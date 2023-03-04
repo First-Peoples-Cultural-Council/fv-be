@@ -23,11 +23,6 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-#### Add public group permission to the default anonymous user
-Login to the admin page at ```localhost:8000/admin/```, navigate to the users page at 
-```http://localhost:8000/admin/auth/user/```, click on the ```AnonymousUser```, add the public group to the user's 
-chosen groups and hit save. 
-
 ### Usage:
 Admin page: ```localhost:8000/admin/```  
 Main REST API page: ```localhost:8000/```  
