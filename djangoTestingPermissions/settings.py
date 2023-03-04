@@ -35,7 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'guardian',
+    # Note that the rules.apps.AutodiscoverRulesConfig will load any rules.py files in the project on startup
+    'rules.apps.AutodiscoverRulesConfig',
     'rest_framework',
     'app.apps.AppConfig',
 ]
@@ -77,7 +78,7 @@ WSGI_APPLICATION = 'djangoTestingPermissions.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db_rule_based.sqlite3',
     }
 }
 
@@ -123,8 +124,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = "/"
 
 AUTHENTICATION_BACKENDS = (
+    'rules.permissions.ObjectPermissionBackend',
     'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend',
 )
 
 REST_FRAMEWORK = {

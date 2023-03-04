@@ -133,3 +133,6 @@ dmypy.json
 
 # Mac folder attributes
 *.DS_Store
+
+# Database files
+*.sqlite3

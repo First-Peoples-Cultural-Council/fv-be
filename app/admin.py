@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import format_html
-from guardian.admin import GuardedModelAdmin
 
 from .models import Language, Word, Phrase
 
@@ -43,7 +42,7 @@ class PhraseInline(admin.TabularInline):
     readonly_fields = ('admin_link', 'uuid')
 
 
-class LanguageAdmin(GuardedModelAdmin):
+class LanguageAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
     inlines = [
         WordInline,
@@ -64,15 +63,14 @@ class LanguageAdmin(GuardedModelAdmin):
     list_display = ('title', 'id', 'state', 'description', 'word_count', 'phrase_count')
 
 
-class WordAdmin(GuardedModelAdmin):
+class WordAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
     list_display = ('title', 'id', 'state', 'language')
 
 
-class PhraseAdmin(GuardedModelAdmin):
+class PhraseAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
     list_display = ('title', 'id', 'state', 'language')
-
 
 
 admin.site.register(Language, LanguageAdmin)

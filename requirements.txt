@@ -1,5 +1,5 @@
 Django>=4.1.7
-django-guardian>=2.4.0
+rules>=3.3
 djangorestframework>=3.14.0
 markdown>=3.4.1
 django-filter>=22.1
