@@ -17,6 +17,8 @@ License: Apache Software License 2.0
    2. `source venv/bin/activate`
 1. Install requirements
    2. `pip install -r requirements/local.txt`
+3. Install pre-commit hooks
+   4. `pre-commit install`
 1. Create a database in postgres, named fv_be
    2. `createdb --username=postgres <project_slug>`
 1. Configure environment settings
