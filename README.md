@@ -7,17 +7,25 @@ Backend for the FirstVoices application
 
 License: Apache Software License 2.0
 
-## Up and Running
+## Developer setup
 
-- Clone the repo
-- Install prereqs
-- Activate venv
-- Install requirements
-- Create db
-- Environment settings
-- Apply migration
-- Npm install
-- Npm run dev
+1. Clone the repo: https://github.com/First-Peoples-Cultural-Council/fv-be
+1. Install prereqs:
+   2. Python 3.10+
+   3. PostgreSQL
+1. Activate the virtual environment in the root of the project
+   2. `source venv/bin/activate`
+1. Install requirements
+   2. `pip install -r requirements/local.txt`
+1. Create a database in postgres, named fv_be
+   2. `createdb --username=postgres <project_slug>`
+1. Configure environment settings
+   2. `export DATABASE_URL=postgres://postgres:<password>@127.0.0.1:5432/<DB name given to createdb>`
+1. Apply migration
+   2. `python manage.py migrate`
+1. Run the server and set it to automatically refresh on changes
+   2. `npm install`
+   3. `npm run dev`
 
 ## Settings
 
