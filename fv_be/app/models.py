@@ -3,6 +3,8 @@ import uuid
 
 import rules
 from django.db import models
+from django.db.models import DEFERRED
+from django_currentuser.middleware import get_current_user
 from rules.contrib.models import RulesModel
 
 from fv_be.users.models import User
@@ -25,7 +27,7 @@ STATE_CHOICES = (
 )
 
 
-class Site(models.Model):
+class Site(RulesModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=100)
     state = models.CharField(max_length=9, choices=STATE_CHOICES, default="new")
@@ -87,7 +89,29 @@ class Word(RulesModel):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        # Default implementation of from_db() (subject to change and could
+        # be replaced with super()).
+        if len(values) != len(cls._meta.concrete_fields):
+            values = list(values)
+            values.reverse()
+            values = [
+                values.pop() if f.attname in field_names else DEFERRED
+                for f in cls._meta.concrete_fields
+            ]
+        instance = cls(*values)
+        instance._state.adding = False
+        instance._state.db = db
+        # customization to store the original field values on the instance
+        instance._loaded_values = dict(
+            zip(field_names, (value for value in values if value is not DEFERRED))
+        )
+        return instance
+
     def save(self, *args, **kwargs):
+        current_user = get_current_user()
+        logger.debug(f"Current user is {current_user}")
         is_new = self._state.adding is True
         super().save(*args, **kwargs)
 

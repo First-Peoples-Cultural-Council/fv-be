@@ -20,8 +20,8 @@ class SiteShortenedSerializer(serializers.ModelSerializer):
 
 # Used to convert the words between an object and JSON
 class WordSerializer(serializers.ModelSerializer):
-    site = SiteShortenedSerializer()
+    # site = SiteShortenedSerializer()
 
     class Meta:
         model = Word
-        fields = ["id", "title", "site", "state"]
+        fields = ["id", "title", "state"]

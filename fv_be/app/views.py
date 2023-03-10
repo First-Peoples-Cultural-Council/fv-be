@@ -6,7 +6,7 @@ from .serializers import Site, SiteSerializer, Word, WordSerializer
 
 # Create your views here.
 # Provides a language endpoint which will use the "can_view_model" rule to check for permission.
-class SiteViewSet(ModelViewSet):
+class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
     serializer_class = SiteSerializer
 
