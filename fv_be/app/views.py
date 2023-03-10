@@ -1,11 +1,12 @@
-from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet
+from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from .serializers import Site, SiteSerializer, Word, WordSerializer
 
 
 # Create your views here.
 # Provides a language endpoint which will use the "can_view_model" rule to check for permission.
-class SiteViewSet(viewsets.ModelViewSet):
+class SiteViewSet(ModelViewSet):
     http_method_names = ["get"]
     serializer_class = SiteSerializer
 
@@ -18,8 +19,7 @@ class SiteViewSet(viewsets.ModelViewSet):
 
 # Provides a word endpoint which will first filter words by the language UUID passed from the url and then use the
 # "can_view_model" rule to check for permission.
-class WordViewSet(viewsets.ModelViewSet):
-    http_method_names = ["get"]
+class WordViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     serializer_class = WordSerializer
 
     def get_queryset(self):

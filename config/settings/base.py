@@ -258,6 +258,13 @@ LOGGING = {
             "formatter": "verbose",
         }
     },
+    "loggers": {
+        "rules": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
