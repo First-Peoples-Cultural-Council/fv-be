@@ -306,3 +306,4 @@ fv_be/media/
 .pytest_cache/
 fv_be/static/webpack_bundles/
 webpack-stats.json
+/fv_be/.envrc

@@ -69,6 +69,8 @@ DJANGO_APPS = [
     "django.contrib.admin",
     "django.forms",
     "fv_be.app",
+    # Note that the rules.apps.AutodiscoverRulesConfig will load any rules.py files in the project on startup
+    "rules.apps.AutodiscoverRulesConfig",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
