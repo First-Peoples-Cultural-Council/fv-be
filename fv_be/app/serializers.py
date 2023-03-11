@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Site, Word
+from .models import Category, Site, Word
 
 
 # Used to convert the language between an object and JSON
@@ -25,3 +25,10 @@ class WordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Word
         fields = ["id", "title", "state"]
+
+
+# Used to convert the categories between an object and JSON
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "title"]

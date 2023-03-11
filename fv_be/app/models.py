@@ -132,7 +132,7 @@ class Category(RulesModel):
 
         # these permissions could be defined on a base class for non-access-controlled site content
         rules_permissions = {
-            "view": predicates.is_visible_site,
+            "view": predicates.has_visible_site,
             "add": predicates.is_at_least_language_admin,
             "change": predicates.is_at_least_language_admin,
             "delete": predicates.is_at_least_language_admin,
