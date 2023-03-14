@@ -1,7 +1,6 @@
 import uuid
 
-# this will be replaced by our custom User class when we create the site models
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 from rules.contrib.models import RulesModel
 
@@ -28,18 +27,18 @@ class BaseModel(RulesModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_trashed = models.BooleanField(default=False)
     created_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, default=None
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        default=None,
+        related_name="created_%(app_label)s_%(class)s",
     )
     created = models.DateTimeField(auto_now_add=True)
     last_modified_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, default=None
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        default=None,
+        related_name="modified_%(app_label)s_%(class)s",
     )
     last_modified = models.DateTimeField(auto_now=True)
-
-    @property
-    def created_by(self):
-        return self.created_by.get_full_name()
-
-    @property
-    def last_modified_by(self):
-        return self.last_modified_by.get_full_name()
