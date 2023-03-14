@@ -30,11 +30,11 @@ class BaseModel(RulesModel):
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, default=None
     )
-    created_by_date = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
     last_modified_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, default=None
     )
-    last_modified_date = models.DateTimeField(auto_now=True)
+    last_modified = models.DateTimeField(auto_now=True)
 
     @property
     def created_by(self):
