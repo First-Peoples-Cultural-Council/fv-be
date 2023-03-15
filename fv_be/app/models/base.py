@@ -24,21 +24,36 @@ class BaseModel(RulesModel):
     class Meta:
         abstract = True
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # from uid (and seemingly not uid:uid)
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, db_index=True
+    )
+
+    # from isTrashed
     is_trashed = models.BooleanField(default=False)
+
+    # from dc:creator
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         default=None,
         related_name="created_%(app_label)s_%(class)s",
+        db_index=True,
     )
+
+    # from dc:created
     created = models.DateTimeField(auto_now_add=True)
+
+    # from dc:modified
     last_modified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         default=None,
         related_name="modified_%(app_label)s_%(class)s",
+        db_index=True,
     )
+
+    # from dc:lastContributor
     last_modified = models.DateTimeField(auto_now=True)
