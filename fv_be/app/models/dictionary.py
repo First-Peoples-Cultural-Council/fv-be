@@ -1,27 +1,40 @@
 from django.db import models
+from django.utils.translation import gettext as _
+
+# FirstVoices
+from .base import BaseModel
 
 
-class Note(models.Model):
+class Note(BaseModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
     text = models.TextField()
 
+    def __str__(self):
+        return self.text
 
-class Acknowledgment(models.Model):
+
+class Acknowledgment(BaseModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
 
+    def __str__(self):
+        return self.text
 
-class Translation(models.Model):
+
+class Translation(BaseModel):
     """Model for translations associated to each dictionary entry."""
 
     # Choices for Language
     ENGLISH_ENUM_KEY = "EN"
     FRENCH_ENUM_KEY = "FR"
-    LANGUAGE_CHOICES = [(ENGLISH_ENUM_KEY, "English"), (FRENCH_ENUM_KEY, "French")]
+    LANGUAGE_CHOICES = [
+        (ENGLISH_ENUM_KEY, _("English")),
+        (FRENCH_ENUM_KEY, _("French")),
+    ]
 
     # Fields
     translation = models.CharField(max_length=200)
@@ -34,8 +47,14 @@ class Translation(models.Model):
     # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
+    def __str__(self):
+        return _("Translation in %(language)s: %(translation)s.") % {
+            "language": self.language,
+            "translation": self.translation,
+        }
 
-class AlternateSpelling(models.Model):
+
+class AlternateSpelling(BaseModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
     # todo: more representative name for the following attribute ?
@@ -44,8 +63,11 @@ class AlternateSpelling(models.Model):
     # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.text
 
-class Pronunciation(models.Model):
+
+class Pronunciation(BaseModel):
     """Model for pronunciations associated to each dictionary entry."""
 
     # todo: more representative name for the following attribute ?
@@ -54,8 +76,11 @@ class Pronunciation(models.Model):
     # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.text
 
-class DictionaryEntry(models.Model):
+
+class DictionaryEntry(BaseModel):
     """Model for dictionary entries"""
 
     class Meta:
@@ -64,7 +89,7 @@ class DictionaryEntry(models.Model):
     # Choices for Type
     WORD_ENUM_KEY = "WORD"
     PHRASE_ENUM_KEY = "PHRASE"
-    TYPE_OF_ENTRY_CHOICES = [(WORD_ENUM_KEY, "Word"), (PHRASE_ENUM_KEY, "Phrase")]
+    TYPE_OF_ENTRY_CHOICES = [(WORD_ENUM_KEY, _("Word")), (PHRASE_ENUM_KEY, _("Phrase"))]
 
     # Fields
     # from dc:title
@@ -95,3 +120,6 @@ class DictionaryEntry(models.Model):
     batch_id = models.CharField(max_length=255, blank=True)
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField("self", blank=True)
+
+    def __str__(self):
+        return self.title
