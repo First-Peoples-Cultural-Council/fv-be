@@ -27,6 +27,15 @@ class BaseAdmin(admin.ModelAdmin):
         obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
 
+    def save_formset(self, request, form, formset, change):
+        for form in formset.forms:
+            if not form.instance.created:
+                form.instance.created_by = request.user
+
+            form.instance.last_modified_by = request.user
+
+        super().save_formset(request, form, formset, change)
+
 
 class BaseSiteContentAdmin(BaseAdmin):
     list_display = ("site",) + BaseAdmin.list_display

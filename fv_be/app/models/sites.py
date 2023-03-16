@@ -44,9 +44,7 @@ class Language(BaseModel):
     alternate_names = models.TextField(max_length=200, blank=True)
 
     # from fva:family
-    language_family = models.ForeignKey(
-        LanguageFamily, null=True, on_delete=models.SET_NULL
-    )
+    language_family = models.ForeignKey(LanguageFamily, on_delete=models.PROTECT)
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
@@ -84,8 +82,10 @@ class Site(BaseModel):
         choices=Visibility.choices, default=Visibility.TEAM, db_index=True
     )
 
+    # from fvdialect:contact_email
+    contact_email = models.EmailField(null=True, blank=True)
+
     # todo: add logo field when media is ready / from fvdialect:logo
-    # todo: contact_email vs link to a contact user /  from fvdialect:contact_email
 
     @property
     def language_family(self):
@@ -133,7 +133,7 @@ class Membership(BaseSiteContentModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # from group memberships
-    role = models.IntegerField(choices=Role.choices, unique=True, default=Role.MEMBER)
+    role = models.IntegerField(choices=Role.choices, default=Role.MEMBER)
 
     class Meta:
         unique_together = ("site", "user")
