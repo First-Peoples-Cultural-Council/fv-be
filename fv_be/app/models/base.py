@@ -39,11 +39,10 @@ class BaseModel(RulesModel):
         null=True,
         default=None,
         related_name="created_%(app_label)s_%(class)s",
-        db_index=True,
     )
 
     # from dc:created
-    created = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # from dc:modified
     last_modified_by = models.ForeignKey(
@@ -52,8 +51,7 @@ class BaseModel(RulesModel):
         null=True,
         default=None,
         related_name="modified_%(app_label)s_%(class)s",
-        db_index=True,
     )
 
     # from dc:lastContributor
-    last_modified = models.DateTimeField(auto_now=True)
+    last_modified = models.DateTimeField(auto_now=True, db_index=True)

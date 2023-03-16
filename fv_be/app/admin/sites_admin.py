@@ -1,74 +1,38 @@
 from django.contrib import admin
-from django.contrib.auth.models import Group
 
-from fv_be.app.models.sites import LanguageFamily, Membership, Site, SiteInformation
+from fv_be.app.models.sites import Language, LanguageFamily, Membership
 
+from .base_admin import BaseAdmin, BaseInlineAdmin, BaseSiteContentAdmin
 
-class BaseAdmin(admin.ModelAdmin):
-    readonly_fields = (
-        "id",
-        "created",
-        "created_by",
-        "last_modified_by",
-        "last_modified",
-    )
-    list_display = (
-        "id",
-        "is_trashed",
-        "created_by",
-        "created",
-        "last_modified_by",
-        "last_modified",
-    )
-
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.created_by = request.user
-
-        obj.last_modified_by = request.user
-        super().save_model(request, obj, form, change)
+# Admin settings for the sites models, except Site. For the main Site admin, see .admin instead.
 
 
-class BaseSiteContentAdmin(BaseAdmin):
-    list_display = ("site",) + BaseAdmin.list_display
-
-
-class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
-    list_display = ("visibility",) + BaseSiteContentAdmin.list_display
-
-
+@admin.register(LanguageFamily)
 class LanguageFamilyAdmin(BaseAdmin):
-    list_display = ("title",) + BaseAdmin.list_display
+    list_display = ("title", "alternate_names") + BaseAdmin.list_display
 
 
-class SiteAdmin(BaseAdmin):
+@admin.register(Language)
+class LanguageAdmin(BaseAdmin):
     list_display = (
         "title",
-        "slug",
-        "visibility",
+        "alternate_names",
         "language_family",
+        "language_code",
+        "colour",
     ) + BaseAdmin.list_display
 
 
-class SiteInformationAdmin(BaseAdmin):
-    list_display = (
-        "site",
-        "contact_information",
-        "greeting",
-        "about_our_language",
-        "about_us",
-        "description",
-        "site_menu",
-    ) + BaseAdmin.list_display
-
-
+@admin.register(Membership)
 class MembershipAdmin(BaseSiteContentAdmin):
+    fields = ("user", "site", "role", "is_trashed")
     list_display = ("user", "role") + BaseSiteContentAdmin.list_display
 
 
-admin.site.register(Membership, MembershipAdmin)
-admin.site.register(LanguageFamily, LanguageFamilyAdmin)
-admin.site.register(Site, SiteAdmin)
-admin.site.register(SiteInformation, SiteInformationAdmin)
-
-admin.site.unregister(Group)
+class MembershipInline(BaseInlineAdmin):
+    model = Membership
+    fields = (
+        "user",
+        "role",
+    ) + BaseInlineAdmin.fields
+    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields

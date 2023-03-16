@@ -12,15 +12,49 @@ class LanguageFamily(BaseModel):
     Represents a Language Family.
     """
 
-    # from fvlanguage type
+    # from FVLanguageFamily type
 
     class Meta:
         # todo: i18n
         verbose_name = "language family"
         verbose_name_plural = "language families"
 
-    # from dc:title
+    # from parent_languages.csv OR from fvdialect:language_family on one of the
+    # linked sites (via one of the linked languages)
     title = models.CharField(max_length=200)
+
+    # from dc:title
+    alternate_names = models.TextField(max_length=200, blank=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Language(BaseModel):
+    """
+    Represents a Language.
+    """
+
+    # from fvlanguage type
+
+    # from parent_languages.csv OR from fvdialect:parent_language on one of the linked sites
+    title = models.CharField(max_length=200)
+
+    # from dc:title
+    alternate_names = models.TextField(max_length=200, blank=True)
+
+    # from fva:family
+    language_family = models.ForeignKey(
+        LanguageFamily, null=True, on_delete=models.SET_NULL
+    )
+
+    # from fvdialect:bcp_47
+    # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
+    language_code = models.TextField(max_length=100)
+
+    # from parent_languages.csv converted from RGB value to a hex number
+    # todo: consider something like django-colorfield to get nice admin ui for this
+    colour = models.IntegerField()
 
     def __str__(self):
         return self.title
@@ -43,7 +77,7 @@ class Site(BaseModel):
     )
 
     # from fva:language
-    language_family = models.ForeignKey(LanguageFamily, on_delete=models.DO_NOTHING)
+    language = models.ForeignKey(Language, null=True, on_delete=models.SET_NULL)
 
     # from state (will have to be translated from existing states to new visibilities)
     visibility = models.IntegerField(
@@ -51,7 +85,14 @@ class Site(BaseModel):
     )
 
     # todo: add logo field when media is ready / from fvdialect:logo
-    # todo: add banner field when media is ready / from fvdialect:background_top_image
+    # todo: contact_email vs link to a contact user /  from fvdialect:contact_email
+
+    @property
+    def language_family(self):
+        if self.language is not None:
+            return self.language.language_family
+        else:
+            return None
 
     def __str__(self):
         return self.title
@@ -66,7 +107,7 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    site = models.ForeignKey(Site, on_delete=models.CASCADE, db_index=True)
+    site = models.ForeignKey(Site, on_delete=models.CASCADE)
 
 
 class BaseControlledSiteContentModel(BaseSiteContentModel):
@@ -83,46 +124,15 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
     )
 
 
-class SiteInformation(BaseSiteContentModel):
-    """Contains the access-controlled information about a language site."""
-
-    # details come from fvdialect document
-
-    # fvdialect:contact_information
-    contact_information = models.TextField(blank=True)
-
-    # fvdialect:site_menu
-    site_menu = models.JSONField()
-
-    # fvdialect:greeting
-    greeting = models.TextField(blank=True)
-
-    # fvdialect:about_our_language
-    about_our_language = models.TextField(blank=True)
-
-    # fvdialect:about_us
-    about_us = models.TextField(blank=True)
-
-    # dc:description
-    description = models.TextField(blank=True)
-
-    # todo: discuss how to handle existing contributors which are stored as usernames / from dc:contributors
-    # todo: add featured words when words are available / from fvdialect:featured_words
-    # todo: add featured audio when media is available / from fvdialect:featured_audio
-    # todo: add keyboards when available / from fvdialect:keyboards
-    # todo: decide whether to import fvl:import_id (from the fvlegacy schema)
-    # todo: as part of pages and widgets epic / from widgets:active
-
-    def __str__(self):
-        # todo: i18n
-        return f"Site information for {self.site.title}"
-
-
 class Membership(BaseSiteContentModel):
     """Represents a user's membership to a language site"""
 
-    # todo: mappings from nuxeo
-    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
+    # site_id from group memberships
+
+    # from user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # from group memberships
     role = models.IntegerField(choices=Role.choices, unique=True, default=Role.MEMBER)
 
     class Meta:
