@@ -9,7 +9,14 @@ from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
 from .sites_admin import MembershipInline, SiteFeatureInline
-
+from fv_be.app.models.dictionary import (
+    Acknowledgment,
+    AlternateSpelling,
+    DictionaryEntry,
+    Note,
+    Pronunciation,
+    Translation,
+)
 # Main Site admin settings. For related sites models, see .sites_admin
 
 
@@ -34,3 +41,17 @@ admin.site.unregister(Group)
 admin.site.unregister(SocialAccount)
 admin.site.unregister(SocialApp)
 admin.site.unregister(SocialToken)
+
+dictionary_models = [
+    Note,
+    Acknowledgment,
+    Translation,
+    AlternateSpelling,
+    Pronunciation,
+    DictionaryEntry,
+]
+
+# todo: make suitable admin objects to register for each model
+# todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
+# ref: https://stackoverflow.com/questions/869856/
+admin.site.register(dictionary_models)

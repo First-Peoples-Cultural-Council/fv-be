@@ -31,7 +31,7 @@ class Translation(models.Model):
     # todo: connect to parts of speech
     # from fv-word:part_of_speech
     # part_of_speech =
-    # todo: the following attribute's name
+    # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
 
@@ -41,7 +41,7 @@ class AlternateSpelling(models.Model):
     # todo: more representative name for the following attribute ?
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
     text = models.CharField(max_length=200)
-    # todo: the following attribute's name
+    # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
 
@@ -51,7 +51,7 @@ class Pronunciation(models.Model):
     # todo: more representative name for the following attribute ?
     # from fv-word:pronunciation
     text = models.CharField(max_length=200)
-    # todo: the following attribute's name
+    # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
 
@@ -94,4 +94,4 @@ class DictionaryEntry(models.Model):
     exclude_from_kids = models.BooleanField(default=False)
     batch_id = models.CharField(max_length=255, blank=True)
     # from fv:related_assets, fv-word:related_phrases
-    related_dictionary_entries = models.ManyToManyField("self")
+    related_dictionary_entries = models.ManyToManyField("self", blank=True)
