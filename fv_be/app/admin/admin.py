@@ -9,6 +9,8 @@ from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
 from .sites_admin import MembershipInline, SiteFeatureInline
+from fv_be.app.models.category import Category
+from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.dictionary import (
     Acknowledgment,
     AlternateSpelling,
@@ -55,3 +57,5 @@ dictionary_models = [
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
 # ref: https://stackoverflow.com/questions/869856/
 admin.site.register(dictionary_models)
+admin.site.register(Category)
+admin.site.register(PartOfSpeech)

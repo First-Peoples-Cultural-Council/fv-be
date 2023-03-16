@@ -3,6 +3,8 @@ from django.utils.translation import gettext as _
 
 # FirstVoices
 from .base import BaseModel
+from .category import Category
+from .part_of_speech import PartOfSpeech
 
 
 class Note(BaseModel):
@@ -41,9 +43,8 @@ class Translation(BaseModel):
     language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, default=ENGLISH_ENUM_KEY
     )
-    # todo: connect to parts of speech
     # from fv-word:part_of_speech
-    # part_of_speech =
+    part_of_speech = models.ManyToManyField(PartOfSpeech)
     # todo: more representative name for the following attribute ?
     parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
 
@@ -83,9 +84,6 @@ class Pronunciation(BaseModel):
 class DictionaryEntry(BaseModel):
     """Model for dictionary entries"""
 
-    class Meta:
-        verbose_name_plural = "DictionaryEntries"
-
     # Choices for Type
     WORD_ENUM_KEY = "WORD"
     PHRASE_ENUM_KEY = "PHRASE"
@@ -105,11 +103,10 @@ class DictionaryEntry(BaseModel):
     # )
     notes = models.ForeignKey("Note", on_delete=models.SET_NULL, null=True)
     acknowledgments = models.ForeignKey(
-        "Acknowledgment", on_delete=models.SET_NULL, null=True
+        "Acknowledgment", on_delete=models.PROTECT, null=True
     )
-    # todo: Add categories table
     # from fv-word:categories, fv-phrase:phrase_books
-    # categories =
+    categories = models.ManyToManyField(Category)
     # from fv:custom_order
     custom_order = models.CharField(max_length=200, blank=True)
     # from fv-word:available_in_games, fvaudience:games
@@ -120,6 +117,9 @@ class DictionaryEntry(BaseModel):
     batch_id = models.CharField(max_length=255, blank=True)
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField("self", blank=True)
+
+    class Meta:
+        verbose_name_plural = "DictionaryEntries"
 
     def __str__(self):
         return self.title
