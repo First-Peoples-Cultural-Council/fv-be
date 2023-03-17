@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from fv_be.app.models.sites import Language, LanguageFamily, Membership
+from fv_be.app.models.sites import Language, LanguageFamily, Membership, SiteFeature
 
 from .base_admin import BaseAdmin, BaseInlineAdmin, BaseSiteContentAdmin
 
@@ -28,10 +28,28 @@ class MembershipAdmin(BaseSiteContentAdmin):
     list_display = ("user", "role") + BaseSiteContentAdmin.list_display
 
 
+@admin.register(SiteFeature)
+class SiteFeatureAdmin(BaseSiteContentAdmin):
+    fields = ("site", "key", "is_enabled")
+    list_display = (
+        "key",
+        "is_enabled",
+    ) + BaseSiteContentAdmin.list_display
+
+
 class MembershipInline(BaseInlineAdmin):
     model = Membership
     fields = (
         "user",
         "role",
+    ) + BaseInlineAdmin.fields
+    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+
+
+class SiteFeatureInline(BaseInlineAdmin):
+    model = SiteFeature
+    fields = (
+        "key",
+        "is_enabled",
     ) + BaseInlineAdmin.fields
     readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
