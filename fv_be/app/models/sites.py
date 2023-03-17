@@ -45,14 +45,14 @@ class Language(BaseModel):
     title = models.CharField(max_length=200)
 
     # from dc:title
-    alternate_names = models.TextField(max_length=200, blank=True)
+    alternate_names = models.CharField(max_length=200, blank=True)
 
     # from fva:family
     language_family = models.ForeignKey(LanguageFamily, on_delete=models.PROTECT)
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
-    language_code = models.TextField(max_length=100, blank=True)
+    language_code = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return self.title
