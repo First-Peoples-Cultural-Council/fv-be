@@ -5,6 +5,12 @@ from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site as Sites
 from rest_framework.authtoken.models import TokenProxy
 
+from fv_be.app.models.characters import (
+    AlphabetMapper,
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
@@ -33,3 +39,9 @@ admin.site.unregister(Group)
 admin.site.unregister(SocialAccount)
 admin.site.unregister(SocialApp)
 admin.site.unregister(SocialToken)
+
+# Character Models
+admin.site.register(Character)
+admin.site.register(CharacterVariant)
+admin.site.register(IgnoredCharacter)
+admin.site.register(AlphabetMapper)
