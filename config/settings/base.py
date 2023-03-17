@@ -68,7 +68,6 @@ DJANGO_APPS = [
     # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
     "django.forms",
-    "fv_be.app",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
@@ -85,7 +84,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "fv_be.users",
-    # Your stuff: custom apps go here
+    "fv_be.app",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -268,7 +267,7 @@ ACCOUNT_AUTHENTICATION_METHOD = "username"
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
 ACCOUNT_EMAIL_REQUIRED = True
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "optional"
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
 ACCOUNT_ADAPTER = "fv_be.users.adapters.AccountAdapter"
 # https://django-allauth.readthedocs.io/en/latest/forms.html

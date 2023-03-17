@@ -19,7 +19,6 @@ class LanguageAdmin(BaseAdmin):
         "alternate_names",
         "language_family",
         "language_code",
-        "colour",
     ) + BaseAdmin.list_display
 
 

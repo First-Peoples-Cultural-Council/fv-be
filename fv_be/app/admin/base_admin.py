@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.translation import gettext as _
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -66,14 +67,15 @@ class BaseInlineAdmin(admin.TabularInline):
     def item_id(self, instance):
         return instance.id
 
-    item_id.short_description = "Id"
+    item_id.short_description = _("Id")
 
     def admin_link(self, instance):
         url = reverse(
             f"admin:{instance._meta.app_label}_{instance._meta.model_name}_change",
             args=(instance.id,),
         )
-        return format_html('<a href="{}">Edit: {}</a>', url, str(instance))
+        # todo: i18n for 'Edit' not working here for some reason
+        return format_html('<a href="{}">{}: {}</a>', url, "Edit", str(instance))
 
     def save_model(self, request, obj, form, change):
         if not change:

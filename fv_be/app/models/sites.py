@@ -1,5 +1,6 @@
 from django.core.validators import validate_slug
 from django.db import models
+from django.utils.translation import gettext as _
 
 from fv_be.app.models import BaseModel
 from fv_be.users.models import User
@@ -15,9 +16,8 @@ class LanguageFamily(BaseModel):
     # from FVLanguageFamily type
 
     class Meta:
-        # todo: i18n
-        verbose_name = "language family"
-        verbose_name_plural = "language families"
+        verbose_name = _("language family")
+        verbose_name_plural = _("language families")
 
     # from parent_languages.csv OR from fvdialect:language_family on one of the
     # linked sites (via one of the linked languages)
@@ -37,6 +37,10 @@ class Language(BaseModel):
 
     # from fvlanguage type
 
+    class Meta:
+        verbose_name = _("language")
+        verbose_name_plural = _("languages")
+
     # from parent_languages.csv OR from fvdialect:parent_language on one of the linked sites
     title = models.CharField(max_length=200)
 
@@ -48,11 +52,7 @@ class Language(BaseModel):
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
-    language_code = models.TextField(max_length=100)
-
-    # from parent_languages.csv converted from RGB value to a hex number
-    # todo: consider something like django-colorfield to get nice admin ui for this
-    colour = models.IntegerField()
+    language_code = models.TextField(max_length=100, blank=True)
 
     def __str__(self):
         return self.title
@@ -66,6 +66,10 @@ class Site(BaseModel):
 
     # from fvdialect type
 
+    class Meta:
+        verbose_name = _("site")
+        verbose_name_plural = _("sites")
+
     # from dc:title
     title = models.CharField(max_length=200)
 
@@ -75,7 +79,9 @@ class Site(BaseModel):
     )
 
     # from fva:language
-    language = models.ForeignKey(Language, null=True, on_delete=models.SET_NULL)
+    language = models.ForeignKey(
+        Language, null=True, blank=True, on_delete=models.SET_NULL
+    )
 
     # from state (will have to be translated from existing states to new visibilities)
     visibility = models.IntegerField(
@@ -136,8 +142,9 @@ class Membership(BaseSiteContentModel):
     role = models.IntegerField(choices=Role.choices, default=Role.MEMBER)
 
     class Meta:
+        verbose_name = _("membership")
+        verbose_name_plural = _("memberships")
         unique_together = ("site", "user")
 
     def __str__(self):
-        # todo: i18n
-        return f"User [{self.user}] has role [{Role.labels[self.role]}] on site [{self.site}]"
+        return f"{self.user} ({self.site} {Role.labels[self.role]})"
