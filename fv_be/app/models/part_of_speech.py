@@ -14,7 +14,7 @@ class PartOfSpeech(BaseModel):
     # from wiki: name of the part of speech in snake case e.g.intransitive_verb
     label = models.CharField(max_length=200)
     # todo: name for the following field
-    parent = models.ForeignKey("self", blank=True, on_delete=models.PROTECT)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT)
 
     class Meta:
         verbose_name_plural = "PartsOfSpeech"
