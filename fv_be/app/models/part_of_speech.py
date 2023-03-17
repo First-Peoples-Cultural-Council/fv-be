@@ -10,15 +10,14 @@ class PartOfSpeech(BaseModel):
     # Fields
     # todo: name for the following field, can we put title ? or will it be very similar to label ?
     # since other models have a title field
-    name = models.CharField(
-        max_length=200
-    )  # from wiki: name of the part of speech in snake case e.g.intransitive_verb
+    name = models.CharField(max_length=200)
+    # from wiki: name of the part of speech in snake case e.g.intransitive_verb
     label = models.CharField(max_length=200)
     # todo: name for the following field
-    parent = models.ManyToManyField("self", blank=True)
+    parent = models.ForeignKey("self", blank=True, on_delete=models.PROTECT)
 
     class Meta:
-        verbose_name_plural = "Categories"
+        verbose_name_plural = "PartsOfSpeech"
 
     def __str__(self):
         return self.name

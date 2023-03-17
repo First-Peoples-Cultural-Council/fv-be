@@ -12,6 +12,9 @@ class Note(BaseModel):
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
     text = models.TextField()
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="notes"
+    )
 
     def __str__(self):
         return self.text
@@ -22,6 +25,9 @@ class Acknowledgment(BaseModel):
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="acknowledgments"
+    )
 
     def __str__(self):
         return self.text
@@ -39,14 +45,17 @@ class Translation(BaseModel):
     ]
 
     # Fields
-    translation = models.CharField(max_length=200)
+    text = models.CharField(max_length=200)
     language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, default=ENGLISH_ENUM_KEY
     )
     # from fv-word:part_of_speech
-    part_of_speech = models.ManyToManyField(PartOfSpeech)
-    # todo: more representative name for the following attribute ?
-    parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
+    part_of_speech = models.ForeignKey(
+        PartOfSpeech, on_delete=models.CASCADE, blank=True, related_name="translations"
+    )
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="translations"
+    )
 
     def __str__(self):
         return _("Translation in %(language)s: %(translation)s.") % {
@@ -58,11 +67,11 @@ class Translation(BaseModel):
 class AlternateSpelling(BaseModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
-    # todo: more representative name for the following attribute ?
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
     text = models.CharField(max_length=200)
-    # todo: more representative name for the following attribute ?
-    parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="alternate_spellings"
+    )
 
     def __str__(self):
         return self.text
@@ -71,11 +80,11 @@ class AlternateSpelling(BaseModel):
 class Pronunciation(BaseModel):
     """Model for pronunciations associated to each dictionary entry."""
 
-    # todo: more representative name for the following attribute ?
     # from fv-word:pronunciation
     text = models.CharField(max_length=200)
-    # todo: more representative name for the following attribute ?
-    parent = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE)
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="pronunciations"
+    )
 
     def __str__(self):
         return self.text
@@ -101,12 +110,14 @@ class DictionaryEntry(BaseModel):
     #     'Site',
     #     on_delete=models.CASCADE
     # )
-    notes = models.ForeignKey("Note", on_delete=models.SET_NULL, null=True)
-    acknowledgments = models.ForeignKey(
-        "Acknowledgment", on_delete=models.PROTECT, null=True
-    )
     # from fv-word:categories, fv-phrase:phrase_books
-    categories = models.ManyToManyField(Category)
+    categories = models.ForeignKey(
+        Category,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="dictionary_entries",
+    )
     # from fv:custom_order
     custom_order = models.CharField(max_length=200, blank=True)
     # from fv-word:available_in_games, fvaudience:games
@@ -116,10 +127,25 @@ class DictionaryEntry(BaseModel):
     exclude_from_kids = models.BooleanField(default=False)
     batch_id = models.CharField(max_length=255, blank=True)
     # from fv:related_assets, fv-word:related_phrases
-    related_dictionary_entries = models.ManyToManyField("self", blank=True)
+    related_dictionary_entries = models.ManyToManyField(
+        "self",
+        blank=True,
+        symmetrical=False,
+        through="DictionaryEntrySelfAssociation",
+        related_name="incoming_related_dictionary_entries",
+    )
 
     class Meta:
         verbose_name_plural = "DictionaryEntries"
 
     def __str__(self):
         return self.title
+
+
+class DictionaryEntrySelfAssociation(models.Model):
+    from_dictionary_entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE)
+    to_dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        on_delete=models.CASCADE,
+        related_name="incoming_related_entries",
+    )
