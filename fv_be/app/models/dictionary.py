@@ -36,18 +36,17 @@ class Acknowledgment(BaseModel):
 class Translation(BaseModel):
     """Model for translations associated to each dictionary entry."""
 
-    # Choices for Language
-    ENGLISH_ENUM_KEY = "EN"
-    FRENCH_ENUM_KEY = "FR"
-    LANGUAGE_CHOICES = [
-        (ENGLISH_ENUM_KEY, _("English")),
-        (FRENCH_ENUM_KEY, _("French")),
-    ]
+    class TranslationLanguages(models.TextChoices):
+        # Choices for Language
+        ENGLISH = "EN", _("English")
+        FRENCH = "FR", _("French")
 
     # Fields
     text = models.CharField(max_length=200)
     language = models.CharField(
-        max_length=2, choices=LANGUAGE_CHOICES, default=ENGLISH_ENUM_KEY
+        max_length=2,
+        choices=TranslationLanguages.choices,
+        default=TranslationLanguages.ENGLISH,
     )
     # from fv-word:part_of_speech
     part_of_speech = models.ForeignKey(
@@ -93,16 +92,18 @@ class Pronunciation(BaseModel):
 class DictionaryEntry(BaseModel):
     """Model for dictionary entries"""
 
-    # Choices for Type
-    WORD_ENUM_KEY = "WORD"
-    PHRASE_ENUM_KEY = "PHRASE"
-    TYPE_OF_ENTRY_CHOICES = [(WORD_ENUM_KEY, _("Word")), (PHRASE_ENUM_KEY, _("Phrase"))]
+    class TypeOfDictionaryEntry(models.TextChoices):
+        # Choices for Type
+        WORD = "WORD", _("Word")
+        PHRASE = "PHRASE", _("Phrase")
 
     # Fields
     # from dc:title
     title = models.CharField(max_length=200)
     type = models.CharField(
-        max_length=6, choices=TYPE_OF_ENTRY_CHOICES, default=WORD_ENUM_KEY
+        max_length=6,
+        choices=TypeOfDictionaryEntry.choices,
+        default=TypeOfDictionaryEntry.WORD,
     )
     # todo: Link to site model when available
     # may be inherited from an abstract base class or mixin later
