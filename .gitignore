@@ -128,7 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# FPCC-specific
-venv
-
+# IDE
 .idea/
+
+# OS
+.DS_Store
