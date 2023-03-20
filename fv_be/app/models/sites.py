@@ -148,3 +148,19 @@ class Membership(BaseSiteContentModel):
 
     def __str__(self):
         return f"{self.user} ({self.site} {Role.labels[self.role]})"
+
+
+class SiteFeature(BaseSiteContentModel):
+    """Represents a feature flag for a site"""
+
+    # from fv-features:features json array
+
+    key = models.CharField(max_length=100)
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("site feature")
+        verbose_name_plural = _("site features")
+
+    def __str__(self):
+        return f"{self.key}: {self.is_enabled} ({self.site})"
