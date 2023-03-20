@@ -20,13 +20,14 @@ class Note(BaseModel):
         return self.text
 
 
-class Acknowledgment(BaseModel):
+class Acknowledgement(BaseModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
+    # todo: Confirm if this should be moved to dictionaryEntry, M:M relation
     dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="acknowledgments"
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="acknowledgements"
     )
 
     def __str__(self):
@@ -50,7 +51,7 @@ class Translation(BaseModel):
     )
     # from fv-word:part_of_speech
     part_of_speech = models.ForeignKey(
-        PartOfSpeech, on_delete=models.CASCADE, blank=True, related_name="translations"
+        PartOfSpeech, on_delete=models.SET_NULL, blank=True, null=True, related_name="translations"
     )
     dictionary_entry = models.ForeignKey(
         "DictionaryEntry", on_delete=models.CASCADE, related_name="translations"
