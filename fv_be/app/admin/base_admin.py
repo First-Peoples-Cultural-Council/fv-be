@@ -50,12 +50,12 @@ class BaseInlineAdmin(admin.TabularInline):
     classes = ["collapse"]
     extra = 0
     readonly_fields = (
-        "admin_link",
+        "detail_link",
         "item_id",
     )
     can_delete = False
     fields = (
-        "admin_link",
+        "detail_link",
         "id",
         "created",
         "created_by",
@@ -69,13 +69,13 @@ class BaseInlineAdmin(admin.TabularInline):
 
     item_id.short_description = _("Id")
 
-    def admin_link(self, instance):
+    def detail_link(self, instance):
         url = reverse(
             f"admin:{instance._meta.app_label}_{instance._meta.model_name}_change",
             args=(instance.id,),
         )
         # todo: i18n for 'Edit' not working here for some reason
-        return format_html('<a href="{}">{}: {}</a>', url, "Edit", str(instance))
+        return format_html('<a href="{}">{}</a>', url, "Edit entry")
 
     def save_model(self, request, obj, form, change):
         if not change:

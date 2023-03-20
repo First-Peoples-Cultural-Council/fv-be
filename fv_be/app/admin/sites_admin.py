@@ -24,8 +24,13 @@ class LanguageAdmin(BaseAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(BaseSiteContentAdmin):
+    autocomplete_fields = (
+        "user",
+        "site",
+    )
     fields = ("user", "site", "role", "is_trashed")
     list_display = ("user", "role") + BaseSiteContentAdmin.list_display
+    search_fields = ("user", "site")
 
 
 @admin.register(SiteFeature)
@@ -42,8 +47,19 @@ class MembershipInline(BaseInlineAdmin):
     fields = (
         "user",
         "role",
+        # "user_link"
     ) + BaseInlineAdmin.fields
-    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+    readonly_fields = (
+        ("user",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+    )
+
+    # def user_link(self, instance):
+    #     url = reverse(
+    #         "admin:users_user_change",
+    #         args=(instance.user.id,),
+    #     )
+    #     # todo: i18n for 'Edit user' not working here for some reason
+    #     return format_html('<a href="{}">{}: {}</a>', url, "Edit user", str(instance.user))
 
 
 class SiteFeatureInline(BaseInlineAdmin):

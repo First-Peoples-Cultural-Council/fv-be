@@ -25,6 +25,7 @@ class SiteAdmin(BaseAdmin):
         MembershipInline,
         SiteFeatureInline,
     ]
+    search_fields = ("title", "slug", "language_family", "id")
 
 
 admin.site.unregister(Sites)
