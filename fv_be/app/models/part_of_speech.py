@@ -6,7 +6,7 @@ from .base import BaseModel
 
 
 class PartOfSpeech(BaseModel):
-    """Model for Categories."""
+    """Model for Parts Of Speech."""
 
     # Fields
     title = models.CharField(max_length=200)
