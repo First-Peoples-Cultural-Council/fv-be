@@ -33,7 +33,8 @@ class Character(BaseSiteContentModel):
 
     # from fvcharacter:related_words
     # TODO: add this as a foreign key to the dictionary entry model once it's created
-    # related_dictionary_entries = models.ForeignKey(DictionaryEntry, on_delete=models.SET_NULL, blank=True, null=True)
+    # related_dictionary_entries = models.ForeignKey(
+    #     DictionaryEntry, on_delete=models.SET_NULL, blank=True, null=True, related_name="characters")
 
     def __str__(self):
         return self.title
@@ -50,7 +51,9 @@ class CharacterVariant(BaseSiteContentModel):
 
     title = models.CharField(max_length=15)
 
-    base_key = models.ForeignKey(Character, on_delete=models.CASCADE)
+    base_key = models.ForeignKey(
+        Character, on_delete=models.CASCADE, related_name="variants"
+    )
 
     def __str__(self):
         return self.title
