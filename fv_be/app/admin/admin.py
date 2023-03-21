@@ -8,7 +8,7 @@ from rest_framework.authtoken.models import TokenProxy
 from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
-from .sites_admin import MembershipInline, SiteFeatureInline
+from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 # Main Site admin settings. For related sites models, see .sites_admin
 
@@ -24,7 +24,10 @@ class SiteAdmin(BaseAdmin):
     inlines = [
         MembershipInline,
         SiteFeatureInline,
+        SiteMenuInline,
     ]
+    search_fields = ("id", "title", "slug", "language__title", "contact_email")
+    autocomplete_fields = ("language",)
 
 
 admin.site.unregister(Sites)
