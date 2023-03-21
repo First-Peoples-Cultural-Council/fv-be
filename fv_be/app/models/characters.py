@@ -2,12 +2,13 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 # FirstVoices
+from .constants import MAX_CHARACTER_LENGTH
 from .sites import BaseSiteContentModel
 
 
 class Character(BaseSiteContentModel):
     """
-    Represents a character in a site.
+    Represents an alphabet character in a site.
     """
 
     # from FVCharacter type
@@ -17,16 +18,13 @@ class Character(BaseSiteContentModel):
         verbose_name_plural = _("characters")
 
     # from dc:title
-    title = models.CharField(max_length=15)
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
 
     # from fvcharacter:alphabet_order
-    sort_order = models.IntegerField()
-
-    # from fv:custom_order
-    sort_character = models.CharField(max_length=1, blank=True)
+    sort_order = models.IntegerField(unique=True)
 
     # from fvcharacter:fuzzy_latin_match
-    approximate_form = models.CharField(max_length=15, blank=True)
+    approximate_form = models.CharField(max_length=MAX_CHARACTER_LENGTH, blank=True)
 
     # from fv:notes
     notes = models.TextField(blank=True)
@@ -49,9 +47,10 @@ class CharacterVariant(BaseSiteContentModel):
         verbose_name = _("character variant")
         verbose_name_plural = _("character variants")
 
-    title = models.CharField(max_length=15)
+    # from fvcharacter: upper_case_character
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
 
-    base_key = models.ForeignKey(
+    base_character = models.ForeignKey(
         Character, on_delete=models.CASCADE, related_name="variants"
     )
 
@@ -68,26 +67,28 @@ class IgnoredCharacter(BaseSiteContentModel):
         verbose_name = _("ignored character")
         verbose_name_plural = _("ignored characters")
 
-    title = models.CharField(max_length=15)
+    # from fv-alphabet:ignored_characters
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
 
     def __str__(self):
         return self.title
 
 
-class AlphabetMapper(BaseSiteContentModel):
-    """
-    Represents a private table holding the g2p mappings and configuration for a site.
-    """
-
-    class Meta:
-        verbose_name = _("alphabet mapper")
-        verbose_name_plural = _("alphabet mappers")
-
-    # TODO: Once file storage is configured, enable these FileFields / change to proper paths
-    # alphabet_mapper is a placeholder for now.
-    # input_to_canonical = models.FileField(upload_to="alphabet_mapper")
-    # canonical_to_base = models.FileField(upload_to="alphabet_mapper")
-    # g2p_config = models.FileField(upload_to="alphabet_mapper")
-
-    def __str__(self):
-        return self.id
+# TODO: AlphabetMapper model implementation once g2p work has been completed
+# class AlphabetMapper(BaseSiteContentModel):
+#     """
+#     Represents a private table holding the g2p mappings and configuration for a site.
+#     """
+#
+#     class Meta:
+#         verbose_name = _("alphabet mapper")
+#         verbose_name_plural = _("alphabet mappers")
+#
+#     # TODO: Once file storage is configured, enable these FileFields / change to proper paths
+#     # alphabet_mapper is a placeholder for now.
+#     # input_to_canonical = models.FileField(upload_to="alphabet_mapper")
+#     # canonical_to_base = models.FileField(upload_to="alphabet_mapper")
+#     # g2p_config = models.FileField(upload_to="alphabet_mapper")
+#
+#     def __str__(self):
+#         return self.id
