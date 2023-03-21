@@ -3,10 +3,10 @@ from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
 
 # FirstVoices
-from .base import BaseModel
+from .sites import BaseSiteContentModel
 
 
-class Category(BaseModel):
+class Category(BaseSiteContentModel):
     """Model for Categories."""
 
     # Fields

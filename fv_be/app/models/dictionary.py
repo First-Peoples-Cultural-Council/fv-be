@@ -2,12 +2,12 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 # FirstVoices
-from .base import BaseModel
+from .sites import BaseSiteContentModel, BaseControlledSiteContentModel
 from .category import Category
 from .part_of_speech import PartOfSpeech
 
 
-class Note(BaseModel):
+class Note(BaseSiteContentModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
@@ -20,7 +20,7 @@ class Note(BaseModel):
         return self.text
 
 
-class Acknowledgement(BaseModel):
+class Acknowledgement(BaseSiteContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
@@ -34,7 +34,7 @@ class Acknowledgement(BaseModel):
         return self.text
 
 
-class Translation(BaseModel):
+class Translation(BaseSiteContentModel):
     """Model for translations associated to each dictionary entry."""
 
     class TranslationLanguages(models.TextChoices):
@@ -64,7 +64,7 @@ class Translation(BaseModel):
         }
 
 
-class AlternateSpelling(BaseModel):
+class AlternateSpelling(BaseSiteContentModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
@@ -77,7 +77,7 @@ class AlternateSpelling(BaseModel):
         return self.text
 
 
-class Pronunciation(BaseModel):
+class Pronunciation(BaseSiteContentModel):
     """Model for pronunciations associated to each dictionary entry."""
 
     # from fv-word:pronunciation
@@ -90,7 +90,7 @@ class Pronunciation(BaseModel):
         return self.text
 
 
-class DictionaryEntry(BaseModel):
+class DictionaryEntry(BaseControlledSiteContentModel):
     """Model for dictionary entries"""
 
     class TypeOfDictionaryEntry(models.TextChoices):
@@ -99,8 +99,9 @@ class DictionaryEntry(BaseModel):
         PHRASE = "PHRASE", _("Phrase")
 
     # Fields
-    # from dc:title
-    title = models.CharField(max_length=200)
+    # from dc:title, relatively more max_length due to phrases
+    # todo: max_length may be modified after doing some analysis on the length of current phrases
+    title = models.CharField(max_length=800)
     type = models.CharField(
         max_length=6,
         choices=TypeOfDictionaryEntry.choices,
@@ -138,7 +139,7 @@ class DictionaryEntry(BaseModel):
     )
 
     class Meta:
-        verbose_name_plural = "DictionaryEntries"
+        verbose_name_plural = _("DictionaryEntries")
 
     def __str__(self):
         return self.title

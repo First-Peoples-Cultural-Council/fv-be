@@ -113,7 +113,7 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    site = models.ForeignKey(Site, on_delete=models.CASCADE)
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="site_%(app_label)s_%(class)s")
 
 
 class BaseControlledSiteContentModel(BaseSiteContentModel):
