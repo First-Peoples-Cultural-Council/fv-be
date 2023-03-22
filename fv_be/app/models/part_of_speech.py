@@ -13,6 +13,7 @@ class PartOfSpeech(BaseModel):
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
 
     class Meta:
+        verbose_name = _("PartOfSpeech")
         verbose_name_plural = _("PartsOfSpeech")
 
     def __str__(self):

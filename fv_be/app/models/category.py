@@ -12,10 +12,12 @@ class Category(BaseSiteContentModel):
     # Fields
     title = models.CharField(max_length=200)
     description = models.TextField()
-    # i.e. Parent Categories can have children but those children cannot have more children
+    # i.e. A category may have a parent, but the parent category cannot have a parent itself. (i.e. no grandparents).
+    # This is enforced in the clean method.
     parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT, related_name="children")
 
     class Meta:
+        verbose_name = _("Category")
         verbose_name_plural = _("Categories")
 
     def __str__(self):
@@ -27,7 +29,8 @@ class Category(BaseSiteContentModel):
         parent_category = self.parent
         if parent_category and parent_category.parent:
             raise ValidationError(
-                _("Choosing categories that are themselves children of other categories is not allowed.")
+                _("A category may have a parent, but the parent category cannot have a parent itself. " +
+                  "(i.e. no grandparents)")
             )
         super().clean()
 

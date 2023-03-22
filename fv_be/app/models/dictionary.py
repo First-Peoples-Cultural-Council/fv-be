@@ -107,12 +107,6 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         choices=TypeOfDictionaryEntry.choices,
         default=TypeOfDictionaryEntry.WORD,
     )
-    # todo: Link to site model when available
-    # may be inherited from an abstract base class or mixin later
-    # site = models.ForeignKey(
-    #     'Site',
-    #     on_delete=models.CASCADE
-    # )
     # from fv-word:categories, fv-phrase:phrase_books
     categories = models.ForeignKey(
         Category,
@@ -139,6 +133,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     )
 
     class Meta:
+        verbose_name = _("DictionaryEntry")
         verbose_name_plural = _("DictionaryEntries")
 
     def __str__(self):
