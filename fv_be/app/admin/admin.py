@@ -8,7 +8,13 @@ from rest_framework.authtoken.models import TokenProxy
 from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
+from .characters_admin import (
+    CharacterInline,
+    CharacterVariantInline,
+    IgnoredCharacterInline,
+)
 from .sites_admin import MembershipInline, SiteFeatureInline
+
 
 # Main Site admin settings. For related sites models, see .sites_admin
 
@@ -23,6 +29,9 @@ class SiteAdmin(BaseAdmin):
     ) + BaseAdmin.list_display
     inlines = [
         MembershipInline,
+        CharacterInline,
+        CharacterVariantInline,
+        IgnoredCharacterInline,
         SiteFeatureInline,
     ]
 
