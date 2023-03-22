@@ -18,6 +18,11 @@ from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
+from .characters_admin import (
+    CharacterInline,
+    CharacterVariantInline,
+    IgnoredCharacterInline,
+)
 from .sites_admin import MembershipInline, SiteFeatureInline
 
 dictionary_models = [
@@ -42,6 +47,9 @@ class SiteAdmin(BaseAdmin):
     ) + BaseAdmin.list_display
     inlines = [
         MembershipInline,
+        CharacterInline,
+        CharacterVariantInline,
+        IgnoredCharacterInline,
         SiteFeatureInline,
     ]
 
