@@ -7,12 +7,12 @@ from rest_framework.authtoken.models import TokenProxy
 
 from fv_be.app.models.category import Category
 from fv_be.app.models.dictionary import (
-    Acknowledgement,
+    DictionaryAcknowledgement,
     AlternateSpelling,
     DictionaryEntry,
-    Note,
+    DictionaryNote,
     Pronunciation,
-    Translation,
+    DictionaryTranslation,
 )
 from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.sites import Site
@@ -21,9 +21,9 @@ from .base_admin import BaseAdmin
 from .sites_admin import MembershipInline, SiteFeatureInline
 
 dictionary_models = [
-    Note,
-    Acknowledgement,
-    Translation,
+    DictionaryNote,
+    DictionaryAcknowledgement,
+    DictionaryTranslation,
     AlternateSpelling,
     Pronunciation,
     DictionaryEntry,
@@ -54,14 +54,6 @@ admin.site.unregister(SocialAccount)
 admin.site.unregister(SocialApp)
 admin.site.unregister(SocialToken)
 
-dictionary_models = [
-    Note,
-    Acknowledgement,
-    Translation,
-    AlternateSpelling,
-    Pronunciation,
-    DictionaryEntry,
-]
 # Dictionary models
 # todo: make suitable admin objects to register for each model
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
