@@ -13,7 +13,8 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .sites_admin import MembershipInline
+from .sites_admin import MembershipInline, SiteFeatureInline
+
 
 # Main Site admin settings. For related sites models, see .sites_admin
 
@@ -31,6 +32,7 @@ class SiteAdmin(BaseAdmin):
         CharacterInline,
         CharacterVariantInline,
         IgnoredCharacterInline,
+        SiteFeatureInline,
     ]
 
 
