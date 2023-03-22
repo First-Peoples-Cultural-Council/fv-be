@@ -25,6 +25,7 @@ from .characters_admin import (
     IgnoredCharacterInline,
 )
 from .sites_admin import MembershipInline, SiteFeatureInline
+from .dictionary_admin import DictionaryEntryAdmin, CategoryAdmin, DictionaryEntryInline, CategoryInline
 
 dictionary_models = [
     DictionaryNote,
@@ -53,6 +54,8 @@ class SiteAdmin(BaseAdmin):
         IgnoredCharacterInline,
         SiteFeatureInline,
         SiteMenuInline,
+        DictionaryEntryInline,
+        CategoryInline
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)
@@ -70,6 +73,6 @@ admin.site.unregister(SocialToken)
 # todo: make suitable admin objects to register for each model
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
 # ref: https://stackoverflow.com/questions/869856/
-admin.site.register(dictionary_models)
-admin.site.register(Category)
+admin.site.register(DictionaryEntry, DictionaryEntryAdmin)
+admin.site.register(Category, CategoryAdmin)
 admin.site.register(PartOfSpeech)
