@@ -7,7 +7,7 @@ from .category import Category
 from .part_of_speech import PartOfSpeech
 
 
-class Note(BaseSiteContentModel):
+class DictionaryNote(BaseSiteContentModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
@@ -20,7 +20,7 @@ class Note(BaseSiteContentModel):
         return self.text
 
 
-class Acknowledgement(BaseSiteContentModel):
+class DictionaryAcknowledgement(BaseSiteContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
@@ -34,7 +34,7 @@ class Acknowledgement(BaseSiteContentModel):
         return self.text
 
 
-class Translation(BaseSiteContentModel):
+class DictionaryTranslation(BaseSiteContentModel):
     """Model for translations associated to each dictionary entry."""
 
     class TranslationLanguages(models.TextChoices):
@@ -122,6 +122,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     # from fvaudience:children fv:available_in_childrens_archive
     # exclude_from_kids can be a shared mixin for dictionary_entries, songs, stories and media
     exclude_from_kids = models.BooleanField(default=False)
+    # from nxtag:tags
     batch_id = models.CharField(max_length=255, blank=True)
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField(
