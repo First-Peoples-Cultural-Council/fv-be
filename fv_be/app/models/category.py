@@ -13,7 +13,7 @@ class Category(BaseSiteContentModel):
     title = models.CharField(max_length=200)
     description = models.TextField()
     # i.e. Parent Categories can have children but those children cannot have more children
-    parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT)
+    parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT, related_name="children")
 
     class Meta:
         verbose_name_plural = _("Categories")

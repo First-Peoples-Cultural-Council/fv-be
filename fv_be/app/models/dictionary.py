@@ -122,7 +122,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="dictionary_entries",
     )
     # from fv:custom_order
-    custom_order = models.CharField(max_length=200, blank=True)
+    custom_order = models.CharField(max_length=800, blank=True)
     # from fv-word:available_in_games, fvaudience:games
     exclude_from_games = models.BooleanField(default=False)
     # from fvaudience:children fv:available_in_childrens_archive
@@ -134,7 +134,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         "self",
         blank=True,
         symmetrical=False,
-        through="DictionaryEntrySelfAssociation",
+        through="DictionaryEntryLink",
         related_name="incoming_related_dictionary_entries",
     )
 
@@ -145,7 +145,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         return self.title
 
 
-class DictionaryEntrySelfAssociation(models.Model):
+class DictionaryEntryLink(models.Model):
     from_dictionary_entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE)
     to_dictionary_entry = models.ForeignKey(
         DictionaryEntry,
