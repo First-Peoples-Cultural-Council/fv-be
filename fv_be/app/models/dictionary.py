@@ -137,7 +137,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
     class Meta:
         verbose_name = _("DictionaryEntry")
-        verbose_name_plural = _("DictionaryEntries")
+        verbose_name_plural = _("Dictionary Entries")
 
     def __str__(self):
         return self.title

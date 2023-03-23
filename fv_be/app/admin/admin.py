@@ -17,15 +17,14 @@ from fv_be.app.models.dictionary import (
 from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.sites import Site
 
-from .base_admin import BaseAdmin
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 from .characters_admin import (
     CharacterInline,
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .sites_admin import MembershipInline, SiteFeatureInline
-from .dictionary_admin import DictionaryEntryAdmin, AdminHideUtility, DictionaryEntryInline, CategoryInline
+from .base_admin import BaseAdmin, AdminHideUtility
+from .dictionary_admin import DictionaryEntryAdmin, DictionaryEntryInline, CategoryInline
 
 dictionary_models = [
     DictionaryNote,

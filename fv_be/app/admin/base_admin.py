@@ -88,3 +88,13 @@ class BaseInlineAdmin(admin.TabularInline):
 
         obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
+
+
+# todo: better name for following class
+class AdminHideUtility(BaseAdmin):
+    """
+    This utility class lets the admin classes to be registered on the top level of admin interface, to get the reverse
+    links working for inline admin classes and also prevents the classes that inherit this to be shown at the top level.
+    """
+    def get_model_perms(self, request):
+        return {}
