@@ -13,11 +13,13 @@ class CharacterAdmin(BaseSiteContentAdmin):
         "approximate_form",
         "site",
         "notes",
+        "related_dictionary_entries",
     )
     list_display = (
         "title",
         "sort_order",
         "approximate_form",
+        "related_dictionary_entries",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "approximate_form")
 
@@ -46,6 +48,7 @@ class CharacterInline(BaseInlineAdmin):
         "sort_order",
         "approximate_form",
         "notes",
+        "related_dictionary_entries",
     ) + BaseInlineAdmin.fields
     readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields
 

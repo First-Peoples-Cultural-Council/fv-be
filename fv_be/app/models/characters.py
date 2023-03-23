@@ -3,6 +3,7 @@ from django.utils.translation import gettext as _
 
 # FirstVoices
 from .constants import MAX_CHARACTER_LENGTH
+from .dictionary import DictionaryEntry
 from .sites import BaseSiteContentModel
 
 
@@ -30,9 +31,13 @@ class Character(BaseSiteContentModel):
     notes = models.TextField(blank=True)
 
     # from fvcharacter:related_words
-    # TODO: add this as a foreign key to the dictionary entry model once it's created
-    # related_dictionary_entries = models.ForeignKey(
-    #     DictionaryEntry, on_delete=models.SET_NULL, blank=True, null=True, related_name="characters")
+    related_dictionary_entries = models.ForeignKey(
+        DictionaryEntry,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="dictionary_entries",
+    )
 
     def __str__(self):
         return self.title
