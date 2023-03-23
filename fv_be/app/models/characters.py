@@ -36,7 +36,7 @@ class Character(BaseSiteContentModel):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="dictionary_entries",
+        related_name="characters",
     )
 
     def __str__(self):
