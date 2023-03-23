@@ -182,10 +182,12 @@ preprocessor_map = pd.DataFrame(
 
 # TODO: create canonical-base mapper
 
-presorter_map = pd.DataFrame([])
+presorter_map = pd.DataFrame(
+    [{"in": variant, "out": base} for variant, base in variant_chars_map.items()]
+)
 
 
-# generate mapper configuration file
+# generate mapper configuration
 
 with open(os.path.join(here, "default_config.yaml")) as f:
     default_config = f.read()
@@ -205,25 +207,13 @@ for mapping in site_config["mappings"]:
         presort_settings = mapping
 
 
-# apply input-canonical mapper
-
-print("Preprocessing INPUT forms to CANONICAL for save")
+# create transducers
 
 preprocessor_map.to_csv(
     os.path.join(here, preprocess_settings["mapping"]), index=False, header=False
 )
-
 preprocessor = g2p.Transducer(g2p.Mapping(**preprocess_settings))
-
-for test_input, expected in sample_data["test_input_to_canon"].items():
-    output = preprocessor(test_input).output_string
-    print(output == expected, "\t\t", test_input, " ==> ", output)
-# TODO: input should have NFC and whitespace stripping applied also
-
-
-# TODO: apply canonical-base mapper
-
-print("Converting CANONICAL forms to BASE for pre-sort step")
+# TODO: maybe pass the mapping directly as a python object instead of passing a file path
 
 presorter_map.to_csv(
     os.path.join(here, presort_settings["mapping"]), index=False, header=False
@@ -231,22 +221,25 @@ presorter_map.to_csv(
 
 presorter = g2p.Transducer(g2p.Mapping(**presort_settings))
 
-for test_input, expected in sample_data["test_canon_to_base"].items():
-    output = presorter(test_input).output_string
-    print(output == expected, "\t\t", test_input, " ==> ", output)
 
-
-# generate custom order string from each pre-sort form
-
-print("Converting BASE forms to CUSTOM ORDER for sort")
+# load alphabet into custom sorter for generating sort strings
 
 alph = [char["name"] for char in base_chars]
 sorter = CustomSorter(alph, ignorable=ignorables)
 
-for test_input, expected in sample_data["test_canon_to_sort"].items():
-    output = presorter(test_input).output_string
-    output = sorter.word_as_sort_string(output)
-    print(output == expected, "\t\t", test_input, " ==> ", output)
 
+# test full workflow
+
+for test_input, expected in sample_data["test_input_to_sort"].items():
+    saved = preprocessor(test_input).output_string
+    base = presorter(saved).output_string
+    custom_order = sorter.word_as_sort_string(base)
+
+    flow = " ==> ".join([test_input, saved, base, custom_order])
+    output = custom_order
+
+    print(output == expected, "\t\t", flow)
+
+# TODO: input should have NFC and whitespace stripping applied also
 
 # TODO: build tests from sample data
