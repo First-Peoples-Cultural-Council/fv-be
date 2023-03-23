@@ -31,7 +31,7 @@ class Character(BaseSiteContentModel):
     notes = models.TextField(blank=True)
 
     # from fvcharacter:related_words
-    related_dictionary_entries = models.ForeignKey(
+    related_dictionary_entries = models.ManyToManyField(
         DictionaryEntry,
         on_delete=models.SET_NULL,
         blank=True,
