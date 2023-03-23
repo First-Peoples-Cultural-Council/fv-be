@@ -535,6 +535,76 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.CreateModel(
+            name='SiteMenu',
+            fields=[
+                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('is_trashed', models.BooleanField(default=False)),
+                ('created', models.DateTimeField(auto_now_add=True, db_index=True)),
+                ('last_modified', models.DateTimeField(auto_now=True, db_index=True)),
+                ('json', models.JSONField()),
+                ('created_by', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_%(app_label)s_%(class)s', to=settings.AUTH_USER_MODEL)),
+                ('last_modified_by', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='modified_%(app_label)s_%(class)s', to=settings.AUTH_USER_MODEL)),
+                ('site', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='site_menu', to='app.site')),
+            ],
+            options={
+                'verbose_name': 'site menu',
+                'verbose_name_plural': 'site menus',
+            },
+            bases=(rules.contrib.models.RulesModelMixin, models.Model),
+       ),
+        migrations.CreateModel(
+            name="SiteFeature",
+            fields=[
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("is_trashed", models.BooleanField(default=False)),
+                ("created", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("last_modified", models.DateTimeField(auto_now=True, db_index=True)),
+                ("key", models.CharField(max_length=100)),
+                ("is_enabled", models.BooleanField(default=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_%(app_label)s_%(class)s",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "last_modified_by",
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="modified_%(app_label)s_%(class)s",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "site",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="app.site"
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "site feature",
+                "verbose_name_plural": "site features",
+                "unique_together": {("site", "key")},
+            },
+            bases=(rules.contrib.models.RulesModelMixin, models.Model),
+        ),
+        migrations.CreateModel(
             name="IgnoredCharacter",
             fields=[
                 (
@@ -967,7 +1037,25 @@ class Migration(migrations.Migration):
             bases=(rules.contrib.models.RulesModelMixin, models.Model),
         ),
         migrations.CreateModel(
-            name="Membership",
+            name='AppJson',
+            fields=[
+                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('is_trashed', models.BooleanField(default=False)),
+                ('created', models.DateTimeField(auto_now_add=True, db_index=True)),
+                ('last_modified', models.DateTimeField(auto_now=True, db_index=True)),
+                ('key', models.CharField(max_length=25, unique=True)),
+                ('json', models.JSONField()),
+                ('created_by', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_%(app_label)s_%(class)s', to=settings.AUTH_USER_MODEL)),
+                ('last_modified_by', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='modified_%(app_label)s_%(class)s', to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'verbose_name': 'app json value',
+                'verbose_name_plural': 'app json values',
+            },
+            bases=(rules.contrib.models.RulesModelMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name='Membership',
             fields=[
                 (
                     "id",

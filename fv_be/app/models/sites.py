@@ -164,3 +164,21 @@ class SiteFeature(BaseSiteContentModel):
 
     def __str__(self):
         return f"{self.key}: {self.is_enabled} ({self.site})"
+
+
+class SiteMenu(BaseModel):
+    """
+    Represents the configuration for a site menu.
+    """
+
+    json = models.JSONField()
+    site = models.OneToOneField(
+        Site, on_delete=models.CASCADE, related_name="site_menu"
+    )
+
+    class Meta:
+        verbose_name = _("site menu")
+        verbose_name_plural = _("site menus")
+
+    def __str__(self):
+        return f"Menu JSON for {self.site.title}"

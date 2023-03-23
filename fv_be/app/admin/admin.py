@@ -18,6 +18,7 @@ from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.sites import Site
 
 from .base_admin import BaseAdmin
+from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 from .characters_admin import (
     CharacterInline,
     CharacterVariantInline,
@@ -51,7 +52,10 @@ class SiteAdmin(BaseAdmin):
         CharacterVariantInline,
         IgnoredCharacterInline,
         SiteFeatureInline,
+        SiteMenuInline,
     ]
+    search_fields = ("id", "title", "slug", "language__title", "contact_email")
+    autocomplete_fields = ("language",)
 
 
 admin.site.unregister(Sites)
