@@ -2,19 +2,34 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 # FirstVoices
+from .base import BaseModel
 from .sites import BaseSiteContentModel, BaseControlledSiteContentModel
 from .category import Category
 from .part_of_speech import PartOfSpeech
 
 
-class DictionaryNote(BaseSiteContentModel):
+class BaseDictionaryModel(BaseModel):
+    """
+    Base model for Dictionary models which all have DictionaryEntry as a foreign key and
+    require site as a property but not as a field.
+    """
+    dictionary_entry = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE,
+                                         related_name="dictionary_%(class)s")
+
+    @property
+    def site(self):
+        """ Returns the site that the DictionaryEntry model is associated with."""
+        return self.dictionary_entry.site
+
+    class Meta:
+        abstract = True
+
+
+class DictionaryNote(BaseDictionaryModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
     text = models.TextField()
-    dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="notes"
-    )
 
     def __str__(self):
         return self.text
@@ -25,10 +40,6 @@ class DictionaryAcknowledgement(BaseSiteContentModel):
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
-    # todo: Confirm if this should be moved to dictionaryEntry, M:M relation
-    dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="acknowledgements"
-    )
 
     def __str__(self):
         return self.text
@@ -52,9 +63,6 @@ class DictionaryTranslation(BaseSiteContentModel):
     # from fv-word:part_of_speech
     part_of_speech = models.ForeignKey(
         PartOfSpeech, on_delete=models.SET_NULL, blank=True, null=True, related_name="translations"
-    )
-    dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="translations"
     )
 
     def __str__(self):
