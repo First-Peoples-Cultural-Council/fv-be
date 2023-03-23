@@ -1,38 +1,46 @@
 from django.contrib import admin
 from django.utils.translation import gettext as _
 
-# Admin settings for the Dictionary related models
 from .base_admin import BaseInlineAdmin
 from .sites_admin import MembershipAdmin
-from fv_be.app.models.dictionary import DictionaryEntry, Note
+from fv_be.app.models.dictionary import DictionaryEntry, Note, Acknowledgement, Translation,\
+    AlternateSpelling, Pronunciation
 from fv_be.app.models.category import Category
 
 
-class NotesInline(BaseInlineAdmin):
+class AdminHideUtility(admin.ModelAdmin):
+    def get_model_perms(self, request):
+        """
+        Return emtpy dict to hide the model, but registration is required so as the reverse admin links
+        along with the editing functionality work.
+        """
+        return {}
+
+
+class DictionaryContentInlineAdmin(BaseInlineAdmin):
+    fields = ("text", "site") + BaseInlineAdmin.fields
+    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+
+
+class NotesInline(DictionaryContentInlineAdmin):
     model = Note
-    fields = ("text", ) + BaseInlineAdmin.fields
-    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
 
 
-class DictionaryEntryAdmin(admin.ModelAdmin):
-    inlines = [NotesInline]
+class AcknowledgementInline(DictionaryContentInlineAdmin):
+    model = Acknowledgement
 
 
-    def get_model_perms(self, request):
-        """
-        Return emtpy dict so as to hide the model, but registration is required so as the reverse admin links
-        along with the editing functionality work.
-        """
-        return {}
+class TranslationInline(DictionaryContentInlineAdmin):
+    model = Translation
+    fields = ("language", "part_of_speech", ) + DictionaryContentInlineAdmin.fields
 
 
-class CategoryAdmin(admin.ModelAdmin):
-    def get_model_perms(self, request):
-        """
-        Return emtpy dict so as to hide the model, but registration is required so as the reverse admin links
-        along with the editing functionality work.
-        """
-        return {}
+class AlternateSpellingInline(DictionaryContentInlineAdmin):
+    model = AlternateSpelling
+
+
+class PronunciationInline(DictionaryContentInlineAdmin):
+    model = Pronunciation
 
 
 class DictionaryEntryInline(BaseInlineAdmin):
@@ -55,3 +63,7 @@ class CategoryInline(BaseInlineAdmin):
         'parent'
     ) + BaseInlineAdmin.fields
     readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+
+
+class DictionaryEntryAdmin(AdminHideUtility):
+    inlines = [NotesInline, AcknowledgementInline, TranslationInline, AlternateSpellingInline, PronunciationInline]

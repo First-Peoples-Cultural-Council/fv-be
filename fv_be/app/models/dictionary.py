@@ -8,7 +8,7 @@ from .category import Category
 from .part_of_speech import PartOfSpeech
 
 
-class BaseDictionaryModel(BaseModel):
+class BaseDictionaryContentModel(BaseModel):
     """
     Base model for Dictionary models which all have DictionaryEntry as a foreign key and
     require site as a property but not as a field.
@@ -25,7 +25,7 @@ class BaseDictionaryModel(BaseModel):
         abstract = True
 
 
-class DictionaryNote(BaseDictionaryModel):
+class DictionaryNote(BaseDictionaryContentModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
@@ -35,7 +35,7 @@ class DictionaryNote(BaseDictionaryModel):
         return self.text
 
 
-class DictionaryAcknowledgement(BaseSiteContentModel):
+class DictionaryAcknowledgement(BaseDictionaryContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
@@ -45,7 +45,7 @@ class DictionaryAcknowledgement(BaseSiteContentModel):
         return self.text
 
 
-class DictionaryTranslation(BaseSiteContentModel):
+class DictionaryTranslation(BaseDictionaryContentModel):
     """Model for translations associated to each dictionary entry."""
 
     class TranslationLanguages(models.TextChoices):
@@ -68,31 +68,25 @@ class DictionaryTranslation(BaseSiteContentModel):
     def __str__(self):
         return _("Translation in %(language)s: %(translation)s.") % {
             "language": self.language,
-            "translation": self.translation,
+            "translation": self.text,
         }
 
 
-class AlternateSpelling(BaseSiteContentModel):
+class AlternateSpelling(BaseDictionaryContentModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
     text = models.CharField(max_length=200)
-    dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="alternate_spellings"
-    )
 
     def __str__(self):
         return self.text
 
 
-class Pronunciation(BaseSiteContentModel):
+class Pronunciation(BaseDictionaryContentModel):
     """Model for pronunciations associated to each dictionary entry."""
 
     # from fv-word:pronunciation
     text = models.CharField(max_length=200)
-    dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="pronunciations"
-    )
 
     def __str__(self):
         return self.text

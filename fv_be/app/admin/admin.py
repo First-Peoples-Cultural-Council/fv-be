@@ -25,7 +25,7 @@ from .characters_admin import (
     IgnoredCharacterInline,
 )
 from .sites_admin import MembershipInline, SiteFeatureInline
-from .dictionary_admin import DictionaryEntryAdmin, CategoryAdmin, DictionaryEntryInline, CategoryInline
+from .dictionary_admin import DictionaryEntryAdmin, AdminHideUtility, DictionaryEntryInline, CategoryInline
 
 dictionary_models = [
     DictionaryNote,
@@ -74,5 +74,10 @@ admin.site.unregister(SocialToken)
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
 # ref: https://stackoverflow.com/questions/869856/
 admin.site.register(DictionaryEntry, DictionaryEntryAdmin)
-admin.site.register(Category, CategoryAdmin)
+admin.site.register(Category, AdminHideUtility)
+admin.site.register(Note, AdminHideUtility)
+admin.site.register(Acknowledgement, AdminHideUtility)
+admin.site.register(Translation, AdminHideUtility)
+admin.site.register(AlternateSpelling, AdminHideUtility)
+admin.site.register(Pronunciation, AdminHideUtility)
 admin.site.register(PartOfSpeech)
