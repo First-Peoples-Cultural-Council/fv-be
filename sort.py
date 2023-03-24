@@ -224,8 +224,9 @@ presorter = g2p.Transducer(g2p.Mapping(**presort_settings))
 
 # load alphabet into custom sorter for generating sort strings
 
-alph = [char["name"] for char in base_chars]
-sorter = CustomSorter(alph, ignorable=ignorables)
+sorted_chars = sorted([(char["order"], char["name"]) for char in base_chars])
+alphabet = [char for (_, char) in sorted_chars]
+sorter = CustomSorter(alphabet, ignorable=ignorables)
 
 
 # test full workflow
