@@ -33,7 +33,6 @@ class Character(BaseSiteContentModel):
     # from fvcharacter:related_words
     related_dictionary_entries = models.ManyToManyField(
         DictionaryEntry,
-        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="characters",
@@ -61,6 +60,13 @@ class CharacterVariant(BaseSiteContentModel):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        self.set_site_id()
+        super().save(*args, **kwargs)
+
+    def set_site_id(self):
+        self.site = self.base_character.site
 
 
 class IgnoredCharacter(BaseSiteContentModel):

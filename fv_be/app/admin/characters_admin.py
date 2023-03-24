@@ -5,8 +5,11 @@ from fv_be.app.models.characters import Character, CharacterVariant, IgnoredChar
 from .base_admin import BaseInlineAdmin, BaseSiteContentAdmin
 
 
+# TODO display title, site when selecting a base character
+# TODO Only show related dictionary entries for the same site
 @admin.register(Character)
 class CharacterAdmin(BaseSiteContentAdmin):
+    filter_horizontal = ("related_dictionary_entries",)
     fields = (
         "title",
         "sort_order",
@@ -19,17 +22,17 @@ class CharacterAdmin(BaseSiteContentAdmin):
         "title",
         "sort_order",
         "approximate_form",
-        "related_dictionary_entries",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "approximate_form")
 
 
 @admin.register(CharacterVariant)
 class CharacterVariantAdmin(BaseSiteContentAdmin):
-    fields = ("title", "base_character", "site")
+    fields = ("title", "base_character")
     list_display = (
         "title",
         "base_character",
+        "site",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "base_character")
 
