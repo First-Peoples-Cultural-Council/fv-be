@@ -44,7 +44,9 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
     search_fields = ("title",)
 
 
+# TODO the horizontal filter is not the prettiest in an inline, consider changing in the future
 class CharacterInline(BaseInlineAdmin):
+    filter_horizontal = ("related_dictionary_entries",)
     model = Character
     fields = (
         "title",
