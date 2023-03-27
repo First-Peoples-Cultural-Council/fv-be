@@ -5,6 +5,8 @@ from pathlib import Path
 
 import environ
 
+from config import database, jwt
+
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # firstvoices/
 APPS_DIR = BASE_DIR / "firstvoices"
@@ -39,13 +41,8 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default="postgres:///firstvoices",
-    ),
-}
-DATABASES["default"]["ATOMIC_REQUESTS"] = True
+DATABASES = {"default": database.config()}
+
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -108,6 +105,8 @@ AUTH_USER_MODEL = "users.User"
 LOGIN_REDIRECT_URL = "users:redirect"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
 LOGIN_URL = "account_login"
+# Cognito authentication
+JWT = jwt.config()
 
 # PASSWORDS
 # ------------------------------------------------------------------------------

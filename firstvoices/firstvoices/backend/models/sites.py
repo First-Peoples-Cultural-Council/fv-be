@@ -1,11 +1,13 @@
+
 import rules
+
+from django.contrib.auth import get_user_model
 from django.core.validators import validate_slug
 from django.db import models
 from django.utils.translation import gettext as _
 
 from firstvoices.backend import predicates
 from firstvoices.backend.models import BaseModel
-from firstvoices.users.models import User
 
 from .constants import Role, Visibility
 
@@ -162,7 +164,7 @@ class Membership(BaseSiteContentModel):
     # site from group memberships
 
     # from user
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="memberships")
 
     # from group memberships
     role = models.IntegerField(choices=Role.choices, default=Role.MEMBER)
