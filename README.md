@@ -49,6 +49,36 @@ Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings
 
 For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
 
+### Local Database Cleanup Script
+For local development, a script has been created which will do the following:
+- Drops any existing databases named `fv_be`
+- Creates a fresh `fv_be` database
+- Deletes any migrations in the fv_be/*/migrations folders
+- Makes fresh migrations
+- Runs the migrations
+- Creates a superuser using the following arguments:
+  - `-u <username> or --username <username>` to specify the username
+  - `-p <password> or --password <password>` to specify the password
+  - `-e <email> or --email <email>` to specify an optional email (a default will be used if not supplied)
+- If no arguments are supplied the script will create a superuser using the following environment variables if they are set:
+  - `DJANGO_SUPERUSER_USERNAME` to specify the username
+  - `DJANGO_SUPERUSER_PASSWORD` to specify the password
+  - `DJANGO_SUPERUSER_EMAIL` to specify an optional email
+- If no environment variables are set and no arguments are found then the script will fail to create a superuser.
+
+You may need to give the script executable permission for your machine by running the following command:
+```
+chmod +x reset-local-database.sh
+```
+An example command to run the script might look like the following:
+```
+./reset-local-database.sh -u admin -p admin -e admin@example.com
+```
+or if you have already set the environment variables locally:
+```
+./reset-local-database.sh
+```
+
 ### Type checks
 
 Running type checks with mypy:
