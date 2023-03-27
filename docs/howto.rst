@@ -4,14 +4,14 @@ How To - Project Documentation
 Get Started
 ----------------------------------------------------------------------
 
-Documentation can be written as rst files in `fv_be/docs`.
+Documentation can be written as rst files in `firstvoices/docs`.
 
 
 To build and serve docs, use the command::
-    
-    make livehtml 
-    
-from inside the `fv_be/docs` directory. 
+
+    make livehtml
+
+from inside the `firstvoices/docs` directory.
 
 
 Changes to files in `docs/_source` will be picked up and reloaded automatically.
@@ -29,6 +29,6 @@ For an in-use example, see the `page source <_sources/users.rst.txt>`_ for :ref:
 
 To compile all docstrings automatically into documentation source files, use the command:
     ::
-    
+
         make apidocs
 

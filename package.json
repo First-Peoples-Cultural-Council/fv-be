@@ -1,5 +1,5 @@
 {
-  "name": "fv_be",
+  "name": "firstvoices",
   "version": "0.1.0",
   "devDependencies": {
     "@babel/core": "^7.16.5",

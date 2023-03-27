@@ -6,11 +6,11 @@ module.exports = {
   target: "web",
   context: path.join(__dirname, '../'),
   entry: {
-    'project': path.resolve(__dirname, '../fv_be/static/js/project'),
-    'vendors': path.resolve(__dirname, '../fv_be/static/js/vendors'),
+    'project': path.resolve(__dirname, '../firstvoices/static/js/project'),
+    'vendors': path.resolve(__dirname, '../firstvoices/static/js/vendors'),
   },
   output: {
-    path: path.resolve(__dirname, '../fv_be/static/webpack_bundles/'),
+    path: path.resolve(__dirname, '../firstvoices/static/webpack_bundles/'),
     publicPath: '/static/webpack_bundles/',
     filename: 'js/[name]-[fullhash].js',
     chunkFilename: 'js/[name]-[hash].js',
