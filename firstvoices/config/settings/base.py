@@ -25,7 +25,7 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # In Windows, this must be set to your system time zone.
 TIME_ZONE = "America/Vancouver"
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en-ca"
 # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
@@ -65,7 +65,6 @@ DJANGO_APPS = [
     "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
     "django.forms",
 ]
@@ -136,7 +135,7 @@ AUTH_PASSWORD_VALIDATORS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",  # ugh. sessions. required by admin.
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
