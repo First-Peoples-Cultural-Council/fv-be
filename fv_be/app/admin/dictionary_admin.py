@@ -1,4 +1,4 @@
-from .base_admin import BaseAdmin, BaseInlineAdmin, AdminHideUtility
+from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
 from .sites_admin import MembershipAdmin
 from fv_be.app.models.dictionary import DictionaryEntry, DictionaryNote, DictionaryAcknowledgement, \
     DictionaryTranslation, AlternateSpelling, Pronunciation
@@ -47,5 +47,5 @@ class CategoryInline(BaseDictionaryInlineAdmin):
     ) + BaseInlineAdmin.fields
 
 
-class DictionaryEntryAdmin(AdminHideUtility):
+class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
     inlines = [NotesInline, AcknowledgementInline, TranslationInline, AlternateSpellingInline, PronunciationInline]

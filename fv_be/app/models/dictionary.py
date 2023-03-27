@@ -10,8 +10,8 @@ from .part_of_speech import PartOfSpeech
 
 class BaseDictionaryContentModel(BaseModel):
     """
-    Base model for Dictionary models which all have DictionaryEntry as a foreign key and
-    require site as a property but not as a field.
+    Base model for Dictionary models which require DictionaryEntry as a foreign key and
+    have site as a property but not as a field.
     """
     dictionary_entry = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE,
                                          related_name="dictionary_%(class)s")
@@ -136,7 +136,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     )
 
     class Meta:
-        verbose_name = _("DictionaryEntry")
+        verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
 
     def __str__(self):

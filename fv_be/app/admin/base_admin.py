@@ -90,8 +90,7 @@ class BaseInlineAdmin(admin.TabularInline):
         super().save_model(request, obj, form, change)
 
 
-# todo: better name for following class
-class AdminHideUtility(BaseAdmin):
+class HiddenBaseAdmin(BaseAdmin):
     """
     This utility class lets the admin classes to be registered on the top level of admin interface, to get the reverse
     links working for inline admin classes and also prevents the classes that inherit this to be shown at the top level.

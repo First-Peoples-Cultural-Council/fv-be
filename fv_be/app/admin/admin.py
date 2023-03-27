@@ -23,8 +23,8 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .base_admin import BaseAdmin, AdminHideUtility
-from .dictionary_admin import DictionaryEntryAdmin, DictionaryEntryInline, CategoryInline
+from .base_admin import BaseAdmin, HiddenBaseAdmin
+from .dictionary_admin import DictionaryEntryHiddenBaseAdmin, DictionaryEntryInline, CategoryInline
 
 dictionary_models = [
     DictionaryNote,
@@ -72,11 +72,11 @@ admin.site.unregister(SocialToken)
 # todo: make suitable admin objects to register for each model
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
 # ref: https://stackoverflow.com/questions/869856/
-admin.site.register(DictionaryEntry, DictionaryEntryAdmin)
-admin.site.register(Category, AdminHideUtility)
-admin.site.register(DictionaryNote, AdminHideUtility)
-admin.site.register(DictionaryAcknowledgement, AdminHideUtility)
-admin.site.register(DictionaryTranslation, AdminHideUtility)
-admin.site.register(AlternateSpelling, AdminHideUtility)
-admin.site.register(Pronunciation, AdminHideUtility)
+admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
+admin.site.register(Category, HiddenBaseAdmin)
+admin.site.register(DictionaryNote, HiddenBaseAdmin)
+admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
+admin.site.register(AlternateSpelling, HiddenBaseAdmin)
+admin.site.register(Pronunciation, HiddenBaseAdmin)
 admin.site.register(PartOfSpeech)
