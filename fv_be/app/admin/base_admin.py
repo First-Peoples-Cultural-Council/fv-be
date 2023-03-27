@@ -92,8 +92,10 @@ class BaseInlineAdmin(admin.TabularInline):
 
 class HiddenBaseAdmin(BaseAdmin):
     """
-    This utility class lets the admin classes to be registered on the top level of admin interface, to get the reverse
-    links working for inline admin classes and also prevents the classes that inherit this to be shown at the top level.
+    This utility class controls if a model will be displayed on the admin index page. This does not restrict
+    access to the view, add, change, or delete views.
+
+    Ref: https://docs.djangoproject.com/en/4.1/ref/contrib/admin/#django.contrib.admin.ModelAdmin.has_add_permission
     """
-    def get_model_perms(self, request):
+    def has_module_permission(self, request):
         return {}
