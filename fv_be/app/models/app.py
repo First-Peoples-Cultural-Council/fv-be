@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from fv_be.app.models import BaseModel
+from fv_be.app.models.base import BaseModel
 
 
 class AppJson(BaseModel):

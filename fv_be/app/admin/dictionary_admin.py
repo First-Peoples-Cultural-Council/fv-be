@@ -1,10 +1,7 @@
-from django.contrib import admin
-from django.utils.translation import gettext as _
-
 from .base_admin import BaseAdmin, BaseInlineAdmin, AdminHideUtility
 from .sites_admin import MembershipAdmin
-from fv_be.app.models.dictionary import DictionaryEntry, Note, Acknowledgement, Translation,\
-    AlternateSpelling, Pronunciation
+from fv_be.app.models.dictionary import DictionaryEntry, DictionaryNote, DictionaryAcknowledgement, \
+    DictionaryTranslation, AlternateSpelling, Pronunciation
 from fv_be.app.models.category import Category
 
 
@@ -14,15 +11,15 @@ class BaseDictionaryInlineAdmin(BaseInlineAdmin):
 
 
 class NotesInline(BaseDictionaryInlineAdmin):
-    model = Note
+    model = DictionaryNote
 
 
 class AcknowledgementInline(BaseDictionaryInlineAdmin):
-    model = Acknowledgement
+    model = DictionaryAcknowledgement
 
 
 class TranslationInline(BaseDictionaryInlineAdmin):
-    model = Translation
+    model = DictionaryTranslation
     fields = ("language", "part_of_speech", ) + BaseDictionaryInlineAdmin.fields
 
 
