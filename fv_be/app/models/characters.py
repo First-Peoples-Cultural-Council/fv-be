@@ -17,12 +17,22 @@ class Character(BaseSiteContentModel):
     class Meta:
         verbose_name = _("character")
         verbose_name_plural = _("characters")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["title", "site_id"], name="unique_character"
+            ),
+            models.UniqueConstraint(
+                fields=["sort_order", "site_id"], name="unique_character_sort_order"
+            ),
+        ]
 
     # from dc:title
-    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
+    # Unique with site_id
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH)
 
     # from fvcharacter:alphabet_order
-    sort_order = models.IntegerField(unique=True)
+    # Unique with site_id
+    sort_order = models.IntegerField()
 
     # from fvcharacter:fuzzy_latin_match
     approximate_form = models.CharField(max_length=MAX_CHARACTER_LENGTH, blank=True)
@@ -34,12 +44,48 @@ class Character(BaseSiteContentModel):
     related_dictionary_entries = models.ManyToManyField(
         DictionaryEntry,
         blank=True,
-        null=True,
+        through="CharacterRelatedDictionaryEntry",
         related_name="characters",
     )
 
     def __str__(self):
-        return self.title
+        return f"{self.title} - {self.site}"
+
+
+class CharacterRelatedDictionaryEntry(BaseSiteContentModel):
+    """
+    Represents a link between a character and a dictionary entry.
+    """
+
+    class Meta:
+        verbose_name = _("character related dictionary entry")
+        verbose_name_plural = _("character related dictionary entries")
+
+    character = models.ForeignKey(
+        Character,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="dictionary_entry_links",
+    )
+
+    dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="character_links",
+    )
+
+    def __str__(self):
+        return f"{self.character} - {self.dictionary_entry}"
+
+    def save(self, *args, **kwargs):
+        self.set_site_id()
+        super().save(*args, **kwargs)
+
+    def set_site_id(self):
+        self.site = self.character.site
 
 
 class CharacterVariant(BaseSiteContentModel):
@@ -50,9 +96,15 @@ class CharacterVariant(BaseSiteContentModel):
     class Meta:
         verbose_name = _("character variant")
         verbose_name_plural = _("character variants")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["title", "site_id"], name="unique_character_variant"
+            )
+        ]
 
     # from fvcharacter: upper_case_character
-    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
+    # Unique with site_id
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH)
 
     base_character = models.ForeignKey(
         Character, on_delete=models.CASCADE, related_name="variants"
@@ -77,9 +129,15 @@ class IgnoredCharacter(BaseSiteContentModel):
     class Meta:
         verbose_name = _("ignored character")
         verbose_name_plural = _("ignored characters")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["title", "site_id"], name="unique_ignored_character"
+            )
+        ]
 
     # from fv-alphabet:ignored_characters
-    title = models.CharField(max_length=MAX_CHARACTER_LENGTH, unique=True)
+    # Unique with site_id
+    title = models.CharField(max_length=MAX_CHARACTER_LENGTH)
 
     def __str__(self):
         return self.title
