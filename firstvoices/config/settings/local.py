@@ -18,9 +18,12 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
 CACHES = {
     "default": {
+        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+    },
+    "auth": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "",
-    }
+        "LOCATION": "auth",
+    },
 }
 
 # EMAIL
@@ -43,7 +46,6 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
 INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
-
 
 # django-extensions
 # ------------------------------------------------------------------------------
