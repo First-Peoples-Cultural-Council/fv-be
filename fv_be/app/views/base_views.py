@@ -2,13 +2,13 @@ from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 
-class BaseViewSetMixin(AutoPermissionViewSetMixin):
+class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     """
     Mixin used to override the default list view and enable the use of rules based permissions as defined in a model.
     If this mixin is used, the list view will return all model instances that the user has view permissions on.
     """
 
-    def list(self):
+    def list(self, request, *args, **kwargs):
         # Get the list of model UUIDs that the user has view permissions for
         models_uuid_list = [
             model.id
