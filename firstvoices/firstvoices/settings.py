@@ -10,6 +10,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
+import os
 
 from . import database
 from . import jwt
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [os.environ.get('HOST_HEADER'), '*.firstvoices.io', '.localhost', '127.0.0.1', '[::1]']
 
 INSTALLED_APPS = [
 	'django.contrib.admin',
