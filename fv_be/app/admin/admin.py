@@ -17,14 +17,14 @@ from fv_be.app.models.dictionary import (
 from fv_be.app.models.part_of_speech import PartOfSpeech
 from fv_be.app.models.sites import Site
 
-from .base_admin import BaseAdmin
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 from .characters_admin import (
     CharacterInline,
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .sites_admin import MembershipInline, SiteFeatureInline
+from .base_admin import BaseAdmin, HiddenBaseAdmin
+from .dictionary_admin import DictionaryEntryHiddenBaseAdmin, DictionaryEntryInline, CategoryInline
 
 dictionary_models = [
     DictionaryNote,
@@ -53,6 +53,8 @@ class SiteAdmin(BaseAdmin):
         IgnoredCharacterInline,
         SiteFeatureInline,
         SiteMenuInline,
+        DictionaryEntryInline,
+        CategoryInline
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)
@@ -70,6 +72,11 @@ admin.site.unregister(SocialToken)
 # todo: make suitable admin objects to register for each model
 # todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
 # ref: https://stackoverflow.com/questions/869856/
-admin.site.register(dictionary_models)
-admin.site.register(Category)
+admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
+admin.site.register(Category, HiddenBaseAdmin)
+admin.site.register(DictionaryNote, HiddenBaseAdmin)
+admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
+admin.site.register(AlternateSpelling, HiddenBaseAdmin)
+admin.site.register(Pronunciation, HiddenBaseAdmin)
 admin.site.register(PartOfSpeech)
