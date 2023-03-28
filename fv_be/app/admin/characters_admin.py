@@ -30,7 +30,6 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
 
 @admin.register(Character)
 class CharacterAdmin(BaseSiteContentAdmin):
-    filter_horizontal = ("related_dictionary_entries",)
     fields = (
         "title",
         "sort_order",
@@ -66,7 +65,6 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
 
 
 class CharacterInline(BaseInlineAdmin):
-    filter_horizontal = ("related_dictionary_entries",)
     model = Character
     fields = (
         "title",
@@ -75,7 +73,6 @@ class CharacterInline(BaseInlineAdmin):
         "notes",
     ) + BaseInlineAdmin.fields
     readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields
-    inlines = (CharacterRelatedDictionaryEntryInline,)
 
 
 class CharacterVariantInline(BaseInlineAdmin):
