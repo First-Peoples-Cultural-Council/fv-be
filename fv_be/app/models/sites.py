@@ -1,7 +1,9 @@
+import rules
 from django.core.validators import validate_slug
 from django.db import models
 from django.utils.translation import gettext as _
 
+from fv_be.app import predicates
 from fv_be.app.models import BaseModel
 from fv_be.users.models import User
 
@@ -18,10 +20,16 @@ class LanguageFamily(BaseModel):
     class Meta:
         verbose_name = _("language family")
         verbose_name_plural = _("language families")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from parent_languages.csv OR from fvdialect:language_family on one of the
     # linked sites (via one of the linked languages)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, unique=True)
 
     # from dc:title
     alternate_names = models.TextField(max_length=200, blank=True)
@@ -40,9 +48,15 @@ class Language(BaseModel):
     class Meta:
         verbose_name = _("language")
         verbose_name_plural = _("languages")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from parent_languages.csv OR from fvdialect:parent_language on one of the linked sites
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, unique=True)
 
     # from dc:title
     alternate_names = models.CharField(max_length=200, blank=True)
@@ -69,13 +83,23 @@ class Site(BaseModel):
     class Meta:
         verbose_name = _("site")
         verbose_name_plural = _("sites")
+        rules_permissions = {
+            "view": predicates.can_view_site_model,
+            "add": predicates.is_superadmin,  # todo
+            "change": predicates.is_superadmin,  # todo
+            "delete": predicates.is_superadmin,  # todo
+        }
 
     # from dc:title
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, unique=True)
 
     # from fvdialect:short_url
     slug = models.SlugField(
-        max_length=200, blank=False, validators=[validate_slug], db_index=True
+        max_length=200,
+        blank=False,
+        validators=[validate_slug],
+        db_index=True,
+        unique=True,
     )
 
     # from fva:language
@@ -113,7 +137,9 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="site_%(app_label)s_%(class)s")
+    site = models.ForeignKey(
+        Site, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s"
+    )
 
 
 class BaseControlledSiteContentModel(BaseSiteContentModel):
@@ -133,10 +159,10 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
 class Membership(BaseSiteContentModel):
     """Represents a user's membership to a language site"""
 
-    # site_id from group memberships
+    # site from group memberships
 
     # from user
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
 
     # from group memberships
     role = models.IntegerField(choices=Role.choices, default=Role.MEMBER)
@@ -145,6 +171,12 @@ class Membership(BaseSiteContentModel):
         verbose_name = _("membership")
         verbose_name_plural = _("memberships")
         unique_together = ("site", "user")
+        rules_permissions = {
+            "view": predicates.can_view_membership_model,
+            "add": predicates.is_superadmin,  # todo
+            "change": predicates.is_superadmin,  # todo
+            "delete": predicates.is_superadmin,  # todo
+        }
 
     def __str__(self):
         return f"{self.user} ({self.site} {Role.labels[self.role]})"
@@ -161,6 +193,13 @@ class SiteFeature(BaseSiteContentModel):
     class Meta:
         verbose_name = _("site feature")
         verbose_name_plural = _("site features")
+        unique_together = ("site", "key")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,  # todo
+            "change": predicates.is_superadmin,  # todo
+            "delete": predicates.is_superadmin,  # todo
+        }
 
     def __str__(self):
         return f"{self.key}: {self.is_enabled} ({self.site})"
