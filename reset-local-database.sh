@@ -76,7 +76,7 @@ case $yn in
     # Create the empty database
     printf '\n\n'
     printf 'Recreating empty fv_be database.'
-    createdb fv_be
+    createdb --username=postgrees fv_be
 
     # Delete any existing migrations files
     printf '\n\n'
