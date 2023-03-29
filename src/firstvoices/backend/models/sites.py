@@ -85,9 +85,9 @@ class Site(BaseModel):
         verbose_name_plural = _("sites")
         rules_permissions = {
             "view": predicates.can_view_site_model,
-            "add": predicates.is_superadmin,  # todo
-            "change": predicates.is_superadmin,  # todo
-            "delete": predicates.is_superadmin,  # todo
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
         }
 
     # from dc:title
@@ -175,9 +175,9 @@ class Membership(BaseSiteContentModel):
         unique_together = ("site", "user")
         rules_permissions = {
             "view": predicates.can_view_membership_model,
-            "add": predicates.is_superadmin,  # todo
-            "change": predicates.is_superadmin,  # todo
-            "delete": predicates.is_superadmin,  # todo
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
         }
 
     def __str__(self):
@@ -198,9 +198,9 @@ class SiteFeature(BaseSiteContentModel):
         unique_together = ("site", "key")
         rules_permissions = {
             "view": rules.always_allow,
-            "add": predicates.is_superadmin,  # todo
-            "change": predicates.is_superadmin,  # todo
-            "delete": predicates.is_superadmin,  # todo
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
         }
 
     def __str__(self):
