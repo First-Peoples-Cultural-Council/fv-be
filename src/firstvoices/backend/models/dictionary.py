@@ -107,7 +107,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
     # Fields
     # from dc:title, relatively more max_length due to phrases
-    # todo: max_length may be modified after doing some analysis on the length of current phrases
+    # see fw-4196, max_length may be modified after doing some analysis on the length of current phrases
     title = models.CharField(max_length=800)
     type = models.CharField(
         max_length=6,

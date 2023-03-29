@@ -15,7 +15,7 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 
 # REST FRAMEWORK
 # ------------------------------------------------------------------------------
-# todo: remove this section and use the base settings once we have instructions for local cognito testing
+# see fw-4235: remove this section and use the base settings once we have instructions for local cognito testing
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": (
         "djangorestframework_camel_case.parser.CamelCaseJSONParser",

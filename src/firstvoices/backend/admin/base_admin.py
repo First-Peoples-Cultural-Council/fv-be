@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
@@ -48,6 +50,7 @@ class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
 
 
 class BaseInlineAdmin(admin.TabularInline):
+    logger = logging.getLogger(__name__)
     classes = ["collapse"]
     extra = 0
     readonly_fields = (
@@ -71,15 +74,19 @@ class BaseInlineAdmin(admin.TabularInline):
     item_id.short_description = _("Id")
 
     def admin_link(self, instance):
-        # todo: Add reverse links for all models
         try:
             url = reverse(
                 f"admin:{instance._meta.app_label}_{instance._meta.model_name}_change",
                 args=(instance.id,),
             )
-            # todo: i18n for 'Edit' not working here for some reason
+            # see fw-4179, i18n for 'Edit' not working here for some reason
             return format_html('<a href="{}">{}: {}</a>', url, "Edit", str(instance))
-        except NoReverseMatch:
+        except NoReverseMatch as e:
+            self.logger.warning(
+                self,
+                f"{instance._meta.app_label}_{instance._meta.model_name} model has no _change url configured",
+                e,
+            )
             return None
 
     def save_model(self, request, obj, form, change):

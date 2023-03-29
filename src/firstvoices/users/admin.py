@@ -13,7 +13,7 @@ class UserAdmin(auth_admin.UserAdmin):
     form = UserAdminChangeForm
     add_form = UserAdminCreationForm
     fieldsets = (
-        # todo: fw-4165, figure out username / id / email fields
+        # see fw-4165, figure out username / id / email fields
         (None, {"fields": ("username", "password")}),
         (_("Personal info"), {"fields": ("email",)}),
         (

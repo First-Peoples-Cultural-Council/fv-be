@@ -8,8 +8,8 @@ class User(AbstractUser):
     User Model
     """
 
-    # todo: tbd how to handle username, id, and email fields to support both cognito and the admin site, FW-4165
-    # todo: decide how to handle group field, FW-4165
+    # note: tbd how to handle username, id, and email fields to support both cognito and the admin site, FW-4165
+    # note: decide how to handle group field, FW-4165
 
     USERNAME_FIELD = "id"
     REQUIRED_FIELDS = ["username"]

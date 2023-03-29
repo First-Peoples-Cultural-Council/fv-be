@@ -143,7 +143,7 @@ class IgnoredCharacter(BaseSiteContentModel):
         return self.title
 
 
-# TODO: AlphabetMapper model implementation once g2p work has been completed
+# See fw-4172: AlphabetMapper model implementation once g2p work has been completed
 # class AlphabetMapper(BaseSiteContentModel):
 #     """
 #     Represents a private table holding the g2p mappings and configuration for a site.
@@ -153,7 +153,7 @@ class IgnoredCharacter(BaseSiteContentModel):
 #         verbose_name = _("alphabet mapper")
 #         verbose_name_plural = _("alphabet mappers")
 #
-#     # TODO: Once file storage is configured, enable these FileFields / change to proper paths
+#     # See fw-4172: Once file storage is configured, enable these FileFields / change to proper paths
 #     # alphabet_mapper is a placeholder for now.
 #     # input_to_canonical = models.FileField(upload_to="alphabet_mapper")
 #     # canonical_to_base = models.FileField(upload_to="alphabet_mapper")

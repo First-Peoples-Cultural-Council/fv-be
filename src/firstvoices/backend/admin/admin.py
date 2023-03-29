@@ -73,9 +73,6 @@ admin.site.unregister(SocialApp)
 admin.site.unregister(SocialToken)
 
 # Dictionary models
-# todo: make suitable admin objects to register for each model
-# todo: make custom admin forms to prevent self selection in ManyToMany fields referring to self
-# ref: https://stackoverflow.com/questions/869856/
 admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
 admin.site.register(Category, HiddenBaseAdmin)
 admin.site.register(DictionaryNote, HiddenBaseAdmin)

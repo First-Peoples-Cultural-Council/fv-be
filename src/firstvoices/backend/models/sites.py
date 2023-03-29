@@ -115,7 +115,7 @@ class Site(BaseModel):
     # from fvdialect:contact_email
     contact_email = models.EmailField(null=True, blank=True)
 
-    # todo: add logo field when media is ready / from fvdialect:logo
+    # see fw-4130, add logo field when media is ready / from fvdialect:logo
 
     @property
     def language_family(self):

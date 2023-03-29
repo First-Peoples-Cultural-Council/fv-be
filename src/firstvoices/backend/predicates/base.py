@@ -74,13 +74,13 @@ def is_at_least_language_admin(user, obj):
 
 @predicate
 def is_at_least_staff_admin(user, obj):
-    # todo: real implementation FW-4178
+    # stub. see FW-4178
     return user.is_staff or user.is_superuser
 
 
 @predicate
 def is_superadmin(user, obj):
-    # todo: real implementation FW-4178
+    # stub. see FW-4178
     return user.is_superuser
 
 

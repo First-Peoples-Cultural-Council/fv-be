@@ -16,7 +16,7 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
     readonly_fields = BaseInlineAdmin.readonly_fields
     can_delete = True
 
-    # TODO: When adding a character, all related dictionary entries are shown. This should be filtered by site.
+    # see fw-4234 about filtering the dictionary entries by site here
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "dictionary_entry":
             # Get the Character from the request and filter dictionary entries by its site_id
