@@ -301,11 +301,11 @@ tags
 dump.rdb
 
 ### Project template
-fv-be/src/firstvoices/media/
+src/firstvoices/media/
 
 .pytest_cache/
-fv-be/src/firstvoices/static/webpack_bundles/
+src/firstvoices/static/webpack_bundles/
 webpack-stats.json
 
-fv-be/src/firstvoices/backend/migrations
-fv-be/src/firstvoices/users/migrations
+src/firstvoices/backend/migrations/*
+src/firstvoices/users/migrations/*
