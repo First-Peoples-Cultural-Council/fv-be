@@ -4,7 +4,7 @@ from firstvoices.backend.serializers import Site, SiteSerializer
 from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
 
 
-class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
+class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     # stub
     http_method_names = ["get"]
     serializer_class = SiteSerializer
