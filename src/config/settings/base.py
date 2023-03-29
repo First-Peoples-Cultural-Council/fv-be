@@ -186,7 +186,7 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "users.context_processors.allauth_settings",
+                # "users.context_processors.allauth_settings",
             ],
         },
     }
@@ -260,34 +260,34 @@ LOGGING = {
 
 # django-allauth
 # ------------------------------------------------------------------------------
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
-# https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_AUTHENTICATION_METHOD = "username"
-# https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_EMAIL_REQUIRED = True
-# https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_EMAIL_VERIFICATION = "optional"
-# https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_ADAPTER = "users.adapters.AccountAdapter"
-# https://django-allauth.readthedocs.io/en/latest/forms.html
-ACCOUNT_FORMS = {"signup": "users.forms.UserSignupForm"}
-# https://django-allauth.readthedocs.io/en/latest/configuration.html
-SOCIALACCOUNT_ADAPTER = "users.adapters.SocialAccountAdapter"
-# https://django-allauth.readthedocs.io/en/latest/forms.html
-SOCIALACCOUNT_FORMS = {"signup": "users.forms.UserSocialSignupForm"}
+# ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
+# # https://django-allauth.readthedocs.io/en/latest/configuration.html
+# ACCOUNT_AUTHENTICATION_METHOD = "username"
+# # https://django-allauth.readthedocs.io/en/latest/configuration.html
+# ACCOUNT_EMAIL_REQUIRED = True
+# # https://django-allauth.readthedocs.io/en/latest/configuration.html
+# ACCOUNT_EMAIL_VERIFICATION = "optional"
+# # https://django-allauth.readthedocs.io/en/latest/configuration.html
+# ACCOUNT_ADAPTER = "users.adapters.AccountAdapter"
+# # https://django-allauth.readthedocs.io/en/latest/forms.html
+# ACCOUNT_FORMS = {"signup": "users.forms.UserSignupForm"}
+# # https://django-allauth.readthedocs.io/en/latest/configuration.html
+# SOCIALACCOUNT_ADAPTER = "users.adapters.SocialAccountAdapter"
+# # https://django-allauth.readthedocs.io/en/latest/forms.html
+# SOCIALACCOUNT_FORMS = {"signup": "users.forms.UserSocialSignupForm"}
 
 # django-rest-framework
 # -------------------------------------------------------------------------------
 # django-rest-framework - https://www.django-rest-framework.org/api-guide/settings/
 REST_FRAMEWORK = {
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    # 	'api.keycloak_authentication.UserAuthentication',),
     "DEFAULT_PARSER_CLASSES": (
         "djangorestframework_camel_case.parser.CamelCaseJSONParser",
     ),
     "DEFAULT_RENDERER_CLASSES": (
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
     ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    # 	'api.keycloak_authentication.UserAuthentication',),
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "UNAUTHENTICATED_USER": None,
