@@ -1,8 +1,8 @@
 from rules import predicate
 
-from firstvoices.backend.models.constants import Role, Visibility
+from firstvoices.backend.models.constants import AppRole, Role, Visibility
 
-from .utils import get_role
+from .utils import get_app_role, get_site_role
 
 #
 # visibility-based test_predicates
@@ -54,38 +54,36 @@ def is_own_obj(user, obj):
 
 @predicate
 def is_at_least_member(user, obj):
-    return get_role(user, obj) >= Role.MEMBER
+    return get_site_role(user, obj) >= Role.MEMBER
 
 
 @predicate
 def is_at_least_assistant(user, obj):
-    return get_role(user, obj) >= Role.ASSISTANT
+    return get_site_role(user, obj) >= Role.ASSISTANT
 
 
 @predicate
 def is_at_least_editor(user, obj):
-    return get_role(user, obj) >= Role.EDITOR
+    return get_site_role(user, obj) >= Role.EDITOR
 
 
 @predicate
 def is_at_least_language_admin(user, obj):
-    return get_role(user, obj) >= Role.LANGUAGE_ADMIN
+    return get_site_role(user, obj) >= Role.LANGUAGE_ADMIN
 
 
 @predicate
 def is_at_least_staff_admin(user, obj):
-    # stub. see FW-4178
-    return user.is_staff or user.is_superuser
+    return get_app_role(user) >= AppRole.STAFF
 
 
 @predicate
 def is_superadmin(user, obj):
-    # stub. see FW-4178
-    return user.is_superuser
+    return get_app_role(user) == AppRole.SUPERADMIN
 
 
 #
-# access-based test_predicates
+# access-based predicates
 #
 has_public_access_to_obj = is_public_obj & has_public_site
 has_member_access_to_obj = (

@@ -26,17 +26,17 @@ class TestPredicateUtils:
         site = SiteFactory.create()
         obj = ControlledSiteContentFactory.create(site=site)
         guest_user = AnonymousUserFactory.build()
-        assert utils.get_role(guest_user, obj) == -1
+        assert utils.get_site_role(guest_user, obj) == -1
 
     def test_get_role_for_non_member(self):
         site = SiteFactory.create()
         obj = ControlledSiteContentFactory.create(site=site)
         lone_user = UserFactory.create()
-        assert utils.get_role(lone_user, obj) == -1
+        assert utils.get_site_role(lone_user, obj) == -1
 
     def test_get_role_for_member(self):
         site = SiteFactory.create()
         obj = ControlledSiteContentFactory.create(site=site)
         member_user = UserFactory.create()
         MembershipFactory(site=site, user=member_user, role=Role.MEMBER)
-        assert utils.get_role(member_user, obj) == Role.MEMBER
+        assert utils.get_site_role(member_user, obj) == Role.MEMBER
