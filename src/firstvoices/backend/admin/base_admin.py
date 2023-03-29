@@ -30,11 +30,11 @@ class BaseAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):
-        for form in formset.forms:
-            if not form.instance.created:
-                form.instance.created_by = request.user
+        for f in formset.forms:
+            if not f.instance.created:
+                f.instance.created_by = request.user
 
-            form.instance.last_modified_by = request.user
+            f.instance.last_modified_by = request.user
 
         super().save_formset(request, form, formset, change)
 
