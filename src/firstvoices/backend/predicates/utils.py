@@ -26,5 +26,4 @@ def get_app_role(user, obj):
     if user.is_anonymous:
         return -1
 
-    role = user.app_role
-    return role if role is not None else -1
+    return user.app_role.role if user.app_role is not None else -1

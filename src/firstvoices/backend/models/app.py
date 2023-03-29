@@ -4,6 +4,7 @@ from django.utils.translation import gettext as _
 
 from firstvoices.backend.models.base import BaseModel
 
+from .. import predicates
 from .constants import AppRole
 
 
@@ -39,6 +40,12 @@ class AppMembership(BaseModel):
     class Meta:
         verbose_name = _("app-level membership")
         verbose_name_plural = _("app-level memberships")
+        rules_permissions = {
+            "view": predicates.is_superadmin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return f"{self.user} ({AppRole.labels[self.role]})"
