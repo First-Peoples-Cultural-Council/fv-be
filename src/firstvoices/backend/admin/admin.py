@@ -18,11 +18,15 @@ from firstvoices.backend.models.part_of_speech import PartOfSpeech
 from firstvoices.backend.models.sites import Site
 
 from .base_admin import BaseAdmin, HiddenBaseAdmin
-from .dictionary_admin import DictionaryEntryHiddenBaseAdmin, DictionaryEntryInline, CategoryInline
 from .characters_admin import (
     CharacterInline,
     CharacterVariantInline,
     IgnoredCharacterInline,
+)
+from .dictionary_admin import (
+    CategoryInline,
+    DictionaryEntryHiddenBaseAdmin,
+    DictionaryEntryInline,
 )
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
@@ -54,7 +58,7 @@ class SiteAdmin(BaseAdmin):
         SiteFeatureInline,
         SiteMenuInline,
         DictionaryEntryInline,
-        CategoryInline
+        CategoryInline,
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)

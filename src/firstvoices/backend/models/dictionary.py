@@ -4,7 +4,7 @@ from django.utils.translation import gettext as _
 from .base import BaseModel
 from .category import Category
 from .part_of_speech import PartOfSpeech
-from .sites import BaseControlledSiteContentModel, BaseSiteContentModel
+from .sites import BaseControlledSiteContentModel
 
 
 class BaseDictionaryContentModel(BaseModel):
@@ -12,12 +12,14 @@ class BaseDictionaryContentModel(BaseModel):
     Base model for Dictionary models which require DictionaryEntry as a foreign key and
     have site as a property but not as a field.
     """
-    dictionary_entry = models.ForeignKey("DictionaryEntry", on_delete=models.CASCADE,
-                                         related_name="dictionary_%(class)s")
+
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="dictionary_%(class)s"
+    )
 
     @property
     def site(self):
-        """ Returns the site that the DictionaryEntry model is associated with."""
+        """Returns the site that the DictionaryEntry model is associated with."""
         return self.dictionary_entry.site
 
     class Meta:

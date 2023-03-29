@@ -6,6 +6,7 @@ from firstvoices.backend.models.characters import (
     IgnoredCharacter,
 )
 from firstvoices.backend.models.dictionary import DictionaryEntry
+
 from .base_admin import BaseInlineAdmin, BaseSiteContentAdmin
 
 

@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
-from django.urls.exceptions import NoReverseMatch
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -79,7 +79,7 @@ class BaseInlineAdmin(admin.TabularInline):
             )
             # todo: i18n for 'Edit' not working here for some reason
             return format_html('<a href="{}">{}: {}</a>', url, "Edit", str(instance))
-        except NoReverseMatch as e:
+        except NoReverseMatch:
             return None
 
     def save_model(self, request, obj, form, change):
@@ -97,5 +97,6 @@ class HiddenBaseAdmin(BaseAdmin):
 
     Ref: https://docs.djangoproject.com/en/4.1/ref/contrib/admin/#django.contrib.admin.ModelAdmin.has_add_permission
     """
+
     def has_module_permission(self, request):
         return {}

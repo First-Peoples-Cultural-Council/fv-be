@@ -1,13 +1,22 @@
-from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
-from .sites_admin import MembershipAdmin
-from firstvoices.backend.models.dictionary import DictionaryEntry, DictionaryNote, DictionaryAcknowledgement, \
-    DictionaryTranslation, AlternateSpelling, Pronunciation
 from firstvoices.backend.models.category import Category
+from firstvoices.backend.models.dictionary import (
+    AlternateSpelling,
+    DictionaryAcknowledgement,
+    DictionaryEntry,
+    DictionaryNote,
+    DictionaryTranslation,
+    Pronunciation,
+)
+
+from .base_admin import BaseInlineAdmin, HiddenBaseAdmin
+from .sites_admin import MembershipAdmin
 
 
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
     fields = ("text", "site") + BaseInlineAdmin.fields
-    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+    readonly_fields = (
+        ("site",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
+    )
 
 
 class NotesInline(BaseDictionaryInlineAdmin):
@@ -20,7 +29,10 @@ class AcknowledgementInline(BaseDictionaryInlineAdmin):
 
 class TranslationInline(BaseDictionaryInlineAdmin):
     model = DictionaryTranslation
-    fields = ("language", "part_of_speech", ) + BaseDictionaryInlineAdmin.fields
+    fields = (
+        "language",
+        "part_of_speech",
+    ) + BaseDictionaryInlineAdmin.fields
 
 
 class AlternateSpellingInline(BaseDictionaryInlineAdmin):
@@ -34,18 +46,21 @@ class PronunciationInline(BaseDictionaryInlineAdmin):
 class DictionaryEntryInline(BaseDictionaryInlineAdmin):
     model = DictionaryEntry
     fields = (
-        'title',
-        'type',
+        "title",
+        "type",
     ) + BaseInlineAdmin.fields
 
 
 class CategoryInline(BaseDictionaryInlineAdmin):
     model = Category
-    fields = (
-        'title',
-        'parent'
-    ) + BaseInlineAdmin.fields
+    fields = ("title", "parent") + BaseInlineAdmin.fields
 
 
 class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
-    inlines = [NotesInline, AcknowledgementInline, TranslationInline, AlternateSpellingInline, PronunciationInline]
+    inlines = [
+        NotesInline,
+        AcknowledgementInline,
+        TranslationInline,
+        AlternateSpellingInline,
+        PronunciationInline,
+    ]
