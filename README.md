@@ -159,15 +159,15 @@ For local development, a script has been created which will do the following:
 
 You may need to give the script executable permission for your machine by running the following command:
 ```
-chmod +x reset-local-database.sh
+chmod +x src/reset-local-database.sh
 ```
 An example command to run the script might look like the following:
 ```
-./reset-local-database.sh -u admin -p admin -e admin@example.com
+./src/reset-local-database.sh -u admin -p admin -e admin@example.com
 ```
 or if you have already set the environment variables locally:
 ```
-./reset-local-database.sh
+./src/reset-local-database.sh
 ```
 
 ### Type checks

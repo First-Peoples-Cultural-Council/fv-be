@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "$PWD"
+
 # Using the input arguments, set the environment variables for a super-admin account username, password, and optional email.
 # Arguments are as follows:
 # -u <username> or --username <username>
@@ -70,33 +72,84 @@ case $yn in
   [Yy]* )
     # Drop the existing database
     printf '\n'
-    printf 'Removing existing fv_be database.'
+    printf 'Removing existing fv_be database.\n'
     dropdb -f fv_be
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Database removal failed: exit code $retval\n"
+      exit $retval
+    fi
 
     # Create the empty database
     printf '\n\n'
-    printf 'Recreating empty fv_be database.'
-    createdb --username=postgrees fv_be
+    printf 'Recreating empty fv_be database.\n'
+    createdb --username=postgres fv_be
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Database creation failed: exit code $retval\n"
+      exit $retval
+    fi
 
-    # Delete any existing migrations files
+    # Delete any existing backend migrations files
     printf '\n\n'
-    printf 'Removing existing migrations.'
-    find ./fv_be/*/migrations -type f -not -name '__init__.py' -delete
+    printf 'Removing existing backend migrations.\n'
+    find $PWD/src/firstvoices/backend/migrations/ -not -name '__init__.py' -delete
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Backend migration removal failed: exit code $retval\n"
+      exit $retval
+    fi
 
-    # Make new migrations
+    # Delete any existing users migrations files
     printf '\n\n'
-    printf 'Generating migrations.\n'
-    python manage.py makemigrations
+    printf 'Removing existing users migrations.\n'
+    find $PWD/src/firstvoices/users/migrations/ -not -name '__init__.py' -delete
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Users migration removal failed: exit code $retval\n"
+      exit $retval
+    fi
+
+    # Make new users migrations
+    printf '\n\n'
+    printf 'Generating users migrations.\n'
+    python $PWD/src/manage.py makemigrations users
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Users migration generation failed: exit code $retval\n"
+      exit $retval
+    fi
+
+    # Make new backend migrations
+    printf '\n\n'
+    printf 'Generating backend migrations.\n'
+    python $PWD/src/manage.py makemigrations backend
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Backend migration generation failed: exit code $retval\n"
+      exit $retval
+    fi
 
     # Run the new migrations
     printf '\n\n'
     printf 'Running migrations.\n'
-    python manage.py migrate
+    python $PWD/src/manage.py migrate
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Migration execution failed: exit code $retval\n"
+      exit $retval
+    fi
 
     # Create a superuser using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
     printf '\n\n'
     printf 'Creating a superuser account using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.\n'
-    python manage.py createsuperuser --noinput;;
+    python $PWD/src/manage.py createsuperuser --noinput --id $DJANGO_SUPERUSER_USERNAME
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Superuser creation failed: exit code $retval\n"
+      exit $retval
+    fi
+    ;;
 
   [Nn]* )
     printf '\n'
