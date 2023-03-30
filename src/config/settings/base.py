@@ -10,6 +10,8 @@ from config import database, jwt
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # firstvoices/
 APPS_DIR = BASE_DIR / "firstvoices"
+# Fixtures directory for initial data
+FIXTURES_DIR = APPS_DIR / "fixtures"
 env = environ.Env()
 
 READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=False)
