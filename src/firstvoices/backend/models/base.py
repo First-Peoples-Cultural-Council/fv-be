@@ -63,6 +63,6 @@ class BaseModel(RulesModel):
     @receiver(pre_save, sender="backend.PartOfSpeech")
     def pre_save_for_fixtures(sender, instance, **kwargs):
         if kwargs["raw"]:
-            instance.last_modified = timezone.now()
-            if not instance.id:
+            if not instance.created:
                 instance.created = timezone.now()
+            instance.last_modified = timezone.now()
