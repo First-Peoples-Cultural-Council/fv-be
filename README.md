@@ -19,10 +19,14 @@ License: Apache Software License 2.0
    2. `pip install -r requirements/local.txt`
 3. Install pre-commit hooks
    4. `pre-commit install`
-1. Create a database in postgres, named fv_be
-   2. `createdb --username=postgres <project_slug>`
-1. Configure environment settings
-   2. `export DATABASE_URL=postgres://postgres:<password>@127.0.0.1:5432/<DB name given to createdb>`
+1. Create a database in postgres, and note the name
+   2. `createdb --username=postgres <db name>`
+1. Configure environment settings. Required settings are:
+   2. DB_DATABASE
+   3. DB_USERNAME
+   4. DB_PASSWORD
+   5. DB_HOST
+   6. DB_PORT
 1. Apply migration
    2. `python manage.py migrate`
 1. Run the server and set it to automatically refresh on changes
@@ -49,7 +53,7 @@ For convenience, you can keep your normal user logged in on Chrome and your supe
 
 Running type checks with mypy:
 
-    $ mypy fv_be
+    $ mypy firstvoices
 
 ### Test coverage
 

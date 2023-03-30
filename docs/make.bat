@@ -10,7 +10,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=_source
 set BUILDDIR=_build
-set APP=..\fv_be
+set APP=..\firstvoices
 
 if "%1" == "" goto help
 
