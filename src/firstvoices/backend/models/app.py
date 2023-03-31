@@ -41,7 +41,7 @@ class AppMembership(BaseModel):
         verbose_name = _("app-level membership")
         verbose_name_plural = _("app-level memberships")
         rules_permissions = {
-            "view": predicates.is_superadmin,
+            "view": predicates.is_at_least_staff_admin,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
