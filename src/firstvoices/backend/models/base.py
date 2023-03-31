@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from rules.contrib.models import RulesModel
 
+from .managers import PermissionsManager
+
 
 class BaseModel(RulesModel):
     """
@@ -23,6 +25,9 @@ class BaseModel(RulesModel):
 
     class Meta:
         abstract = True
+
+    # The permissions manager adds functionality to filter a queryset based on user permissions.
+    objects = PermissionsManager()
 
     # from uid (and seemingly not uid:uid)
     id = models.UUIDField(
