@@ -14,7 +14,7 @@ class PermissionsManager(models.Manager):
         models_uuid_list = [
             model.id
             for model in self.get_queryset()
-            if user.has_perm(f"backend.view_{model.__class__.__name__.lower()}", model)
+            if user.has_perm(model.get_perm("view"), model)
         ]
         # Return a queryset filtered by the UUID list
         return self.get_queryset().filter(id__in=models_uuid_list)
