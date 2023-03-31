@@ -81,3 +81,9 @@ def get_site_with_member(site_visibility, user_role):
     site = SiteFactory.create(visibility=site_visibility)
     MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user
+
+
+def get_app_admin(role):
+    user = UserFactory.create()
+    AppMembershipFactory.create(user=user, role=role)
+    return user

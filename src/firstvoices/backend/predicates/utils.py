@@ -18,7 +18,7 @@ def get_site_role(user, obj):
     return membership[0].role if len(membership) > 0 else -1
 
 
-def get_app_role(user, obj):
+def get_app_role(user):
     """
     Returns an integer corresponding to a user's app-level role.
     """
@@ -26,4 +26,4 @@ def get_app_role(user, obj):
     if user.is_anonymous:
         return -1
 
-    return user.app_role.role if user.app_role is not None else -1
+    return user.app_role.role if hasattr(user, "app_role") else -1
