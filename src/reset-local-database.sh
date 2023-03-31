@@ -1,6 +1,7 @@
 #!/bin/bash
 
-echo "$PWD"
+# Get the path to this script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Using the input arguments, set the environment variables for a super-admin account username, password, and optional email.
 # Arguments are as follows:
@@ -89,12 +90,12 @@ case $yn in
       printf "Database creation failed: exit code $retval\n"
       exit $retval
     fi
-    
+
     # Note: this should be removed once we begin commiting migrations. See FW-4240
     # Delete any existing backend migrations files
     printf '\n\n'
     printf 'Removing existing backend migrations.\n'
-    find $PWD/src/firstvoices/backend/migrations/ -not -name '__init__.py' -delete
+    find $SCRIPT_DIR/firstvoices/backend/migrations/ -not -name '__init__.py' -delete
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Backend migration removal failed: exit code $retval\n"
@@ -105,7 +106,7 @@ case $yn in
     # Delete any existing users migrations files
     printf '\n\n'
     printf 'Removing existing users migrations.\n'
-    find $PWD/src/firstvoices/users/migrations/ -not -name '__init__.py' -delete
+    find $SCRIPT_DIR/firstvoices/users/migrations/ -not -name '__init__.py' -delete
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Users migration removal failed: exit code $retval\n"
@@ -115,7 +116,7 @@ case $yn in
     # Make new users migrations
     printf '\n\n'
     printf 'Generating users migrations.\n'
-    python $PWD/src/manage.py makemigrations users
+    python $SCRIPT_DIR/manage.py makemigrations users
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Users migration generation failed: exit code $retval\n"
@@ -125,7 +126,7 @@ case $yn in
     # Make new backend migrations
     printf '\n\n'
     printf 'Generating backend migrations.\n'
-    python $PWD/src/manage.py makemigrations backend
+    python $SCRIPT_DIR/manage.py makemigrations backend
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Backend migration generation failed: exit code $retval\n"
@@ -135,7 +136,7 @@ case $yn in
     # Run the new migrations
     printf '\n\n'
     printf 'Running migrations.\n'
-    python $PWD/src/manage.py migrate
+    python $SCRIPT_DIR/manage.py migrate
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Migration execution failed: exit code $retval\n"
@@ -145,7 +146,7 @@ case $yn in
     # Create a superuser using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
     printf '\n\n'
     printf 'Creating a superuser account using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.\n'
-    python $PWD/src/manage.py createsuperuser --noinput --id $DJANGO_SUPERUSER_USERNAME
+    python $SCRIPT_DIR/manage.py createsuperuser --noinput --id $DJANGO_SUPERUSER_USERNAME
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Superuser creation failed: exit code $retval\n"
