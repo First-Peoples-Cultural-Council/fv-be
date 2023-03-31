@@ -1,12 +1,13 @@
 import pytest
 
-from firstvoices.backend.models.constants import Role, Visibility
+from firstvoices.backend.models.constants import AppRole, Role, Visibility
 from firstvoices.backend.predicates import view_models
 from firstvoices.backend.tests.factories import (
     MembershipFactory,
     SiteFactory,
     UserFactory,
     get_anonymous_user,
+    get_app_admin,
     get_non_member_user,
     get_site_with_member,
 )
@@ -69,6 +70,17 @@ class TestCanViewSiteModel:
         site2 = SiteFactory.create(visibility=Visibility.TEAM)
         assert not view_models.can_view_site_model(user, site2)
 
+    @pytest.mark.parametrize(
+        "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
+    )
+    @pytest.mark.parametrize("role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.django_db
+    def test_app_admins_always_see_site_models(self, site_visibility, role):
+        user = get_app_admin(role)
+        site = SiteFactory.build(visibility=site_visibility)
+
+        assert view_models.can_view_site_model(user, site)
+
 
 class TestCanViewMembershipModel:
     @pytest.mark.parametrize(
@@ -119,3 +131,17 @@ class TestCanViewMembershipModel:
         MembershipFactory.create(site=site, user=user, role=Role.LANGUAGE_ADMIN)
         membership2 = MembershipFactory.create(site=site2, user=user2, role=Role.MEMBER)
         assert not view_models.can_view_membership_model(user, membership2)
+
+    @pytest.mark.parametrize("role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.parametrize(
+        "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
+    )
+    @pytest.mark.django_db
+    def test_app_admins_see_all_memberships(self, site_visibility, role):
+        user = UserFactory.create()
+        site = SiteFactory.create(visibility=site_visibility)
+        membership = MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
+
+        admin_user = get_app_admin(role)
+
+        assert view_models.can_view_membership_model(admin_user, membership)
