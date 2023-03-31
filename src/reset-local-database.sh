@@ -89,7 +89,8 @@ case $yn in
       printf "Database creation failed: exit code $retval\n"
       exit $retval
     fi
-
+    
+    # Note: this should be removed once we begin commiting migrations. See FW-4240
     # Delete any existing backend migrations files
     printf '\n\n'
     printf 'Removing existing backend migrations.\n'
@@ -100,6 +101,7 @@ case $yn in
       exit $retval
     fi
 
+    # Note: this should be removed once we begin commiting migrations. See FW-4240
     # Delete any existing users migrations files
     printf '\n\n'
     printf 'Removing existing users migrations.\n'
