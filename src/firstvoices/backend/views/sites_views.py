@@ -27,12 +27,14 @@ from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
         },
     ),
 )
-class SiteFilteredList(FVPermissionViewSetMixin, ModelViewSet):
+class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     """
-    Summary information about language sites available on this server. Public and member sites are included, as well as
-    any team sites the user has access to.
+    Summary information about language sites.
     """
 
     http_method_names = ["get"]
     queryset = Site.objects.all()  # todo: prefetching for related objects?
+
+    lookup_field = "slug"
+
     serializer_class = SiteSerializer

@@ -5,9 +5,10 @@ from firstvoices.backend.models.sites import Site
 
 class SiteSerializer(serializers.HyperlinkedModelSerializer):
     visibility = serializers.CharField(source="get_visibility_display")
-    url = serializers.HyperlinkedIdentityField(view_name="api:site-detail")
+    url = serializers.HyperlinkedIdentityField(
+        view_name="api:site-detail", lookup_field="slug"
+    )
     language = serializers.StringRelatedField()
-    language_family = serializers.StringRelatedField()
 
     class Meta:
         model = Site
@@ -15,8 +16,8 @@ class SiteSerializer(serializers.HyperlinkedModelSerializer):
             "id",
             "title",
             "slug",
+            "contact_email",
             "language",
-            "language_family",
             "visibility",
             "url",
         ]
