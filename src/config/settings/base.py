@@ -299,11 +299,14 @@ REST_FRAMEWORK = {
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
 CORS_URLS_REGEX = r"^/api/.*$"
 
+with open(str(APPS_DIR / "static" / "api-description.md")) as f:
+    description = f.read()
+
 # By Default swagger ui is available only to admin user(s). You can change permission classes to change that
 # See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "FirstVoices Backend API",
-    "DESCRIPTION": "Documentation of API endpoints of FirstVoices Backend",
+    "DESCRIPTION": description,
     "VERSION": "2.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }
