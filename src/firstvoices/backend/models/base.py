@@ -59,10 +59,11 @@ class BaseModel(RulesModel):
     # from dc:lastContributor
     last_modified = models.DateTimeField(auto_now=True, db_index=True)
 
-    # method to add last_modified and created fields if missing in the data, helpful for fixtures
-    @receiver(pre_save, sender="backend.PartOfSpeech")
-    def pre_save_for_fixtures(sender, instance, **kwargs):
-        if kwargs["raw"]:
-            if not instance.created:
-                instance.created = timezone.now()
-            instance.last_modified = timezone.now()
+
+# method to add last_modified and created fields if missing in the data, helpful for fixtures
+@receiver(pre_save, sender="backend.PartOfSpeech")
+def pre_save_for_fixtures(sender, instance, **kwargs):
+    if kwargs["raw"]:
+        if not instance.created:
+            instance.created = timezone.now()
+        instance.last_modified = timezone.now()
