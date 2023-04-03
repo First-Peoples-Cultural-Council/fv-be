@@ -4,46 +4,66 @@ Backend for the FirstVoices application
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
 
 License: Apache Software License 2.0
 
----
+___
 
 ## Developer setup
 
-1. Clone the repo: https://github.com/First-Peoples-Cultural-Council/fv-be
-1. Install prereqs:
-   2. Python 3.10+
-   3. PostgreSQL
-1. Activate the virtual environment in the root of the project
-   2. `source venv/bin/activate`
-1. Install requirements
-   2. `pip install -r requirements/local.txt`
-3. Install pre-commit hooks
-   4. `pre-commit install`
-1. Create a database in postgres, and note the name
-   2. `createdb --username=postgres <db name>`
-1. Configure environment settings. Required settings are:
-   2. DB_DATABASE
-   3. DB_USERNAME
-   4. DB_PASSWORD
-   5. DB_HOST
-   6. DB_PORT
-1. Apply migration
-   2. `python manage.py migrate`
-1. Run the server and set it to automatically refresh on changes
-   2. `npm install`
-   3. `npm run dev`
-1. (Optional) To load data from fixtures, use the following command (from inside the src directory) and replace the fixture_name with fixtures available.
-   1. `python manage.py loaddata fixture_name`
-   2. Fixtures available:
-      3.  `partsOfSpeech_initial.json`
+1. Clone the repo: `git clone https://github.com/First-Peoples-Cultural-Council/fv-be.git`
+2. Install prereqs:
+   - [Python 3.10+](python.org)
+     - (Recommended: [pyenv](https://github.com/pyenv/pyenv) to install and manage current Python versions)
+   - [PostgreSQL](https://www.postgresql.org/)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install postgresql`
+       - `brew services start postgresql` to start the service and autostart on system startup.
+       - `brew services stop postgresql` to stop the service.
+     - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
+3. (Recommended) Create and activate a virtual environment in the root of the project
+   - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
+   - If using [venv](https://docs.python.org/3/library/venv.html)
+     - python -m venv <name for your venv>
+     - `source <name for your venv>/bin/activate`
+   - If using [direnv](https://direnv.net/)
+     - Install direnv as explained in the [official installation docs](https://direnv.net/docs/installation.html).
+     - Create a .envrc file in the root project directory
+     - Add environment variables to the .envrc file and they will be loaded into your environment whenever you navigate your terminal to the root directory and any child directories.
+4. Install requirements
+   - `pip install -r requirements/local.txt`
+5. Install pre-commit hooks
+   - `pre-commit install`
+6. Create a database in postgres, and note the name
+   - `createdb --username=postgres <db name>`
+7. Configure environment variables. Required variables are:
+   - `DB_DATABASE`: `<db name>` when you created the database
+   - `DB_USERNAME`: the database admin username (usually `postgres`)
+   - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
+   - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
+   - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
+   - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account (used to access the admin panel and all APIs).
+   - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
+   - (optional) `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account.
+   - If using [venv](https://docs.python.org/3/library/venv.html)
+     - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
+   - If using [direnv](https://direnv.net/)
+     - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
+8. Apply migration
+   - From the root project directory: `python src/manage.py migrate`
+9. Run the server and set it to automatically refresh on changes
+   - `npm install`
+   - `npm run dev`
+10. (Optional) To load data from fixtures, use the following command (from inside the src directory) and replace the fixture_name with fixtures available.
+    - `python manage.py loaddata fixture_name`
+    - Fixtures available: 
+      - `partsOfSpeech_initial.json`
+___
 
-
----
-
-## IDE Linting and Formatting (Optional)
-These instruction include the steps needed to setup your local IDE so that you will get warnings if any changes are not up to the linting and formatting standards.
+## IDE Linting and Formatting (Recommended)
+These instruction include the steps needed to set up your local IDE so that you will get warnings if any changes are not up to the linting and formatting standards.
 The pre-commit hooks will ensure that your code changes are up to these standards, but setting up the following in your IDE will help to catch any issues earlier.
 
 **(Recommended before staging and committing files with git):** The entire suite of pre-commit hooks can be run manually by running the following commands from the root project directory:
@@ -129,19 +149,28 @@ pre-commit run check-yaml -a
 
 ---
 
-## Settings
+## Configuration Settings
 
-Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).
+A list of configuration settings and the environment variables that can be set to override the settings specified in the config files can be seen in the [Cookiecutter Django settings docs](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).
+
+---
 
 ## Basic Commands
 
 ### Setting Up Your Users
 
--   To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into your browser. Now the user's email should be verified and ready to go.
+-   To create a **superuser account**, with the environment variables you may have set earlier, use this command:
+    ```
+    cd src
+    python manage.py createsuperuser --noinput
+    ```
+    or if you want to supply the username and password manually:
+    ```
+    cd src
+    python manage.py createsuperuser
+    ```
 
--   To create a **superuser account**, use this command:
-
-        $ python manage.py createsuperuser
+- Normal users can be created using the admin panel, which can be accessed using the URL listed in the [Useful Local URLs on Startup](#useful-local-urls-on-startup) section. The admin panel can only be accessed when logged in as a superuser or staff user.
 
 For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
 
@@ -149,20 +178,20 @@ For convenience, you can keep your normal user logged in on Chrome and your supe
 For local development, a script has been created which will do the following:
 - Drops any existing databases named `fv_be`
 - Creates a fresh `fv_be` database
-- Deletes any migrations in the fv_be/*/migrations folders
+- Deletes any migrations in the `src/firstvoices/backend/migrations` and `src/firstvoices/users/migrations` folders
 - Makes fresh migrations
 - Runs the migrations
 - Creates a superuser using the following arguments:
   - `-u <username> or --username <username>` to specify the username
   - `-p <password> or --password <password>` to specify the password
   - `-e <email> or --email <email>` to specify an optional email (a default will be used if not supplied)
-- If no arguments are supplied the script will create a superuser using the following environment variables if they are set:
+- If no arguments are supplied the script will create a superuser using the following environment variables if they are set (as specified in the [Developer Setup Section](#developer-setup)):
   - `DJANGO_SUPERUSER_USERNAME` to specify the username
   - `DJANGO_SUPERUSER_PASSWORD` to specify the password
   - `DJANGO_SUPERUSER_EMAIL` to specify an optional email
 - If no environment variables are set and no arguments are found then the script will fail to create a superuser.
 
-You may need to give the script executable permission for your machine by running the following command:
+You may need to give the script executable permission on your machine by running the following command:
 ```
 chmod +x src/reset-local-database.sh
 ```
@@ -178,34 +207,50 @@ or if you have already set the environment variables locally:
 ### Type checks
 
 Running type checks with mypy:
+- navigate to the `src` directory:
+```
+cd src
+```
+- run the checks:
+```
+mypy firstvoices
+```
 
-    $ mypy firstvoices
 
 ### Test coverage
 
 To run the tests, check your test coverage, and generate an HTML coverage report:
+- navigate to the `src` directory:
+```
+cd src
+```
+- Run the tests with coverage, generate an html results page, and open the results in a browser:
+```
+coverage run -m pytest
+coverage html
+open htmlcov/index.html
+```
 
-    $ coverage run -m pytest
-    $ coverage html
-    $ open htmlcov/index.html
+### Running tests with pytest
+From the `src` project directory:
+- Run all tests:
+```
+pytest
+```
+- Run a set of tests in a directory:
+```
+pytest <path to directory>
+```
+- Run a single file:
+```
+pytest <path to file>
+```
+- Run a single test:
+```
+pytest <path to file containing test> -k '<name of single test>'
+```
 
-#### Running tests with pytest
-
-    $ pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally.html#sass-compilation-live-reloading).
-
-## Deployment
-
-The following details how to deploy this application.
-
-### Custom Bootstrap Compilation
-
-The generated CSS is set up with automatic Bootstrap recompilation with variables of your choice.
-Bootstrap v5 is installed using npm and customised by tweaking your variables in `static/sass/custom_bootstrap_vars`.
-
-You can find a list of available variables [in the bootstrap source](https://github.com/twbs/bootstrap/blob/v5.1.3/scss/_variables.scss), or get explanations on them in the [Bootstrap docs](https://getbootstrap.com/docs/5.1/customize/sass/).
-
-Bootstrap's javascript as well as its dependencies are concatenated into a single file: `static/js/vendors.js`.
+## Useful Local URLs On Startup
+- Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
+- Base API list: `localhost:8000/api/2.0/`
+- Model API list view for any model type: `localhost:8000/api/2.0/<model type here>` for example to get a list of sites models go to `localhost:8000/api/2.0/sites`
