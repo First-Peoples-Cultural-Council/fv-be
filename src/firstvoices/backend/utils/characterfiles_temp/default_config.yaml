@@ -1,0 +1,27 @@
+mappings:
+  - language_name: "{language}"
+    display_name: "{language} Preprocessor: Input to Canonical"
+    in_lang: "{code}-input"
+    out_lang: "{code}"
+    type: mapping
+    authors:
+      - Generated from FirstVoices Confusables
+    mapping: "{code}-preprocess.csv"
+    rule_ordering: 'apply-longest-first'
+    # experiment with 'as-written'
+    # sort list by length and add preprocessors to the beginning
+    case_sensitive: true
+    norm_form: "NFC"
+    prevent_feeding: true
+  - language_name: "{language}"
+    display_name: "{language} Pre-sort: Canonical to Base Characters"
+    in_lang: "{code}"
+    out_lang: "{code}-base"
+    type: mapping
+    authors:
+      - Generated from FirstVoices Alphabet
+    mapping: "{code}-base.csv"
+    rule_ordering: 'apply-longest-first'
+    case_sensitive: true
+    norm_form: "NFC"
+    prevent_feeding: true
