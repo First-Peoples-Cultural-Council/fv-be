@@ -32,6 +32,11 @@ License: Apache Software License 2.0
 1. Run the server and set it to automatically refresh on changes
    2. `npm install`
    3. `npm run dev`
+1. (Optional) To load data from fixtures, use the following command and replace the fixture_name with fixtures available.
+   1. ` python3 manage.py loaddata fixture_name`
+   2. Fixtures available:
+      3.  `partsOfSpeech_initial.json`
+
 
 ## Settings
 
