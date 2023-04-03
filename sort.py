@@ -130,7 +130,7 @@ class CustomSorter(ArbSorter):
 
 
 def nfc(string: str) -> str:
-    return unicodedata.normalize("NFC", unicodedata.normalize("NFC", string))
+    return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
 
 
 # load some sample data
@@ -159,16 +159,20 @@ confusables_source = sample_data["confusables"]
 
 # get a list of confusables mapped to their parent variant + some validation
 confusables_map = {}
-for variant, confusable_options in confusables_source.items():
-    for confusable in set([nfc(c) for c in confusable_options]):
-        if confusable in variant_chars_map:
+duplicates = []
+for variant, confusables in confusables_source.items():
+    for confusable in set([nfc(c) for c in confusables]):
+        if (confusable in variant_chars_map) or (confusable in ignorables):
             print("Skipping confusable {} -- same as a canonical character")
         elif confusable in confusables_map:
-            # FIXME: needs more tweaking, e.g. what if same confusable used 3 times
-            print("Skipping confusable {} -- listed for multiple characters")
-            del confusables_map[confusable]
+            duplicates.append(confusable)
         else:
             confusables_map[confusable] = variant
+if duplicates:
+    for duplicate_confusable in set(duplicates):
+        print("Removing confusable {} -- duplicated")
+        del confusables_map[confusable]
+
 
 # save this as a object with 2 fields, (confusable "in", variant "out")
 preprocessor_map = pd.DataFrame(
