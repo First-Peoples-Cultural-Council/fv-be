@@ -1,13 +1,12 @@
-import os
+import json
 import re
 import unicodedata
 
-# import g2p, will be used in fw-4172
-import pandas as pd
-import yaml
-
-from ..models.characters import Character, CharacterVariant
-from ..models.sites import Site
+from firstvoices.backend.models.characters import (
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 
 
 # From MTD processors
@@ -133,55 +132,26 @@ class CustomSorter(ArbSorter):
         return "".join(custom_chars)
 
 
+# TODO: Find a better place to put  the NFC function
 def nfc(string: str) -> str:
-    return unicodedata.normalize("NFC", unicodedata.normalize("NFC", string))
+    return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
 
 
-def generate_confusable_map(filepath: str) -> dict:
-    """Generates the confusable map from a provided confusables file."""
-    # TODO: This is temporary to get confusables working,
-    #  ideally we will store confusables either in the database or in site-specific files.
-    #  Maybe we should return to the idea of a confusable model, and pass the confusables like characters/variants?
+class SiteG2PMappingGenerator:
+    """Generates the appropriate site mappings for a given site"""
 
-    df = pd.read_csv(filepath)
-
-    # remove unused columns
-    df = df.drop(["id", "confusable_unicode"], axis=1)
-
-    # remove rows with null confusable_char values
-    df = df.dropna(subset=["confusable_char"])
-
-    # group the confusable characters by their label
-    groups = df.groupby("label")["confusable_char"].apply(
-        lambda x: [s.split(",") for s in x]
-    )
-
-    # flatten the list of lists
-    groups = groups.apply(lambda x: [item for sublist in x for item in sublist])
-
-    # convert the groups into a dictionary
-    confusables_dict = groups.to_dict()
-
-    return confusables_dict
-
-
-class CharacterMappingFileGenerator:
-    """Generates the appropriate site mapping files for a given language."""
-
-    def __init__(self):
-        self.default_yaml_location = "characterfiles_temp/default_config.yaml"
-        self.confusables_location = "characterfiles_temp/all_characters_confusables.csv"
-
-    def generate_preprocess_csv(
-        self,
-        base_chars: list[Character],
+    @staticmethod
+    def generate_preprocess_map(
+        base_characters: list[Character],
         variants: list[CharacterVariant],
-        site_config: str,
+        confusable_chars: dict[str, list[str]],
+        ignored_chars: list[IgnoredCharacter],
+        site_config_yaml: str,
     ):
-        """Generates the confusable to canonical g2p mapping csv file."""
+        """Generates the confusable to canonical g2p mapping."""
 
         base_character_info = [
-            {"title": char.title, "order": char.sort_order} for char in base_chars
+            {"title": char.title, "order": char.sort_order} for char in base_characters
         ]
         variant_character_map = {}
 
@@ -192,50 +162,40 @@ class CharacterMappingFileGenerator:
         variant_character_map.update(
             {char["title"]: char["title"] for char in base_character_info}
         )
-        # TODO: Temporary, see generate_confusable_map comments
-        confusables = generate_confusable_map(self.confusables_location)
 
-        # TODO: Logging rather than print statements
+        ignorables = [char.title for char in ignored_chars]
+        confusables_source = confusable_chars
+
+        # get a list of confusables mapped to their parent variant + some validation
         confusables_map = {}
-        for variant, confusable_options in confusables.items():
-            for confusable in {nfc(c) for c in confusable_options}:
-                if confusable in variant_character_map:
+        duplicates = []
+        for variant, confusables in confusables_source.items():
+            for confusable in {nfc(c) for c in confusables}:
+                if (confusable in variant_character_map) or (confusable in ignorables):
                     print("Skipping confusable {} -- same as a canonical character")
                 elif confusable in confusables_map:
-                    # FIXME: needs more tweaking, e.g. what if same confusable used 3 times
-                    print("Skipping confusable {} -- listed for multiple characters")
-                    del confusables_map[confusable]
+                    duplicates.append(confusable)
                 else:
                     confusables_map[confusable] = variant
-                    print(f"Adding confusable {confusable} for {variant}")
+        if duplicates:
+            for duplicate_confusable in set(duplicates):
+                print("Removing confusable {} -- duplicated")
+                del confusables_map[confusable]
 
-        # Make dataframe and save to csv
-        preprocessor_map = pd.DataFrame(
+        preprocessor_map = json.dumps(
             [
                 {"in": confusable, "out": canonical}
                 for confusable, canonical in confusables_map.items()
-            ]
+            ],
+            ensure_ascii=False,
         )
 
-        # Find preprocess settings
-        for mapping in site_config["mappings"]:
-            if mapping["in_lang"].endswith("-input"):
-                preprocess_settings = mapping
-            else:
-                # Error handling
-                print("No appropriate mapping found in site config")
+        return preprocessor_map
 
-        csv_path = os.path.join("/characterfiles_temp", preprocess_settings["mapping"])
-
-        preprocessor_map.to_csv(csv_path, index=False, header=False)
-
-        return csv_path
-
-    def generate_presort_csv(
-        self,
+    @staticmethod
+    def generate_presort_map(
         base_chars: list[Character],
         variants: list[CharacterVariant],
-        site_config: str,
     ):
         """Generates the canonical to base g2p mapping csv file."""
 
@@ -250,37 +210,12 @@ class CharacterMappingFileGenerator:
             {char["title"]: char["title"] for char in base_character_info}
         )
 
-        presorter_map = pd.DataFrame(
+        presorter_map = json.dumps(
             [
                 {"in": variant, "out": base}
                 for variant, base in variant_character_map.items()
-            ]
+            ],
+            ensure_ascii=False,
         )
 
-        # Find presort settings
-        for mapping in site_config["mappings"]:
-            if mapping["out_lang"].endswith("-base"):
-                presort_settings = mapping
-            else:
-                # Error handling
-                print("No appropriate mapping found in site config")
-
-        csv_path = os.path.join("/characterfiles_temp", presort_settings["mapping"])
-
-        presorter_map.to_csv(csv_path, index=False, header=False)
-
-        return csv_path
-
-    def get_site_yaml_config(self, site: Site) -> str:
-        """Generates the site-specific yaml config file using a yaml template."""
-
-        site_name = f"FV {site.title}"
-        site_code = f"fv-{site.slug}"
-
-        with open(os.path.join(self.default_yaml_location)) as f:
-            default_config = f.read()
-
-        site_config = default_config.format(language=site_name, code=site_code)
-        site_config = yaml.safe_load(site_config)
-
-        return site_config
+        return presorter_map

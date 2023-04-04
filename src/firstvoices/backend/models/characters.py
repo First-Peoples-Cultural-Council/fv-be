@@ -1,3 +1,6 @@
+import os
+
+import yaml
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -143,21 +146,43 @@ class IgnoredCharacter(BaseSiteContentModel):
         return self.title
 
 
-# See fw-4172: AlphabetMapper model implementation once g2p work has been completed
-# class AlphabetMapper(BaseSiteContentModel):
-#     """
-#     Represents a private table holding the g2p mappings and configuration for a site.
-#     """
-#
-#     class Meta:
-#         verbose_name = _("alphabet mapper")
-#         verbose_name_plural = _("alphabet mappers")
-#
-#     # See fw-4172: Once file storage is configured, enable these FileFields / change to proper paths
-#     # alphabet_mapper is a placeholder for now.
-#     # input_to_canonical = models.FileField(upload_to="alphabet_mapper")
-#     # canonical_to_base = models.FileField(upload_to="alphabet_mapper")
-#     # g2p_config = models.FileField(upload_to="alphabet_mapper")
-#
-#     def __str__(self):
-#         return self.id
+class ConfusableMapper(BaseSiteContentModel):
+    """
+    Represents a private table holding the confusable g2p mapping and configuration for a site.
+    """
+
+    class Meta:
+        verbose_name = _("confusable mapper")
+        verbose_name_plural = _("confusable mappers")
+
+    # from fv-alphabet:confusable_characters
+    # JSON representation of a g2p mapping from confusable characters to canonical characters
+    input_to_canonical_map = models.JSONField()
+    # TODO: Possibly write a custom field that takes YAML here
+    g2p_config_yaml = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Confusable mapper for {self.site}"
+
+    def save(self, *args, **kwargs):
+        self.__setattr__("g2p_config_yaml", yaml.dump(self.generate_g2p_config()))
+        super().save(*args, **kwargs)
+
+    def generate_g2p_config(self):
+        """Generates the site-specific yaml config file using a yaml template."""
+
+        site_name = f"FV {self.site.title}"
+        site_code = f"fv-{self.site.slug}"
+
+        # TODO: default_config yaml storage location is temporary
+        default_yaml_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../utils/characterfiles/default_config.yaml",
+        )
+        with open(default_yaml_path) as f:
+            default_config = f.read()
+
+        site_config = default_config.format(language=site_name, code=site_code)
+        site_config = yaml.safe_load(site_config)
+
+        return site_config

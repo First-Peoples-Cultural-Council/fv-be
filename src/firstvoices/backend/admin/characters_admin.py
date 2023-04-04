@@ -3,6 +3,7 @@ from django.contrib import admin
 from firstvoices.backend.models.characters import (
     Character,
     CharacterVariant,
+    ConfusableMapper,
     IgnoredCharacter,
 )
 from firstvoices.backend.models.dictionary import DictionaryEntry
@@ -65,6 +66,18 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
     fields = ("title", "site")
     list_display = ("title", "site") + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
+
+
+@admin.register(ConfusableMapper)
+class ConfusableMapperAdmin(BaseSiteContentAdmin):
+    fields = ("site", "input_to_canonical_map", "g2p_config_yaml")
+    # TODO: g2p_config_yaml is currently read only but could possibly be editable?
+    readonly_fields = ("g2p_config_yaml",)
+    list_display = (
+        "site",
+        "input_to_canonical_map",
+        "g2p_config_yaml",
+    ) + BaseSiteContentAdmin.list_display
 
 
 class CharacterInline(BaseInlineAdmin):

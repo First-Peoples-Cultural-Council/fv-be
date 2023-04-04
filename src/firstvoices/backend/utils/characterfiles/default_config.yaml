@@ -3,7 +3,7 @@ mappings:
     display_name: "{language} Preprocessor: Input to Canonical"
     in_lang: "{code}-input"
     out_lang: "{code}"
-    type: mapping 
+    type: mapping
     authors:
       - Generated from FirstVoices Confusables
     rule_ordering: 'apply-longest-first'
@@ -16,7 +16,7 @@ mappings:
     display_name: "{language} Pre-sort: Canonical to Base Characters"
     in_lang: "{code}"
     out_lang: "{code}-base"
-    type: mapping 
+    type: mapping
     authors:
       - Generated from FirstVoices Alphabet
     rule_ordering: 'apply-longest-first'
