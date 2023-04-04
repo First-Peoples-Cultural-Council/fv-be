@@ -20,6 +20,7 @@ class LanguageFamily(BaseModel):
     class Meta:
         verbose_name = _("language family")
         verbose_name_plural = _("language families")
+        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,
@@ -48,6 +49,7 @@ class Language(BaseModel):
     class Meta:
         verbose_name = _("language")
         verbose_name_plural = _("languages")
+        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,
@@ -62,7 +64,9 @@ class Language(BaseModel):
     alternate_names = models.CharField(max_length=200, blank=True)
 
     # from fva:family
-    language_family = models.ForeignKey(LanguageFamily, on_delete=models.PROTECT)
+    language_family = models.ForeignKey(
+        LanguageFamily, on_delete=models.PROTECT, related_name="languages"
+    )
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
@@ -83,6 +87,7 @@ class Site(BaseModel):
     class Meta:
         verbose_name = _("site")
         verbose_name_plural = _("sites")
+        ordering = ["title"]
         rules_permissions = {
             "view": predicates.can_view_site_model,
             "add": predicates.is_superadmin,
@@ -104,7 +109,7 @@ class Site(BaseModel):
 
     # from fva:language
     language = models.ForeignKey(
-        Language, null=True, blank=True, on_delete=models.SET_NULL
+        Language, null=True, blank=True, on_delete=models.SET_NULL, related_name="sites"
     )
 
     # from state (will have to be translated from existing states to new visibilities)
@@ -137,9 +142,7 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    site = models.ForeignKey(
-        Site, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s"
-    )
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="%(class)s")
 
 
 class BaseControlledSiteContentModel(BaseSiteContentModel):
@@ -213,9 +216,7 @@ class SiteMenu(BaseModel):
     """
 
     json = models.JSONField()
-    site = models.OneToOneField(
-        Site, on_delete=models.CASCADE, related_name="site_menu"
-    )
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="menu")
 
     class Meta:
         verbose_name = _("site menu")
