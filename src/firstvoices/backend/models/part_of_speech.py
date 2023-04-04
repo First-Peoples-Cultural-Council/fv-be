@@ -1,6 +1,9 @@
+import rules
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
+
+from firstvoices.backend import predicates
 
 # FirstVoices
 from .base import BaseModel
@@ -20,6 +23,12 @@ class PartOfSpeech(BaseModel):
     class Meta:
         verbose_name = _("PartOfSpeech")
         verbose_name_plural = _("PartsOfSpeech")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return self.title

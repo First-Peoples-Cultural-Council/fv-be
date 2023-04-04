@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 
-from firstvoices.backend.serializers import Site, SiteSerializer
+from firstvoices.backend.serializers.sites_serializers import Site, SiteSerializer
 from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
 
 

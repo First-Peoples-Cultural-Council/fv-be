@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models.sites import Site
+from firstvoices.backend.models.sites import Site
 
 
 class SiteSerializer(serializers.ModelSerializer):
