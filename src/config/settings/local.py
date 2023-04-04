@@ -22,6 +22,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_RENDERER_CLASSES": (
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     ),
     # these authentication classes are for local only
     "DEFAULT_AUTHENTICATION_CLASSES": (
