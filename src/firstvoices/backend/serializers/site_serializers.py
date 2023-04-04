@@ -14,6 +14,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name="api:site-detail", lookup_field="slug"
     )
+    language = serializers.StringRelatedField()
 
     class Meta:
         model = Site
@@ -21,6 +22,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
             "id",
             "title",
             "slug",
+            "language",
             "visibility",
             "url",
         )
@@ -41,10 +43,9 @@ class LinkedTitleLanguageSerializer(serializers.HyperlinkedModelSerializer):
 
 class SiteDetailSerializer(SiteSummarySerializer):
     """
-    Serializes details about a site object, including access-controlled related information.
+    Serializes basic details about a site object, including access-controlled related information.
     """
 
-    language = LinkedTitleLanguageSerializer()
     features = FeatureFlagSerializer(source="sitefeature", many=True)
     menu = serializers.SerializerMethodField()
 
@@ -56,22 +57,4 @@ class SiteDetailSerializer(SiteSummarySerializer):
         return default_menu[0].json if len(default_menu) > 0 else None
 
     class Meta(SiteSummarySerializer.Meta):
-        fields = SiteSummarySerializer.Meta.fields + ("language", "menu", "features")
-
-
-class LanguageSerializer(serializers.HyperlinkedModelSerializer):
-    language_family = serializers.StringRelatedField()
-    sites = SiteSummarySerializer(many=True)
-    url = serializers.HyperlinkedIdentityField(view_name="api:language-detail")
-
-    class Meta:
-        model = Language
-        fields = [
-            "id",
-            "title",
-            "url",
-            "alternate_names",
-            "language_code",
-            "language_family",
-            "sites",
-        ]
+        fields = SiteSummarySerializer.Meta.fields + ("menu", "features")

@@ -27,3 +27,19 @@ def get_app_role(user):
         return -1
 
     return user.app_role.role if hasattr(user, "app_role") else -1
+
+
+def filter_by_viewable(user, queryset):
+    """
+    Returns a new queryset containing items from queryset that the user has permission to view
+    """
+
+    # see fw-4255-- we should do this via a query filter rather than post-processing the entire table
+    allowed_ids = [
+        obj.id for obj in queryset if user.has_perm(obj.get_perm("view"), obj)
+    ]
+
+    if len(allowed_ids) < queryset.count():
+        return queryset.filter(id__in=allowed_ids)
+    else:
+        return queryset.all()

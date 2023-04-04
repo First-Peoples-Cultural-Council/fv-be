@@ -3,9 +3,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
-from firstvoices.backend.models.app import AppMembership
+from firstvoices.backend.models.app import AppJson, AppMembership
 from firstvoices.backend.models.dictionary import DictionaryEntry
-from firstvoices.backend.models.sites import Membership, Site, SiteFeature
+from firstvoices.backend.models.sites import (
+    Language,
+    LanguageFamily,
+    Membership,
+    Site,
+    SiteFeature,
+    SiteMenu,
+)
 
 
 class SiteFactory(DjangoModelFactory):
@@ -48,14 +55,18 @@ class AppMembershipFactory(DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
 
 
-class UncontrolledSiteContentFactory(DjangoModelFactory):
+class SiteFeatureFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
-        # use any concrete model that inherits from BaseSiteContentModel
         model = SiteFeature
 
     key = factory.Sequence(lambda n: "Uncontrolled content %03d" % n)
+
+
+class UncontrolledSiteContentFactory(SiteFeatureFactory):
+    # use any concrete model that inherits from BaseSiteContentModel
+    pass
 
 
 class ControlledSiteContentFactory(DjangoModelFactory):
@@ -66,6 +77,33 @@ class ControlledSiteContentFactory(DjangoModelFactory):
         model = DictionaryEntry
 
     title = factory.Sequence(lambda n: "Controlled content %03d" % n)
+
+
+class LanguageFamilyFactory(DjangoModelFactory):
+    class Meta:
+        model = LanguageFamily
+
+    title = factory.Sequence(lambda n: "Language Family %03d" % n)
+
+
+class LanguageFactory(DjangoModelFactory):
+    class Meta:
+        model = Language
+
+    title = factory.Sequence(lambda n: "Language %03d" % n)
+    language_family = factory.SubFactory(LanguageFamilyFactory)
+
+
+class SiteMenuFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = SiteMenu
+
+
+class AppJsonFactory(DjangoModelFactory):
+    class Meta:
+        model = AppJson
 
 
 def get_anonymous_user():

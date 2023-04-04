@@ -76,12 +76,12 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "webpack_loader",
+    "rules.apps.AutodiscoverRulesConfig",
 ]
 
 LOCAL_APPS = [
     "firstvoices.users",
     "firstvoices.backend",
-    "rules.apps.AutodiscoverRulesConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -97,7 +97,6 @@ MIGRATION_MODULES = {"sites": "firstvoices.contrib.sites.migrations"}
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 AUTH_USER_MODEL = "users.User"
@@ -256,6 +255,13 @@ LOGGING = {
         }
     },
     "root": {"level": "INFO", "handlers": ["console"]},
+    # "loggers": {
+    #     "rules": {
+    #         "handlers": ["console"],
+    #         "level": "DEBUG",
+    #         "propagate": True,
+    #     },
+    # },
 }
 
 # django-allauth
