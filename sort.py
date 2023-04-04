@@ -170,7 +170,7 @@ for variant, confusables in confusables_source.items():
 if duplicates:
     for duplicate_confusable in set(duplicates):
         print("Removing confusable {} -- duplicated")
-        del confusables_map[confusable]
+        del confusables_map[duplicate_confusable]
 
 
 # save input-canonical and canonical-base mappers as text
