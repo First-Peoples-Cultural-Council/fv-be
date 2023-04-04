@@ -1,6 +1,6 @@
 import pytest
 
-from firstvoices.backend.models.constants import Role, Visibility
+from firstvoices.backend.models.constants import AppRole, Role, Visibility
 from firstvoices.backend.predicates import view
 from firstvoices.backend.tests.factories import (
     ControlledSiteContentFactory,
@@ -9,6 +9,7 @@ from firstvoices.backend.tests.factories import (
     UncontrolledSiteContentFactory,
     UserFactory,
     get_anonymous_user,
+    get_app_admin,
     get_non_member_user,
     get_site_with_member,
 )
@@ -158,6 +159,26 @@ class TestIsVisibleObject:
         obj = ControlledSiteContentFactory.build(site=site2, visibility=obj_visibility)
         assert not view.is_visible_object(user, obj)
 
+    @pytest.mark.parametrize(
+        "site_visibility",
+        [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM],
+    )
+    @pytest.mark.parametrize(
+        "obj_visibility",
+        [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM],
+    )
+    @pytest.mark.parametrize(
+        "role",
+        [AppRole.STAFF, AppRole.SUPERADMIN],
+    )
+    @pytest.mark.django_db
+    def test_app_admins_see_all_objects(self, site_visibility, obj_visibility, role):
+        user = get_app_admin(role)
+        site = SiteFactory.create(visibility=site_visibility)
+        obj = ControlledSiteContentFactory.build(site=site, visibility=obj_visibility)
+
+        assert view.is_visible_object(user, obj)
+
 
 class TestHasVisibleSite:
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
@@ -239,3 +260,19 @@ class TestHasVisibleSite:
         site2 = SiteFactory.create(visibility=site_visibility)
         obj = UncontrolledSiteContentFactory.build(site=site2)
         assert not view.has_visible_site(user, obj)
+
+    @pytest.mark.parametrize(
+        "site_visibility",
+        [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM],
+    )
+    @pytest.mark.parametrize(
+        "role",
+        [AppRole.STAFF, AppRole.SUPERADMIN],
+    )
+    @pytest.mark.django_db
+    def test_app_admins_see_all_sites(self, site_visibility, role):
+        user = get_app_admin(role)
+        site = SiteFactory.create(visibility=site_visibility)
+        obj = UncontrolledSiteContentFactory.build(site=site)
+
+        assert view.has_visible_site(user, obj)

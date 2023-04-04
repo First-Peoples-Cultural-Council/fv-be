@@ -68,6 +68,7 @@ target/
 .venv
 venv/
 ENV/
+.envrc
 
 # Rope project settings
 .ropeproject
@@ -151,7 +152,7 @@ typings/
 
 
 ### VisualStudioCode template
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json

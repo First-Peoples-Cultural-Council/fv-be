@@ -1,6 +1,6 @@
 import pytest
 
-from firstvoices.backend.models.constants import Role, Visibility
+from firstvoices.backend.models.constants import AppRole, Role, Visibility
 from firstvoices.backend.predicates import base
 from firstvoices.backend.tests.factories import (
     AnonymousUserFactory,
@@ -9,6 +9,7 @@ from firstvoices.backend.tests.factories import (
     SiteFactory,
     UncontrolledSiteContentFactory,
     UserFactory,
+    get_app_admin,
 )
 
 
@@ -81,7 +82,7 @@ class TestBaseSiteVisibilityPredicates:
         assert base.has_team_site(None, obj)
 
 
-class TestBaseMemberRolePredicates:
+class TestBaseSiteRolePredicates:
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
@@ -169,26 +170,38 @@ class TestBaseMemberRolePredicates:
         obj = ControlledSiteContentFactory.build(site=site)
         assert predicate(user, obj) is False
 
+
+class TestBaseAppRolePredicates:
     @pytest.mark.django_db
-    @pytest.mark.parametrize("value", [(True, False), (False, True), (True, True)])
-    def test_is_at_least_staff_admin_true(self, value):
-        user = UserFactory.create(id=1, is_staff=value[0], is_superuser=value[1])
-        assert base.is_at_least_staff_admin(user, None) is True
+    @pytest.mark.parametrize("role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    def test_is_at_least_staff_true(self, role):
+        user = get_app_admin(role)
+        obj = SiteFactory.create(id=1)
+        assert base.is_at_least_staff_admin(user, obj)
 
     @pytest.mark.django_db
-    def test_is_at_least_staff_admin_false(self):
-        user = UserFactory.create(id=1, is_staff=False, is_superuser=False)
-        assert base.is_at_least_staff_admin(user, None) is False
+    def test_is_at_least_staff_false(self):
+        user = UserFactory.create()
+        obj = SiteFactory.create()
+        assert not base.is_at_least_staff_admin(user, obj)
 
     @pytest.mark.django_db
     def test_is_superadmin_true(self):
-        user = UserFactory.create(id=1, is_superuser=True)
-        assert base.is_superadmin(user, None) is True
+        user = get_app_admin(AppRole.SUPERADMIN)
+        obj = SiteFactory.create()
+        assert base.is_superadmin(user, obj)
+
+    @pytest.mark.django_db
+    def test_is_superadmin_wrong_role(self):
+        user = get_app_admin(AppRole.STAFF)
+        obj = SiteFactory.create(id=1)
+        assert not base.is_superadmin(user, obj)
 
     @pytest.mark.django_db
     def test_is_superadmin_false(self):
-        user = UserFactory.create(id=1, is_superuser=False)
-        assert base.is_superadmin(user, None) is False
+        user = UserFactory.create()
+        obj = SiteFactory.create()
+        assert not base.is_superadmin(user, obj)
 
 
 class TestBaseObjectAccessPredicates:

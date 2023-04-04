@@ -9,16 +9,9 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     """
 
     def list(self, request, *args, **kwargs):
-        # Get the list of model UUIDs that the user has view permissions for
-        models_uuid_list = [
-            model.id
-            for model in self.get_queryset()
-            if self.request.user.has_perm(
-                f"app.view_{model.__class__.__name__.lower()}", model
-            )
-        ]
-        # Create a queryset filtered by the UUID list
-        queryset = self.queryset.model.objects.filter(id__in=models_uuid_list)
+        # Get the model objects a user has view permissions on.
+        queryset = self.queryset.model.objects.get_viewable_for_user(request.user)
+
         # Serialize and return the data
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)

@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
+from firstvoices.backend.models.app import AppMembership
 from firstvoices.backend.models.dictionary import DictionaryEntry
 from firstvoices.backend.models.sites import Membership, Site, SiteFeature
 
@@ -40,6 +41,13 @@ class MembershipFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
 
 
+class AppMembershipFactory(DjangoModelFactory):
+    class Meta:
+        model = AppMembership
+
+    user = factory.SubFactory(UserFactory)
+
+
 class UncontrolledSiteContentFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
 
@@ -73,3 +81,9 @@ def get_site_with_member(site_visibility, user_role):
     site = SiteFactory.create(visibility=site_visibility)
     MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user
+
+
+def get_app_admin(role):
+    user = UserFactory.create()
+    AppMembershipFactory.create(user=user, role=role)
+    return user

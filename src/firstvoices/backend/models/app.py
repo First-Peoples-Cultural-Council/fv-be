@@ -1,7 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
 from firstvoices.backend.models.base import BaseModel
+
+from .. import predicates
+from .constants import AppRole
 
 
 class AppJson(BaseModel):
@@ -18,3 +22,30 @@ class AppJson(BaseModel):
 
     def __str__(self):
         return self.key
+
+
+class AppMembership(BaseModel):
+    """
+    Represents app-level memberships that apply across all sites, such as staff admins.
+    """
+
+    # from user
+    user = models.OneToOneField(
+        get_user_model(), on_delete=models.CASCADE, related_name="app_role"
+    )
+
+    # from group memberships
+    role = models.IntegerField(choices=AppRole.choices, default=AppRole.STAFF)
+
+    class Meta:
+        verbose_name = _("app-level membership")
+        verbose_name_plural = _("app-level memberships")
+        rules_permissions = {
+            "view": predicates.is_at_least_staff_admin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
+    def __str__(self):
+        return f"{self.user} ({AppRole.labels[self.role]})"
