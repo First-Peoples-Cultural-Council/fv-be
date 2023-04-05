@@ -158,6 +158,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
     def save(self, *args, **kwargs):
         self.clean_confusables()
+        self.set_custom_order()
         super().save(*args, **kwargs)
 
     def clean_confusables(self):
@@ -165,6 +166,12 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         confusables_transducer = mapper.preprocess_transducer if mapper else {}
         cleaned_title = confusables_transducer(self.title).output_string
         self.title = cleaned_title
+
+    def set_custom_order(self):
+        mapper = AlphabetMapper.objects.filter(site_id=self.site_id).first()
+        if mapper:
+            custom_order_str = mapper.custom_order(self.title)
+        self.custom_order = custom_order_str
 
 
 class DictionaryEntryLink(models.Model):

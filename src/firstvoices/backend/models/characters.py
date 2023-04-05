@@ -197,10 +197,11 @@ class AlphabetMapper(BaseSiteContentModel):
             {"title": char.title, "order": char.sort_order}
             for char in self.base_characters
         ]
-        variant_character_map = [
-            {variant.title: variant.base_character.title}
+
+        variant_character_map = {
+            variant.title: variant.base_character.title
             for variant in self.variant_characters
-        ]
+        }
 
         variant_character_map.update(
             {char["title"]: char["title"] for char in base_character_info}
