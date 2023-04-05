@@ -5,6 +5,7 @@ import yaml
 from django.db import models
 from django.utils.translation import gettext as _
 
+from ..utils.CharacterSortOrderHelpers import CustomSorter
 from .app import AppJson
 from .constants import MAX_CHARACTER_LENGTH
 from .sites import BaseSiteContentModel
@@ -104,19 +105,44 @@ class IgnoredCharacter(BaseSiteContentModel):
 
 class AlphabetMapper(BaseSiteContentModel):
     """
-    Represents a private table holding the confusable g2p mapping and configuration for a site.
+    Hosts text processors and sorters for a site's custom alphabet.
+    Must be re-created upon changing any character models in an alphabet.
     """
 
     class Meta:
         verbose_name = _("alphabet mapper")
         verbose_name_plural = _("alphabet mappers")
 
-    # from fv-alphabet:confusable_characters
+    # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
     input_to_canonical_map = models.JSONField()
 
     @property
+    def base_characters(self):
+        """
+        Characters for the site in sort order.
+        """
+        return Character.objects.filter(site=self.site).order_by("sort_order")
+
+    @property
+    def variant_characters(self):
+        """
+        All variant characters for the site.
+        """
+        return CharacterVariant.objects.filter(site=self.site)
+
+    @property
+    def ignorable_characters(self):
+        """
+        Ignorable characters for the site.
+        """
+        return IgnoredCharacter.objects.filter(site=self.site)
+
+    @property
     def g2p_config(self):
+        """
+        Returns a site-specific G2P configuration and related variables from the default template.
+        """
         site_name = f"FV {self.site.title}"
         site_code = f"fv-{self.site.slug}"
 
@@ -124,9 +150,7 @@ class AlphabetMapper(BaseSiteContentModel):
         default_config_str = yaml.dump(
             AppJson.objects.get(key="default_g2p_config").json
         )
-        # print("default_config_str:", default_config_str)
         site_config_str = default_config_str.format(language=site_name, code=site_code)
-        # print(site_config_str)
         site_config = yaml.safe_load(site_config_str)
 
         g2p_config = {
@@ -139,6 +163,9 @@ class AlphabetMapper(BaseSiteContentModel):
 
     @property
     def preprocess_transducer(self):
+        """
+        Returns an input-to-canonical G2P transducer.
+        """
         site_config = self.g2p_config["site_config"]
         site_code = self.g2p_config["site_code"]
         # identify mapper for preprocess transducer
@@ -163,18 +190,16 @@ class AlphabetMapper(BaseSiteContentModel):
 
     @property
     def presort_transducer(self):
-        base_characters = Character.objects.filter(site=self.site)
-        variant_characters = CharacterVariant.objects.filter(site=self.site)
-
         site_config = self.g2p_config["site_config"]
         site_code = self.g2p_config["site_code"]
 
         base_character_info = [
-            {"title": char.title, "order": char.sort_order} for char in base_characters
+            {"title": char.title, "order": char.sort_order}
+            for char in self.base_characters
         ]
         variant_character_map = [
             {variant.title: variant.base_character.title}
-            for variant in variant_characters
+            for variant in self.variant_characters
         ]
 
         variant_character_map.update(
@@ -211,3 +236,22 @@ class AlphabetMapper(BaseSiteContentModel):
 
     def __str__(self):
         return f"Confusable mapper for {self.site}"
+
+    @property
+    def sorter(self) -> CustomSorter:
+        """
+        Returns a sorter object which can be called to provide custom sort values based on the site alphabet.
+        """
+
+        return CustomSorter(
+            order=[char.title for char in self.base_characters],
+            ignorable=[char.title for char in self.ignorable_characters],
+        )
+
+    def custom_order(self, text: str) -> str:
+        """
+        Convert a string to a custom-order string which follows the site custom alphabet order.
+        Sort is insensitive to character variants (such as uppercase), and ignores ignorable characters.
+        """
+        text = self.presort_transducer(text).output_string
+        return self.sorter.word_as_sort_string(text)
