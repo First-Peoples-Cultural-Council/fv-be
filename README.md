@@ -62,6 +62,7 @@ ___
     - `python manage.py loaddata fixture_name`
     - Fixtures available:
       - `partsOfSpeech_initial.json`
+      - `default_g2p_config.json`
 ___
 
 ## IDE Linting and Formatting (Recommended)

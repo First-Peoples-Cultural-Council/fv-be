@@ -67,6 +67,7 @@ class BaseModel(RulesModel):
 
 # method to add last_modified and created fields if missing in the data, helpful for fixtures
 @receiver(pre_save, sender="backend.PartOfSpeech")
+@receiver(pre_save, sender="backend.appjson")
 def pre_save_for_fixtures(sender, instance, **kwargs):
     if kwargs["raw"]:
         if not instance.created:
