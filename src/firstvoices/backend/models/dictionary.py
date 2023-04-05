@@ -3,8 +3,9 @@ from django.utils.translation import gettext as _
 
 from .base import BaseModel
 from .category import Category
+from .characters import AlphabetMapper, Character
 from .part_of_speech import PartOfSpeech
-from .sites import BaseControlledSiteContentModel
+from .sites import BaseControlledSiteContentModel, BaseSiteContentModel
 
 
 class BaseDictionaryContentModel(BaseModel):
@@ -140,12 +141,30 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="incoming_related_dictionary_entries",
     )
 
+    # from fvcharacter:related_words
+    related_characters = models.ManyToManyField(
+        Character,
+        blank=True,
+        through="DictionaryEntryRelatedCharacter",
+        related_name="dictionary_entries",
+    )
+
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        self.clean_confusables()
+        super().save(*args, **kwargs)
+
+    def clean_confusables(self):
+        mapper = AlphabetMapper.objects.filter(site_id=self.site_id).first()
+        confusables_transducer = mapper.preprocess_transducer if mapper else {}
+        cleaned_title = confusables_transducer(self.title).output_string
+        self.title = cleaned_title
 
 
 class DictionaryEntryLink(models.Model):
@@ -155,3 +174,39 @@ class DictionaryEntryLink(models.Model):
         on_delete=models.CASCADE,
         related_name="incoming_related_entries",
     )
+
+
+class DictionaryEntryRelatedCharacter(BaseSiteContentModel):
+    """
+    Represents a link between a dictionary entry and  a character.
+    """
+
+    class Meta:
+        verbose_name = _("character related dictionary entry")
+        verbose_name_plural = _("character related dictionary entries")
+
+    character = models.ForeignKey(
+        Character,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="dictionary_entry_links",
+    )
+
+    dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="character_links",
+    )
+
+    def __str__(self):
+        return f"{self.character} - {self.dictionary_entry}"
+
+    def save(self, *args, **kwargs):
+        self.set_site_id()
+        super().save(*args, **kwargs)
+
+    def set_site_id(self):
+        self.site = self.character.site

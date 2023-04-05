@@ -1,9 +1,9 @@
 from django.contrib import admin
 
 from firstvoices.backend.models.characters import (
+    AlphabetMapper,
     Character,
     CharacterVariant,
-    ConfusableMapper,
     IgnoredCharacter,
 )
 from firstvoices.backend.models.dictionary import DictionaryEntry
@@ -12,7 +12,7 @@ from .base_admin import BaseInlineAdmin, BaseSiteContentAdmin
 
 
 class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
-    model = Character.related_dictionary_entries.through
+    model = DictionaryEntry.related_characters.through
     fields = ("character", "dictionary_entry")
     readonly_fields = BaseInlineAdmin.readonly_fields
     can_delete = True
@@ -68,15 +68,12 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
     search_fields = ("title",)
 
 
-@admin.register(ConfusableMapper)
-class ConfusableMapperAdmin(BaseSiteContentAdmin):
-    fields = ("site", "input_to_canonical_map", "g2p_config_yaml")
-    # TODO: g2p_config_yaml is currently read only but could possibly be editable?
-    readonly_fields = ("g2p_config_yaml",)
+@admin.register(AlphabetMapper)
+class AlphabetMapperAdmin(BaseSiteContentAdmin):
+    fields = ("site", "input_to_canonical_map")
     list_display = (
         "site",
         "input_to_canonical_map",
-        "g2p_config_yaml",
     ) + BaseSiteContentAdmin.list_display
 
 

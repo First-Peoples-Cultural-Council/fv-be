@@ -1,12 +1,12 @@
-import os
+import json
 
+import g2p
 import yaml
 from django.db import models
 from django.utils.translation import gettext as _
 
-# FirstVoices
+from .app import AppJson
 from .constants import MAX_CHARACTER_LENGTH
-from .dictionary import DictionaryEntry
 from .sites import BaseSiteContentModel
 
 
@@ -43,52 +43,8 @@ class Character(BaseSiteContentModel):
     # from fv:notes
     notes = models.TextField(blank=True)
 
-    # from fvcharacter:related_words
-    related_dictionary_entries = models.ManyToManyField(
-        DictionaryEntry,
-        blank=True,
-        through="CharacterRelatedDictionaryEntry",
-        related_name="characters",
-    )
-
     def __str__(self):
         return f"{self.title} - {self.site}"
-
-
-class CharacterRelatedDictionaryEntry(BaseSiteContentModel):
-    """
-    Represents a link between a character and a dictionary entry.
-    """
-
-    class Meta:
-        verbose_name = _("character related dictionary entry")
-        verbose_name_plural = _("character related dictionary entries")
-
-    character = models.ForeignKey(
-        Character,
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="dictionary_entry_links",
-    )
-
-    dictionary_entry = models.ForeignKey(
-        DictionaryEntry,
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="character_links",
-    )
-
-    def __str__(self):
-        return f"{self.character} - {self.dictionary_entry}"
-
-    def save(self, *args, **kwargs):
-        self.set_site_id()
-        super().save(*args, **kwargs)
-
-    def set_site_id(self):
-        self.site = self.character.site
 
 
 class CharacterVariant(BaseSiteContentModel):
@@ -146,43 +102,112 @@ class IgnoredCharacter(BaseSiteContentModel):
         return self.title
 
 
-class ConfusableMapper(BaseSiteContentModel):
+class AlphabetMapper(BaseSiteContentModel):
     """
     Represents a private table holding the confusable g2p mapping and configuration for a site.
     """
 
     class Meta:
-        verbose_name = _("confusable mapper")
-        verbose_name_plural = _("confusable mappers")
+        verbose_name = _("alphabet mapper")
+        verbose_name_plural = _("alphabet mappers")
 
     # from fv-alphabet:confusable_characters
     # JSON representation of a g2p mapping from confusable characters to canonical characters
     input_to_canonical_map = models.JSONField()
-    # TODO: Possibly write a custom field that takes YAML here
-    g2p_config_yaml = models.TextField(blank=True)
 
-    def __str__(self):
-        return f"Confusable mapper for {self.site}"
-
-    def save(self, *args, **kwargs):
-        self.__setattr__("g2p_config_yaml", yaml.dump(self.generate_g2p_config()))
-        super().save(*args, **kwargs)
-
-    def generate_g2p_config(self):
-        """Generates the site-specific yaml config file using a yaml template."""
-
+    @property
+    def g2p_config(self):
         site_name = f"FV {self.site.title}"
         site_code = f"fv-{self.site.slug}"
 
-        # TODO: default_config yaml storage location is temporary
-        default_yaml_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "../utils/characterfiles/default_config.yaml",
+        # Convert from default g2p config json to site-specific yaml
+        default_config_str = yaml.dump(
+            AppJson.objects.get(key="default_g2p_config").json
         )
-        with open(default_yaml_path) as f:
-            default_config = f.read()
+        # print("default_config_str:", default_config_str)
+        site_config_str = default_config_str.format(language=site_name, code=site_code)
+        # print(site_config_str)
+        site_config = yaml.safe_load(site_config_str)
 
-        site_config = default_config.format(language=site_name, code=site_code)
-        site_config = yaml.safe_load(site_config)
+        g2p_config = {
+            "site_name": site_name,
+            "site_code": site_code,
+            "site_config": site_config,
+        }
 
-        return site_config
+        return g2p_config
+
+    @property
+    def preprocess_transducer(self):
+        site_config = self.g2p_config["site_config"]
+        site_code = self.g2p_config["site_code"]
+        # identify mapper for preprocess transducer
+        input_name = site_code + "-input"
+        canonical_name = site_code
+
+        for mapping in site_config["mappings"]:
+            if (
+                mapping["in_lang"] == input_name
+                and mapping["out_lang"] == canonical_name
+            ):
+                preprocess_settings = mapping
+            else:
+                # TODO: raise error if no mapping found
+                pass
+
+        preprocessor = g2p.Transducer(
+            g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
+        )
+
+        return preprocessor
+
+    @property
+    def presort_transducer(self):
+        base_characters = Character.objects.filter(site=self.site)
+        variant_characters = CharacterVariant.objects.filter(site=self.site)
+
+        site_config = self.g2p_config["site_config"]
+        site_code = self.g2p_config["site_code"]
+
+        base_character_info = [
+            {"title": char.title, "order": char.sort_order} for char in base_characters
+        ]
+        variant_character_map = [
+            {variant.title: variant.base_character.title}
+            for variant in variant_characters
+        ]
+
+        variant_character_map.update(
+            {char["title"]: char["title"] for char in base_character_info}
+        )
+
+        presorter_map = json.dumps(
+            [
+                {"in": variant, "out": base}
+                for variant, base in variant_character_map.items()
+            ],
+            ensure_ascii=False,
+        )
+
+        # identify mapper for presort transducer
+        canonical_name = site_code
+        output_name = site_code + "-base"
+
+        for mapping in site_config["mappings"]:
+            if (
+                mapping["in_lang"] == canonical_name
+                and mapping["out_lang"] == output_name
+            ):
+                presort_settings = mapping
+            else:
+                # TODO: raise error if no mapping found
+                pass
+
+        presorter = g2p.Transducer(
+            g2p.Mapping(**presort_settings, mapping=json.loads(presorter_map))
+        )
+
+        return presorter
+
+    def __str__(self):
+        return f"Confusable mapper for {self.site}"
