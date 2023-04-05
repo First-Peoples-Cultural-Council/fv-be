@@ -316,3 +316,5 @@ WEBPACK_LOADER = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+# Fixtures directory for initial data
+FIXTURES_DIR = APPS_DIR / "backend" / "fixtures"
