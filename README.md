@@ -52,13 +52,15 @@ ___
    - If using [direnv](https://direnv.net/)
      - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
 8. Apply migration
-   - From the root project directory: `python src/manage.py migrate`
+   - Navigate to the `src` directory: `cd src`
+   - From the `src` directory: `python manage.py migrate`
 9. Run the server and set it to automatically refresh on changes
+   - Navigate to the `src` directory if you aren't already there: `cd src`
    - `npm install`
    - `npm run dev`
 10. (Optional) To load data from fixtures, use the following command (from inside the src directory) and replace the fixture_name with fixtures available.
     - `python manage.py loaddata fixture_name`
-    - Fixtures available: 
+    - Fixtures available:
       - `partsOfSpeech_initial.json`
 ___
 
