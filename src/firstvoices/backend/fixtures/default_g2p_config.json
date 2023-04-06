@@ -4,8 +4,7 @@
     "fields": {
       "key": "default_g2p_config",
       "json": {
-        "mappings": [
-          {
+        "preprocess_config": {
             "language_name": "{language}",
             "display_name": "{language} Preprocessor: Input to Canonical",
             "in_lang": "{code}-input",
@@ -17,9 +16,10 @@
             "rule_ordering": "apply-longest-first",
             "case_sensitive": true,
             "norm_form": "NFC",
-            "prevent_feeding": true
+            "prevent_feeding": true,
+            "escape_special": true
           },
-          {
+        "presort_config": {
             "language_name": "{language}",
             "display_name": "{language} Pre-sort: Canonical to Base Characters",
             "in_lang": "{code}",
@@ -31,9 +31,9 @@
             "rule_ordering": "apply-longest-first",
             "case_sensitive": true,
             "norm_form": "NFC",
-            "prevent_feeding": true
+            "prevent_feeding": true,
+            "escape_special": true
           }
-        ]
       }
     }
   }

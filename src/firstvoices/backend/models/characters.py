@@ -1,5 +1,3 @@
-import json
-
 import g2p
 import yaml
 from django.db import models
@@ -139,9 +137,9 @@ class AlphabetMapper(BaseSiteContentModel):
         return IgnoredCharacter.objects.filter(site=self.site)
 
     @property
-    def g2p_config(self):
+    def default_g2p_config(self):
         """
-        Returns a site-specific G2P configuration and related variables from the default template.
+        Returns default G2P configurations for required mappers, customized with site name and slug.
         """
         site_name = f"FV {self.site.title}"
         site_code = f"fv-{self.site.slug}"
@@ -153,87 +151,37 @@ class AlphabetMapper(BaseSiteContentModel):
         site_config_str = default_config_str.format(language=site_name, code=site_code)
         site_config = yaml.safe_load(site_config_str)
 
-        g2p_config = {
-            "site_name": site_name,
-            "site_code": site_code,
-            "site_config": site_config,
-        }
-
-        return g2p_config
+        return site_config
 
     @property
     def preprocess_transducer(self):
         """
-        Returns an input-to-canonical G2P transducer.
+        Returns an input-to-canonical G2P transducer from stored JSON map, using default config settings.
+        Does not allow manual configuration yet.
         """
-        site_config = self.g2p_config["site_config"]
-        site_code = self.g2p_config["site_code"]
-        # identify mapper for preprocess transducer
-        input_name = site_code + "-input"
-        canonical_name = site_code
+        preprocess_settings = self.default_g2p_config["preprocess_config"]
 
-        for mapping in site_config["mappings"]:
-            if (
-                mapping["in_lang"] == input_name
-                and mapping["out_lang"] == canonical_name
-            ):
-                preprocess_settings = mapping
-            else:
-                # TODO: raise error if no mapping found
-                pass
-
-        preprocessor = g2p.Transducer(
+        return g2p.Transducer(
             g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
         )
 
-        return preprocessor
-
     @property
     def presort_transducer(self):
-        site_config = self.g2p_config["site_config"]
-        site_code = self.g2p_config["site_code"]
-
-        base_character_info = [
-            {"title": char.title, "order": char.sort_order}
-            for char in self.base_characters
+        """
+        Returns a variant-to-base G2P transducer, built from Characters and CharacterVariants.
+        """
+        base_character_map = [
+            {"in": char.title, "out": char.title} for char in self.base_characters
         ]
-
-        variant_character_map = {
-            variant.title: variant.base_character.title
+        variant_character_map = [
+            {"in": variant.title, "out": variant.base_character.title}
             for variant in self.variant_characters
-        }
+        ]
+        full_map = base_character_map + variant_character_map
 
-        variant_character_map.update(
-            {char["title"]: char["title"] for char in base_character_info}
-        )
+        presort_settings = self.default_g2p_config["presort_config"]
 
-        presorter_map = json.dumps(
-            [
-                {"in": variant, "out": base}
-                for variant, base in variant_character_map.items()
-            ],
-            ensure_ascii=False,
-        )
-
-        # identify mapper for presort transducer
-        canonical_name = site_code
-        output_name = site_code + "-base"
-
-        for mapping in site_config["mappings"]:
-            if (
-                mapping["in_lang"] == canonical_name
-                and mapping["out_lang"] == output_name
-            ):
-                presort_settings = mapping
-            else:
-                # TODO: raise error if no mapping found
-                pass
-
-        presorter = g2p.Transducer(
-            g2p.Mapping(**presort_settings, mapping=json.loads(presorter_map))
-        )
-
-        return presorter
+        return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
 
     def __str__(self):
         return f"Confusable mapper for {self.site}"
