@@ -8,7 +8,6 @@ from firstvoices.backend.serializers.dictionary_serializers import (
 from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
 
 
-# todo: Add pagination
 @extend_schema_view(
     list=extend_schema(
         description="A list of different parts-of-speech available that different words/phrases can be assigned to.",
