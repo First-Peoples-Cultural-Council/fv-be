@@ -165,6 +165,14 @@ class AlphabetMapper(BaseSiteContentModel):
             g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
         )
 
+    def clean_confusables(self, text: str) -> str:
+        """
+        Applies the mapper's confusable cleanup transducer to a string,
+        converting all instances of confusables to instances of characters or
+        variant characters.
+        """
+        return self.preprocess_transducer(text).output_string
+
     @property
     def presort_transducer(self):
         """

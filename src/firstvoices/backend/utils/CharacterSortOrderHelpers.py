@@ -108,8 +108,6 @@ class CustomSorter(ArbSorter):
             custom_char_range += supplementary_chars
 
         self.custom_order = [chr(i) for i in custom_char_range[0:alphabet_length]]
-        # print("Custom order:", self.custom_order, f"({len(self.custom_order)} chars)")
-        # Custom order: [' ', '!', '#', '$', '%'] (5 chars)
 
     def custom_sort_char(self, ord_value: int) -> str:
         """Converts a single character ord value to custom sort character equivalent"""
