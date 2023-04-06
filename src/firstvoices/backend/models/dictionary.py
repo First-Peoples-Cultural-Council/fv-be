@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
+from ..utils.CharacterSortOrderHelpers import nfc
 from .base import BaseModel
 from .category import Category
 from .characters import AlphabetMapper, Character
@@ -164,6 +165,12 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     def clean_confusables(self):
         mapper = AlphabetMapper.objects.filter(site_id=self.site_id).first()
         confusables_transducer = mapper.preprocess_transducer if mapper else {}
+
+        # strip whitespace and normalize
+        self.title = self.title.strip()
+        self.title = nfc(self.title)
+
+        # clean confusables
         cleaned_title = confusables_transducer(self.title).output_string
         self.title = cleaned_title
 

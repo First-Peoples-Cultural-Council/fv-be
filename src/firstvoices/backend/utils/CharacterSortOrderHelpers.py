@@ -45,9 +45,9 @@ class ArbSorter:
             if char in self.char_to_ord_lookup:
                 values.append(self.char_to_ord_lookup[char])
             else:
-                # OOV (can be multiple OOVs strung together) # TODO: what does this mean?
+                # OOV (can be multiple OOVs strung together)
                 for oov in char:
-                    if oov in self.ignorable:  # TODO: is this required
+                    if oov in self.ignorable:
                         continue
                     oov_index = self.oov_start + ord(oov)
                     self.char_to_ord_lookup[oov] = oov_index
@@ -125,6 +125,5 @@ class CustomSorter(ArbSorter):
         return "".join(custom_chars)
 
 
-# TODO: Find a better place to put  the NFC function
 def nfc(string: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
