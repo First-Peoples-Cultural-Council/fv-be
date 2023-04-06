@@ -11,7 +11,7 @@ else:
     router = SimpleRouter()
 
 router.register(r"sites", SiteViewSet, basename="Sites")
-router.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="PartsOfSpeech")
+router.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="parts-of-speech")
 router.register("users", UserViewSet)
 
 app_name = "api"

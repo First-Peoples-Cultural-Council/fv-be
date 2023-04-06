@@ -59,6 +59,6 @@ class PartOfSpeech(BaseModel):
         super().clean()
 
     def save(self, *args, **kwargs):
-        if not self.is_cleaned:
+        if hasattr(self, "is_cleaned") and not self.is_cleaned:
             self.full_clean()
         super().save(*args, **kwargs)
