@@ -1,14 +1,15 @@
-import re
-import unicodedata
-from typing import Optional
 import json
 import os
-import yaml
+import re
+import unicodedata
+
 import g2p
+import pandas as pd
+import yaml
 
 
 # From MTD processors
-class ArbSorter(object):
+class ArbSorter:
     """Sort entries based on alphabet. Thanks to Lingweenie: https://lingweenie.org/conlang/sort.html
 
     Given a sequence of letters (arbitrary-length Unicode strings), convert each into a numerical code.
@@ -27,7 +28,7 @@ class ArbSorter(object):
         order (list[str]): The order to sort by.
     """
 
-    def __init__(self, order: list[str], ignorable: Optional[list[str]] = None):
+    def __init__(self, order: list[str], ignorable: list[str] | None = None):
         self.ignorable = [] if ignorable is None else ignorable
         split_order = [re.escape(x) for x in sorted(order, key=len, reverse=True)]
         self.splitter = re.compile(f'({"|".join(split_order)})', re.UNICODE)
@@ -97,7 +98,7 @@ class CustomSorter(ArbSorter):
     space = " "
     out_of_vocab_flag = unicodedata.lookup("BLACK FLAG")
 
-    def __init__(self, order: list[str], ignorable: Optional[list[str]] = None):
+    def __init__(self, order: list[str], ignorable: list[str] | None = None):
         order.insert(0, self.space)
         self._init_custom_order(len(order))
 
@@ -132,8 +133,32 @@ def nfc(string: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
 
 
-# load some sample data
+def generate_confusable_map(filepath: str) -> dict:
+    """Generates the confusable map compatible with sort.py from a provided confusables file."""
 
+    df = pd.read_csv(filepath)
+
+    # remove unused columns
+    df = df.drop(["id", "confusable_unicode"], axis=1)
+
+    # remove rows with null confusable_char values
+    df = df.dropna(subset=["confusable_char"])
+
+    # group the confusable characters by their label
+    groups = df.groupby("label")["confusable_char"].apply(
+        lambda x: [s.split(",") for s in x]
+    )
+
+    # flatten the list of lists
+    groups = groups.apply(lambda x: [item for sublist in x for item in sublist])
+
+    # convert the groups into a dictionary
+    confusables_dict = groups.to_dict()
+
+    return confusables_dict
+
+
+# load some sample data
 here = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(here, "sort_sample.json")) as f:
     sample_data = json.load(f)
@@ -154,13 +179,15 @@ ignorables = sample_data["ignorables"]
 
 variant_chars_map.update({char["name"]: char["name"] for char in base_chars})
 
+# to use the master confusables list, uncomment the following line
+# confusables_source = generate_confusable_map(os.path.join(here, "all_characters_confusables.csv"))
 confusables_source = sample_data["confusables"]
 
 # get a list of confusables mapped to their parent variant + some validation
 confusables_map = {}
 duplicates = []
 for variant, confusables in confusables_source.items():
-    for confusable in set([nfc(c) for c in confusables]):
+    for confusable in {nfc(c) for c in confusables}:
         if (confusable in variant_chars_map) or (confusable in ignorables):
             print("Skipping confusable {} -- same as a canonical character")
         elif confusable in confusables_map:
@@ -234,6 +261,10 @@ sorter = CustomSorter(alphabet, ignorable=ignorables)
 # test full workflow
 
 for test_input, expected in sample_data["test_input_to_sort"].items():
+    # Strip and normalize input
+    test_input = test_input.strip()
+    test_input = nfc(test_input)
+
     saved = preprocessor(test_input).output_string
     base = presorter(saved).output_string
     custom_order = sorter.word_as_sort_string(base)
@@ -242,7 +273,5 @@ for test_input, expected in sample_data["test_input_to_sort"].items():
     output = custom_order
 
     print(output == expected, "\t\t", flow)
-
-# TODO: input should have NFC and whitespace stripping applied also
 
 # TODO: build tests from sample data
