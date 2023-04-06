@@ -5,6 +5,7 @@ from firstvoices.backend.serializers.dictionary_serializers import (
     PartOfSpeech,
     PartsOfSpeechSerializer,
 )
+from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
 
 
 # todo: Add pagination
@@ -18,7 +19,7 @@ from firstvoices.backend.serializers.dictionary_serializers import (
         responses={200: PartsOfSpeechSerializer},
     ),
 )
-class PartsOfSpeechViewSet(ModelViewSet):
+class PartsOfSpeechViewSet(FVPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
     serializer_class = PartsOfSpeechSerializer
     queryset = PartOfSpeech.objects.all()

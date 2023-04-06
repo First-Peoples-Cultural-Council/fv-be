@@ -4,12 +4,13 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from firstvoices.backend import predicates
+from firstvoices.backend.models.managers import PermissionsManager
 
 # FirstVoices
 from .base import BaseModel
 
 
-class ParentManager(models.Manager):
+class ParentManager(PermissionsManager):
     """Manager to convert foreign key relationship to natural keys for fixtures to load correctly."""
 
     def get_by_natural_key(self, title):
