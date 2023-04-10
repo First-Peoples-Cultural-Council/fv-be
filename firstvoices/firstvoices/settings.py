@@ -104,6 +104,7 @@ AUTH_USER_MODEL = 'backend.User'
 JWT = jwt.config()
 
 CORS_ALLOWED_ORIGINS = [
+	'http://localhost:3000',
 	os.getenv('ALLOWED_ORIGIN')
 ]
 
