@@ -30,6 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = [os.environ.get('HOST_HEADER'), '*.firstvoices.io', '.localhost', '127.0.0.1', '[::1]']
 
 INSTALLED_APPS = [
+	'corsheaders',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
 	'django.contrib.sessions.middleware.SessionMiddleware', # ugh. sessions. required by admin.
+	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.security.SecurityMiddleware',
 	'django.middleware.common.CommonMiddleware',
 	'django.middleware.csrf.CsrfViewMiddleware',
@@ -51,15 +53,15 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'firstvoices.urls'
 
 REST_FRAMEWORK = {
-	# 'DEFAULT_AUTHENTICATION_CLASSES': (
-	# 	'api.keycloak_authentication.UserAuthentication',),
 	'DEFAULT_PARSER_CLASSES': (
 		'djangorestframework_camel_case.parser.CamelCaseJSONParser',
 	),
 	'DEFAULT_RENDERER_CLASSES': (
 		'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
 	),
-	'DEFAULT_AUTHENTICATION_CLASSES': [],
+	'DEFAULT_AUTHENTICATION_CLASSES': [
+		'backend.jwt_auth.UserAuthentication'
+	],
 	'DEFAULT_PERMISSION_CLASSES': (
 		'rest_framework.permissions.IsAuthenticated',),
 	'UNAUTHENTICATED_USER': None
@@ -101,6 +103,10 @@ AUTH_USER_MODEL = 'backend.User'
 
 JWT = jwt.config()
 
+CORS_ALLOWED_ORIGINS = [
+	'http://localhost:3000',
+]
+
 LANGUAGE_CODE = 'en-ca'
 
 TIME_ZONE = 'America/Vancouver'
@@ -110,3 +116,5 @@ USE_I18N = True
 USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ADMIN_URL = "admin/"

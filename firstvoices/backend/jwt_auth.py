@@ -6,6 +6,8 @@ from django.conf import settings
 from rest_framework import authentication
 from rest_framework import exceptions
 
+from backend.models import User
+
 
 class UserAuthentication(authentication.BaseAuthentication):
 	"""
@@ -13,7 +15,7 @@ class UserAuthentication(authentication.BaseAuthentication):
 	"""
 
 	def refresh_jwk(self):
-		certs_response = requests.get(settings.JWT['JWKS_URI'])
+		certs_response = requests.get(settings.JWT['JWKS_URL'])
 		jwks = json.loads(certs_response.text)
 		self.jwks = jwks
 
@@ -46,7 +48,7 @@ class UserAuthentication(authentication.BaseAuthentication):
 
 		token_validation_errors = []
 
-		jwks_client = jwt.PyJWKClient(settings.JWT['JWKS_URI'])
+		jwks_client = jwt.PyJWKClient(settings.JWT['JWKS_URL'])
 
 		try:
 			signing_key = jwks_client.get_signing_key_from_jwt(token)
