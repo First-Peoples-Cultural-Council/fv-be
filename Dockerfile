@@ -2,6 +2,7 @@ FROM python:3.11.2-alpine
 
 EXPOSE 8000
 WORKDIR /app
+RUN apk add build-base
 RUN pip3 install gunicorn
 
 COPY requirements.txt /app
