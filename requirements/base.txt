@@ -1,0 +1,28 @@
+pytz==2022.7.1  # https://github.com/stub42/pytz
+python-dotenv==1.0.0
+python-slugify==8.0.1  # https://github.com/un33k/python-slugify
+Pillow==9.4.0  # https://github.com/python-pillow/Pillow
+argon2-cffi==21.3.0  # https://github.com/hynek/argon2_cffi
+asgiref==3.6.0
+redis==4.5.1  # https://github.com/redis/redis-py
+sqlparse==0.4.3
+hiredis==2.2.2  # https://github.com/redis/hiredis-py
+
+# Django
+# ------------------------------------------------------------------------------
+django==4.1.7  # pyup: < 4.1  # https://www.djangoproject.com/
+django-environ==0.10.0  # https://github.com/joke2k/django-environ
+django-model-utils==4.3.1  # https://github.com/jazzband/django-model-utils
+django-allauth==0.52.0  # https://github.com/pennersr/django-allauth
+django-crispy-forms==2.0  # https://github.com/django-crispy-forms/django-crispy-forms
+crispy-bootstrap5==0.7  # https://github.com/django-crispy-forms/crispy-bootstrap5
+django-redis==5.2.0  # https://github.com/jazzband/django-redis
+# Django REST Framework
+djangorestframework==3.14.0  # https://github.com/encode/django-rest-framework
+djangorestframework-camel-case==1.4.2
+django-cors-headers==3.14.0  # https://github.com/adamchainz/django-cors-headers
+# DRF-spectacular for api documentation
+drf-spectacular==0.26.0  # https://github.com/tfranzel/drf-spectacular
+django-webpack-loader==1.8.1  # https://github.com/django-webpack/django-webpack-loader
+# Django-rules
+rules>=3.3 # https://github.com/dfunckt/django-rules
