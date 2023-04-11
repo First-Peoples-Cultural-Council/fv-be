@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from firstvoices.backend.models.base import AppJson
+from firstvoices.backend.models.app import AppJson
 from firstvoices.backend.models.sites import Site
 
 

@@ -16,25 +16,19 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 # REST FRAMEWORK
 # ------------------------------------------------------------------------------
 # see fw-4235: remove this section and use the base settings once we have instructions for local cognito testing
-REST_FRAMEWORK = {
-    "DEFAULT_PARSER_CLASSES": (
-        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
-    ),
-    "DEFAULT_RENDERER_CLASSES": (
-        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
-        "rest_framework.renderers.BrowsableAPIRenderer",
-    ),
-    # these authentication classes are for local only
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "UNAUTHENTICATED_USER": None,
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PAGINATION_CLASS": "firstvoices.backend.pagination.PageNumberPagination",
-    "PAGE_SIZE": 100,
-}
+REST_FRAMEWORK.update(  # noqa F405
+    {
+        # these authentication classes are for local only
+        "DEFAULT_AUTHENTICATION_CLASSES": (
+            "rest_framework.authentication.SessionAuthentication",
+            "rest_framework.authentication.TokenAuthentication",
+        ),
+        "DEFAULT_RENDERER_CLASSES": (
+            "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+            "rest_framework.renderers.BrowsableAPIRenderer",
+        ),
+    }
+)
 
 # CACHES
 # ------------------------------------------------------------------------------
