@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from firstvoices.backend.models import AppJson
-from firstvoices.backend.models.sites import Language, Site
+from firstvoices.backend.models.base import AppJson
+from firstvoices.backend.models.sites import Site
 
 
 class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -31,14 +31,6 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
 class FeatureFlagSerializer(serializers.Serializer):
     key = serializers.CharField()
     is_enabled = serializers.BooleanField()
-
-
-class LinkedTitleLanguageSerializer(serializers.HyperlinkedModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name="api:language-detail")
-
-    class Meta:
-        model = Language
-        fields = ("title", "url")
 
 
 class SiteDetailSerializer(SiteSummarySerializer):
