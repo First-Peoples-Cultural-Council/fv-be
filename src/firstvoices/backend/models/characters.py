@@ -1,3 +1,5 @@
+import logging
+
 import g2p
 import yaml
 from django.db import models
@@ -111,9 +113,11 @@ class AlphabetMapper(BaseSiteContentModel):
         verbose_name = _("alphabet mapper")
         verbose_name_plural = _("alphabet mappers")
 
+    logger = logging.getLogger(__name__)
+
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
-    input_to_canonical_map = models.JSONField()
+    input_to_canonical_map = models.JSONField(blank=True, default=dict)
 
     @property
     def base_characters(self):
@@ -159,11 +163,15 @@ class AlphabetMapper(BaseSiteContentModel):
         Returns an input-to-canonical G2P transducer from stored JSON map, using default config settings.
         Does not allow manual configuration yet.
         """
-        preprocess_settings = self.default_g2p_config["preprocess_config"]
+        if self.input_to_canonical_map != {}:
+            preprocess_settings = self.default_g2p_config["preprocess_config"]
 
-        return g2p.Transducer(
-            g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
-        )
+            return g2p.Transducer(
+                g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
+            )
+        else:
+            self.logger.warning("No confusable map found for site %s", self.site)
+            return None
 
     def clean_confusables(self, text: str) -> str:
         """
@@ -171,7 +179,10 @@ class AlphabetMapper(BaseSiteContentModel):
         converting all instances of confusables to instances of characters or
         variant characters.
         """
-        return self.preprocess_transducer(text).output_string
+        if self.preprocess_transducer:
+            return self.preprocess_transducer(text).output_string
+        else:
+            return text
 
     @property
     def presort_transducer(self):

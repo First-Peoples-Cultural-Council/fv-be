@@ -158,21 +158,21 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         return self.title
 
     def save(self, *args, **kwargs):
-        self.clean_title()
-        self.set_custom_order()
+        mapper, created = AlphabetMapper.objects.get_or_create(site_id=self.site_id)
+
+        self.clean_title(mapper)
+        self.set_custom_order(mapper)
         super().save(*args, **kwargs)
 
-    def clean_title(self):
+    def clean_title(self, mapper):
         # strip whitespace and normalize
         self.title = self.title.strip()
         self.title = nfc(self.title)
 
         # clean confusables
-        mapper = AlphabetMapper.objects.filter(site_id=self.site_id).first()
         self.title = mapper.clean_confusables(self.title)
 
-    def set_custom_order(self):
-        mapper = AlphabetMapper.objects.filter(site_id=self.site_id).first()
+    def set_custom_order(self, mapper):
         self.custom_order = mapper.custom_order(self.title)
 
 
