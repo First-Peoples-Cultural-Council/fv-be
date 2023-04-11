@@ -90,6 +90,4 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
             for language, items in rows
         ]
 
-        # todo: "my sites"
-
         return Response(data)
