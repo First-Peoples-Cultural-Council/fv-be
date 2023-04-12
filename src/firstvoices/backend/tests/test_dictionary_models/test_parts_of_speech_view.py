@@ -56,10 +56,12 @@ class TestPartsOfSpeechView:
         response = client.get(
             reverse("api:parts-of-speech-list", current_app="backend")
         )
-        content = json.loads(response.content)
+        content = json.loads(response.content)["results"]
 
-        assert type(content) == list
+        assert isinstance(content, list)
         assert len(content) > 0
+
+        print(content)
 
         sample_obj = content[1]
 
