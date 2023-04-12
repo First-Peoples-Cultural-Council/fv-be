@@ -60,6 +60,10 @@ class PartOfSpeech(BaseModel):
         super().clean()
 
     def save(self, *args, **kwargs):
-        if hasattr(self, "is_cleaned") and not self.is_cleaned:
+        # Inputs coming from other sources than forms may not have this attribute present
+        # to validate those inputs as well, this attributed is added explicitly
+        if not hasattr(self, "is_cleaned"):
+            self.is_cleaned = False
+        if not self.is_cleaned:
             self.full_clean()
         super().save(*args, **kwargs)

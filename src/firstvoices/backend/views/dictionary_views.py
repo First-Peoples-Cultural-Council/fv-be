@@ -14,7 +14,7 @@ from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
         responses={200: PartsOfSpeechSerializer},
     ),
     retrieve=extend_schema(
-        description="Details about a specific parts-of-speech.",
+        description="Details about a specific part of speech.",
         responses={200: PartsOfSpeechSerializer},
     ),
 )
