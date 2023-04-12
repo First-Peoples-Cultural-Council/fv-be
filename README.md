@@ -260,6 +260,10 @@ pytest <path to file>
 ```
 pytest <path to file containing test> -k '<name of single test>'
 ```
+- Reset the test database:
+```
+python manage.py reset_db -D test_fv_be
+```
 
 ## Useful Local URLs On Startup
 - Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
