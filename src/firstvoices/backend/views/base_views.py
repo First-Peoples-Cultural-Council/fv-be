@@ -1,17 +1,31 @@
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
+from firstvoices.backend.predicates import utils
+
 
 class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     """
-    Mixin used to override the default list view and enable the use of rules based permissions as defined in a model.
-    If this mixin is used, the list view will return all model instances that the user has view permissions on.
+    Enforces object-level permissions in ``rest_framework.viewsets.ViewSet``,
+    deriving the permission type from the particular action to be performed. List results are
+    filtered to only include permitted items.
+
+    As with ``rules.contrib.views.AutoPermissionRequiredMixin``, this only works when
+    model permissions are registered using ``rules.contrib.models.RulesModelMixin``.
     """
 
     def list(self, request, *args, **kwargs):
-        # Get the model objects a user has view permissions on.
-        queryset = self.queryset.model.objects.get_viewable_for_user(request.user)
+        # apply view permissions
+        queryset = utils.filter_by_viewable(request.user, self.get_queryset())
 
-        # Serialize and return the data
-        serializer = self.serializer_class(queryset, many=True)
+        # paginate the queryset
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # serialize and return the data, with context to support hyperlinking
+        serializer = self.serializer_class(
+            queryset, many=True, context={"request": request}
+        )
         return Response(serializer.data)
