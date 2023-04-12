@@ -94,7 +94,7 @@ class CustomSorter(ArbSorter):
     out_of_vocab_flag = unicodedata.lookup("BLACK FLAG")
 
     def __init__(self, order: list[str], ignorable: list[str] | None = None):
-        order.insert(0, self.space)
+        order = [self.space] + order
         self._init_custom_order(len(order))
 
         super().__init__(order, ignorable)
