@@ -4,7 +4,6 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views import defaults as default_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
@@ -15,9 +14,9 @@ urlpatterns = [
 # API URLS
 urlpatterns += [
     # API base url
-    path("api/2.0/", include("config.api_router")),
+    path("api/2.0/", include("config.api_router", namespace="api")),
     # DRF auth token
-    path("auth-token/", obtain_auth_token),
+    # path("auth-token/", obtain_auth_token),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path(
         "api/docs/",

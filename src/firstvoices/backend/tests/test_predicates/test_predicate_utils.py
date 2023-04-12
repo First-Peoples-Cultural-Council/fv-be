@@ -52,4 +52,4 @@ class TestPredicateUtils:
 
     def test_get_app_role_for_member(self):
         member_user = get_app_admin(AppRole.STAFF)
-        assert utils.get_site_role(member_user) == AppRole.STAFF
+        assert utils.get_app_role(member_user) == AppRole.STAFF
