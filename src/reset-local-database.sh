@@ -152,6 +152,16 @@ case $yn in
       printf "Superuser creation failed: exit code $retval\n"
       exit $retval
     fi
+
+    # Reset the test database
+    printf '\n'
+    printf 'Flushing test database.\n'
+    dropdb test_fv_be
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Test database cleanup failed: exit code $retval\n"
+      exit $retval
+    fi
     ;;
 
   [Nn]* )
