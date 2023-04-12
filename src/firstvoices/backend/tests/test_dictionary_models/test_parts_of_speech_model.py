@@ -144,4 +144,4 @@ class TestPartsOfSpeechModel:
         # Deleting object and verifying
         p1.delete()
         with pytest.raises(Http404):
-            p1_fetch = get_object_or_404(PartOfSpeech, title="pos_2")
+            get_object_or_404(PartOfSpeech, title="pos_2")
