@@ -2,7 +2,7 @@ from .app import AppJson  # noqa F401
 from .base import BaseModel  # noqa F401
 from .category import Category  # noqa F401
 from .characters import (  # noqa F401
-    AlphabetMapper,
+    Alphabet,
     Character,
     CharacterVariant,
     IgnoredCharacter,

@@ -1,10 +1,10 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from ..utils.character_utils import nfc
+from ..utils.character_utils import clean_input
 from .base import BaseModel
 from .category import Category
-from .characters import AlphabetMapper, Character
+from .characters import Alphabet, Character
 from .part_of_speech import PartOfSpeech
 from .sites import BaseControlledSiteContentModel, BaseSiteContentModel
 
@@ -158,7 +158,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         return self.title
 
     def save(self, *args, **kwargs):
-        mapper, created = AlphabetMapper.objects.get_or_create(site_id=self.site_id)
+        mapper, created = Alphabet.objects.get_or_create(site_id=self.site_id)
 
         self.clean_title(mapper)
         self.set_custom_order(mapper)
@@ -166,8 +166,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
     def clean_title(self, mapper):
         # strip whitespace and normalize
-        self.title = self.title.strip()
-        self.title = nfc(self.title)
+        self.title = clean_input(self.title)
 
         # clean confusables
         self.title = mapper.clean_confusables(self.title)

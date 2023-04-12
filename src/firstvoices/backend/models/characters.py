@@ -103,10 +103,9 @@ class IgnoredCharacter(BaseSiteContentModel):
         return self.title
 
 
-class AlphabetMapper(BaseSiteContentModel):
+class Alphabet(BaseSiteContentModel):
     """
     Hosts text processors and sorters for a site's custom alphabet.
-    Must be re-created upon changing any character models in an alphabet.
     """
 
     class Meta:

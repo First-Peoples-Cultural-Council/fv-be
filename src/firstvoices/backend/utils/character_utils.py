@@ -126,3 +126,7 @@ class CustomSorter(ArbSorter):
 
 def nfc(string: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
+
+
+def clean_input(string: str) -> str:
+    return nfc(string.strip())

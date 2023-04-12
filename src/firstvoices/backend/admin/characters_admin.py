@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from firstvoices.backend.models.characters import (
-    AlphabetMapper,
+    Alphabet,
     Character,
     CharacterVariant,
     IgnoredCharacter,
@@ -68,8 +68,8 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
     search_fields = ("title",)
 
 
-@admin.register(AlphabetMapper)
-class AlphabetMapperAdmin(BaseSiteContentAdmin):
+@admin.register(Alphabet)
+class AlphabetAdmin(BaseSiteContentAdmin):
     fields = ("site", "input_to_canonical_map")
     list_display = (
         "site",
