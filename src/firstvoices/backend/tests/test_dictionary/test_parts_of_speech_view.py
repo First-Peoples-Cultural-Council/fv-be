@@ -47,7 +47,7 @@ class TestPartsOfSpeechView:
         )
         assert response.status_code == 404
 
-    def test_response_format_list(self, db, parts_of_speech_db_setup):
+    def test_response_format_list_view(self, db, parts_of_speech_db_setup):
         # Testing the format of the content returned by list view for parts of speech
 
         client = APIClient()
@@ -68,10 +68,8 @@ class TestPartsOfSpeechView:
         # Checking for required keys and their response structure
         assert "id" in sample_obj
         assert "title" in sample_obj
-        assert "parent" in sample_obj
+        assert "children" in sample_obj
 
         assert isinstance(sample_obj["id"], str)
         assert isinstance(sample_obj["title"], str)
-        assert isinstance(sample_obj["parent"], str) or isinstance(
-            sample_obj["parent"], type(None)
-        )
+        assert isinstance(sample_obj["children"], list)
