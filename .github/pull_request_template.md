@@ -1,14 +1,6 @@
 ### Description of Changes
 Please briefly explain the changes here.
 
-### Types of Changes
-- [ ] Bugfix
-- [ ] Documentation
-- [ ] Functionality/API change
-- [ ] Admin panel update
-- [ ] New feature/API
-- [ ] Other
-
 ### Checklist
 - [ ] README / documentation has been updated if needed
 - [ ] PR title / commit messages contain Jira ticket number if applicable
