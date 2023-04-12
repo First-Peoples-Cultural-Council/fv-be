@@ -20,7 +20,6 @@ class LanguageFamily(BaseModel):
     class Meta:
         verbose_name = _("language family")
         verbose_name_plural = _("language families")
-        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,
@@ -49,7 +48,6 @@ class Language(BaseModel):
     class Meta:
         verbose_name = _("language")
         verbose_name_plural = _("languages")
-        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,
@@ -87,7 +85,6 @@ class Site(BaseModel):
     class Meta:
         verbose_name = _("site")
         verbose_name_plural = _("sites")
-        ordering = ["title"]
         rules_permissions = {
             "view": predicates.can_view_site_model,
             "add": predicates.is_superadmin,
