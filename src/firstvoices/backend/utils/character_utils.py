@@ -2,7 +2,8 @@ import re
 import unicodedata
 
 
-# From MTD processors
+# From https://github.com/roedoejet/mothertongues/blob/master/mtd/processors/sorter.py
+# with additions for ignorables and out-of-vocab chars (on branch: dev.sorter)
 class ArbSorter:
     """Sort entries based on alphabet. Thanks to Lingweenie: https://lingweenie.org/conlang/sort.html
 

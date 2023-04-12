@@ -5,7 +5,7 @@ import yaml
 from django.db import models
 from django.utils.translation import gettext as _
 
-from ..utils.CharacterSortOrderHelpers import CustomSorter
+from ..utils.character_utils import CustomSorter
 from .app import AppJson
 from .constants import MAX_CHARACTER_LENGTH
 from .sites import BaseSiteContentModel
@@ -117,7 +117,7 @@ class AlphabetMapper(BaseSiteContentModel):
 
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
-    input_to_canonical_map = models.JSONField(blank=True, default=dict)
+    input_to_canonical_map = models.JSONField(blank=True, default=list)
 
     @property
     def base_characters(self):
@@ -163,7 +163,7 @@ class AlphabetMapper(BaseSiteContentModel):
         Returns an input-to-canonical G2P transducer from stored JSON map, using default config settings.
         Does not allow manual configuration yet.
         """
-        if self.input_to_canonical_map != {}:
+        if self.input_to_canonical_map:
             preprocess_settings = self.default_g2p_config["preprocess_config"]
 
             return g2p.Transducer(
@@ -216,7 +216,7 @@ class AlphabetMapper(BaseSiteContentModel):
             ignorable=[char.title for char in self.ignorable_characters],
         )
 
-    def custom_order(self, text: str) -> str:
+    def get_custom_order(self, text: str) -> str:
         """
         Convert a string to a custom-order string which follows the site custom alphabet order.
         Sort is insensitive to character variants (such as uppercase), and ignores ignorable characters.

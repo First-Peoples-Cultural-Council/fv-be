@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from ..utils.CharacterSortOrderHelpers import nfc
+from ..utils.character_utils import nfc
 from .base import BaseModel
 from .category import Category
 from .characters import AlphabetMapper, Character
@@ -173,7 +173,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         self.title = mapper.clean_confusables(self.title)
 
     def set_custom_order(self, mapper):
-        self.custom_order = mapper.custom_order(self.title)
+        self.custom_order = mapper.get_custom_order(self.title)
 
 
 class DictionaryEntryLink(models.Model):
