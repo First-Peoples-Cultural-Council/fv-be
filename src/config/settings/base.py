@@ -76,12 +76,12 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "drf_spectacular",
     "webpack_loader",
+    "rules.apps.AutodiscoverRulesConfig",
 ]
 
 LOCAL_APPS = [
     "firstvoices.users",
     "firstvoices.backend",
-    "rules.apps.AutodiscoverRulesConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -97,7 +97,6 @@ MIGRATION_MODULES = {"sites": "firstvoices.contrib.sites.migrations"}
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 AUTH_USER_MODEL = "users.User"
@@ -256,6 +255,13 @@ LOGGING = {
         }
     },
     "root": {"level": "INFO", "handlers": ["console"]},
+    # "loggers": {
+    #     "rules": {
+    #         "handlers": ["console"],
+    #         "level": "DEBUG",
+    #         "propagate": True,
+    #     },
+    # },
 }
 
 # django-allauth
@@ -291,17 +297,23 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "UNAUTHENTICATED_USER": None,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "firstvoices.backend.pagination.PageNumberPagination",
+    "PAGE_SIZE": 100,
 }
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
 CORS_URLS_REGEX = r"^/api/.*$"
 
+with open(str(APPS_DIR / "static" / "api-description.md")) as f:
+    description = f.read()
+
 # By Default swagger ui is available only to admin user(s). You can change permission classes to change that
 # See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "FirstVoices Backend API",
-    "DESCRIPTION": "Documentation of API endpoints of FirstVoices Backend",
-    "VERSION": "1.0.0",
+    "DESCRIPTION": description,
+    "VERSION": "2.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }
 # django-webpack-loader

@@ -62,7 +62,9 @@ class Language(BaseModel):
     alternate_names = models.CharField(max_length=200, blank=True)
 
     # from fva:family
-    language_family = models.ForeignKey(LanguageFamily, on_delete=models.PROTECT)
+    language_family = models.ForeignKey(
+        LanguageFamily, on_delete=models.PROTECT, related_name="languages"
+    )
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
@@ -104,7 +106,7 @@ class Site(BaseModel):
 
     # from fva:language
     language = models.ForeignKey(
-        Language, null=True, blank=True, on_delete=models.SET_NULL
+        Language, null=True, blank=True, on_delete=models.SET_NULL, related_name="sites"
     )
 
     # from state (will have to be translated from existing states to new visibilities)
@@ -137,9 +139,7 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    site = models.ForeignKey(
-        Site, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s"
-    )
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="%(class)s")
 
 
 class BaseControlledSiteContentModel(BaseSiteContentModel):
@@ -213,9 +213,7 @@ class SiteMenu(BaseModel):
     """
 
     json = models.JSONField()
-    site = models.OneToOneField(
-        Site, on_delete=models.CASCADE, related_name="site_menu"
-    )
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="menu")
 
     class Meta:
         verbose_name = _("site menu")
