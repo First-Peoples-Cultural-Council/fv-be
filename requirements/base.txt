@@ -29,4 +29,4 @@ rules>=3.3 # https://github.com/dfunckt/django-rules
 
 # Alphabetization
 # ------------------------------------------------------------------------------
-g2p>=1.0 # https://github.com/roedoejet/g2p
+g2p==1.0.20230412 # https://github.com/roedoejet/g2p
