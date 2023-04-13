@@ -2,94 +2,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Adjective",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Adverb",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Affirmation",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Command",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Conjunction",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Connective",
-      "parent": [
-        "Particle"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Demonstrative",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Interjection",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Intransitive Verb",
-      "parent": [
-        "Verb"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Noun Modifier",
-      "parent": [
-        "Modifier"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Modifier Verb",
-      "parent": [
-        "Modifier"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Negation",
+      "title": "Name",
       "parent": null
     }
   },
@@ -103,21 +16,25 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Number",
-      "parent": null
+      "title": "Reflexive Verb",
+      "parent": [
+        "Verb"
+      ]
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Particle",
-      "parent": null
+      "title": "Transitive Verb",
+      "parent": [
+        "Verb"
+      ]
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Article/Determiner",
+      "title": "Plural Marker",
       "parent": [
         "Particle"
       ]
@@ -135,14 +52,14 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Modal",
+      "title": "Negation",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Postposition",
+      "title": "Connective",
       "parent": [
         "Particle"
       ]
@@ -151,14 +68,195 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Quantifier",
+      "title": "Pronoun",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Plural Marker",
+      "title": "Affirmation",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reciprocal Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Tense/Aspect",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Question Marker",
+      "parent": [
+        "Question Word"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Entity",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Relative Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Conjunction",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Command",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Adverb",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Number",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reflexive Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Word Piece/Affix",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Demonstrative",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Event/Activity",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Particle",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Question Word",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Personal Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Suffix",
+      "parent": [
+        "Word Piece/Affix"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Modal",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reciprocal Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Noun Modifier",
+      "parent": [
+        "Modifier"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Article/Determiner",
+      "parent": [
+        "Particle"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Adjective",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Postposition",
       "parent": [
         "Particle"
       ]
@@ -176,73 +274,14 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Pronoun",
+      "title": "Verb",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Personal Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Reciprocal Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Reflexive Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Relative Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Question Marker",
-      "parent": [
-        "Question Word"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Question Word",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Tense/Aspect",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Transitive Verb",
+      "title": "Intransitive Verb",
       "parent": [
         "Verb"
       ]
@@ -251,7 +290,16 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Verb",
+      "title": "Modifier Verb",
+      "parent": [
+        "Modifier"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Interjection",
       "parent": null
     }
   },
@@ -259,6 +307,22 @@
     "model": "backend.partofspeech",
     "fields": {
       "title": "Modifier",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Prefix",
+      "parent": [
+        "Word Piece/Affix"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Quantifier",
       "parent": null
     }
   }
