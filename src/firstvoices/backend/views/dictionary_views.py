@@ -21,6 +21,8 @@ from firstvoices.backend.views.base_views import FVPermissionViewSetMixin
 class PartsOfSpeechViewSet(FVPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
     serializer_class = PartsOfSpeechSerializer
-    # Excluding entries which have a parent since they will be displayed
-    # in the children attribute of their parent
-    queryset = PartOfSpeech.objects.exclude(parent__isnull=False)
+    queryset = PartOfSpeech.objects.all()
+
+    @staticmethod
+    def get_list_queryset():
+        return PartOfSpeech.objects.exclude(parent__isnull=False)
