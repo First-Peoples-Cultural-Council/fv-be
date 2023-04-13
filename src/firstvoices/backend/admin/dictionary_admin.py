@@ -67,4 +67,7 @@ class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
 
 
 class PartsOfSpeechAdmin(BaseAdmin):
-    list_display = ("title",) + BaseAdmin.list_display
+    list_display = (
+        "title",
+        "parent",
+    ) + BaseAdmin.list_display

@@ -100,8 +100,6 @@ class TestPartsOfSpeechView:
         assert isinstance(content, list)
         assert len(content) > 0
 
-        print(content)
-
         sample_obj = content[1]
 
         # Checking for required keys and their response structure
