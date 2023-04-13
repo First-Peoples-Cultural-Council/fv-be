@@ -2,57 +2,35 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Name",
+      "title": "Adjective",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Noun",
+      "title": "Adverb",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Reflexive Verb",
-      "parent": [
-        "Verb"
-      ]
+      "title": "Affirmation",
+      "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Transitive Verb",
-      "parent": [
-        "Verb"
-      ]
+      "title": "Command",
+      "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Plural Marker",
-      "parent": [
-        "Particle"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Auxiliary Verb",
-      "parent": [
-        "Verb"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Negation",
+      "title": "Conjunction",
       "parent": null
     }
   },
@@ -68,105 +46,6 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Pronoun",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Affirmation",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Reciprocal Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Tense/Aspect",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Question Marker",
-      "parent": [
-        "Question Word"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Entity",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Relative Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Conjunction",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Command",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Adverb",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Number",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Reflexive Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Word Piece/Affix",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
       "title": "Demonstrative",
       "parent": [
         "Pronoun"
@@ -176,53 +55,14 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Event/Activity",
+      "title": "Interjection",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Particle",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Question Word",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Personal Pronoun",
-      "parent": [
-        "Pronoun"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Suffix",
-      "parent": [
-        "Word Piece/Affix"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Modal",
-      "parent": null
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Reciprocal Verb",
+      "title": "Intransitive Verb",
       "parent": [
         "Verb"
       ]
@@ -240,6 +80,43 @@
   {
     "model": "backend.partofspeech",
     "fields": {
+      "title": "Modifier Verb",
+      "parent": [
+        "Modifier"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Negation",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Noun",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Number",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Particle",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
       "title": "Article/Determiner",
       "parent": [
         "Particle"
@@ -249,7 +126,16 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Adjective",
+      "title": "Auxiliary Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Modal",
       "parent": null
     }
   },
@@ -257,6 +143,22 @@
     "model": "backend.partofspeech",
     "fields": {
       "title": "Postposition",
+      "parent": [
+        "Particle"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Quantifier",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Plural Marker",
       "parent": [
         "Particle"
       ]
@@ -274,14 +176,73 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Verb",
+      "title": "Pronoun",
       "parent": null
     }
   },
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Intransitive Verb",
+      "title": "Personal Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reciprocal Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reflexive Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Relative Pronoun",
+      "parent": [
+        "Pronoun"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Question Marker",
+      "parent": [
+        "Question Word"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Question Word",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Tense/Aspect",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Transitive Verb",
       "parent": [
         "Verb"
       ]
@@ -290,16 +251,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Modifier Verb",
-      "parent": [
-        "Modifier"
-      ]
-    }
-  },
-  {
-    "model": "backend.partofspeech",
-    "fields": {
-      "title": "Interjection",
+      "title": "Verb",
       "parent": null
     }
   },
@@ -313,7 +265,44 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Prefix",
+      "title": "Name",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reflexive Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Entity",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Word Piece/Affix",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Event/Activity",
+      "parent": null
+    }
+  },
+    {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Suffix",
       "parent": [
         "Word Piece/Affix"
       ]
@@ -322,8 +311,19 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Quantifier",
-      "parent": null
+      "title": "Reciprocal Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Prefix",
+      "parent": [
+        "Word Piece/Affix"
+      ]
     }
   }
 ]
