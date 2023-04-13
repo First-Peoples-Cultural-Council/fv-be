@@ -47,9 +47,7 @@
     "model": "backend.partofspeech",
     "fields": {
       "title": "Demonstrative",
-      "parent": [
-        "Pronoun"
-      ]
+      "parent": null
     }
   },
   {
@@ -80,7 +78,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Modifier Verb",
+      "title": "Verb Modifier",
       "parent": [
         "Modifier"
       ]
@@ -281,7 +279,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Entity",
+      "title": "Entity (Noun-like word)",
       "parent": null
     }
   },
@@ -295,7 +293,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Event/Activity",
+      "title": "Event/Activity (Verb-like word)",
       "parent": null
     }
   },
