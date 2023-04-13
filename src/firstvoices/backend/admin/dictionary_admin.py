@@ -8,7 +8,7 @@ from firstvoices.backend.models.dictionary import (
     Pronunciation,
 )
 
-from .base_admin import BaseInlineAdmin, HiddenBaseAdmin
+from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
 from .sites_admin import MembershipAdmin
 
 
@@ -64,3 +64,7 @@ class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
         AlternateSpellingInline,
         PronunciationInline,
     ]
+
+
+class PartsOfSpeechAdmin(BaseAdmin):
+    list_display = ("title",) + BaseAdmin.list_display
