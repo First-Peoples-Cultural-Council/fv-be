@@ -211,9 +211,10 @@ or if you have already set the environment variables locally:
 To set up custom order/confusable cleaning locally, you will need to do the following:
 - Load the `default_g2p_config.json` fixture
 - Create `Character` models that correspond with the characters you will use in a site's alphabet.
-    - Base characters are require, ignorables and variants are optional.
+    - Base characters are required, ignorables and variants are optional.
 - Create an `AlphabetMapper` class with an appropriate input to canonical mapping that defines confusables.
-    - For example: ```[{"in": "á", "out": "a"}, {"in": "à", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "À", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "č", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "Č", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
+    - For example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
+    - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
 
 ### Type checks
 
