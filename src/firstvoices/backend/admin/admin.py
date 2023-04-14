@@ -27,6 +27,7 @@ from .dictionary_admin import (
     CategoryInline,
     DictionaryEntryHiddenBaseAdmin,
     DictionaryEntryInline,
+    PartsOfSpeechAdmin,
 )
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
@@ -80,4 +81,4 @@ admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)
-admin.site.register(PartOfSpeech)
+admin.site.register(PartOfSpeech, PartsOfSpeechAdmin)

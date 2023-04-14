@@ -1,12 +1,16 @@
+import rules
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
+
+from firstvoices.backend import predicates
+from firstvoices.backend.models.managers import PermissionsManager
 
 # FirstVoices
 from .base import BaseModel
 
 
-class ParentManager(models.Manager):
+class ParentManager(PermissionsManager):
     """Manager to convert foreign key relationship to natural keys for fixtures to load correctly."""
 
     def get_by_natural_key(self, title):
@@ -29,6 +33,12 @@ class PartOfSpeech(BaseModel):
     class Meta:
         verbose_name = _("Part Of Speech")
         verbose_name_plural = _("Parts Of Speech")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return self.title
@@ -50,6 +60,10 @@ class PartOfSpeech(BaseModel):
         super().clean()
 
     def save(self, *args, **kwargs):
+        # Inputs coming from other sources than forms may not have this attribute present
+        # to validate those inputs as well, this attributed is added explicitly
+        if not hasattr(self, "is_cleaned"):
+            self.is_cleaned = False
         if not self.is_cleaned:
             self.full_clean()
         super().save(*args, **kwargs)
