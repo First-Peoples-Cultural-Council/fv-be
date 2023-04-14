@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 # FirstVoices
-from .sites import BaseSiteContentModel
+from .base import BaseSiteContentModel
 
 
 class Category(BaseSiteContentModel):
@@ -11,7 +11,7 @@ class Category(BaseSiteContentModel):
 
     # Fields
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True)
     # i.e. A category may have a parent, but the parent category cannot have a parent itself. (i.e. no grandparents).
     # This is enforced in the clean method.
     parent = models.ForeignKey(

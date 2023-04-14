@@ -1,10 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from .base import BaseModel
+from .base import BaseControlledSiteContentModel, BaseModel
 from .category import Category
 from .part_of_speech import PartOfSpeech
-from .sites import BaseControlledSiteContentModel
 
 
 class BaseDictionaryContentModel(BaseModel):

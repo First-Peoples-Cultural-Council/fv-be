@@ -1,10 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-# FirstVoices
+from .base import BaseSiteContentModel
 from .constants import MAX_CHARACTER_LENGTH
 from .dictionary import DictionaryEntry
-from .sites import BaseSiteContentModel
 
 
 class Character(BaseSiteContentModel):
