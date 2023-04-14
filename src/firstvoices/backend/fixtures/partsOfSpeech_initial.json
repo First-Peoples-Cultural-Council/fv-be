@@ -47,9 +47,7 @@
     "model": "backend.partofspeech",
     "fields": {
       "title": "Demonstrative",
-      "parent": [
-        "Pronoun"
-      ]
+      "parent": null
     }
   },
   {
@@ -80,7 +78,7 @@
   {
     "model": "backend.partofspeech",
     "fields": {
-      "title": "Modifier Verb",
+      "title": "Verb Modifier",
       "parent": [
         "Modifier"
       ]
@@ -260,6 +258,70 @@
     "fields": {
       "title": "Modifier",
       "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Name",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reflexive Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Entity (Noun-like word)",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Word Piece/Affix",
+      "parent": null
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Event/Activity (Verb-like word)",
+      "parent": null
+    }
+  },
+    {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Suffix",
+      "parent": [
+        "Word Piece/Affix"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Reciprocal Verb",
+      "parent": [
+        "Verb"
+      ]
+    }
+  },
+  {
+    "model": "backend.partofspeech",
+    "fields": {
+      "title": "Prefix",
+      "parent": [
+        "Word Piece/Affix"
+      ]
     }
   }
 ]
