@@ -180,5 +180,3 @@ class TestCharacterModel:
         ichar = IgnoredCharacterFactory.create(site=char.site)
         with pytest.raises(IntegrityError):
             CharacterVariantFactory.create(title=ichar.title, base_character=char)
-
-    # TODO: can't create over 429 characters - custom sorter max
