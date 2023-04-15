@@ -96,7 +96,7 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables("ᐱ/_/b/č") == "A/_/b/cv"
 
     @pytest.mark.django_db
-    def test_clean_confusables_no_feeding(self, alphabet):
+    def test_clean_confusables_no_feeding(self):
         """Default confusables transducer does not allow multi-rule application"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
