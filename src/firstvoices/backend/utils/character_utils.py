@@ -87,8 +87,10 @@ class CustomSorter(ArbSorter):
     basic_latin = range(32, 127)
     # Latin Extended planes A+B
     extended_latin = range(256, 592)
-    # Remove double quote
-    exclude_chars = [34]
+    # Remove double quote, backslash
+    exclude_chars = [34, 92]
+
+    max_alphabet_length = len(basic_latin) + len(extended_latin) - len(exclude_chars)
 
     space = " "
     out_of_vocab_flag = unicodedata.lookup("BLACK FLAG")
@@ -100,14 +102,17 @@ class CustomSorter(ArbSorter):
         super().__init__(order, ignorable)
 
     def _init_custom_order(self, alphabet_length: int) -> None:
-        custom_char_range = [i for i in self.basic_latin if i not in self.exclude_chars]
-
+        custom_char_range = [
+            i
+            for i in list(self.basic_latin) + list(self.extended_latin)
+            if i not in self.exclude_chars
+        ]
         if alphabet_length > len(custom_char_range):
-            supplementary_chars = [
-                i for i in self.extended_latin if i not in self.exclude_chars
-            ]
-            custom_char_range += supplementary_chars
-
+            raise ValueError(
+                "Alphabet length ({}) exceeds possible custom order ({})".format(
+                    alphabet_length, self.max_alphabet_length
+                )
+            )
         self.custom_order = [chr(i) for i in custom_char_range[0:alphabet_length]]
 
     def custom_sort_char(self, ord_value: int) -> str:

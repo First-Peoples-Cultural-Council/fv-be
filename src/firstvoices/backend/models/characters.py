@@ -182,7 +182,7 @@ class Alphabet(BaseSiteContentModel):
 
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
-    input_to_canonical_map = models.JSONField(blank=True, default=list)
+    input_to_canonical_map = models.JSONField(default=list)
 
     @property
     def base_characters(self):
