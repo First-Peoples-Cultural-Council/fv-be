@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
+	'django.contrib.sessions',
 	'django.contrib.messages',
 	'rest_framework',
 	'backend'
@@ -60,6 +61,9 @@ REST_FRAMEWORK = {
 		'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
 	),
 	'DEFAULT_AUTHENTICATION_CLASSES': [
+		# the first 2 are for admin app compatibility
+		'rest_framework.authentication.SessionAuthentication',
+		'rest_framework.authentication.BasicAuthentication',
 		'backend.jwt_auth.UserAuthentication'
 	],
 	'DEFAULT_PERMISSION_CLASSES': (

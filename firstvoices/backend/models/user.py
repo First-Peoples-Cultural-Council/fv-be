@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 
 from .role import Role
+from backend.managers.user import UserManager
 
 
 class User(AbstractBaseUser):
@@ -9,7 +10,9 @@ class User(AbstractBaseUser):
 	User Model
 	"""
 	USERNAME_FIELD = 'id'
-	REQUIRED_FIELDS = []
+	REQUIRED_FIELDS = ['email']
+
+	objects = UserManager()
 
 	"""
 	Maps to JWT 'sub' field -- this is the primary key
@@ -22,21 +25,30 @@ class User(AbstractBaseUser):
 		null=False
 	)
 
-	@property
-	def password(self):
-		return None
+	email = models.EmailField(
+		unique=True,
+		null=False,
+		default='test@test.com'
+	)
 
-	@property
-	def is_staff(self):
-		return None
+	password = models.CharField(
+		null=True,
+		blank=False,
+		max_length=128
+	)
+
+	is_staff = models.BooleanField(
+		null=False,
+		default=False
+	)
+	is_superuser = models.BooleanField(
+		null=False,
+		default=False
+	)
 
 	@property
 	def is_active(self):
 		return True
-
-	@property
-	def is_superuser(self):
-		return False
 
 	@property
 	def is_anonymous(self):
@@ -44,7 +56,7 @@ class User(AbstractBaseUser):
 
 	@property
 	def username(self):
-		return self.sub
+		return self.id
 
 	@property
 	def is_authenticated(self):
@@ -53,7 +65,6 @@ class User(AbstractBaseUser):
 	"""
 	@todo decide how to store group information -- this is here to erase the default from the base class
 	"""
-
 	@property
 	def groups(self):
 		return None
@@ -62,19 +73,16 @@ class User(AbstractBaseUser):
 	def user_permissions(self):
 		return None
 
-	def set_password(self, raw_password):
-		raise NotImplementedError(
-			"Nonsensical operation"
-		)
+	def has_module_perms(self, request=None):
+		return self.is_staff
 
-	def check_password(self, raw_password):
-		raise NotImplementedError(
-			"Nonsensical operation"
-		)
+	def has_perm(self, request=None):
+		return True
 
 	def __str__(self):
 		return str(self.id)
 
+	@property
 	def natural_key(self):
 		return self.id,
 
