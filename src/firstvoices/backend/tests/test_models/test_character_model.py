@@ -1,5 +1,4 @@
 import pytest
-from django.core.management import call_command
 from django.db.utils import IntegrityError
 
 from firstvoices.backend.models.characters import AppJson
@@ -12,11 +11,6 @@ from firstvoices.backend.tests.factories import (
 
 
 class TestAlphabetModel:
-    @pytest.fixture(scope="session")
-    def alphabet_db_setup(self, django_db_setup, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
-
     @pytest.fixture
     def alphabet(self):
         return AlphabetFactory.create()
