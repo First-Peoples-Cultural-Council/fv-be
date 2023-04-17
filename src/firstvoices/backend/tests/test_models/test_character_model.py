@@ -13,7 +13,7 @@ from firstvoices.backend.tests.factories import (
 
 class TestAlphabetModel:
     @pytest.fixture(scope="session")
-    def g2p_db_setup(self, django_db_setup, django_db_blocker):
+    def django_db_setup(django_db_setup, django_db_blocker):
         with django_db_blocker.unblock():
             call_command("loaddata", "default_g2p_config.json")
 
@@ -142,20 +142,24 @@ class TestCharacterModel:
         with pytest.raises(IntegrityError):
             CharacterFactory.create(site=char.site, title=char.title)
 
-    @pytest.mark.skip("cross model uniqueness")
+    # @pytest.mark.skip("cross model uniqueness")
     @pytest.mark.django_db
     def test_character_variant_same_name(self):
         """Variant can't be created with the same name as a character"""
-        char = CharacterFactory.create()
+        name = "a"
+        char = CharacterFactory.create(title=name)
         with pytest.raises(IntegrityError):
-            CharacterVariantFactory.create(site=char.site, title=char.title)
+            CharacterVariantFactory.create(
+                site=char.site, title=name, base_character=char
+            )
 
-        char = CharacterFactory.create()
-        var_char = CharacterVariantFactory(base_character=char)
+        name = "b"
+        upper = "B"
+        char = CharacterFactory.create(title=name)
+        CharacterVariantFactory.create(base_character=char, title=upper)
         with pytest.raises(IntegrityError):
-            CharacterFactory.create(site=char.site, title=var_char.title)
+            CharacterFactory.create(site=char.site, title=upper)
 
-    @pytest.mark.skip("cross model uniqueness")
     @pytest.mark.django_db
     def test_character_ignorable_same_name(self):
         """Ignorable can't be created with the same name as a character"""
@@ -168,7 +172,6 @@ class TestCharacterModel:
         with pytest.raises(IntegrityError):
             CharacterFactory(site=ichar.site, title=ichar.title)
 
-    @pytest.mark.skip("cross model uniqueness")
     @pytest.mark.django_db
     def test_variant_ignorable_same_name(self):
         """Ignorable can't be created with the same name as a character variant"""

@@ -2,8 +2,8 @@ import logging
 
 import g2p
 import yaml
-from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
 from ..utils.character_utils import CustomSorter
@@ -48,9 +48,9 @@ class Character(BaseSiteContentModel):
     def __str__(self):
         return f"{self.title} - {self.site}"
 
-    def save(self):
+    def save(self, *args, **kwargs):
         self.validate_title_uniqueness()
-        super().save()
+        super().save(*args, **kwargs)
 
     def validate_title_uniqueness(self):
         """
@@ -60,14 +60,14 @@ class Character(BaseSiteContentModel):
         if CharacterVariant.objects.filter(
             site_id=self.site_id, title=self.title
         ).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by a CharacterVariant with the same site_id."
                 % self.title
             )
         elif IgnoredCharacter.objects.filter(
             site_id=self.site_id, title=self.title
         ).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by an IgnoredCharacter with the same site_id."
                 % self.title
             )
@@ -112,14 +112,14 @@ class CharacterVariant(BaseSiteContentModel):
         models for a given `site_id`.
         """
         if Character.objects.filter(site_id=self.site_id, title=self.title).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by a Character with the same site_id."
                 % self.title
             )
         elif IgnoredCharacter.objects.filter(
             site_id=self.site_id, title=self.title
         ).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by an IgnoredCharacter with the same site_id."
                 % self.title
             )
@@ -146,9 +146,9 @@ class IgnoredCharacter(BaseSiteContentModel):
     def __str__(self):
         return self.title
 
-    def save(self):
+    def save(self, *args, **kwargs):
         self.validate_title_uniqueness()
-        super().save()
+        super().save(*args, **kwargs)
 
     def validate_title_uniqueness(self):
         """
@@ -158,12 +158,12 @@ class IgnoredCharacter(BaseSiteContentModel):
         if CharacterVariant.objects.filter(
             site_id=self.site_id, title=self.title
         ).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by a CharacterVariant with the same site_id."
                 % self.title
             )
         elif Character.objects.filter(site_id=self.site_id, title=self.title).exists():
-            raise ValidationError(
+            raise IntegrityError(
                 "The title %s is already used by an Character with the same site_id."
                 % self.title
             )
