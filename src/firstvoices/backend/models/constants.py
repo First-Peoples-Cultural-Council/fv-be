@@ -3,6 +3,7 @@ from django.utils.translation import gettext as _
 
 # Character length values
 MAX_CHARACTER_LENGTH = 10
+DICTIONARY_MODELS_TITLE_MAX_LENGTH = 225
 
 
 class Visibility(models.IntegerChoices):

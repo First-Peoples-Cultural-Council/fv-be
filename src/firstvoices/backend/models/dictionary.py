@@ -1,10 +1,11 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from .base import BaseModel
-from .category import Category
-from .part_of_speech import PartOfSpeech
-from .sites import BaseControlledSiteContentModel
+from firstvoices.backend.models.base import BaseModel
+from firstvoices.backend.models.category import Category
+from firstvoices.backend.models.constants import DICTIONARY_MODELS_TITLE_MAX_LENGTH
+from firstvoices.backend.models.part_of_speech import PartOfSpeech
+from firstvoices.backend.models.sites import BaseControlledSiteContentModel
 
 
 class BaseDictionaryContentModel(BaseModel):
@@ -55,7 +56,7 @@ class DictionaryTranslation(BaseDictionaryContentModel):
         FRENCH = "FR", _("French")
 
     # Fields
-    text = models.CharField(max_length=200)
+    text = models.CharField(max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH)
     language = models.CharField(
         max_length=2,
         choices=TranslationLanguages.choices,
@@ -81,7 +82,7 @@ class AlternateSpelling(BaseDictionaryContentModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
-    text = models.CharField(max_length=200)
+    text = models.CharField(max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH)
 
     def __str__(self):
         return self.text
@@ -91,7 +92,7 @@ class Pronunciation(BaseDictionaryContentModel):
     """Model for pronunciations associated to each dictionary entry."""
 
     # from fv-word:pronunciation
-    text = models.CharField(max_length=200)
+    text = models.CharField(max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH)
 
     def __str__(self):
         return self.text
@@ -108,7 +109,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     # Fields
     # from dc:title, relatively more max_length due to phrases
     # see fw-4196, max_length may be modified after doing some analysis on the length of current phrases
-    title = models.CharField(max_length=800)
+    title = models.CharField(max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH)
     type = models.CharField(
         max_length=6,
         choices=TypeOfDictionaryEntry.choices,
@@ -123,7 +124,9 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="dictionary_entries",
     )
     # from fv:custom_order
-    custom_order = models.CharField(max_length=800, blank=True)
+    custom_order = models.CharField(
+        max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH, blank=True
+    )
     # from fv-word:available_in_games, fvaudience:games
     exclude_from_games = models.BooleanField(default=False)
     # from fvaudience:children fv:available_in_childrens_archive
