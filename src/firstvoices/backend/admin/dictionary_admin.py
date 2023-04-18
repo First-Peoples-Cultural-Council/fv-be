@@ -58,12 +58,13 @@ class CategoryInline(BaseDictionaryInlineAdmin):
 
 class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
     inlines = [
-        NotesInline,
-        AcknowledgementInline,
         TranslationInline,
         AlternateSpellingInline,
         PronunciationInline,
+        NotesInline,
+        AcknowledgementInline,
     ]
+    readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
 
 
 class PartsOfSpeechAdmin(BaseAdmin):
