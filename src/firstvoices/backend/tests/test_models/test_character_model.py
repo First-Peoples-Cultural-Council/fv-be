@@ -1,4 +1,5 @@
 import pytest
+from django.core.management import call_command
 from django.db.utils import IntegrityError
 
 from firstvoices.backend.models.characters import AppJson
@@ -12,30 +13,35 @@ from firstvoices.backend.tests.factories import (
 
 class TestAlphabetModel:
     @pytest.fixture
+    def g2p_db_setup(self, django_db_blocker):
+        with django_db_blocker.unblock():
+            call_command("loaddata", "default_g2p_config.json")
+
+    @pytest.fixture
     def alphabet(self):
         return AlphabetFactory.create()
 
     @pytest.mark.django_db
-    def test_load_config_fixture(self):
+    def test_load_config_fixture(self, g2p_db_setup):
         """Default g2p config settings loaded from fixture"""
         settings = AppJson.objects.get(key="default_g2p_config").json
         assert settings is not None
         assert "preprocess_config" in settings
 
     @pytest.mark.django_db
-    def test_sort_no_characters(self, alphabet):
+    def test_sort_no_characters(self, alphabet, g2p_db_setup):
         """When no characters are defined, alphabet uses basic sort"""
         assert alphabet.get_custom_order("a") < alphabet.get_custom_order("b")
 
     @pytest.mark.django_db
-    def test_sort_characters(self, alphabet):
+    def test_sort_characters(self, alphabet, g2p_db_setup):
         """When characters are defined, alphabet uses custom sort"""
         CharacterFactory(site=alphabet.site, title="b", sort_order=1)
         CharacterFactory(site=alphabet.site, title="a", sort_order=2)
         assert alphabet.get_custom_order("a") > alphabet.get_custom_order("b")
 
     @pytest.mark.django_db
-    def test_sort_variant_insensitive(self, alphabet):
+    def test_sort_variant_insensitive(self, alphabet, g2p_db_setup):
         """When variants are defined, their sort equals base character sort"""
         char_a = CharacterFactory(site=alphabet.site, title="a")
         CharacterVariantFactory(site=alphabet.site, title="A", base_character=char_a)
@@ -45,7 +51,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("aAᐱ*") == alphabet.get_custom_order("ᐱaA*")
 
     @pytest.mark.django_db
-    def test_sort_skip_ignorables(self, alphabet):
+    def test_sort_skip_ignorables(self, alphabet, g2p_db_setup):
         """When ignorable characters are defined, they are ignored from sort"""
         CharacterFactory(site=alphabet.site, title="a")
         IgnoredCharacterFactory(site=alphabet.site, title="x")
@@ -55,7 +61,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("xaxaxax") == alphabet.get_custom_order("aaa")
 
     @pytest.mark.django_db
-    def test_sort_regex_insensitive(self, alphabet):
+    def test_sort_regex_insensitive(self, alphabet, g2p_db_setup):
         """Regex characters are escaped in variant-character transductions"""
         char_a = CharacterFactory(site=alphabet.site, title="A")
         char_o = CharacterFactory(site=alphabet.site, title="o")
@@ -70,7 +76,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("\n\n") != alphabet.get_custom_order("nn")
 
     @pytest.mark.django_db
-    def test_clean_confusables_basic(self):
+    def test_clean_confusables_basic(self, g2p_db_setup):
         """Apply confusable transducer as defined in alphabet"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
@@ -90,7 +96,7 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables("ᐱ/_/b/č") == "A/_/b/cv"
 
     @pytest.mark.django_db
-    def test_clean_confusables_no_feeding(self):
+    def test_clean_confusables_no_feeding(self, g2p_db_setup):
         """Default confusables transducer does not allow multi-rule application"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
@@ -110,7 +116,7 @@ class TestAlphabetModel:
 
     @pytest.mark.skip("g2p regex escape seems to ignore the mapping with escaped char?")
     @pytest.mark.django_db
-    def test_clean_confusables_regex_escape(self):
+    def test_clean_confusables_regex_escape(self, g2p_db_setup):
         """Default confusables transducer ignores regex rules"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
