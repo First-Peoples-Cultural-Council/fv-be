@@ -1,10 +1,12 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
+from ..utils.character_utils import clean_input
 from .base import BaseModel
 from .category import Category
+from .characters import Alphabet, Character
 from .part_of_speech import PartOfSpeech
-from .sites import BaseControlledSiteContentModel
+from .sites import BaseControlledSiteContentModel, BaseSiteContentModel
 
 
 class BaseDictionaryContentModel(BaseModel):
@@ -140,12 +142,36 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="incoming_related_dictionary_entries",
     )
 
+    # from fvcharacter:related_words
+    related_characters = models.ManyToManyField(
+        Character,
+        blank=True,
+        through="DictionaryEntryRelatedCharacter",
+        related_name="dictionary_entries",
+    )
+
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        alphabet, created = Alphabet.objects.get_or_create(site_id=self.site_id)
+
+        self.clean_title(alphabet)
+        self.set_custom_order(alphabet)
+        super().save(*args, **kwargs)
+
+    def clean_title(self, alphabet):
+        # strip whitespace and normalize
+        self.title = clean_input(self.title)
+        # clean confusables
+        self.title = alphabet.clean_confusables(self.title)
+
+    def set_custom_order(self, alphabet):
+        self.custom_order = alphabet.get_custom_order(self.title)
 
 
 class DictionaryEntryLink(models.Model):
@@ -155,3 +181,39 @@ class DictionaryEntryLink(models.Model):
         on_delete=models.CASCADE,
         related_name="incoming_related_entries",
     )
+
+
+class DictionaryEntryRelatedCharacter(BaseSiteContentModel):
+    """
+    Represents a link between a dictionary entry and  a character.
+    """
+
+    class Meta:
+        verbose_name = _("character related dictionary entry")
+        verbose_name_plural = _("character related dictionary entries")
+
+    character = models.ForeignKey(
+        Character,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="dictionary_entry_links",
+    )
+
+    dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="character_links",
+    )
+
+    def __str__(self):
+        return f"{self.character} - {self.dictionary_entry}"
+
+    def save(self, *args, **kwargs):
+        self.set_site_id()
+        super().save(*args, **kwargs)
+
+    def set_site_id(self):
+        self.site = self.character.site

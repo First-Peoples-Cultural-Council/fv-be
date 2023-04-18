@@ -26,3 +26,7 @@ drf-spectacular==0.26.0  # https://github.com/tfranzel/drf-spectacular
 django-webpack-loader==1.8.1  # https://github.com/django-webpack/django-webpack-loader
 # Django-rules
 rules>=3.3 # https://github.com/dfunckt/django-rules
+
+# Alphabetization
+# ------------------------------------------------------------------------------
+g2p==1.0.20230412 # https://github.com/roedoejet/g2p
