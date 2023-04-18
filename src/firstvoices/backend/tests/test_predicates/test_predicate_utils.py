@@ -15,6 +15,7 @@ from firstvoices.backend.tests.factories import (
 
 @pytest.mark.django_db
 class TestPredicateUtils:
+    # The default g2p config is required for tests that use DictionaryEntry, as an Alphabet is created for custom sort.
     @pytest.fixture
     def g2p_db_setup(self, django_db_blocker):
         with django_db_blocker.unblock():
