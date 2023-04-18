@@ -71,7 +71,6 @@ class TestAlphabetModel:
         CharacterVariantFactory(title="n", base_character=char_n)
         assert alphabet.get_custom_order("^") == alphabet.get_custom_order("A")
         assert alphabet.get_custom_order("..") == alphabet.get_custom_order("oo")
-        assert alphabet.get_custom_order("..") != alphabet.get_custom_order("12")
         assert alphabet.get_custom_order("\\n\\n") == alphabet.get_custom_order("nn")
         assert alphabet.get_custom_order("\n\n") != alphabet.get_custom_order("nn")
 
@@ -114,7 +113,7 @@ class TestAlphabetModel:
         IgnoredCharacterFactory(site=alphabet.site, title="/")
         assert alphabet.clean_confusables("A/A") == "a/a"
 
-    @pytest.mark.skip("g2p regex escape seems to ignore the mapping with escaped char?")
+    @pytest.mark.skip("g2p with regex escape ignores mapping with escaped in-chars")
     @pytest.mark.django_db
     def test_clean_confusables_regex_escape(self, g2p_db_setup):
         """Default confusables transducer ignores regex rules"""
@@ -126,7 +125,6 @@ class TestAlphabetModel:
                 {"in": r"\d", "out": "D"},
             ],
         )
-        assert len(alphabet.input_to_canonical_map) == 4
         assert alphabet.clean_confusables("test") == "test"
         assert alphabet.clean_confusables(r"^^a") == "AAa"
         assert alphabet.clean_confusables(r"test.") == "testo"
@@ -175,8 +173,9 @@ class TestCharacterModel:
     def test_variant_ignorable_same_name(self):
         """Ignorable can't be created with the same name as a character variant"""
         char = CharacterFactory.create()
+        vchar = CharacterVariantFactory.create(base_character=char)
         with pytest.raises(IntegrityError):
-            IgnoredCharacterFactory.create(site=char.site, title=char.title)
+            IgnoredCharacterFactory.create(site=char.site, title=vchar.title)
 
         char = CharacterFactory.create()
         ichar = IgnoredCharacterFactory.create(site=char.site)

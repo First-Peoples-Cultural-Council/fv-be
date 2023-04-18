@@ -85,6 +85,7 @@ class CharacterInline(BaseInlineAdmin):
         "approximate_form",
         "notes",
     ) + BaseInlineAdmin.fields
+    ordering = ("sort_order",)
     readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields
 
 
@@ -94,6 +95,7 @@ class CharacterVariantInline(BaseInlineAdmin):
         "title",
         "base_character",
     ) + BaseInlineAdmin.fields
+    ordering = ("base_character__sort_order", "title")
     readonly_fields = (
         BaseInlineAdmin.readonly_fields + CharacterVariantAdmin.readonly_fields
     )
