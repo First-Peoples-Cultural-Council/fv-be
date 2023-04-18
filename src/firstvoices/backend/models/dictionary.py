@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from firstvoices.backend.models.base import BaseModel
+from firstvoices.backend.models.base import BaseModel, TruncatingCharField
 from firstvoices.backend.models.category import Category
 from firstvoices.backend.models.constants import DICTIONARY_MODELS_TITLE_MAX_LENGTH
 from firstvoices.backend.models.part_of_speech import PartOfSpeech
@@ -124,7 +124,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="dictionary_entries",
     )
     # from fv:custom_order
-    custom_order = models.CharField(
+    custom_order = TruncatingCharField(
         max_length=DICTIONARY_MODELS_TITLE_MAX_LENGTH, blank=True
     )
     # from fv-word:available_in_games, fvaudience:games
