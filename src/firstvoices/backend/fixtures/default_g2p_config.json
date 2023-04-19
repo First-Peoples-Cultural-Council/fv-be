@@ -1,0 +1,36 @@
+[
+  {
+    "model": "backend.appjson",
+    "fields": {
+      "key": "default_g2p_config",
+      "json": {
+        "preprocess_config": {
+          "language_name": "{language}",
+          "display_name": "{language} Preprocessor: Input to Canonical",
+          "in_lang": "{code}-input",
+          "out_lang": "{code}",
+          "type": "mapping",
+          "authors": ["Generated from FirstVoices Confusables"],
+          "rule_ordering": "apply-longest-first",
+          "case_sensitive": true,
+          "norm_form": "NFC",
+          "prevent_feeding": true,
+          "escape_special": true
+        },
+        "presort_config": {
+          "language_name": "{language}",
+          "display_name": "{language} Pre-sort: Canonical to Base Characters",
+          "in_lang": "{code}",
+          "out_lang": "{code}-base",
+          "type": "mapping",
+          "authors": ["Generated from FirstVoices Alphabet"],
+          "rule_ordering": "apply-longest-first",
+          "case_sensitive": true,
+          "norm_form": "NFC",
+          "prevent_feeding": true,
+          "escape_special": true
+        }
+      }
+    }
+  }
+]
