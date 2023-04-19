@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
+from firstvoices.backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
 from firstvoices.backend.models.sites import BaseSiteContentModel
 
 
@@ -9,7 +10,7 @@ class Category(BaseSiteContentModel):
     """Model for Categories."""
 
     # Fields
-    title = models.CharField(max_length=75)
+    title = models.CharField(max_length=CATEGORY_POS_MAX_TITLE_LENGTH)
     description = models.TextField()
     # i.e. A category may have a parent, but the parent category cannot have a parent itself. (i.e. no grandparents).
     # This is enforced in the clean method.

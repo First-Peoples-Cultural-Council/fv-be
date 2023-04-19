@@ -5,6 +5,7 @@ from django.utils.translation import gettext as _
 
 from firstvoices.backend import predicates
 from firstvoices.backend.models.base import BaseModel
+from firstvoices.backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
 from firstvoices.backend.models.managers import PermissionsManager
 
 
@@ -21,7 +22,7 @@ class PartOfSpeech(BaseModel):
     objects = ParentManager()
 
     # Fields
-    title = models.CharField(max_length=75, unique=True)
+    title = models.CharField(max_length=CATEGORY_POS_MAX_TITLE_LENGTH, unique=True)
     # i.e. A PartOfSpeech may have a parent, but the parent PartOfSpeech cannot have a parent itself.
     # (i.e. no grandparents). This is enforced in the clean method.
     parent = models.ForeignKey(

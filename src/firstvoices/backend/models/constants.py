@@ -3,7 +3,7 @@ from django.utils.translation import gettext as _
 
 # Character length values
 MAX_CHARACTER_LENGTH = 10
-DICTIONARY_MODELS_TITLE_MAX_LENGTH = 225
+CATEGORY_POS_MAX_TITLE_LENGTH = 75  # Title length for parts of speech and categories
 
 
 class Visibility(models.IntegerChoices):
