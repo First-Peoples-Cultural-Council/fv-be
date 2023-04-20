@@ -152,6 +152,26 @@ case $yn in
       printf "Superuser creation failed: exit code $retval\n"
       exit $retval
     fi
+
+    # Load required db fixtures
+    printf '\n\n'
+    printf 'Loading required fixture: default_g2p_config\n'
+    python $SCRIPT_DIR/manage.py loaddata default_g2p_config.json
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Failed loading fixture default_g2p_config: exit code $retval\n"
+      exit $retval
+    fi
+
+    # Reset the test database
+    printf '\n'
+    printf 'Flushing test database.\n'
+    dropdb test_fv_be
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Test database cleanup failed: exit code $retval\n"
+      exit $retval
+    fi
     ;;
 
   [Nn]* )

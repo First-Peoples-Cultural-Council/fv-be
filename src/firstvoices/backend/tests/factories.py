@@ -4,6 +4,12 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from firstvoices.backend.models.app import AppJson, AppMembership
+from firstvoices.backend.models.characters import (
+    Alphabet,
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 from firstvoices.backend.models.dictionary import DictionaryEntry
 from firstvoices.backend.models.sites import (
     Language,
@@ -106,6 +112,42 @@ class SiteMenuFactory(DjangoModelFactory):
 class AppJsonFactory(DjangoModelFactory):
     class Meta:
         model = AppJson
+
+
+class CharacterFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = Character
+
+    title = factory.Sequence(lambda n: "chr" + chr(n + 64))  # begin with A
+    sort_order = factory.Sequence(int)
+
+
+class CharacterVariantFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = CharacterVariant
+
+    base_character = factory.SubFactory(CharacterFactory)
+    title = factory.Sequence(lambda n: "varchr" + chr(n + 64))  # begin with A
+
+
+class IgnoredCharacterFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = IgnoredCharacter
+
+    title = factory.Sequence(lambda n: "%03d" % n)
+
+
+class AlphabetFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = Alphabet
 
 
 def get_anonymous_user():

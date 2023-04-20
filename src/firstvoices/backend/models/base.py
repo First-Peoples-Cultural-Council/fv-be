@@ -96,8 +96,23 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
 
 # method to add last_modified and created fields if missing in the data, helpful for fixtures
 @receiver(pre_save, sender="backend.PartOfSpeech")
+@receiver(pre_save, sender="backend.appjson")
 def pre_save_for_fixtures(sender, instance, **kwargs):
     if kwargs["raw"]:
         if not instance.created:
             instance.created = timezone.now()
         instance.last_modified = timezone.now()
+
+
+class TruncatingCharField(models.CharField):
+    """
+    Custom field which auto truncates the value of a varchar field if it goes above a specific length.
+    Also strips any whites spaces in the beginning or in the end before enforcing max length.
+    Ref: https://docs.djangoproject.com/en/4.2/ref/models/fields/#django.db.models.Field.get_prep_value
+    """
+
+    def get_prep_value(self, value):
+        value = super().get_prep_value(value)
+        if value:
+            return value.strip()[: self.max_length]
+        return value
