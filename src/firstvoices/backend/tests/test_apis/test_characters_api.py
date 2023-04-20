@@ -97,6 +97,21 @@ class TestCharactersEndpoints:
         character_json = response_data[1]["characters"][0]
         assert character_json["id"] == str(character2.id)
 
+    # Test List Permissions
+    @pytest.mark.django_db
+    def test_list_permissions(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory(title="Test Site", visibility=Visibility.TEAM)
+        factories.CharacterFactory.create(site=site, sort_order=1)
+
+        response = self.client.get(self.endpoint)
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data) == 0
+
     # Test detail
     @pytest.mark.django_db
     def test_detail(self):
@@ -171,7 +186,7 @@ class TestCharactersEndpoints:
 
         assert response.status_code == 403
 
-        factories.SiteMembershipFactory(user=user, site=site, role=Role.MEMBER)
+        factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
         response = self.client.get(f"{self.endpoint}{character.id}/")
 
         assert response.status_code == 200
