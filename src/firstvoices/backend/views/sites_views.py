@@ -63,7 +63,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         # not used for list action
         return Site.objects.select_related("menu", "language").prefetch_related(
             Prefetch(
-                "sitefeature", queryset=SiteFeature.objects.filter(is_enabled=True)
+                "sitefeature_set", queryset=SiteFeature.objects.filter(is_enabled=True)
             )
         )
 
