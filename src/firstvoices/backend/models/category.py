@@ -39,6 +39,8 @@ class Category(BaseSiteContentModel):
         super().clean()
 
     def save(self, *args, **kwargs):
+        if not hasattr(self, "is_cleaned"):
+            self.is_cleaned = False
         if not self.is_cleaned:
             self.full_clean()
         super().save(*args, **kwargs)

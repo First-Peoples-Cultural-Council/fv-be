@@ -56,5 +56,4 @@ def load_default_categories(site):
             created_by=site.created_by,
             last_modified_by=site.last_modified_by,
         )
-        c.is_cleaned = False
         c.save()

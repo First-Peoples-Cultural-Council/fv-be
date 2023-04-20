@@ -76,7 +76,7 @@ class BaseSiteContentModel(BaseModel):
         abstract = True
 
     site = models.ForeignKey(
-        to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s"
+        to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s_set"
     )
 
 
