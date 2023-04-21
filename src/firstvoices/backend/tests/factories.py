@@ -21,12 +21,13 @@ from firstvoices.backend.models.sites import (
 )
 
 
-class SiteFactory(DjangoModelFactory):
-    class Meta:
-        model = Site
+class AnonymousUserFactory(DjangoModelFactory):
+    """
+    Note: use the build() strategy only with this factory, because these do not have a db table
+    """
 
-    title = factory.Sequence(lambda n: "Site %03d" % n)
-    slug = factory.Sequence(lambda n: "site-%03d" % n)
+    class Meta:
+        model = AnonymousUser
 
 
 class UserFactory(DjangoModelFactory):
@@ -37,13 +38,14 @@ class UserFactory(DjangoModelFactory):
     id = factory.Sequence(lambda n: "user id %03d" % n)
 
 
-class AnonymousUserFactory(DjangoModelFactory):
-    """
-    Note: use the build() strategy only with this factory, because these do not have a db table
-    """
-
+class SiteFactory(DjangoModelFactory):
     class Meta:
-        model = AnonymousUser
+        model = Site
+
+    title = factory.Sequence(lambda n: "Site %03d" % n)
+    slug = factory.Sequence(lambda n: "site-%03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
 
 
 class MembershipFactory(DjangoModelFactory):

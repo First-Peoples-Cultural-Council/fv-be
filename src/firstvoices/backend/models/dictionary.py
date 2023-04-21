@@ -1,14 +1,14 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from firstvoices.backend.models.base import BaseModel, TruncatingCharField
+from firstvoices.backend.models.base import (
+    BaseControlledSiteContentModel,
+    BaseModel,
+    TruncatingCharField,
+)
 from firstvoices.backend.models.category import Category
 from firstvoices.backend.models.characters import Alphabet, Character
 from firstvoices.backend.models.part_of_speech import PartOfSpeech
-from firstvoices.backend.models.sites import (
-    BaseControlledSiteContentModel,
-    BaseSiteContentModel,
-)
 from firstvoices.backend.utils.character_utils import clean_input
 
 TITLE_MAX_LENGTH = 225
@@ -193,7 +193,7 @@ class DictionaryEntryLink(models.Model):
     )
 
 
-class DictionaryEntryRelatedCharacter(BaseSiteContentModel):
+class DictionaryEntryRelatedCharacter(models.Model):
     """
     Represents a link between a dictionary entry and  a character.
     """

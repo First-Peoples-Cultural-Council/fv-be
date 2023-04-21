@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
+from .constants import Visibility
 from .managers import PermissionsManager
 
 
@@ -63,6 +64,34 @@ class BaseModel(RulesModel):
 
     # from dc:lastContributor
     last_modified = models.DateTimeField(auto_now=True, db_index=True)
+
+
+class BaseSiteContentModel(BaseModel):
+    """
+    Base model for non-access-controlled site content data such as categories, that do not have their own
+    visibility levels. Can also be used as a base for more specific types of site content base models.
+    """
+
+    class Meta:
+        abstract = True
+
+    site = models.ForeignKey(
+        to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s_set"
+    )
+
+
+class BaseControlledSiteContentModel(BaseSiteContentModel):
+    """
+    Base model for access-controlled site content models such as words, phrases, songs, and stories, that have their own
+    visibility level setting.
+    """
+
+    class Meta:
+        abstract = True
+
+    visibility = models.IntegerField(
+        choices=Visibility.choices, default=Visibility.TEAM
+    )
 
 
 # method to add last_modified and created fields if missing in the data, helpful for fixtures

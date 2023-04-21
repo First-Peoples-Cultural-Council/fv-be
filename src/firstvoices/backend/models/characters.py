@@ -6,10 +6,10 @@ from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
-from ..utils.character_utils import CustomSorter
-from .app import AppJson
-from .constants import MAX_CHARACTER_LENGTH
-from .sites import BaseSiteContentModel
+from firstvoices.backend.models.app import AppJson
+from firstvoices.backend.models.base import BaseSiteContentModel
+from firstvoices.backend.models.constants import MAX_CHARACTER_LENGTH
+from firstvoices.backend.utils.character_utils import CustomSorter
 
 
 class Character(BaseSiteContentModel):

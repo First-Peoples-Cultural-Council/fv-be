@@ -7,7 +7,9 @@ from django.utils.translation import gettext as _
 from firstvoices.backend import predicates
 from firstvoices.backend.models import BaseModel
 
+from .base import BaseSiteContentModel
 from .constants import Role, Visibility
+from .utils import load_default_categories
 
 
 class LanguageFamily(BaseModel):
@@ -129,31 +131,14 @@ class Site(BaseModel):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        # Check if saving a new model or updating an existing one.
+        new_model = self._state.adding
+        super().save(*args, **kwargs)
 
-class BaseSiteContentModel(BaseModel):
-    """
-    Base model for non-access-controlled site content data such as categories, that do not have their own
-    visibility levels. Can also be used as a base for more specific types of site content base models.
-    """
-
-    class Meta:
-        abstract = True
-
-    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="%(class)s")
-
-
-class BaseControlledSiteContentModel(BaseSiteContentModel):
-    """
-    Base model for access-controlled site content models such as words, phrases, songs, and stories, that have their own
-    visibility level setting.
-    """
-
-    class Meta:
-        abstract = True
-
-    visibility = models.IntegerField(
-        choices=Visibility.choices, default=Visibility.TEAM
-    )
+        if new_model:
+            # Add default categories for all new sites.
+            load_default_categories(self)
 
 
 class Membership(BaseSiteContentModel):
