@@ -38,7 +38,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
     Serializes basic details about a site object, including access-controlled related information.
     """
 
-    features = FeatureFlagSerializer(source="sitefeature", many=True)
+    features = FeatureFlagSerializer(source="sitefeature_set", many=True)
     menu = serializers.SerializerMethodField()
 
     def get_menu(self, site):

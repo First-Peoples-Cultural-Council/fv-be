@@ -54,6 +54,8 @@ class DictionaryEntryInline(BaseDictionaryInlineAdmin):
 class CategoryInline(BaseDictionaryInlineAdmin):
     model = Category
     fields = ("title", "parent") + BaseInlineAdmin.fields
+    readonly_fields = ("parent",) + BaseDictionaryInlineAdmin.readonly_fields
+    ordering = ["title"]
 
 
 class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):

@@ -9,7 +9,7 @@ from firstvoices.backend.models.constants import AppRole
 from firstvoices.backend.tests.factories import get_app_admin
 
 
-class TestPartsOfSpeechView:
+class TestPartsOfSpeechAPI:
     """Tests for parts-of-speech views."""
 
     FIXTURE_FILE = "partsOfSpeech_initial.json"
