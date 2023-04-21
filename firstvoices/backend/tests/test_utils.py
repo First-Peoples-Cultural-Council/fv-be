@@ -2,7 +2,7 @@ from itertools import product
 
 import pytest
 
-from ..utils.character_utils import ArbSorter, CustomSorter
+from backend.utils.character_utils import ArbSorter, CustomSorter
 
 
 class TestCharacterUtils:

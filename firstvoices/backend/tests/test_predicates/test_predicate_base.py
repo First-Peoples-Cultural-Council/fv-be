@@ -1,4 +1,6 @@
 import pytest
+from django.core.management import call_command
+
 from backend.models.constants import AppRole, Role, Visibility
 from backend.predicates import base
 from backend.tests.factories import (
@@ -10,7 +12,6 @@ from backend.tests.factories import (
     UserFactory,
     get_app_admin,
 )
-from django.core.management import call_command
 
 
 class TestBaseObjectVisibilityPredicates:

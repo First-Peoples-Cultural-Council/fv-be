@@ -1,10 +1,11 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.viewsets import ModelViewSet
+
 from backend.serializers.dictionary_serializers import (
     PartOfSpeech,
     PartsOfSpeechSerializer,
 )
 from backend.views.base_views import FVPermissionViewSetMixin
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework.viewsets import ModelViewSet
 
 
 @extend_schema_view(

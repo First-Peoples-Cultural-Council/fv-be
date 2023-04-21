@@ -1,9 +1,6 @@
 from itertools import groupby
 from operator import itemgetter
 
-from backend.models.sites import SiteFeature
-from backend.predicates import utils
-from backend.serializers import Site, SiteDetailSerializer, SiteSummarySerializer
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from drf_spectacular.utils import (
@@ -16,6 +13,10 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
+
+from backend.models.sites import SiteFeature
+from backend.predicates import utils
+from backend.serializers import Site, SiteDetailSerializer, SiteSummarySerializer
 
 
 @extend_schema_view(

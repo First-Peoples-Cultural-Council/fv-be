@@ -1,3 +1,5 @@
+from django.contrib import admin
+
 from backend.models.sites import (
     Language,
     LanguageFamily,
@@ -5,7 +7,6 @@ from backend.models.sites import (
     SiteFeature,
     SiteMenu,
 )
-from django.contrib import admin
 
 from .base_admin import BaseAdmin, BaseInlineAdmin, BaseSiteContentAdmin
 

@@ -1,9 +1,10 @@
 import json
 
 import pytest
+from rest_framework.test import APIClient
+
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from rest_framework.test import APIClient
 
 
 class TestSitesEndpoints:

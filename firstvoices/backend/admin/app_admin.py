@@ -1,5 +1,6 @@
-from backend.models.app import AppJson
 from django.contrib import admin
+
+from backend.models.app import AppJson
 
 from .base_admin import BaseAdmin
 

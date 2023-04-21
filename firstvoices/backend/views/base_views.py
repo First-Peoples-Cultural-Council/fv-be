@@ -1,6 +1,7 @@
-from backend.predicates import utils
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
+
+from backend.predicates import utils
 
 
 class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):

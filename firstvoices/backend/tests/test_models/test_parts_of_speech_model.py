@@ -1,14 +1,15 @@
 import re
 
 import pytest
-from backend.models.constants import AppRole
-from backend.models.part_of_speech import PartOfSpeech
-from backend.tests.factories import get_app_admin
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.http.response import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
 from django.utils import timezone
+
+from backend.models.constants import AppRole
+from backend.models.part_of_speech import PartOfSpeech
+from backend.tests.factories import get_app_admin
 
 
 class TestPartsOfSpeechModel:

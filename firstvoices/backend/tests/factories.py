@@ -1,4 +1,8 @@
 import factory
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from factory.django import DjangoModelFactory
+
 from backend.models.app import AppJson, AppMembership
 from backend.models.characters import (
     Alphabet,
@@ -15,9 +19,6 @@ from backend.models.sites import (
     SiteFeature,
     SiteMenu,
 )
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
-from factory.django import DjangoModelFactory
 
 
 class AnonymousUserFactory(DjangoModelFactory):

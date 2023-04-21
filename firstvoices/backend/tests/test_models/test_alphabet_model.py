@@ -1,4 +1,6 @@
 import pytest
+from django.core.management import call_command
+
 from backend.models.characters import AppJson
 from backend.tests.factories import (
     AlphabetFactory,
@@ -6,7 +8,6 @@ from backend.tests.factories import (
     CharacterVariantFactory,
     IgnoredCharacterFactory,
 )
-from django.core.management import call_command
 
 
 class TestAlphabetModel:

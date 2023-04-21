@@ -1,5 +1,6 @@
-from backend.models.part_of_speech import PartOfSpeech
 from rest_framework import serializers
+
+from backend.models.part_of_speech import PartOfSpeech
 
 
 class PartsOfSpeechChildrenSerializer(serializers.ModelSerializer):

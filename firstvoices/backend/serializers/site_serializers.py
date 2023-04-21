@@ -1,6 +1,7 @@
+from rest_framework import serializers
+
 from backend.models.app import AppJson
 from backend.models.sites import Site
-from rest_framework import serializers
 
 
 class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):

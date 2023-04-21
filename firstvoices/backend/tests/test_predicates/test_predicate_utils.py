@@ -1,4 +1,6 @@
 import pytest
+from django.core.management import call_command
+
 from backend.models.constants import AppRole, Role
 from backend.predicates import utils
 from backend.tests.factories import (
@@ -9,7 +11,6 @@ from backend.tests.factories import (
     UserFactory,
     get_app_admin,
 )
-from django.core.management import call_command
 
 
 @pytest.mark.django_db

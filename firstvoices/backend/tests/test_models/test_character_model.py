@@ -1,10 +1,11 @@
 import pytest
+from django.db.utils import IntegrityError
+
 from backend.tests.factories import (
     CharacterFactory,
     CharacterVariantFactory,
     IgnoredCharacterFactory,
 )
-from django.db.utils import IntegrityError
 
 
 class TestCharacterModel:

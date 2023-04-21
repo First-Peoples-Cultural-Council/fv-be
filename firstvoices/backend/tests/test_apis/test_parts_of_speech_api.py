@@ -1,11 +1,12 @@
 import json
 
 import pytest
-from backend.models.constants import AppRole
-from backend.tests.factories import get_app_admin
 from django.core.management import call_command
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
+
+from backend.models.constants import AppRole
+from backend.tests.factories import get_app_admin
 
 
 class TestPartsOfSpeechAPI:

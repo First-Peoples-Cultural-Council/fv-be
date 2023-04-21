@@ -1,3 +1,5 @@
+from django.contrib import admin
+
 from backend.models.characters import (
     Alphabet,
     Character,
@@ -5,7 +7,6 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.dictionary import DictionaryEntry
-from django.contrib import admin
 
 from .base_admin import BaseInlineAdmin, BaseSiteContentAdmin
 

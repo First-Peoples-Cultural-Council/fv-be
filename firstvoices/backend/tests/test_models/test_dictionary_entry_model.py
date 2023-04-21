@@ -1,4 +1,7 @@
 import pytest
+from django.core.management import call_command
+from django.db.utils import DataError
+
 from backend.models.characters import Alphabet
 from backend.models.dictionary import TITLE_MAX_LENGTH, DictionaryEntry
 from backend.tests.factories import (
@@ -7,8 +10,6 @@ from backend.tests.factories import (
     SiteFactory,
 )
 from backend.tests.utils import generate_string
-from django.core.management import call_command
-from django.db.utils import DataError
 
 
 class TestDictionaryEntryModel:

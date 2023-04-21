@@ -1,5 +1,8 @@
-from allauth.account.models import EmailAddress
-from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
+from django.contrib import admin
+from django.contrib.auth.models import Group
+from django.contrib.sites.models import Site as Sites
+from rest_framework.authtoken.models import TokenProxy
+
 from backend.models.category import Category
 from backend.models.dictionary import (
     AlternateSpelling,
@@ -11,10 +14,6 @@ from backend.models.dictionary import (
 )
 from backend.models.part_of_speech import PartOfSpeech
 from backend.models.sites import Site
-from django.contrib import admin
-from django.contrib.auth.models import Group
-from django.contrib.sites.models import Site as Sites
-from rest_framework.authtoken.models import TokenProxy
 
 from .base_admin import BaseAdmin, HiddenBaseAdmin
 from .characters_admin import (
@@ -65,12 +64,8 @@ class SiteAdmin(BaseAdmin):
 
 
 admin.site.unregister(Sites)
-admin.site.unregister(EmailAddress)
 admin.site.unregister(TokenProxy)
 admin.site.unregister(Group)
-admin.site.unregister(SocialAccount)
-admin.site.unregister(SocialApp)
-admin.site.unregister(SocialToken)
 
 # Dictionary models
 admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
