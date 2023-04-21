@@ -1,7 +1,7 @@
-from firstvoices.backend.models.constants import AppRole
-from firstvoices.backend.models.sites import Site
-from firstvoices.backend.models.utils import load_data
-from firstvoices.backend.tests.factories import get_app_admin
+from backend.models.constants import AppRole
+from backend.models.sites import Site
+from backend.models.utils import load_data
+from backend.tests.factories import get_app_admin
 
 
 class TestSiteModel:

@@ -1,7 +1,7 @@
 import json
 from os import path
 
-from firstvoices.backend.models.category import Category
+from backend.models.category import Category
 
 
 def load_data(json_file):

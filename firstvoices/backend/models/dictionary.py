@@ -1,15 +1,12 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from firstvoices.backend.models.base import (
-    BaseControlledSiteContentModel,
-    BaseModel,
-    TruncatingCharField,
-)
-from firstvoices.backend.models.category import Category
-from firstvoices.backend.models.characters import Alphabet, Character
-from firstvoices.backend.models.part_of_speech import PartOfSpeech
-from firstvoices.backend.utils.character_utils import clean_input
+from backend.utils.character_utils import clean_input
+
+from .base import BaseControlledSiteContentModel, BaseModel, TruncatingCharField
+from .category import Category
+from .characters import Alphabet, Character
+from .part_of_speech import PartOfSpeech
 
 TITLE_MAX_LENGTH = 225
 

@@ -4,10 +4,9 @@ from django.core.validators import validate_slug
 from django.db import models
 from django.utils.translation import gettext as _
 
-from firstvoices.backend import predicates
-from firstvoices.backend.models import BaseModel
+from backend import predicates
 
-from .base import BaseSiteContentModel
+from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
 from .utils import load_default_categories
 

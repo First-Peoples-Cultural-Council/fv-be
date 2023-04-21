@@ -2,8 +2,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
-from firstvoices.backend.models.base import BaseSiteContentModel
-from firstvoices.backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
+from .base import BaseSiteContentModel
+from .constants import CATEGORY_POS_MAX_TITLE_LENGTH
 
 
 class Category(BaseSiteContentModel):

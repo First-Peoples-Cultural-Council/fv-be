@@ -1,5 +1,6 @@
-from backend.predicates import utils
 from django.db import models
+
+from backend.predicates import utils
 
 
 class PermissionsManager(models.Manager):
