@@ -4,9 +4,8 @@ from rest_framework.views import APIView
 
 
 class HealthCheckView(APIView):
-	permission_classes = [permissions.AllowAny]
-	authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
-	def get(self, request, format=None):
-		return Response({"status": "server is ok"})
-
+    def get(self, request, format=None):
+        return Response({"status": "server is ok"})

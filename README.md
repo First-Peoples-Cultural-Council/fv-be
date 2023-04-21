@@ -62,6 +62,7 @@ ___
     - `python manage.py loaddata fixture_name`
     - Fixtures available:
       - `partsOfSpeech_initial.json`
+      - `default_g2p_config.json`
 ___
 
 ## IDE Linting and Formatting (Recommended)
@@ -206,6 +207,15 @@ or if you have already set the environment variables locally:
 ./src/reset-local-database.sh
 ```
 
+### Setting Up Custom Order/Confusable Cleaning for Dictionary Entries
+To set up custom order/confusable cleaning locally, you will need to do the following:
+- Load the `default_g2p_config.json` fixture
+- Create `Character` models that correspond with the characters you will use in a site's alphabet.
+    - Base characters are required, ignorables and variants are optional.
+- Create an `AlphabetMapper` class with an appropriate input to canonical mapping that defines confusables.
+    - For example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
+    - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
+
 ### Type checks
 
 Running type checks with mypy:
@@ -250,6 +260,10 @@ pytest <path to file>
 - Run a single test:
 ```
 pytest <path to file containing test> -k '<name of single test>'
+```
+- Reset the test database:
+```
+python manage.py reset_db -D test_fv_be
 ```
 
 ## Useful Local URLs On Startup

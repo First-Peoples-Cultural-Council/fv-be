@@ -11,6 +11,7 @@ djangorestframework-camel-case==1.4.2
 drf-spectacular==0.26.0
 factory-boy==3.2.1
 Faker==18.4.0
+g2p==1.0.20230412 # https://github.com/roedoejet/g2p
 gunicorn==20.1.0
 idna==3.4
 inflection==0.5.1
@@ -23,6 +24,7 @@ pycparser==2.21
 PyJWT==2.6.0
 pyrsistent==0.19.3
 pytest==7.3.0
+pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 pytz==2022.7.1

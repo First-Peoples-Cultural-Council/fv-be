@@ -1,6 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth.models import Group
-from rest_framework.authtoken.models import TokenProxy
 
 from backend.models.category import Category
 from backend.models.dictionary import (
@@ -24,6 +22,7 @@ from .dictionary_admin import (
     CategoryInline,
     DictionaryEntryHiddenBaseAdmin,
     DictionaryEntryInline,
+    PartsOfSpeechAdmin,
 )
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
@@ -61,7 +60,7 @@ class SiteAdmin(BaseAdmin):
     autocomplete_fields = ("language",)
 
 
-admin.site.unregister(Group)
+# admin.site.unregister(Group)
 
 # Dictionary models
 admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
@@ -71,4 +70,4 @@ admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)
-admin.site.register(PartOfSpeech)
+admin.site.register(PartOfSpeech, PartsOfSpeechAdmin)

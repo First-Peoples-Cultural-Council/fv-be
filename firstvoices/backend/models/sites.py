@@ -5,9 +5,10 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend import predicates
-from .base import BaseModel
 
+from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
+from .utils import load_default_categories
 
 
 class LanguageFamily(BaseModel):
@@ -62,7 +63,9 @@ class Language(BaseModel):
     alternate_names = models.CharField(max_length=200, blank=True)
 
     # from fva:family
-    language_family = models.ForeignKey(LanguageFamily, on_delete=models.PROTECT)
+    language_family = models.ForeignKey(
+        LanguageFamily, on_delete=models.PROTECT, related_name="languages"
+    )
 
     # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
@@ -104,7 +107,7 @@ class Site(BaseModel):
 
     # from fva:language
     language = models.ForeignKey(
-        Language, null=True, blank=True, on_delete=models.SET_NULL
+        Language, null=True, blank=True, on_delete=models.SET_NULL, related_name="sites"
     )
 
     # from state (will have to be translated from existing states to new visibilities)
@@ -127,33 +130,14 @@ class Site(BaseModel):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        # Check if saving a new model or updating an existing one.
+        new_model = self._state.adding
+        super().save(*args, **kwargs)
 
-class BaseSiteContentModel(BaseModel):
-    """
-    Base model for non-access-controlled site content data such as categories, that do not have their own
-    visibility levels. Can also be used as a base for more specific types of site content base models.
-    """
-
-    class Meta:
-        abstract = True
-
-    site = models.ForeignKey(
-        Site, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s"
-    )
-
-
-class BaseControlledSiteContentModel(BaseSiteContentModel):
-    """
-    Base model for access-controlled site content models such as words, phrases, songs, and stories, that have their own
-    visibility level setting.
-    """
-
-    class Meta:
-        abstract = True
-
-    visibility = models.IntegerField(
-        choices=Visibility.choices, default=Visibility.TEAM
-    )
+        if new_model:
+            # Add default categories for all new sites.
+            load_default_categories(self)
 
 
 class Membership(BaseSiteContentModel):
@@ -213,9 +197,7 @@ class SiteMenu(BaseModel):
     """
 
     json = models.JSONField()
-    site = models.OneToOneField(
-        Site, on_delete=models.CASCADE, related_name="site_menu"
-    )
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="menu")
 
     class Meta:
         verbose_name = _("site menu")

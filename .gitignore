@@ -110,6 +110,7 @@ ENV/
 .envrc
 env.bak/
 venv.bak/
+*.env
 
 # Spyder project settings
 .spyderproject
@@ -283,10 +284,10 @@ tags
 dump.rdb
 
 ### Project template
-src/firstvoices/media/
+firstvoices/firstvoices/media/
 
 .pytest_cache/
-src/firstvoices/static/webpack_bundles/
+firstvoices/firstvoices/static/webpack_bundles/
 webpack-stats.json
 
 firstvoices/static
