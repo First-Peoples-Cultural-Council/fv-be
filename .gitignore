@@ -303,11 +303,11 @@ tags
 dump.rdb
 
 ### Project template
-src/firstvoices/media/
+firstvoices/firstvoices/media/
 
 .pytest_cache/
-src/firstvoices/static/webpack_bundles/
+firstvoices/firstvoices/static/webpack_bundles/
 webpack-stats.json
 
-src/firstvoices/backend/migrations/*
-src/firstvoices/users/migrations/*
+firstvoices/backend/migrations/*
+firstvoices/firstvoices/users/migrations/*
