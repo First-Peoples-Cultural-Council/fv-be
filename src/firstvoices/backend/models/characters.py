@@ -6,6 +6,7 @@ from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
+from .. import predicates
 from ..utils.character_utils import CustomSorter
 from .app import AppJson
 from .constants import MAX_CHARACTER_LENGTH
@@ -30,6 +31,12 @@ class Character(BaseSiteContentModel):
                 fields=["sort_order", "site_id"], name="unique_character_sort_order"
             ),
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from dc:title
     # Unique with site_id

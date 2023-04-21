@@ -12,6 +12,9 @@ class TestCharactersEndpoints:
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
 
+    CHARACTER_NOTE = "This is a test character note"
+    TEST_SITE_TITLE = "Test Site"
+
     endpoint = "/api/2.0/characters/"
 
     def setup_method(self):
@@ -34,13 +37,15 @@ class TestCharactersEndpoints:
     def test_list_with_characters(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.PUBLIC)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.PUBLIC
+        )
         character0 = factories.CharacterFactory.create(
             title="Ch0",
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes="Ch0 notes",
+            notes=self.CHARACTER_NOTE,
         )
         factories.CharacterFactory.create(
             title="Ch1", site=site, sort_order=2, approximate_form="Ch1", notes=""
@@ -53,7 +58,7 @@ class TestCharactersEndpoints:
         response_data = json.loads(response.content)
         assert len(response_data) == 1
 
-        assert response_data[0]["site"] == "Test Site"
+        assert response_data[0]["site"] == self.TEST_SITE_TITLE
         assert len(response_data[0]["characters"]) == 2
 
         character_json = response_data[0]["characters"][0]
@@ -63,7 +68,7 @@ class TestCharactersEndpoints:
             "site": site.title,
             "sortOrder": 1,
             "approximateForm": "Ch0",
-            "notes": "Ch0 notes",
+            "notes": self.CHARACTER_NOTE,
         }
 
     # Test list with multiple sites and multiple characters
@@ -71,7 +76,9 @@ class TestCharactersEndpoints:
     def test_list_with_multiple_characters_and_sites(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.PUBLIC)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.PUBLIC
+        )
         site2 = factories.SiteFactory(title="Test Site 2", visibility=Visibility.PUBLIC)
         character0 = factories.CharacterFactory.create(site=site, sort_order=1)
         factories.CharacterFactory.create(site=site, sort_order=2)
@@ -85,7 +92,7 @@ class TestCharactersEndpoints:
         response_data = json.loads(response.content)
         assert len(response_data) == 2
 
-        assert response_data[0]["site"] == "Test Site"
+        assert response_data[0]["site"] == self.TEST_SITE_TITLE
         assert len(response_data[0]["characters"]) == 2
 
         assert response_data[1]["site"] == "Test Site 2"
@@ -102,7 +109,9 @@ class TestCharactersEndpoints:
     def test_list_permissions(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.TEAM)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.TEAM
+        )
         factories.CharacterFactory.create(site=site, sort_order=1)
 
         response = self.client.get(self.endpoint)
@@ -117,13 +126,15 @@ class TestCharactersEndpoints:
     def test_detail(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.PUBLIC)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.PUBLIC
+        )
         character = factories.CharacterFactory.create(
             title="Ch0",
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes="Ch0 notes",
+            notes=self.CHARACTER_NOTE,
         )
 
         response = self.client.get(f"{self.endpoint}{character.id}/")
@@ -137,7 +148,7 @@ class TestCharactersEndpoints:
             "site": site.title,
             "sortOrder": 1,
             "approximateForm": "Ch0",
-            "notes": "Ch0 notes",
+            "notes": self.CHARACTER_NOTE,
         }
 
     # Test detail 403
@@ -145,13 +156,15 @@ class TestCharactersEndpoints:
     def test_detail_403(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.TEAM)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.TEAM
+        )
         character = factories.CharacterFactory.create(
             title="Ch0",
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes="Ch0 notes",
+            notes=self.CHARACTER_NOTE,
         )
 
         response = self.client.get(f"{self.endpoint}{character.id}/")
@@ -173,13 +186,15 @@ class TestCharactersEndpoints:
     def test_permissions(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(title="Test Site", visibility=Visibility.TEAM)
+        site = factories.SiteFactory(
+            title=self.TEST_SITE_TITLE, visibility=Visibility.TEAM
+        )
         character = factories.CharacterFactory.create(
             title="Ch0",
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes="Ch0 notes",
+            notes=self.CHARACTER_NOTE,
         )
 
         response = self.client.get(f"{self.endpoint}{character.id}/")
