@@ -3,80 +3,75 @@ import json
 import jwt
 import requests
 from django.conf import settings
-from rest_framework import authentication
-from rest_framework import exceptions
+from rest_framework import authentication, exceptions
 
 from backend.models import User
 
 
 class UserAuthentication(authentication.BaseAuthentication):
-	"""
-	JWT Token Decode and Map to User
-	"""
+    """
+    JWT Token Decode and Map to User
+    """
 
-	def refresh_jwk(self):
-		certs_response = requests.get(settings.JWT['JWKS_URL'])
-		jwks = json.loads(certs_response.text)
-		self.jwks = jwks
+    def refresh_jwk(self):
+        certs_response = requests.get(settings.JWT["JWKS_URL"])
+        jwks = json.loads(certs_response.text)
+        self.jwks = jwks
 
-	def __init__(self):
-		self.jwks = None
-		self.refresh_jwk()
+    def __init__(self):
+        self.jwks = None
+        self.refresh_jwk()
 
-	def authenticate(self, request):
-		"""Verify the JWT token and find (or create) the correct user in the DB"""
-		auth = request.META.get('HTTP_AUTHORIZATION', None)
+    def authenticate(self, request):
+        """Verify the JWT token and find (or create) the correct user in the DB"""
+        auth = request.META.get("HTTP_AUTHORIZATION", None)
 
-		if not auth:
-			raise exceptions.AuthenticationFailed(
-				'Authorization header required')
+        if not auth:
+            raise exceptions.AuthenticationFailed("Authorization header required")
 
-		try:
-			scheme, token = auth.split()
-		except ValueError:
-			raise exceptions.AuthenticationFailed(
-				'Invalid format for authorization header')
-		if scheme != 'Bearer':
-			raise exceptions.AuthenticationFailed(
-				'Authorization header invalid'
-			)
+        try:
+            scheme, token = auth.split()
+        except ValueError:
+            raise exceptions.AuthenticationFailed(
+                "Invalid format for authorization header"
+            )
+        if scheme != "Bearer":
+            raise exceptions.AuthenticationFailed("Authorization header invalid")
 
-		if not token:
-			raise exceptions.AuthenticationFailed(
-				'No token found'
-			)
+        if not token:
+            raise exceptions.AuthenticationFailed("No token found")
 
-		token_validation_errors = []
+        token_validation_errors = []
 
-		jwks_client = jwt.PyJWKClient(settings.JWT['JWKS_URL'])
+        jwks_client = jwt.PyJWKClient(settings.JWT["JWKS_URL"])
 
-		try:
-			signing_key = jwks_client.get_signing_key_from_jwt(token)
-		except Exception as exc:
-			token_validation_errors.append(exc)
-			raise Exception(str(exc))
+        try:
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+        except Exception as exc:
+            token_validation_errors.append(exc)
+            raise Exception(str(exc))
 
-		try:
-			user_token = jwt.decode(
-				token,
-				signing_key.key,
-				algorithms=["RS256"],
-				audience=settings.JWT['AUDIENCE'],
-				options={"verify_exp": True},
-			)
-		except (jwt.InvalidTokenError, jwt.ExpiredSignature, jwt.DecodeError) as exc:
-			token_validation_errors.append(exc)
-			raise Exception(exc)
+        try:
+            user_token = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=settings.JWT["AUDIENCE"],
+                options={"verify_exp": True},
+            )
+        except (jwt.InvalidTokenError, jwt.ExpiredSignature, jwt.DecodeError) as exc:
+            token_validation_errors.append(exc)
+            raise Exception(exc)
 
-		if not user_token:
-			raise exceptions.AuthenticationFailed(
-				'Failed decode: {}',
-				'\n'.join([str(error) for error in token_validation_errors])
-			)
+        if not user_token:
+            raise exceptions.AuthenticationFailed(
+                "Failed decode: {}",
+                "\n".join([str(error) for error in token_validation_errors]),
+            )
 
-		try:
-			user = User.objects.get(id=user_token['sub'])
-			return user, None
-		except User.DoesNotExist:
-			user = User.objects.create(id=user_token['sub'])
-			return user, None
+        try:
+            user = User.objects.get(id=user_token["sub"])
+            return user, None
+        except User.DoesNotExist:
+            user = User.objects.create(id=user_token["sub"])
+            return user, None
