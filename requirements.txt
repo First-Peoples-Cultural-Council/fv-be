@@ -11,6 +11,7 @@ djangorestframework-camel-case==1.4.2
 drf-spectacular==0.26.0
 factory-boy==3.2.1
 Faker==18.4.0
+g2p==1.0.20230412 # https://github.com/roedoejet/g2p
 gunicorn==20.1.0
 idna==3.4
 inflection==0.5.1

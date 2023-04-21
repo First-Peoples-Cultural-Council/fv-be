@@ -1,7 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth.models import Group
-from django.contrib.sites.models import Site as Sites
-from rest_framework.authtoken.models import TokenProxy
 
 from backend.models.category import Category
 from backend.models.dictionary import (
@@ -63,9 +60,7 @@ class SiteAdmin(BaseAdmin):
     autocomplete_fields = ("language",)
 
 
-admin.site.unregister(Sites)
-admin.site.unregister(TokenProxy)
-admin.site.unregister(Group)
+# admin.site.unregister(Group)
 
 # Dictionary models
 admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
