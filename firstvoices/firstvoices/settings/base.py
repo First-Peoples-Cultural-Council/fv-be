@@ -5,7 +5,7 @@ from pathlib import Path
 
 import environ
 
-from config import database, jwt
+from firstvoices.config import database, jwt
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # firstvoices/
