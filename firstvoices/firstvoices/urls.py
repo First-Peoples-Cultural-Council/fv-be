@@ -4,7 +4,6 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from backend.admin import admin
-from backend.urls import urlpatterns as backend_urls
 
 from . import settings
 
@@ -19,9 +18,8 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="api-schema"),
         name="api-docs",
     ),
+    path("api/1.0/", include("backend.urls")),
 ]
-
-urlpatterns += backend_urls
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

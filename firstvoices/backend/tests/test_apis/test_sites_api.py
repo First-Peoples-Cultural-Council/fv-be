@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
@@ -13,10 +14,13 @@ class TestSitesEndpoints:
     serializer tests.
     """
 
-    endpoint = "/api/2.0/sites/"
+    API_LIST_VIEW = "api:site-list"
+    API_DETAIL_VIEW = "api:site-detail"
+    APP_NAME = "backend"
 
     def setup_method(self):
         self.client = APIClient()
+        self.endpoint = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
 
     @pytest.mark.django_db
     def test_list_empty(self):
@@ -63,7 +67,7 @@ class TestSitesEndpoints:
             "slug": site.slug,
             "language": language0.title,
             "visibility": "Public",
-            "url": f"http://testserver/api/2.0/sites/{site.slug}/",
+            "url": f"http://testserver/api/1.0/sites/{site.slug}",
         }
 
     @pytest.mark.django_db
@@ -103,7 +107,7 @@ class TestSitesEndpoints:
         )
         menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
 
-        response = self.client.get(f"{self.endpoint}{site.slug}/")
+        response = self.client.get(f"{self.endpoint}/{site.slug}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -113,7 +117,7 @@ class TestSitesEndpoints:
             "slug": site.slug,
             "language": language.title,
             "visibility": "Members",
-            "url": f"http://testserver/api/2.0/sites/{site.slug}/",
+            "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "menu": menu.json,
             "features": [],
         }
@@ -128,7 +132,7 @@ class TestSitesEndpoints:
             key="default_site_menu", json='{"some": "json"}'
         )
 
-        response = self.client.get(f"{self.endpoint}{site.slug}/")
+        response = self.client.get(f"{self.endpoint}/{site.slug}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -145,7 +149,7 @@ class TestSitesEndpoints:
         )
         factories.SiteFeatureFactory.create(site=site, key="key2", is_enabled=False)
 
-        response = self.client.get(f"{self.endpoint}{site.slug}/")
+        response = self.client.get(f"{self.endpoint}/{site.slug}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -163,7 +167,7 @@ class TestSitesEndpoints:
         factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.endpoint}{site.slug}/")
+        response = self.client.get(f"{self.endpoint}/{site.slug}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -175,7 +179,7 @@ class TestSitesEndpoints:
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.endpoint}{site.slug}/")
+        response = self.client.get(f"{self.endpoint}/{site.slug}")
 
         assert response.status_code == 403
 

@@ -7,11 +7,9 @@ from backend.views.sites_views import SiteViewSet
 from backend.views.user import UserViewSet
 
 ROUTER = DefaultRouter(trailing_slash=False)
-ROUTER.register(r"api/1.0/user", UserViewSet, basename=r"user")
-ROUTER.register(r"api/1.0/sites", SiteViewSet, basename="site")
-ROUTER.register(
-    r"api/1.0/parts-of-speech", PartsOfSpeechViewSet, basename="parts-of-speech"
-)
+ROUTER.register(r"user", UserViewSet, basename=r"user")
+ROUTER.register(r"sites", SiteViewSet, basename="site")
+ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="parts-of-speech")
 
 app_name = "api"
 

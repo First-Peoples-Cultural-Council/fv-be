@@ -86,10 +86,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "backend.jwt_auth.UserAuthentication",
     ],
-    # @todo fix this
-    # 'DEFAULT_SCHEMA_CLASS': (
-    # 	'drf_spectacular.openapi.AutoSchema',
-    # ),
+    "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",

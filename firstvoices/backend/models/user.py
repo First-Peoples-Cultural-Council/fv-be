@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from backend.managers.user import UserManager
@@ -6,7 +6,7 @@ from backend.managers.user import UserManager
 from .role import Role
 
 
-class User(AbstractBaseUser):
+class User(AbstractUser):
     """
     User Model
     """
@@ -31,6 +31,14 @@ class User(AbstractBaseUser):
     is_superuser = models.BooleanField(null=False, default=False)
 
     @property
+    def first_name(self):
+        return None
+
+    @property
+    def last_name(self):
+        return None
+
+    @property
     def is_active(self):
         return True
 
@@ -49,16 +57,6 @@ class User(AbstractBaseUser):
     @property
     def groups(self):
         return None
-
-    @property
-    def user_permissions(self):
-        return None
-
-    def has_module_perms(self, request=None):
-        return self.is_staff
-
-    def has_perm(self, request=None):
-        return True
 
     def __str__(self):
         return str(self.id)
