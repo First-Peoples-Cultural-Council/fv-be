@@ -7,7 +7,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import os
@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG_DISABLE') is not None
+DEBUG: bool = os.environ.get('DEBUG_DISABLE') is None
 
 ALLOWED_HOSTS = [os.environ.get('HOST_HEADER'), '*.firstvoices.io', '.localhost', '127.0.0.1', '[::1]']
 
