@@ -289,5 +289,4 @@ src/firstvoices/media/
 src/firstvoices/static/webpack_bundles/
 webpack-stats.json
 
-src/firstvoices/backend/migrations/*
-src/firstvoices/users/migrations/*
+firstvoices/static

@@ -36,12 +36,15 @@ INSTALLED_APPS = [
 	'django.contrib.contenttypes',
 	'django.contrib.sessions',
 	'django.contrib.messages',
+	'django.contrib.staticfiles',
 	'rest_framework',
-	'backend'
+	'backend',
+	"drf_spectacular",
+	"rules.apps.AutodiscoverRulesConfig",
 ]
 
 MIDDLEWARE = [
-	'django.contrib.sessions.middleware.SessionMiddleware', # ugh. sessions. required by admin.
+	'django.contrib.sessions.middleware.SessionMiddleware',  # ugh. sessions. required by admin.
 	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.security.SecurityMiddleware',
 	'django.middleware.common.CommonMiddleware',
@@ -50,6 +53,18 @@ MIDDLEWARE = [
 	'django.contrib.messages.middleware.MessageMiddleware',
 	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# local only
+if DEBUG:
+	# https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
+	INSTALLED_APPS += ["debug_toolbar"]
+	# https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
+	MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+	# https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
+	DEBUG_TOOLBAR_CONFIG = {
+		"DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
+		"SHOW_TEMPLATE_CONTEXT": True,
+	}
 
 ROOT_URLCONF = 'firstvoices.urls'
 
@@ -66,11 +81,21 @@ REST_FRAMEWORK = {
 		'rest_framework.authentication.BasicAuthentication',
 		'backend.jwt_auth.UserAuthentication'
 	],
+	# @todo fix this
+	# 'DEFAULT_SCHEMA_CLASS': (
+	# 	'drf_spectacular.openapi.AutoSchema',
+	# ),
 	'DEFAULT_PERMISSION_CLASSES': (
 		'rest_framework.permissions.IsAuthenticated',),
-	'UNAUTHENTICATED_USER': None
-
+	'UNAUTHENTICATED_USER': None,
+	"DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
+	"PAGE_SIZE": 100,
 }
+
+AUTHENTICATION_BACKENDS = [
+	"rules.permissions.ObjectPermissionBackend",
+	"django.contrib.auth.backends.ModelBackend",
+]
 
 TEMPLATES = [
 	{
@@ -86,6 +111,9 @@ TEMPLATES = [
 		},
 	},
 ]
+
+STATIC_URL = 'static/'
+STATIC_ROOT = 'static'
 
 WSGI_APPLICATION = 'firstvoices.wsgi.application'
 
@@ -112,7 +140,6 @@ CORS_ALLOWED_ORIGINS = [
 	os.getenv('ALLOWED_ORIGIN')
 ]
 
-
 LANGUAGE_CODE = 'en-ca'
 
 TIME_ZONE = 'America/Vancouver'
@@ -124,3 +151,18 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ADMIN_URL = "admin/"
+
+with open(str(BASE_DIR / "firstvoices" / "templates" / "api-description.md")) as f:
+	description = f.read()
+
+# By Default swagger ui is available only to admin user(s). You can change permission classes to change that
+# See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
+SPECTACULAR_SETTINGS = {
+	"TITLE": "FirstVoices Backend API",
+	"DESCRIPTION": description,
+	"VERSION": "2.0.0",
+	"SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+}
+
+# Fixtures directory for initial data
+FIXTURES_DIR = BASE_DIR / "backend" / "fixtures"

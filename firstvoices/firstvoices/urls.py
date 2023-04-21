@@ -3,6 +3,7 @@ from backend.admin import admin
 from backend.urls import urlpatterns as backend_urls
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from django.conf.urls.static import static
 
 from . import settings
 
@@ -15,4 +16,8 @@ urlpatterns = [
 		name="api-docs",
 	),
 ]
+
 urlpatterns += backend_urls
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
