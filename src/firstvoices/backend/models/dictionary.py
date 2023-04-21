@@ -193,7 +193,7 @@ class DictionaryEntryLink(models.Model):
     )
 
 
-class DictionaryEntryRelatedCharacter(models.Model):
+class DictionaryEntryRelatedCharacter(BaseModel):
     """
     Represents a link between a dictionary entry and  a character.
     """
@@ -220,10 +220,3 @@ class DictionaryEntryRelatedCharacter(models.Model):
 
     def __str__(self):
         return f"{self.character} - {self.dictionary_entry}"
-
-    def save(self, *args, **kwargs):
-        self.set_site_id()
-        super().save(*args, **kwargs)
-
-    def set_site_id(self):
-        self.site = self.character.site
