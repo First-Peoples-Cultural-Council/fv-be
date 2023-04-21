@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "backend",
     "drf_spectacular",
     "rules.apps.AutodiscoverRulesConfig",
+    "backend",
 ]
 
 MIDDLEWARE = [
@@ -137,7 +137,7 @@ AUTH_USER_MODEL = "backend.User"
 
 JWT = jwt.config()
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", os.getenv("ALLOWED_ORIGIN")]
+CORS_ALLOWED_ORIGINS = [os.getenv("ALLOWED_ORIGIN", default="http://localhost:3000")]
 
 LANGUAGE_CODE = "en-ca"
 

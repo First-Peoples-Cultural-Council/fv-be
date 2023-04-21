@@ -1,24 +1,18 @@
-from django.conf import settings
+"""firstvoices URL Configuration"""
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+from backend.admin import admin
+from backend.urls import urlpatterns as backend_urls
+
+from . import settings
 
 handler500 = "rest_framework.exceptions.server_error"
 handler400 = "rest_framework.exceptions.bad_request"
 
 urlpatterns = [
-    # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
-    # Your stuff: custom urls includes go here
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-# API URLS
-urlpatterns += [
-    # API base url
-    path("api/2.0/", include("config.api_router", namespace="api")),
-    # DRF auth token
-    # path("auth-token/", obtain_auth_token),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path(
         "api/docs/",
@@ -26,6 +20,10 @@ urlpatterns += [
         name="api-docs",
     ),
 ]
+
+urlpatterns += backend_urls
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
     if "debug_toolbar" in settings.INSTALLED_APPS:
