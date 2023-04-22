@@ -34,7 +34,6 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = get_user_model()
 
-    # username = factory.Sequence(lambda n: "username %03d" % n)
     id = factory.Sequence(lambda n: "user id %03d" % n)
     email = factory.Sequence(lambda n: "user%03d@email.com" % n)
 
