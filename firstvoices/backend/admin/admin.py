@@ -5,6 +5,7 @@ from backend.models.dictionary import (
     AlternateSpelling,
     DictionaryAcknowledgement,
     DictionaryEntry,
+    DictionaryEntryLink,
     DictionaryNote,
     DictionaryTranslation,
     Pronunciation,
@@ -67,6 +68,7 @@ admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
 admin.site.register(Category, HiddenBaseAdmin)
 admin.site.register(DictionaryNote, HiddenBaseAdmin)
 admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
 admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)
