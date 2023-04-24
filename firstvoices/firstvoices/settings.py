@@ -60,6 +60,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+CSRF_TRUSTED_ORIGINS = ["https://*.eks.firstvoices.io"]
+
 # local only
 if DEBUG:
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites

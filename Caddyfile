@@ -4,6 +4,10 @@
 :8080
 
 root * /srv
+header {
+Access-Control-Allow-Origin *
+}
+
 file_server
 
 log {
