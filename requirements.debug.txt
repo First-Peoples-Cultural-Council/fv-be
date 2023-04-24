@@ -1,3 +1,13 @@
 -r requirements.txt
 
-django-debug-toolbar==4.0.0
+# Debug tools --------------------------------------
+django-debug-toolbar==4.0.0  # https://github.com/jazzband/django-debug-toolbar
+django-extensions==3.2.1  # https://github.com/django-extensions/django-extensions
+
+# Linting ------------------------------------------
+flake8==6.0.0  # https://github.com/PyCQA/flake8
+flake8-isort==6.0.0  # https://github.com/gforcada/flake8-isort
+coverage==7.2.1  # https://github.com/nedbat/coveragepy
+black==23.1.0  # https://github.com/psf/black
+pylint-django==2.5.3  # https://github.com/PyCQA/pylint-django
+pre-commit==3.1.1  # https://github.com/pre-commit/pre-commit

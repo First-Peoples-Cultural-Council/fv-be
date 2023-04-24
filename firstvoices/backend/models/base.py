@@ -1,12 +1,13 @@
 import uuid
 
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
+from .constants import Visibility
 from .managers import PermissionsManager
 
 
@@ -42,7 +43,7 @@ class BaseModel(RulesModel):
 
     # from dc:creator
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        get_user_model(),
         on_delete=models.SET_NULL,
         null=True,
         default=None,
@@ -54,7 +55,7 @@ class BaseModel(RulesModel):
 
     # from dc:modified
     last_modified_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        get_user_model(),
         on_delete=models.SET_NULL,
         null=True,
         default=None,
@@ -65,10 +66,53 @@ class BaseModel(RulesModel):
     last_modified = models.DateTimeField(auto_now=True, db_index=True)
 
 
+class BaseSiteContentModel(BaseModel):
+    """
+    Base model for non-access-controlled site content data such as categories, that do not have their own
+    visibility levels. Can also be used as a base for more specific types of site content base models.
+    """
+
+    class Meta:
+        abstract = True
+
+    site = models.ForeignKey(
+        to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s_set"
+    )
+
+
+class BaseControlledSiteContentModel(BaseSiteContentModel):
+    """
+    Base model for access-controlled site content models such as words, phrases, songs, and stories, that have their own
+    visibility level setting.
+    """
+
+    class Meta:
+        abstract = True
+
+    visibility = models.IntegerField(
+        choices=Visibility.choices, default=Visibility.TEAM
+    )
+
+
 # method to add last_modified and created fields if missing in the data, helpful for fixtures
 @receiver(pre_save, sender="backend.PartOfSpeech")
+@receiver(pre_save, sender="backend.appjson")
 def pre_save_for_fixtures(sender, instance, **kwargs):
     if kwargs["raw"]:
         if not instance.created:
             instance.created = timezone.now()
         instance.last_modified = timezone.now()
+
+
+class TruncatingCharField(models.CharField):
+    """
+    Custom field which auto truncates the value of a varchar field if it goes above a specific length.
+    Also strips any whites spaces in the beginning or in the end before enforcing max length.
+    Ref: https://docs.djangoproject.com/en/4.2/ref/models/fields/#django.db.models.Field.get_prep_value
+    """
+
+    def get_prep_value(self, value):
+        value = super().get_prep_value(value)
+        if value:
+            return value.strip()[: self.max_length]
+        return value

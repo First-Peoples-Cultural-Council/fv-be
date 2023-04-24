@@ -3,17 +3,18 @@ from django.db.models import Model
 
 
 class Role(Model):
-	"""
-	Roles
-	"""
-	name = models.CharField(
-		max_length=64,
-		unique=True,
-	)
+    """
+    Roles
+    """
 
-	description = models.CharField(
-		max_length=255,
-	)
+    name = models.CharField(
+        max_length=64,
+        unique=True,
+    )
 
-	class Meta:
-		db_table = 'role'
+    description = models.CharField(
+        max_length=255,
+    )
+
+    class Meta:
+        db_table = "role"

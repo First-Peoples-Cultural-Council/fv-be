@@ -6,7 +6,7 @@ from backend.serializers.user import CurrentUserSerializer
 
 
 class UserViewSet(viewsets.GenericViewSet):
-    http_method_names = ['get']
+    http_method_names = ["get"]
 
     serializer_class = CurrentUserSerializer
 

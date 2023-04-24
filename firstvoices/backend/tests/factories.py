@@ -3,25 +3,22 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
-from backend.models.app import AppMembership
+from backend.models.app import AppJson, AppMembership
+from backend.models.characters import (
+    Alphabet,
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 from backend.models.dictionary import DictionaryEntry
-from backend.models.sites import Membership, Site, SiteFeature
-
-
-class SiteFactory(DjangoModelFactory):
-    class Meta:
-        model = Site
-
-    title = factory.Sequence(lambda n: "Site %03d" % n)
-    slug = factory.Sequence(lambda n: "site-%03d" % n)
-
-
-class UserFactory(DjangoModelFactory):
-    class Meta:
-        model = get_user_model()
-
-    username = factory.Sequence(lambda n: "username %03d" % n)
-    id = factory.Sequence(lambda n: "user id %03d" % n)
+from backend.models.sites import (
+    Language,
+    LanguageFamily,
+    Membership,
+    Site,
+    SiteFeature,
+    SiteMenu,
+)
 
 
 class AnonymousUserFactory(DjangoModelFactory):
@@ -31,6 +28,24 @@ class AnonymousUserFactory(DjangoModelFactory):
 
     class Meta:
         model = AnonymousUser
+
+
+class UserFactory(DjangoModelFactory):
+    class Meta:
+        model = get_user_model()
+
+    id = factory.Sequence(lambda n: "user id %03d" % n)
+    email = factory.Sequence(lambda n: "user%03d@email.com" % n)
+
+
+class SiteFactory(DjangoModelFactory):
+    class Meta:
+        model = Site
+
+    title = factory.Sequence(lambda n: "Site %03d" % n)
+    slug = factory.Sequence(lambda n: "site-%03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
 
 
 class MembershipFactory(DjangoModelFactory):
@@ -48,14 +63,18 @@ class AppMembershipFactory(DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
 
 
-class UncontrolledSiteContentFactory(DjangoModelFactory):
+class SiteFeatureFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
-        # use any concrete model that inherits from BaseSiteContentModel
         model = SiteFeature
 
     key = factory.Sequence(lambda n: "Uncontrolled content %03d" % n)
+
+
+class UncontrolledSiteContentFactory(SiteFeatureFactory):
+    # use any concrete model that inherits from BaseSiteContentModel
+    pass
 
 
 class ControlledSiteContentFactory(DjangoModelFactory):
@@ -66,6 +85,69 @@ class ControlledSiteContentFactory(DjangoModelFactory):
         model = DictionaryEntry
 
     title = factory.Sequence(lambda n: "Controlled content %03d" % n)
+
+
+class LanguageFamilyFactory(DjangoModelFactory):
+    class Meta:
+        model = LanguageFamily
+
+    title = factory.Sequence(lambda n: "Language Family %03d" % n)
+
+
+class LanguageFactory(DjangoModelFactory):
+    class Meta:
+        model = Language
+
+    title = factory.Sequence(lambda n: "Language %03d" % n)
+    language_family = factory.SubFactory(LanguageFamilyFactory)
+
+
+class SiteMenuFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = SiteMenu
+
+
+class AppJsonFactory(DjangoModelFactory):
+    class Meta:
+        model = AppJson
+
+
+class CharacterFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = Character
+
+    title = factory.Sequence(lambda n: "chr" + chr(n + 64))  # begin with A
+    sort_order = factory.Sequence(int)
+
+
+class CharacterVariantFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = CharacterVariant
+
+    base_character = factory.SubFactory(CharacterFactory)
+    title = factory.Sequence(lambda n: "varchr" + chr(n + 64))  # begin with A
+
+
+class IgnoredCharacterFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = IgnoredCharacter
+
+    title = factory.Sequence(lambda n: "%03d" % n)
+
+
+class AlphabetFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+
+    class Meta:
+        model = Alphabet
 
 
 def get_anonymous_user():

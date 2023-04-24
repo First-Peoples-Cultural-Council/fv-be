@@ -1,0 +1,268 @@
+[
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Animals",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Birds",
+            "parent": "Animals"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Body",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Body Parts",
+            "parent": "Body"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Buildings",
+            "parent": "Human Things / Activities"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Colours",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Cultural Objects & Practices",
+            "parent": "Human Things / Activities"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Essential Phrases",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Family",
+            "parent": "Human Relations"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Fish",
+            "parent": "Animals"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Fishing & Hunting",
+            "parent": "Human Things / Activities"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Flowers",
+            "parent": "Plants"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Food",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Fungi & Lichens",
+            "parent": "Plants"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Greetings",
+            "parent": "Essential Phrases"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Health",
+            "parent": "Body"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Household",
+            "parent": "Human Things / Activities"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Human Relations",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Human Things / Activities",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Insects",
+            "parent": "Animals"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Language / Communication",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Mammals",
+            "parent": "Animals"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Medicine Plants",
+            "parent": "Plants"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Movement",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Natural Resources",
+            "parent": "Nature / Environment"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Nature / Environment",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Numbers",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Place Names",
+            "parent": "Nature / Environment"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Plants",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Seasons",
+            "parent": "Nature / Environment"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Senses",
+            "parent": "Body"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Spiritual Beliefs",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Sports & Play",
+            "parent": "Human Things / Activities"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Thinking / Feeling",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Time",
+            "parent": ""
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Trees",
+            "parent": "Plants"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Weather",
+            "parent": "Nature / Environment"
+        }
+    },
+    {
+        "model": "backend.category",
+        "fields": {
+            "title": "Work & Trade",
+            "parent": "Human Things / Activities"
+        }
+    }
+]

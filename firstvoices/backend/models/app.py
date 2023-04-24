@@ -1,10 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
-from .user import User
-from .base import BaseModel
+from backend import predicates
 
-from .. import predicates
+from .base import BaseModel
 from .constants import AppRole
 
 
@@ -31,7 +31,7 @@ class AppMembership(BaseModel):
 
     # from user
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="app_role"
+        get_user_model(), on_delete=models.CASCADE, related_name="app_role"
     )
 
     # from group memberships

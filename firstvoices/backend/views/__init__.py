@@ -1,1 +1,1 @@
-from . import sites  # noqa F401
+from . import sites_views  # noqa F401
