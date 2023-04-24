@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rules.apps.AutodiscoverRulesConfig",
     "backend",
+    "healthcheck"
 ]
 
 MIDDLEWARE = [
@@ -86,7 +87,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "backend.jwt_auth.UserAuthentication",
     ],
-    "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",

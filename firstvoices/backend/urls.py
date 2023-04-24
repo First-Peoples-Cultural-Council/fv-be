@@ -2,7 +2,6 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from backend.views.dictionary_views import PartsOfSpeechViewSet
-from backend.views.health import HealthCheckView
 from backend.views.sites_views import SiteViewSet
 from backend.views.user import UserViewSet
 
@@ -13,8 +12,6 @@ ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="parts-of-spe
 
 app_name = "api"
 
-urlpatterns = [
-    path(r"health", HealthCheckView.as_view()),
-]
+urlpatterns = []
 
 urlpatterns += ROUTER.urls
