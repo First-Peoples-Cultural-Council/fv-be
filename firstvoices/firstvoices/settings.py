@@ -114,7 +114,7 @@ TEMPLATES = [
     },
 ]
 
-STATIC_URL = "static/"
+STATIC_URL = os.getenv("DJANGO_STATIC_URL", "static/")
 STATIC_ROOT = "static"
 
 WSGI_APPLICATION = "firstvoices.wsgi.application"
