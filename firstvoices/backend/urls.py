@@ -1,7 +1,6 @@
-from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from backend.views.dictionary_views import PartsOfSpeechViewSet
+from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import SiteViewSet
 from backend.views.user import UserViewSet
 
