@@ -15,12 +15,15 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     """
 
     # Method to override the list queryset to implement different querysets for list and retrieve respectively
-    def get_list_view_queryset(self):
-        return self.get_list_queryset()
+    def get_list_queryset(self):
+        """
+        Defaults to main queryset.
+        """
+        return self.get_queryset()
 
     def list(self, request, *args, **kwargs):
         # apply view permissions
-        queryset = utils.filter_by_viewable(request.user, self.get_list_view_queryset())
+        queryset = utils.filter_by_viewable(request.user, self.get_list_queryset())
 
         # paginate the queryset
         page = self.paginate_queryset(queryset)
