@@ -45,11 +45,55 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.BigAutoField(
-                        auto_created=True,
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
                         primary_key=True,
                         serialize=False,
-                        verbose_name="ID",
+                    ),
+                ),
+                ("is_trashed", models.BooleanField(default=False)),
+                ("created", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("last_modified", models.DateTimeField(auto_now=True, db_index=True)),
+                (
+                    "character",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="dictionary_entry_links",
+                        to="backend.character",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_%(app_label)s_%(class)s",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "dictionary_entry",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="character_links",
+                        to="backend.dictionaryentry",
+                    ),
+                ),
+                (
+                    "last_modified_by",
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="modified_%(app_label)s_%(class)s",
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
@@ -57,6 +101,7 @@ class Migration(migrations.Migration):
                 "verbose_name": "character related dictionary entry",
                 "verbose_name_plural": "character related dictionary entries",
             },
+            bases=(rules.contrib.models.RulesModelMixin, models.Model),
         ),
         migrations.RemoveField(
             model_name="character",
@@ -215,28 +260,6 @@ class Migration(migrations.Migration):
         ),
         migrations.DeleteModel(
             name="CharacterRelatedDictionaryEntry",
-        ),
-        migrations.AddField(
-            model_name="dictionaryentryrelatedcharacter",
-            name="character",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="dictionary_entry_links",
-                to="backend.character",
-            ),
-        ),
-        migrations.AddField(
-            model_name="dictionaryentryrelatedcharacter",
-            name="dictionary_entry",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="character_links",
-                to="backend.dictionaryentry",
-            ),
         ),
         migrations.AddField(
             model_name="alphabet",
