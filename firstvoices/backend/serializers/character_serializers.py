@@ -14,19 +14,17 @@ class IgnoredCharacterSerializer(serializers.ModelSerializer):
 
 
 class CharacterVariantSerializer(serializers.ModelSerializer):
-    site = serializers.StringRelatedField()
+    base_character = serializers.StringRelatedField()
 
     class Meta:
         model = CharacterVariant
-        fields = ["id", "title", "base_character", "site"]
+        fields = ["id", "title", "base_character"]
 
 
 class CharacterDetailSerializer(serializers.ModelSerializer):
     url = SiteHyperlinkedIdentityField(view_name="api:characters-detail")
     site = serializers.StringRelatedField()
-    # variants = CharacterVariantSerializer(many=True, read_only=True)
-
-    # TODO: Add related characters
+    variants = CharacterVariantSerializer(many=True)
 
     class Meta:
         model = Character
@@ -38,4 +36,5 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
             "approximate_form",
             "notes",
             "site",
+            "variants",
         ]
