@@ -130,7 +130,6 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         default=TypeOfDictionaryEntry.WORD,
     )
     # from fv-word:categories, fv-phrase:phrase_books
-    # todo: entries can belong to more than one category; this needs to be a m2m link
     category = models.ForeignKey(
         Category,
         blank=True,
