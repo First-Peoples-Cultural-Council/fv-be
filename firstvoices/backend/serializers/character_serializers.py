@@ -1,7 +1,16 @@
 from rest_framework import serializers
 
-from backend.models.characters import Character, CharacterVariant
+from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+
+
+class IgnoredCharacterSerializer(serializers.ModelSerializer):
+    url = SiteHyperlinkedIdentityField(view_name="api:ignored_characters-detail")
+    site = serializers.StringRelatedField()
+
+    class Meta:
+        model = IgnoredCharacter
+        fields = ["url", "id", "title", "site"]
 
 
 class CharacterVariantSerializer(serializers.ModelSerializer):
