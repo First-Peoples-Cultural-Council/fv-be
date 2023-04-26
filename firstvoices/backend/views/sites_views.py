@@ -16,15 +16,19 @@ from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import SiteFeature
 from backend.predicates import utils
-from backend.serializers import Site, SiteDetailSerializer, SiteSummarySerializer
+from backend.serializers.site_serializers import (
+    Site,
+    SiteDetailSerializer,
+    SiteSummarySerializer,
+)
 
 
 @extend_schema_view(
     list=extend_schema(
         description="A public list of available language sites, grouped by language. "
-                    "Public and member sites are included, as well as any team sites the user has access to. If there "
-                    "are no accessible sites the list will be empty. Sites with no specified language will be grouped "
-                    "under 'Other'.",
+        "Public and member sites are included, as well as any team sites the user has access to. If there "
+        "are no accessible sites the list will be empty. Sites with no specified language will be grouped "
+        "under 'Other'.",
         responses={
             200: inline_serializer(
                 name="InlineLanguageSerializer",
