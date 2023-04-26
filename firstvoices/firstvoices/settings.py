@@ -87,7 +87,7 @@ REST_FRAMEWORK = {
         # the first 2 are for admin app compatibility
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
-        # "backend.jwt_auth.UserAuthentication",
+        "backend.jwt_auth.UserAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
@@ -139,7 +139,7 @@ JWT = jwt.config()
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    os.getenv("ALLOWED_ORIGIN", default="http://localhost:3000"),
+    os.getenv("ALLOWED_ORIGIN"),
 ]
 
 LANGUAGE_CODE = "en-ca"
