@@ -10,7 +10,7 @@ from backend.models.characters import (
     CharacterVariant,
     IgnoredCharacter,
 )
-from backend.models.dictionary import DictionaryEntry
+from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
 from backend.models.sites import (
     Language,
     LanguageFamily,
@@ -44,6 +44,7 @@ class SiteFactory(DjangoModelFactory):
 
     title = factory.Sequence(lambda n: "Site %03d" % n)
     slug = factory.Sequence(lambda n: "site-%03d" % n)
+
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
 
@@ -77,14 +78,26 @@ class UncontrolledSiteContentFactory(SiteFeatureFactory):
     pass
 
 
-class ControlledSiteContentFactory(DjangoModelFactory):
-    site = factory.SubFactory(SiteFactory)
-
+class DictionaryEntryFactory(DjangoModelFactory):
     class Meta:
-        # use any concrete model that inherits from BaseControlledSiteContentModel
         model = DictionaryEntry
 
-    title = factory.Sequence(lambda n: "Controlled content %03d" % n)
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Dictionary entry %03d" % n)
+    custom_order = factory.Sequence(lambda n: "sort order %03d" % n)
+
+
+class ControlledSiteContentFactory(DictionaryEntryFactory):
+    # use any concrete model that inherits from BaseControlledSiteContentModel
+    pass
+
+
+class DictionaryEntryLinkFactory(DjangoModelFactory):
+    class Meta:
+        model = DictionaryEntryLink
+
+    from_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
+    to_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
 
 
 class LanguageFamilyFactory(DjangoModelFactory):
