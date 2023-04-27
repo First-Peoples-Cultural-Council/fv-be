@@ -1,17 +1,51 @@
 from rest_framework import serializers
 
-from backend.models.part_of_speech import PartOfSpeech
+from backend.models.dictionary import DictionaryEntry, DictionaryTranslation
+from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
-class PartsOfSpeechChildrenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PartOfSpeech
-        fields = ["id", "title"]
-
-
-class PartsOfSpeechSerializer(serializers.ModelSerializer):
-    children = PartsOfSpeechChildrenSerializer(many=True)
+class TranslationSerializer(serializers.ModelSerializer):
+    part_of_speech = serializers.StringRelatedField()
 
     class Meta:
-        model = PartOfSpeech
-        fields = ["id", "title", "children"]
+        model = DictionaryTranslation
+        fields = ("text", "language", "part_of_speech")
+
+
+class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
+    url = SiteHyperlinkedIdentityField(view_name="api:dictionary-detail")
+    visibility = serializers.CharField(source="get_visibility_display")
+    translations = TranslationSerializer(
+        source="dictionary_dictionarytranslation", many=True
+    )
+    pronunciations = serializers.StringRelatedField(
+        source="dictionary_pronunciation", many=True
+    )
+    notes = serializers.StringRelatedField(
+        source="dictionary_dictionarynote", many=True
+    )
+    alternate_spellings = serializers.StringRelatedField(
+        source="dictionary_alternatespelling", many=True
+    )
+    category = serializers.StringRelatedField()
+    site = serializers.StringRelatedField()
+
+    class Meta:
+        model = DictionaryEntry
+        fields = (
+            "url",
+            "id",
+            "title",
+            "type",
+            "custom_order",
+            "visibility",
+            "category",
+            "exclude_from_games",
+            "exclude_from_kids",
+            # "related_entries",
+            "alternate_spellings",
+            "notes",
+            "translations",
+            "pronunciations",
+            "site",
+        )

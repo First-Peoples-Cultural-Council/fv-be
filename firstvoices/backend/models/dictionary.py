@@ -3,7 +3,13 @@ from django.utils.translation import gettext as _
 
 from backend.utils.character_utils import clean_input
 
-from .base import BaseControlledSiteContentModel, BaseModel, TruncatingCharField
+from .. import predicates
+from .base import (
+    BaseControlledSiteContentModel,
+    BaseModel,
+    BaseSiteContentModel,
+    TruncatingCharField,
+)
 from .category import Category
 from .characters import Alphabet, Character
 from .part_of_speech import PartOfSpeech
@@ -124,7 +130,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         default=TypeOfDictionaryEntry.WORD,
     )
     # from fv-word:categories, fv-phrase:phrase_books
-    categories = models.ForeignKey(
+    category = models.ForeignKey(
         Category,
         blank=True,
         null=True,
@@ -160,6 +166,12 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
+        rules_permissions = {
+            "view": predicates.is_visible_object,
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return self.title
@@ -181,7 +193,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         self.custom_order = alphabet.get_custom_order(self.title)
 
 
-class DictionaryEntryLink(models.Model):
+class DictionaryEntryLink(BaseSiteContentModel):
     from_dictionary_entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE)
     to_dictionary_entry = models.ForeignKey(
         DictionaryEntry,
@@ -189,10 +201,14 @@ class DictionaryEntryLink(models.Model):
         related_name="incoming_related_entries",
     )
 
+    @property
+    def site(self):
+        return self.from_dictionary_entry.site
 
-class DictionaryEntryRelatedCharacter(models.Model):
+
+class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
     """
-    Represents a link between a dictionary entry and  a character.
+    Represents a many-to-many link between a dictionary entry and a character.
     """
 
     class Meta:
@@ -217,10 +233,3 @@ class DictionaryEntryRelatedCharacter(models.Model):
 
     def __str__(self):
         return f"{self.character} - {self.dictionary_entry}"
-
-    def save(self, *args, **kwargs):
-        self.set_site_id()
-        super().save(*args, **kwargs)
-
-    def set_site_id(self):
-        self.site = self.character.site

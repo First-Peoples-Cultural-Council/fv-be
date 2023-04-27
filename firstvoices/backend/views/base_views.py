@@ -1,6 +1,9 @@
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
+from backend.models import Site
 from backend.predicates import utils
 
 
@@ -15,12 +18,15 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     """
 
     # Method to override the list queryset to implement different querysets for list and retrieve respectively
-    def get_list_view_queryset(self):
-        return self.get_list_queryset()
+    def get_list_queryset(self):
+        """
+        Defaults to main queryset.
+        """
+        return self.get_queryset()
 
     def list(self, request, *args, **kwargs):
         # apply view permissions
-        queryset = utils.filter_by_viewable(request.user, self.get_list_view_queryset())
+        queryset = utils.filter_by_viewable(request.user, self.get_list_queryset())
 
         # paginate the queryset
         page = self.paginate_queryset(queryset)
@@ -33,3 +39,21 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
             queryset, many=True, context={"request": request}
         )
         return Response(serializer.data)
+
+
+class SiteContentViewSetMixin:
+    """
+    Provides common methods for handling site content, usually for data models that use the BaseSiteContentModel.
+    """
+
+    def get_validated_site(self):
+        site_slug = self.kwargs["site_slug"]
+        site = Site.objects.filter(slug=site_slug)
+
+        if site.count() == 0:
+            raise Http404
+
+        if utils.filter_by_viewable(self.request.user, site).count() == 0:
+            raise PermissionDenied
+
+        return site

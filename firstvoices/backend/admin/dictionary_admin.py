@@ -1,12 +1,16 @@
+from django.contrib import admin
+
 from backend.models.category import Category
 from backend.models.dictionary import (
     AlternateSpelling,
     DictionaryAcknowledgement,
     DictionaryEntry,
+    DictionaryEntryLink,
     DictionaryNote,
     DictionaryTranslation,
     Pronunciation,
 )
+from backend.models.part_of_speech import PartOfSpeech
 
 from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
 from .sites_admin import MembershipAdmin
@@ -58,7 +62,8 @@ class CategoryInline(BaseDictionaryInlineAdmin):
     ordering = ["title"]
 
 
-class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
+@admin.register(DictionaryEntry)
+class DictionaryEntryAdmin(HiddenBaseAdmin):
     inlines = [
         TranslationInline,
         AlternateSpellingInline,
@@ -69,8 +74,19 @@ class DictionaryEntryHiddenBaseAdmin(HiddenBaseAdmin):
     readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
 
 
+@admin.register(PartOfSpeech)
 class PartsOfSpeechAdmin(BaseAdmin):
     list_display = (
         "title",
         "parent",
     ) + BaseAdmin.list_display
+
+
+# Non-customized admin forms
+admin.site.register(Category, HiddenBaseAdmin)
+admin.site.register(DictionaryNote, HiddenBaseAdmin)
+admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
+admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
+admin.site.register(AlternateSpelling, HiddenBaseAdmin)
+admin.site.register(Pronunciation, HiddenBaseAdmin)
