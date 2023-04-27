@@ -2,7 +2,6 @@ import re
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.core.management import call_command
 from django.http.response import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
 from django.utils import timezone
@@ -14,11 +13,6 @@ from backend.tests.factories import get_app_admin
 
 class TestPartsOfSpeechModel:
     """Tests for parts-of-speech model."""
-
-    @pytest.fixture(scope="session")
-    def parts_of_speech_db_setup(self, django_db_setup, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", "partsOfSpeech_initial.json")
 
     def test_save_operation(self, db):
         # Testing save operation for the model
@@ -50,7 +44,7 @@ class TestPartsOfSpeechModel:
             p2_fetch.parent.title == "part_of_speech_1"
         ), "Parent's title does not match"
 
-    def test_fixture_with_model(self, db, parts_of_speech_db_setup):
+    def test_fixture_with_model(self, db):
         # Testing that the fixture works, and we have at least 1 object in the database
 
         pos_count = get_list_or_404(PartOfSpeech)
