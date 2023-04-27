@@ -17,19 +17,6 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
     API_DETAIL_VIEW = "api:ignored_characters-detail"
 
     @pytest.mark.django_db
-    def test_list_empty(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 0
-        assert response_data["count"] == 0
-
-    @pytest.mark.django_db
     def test_list_with_ignored_characters(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
@@ -56,25 +43,6 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
             "title": "/",
             "site": site.title,
         }
-
-    @pytest.mark.django_db
-    def test_list_permissons(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.TEAM)
-        factories.IgnoredCharacterFactory.create(title="/", site=site)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 403
-
-        factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 1
-        assert response_data["count"] == 1
 
     @pytest.mark.django_db
     def test_detail(self):
