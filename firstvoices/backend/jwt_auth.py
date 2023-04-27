@@ -73,5 +73,5 @@ class UserAuthentication(authentication.BaseAuthentication):
             user = User.objects.get(id=user_token["sub"])
             return user, None
         except User.DoesNotExist:
-            user = User.objects.create(id=user_token["sub"])
+            user = User.objects.create(id=user_token["sub"], email=user_token["email"])
             return user, None
