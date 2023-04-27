@@ -19,7 +19,7 @@ urlpatterns = [
         name="api-docs",
     ),
     path("api/1.0/", include("backend.urls")),
-    path("", include("healthcheck.urls"))
+    path("", include("healthcheck.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

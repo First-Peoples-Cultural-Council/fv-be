@@ -1,6 +1,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from backend.views.debug.async_example import ExampleAsyncTaskView
+from backend.views.debug.elastic_example import ExampleElasticSearch
 from backend.views.dictionary_views import PartsOfSpeechViewSet
 from backend.views.sites_views import SiteViewSet
 from backend.views.user import UserViewSet
@@ -12,6 +14,9 @@ ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="parts-of-spe
 
 app_name = "api"
 
-urlpatterns = []
+urlpatterns = [
+    path(r"debug/async", ExampleAsyncTaskView.as_view()),
+    path(r"debug/elastic", ExampleElasticSearch.as_view()),
+]
 
 urlpatterns += ROUTER.urls
