@@ -351,12 +351,18 @@ ElasticSearch instance for testing.
 
 To run just `docker-compose up`. The default values in `settings.py` will fall back to appropriate values.
 
-If you prefer to run your own instances of `RabbitMQ`, `ElasticSearch`, or `Redis`, set the following environment vars (docker-compatible defaults shown):
+If you prefer to run your own instances of `RabbitMQ`, `ElasticSearch`, or `Redis`, set the following environment vars (
+docker-compatible defaults shown):
 
 - `CELERY_BROKER_URL`=`"amqp://rabbitmq:rabbitmq@localhost:5672//fv"`
 - `CELERY_RESULT_BACKEND`=`"redis://localhost/0"`
 - `ELASTICSEARCH_HOST`=`"localhost"`
 - `ELASTICSEARCH_PRIMARY_INDEX`=`"fv"`
+
+## Celery
+
+For async and periodic tasks to successfully execute, a worker process must be running. In another terminal, with the
+virtual environment setup, execute `celery -A firstvoices worker -B` in the `./firstvoices` directory
 
 ## Useful Local URLs On Startup
 
