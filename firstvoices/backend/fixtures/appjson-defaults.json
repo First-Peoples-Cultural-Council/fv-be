@@ -1,1 +1,84 @@
-[{"model": "backend.appjson", "pk": "b9a3afab-c9cf-413f-bdc3-e80edb8e5cc1", "fields": {"is_trashed": false, "created_by": "admin", "created": "2023-04-04T19:36:06.922Z", "last_modified_by": "admin", "last_modified": "2023-04-04T19:36:06.922Z", "key": "default_site_menu", "json": {"kids": {"id": "kids", "href": "/kids", "title": "Kids", "transKey": "general.kids", "itemsData": []}, "about": {"id": "about", "title": "About", "transKey": "general.about", "itemsData": [{"href": "/our-language", "title": "Our Language", "transKey": "general.our_language"}, {"href": "/our-people", "title": "Our People", "transKey": "general.our_people"}]}, "learn": {"id": "learn", "title": "Learn", "transKey": "general.learn", "itemsData": [{"href": "/songs", "title": "Songs", "transKey": "general.songs"}, {"href": "/stories", "title": "Stories", "transKey": "general.stories"}, {"href": "/games", "title": "Games", "transKey": "general.games"}]}, "resources": {"id": "resources", "title": "Resources", "transKey": "general.resources", "itemsData": [{"href": "/apps", "title": "Mobile App", "transKey": "general.apps"}, {"href": "/keyboards", "title": "Keyboards", "transKey": "general.keyboards"}]}, "dictionary": {"id": "dictionary", "title": "Dictionary", "transKey": "general.dictionary", "itemsData": [{"href": "/words", "title": "Words", "transKey": "general.words"}, {"href": "/phrases", "title": "Phrases", "transKey": "general.phrases"}, {"href": "/alphabet", "title": "Alphabet", "transKey": "general.alphabet"}, {"href": "/categories", "title": "Categories", "transKey": "general.categories"}]}}}}]
+[{
+	"model": "backend.appjson",
+	"fields": {
+		"is_trashed": false,
+		"key": "default_site_menu",
+		"json": {
+			"kids": {
+				"id": "kids",
+				"href": "/kids",
+				"title": "Kids",
+				"transKey": "general.kids",
+				"itemsData": []
+			},
+			"about": {
+				"id": "about",
+				"title": "About",
+				"transKey": "general.about",
+				"itemsData": [{
+					"href": "/our-language",
+					"title": "Our Language",
+					"transKey": "general.our_language"
+				}, {
+					"href": "/our-people",
+					"title": "Our People",
+					"transKey": "general.our_people"
+				}]
+			},
+			"learn": {
+				"id": "learn",
+				"title": "Learn",
+				"transKey": "general.learn",
+				"itemsData": [{
+					"href": "/songs",
+					"title": "Songs",
+					"transKey": "general.songs"
+				}, {
+					"href": "/stories",
+					"title": "Stories",
+					"transKey": "general.stories"
+				}, {
+					"href": "/games",
+					"title": "Games",
+					"transKey": "general.games"
+				}]
+			},
+			"resources": {
+				"id": "resources",
+				"title": "Resources",
+				"transKey": "general.resources",
+				"itemsData": [{
+					"href": "/apps",
+					"title": "Mobile App",
+					"transKey": "general.apps"
+				}, {
+					"href": "/keyboards",
+					"title": "Keyboards",
+					"transKey": "general.keyboards"
+				}]
+			},
+			"dictionary": {
+				"id": "dictionary",
+				"title": "Dictionary",
+				"transKey": "general.dictionary",
+				"itemsData": [{
+					"href": "/words",
+					"title": "Words",
+					"transKey": "general.words"
+				}, {
+					"href": "/phrases",
+					"title": "Phrases",
+					"transKey": "general.phrases"
+				}, {
+					"href": "/alphabet",
+					"title": "Alphabet",
+					"transKey": "general.alphabet"
+				}, {
+					"href": "/categories",
+					"title": "Categories",
+					"transKey": "general.categories"
+				}]
+			}
+		}
+	}
+}]
