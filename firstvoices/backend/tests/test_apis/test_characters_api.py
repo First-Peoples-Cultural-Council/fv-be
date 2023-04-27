@@ -18,25 +18,6 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
     CHARACTER_NOTE = "Test note"
 
     @pytest.mark.django_db
-    def test_site_not_found(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint("invalid-site"))
-
-        assert response.status_code == 404
-
-    @pytest.mark.django_db
-    def test_site_access_denied(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.TEAM)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
     def test_list_empty(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
