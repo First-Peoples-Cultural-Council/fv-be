@@ -24,6 +24,8 @@ class CharacterVariantSerializer(serializers.ModelSerializer):
 
 
 class RelatedDictionaryEntrySerializer(serializers.HyperlinkedModelSerializer):
+    # This serializer is a WIP
+    # It does return a list of related dictionary entries but within a "dictionary_entry" object
     dictionary_entry = DictionaryEntryDetailSerializer("dictionary_entry")
 
     class Meta:

@@ -146,6 +146,12 @@ class IgnoredCharacter(BaseSiteContentModel):
                 fields=["title", "site_id"], name="unique_ignored_character"
             )
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from fv-alphabet:ignored_characters
     # Unique with site_id
