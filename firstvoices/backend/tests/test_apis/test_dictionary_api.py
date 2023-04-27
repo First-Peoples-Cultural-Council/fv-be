@@ -113,7 +113,13 @@ class TestDictionaryEndpoint(BaseSiteContentApiTest):
             "notes": [],
             "translations": [],
             "pronunciations": [],
-            "site": site.title,
+            "site": {
+                "title": site.title,
+                "slug": site.slug,
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+                "language": None,
+                "visibility": "Public",
+            },
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }
@@ -171,7 +177,13 @@ class TestDictionaryEndpoint(BaseSiteContentApiTest):
             "notes": [],
             "translations": [],
             "pronunciations": [],
-            "site": site.title,
+            "site": {
+                "title": site.title,
+                "slug": site.slug,
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+                "language": None,
+                "visibility": "Public",
+            },
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }

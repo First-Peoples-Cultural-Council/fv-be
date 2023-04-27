@@ -3,6 +3,7 @@ from rest_framework import serializers
 from backend.models import dictionary
 from backend.serializers.base_serializers import base_timestamp_fields
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.site_serializers import SiteSummarySerializer
 
 
 class DictionaryContentMeta:
@@ -54,7 +55,7 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         source="dictionary_alternatespelling", many=True
     )
     category = serializers.StringRelatedField()
-    site = serializers.StringRelatedField()
+    site = SiteSummarySerializer()
 
     class Meta:
         model = dictionary.DictionaryEntry

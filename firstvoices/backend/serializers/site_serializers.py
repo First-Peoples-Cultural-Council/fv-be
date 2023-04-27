@@ -20,7 +20,6 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Site
         fields = (
-            "id",
             "title",
             "slug",
             "language",
