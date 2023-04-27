@@ -1,15 +1,15 @@
 asgiref==3.6.0
-attrs==22.2.0
+attrs==23.1.0
 certifi==2022.12.7
 cffi==1.15.1
 charset-normalizer==3.1.0
-cryptography==40.0.1
+cryptography==40.0.2
 Django==4.1.7
 django-cors-headers==3.14.0
 drf-nested-routers==0.93.4  # https://github.com/alanjds/drf-nested-routers/
 djangorestframework==3.14.0
 djangorestframework-camel-case==1.4.2
-drf-spectacular==0.26.0
+drf-spectacular==0.26.2
 factory-boy==3.2.1
 Faker==18.4.0
 g2p==1.0.20230412 # https://github.com/roedoejet/g2p
