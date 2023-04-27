@@ -16,7 +16,6 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
     API_LIST_VIEW = "api:characters-list"
     API_DETAIL_VIEW = "api:characters-detail"
     CHARACTER_NOTE = "Test note"
-    TEST_SERVER = "http://testserver"
 
     @pytest.mark.django_db
     def test_site_not_found(self):
@@ -76,7 +75,7 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
 
         character_json = response_data["results"][0]
         assert character_json == {
-            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
             "id": str(character0.id),
             "title": "Ch0",
             "site": site.title,
@@ -123,7 +122,7 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
         variant_json1 = character_json["variants"][1]
 
         assert character_json == {
-            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
             "id": str(character0.id),
             "title": "Ch0",
             "site": site.title,
@@ -199,7 +198,7 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
 
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))}",
             "id": str(character.id),
             "title": "Ch0",
             "site": site.title,
