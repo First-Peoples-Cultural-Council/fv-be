@@ -34,7 +34,7 @@ class CategoryViewSet(
         if site.count() > 0:
             return Category.objects.filter(site__slug=site[0].slug).prefetch_related("children").all()
         else:
-            return Category.objects.filter(site__slug=None)
+            return Category.objects.none()
 
     def get_list_queryset(self):
         site = self.get_validated_site()
@@ -43,9 +43,7 @@ class CategoryViewSet(
                 parent__isnull=False
             )
         else:
-            return Category.objects.filter(site__slug=None).prefetch_related("children").exclude(
-                parent__isnull=False
-            )
+            return Category.objects.none()
 
     def get_serializer_class(self):
         if self.action == "list":
