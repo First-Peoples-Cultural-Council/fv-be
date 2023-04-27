@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from backend.models import AppJson
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
@@ -124,9 +125,7 @@ class TestSitesEndpoints(BaseApiTest):
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
-        menu = factories.AppJsonFactory.create(
-            key="default_site_menu", json='{"some": "json"}'
-        )
+        menu = AppJson.objects.get(key="default_site_menu")
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 

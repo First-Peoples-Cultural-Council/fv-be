@@ -1,7 +1,5 @@
 import json
 
-import pytest
-from django.core.management import call_command
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
@@ -17,12 +15,7 @@ class TestPartsOfSpeechAPI:
     API_DETAIL_VIEW = "api:parts-of-speech-detail"
     APP_NAME = "backend"
 
-    @pytest.fixture(scope="session")
-    def parts_of_speech_db_setup(self, django_db_setup, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", self.FIXTURE_FILE)
-
-    def test_base_case_list_view(self, db, parts_of_speech_db_setup):
+    def test_base_case_list_view(self, db):
         # Testing the view returns a list of parts-of-speech
 
         client = APIClient()
@@ -34,7 +27,7 @@ class TestPartsOfSpeechAPI:
         assert response.status_code == 200
         assert len(content) > 0
 
-    def test_retrieve_base_case(self, db, parts_of_speech_db_setup):
+    def test_retrieve_base_case(self, db):
         """Test case for retrieve case to verify different querysets working for list and detail view."""
 
         client = APIClient()
@@ -72,7 +65,7 @@ class TestPartsOfSpeechAPI:
         assert isinstance(response_obj["title"], str)
         assert isinstance(response_obj["children"], list)
 
-    def test_retrieve_not_found(self, db, parts_of_speech_db_setup):
+    def test_retrieve_not_found(self, db):
         # Testing the view returns 404 if parts of speech not found
 
         client = APIClient()
@@ -88,7 +81,7 @@ class TestPartsOfSpeechAPI:
         )
         assert response.status_code == 404
 
-    def test_response_format_list_view(self, db, parts_of_speech_db_setup):
+    def test_response_format_list_view(self, db):
         # Testing the format of the content returned by list view for parts of speech
 
         client = APIClient()

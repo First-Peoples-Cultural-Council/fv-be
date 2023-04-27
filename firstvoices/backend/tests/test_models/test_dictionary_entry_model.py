@@ -1,5 +1,4 @@
 import pytest
-from django.core.management import call_command
 from django.db.utils import DataError
 
 from backend.models.characters import Alphabet
@@ -19,13 +18,7 @@ class TestDictionaryEntryModel:
     character, i.e. length of custom order field should be double that of title field.
     """
 
-    @pytest.fixture
-    def g2p_db_setup(self, django_db_blocker):
-        """Required as to create a dictionary entry, we need alphabets and g2p config for alphabets."""
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
-
-    def test_max_length_success(self, db, g2p_db_setup):
+    def test_max_length_success(self, db):
         site = SiteFactory.create()
         entry_title_valid = generate_string(TITLE_MAX_LENGTH - 1)
 
@@ -35,7 +28,7 @@ class TestDictionaryEntryModel:
         fetched_entry = DictionaryEntry.objects.get(title=entry_title_valid)
         assert fetched_entry.title == entry_title_valid
 
-    def test_max_length_failure(self, db, g2p_db_setup):
+    def test_max_length_failure(self, db):
         site = SiteFactory.create()
         entry_title_invalid = generate_string(TITLE_MAX_LENGTH + 1)
 
@@ -45,7 +38,7 @@ class TestDictionaryEntryModel:
             )
             entry_to_fail.save()
 
-    def test_truncating_field_custom_order_no_truncation(self, db, g2p_db_setup):
+    def test_truncating_field_custom_order_no_truncation(self, db):
         site = SiteFactory.create()
         entry_title_length = 10
         entry_title_string = generate_string(entry_title_length)
@@ -55,7 +48,7 @@ class TestDictionaryEntryModel:
         assert fetched_entry.title == entry_title_string
         assert len(fetched_entry.custom_order) == 20
 
-    def test_truncating_field_custom_order_truncation(self, db, g2p_db_setup):
+    def test_truncating_field_custom_order_truncation(self, db):
         """Verify if the custom order field of dictionary entry is removing extra characters after max length.
         Testing for the maximum length case in this test
         """
@@ -69,7 +62,7 @@ class TestDictionaryEntryModel:
         assert fetched_entry.title == long_title
         assert len(fetched_entry.custom_order) == TITLE_MAX_LENGTH
 
-    def test_truncating_field_custom_order_whitespace(self, db, g2p_db_setup):
+    def test_truncating_field_custom_order_whitespace(self, db):
         """Verify if the custom order field is does not retain any leading or trailing whitepsaces. Though spaces are
         mapped 1-1 in custom order field, The title field also removes any whitesspace before saving an entry.
         """
@@ -91,13 +84,8 @@ class TestDictionaryEntryModel:
 
 
 class TestDictionarySortProcessing:
-    @pytest.fixture
-    def g2p_db_setup(self, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
-
     @pytest.mark.django_db
-    def test_autocreate_alphabet_on_save(self, g2p_db_setup):
+    def test_autocreate_alphabet_on_save(self):
         """When no alphabet exists, creating sortable content should create it"""
         site = SiteFactory.create()
         assert len(Alphabet.objects.filter(site_id=site.id)) == 0
@@ -105,7 +93,7 @@ class TestDictionarySortProcessing:
         assert len(Alphabet.objects.filter(site_id=site.id)) == 1
 
     @pytest.mark.django_db
-    def test_custom_sort_on_save(self, g2p_db_setup):
+    def test_custom_sort_on_save(self):
         """Saving sortable content should reapply sort"""
         alphabet = AlphabetFactory.create()
         content = ControlledSiteContentFactory.create(
@@ -114,7 +102,7 @@ class TestDictionarySortProcessing:
         assert content.custom_order == alphabet.get_custom_order(content.title)
 
     @pytest.mark.django_db
-    def test_clean_confusables_on_save(self, g2p_db_setup):
+    def test_clean_confusables_on_save(self):
         """Saving sortable content should clean confusables"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
