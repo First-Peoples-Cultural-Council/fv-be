@@ -2,13 +2,13 @@ from django.contrib import admin
 
 from backend.models.category import Category
 from backend.models.dictionary import (
+    Acknowledgement,
     AlternateSpelling,
-    DictionaryAcknowledgement,
     DictionaryEntry,
     DictionaryEntryLink,
-    DictionaryNote,
-    DictionaryTranslation,
+    Note,
     Pronunciation,
+    Translation,
 )
 from backend.models.part_of_speech import PartOfSpeech
 
@@ -24,15 +24,15 @@ class BaseDictionaryInlineAdmin(BaseInlineAdmin):
 
 
 class NotesInline(BaseDictionaryInlineAdmin):
-    model = DictionaryNote
+    model = Note
 
 
 class AcknowledgementInline(BaseDictionaryInlineAdmin):
-    model = DictionaryAcknowledgement
+    model = Acknowledgement
 
 
 class TranslationInline(BaseDictionaryInlineAdmin):
-    model = DictionaryTranslation
+    model = Translation
     fields = (
         "language",
         "part_of_speech",
@@ -84,9 +84,9 @@ class PartsOfSpeechAdmin(BaseAdmin):
 
 # Non-customized admin forms
 admin.site.register(Category, HiddenBaseAdmin)
-admin.site.register(DictionaryNote, HiddenBaseAdmin)
-admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(Note, HiddenBaseAdmin)
+admin.site.register(Acknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
-admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
+admin.site.register(Translation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)

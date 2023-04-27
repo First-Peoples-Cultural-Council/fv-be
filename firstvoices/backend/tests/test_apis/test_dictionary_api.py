@@ -13,7 +13,7 @@ from .base_api_test import BaseSiteContentApiTest
 
 class AcknowledgementFactory(DjangoModelFactory):
     class Meta:
-        model = dictionary.DictionaryAcknowledgement
+        model = dictionary.Acknowledgement
 
 
 class AlternateSpellingFactory(DjangoModelFactory):
@@ -23,7 +23,7 @@ class AlternateSpellingFactory(DjangoModelFactory):
 
 class NoteFactory(DjangoModelFactory):
     class Meta:
-        model = dictionary.DictionaryNote
+        model = dictionary.Note
 
 
 class PronunciationFactory(DjangoModelFactory):
@@ -33,7 +33,7 @@ class PronunciationFactory(DjangoModelFactory):
 
 class TranslationFactory(DjangoModelFactory):
     class Meta:
-        model = dictionary.DictionaryTranslation
+        model = dictionary.Translation
 
 
 class TestDictionaryEndpoint(BaseSiteContentApiTest):
