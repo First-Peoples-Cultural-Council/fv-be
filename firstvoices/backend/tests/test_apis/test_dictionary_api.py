@@ -114,6 +114,8 @@ class TestDictionaryEndpoint(BaseSiteContentApiTest):
             "translations": [],
             "pronunciations": [],
             "site": site.title,
+            "created": entry.created.astimezone().isoformat(),
+            "lastModified": entry.last_modified.astimezone().isoformat(),
         }
 
     @pytest.mark.django_db
@@ -170,6 +172,8 @@ class TestDictionaryEndpoint(BaseSiteContentApiTest):
             "translations": [],
             "pronunciations": [],
             "site": site.title,
+            "created": entry.created.astimezone().isoformat(),
+            "lastModified": entry.last_modified.astimezone().isoformat(),
         }
 
     @pytest.mark.parametrize(

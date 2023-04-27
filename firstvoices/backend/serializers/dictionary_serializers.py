@@ -1,31 +1,32 @@
 from rest_framework import serializers
 
 from backend.models import dictionary
+from backend.serializers.base_serializers import base_timestamp_fields
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
+class DictionaryContentMeta:
+    fields = ("text",)
+
+
 class AcknowledgementSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(DictionaryContentMeta):
         model = dictionary.DictionaryAcknowledgement
-        fields = ("text",)
 
 
 class AlternateSpellingSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(DictionaryContentMeta):
         model = dictionary.AlternateSpelling
-        fields = ("text",)
 
 
 class NoteSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(DictionaryContentMeta):
         model = dictionary.DictionaryNote
-        fields = ("text",)
 
 
 class PronunciationSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(DictionaryContentMeta):
         model = dictionary.Pronunciation
-        fields = ("text",)
 
 
 class TranslationSerializer(serializers.ModelSerializer):
@@ -57,7 +58,7 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = dictionary.DictionaryEntry
-        fields = (
+        fields = base_timestamp_fields + (
             "url",
             "id",
             "title",
