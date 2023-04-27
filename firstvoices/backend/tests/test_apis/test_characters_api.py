@@ -50,42 +50,6 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
         assert response_data["count"] == 0
 
     @pytest.mark.django_db
-    def test_list_with_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        character0 = factories.CharacterFactory.create(
-            title="Ch0",
-            site=site,
-            sort_order=1,
-            approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
-        )
-        factories.CharacterFactory.create(
-            title="Ch1", site=site, sort_order=2, approximate_form="Ch1", notes=""
-        )
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 2
-        assert response_data["count"] == 2
-
-        character_json = response_data["results"][0]
-        assert character_json == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
-            "id": str(character0.id),
-            "title": "Ch0",
-            "site": site.title,
-            "sortOrder": 1,
-            "approximateForm": "Ch0",
-            "notes": self.CHARACTER_NOTE,
-            "variants": [],
-        }
-
-    @pytest.mark.django_db
     def test_list_with_characters_and_variants(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
