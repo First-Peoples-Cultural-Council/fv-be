@@ -2,13 +2,41 @@ import json
 
 import pytest
 
+from factory.django import DjangoModelFactory
+
+from backend.models import dictionary
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
 from .base_api_test import BaseSiteContentApiTest
 
 
-class TestDictionaryEndpoints(BaseSiteContentApiTest):
+class AcknowledgementFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.DictionaryAcknowledgement
+
+
+class AlternateSpellingFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.AlternateSpelling
+
+
+class NoteFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.DictionaryNote
+
+
+class PronunciationFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.Pronunciation
+
+
+class TranslationFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.DictionaryTranslation
+
+
+class TestDictionaryEndpoint(BaseSiteContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -80,6 +108,7 @@ class TestDictionaryEndpoints(BaseSiteContentApiTest):
             "category": None,
             "excludeFromGames": False,
             "excludeFromKids": False,
+            "acknowledgements": [],
             "alternateSpellings": [],
             "notes": [],
             "translations": [],
@@ -135,12 +164,73 @@ class TestDictionaryEndpoints(BaseSiteContentApiTest):
             "category": None,
             "excludeFromGames": False,
             "excludeFromKids": False,
+            "acknowledgements": [],
             "alternateSpellings": [],
             "notes": [],
             "translations": [],
             "pronunciations": [],
             "site": site.title,
         }
+
+    @pytest.mark.parametrize(
+        "field",
+        [
+            {"factory": AlternateSpellingFactory, "name": "alternateSpellings"},
+            {"factory": AcknowledgementFactory, "name": "acknowledgements"},
+            {"factory": NoteFactory, "name": "notes"},
+            {"factory": PronunciationFactory, "name": "pronunciations"},
+        ],
+        ids=["alternateSpellings", "acknowledgements", "notes", "pronunciations"],
+    )
+    @pytest.mark.django_db
+    def test_detail_fields(self, field):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
+
+        text = "bon mots"
+        field["factory"].create(dictionary_entry=entry, text=text)
+
+        response = self.client.get(
+            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data[field["name"]] == [{"text": f"{text}"}]
+
+    @pytest.mark.django_db
+    def test_detail_translations(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
+
+        text = "bon mots"
+        TranslationFactory.create(dictionary_entry=entry, text=text)
+
+        response = self.client.get(
+            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["translations"] == [
+            {
+                "text": f"{text}",
+                "language": "EN",
+                "partOfSpeech": None,
+            }
+        ]
 
     @pytest.mark.django_db
     def test_list_team_access(self):
