@@ -15,6 +15,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
 
     API_LIST_VIEW = "api:ignored_characters-list"
     API_DETAIL_VIEW = "api:ignored_characters-detail"
+    TEST_SERVER = "http://testserver"
 
     @pytest.mark.django_db
     def test_site_not_found(self):
@@ -70,7 +71,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
 
         ignored_character_json = response_data["results"][0]
         assert ignored_character_json == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
+            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
             "id": str(ignored_character0.id),
             "title": "/",
             "site": site.title,
@@ -114,7 +115,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
 
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
+            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
             "id": str(ignored_character0.id),
             "title": "/",
             "site": site.title,
@@ -171,7 +172,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))}",
+            "url": f"{self.TEST_SERVER}{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))}",
             "id": str(ignored_character.id),
             "title": "/",
             "site": site.title,
