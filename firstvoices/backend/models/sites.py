@@ -165,7 +165,7 @@ class Membership(BaseSiteContentModel):
         }
 
     def __str__(self):
-        return f"{self.user} ({self.site} {Role.labels[self.role]})"
+        return f"{self.user} ({self.site} {self.get_role_display()})"
 
 
 class SiteFeature(BaseSiteContentModel):
