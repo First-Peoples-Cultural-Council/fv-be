@@ -1,8 +1,6 @@
 from rest_framework import serializers
 
 from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
-from backend.models.dictionary import DictionaryEntry
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
@@ -12,33 +10,18 @@ class IgnoredCharacterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IgnoredCharacter
-        fields = ["url", "id", "title", "site"]
+        fields = ["url", "id", "title"]
 
 
 class CharacterVariantSerializer(serializers.ModelSerializer):
-    base_character = serializers.StringRelatedField()
-
     class Meta:
         model = CharacterVariant
-        fields = ["id", "title", "base_character"]
-
-
-class RelatedDictionaryEntrySerializer(serializers.HyperlinkedModelSerializer):
-    # This serializer is a WIP
-    # It does return a list of related dictionary entries but within a "dictionary_entry" object
-    dictionary_entry = DictionaryEntryDetailSerializer("dictionary_entry")
-
-    class Meta:
-        model = DictionaryEntry
-        fields = ["dictionary_entry"]
+        fields = ["title"]
 
 
 class CharacterDetailSerializer(serializers.ModelSerializer):
     url = SiteHyperlinkedIdentityField(view_name="api:characters-detail")
-    site = serializers.StringRelatedField()
     variants = CharacterVariantSerializer(many=True)
-    # This related dictionary entries field is a WIP
-    # related_dictionary_entries = RelatedDictionaryEntrySerializer(many=True, source="dictionary_entry_links")
 
     class Meta:
         model = Character
@@ -49,7 +32,7 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
             "sort_order",
             "approximate_form",
             "notes",
-            "site",
             "variants",
+            # related dictionary entries will be added in a future PR
             # "related_dictionary_entries",
         ]

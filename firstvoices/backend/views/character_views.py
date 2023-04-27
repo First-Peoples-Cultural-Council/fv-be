@@ -44,7 +44,7 @@ class CharactersViewSet(
                 "sort_order"
             )
         else:
-            return Character.objects.filter(site__slug=None)
+            return Character.objects.none()
 
 
 @extend_schema_view(
@@ -80,4 +80,4 @@ class IgnoredCharactersViewSet(
         if site.count() > 0:
             return IgnoredCharacter.objects.filter(site__slug=site[0].slug)
         else:
-            return IgnoredCharacter.objects.filter(site__slug=None)
+            return IgnoredCharacter.objects.none()

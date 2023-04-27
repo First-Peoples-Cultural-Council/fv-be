@@ -94,6 +94,12 @@ class CharacterVariant(BaseSiteContentModel):
                 fields=["title", "site_id"], name="unique_character_variant"
             )
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from fvcharacter: upper_case_character
     # Unique with site_id
@@ -193,6 +199,12 @@ class Alphabet(BaseSiteContentModel):
         verbose_name_plural = _("alphabet mappers")
 
     logger = logging.getLogger(__name__)
+    rules_permissions = {
+        "view": predicates.is_superadmin,
+        "add": predicates.is_superadmin,
+        "change": predicates.is_superadmin,
+        "delete": predicates.is_superadmin,
+    }
 
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
