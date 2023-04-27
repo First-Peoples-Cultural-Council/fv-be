@@ -24,7 +24,6 @@ from backend.views.base_views import FVPermissionViewSetMixin
     ),
     retrieve=extend_schema(
         description="Details about a specific character in the specified site",
-        # TODO add character variants to the detail view
         responses={
             200: CharacterDetailSerializer,
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
