@@ -11,6 +11,7 @@ from .managers import PermissionsManager
 
 
 class ParentManager(PermissionsManager):
+    use_in_migrations = True
     """Manager to convert foreign key relationship to natural keys for fixtures to load correctly."""
 
     def get_by_natural_key(self, title):

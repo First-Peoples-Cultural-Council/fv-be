@@ -41,6 +41,8 @@ class SiteDetailSerializer(SiteSummarySerializer):
 
     features = FeatureFlagSerializer(source="sitefeature_set", many=True)
     menu = serializers.SerializerMethodField()
+    characters = serializers.SerializerMethodField()
+    ignored_characters = serializers.SerializerMethodField()
     dictionary = serializers.SerializerMethodField()
 
     def get_menu(self, site):
@@ -49,6 +51,12 @@ class SiteDetailSerializer(SiteSummarySerializer):
     def get_default_menu(self):
         default_menu = AppJson.objects.filter(key="default_site_menu")
         return default_menu[0].json if len(default_menu) > 0 else None
+
+    def get_characters(self, site):
+        return self.get_site_content_link(site, "api:characters-list")
+
+    def get_ignored_characters(self, site):
+        return self.get_site_content_link(site, "api:ignored-characters-list")
 
     def get_dictionary(self, site):
         return self.get_site_content_link(site, "api:dictionary-list")
@@ -61,4 +69,10 @@ class SiteDetailSerializer(SiteSummarySerializer):
         )
 
     class Meta(SiteSummarySerializer.Meta):
-        fields = SiteSummarySerializer.Meta.fields + ("menu", "features", "dictionary")
+        fields = SiteSummarySerializer.Meta.fields + (
+            "menu",
+            "features",
+            "characters",
+            "ignored_characters",
+            "dictionary",
+        )
