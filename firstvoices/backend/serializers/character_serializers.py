@@ -5,7 +5,7 @@ from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
 class IgnoredCharacterSerializer(serializers.ModelSerializer):
-    url = SiteHyperlinkedIdentityField(view_name="api:ignored-characters-detail")
+    url = SiteHyperlinkedIdentityField(view_name="api:ignoredcharacter-detail")
 
     class Meta:
         model = IgnoredCharacter
@@ -19,7 +19,7 @@ class CharacterVariantSerializer(serializers.ModelSerializer):
 
 
 class CharacterDetailSerializer(serializers.ModelSerializer):
-    url = SiteHyperlinkedIdentityField(view_name="api:characters-detail")
+    url = SiteHyperlinkedIdentityField(view_name="api:character-detail")
     variants = CharacterVariantSerializer(many=True)
 
     class Meta:

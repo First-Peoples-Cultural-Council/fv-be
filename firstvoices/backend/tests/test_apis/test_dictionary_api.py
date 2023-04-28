@@ -49,6 +49,8 @@ class CategoryFactory(DjangoModelFactory):
         model = dictionary.Category
 
     title = factory.Sequence(lambda n: "Category %03d" % n)
+    created_by = factory.SubFactory(factories.UserFactory)
+    last_modified_by = factory.SubFactory(factories.UserFactory)
 
 
 class DictionaryEntryCategoryFactory(DjangoModelFactory):
@@ -64,8 +66,8 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
 
-    API_LIST_VIEW = "api:dictionary-list"
-    API_DETAIL_VIEW = "api:dictionary-detail"
+    API_LIST_VIEW = "api:dictionaryentry-list"
+    API_DETAIL_VIEW = "api:dictionaryentry-detail"
 
     def get_expected_response(self, entry, site):
         return {
@@ -228,12 +230,12 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site, visibility=Visibility.PUBLIC
         )
 
-        category1 = CategoryFactory(site=site)
-        category2 = CategoryFactory(site=site)
+        category1 = CategoryFactory(site=site, title="test category A")
+        category2 = CategoryFactory(site=site, title="test category B")
         CategoryFactory(site=site)
 
-        DictionaryEntryCategoryFactory(category=category1, entry=entry)
-        DictionaryEntryCategoryFactory(category=category2, entry=entry)
+        DictionaryEntryCategoryFactory(category=category1, dictionary_entry=entry)
+        DictionaryEntryCategoryFactory(category=category2, dictionary_entry=entry)
 
         response = self.client.get(
             self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
@@ -245,12 +247,12 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             {
                 "title": f"{category1.title}",
                 "id": str(category1.id),
-                "url": "EN",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/categories/{str(category1.id)}/",
             },
             {
                 "title": f"{category2.title}",
                 "id": str(category2.id),
-                "url": "EN",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/categories/{str(category2.id)}/",
             },
         ]
 

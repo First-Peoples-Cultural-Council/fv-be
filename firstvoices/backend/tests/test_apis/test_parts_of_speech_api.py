@@ -11,8 +11,8 @@ class TestPartsOfSpeechAPI:
     """Tests for parts-of-speech views."""
 
     FIXTURE_FILE = "partsOfSpeech_initial.json"
-    API_LIST_VIEW = "api:parts-of-speech-list"
-    API_DETAIL_VIEW = "api:parts-of-speech-detail"
+    API_LIST_VIEW = "api:partofspeech-list"
+    API_DETAIL_VIEW = "api:partofspeech-detail"
     APP_NAME = "backend"
 
     def test_base_case_list_view(self, db):

@@ -47,7 +47,7 @@ class TranslationSerializer(serializers.ModelSerializer):
 
 
 class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
-    url = SiteHyperlinkedIdentityField(view_name="api:dictionary-detail")
+    url = SiteHyperlinkedIdentityField(view_name="api:dictionaryentry-detail")
     visibility = serializers.CharField(source="get_visibility_display")
     translations = TranslationSerializer(source="translation_set", many=True)
     pronunciations = PronunciationSerializer(source="pronunciation_set", many=True)

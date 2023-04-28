@@ -53,16 +53,16 @@ class SiteDetailSerializer(SiteSummarySerializer):
         return default_menu[0].json if len(default_menu) > 0 else None
 
     def get_characters(self, site):
-        return self.get_site_content_link(site, "api:characters-list")
+        return self.get_site_content_link(site, "api:character-list")
 
     def get_ignored_characters(self, site):
-        return self.get_site_content_link(site, "api:ignored-characters-list")
+        return self.get_site_content_link(site, "api:ignoredcharacter-list")
 
     def get_dictionary(self, site):
-        return self.get_site_content_link(site, "api:dictionary-list")
+        return self.get_site_content_link(site, "api:dictionaryentry-list")
 
     def get_categories(self, site):
-        return self.get_site_content_link(site, "api:categories-list")
+        return self.get_site_content_link(site, "api:category-list")
 
     def get_site_content_link(self, site, view_name):
         return reverse(
