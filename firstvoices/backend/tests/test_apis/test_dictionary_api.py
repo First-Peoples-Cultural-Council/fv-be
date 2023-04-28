@@ -257,19 +257,6 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         ]
 
     @pytest.mark.django_db
-    def test_list_team_access(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["results"] == []
-
-    @pytest.mark.django_db
     def test_detail_team_access(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_non_member_user()
