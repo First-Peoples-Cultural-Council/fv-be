@@ -41,8 +41,26 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
             "id": str(ignored_character0.id),
             "title": "/",
-            "site": site.title,
         }
+
+    @pytest.mark.django_db
+    def test_list_permissons(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory(visibility=Visibility.TEAM)
+        factories.IgnoredCharacterFactory.create(title="/", site=site)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 403
+
+        factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
+        assert response_data["count"] == 1
 
     @pytest.mark.django_db
     def test_detail(self):
@@ -66,7 +84,6 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
             "id": str(ignored_character0.id),
             "title": "/",
-            "site": site.title,
         }
 
     @pytest.mark.django_db
@@ -85,14 +102,14 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
         assert response.status_code == 403
 
     @pytest.mark.django_db
-    def test_detail_404(self):
+    def test_detail_404_site_not_found(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        factories.IgnoredCharacterFactory.create(title="/", site=site)
+        ignored = factories.IgnoredCharacterFactory.create(title="/", site=site)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key="invalid")
+            self.get_detail_endpoint(site_slug="invalid", key=ignored.id)
         )
 
         assert response.status_code == 404
@@ -123,5 +140,4 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))}",
             "id": str(ignored_character.id),
             "title": "/",
-            "site": site.title,
         }

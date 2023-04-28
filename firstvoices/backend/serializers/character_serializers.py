@@ -6,7 +6,6 @@ from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 class IgnoredCharacterSerializer(serializers.ModelSerializer):
     url = SiteHyperlinkedIdentityField(view_name="api:ignored_characters-detail")
-    site = serializers.StringRelatedField()
 
     class Meta:
         model = IgnoredCharacter

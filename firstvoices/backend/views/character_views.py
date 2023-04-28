@@ -40,8 +40,10 @@ class CharactersViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            return Character.objects.filter(site__slug=site[0].slug).order_by(
-                "sort_order"
+            return (
+                Character.objects.filter(site__slug=site[0].slug)
+                .order_by("sort_order")
+                .prefetch_related("variants")
             )
         else:
             return Character.objects.none()

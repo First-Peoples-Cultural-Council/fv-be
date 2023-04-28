@@ -117,6 +117,8 @@ class TestSitesEndpoints(BaseApiTest):
             "menu": menu.json,
             "features": [],
             "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
+            "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
+            "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored_characters/",
         }
 
     @pytest.mark.django_db

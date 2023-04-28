@@ -18,17 +18,39 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
     CHARACTER_NOTE = "Test note"
 
     @pytest.mark.django_db
-    def test_list_empty(self):
+    def test_list_with_characters(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        character0 = factories.CharacterFactory.create(
+            title="Ch0",
+            site=site,
+            sort_order=1,
+            approximate_form="Ch0",
+            notes=self.CHARACTER_NOTE,
+        )
+        factories.CharacterFactory.create(
+            title="Ch1", site=site, sort_order=2, approximate_form="Ch1", notes=""
+        )
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
+
         response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 0
-        assert response_data["count"] == 0
+        assert len(response_data["results"]) == 2
+        assert response_data["count"] == 2
+
+        character_json = response_data["results"][0]
+        assert character_json == {
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
+            "id": str(character0.id),
+            "title": "Ch0",
+            "sortOrder": 1,
+            "approximateForm": "Ch0",
+            "notes": self.CHARACTER_NOTE,
+            "variants": [],
+        }
 
     @pytest.mark.django_db
     def test_list_with_characters_and_variants(self):
@@ -70,21 +92,16 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
             "id": str(character0.id),
             "title": "Ch0",
-            "site": site.title,
             "sortOrder": 1,
             "approximateForm": "Ch0",
             "notes": self.CHARACTER_NOTE,
             "variants": [variant_json0, variant_json1],
         }
         assert variant_json0 == {
-            "id": str(character0.variants.all()[0].id),
             "title": "Ch0v0",
-            "baseCharacter": f"{character0.title} - {character0.site.title}",
         }
         assert variant_json1 == {
-            "id": str(character0.variants.all()[1].id),
             "title": "Ch0v1",
-            "baseCharacter": f"{character0.title} - {character0.site.title}",
         }
 
     # Test that users can only access characters if they have the correct role in a site
@@ -125,14 +142,12 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
             approximate_form="Ch0",
             notes=self.CHARACTER_NOTE,
         )
-        variant = factories.CharacterVariantFactory.create(
+        factories.CharacterVariantFactory.create(
             title="Ch0v0", base_character=character
         )
 
         variant_json = {
-            "id": str(variant.id),
             "title": "Ch0v0",
-            "baseCharacter": f"{character.title} - {character.site.title}",
         }
 
         response = self.client.get(
@@ -146,12 +161,24 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))}",
             "id": str(character.id),
             "title": "Ch0",
-            "site": site.title,
             "sortOrder": 1,
             "approximateForm": "Ch0",
             "notes": self.CHARACTER_NOTE,
             "variants": [variant_json],
         }
+
+    @pytest.mark.django_db
+    def test_detail_404_site_not_found(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        factories.SiteFactory(visibility=Visibility.PUBLIC)
+        character = factories.CharacterFactory.create()
+
+        response = self.client.get(
+            self.get_detail_endpoint(site_slug="invalid", key=character.id)
+        )
+
+        assert response.status_code == 404
 
     @pytest.mark.django_db
     def test_detail_403(self):
@@ -168,18 +195,6 @@ class TestCharactersEndpoints(BaseSiteContentApiTest):
         )
 
         assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_detail_404(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key="invalid")
-        )
-
-        assert response.status_code == 404
 
     # Test that users can only access character detail if they have the correct role in a site
     @pytest.mark.django_db
