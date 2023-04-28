@@ -50,10 +50,11 @@ class SiteContentViewSetMixin:
         site_slug = self.kwargs["site_slug"]
         site = Site.objects.filter(slug=site_slug)
 
-        if site.count() == 0:
+        if len(site) == 0:
             raise Http404
 
-        if utils.filter_by_viewable(self.request.user, site).count() == 0:
+        allowed_site = utils.filter_by_viewable(self.request.user, site)
+        if len(allowed_site) == 0:
             raise PermissionDenied
 
-        return site
+        return allowed_site
