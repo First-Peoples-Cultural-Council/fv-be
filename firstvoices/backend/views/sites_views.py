@@ -14,13 +14,34 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models.sites import Membership, SiteFeature
+from backend.models.sites import SiteFeature
 from backend.predicates import utils
 from backend.serializers.site_serializers import (
     Site,
     SiteDetailSerializer,
     SiteSummarySerializer,
 )
+
+
+def group_sites_by_language(request, sites):
+    """
+    A helper function the group sites by language. Sites will be grouped under `Other` if they don't have a language.
+    """
+    # serialize each site (groupby can't handle Models)
+    site_jsons = [
+        SiteSummarySerializer(site, context={"request": request}).data for site in sites
+    ]
+
+    # group by language
+    rows = groupby(site_jsons, itemgetter("language"))
+    data = [
+        {
+            "language": language if language is not None else "Other",
+            "sites": list(items),
+        }
+        for language, items in rows
+    ]
+    return data
 
 
 @extend_schema_view(
@@ -72,6 +93,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         Override the list method to group sites by language.
         """
         # custom queryset to avoid prefetching from unneeded tables (list view has less detail)
+        # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         queryset = Site.objects.select_related("language").order_by(
             Upper("language__title"), Upper("title")
         )
@@ -79,21 +101,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         # apply permissions
         sites = utils.filter_by_viewable(request.user, queryset)
 
-        # serialize each site (groupby can't handle Models)
-        site_jsons = [
-            SiteSummarySerializer(site, context={"request": request}).data
-            for site in sites
-        ]
-
-        # group by language
-        rows = groupby(site_jsons, itemgetter("language"))
-        data = [
-            {
-                "language": language if language is not None else "Other",
-                "sites": list(items),
-            }
-            for language, items in rows
-        ]
+        data = group_sites_by_language(request, sites)
 
         return Response(data)
 
@@ -128,44 +136,22 @@ class MySitesViewSet(
     serializer_class = SiteSummarySerializer
 
     def get_queryset(self):
-        # get memberships for the user
-        memberships = Membership.objects.filter(user=self.request.user)
-        sites_id_list = []
-
-        # get the site ids from the memberships
-        for membership in memberships:
-            sites_id_list.append(membership.site.id)
-
-        # get the site objects filtered by the id list and order by language
+        # get the site objects filtered by the membership set for the user and ordered by language
+        # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         queryset = (
-            Site.objects.filter(id__in=sites_id_list)
+            Site.objects.filter(membership_set__user=self.request.user)
             .select_related("language")
             .order_by(Upper("language__title"), Upper("title"))
         )
 
         # filter the list down to the sites the user has view permissions on
-        sites = utils.filter_by_viewable(self.request.user, queryset)
-
-        return sites
+        queryset = utils.filter_by_viewable(self.request.user, queryset)
+        return queryset
 
     def list(self, request, *args, **kwargs):
         # get the sites
         sites = self.get_queryset()
 
-        # serialize each site (groupby can't handle Models)
-        site_jsons = [
-            SiteSummarySerializer(site, context={"request": request}).data
-            for site in sites
-        ]
-
-        # group by language
-        rows = groupby(site_jsons, itemgetter("language"))
-        data = [
-            {
-                "language": language if language is not None else "Other",
-                "sites": list(items),
-            }
-            for language, items in rows
-        ]
+        data = group_sites_by_language(request, sites)
 
         return Response(data)
