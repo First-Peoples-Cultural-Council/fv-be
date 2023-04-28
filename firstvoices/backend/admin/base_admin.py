@@ -56,6 +56,11 @@ class BaseInlineAdmin(admin.TabularInline):
     readonly_fields = (
         "admin_link",
         "item_id",
+        "id",
+        "created",
+        "created_by",
+        "last_modified_by",
+        "last_modified",
     )
     can_delete = False
     fields = (
