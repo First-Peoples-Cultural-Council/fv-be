@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from django.core.management import call_command
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
@@ -16,12 +15,6 @@ class TestDictionaryEndpoints(BaseSiteContentApiTest):
 
     API_LIST_VIEW = "api:dictionary-list"
     API_DETAIL_VIEW = "api:dictionary-detail"
-
-    @pytest.fixture(autouse=True)
-    def g2p_db_setup(self, django_db_blocker):
-        """Required as to create a dictionary entry, we need alphabets and g2p config for alphabets."""
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
