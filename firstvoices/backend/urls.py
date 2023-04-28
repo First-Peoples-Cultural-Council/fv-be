@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from backend.views.dictionary_views import DictionaryViewSet
+from backend.views.dictionary_views import DictionaryViewSet, WordOfTheDayView
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import SiteViewSet
 from backend.views.user import UserViewSet
@@ -15,6 +15,7 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionary")
+sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 
 app_name = "api"
 

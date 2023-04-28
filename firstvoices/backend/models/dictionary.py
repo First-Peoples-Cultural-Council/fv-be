@@ -163,6 +163,12 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="dictionary_entries",
     )
 
+    # Word of the day flag, if false, will not be included when looking for word-of-the-day
+    wotd_enabled = models.BooleanField(default=True, blank=False)
+
+    # last day when this word was word-of-the-day
+    wotd_date = models.DateField(blank=True, null=True)
+
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
