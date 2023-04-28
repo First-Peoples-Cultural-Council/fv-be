@@ -84,6 +84,24 @@ class BaseSiteContentApiTest:
         assert response_data["count"] == 0
 
     @pytest.mark.django_db
+    def test_detail_404_unknown_key(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            self.get_detail_endpoint(site_slug=site.slug, key="fake-key")
+        )
+
+        assert response.status_code == 404
+
+
+class BaseSiteControlledContentApiTest(BaseSiteContentApiTest):
+    """
+    Minimal setup for controlled site content api integration testing.
+    """
+
+    @pytest.mark.django_db
     def test_list_team_access(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
         user = factories.get_non_member_user()
@@ -95,15 +113,3 @@ class BaseSiteContentApiTest:
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["results"] == []
-
-    @pytest.mark.django_db
-    def test_detail_404_unknown_key(self):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key="fake-key")
-        )
-
-        assert response.status_code == 404

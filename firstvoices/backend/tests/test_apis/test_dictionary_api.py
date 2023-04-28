@@ -7,7 +7,7 @@ from backend.models import dictionary
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from .base_api_test import BaseSiteContentApiTest
+from .base_api_test import BaseSiteControlledContentApiTest
 
 
 class AcknowledgementFactory(DjangoModelFactory):
@@ -35,7 +35,7 @@ class TranslationFactory(DjangoModelFactory):
         model = dictionary.Translation
 
 
-class TestDictionaryEndpoint(BaseSiteContentApiTest):
+class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """

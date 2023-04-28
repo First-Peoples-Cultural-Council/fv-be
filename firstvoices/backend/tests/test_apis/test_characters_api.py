@@ -5,10 +5,10 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from .base_api_test import BaseSiteContentApiTest
+from .base_api_test import BaseSiteControlledContentApiTest
 
 
-class TestCharactersEndpoints(BaseSiteContentApiTest):
+class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
     """
     End-to-end tests that the characters endpoints have the expected behaviour.
     """

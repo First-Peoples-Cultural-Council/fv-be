@@ -1,6 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
@@ -20,6 +21,7 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignored-characters"
 )
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionary")
+sites_router.register(r"categories", CategoryViewSet, basename="categories")
 
 app_name = "api"
 
