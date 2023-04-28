@@ -63,30 +63,6 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
         assert response_data["count"] == 1
 
     @pytest.mark.django_db
-    def test_detail(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        ignored_character0 = factories.IgnoredCharacterFactory.create(
-            title="/", site=site
-        )
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                site_slug=site.slug, key=str(ignored_character0.id)
-            )
-        )
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
-            "id": str(ignored_character0.id),
-            "title": "/",
-        }
-
-    @pytest.mark.django_db
     def test_detail_403(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
@@ -113,6 +89,30 @@ class TestIgnoredCharactersEndpoints(BaseSiteContentApiTest):
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_detail(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        ignored_character0 = factories.IgnoredCharacterFactory.create(
+            title="/", site=site
+        )
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                site_slug=site.slug, key=str(ignored_character0.id)
+            )
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data == {
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
+            "id": str(ignored_character0.id),
+            "title": "/",
+        }
 
     @pytest.mark.django_db
     def test_detail_permissions(self):
