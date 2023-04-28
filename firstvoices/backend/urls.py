@@ -17,7 +17,7 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"characters", CharactersViewSet, basename="characters")
 sites_router.register(
-    r"ignored_characters", IgnoredCharactersViewSet, basename="ignored_characters"
+    r"ignored-characters", IgnoredCharactersViewSet, basename="ignored-characters"
 )
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionary")
 

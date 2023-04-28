@@ -56,7 +56,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
         return self.get_site_content_link(site, "api:characters-list")
 
     def get_ignored_characters(self, site):
-        return self.get_site_content_link(site, "api:ignored_characters-list")
+        return self.get_site_content_link(site, "api:ignored-characters-list")
 
     def get_dictionary(self, site):
         return self.get_site_content_link(site, "api:dictionary-list")
