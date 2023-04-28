@@ -39,7 +39,7 @@ class DictionaryViewSet(
         if len(site) > 0:
             return (
                 DictionaryEntry.objects.filter(site__slug=site[0].slug)
-                .select_related("site", "category")
+                .select_related("site")
                 .prefetch_related(
                     "acknowledgement_set",
                     "alternatespelling_set",
@@ -47,6 +47,7 @@ class DictionaryViewSet(
                     "pronunciation_set",
                     "translation_set",
                     "translation_set__part_of_speech",
+                    "categories",
                 )
             )
         else:

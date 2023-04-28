@@ -11,7 +11,7 @@ from backend.models.characters import (
     CharacterVariant,
     IgnoredCharacter,
 )
-from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
+from backend.models.dictionary import DictionaryEntry
 from backend.models.sites import (
     Language,
     LanguageFamily,
@@ -91,14 +91,6 @@ class DictionaryEntryFactory(DjangoModelFactory):
 class ControlledSiteContentFactory(DictionaryEntryFactory):
     # use any concrete model that inherits from BaseControlledSiteContentModel
     pass
-
-
-class DictionaryEntryLinkFactory(DjangoModelFactory):
-    class Meta:
-        model = DictionaryEntryLink
-
-    from_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
-    to_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
 
 
 class LanguageFamilyFactory(DjangoModelFactory):

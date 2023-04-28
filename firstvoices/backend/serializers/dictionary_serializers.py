@@ -1,7 +1,10 @@
 from rest_framework import serializers
 
-from backend.models import dictionary
-from backend.serializers.base_serializers import base_timestamp_fields
+from backend.models import category, dictionary
+from backend.serializers.base_serializers import (
+    SiteContentLinkedTitleSerializer,
+    base_timestamp_fields,
+)
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.site_serializers import SiteSummarySerializer
 
@@ -18,6 +21,11 @@ class AcknowledgementSerializer(serializers.ModelSerializer):
 class AlternateSpellingSerializer(serializers.ModelSerializer):
     class Meta(DictionaryContentMeta):
         model = dictionary.AlternateSpelling
+
+
+class CategorySerializer(SiteContentLinkedTitleSerializer):
+    class Meta(SiteContentLinkedTitleSerializer.Meta):
+        model = category.Category
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -50,7 +58,7 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     alternate_spellings = AlternateSpellingSerializer(
         source="alternatespelling_set", many=True
     )
-    category = serializers.StringRelatedField()
+    categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
 
     class Meta:
@@ -62,7 +70,7 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "type",
             "custom_order",
             "visibility",
-            "category",
+            "categories",
             "exclude_from_games",
             "exclude_from_kids",
             # "related_entries",

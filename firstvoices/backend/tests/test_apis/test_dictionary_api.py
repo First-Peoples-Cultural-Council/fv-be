@@ -1,5 +1,6 @@
 import json
 
+import factory
 import pytest
 from factory.django import DjangoModelFactory
 
@@ -35,6 +36,29 @@ class TranslationFactory(DjangoModelFactory):
         model = dictionary.Translation
 
 
+class DictionaryEntryLinkFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.DictionaryEntryLink
+
+    from_dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
+    to_dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
+
+
+class CategoryFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.Category
+
+    title = factory.Sequence(lambda n: "Category %03d" % n)
+
+
+class DictionaryEntryCategoryFactory(DjangoModelFactory):
+    class Meta:
+        model = dictionary.DictionaryEntryCategory
+
+    dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
+    category = factory.SubFactory(CategoryFactory)
+
+
 class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
@@ -42,6 +66,33 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
     API_LIST_VIEW = "api:dictionary-list"
     API_DETAIL_VIEW = "api:dictionary-detail"
+
+    def get_expected_response(self, entry, site):
+        return {
+            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))}",
+            "id": str(entry.id),
+            "title": entry.title,
+            "type": "WORD",
+            "customOrder": entry.custom_order,
+            "visibility": "Public",
+            "categories": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "acknowledgements": [],
+            "alternateSpellings": [],
+            "notes": [],
+            "translations": [],
+            "pronunciations": [],
+            "site": {
+                "title": site.title,
+                "slug": site.slug,
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+                "language": None,
+                "visibility": "Public",
+            },
+            "created": entry.created.astimezone().isoformat(),
+            "lastModified": entry.last_modified.astimezone().isoformat(),
+        }
 
     @pytest.mark.django_db
     def test_list_full(self):
@@ -66,33 +117,6 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert len(response_data["results"]) == 1
 
         assert response_data["results"][0] == self.get_expected_response(entry, site)
-
-    def get_expected_response(self, entry, site):
-        return {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))}",
-            "id": str(entry.id),
-            "title": entry.title,
-            "type": "WORD",
-            "customOrder": entry.custom_order,
-            "visibility": "Public",
-            "category": None,
-            "excludeFromGames": False,
-            "excludeFromKids": False,
-            "acknowledgements": [],
-            "alternateSpellings": [],
-            "notes": [],
-            "translations": [],
-            "pronunciations": [],
-            "site": {
-                "title": site.title,
-                "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/",
-                "language": None,
-                "visibility": "Public",
-            },
-            "created": entry.created.astimezone().isoformat(),
-            "lastModified": entry.last_modified.astimezone().isoformat(),
-        }
 
     @pytest.mark.django_db
     def test_list_permissions(self):
@@ -193,6 +217,55 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
                 "partOfSpeech": None,
             }
         ]
+
+    @pytest.mark.django_db
+    def test_detail_categories(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+
+        category1 = CategoryFactory(site=site)
+        category2 = CategoryFactory(site=site)
+        CategoryFactory(site=site)
+
+        DictionaryEntryCategoryFactory(category=category1, entry=entry)
+        DictionaryEntryCategoryFactory(category=category2, entry=entry)
+
+        response = self.client.get(
+            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["categories"] == [
+            {
+                "title": f"{category1.title}",
+                "id": str(category1.id),
+                "url": "EN",
+            },
+            {
+                "title": f"{category2.title}",
+                "id": str(category2.id),
+                "url": "EN",
+            },
+        ]
+
+    @pytest.mark.django_db
+    def test_list_team_access(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["results"] == []
 
     @pytest.mark.django_db
     def test_detail_team_access(self):
