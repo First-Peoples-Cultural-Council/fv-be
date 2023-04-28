@@ -1,18 +1,25 @@
-import pytest
 import json
+
+import pytest
 from rest_framework.test import APIClient
 
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
-from backend.tests.factories import get_app_admin, SiteFactory, ParentCategoryFactory, ChildCategoryFactory
 from backend.models.constants import AppRole
+from backend.tests.factories import (
+    ChildCategoryFactory,
+    ParentCategoryFactory,
+    SiteFactory,
+    get_app_admin,
+)
+from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
 
 
 class TestCategoryEndpoints(BaseSiteContentApiTest):
     """
     End-to-end tests that the category endpoints have the expected behaviour.
     """
-    API_LIST_VIEW = "api:category-list"
-    API_DETAIL_VIEW = "api:category-detail"
+
+    API_LIST_VIEW = "api:categories-list"
+    API_DETAIL_VIEW = "api:categories-detail"
 
     def setup_method(self):
         self.client = APIClient()
@@ -28,18 +35,17 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         """
         pass
 
-
     @pytest.mark.django_db
     def test_category_list_full(self):
-        """ Assuming a new site will have at least 1 category. """
+        """Assuming a new site will have at least 1 category."""
 
         response = self.client.get(self.get_list_endpoint(self.site.slug))
         response_data = json.loads(response.content)
 
         assert response.status_code == 200
-        assert response_data['count'] > 0
+        assert response_data["count"] > 0
 
-        category_json = response_data['results'][0]
+        category_json = response_data["results"][0]
         # Testing general structure of the response json.
         # Specific testing done in the retrieve view test
         assert "id" in category_json
@@ -51,7 +57,9 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
     @pytest.mark.django_db
     def test_detail_parent_category(self):
         parent_category = ParentCategoryFactory.create(site=self.site)
-        child_category = ChildCategoryFactory.create(site=self.site, parent=parent_category)
+        child_category = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category
+        )
         detail_endpoint = self.get_detail_endpoint(self.site.slug, parent_category.id)
         response = self.client.get(detail_endpoint)
 
@@ -65,16 +73,18 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
                 {
                     "id": str(child_category.id),
                     "title": child_category.title,
-                    "description": child_category.description
+                    "description": child_category.description,
                 }
             ],
-            "parent": None
+            "parent": None,
         }
 
     @pytest.mark.django_db
     def test_detail_children_category(self):
         parent_category = ParentCategoryFactory.create(site=self.site)
-        child_category = ChildCategoryFactory.create(site=self.site, parent=parent_category)
+        child_category = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category
+        )
 
         detail_endpoint = self.get_detail_endpoint(self.site.slug, child_category.id)
 
@@ -86,7 +96,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
             "title": child_category.title,
             "description": child_category.description,
             "children": [],
-            "parent": str(parent_category.id)
+            "parent": str(parent_category.id),
         }
 
     @pytest.mark.django_db

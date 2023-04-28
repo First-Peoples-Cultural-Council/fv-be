@@ -33,6 +33,7 @@ class BaseSiteContentApiTest:
     """
     Minimal setup for site content api integration testing.
     """
+
     API_LIST_VIEW = ""  # E.g., "api:site-list"
     API_DETAIL_VIEW = ""  # E.g., "api:site-detail"
     APP_NAME = "backend"

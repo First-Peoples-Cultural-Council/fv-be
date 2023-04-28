@@ -21,7 +21,7 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignored-characters"
 )
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionary")
-sites_router.register(r"category", CategoryViewSet, basename="category")
+sites_router.register(r"categories", CategoryViewSet, basename="categories")
 
 app_name = "api"
 

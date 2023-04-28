@@ -1,9 +1,12 @@
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 from backend.models.category import Category
-from backend.serializers.category_serializers import CategoryListSerializer, CategoryDetailSerializer
+from backend.serializers.category_serializers import (
+    CategoryDetailSerializer,
+    CategoryListSerializer,
+)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
 @extend_schema_view(
@@ -22,25 +25,29 @@ from backend.serializers.category_serializers import CategoryListSerializer, Cat
             403: OpenApiResponse(description="Todo: Error Not Authorized"),
             404: OpenApiResponse(description="Todo: Not Found"),
         },
-    )
+    ),
 )
-class CategoryViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
-):
+class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
 
     def get_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            return Category.objects.filter(site__slug=site[0].slug).prefetch_related("children").all()
+            return (
+                Category.objects.filter(site__slug=site[0].slug)
+                .prefetch_related("children")
+                .all()
+            )
         else:
             return Category.objects.none()
 
     def get_list_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            return Category.objects.filter(site__slug=site[0].slug).prefetch_related("children").exclude(
-                parent__isnull=False
+            return (
+                Category.objects.filter(site__slug=site[0].slug)
+                .prefetch_related("children")
+                .exclude(parent__isnull=False)
             )
         else:
             return Category.objects.none()
