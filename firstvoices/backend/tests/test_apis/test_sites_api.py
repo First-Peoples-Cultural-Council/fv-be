@@ -58,7 +58,6 @@ class TestSitesEndpoints(BaseApiTest):
 
         site_json = response_data[0]["sites"][0]
         assert site_json == {
-            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language0.title,
@@ -108,7 +107,6 @@ class TestSitesEndpoints(BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == {
-            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
@@ -169,7 +167,7 @@ class TestSitesEndpoints(BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["id"] == str(site.id)
+        assert response_data["slug"] == str(site.slug)
 
     @pytest.mark.django_db
     def test_detail_403(self):

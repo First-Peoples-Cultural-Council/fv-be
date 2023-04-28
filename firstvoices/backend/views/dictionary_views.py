@@ -36,7 +36,18 @@ class DictionaryViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return DictionaryEntry.objects.filter(site__slug=site[0].slug)
+        if len(site) > 0:
+            return (
+                DictionaryEntry.objects.filter(site__slug=site[0].slug)
+                .select_related("site", "category")
+                .prefetch_related(
+                    "acknowledgement_set",
+                    "alternatespelling_set",
+                    "note_set",
+                    "pronunciation_set",
+                    "translation_set",
+                    "translation_set__part_of_speech",
+                )
+            )
         else:
-            return DictionaryEntry.objects.filter(site__slug=None)
+            return DictionaryEntry.objects.none()
