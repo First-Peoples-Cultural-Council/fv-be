@@ -24,7 +24,7 @@ class BaseDictionaryContentModel(BaseModel):
     """
 
     dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="dictionary_%(class)s"
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="%(class)s_set"
     )
 
     @property
@@ -36,7 +36,7 @@ class BaseDictionaryContentModel(BaseModel):
         abstract = True
 
 
-class DictionaryNote(BaseDictionaryContentModel):
+class Note(BaseDictionaryContentModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
@@ -46,7 +46,7 @@ class DictionaryNote(BaseDictionaryContentModel):
         return self.text
 
 
-class DictionaryAcknowledgement(BaseDictionaryContentModel):
+class Acknowledgement(BaseDictionaryContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
@@ -56,7 +56,7 @@ class DictionaryAcknowledgement(BaseDictionaryContentModel):
         return self.text
 
 
-class DictionaryTranslation(BaseDictionaryContentModel):
+class Translation(BaseDictionaryContentModel):
     """Model for translations associated to each dictionary entry."""
 
     class TranslationLanguages(models.TextChoices):
