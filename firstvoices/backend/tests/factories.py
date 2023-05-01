@@ -183,8 +183,9 @@ def get_non_member_user():
     return UserFactory.create()
 
 
-def get_site_with_member(site_visibility, user_role):
-    user = UserFactory.create()
+def get_site_with_member(site_visibility, user_role, user=None):
+    if user is None:
+        user = UserFactory.create()
     site = SiteFactory.create(visibility=site_visibility)
     MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user
