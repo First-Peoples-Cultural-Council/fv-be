@@ -25,7 +25,7 @@ from backend.serializers.site_serializers import (
 
 def group_sites_by_language(request, sites):
     """
-    A helper function the group sites by language. Sites will be grouped under `Other` if they don't have a language.
+    A helper function to group sites by language. Sites will be grouped under `Other` if they don't have a language.
     """
     # serialize each site (groupby can't handle Models)
     site_jsons = [
@@ -108,11 +108,9 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of language sites a given user is a member of, "
-        "grouped by language. If there are no accessible sites or "
-        "the user does not have membership to any site then the "
-        "list will be empty. Sites with no specified language "
-        "will be grouped under 'Other'.",
+        description="A list of language sites a given user is a member of. If "
+        "there are no accessible sites or the user does not have "
+        "membership to any site then the list will be empty.",
         responses={
             200: inline_serializer(
                 name="InlineLanguageSerializer",
@@ -136,22 +134,12 @@ class MySitesViewSet(
     serializer_class = SiteSummarySerializer
 
     def get_queryset(self):
-        # get the site objects filtered by the membership set for the user and ordered by language
+        # get the site objects filtered by the membership set for the user
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = (
-            Site.objects.filter(membership_set__user=self.request.user)
-            .select_related("language")
-            .order_by(Upper("language__title"), Upper("title"))
+        queryset = Site.objects.filter(membership_set__user=self.request.user).order_by(
+            Upper("title")
         )
 
         # filter the list down to the sites the user has view permissions on
         queryset = utils.filter_by_viewable(self.request.user, queryset)
         return queryset
-
-    def list(self, request, *args, **kwargs):
-        # get the sites
-        sites = self.get_queryset()
-
-        data = group_sites_by_language(request, sites)
-
-        return Response(data)
