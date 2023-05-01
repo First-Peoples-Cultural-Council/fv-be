@@ -215,6 +215,9 @@ class DictionaryEntryLink(BaseSiteContentModel):
     def site(self):
         return self.from_dictionary_entry.site
 
+    def __str__(self):
+        return f"{self.from_dictionary_entry} -> {self.to_dictionary_entry}"
+
 
 class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
     """
