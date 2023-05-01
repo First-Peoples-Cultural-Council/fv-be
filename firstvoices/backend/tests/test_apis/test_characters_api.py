@@ -13,8 +13,8 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
 
-    API_LIST_VIEW = "api:characters-list"
-    API_DETAIL_VIEW = "api:characters-detail"
+    API_LIST_VIEW = "api:character-list"
+    API_DETAIL_VIEW = "api:character-detail"
     CHARACTER_NOTE = "Test note"
 
     @pytest.mark.django_db

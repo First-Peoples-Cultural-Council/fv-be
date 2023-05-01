@@ -5,7 +5,9 @@ from backend.models.dictionary import (
     Acknowledgement,
     AlternateSpelling,
     DictionaryEntry,
+    DictionaryEntryCategory,
     DictionaryEntryLink,
+    DictionaryEntryRelatedCharacter,
     Note,
     Pronunciation,
     Translation,
@@ -13,14 +15,11 @@ from backend.models.dictionary import (
 from backend.models.part_of_speech import PartOfSpeech
 
 from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
-from .sites_admin import MembershipAdmin
 
 
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
     fields = ("text", "site") + BaseInlineAdmin.fields
-    readonly_fields = (
-        ("site",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
-    )
+    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields
 
 
 class NotesInline(BaseDictionaryInlineAdmin):
@@ -62,14 +61,33 @@ class CategoryInline(BaseDictionaryInlineAdmin):
     ordering = ["title"]
 
 
+class DictionaryEntryCharacterInline(BaseInlineAdmin):
+    model = DictionaryEntryRelatedCharacter
+    fields = ("character",) + BaseInlineAdmin.fields
+
+
+class DictionaryEntryCategoryInline(BaseInlineAdmin):
+    model = DictionaryEntryCategory
+    fields = ("category",) + BaseInlineAdmin.fields
+
+
+class DictionaryEntryLinkInline(BaseInlineAdmin):
+    model = DictionaryEntryLink
+    fk_name = "from_dictionary_entry"
+    fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
+
+
 @admin.register(DictionaryEntry)
 class DictionaryEntryAdmin(HiddenBaseAdmin):
     inlines = [
+        DictionaryEntryCategoryInline,
         TranslationInline,
         AlternateSpellingInline,
         PronunciationInline,
         NotesInline,
         AcknowledgementInline,
+        DictionaryEntryLinkInline,
+        DictionaryEntryCharacterInline,
     ]
     readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
 
@@ -87,6 +105,8 @@ admin.site.register(Category, HiddenBaseAdmin)
 admin.site.register(Note, HiddenBaseAdmin)
 admin.site.register(Acknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryCategory, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryRelatedCharacter, HiddenBaseAdmin)
 admin.site.register(Translation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)

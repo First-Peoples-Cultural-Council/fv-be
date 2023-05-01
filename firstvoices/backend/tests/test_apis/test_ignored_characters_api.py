@@ -13,8 +13,8 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
 
-    API_LIST_VIEW = "api:ignored-characters-list"
-    API_DETAIL_VIEW = "api:ignored-characters-detail"
+    API_LIST_VIEW = "api:ignoredcharacter-list"
+    API_DETAIL_VIEW = "api:ignoredcharacter-detail"
 
     @pytest.mark.django_db
     def test_list_with_ignored_characters(self):

@@ -18,8 +18,8 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
     End-to-end tests that the category endpoints have the expected behaviour.
     """
 
-    API_LIST_VIEW = "api:categories-list"
-    API_DETAIL_VIEW = "api:categories-detail"
+    API_LIST_VIEW = "api:category-list"
+    API_DETAIL_VIEW = "api:category-detail"
 
     def setup_method(self):
         self.client = APIClient()
