@@ -52,9 +52,9 @@ class TestMySitesEndpoint(BaseApiTest):
         response = self.client.get(self.get_list_endpoint())
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data[0]["sites"]) == 2
-        assert response_data[0]["sites"][0]["visibility"] == Visibility.MEMBERS.label
-        assert response_data[0]["sites"][1]["visibility"] == Visibility.PUBLIC.label
+        assert len(response_data) == 2
+        assert response_data[0]["visibility"] == Visibility.MEMBERS.label
+        assert response_data[1]["visibility"] == Visibility.PUBLIC.label
 
     @pytest.mark.django_db
     def test_assistant_role(self):
@@ -68,7 +68,7 @@ class TestMySitesEndpoint(BaseApiTest):
         response = self.client.get(self.get_list_endpoint())
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data[0]["sites"]) == 3
+        assert len(response_data) == 3
 
     @pytest.mark.django_db
     def test_editor_role(self):
@@ -82,7 +82,7 @@ class TestMySitesEndpoint(BaseApiTest):
         response = self.client.get(self.get_list_endpoint())
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data[0]["sites"]) == 3
+        assert len(response_data) == 3
 
     @pytest.mark.django_db
     def test_language_admin_role(self):
@@ -96,45 +96,4 @@ class TestMySitesEndpoint(BaseApiTest):
         response = self.client.get(self.get_list_endpoint())
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data[0]["sites"]) == 3
-
-    @pytest.mark.django_db
-    def test_language_grouping(self):
-        user = factories.UserFactory.create()
-
-        language0 = factories.LanguageFactory.create(title="Language 0")
-        members_site0 = factories.SiteFactory.create(
-            language=language0, visibility=Visibility.MEMBERS
-        )
-        factories.MembershipFactory.create(
-            site=members_site0, user=user, role=Role.MEMBER
-        )
-
-        language1 = factories.LanguageFactory.create(title="Language 1")
-        members_site1 = factories.SiteFactory.create(
-            language=language1, visibility=Visibility.MEMBERS
-        )
-        factories.MembershipFactory.create(
-            site=members_site1, user=user, role=Role.MEMBER
-        )
-
-        members_site2 = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
-        factories.MembershipFactory.create(
-            site=members_site2, user=user, role=Role.MEMBER
-        )
-
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint())
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
         assert len(response_data) == 3
-
-        assert len(response_data[0]["sites"]) == 1
-        assert response_data[0]["language"] == "Language 0"
-
-        assert len(response_data[1]["sites"]) == 1
-        assert response_data[1]["language"] == "Language 1"
-
-        assert len(response_data[2]["sites"]) == 1
-        assert response_data[2]["language"] == "Other"
