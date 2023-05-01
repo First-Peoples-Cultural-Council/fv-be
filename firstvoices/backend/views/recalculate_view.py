@@ -12,13 +12,13 @@ class RecalculateView(APIView):
 
     def get(self, request):
         try:
-            remotely_computed_result: AsyncResult = (
+            recalculation_results: AsyncResult = (
                 recalculate_custom_sort_order.apply_async(("test-site",), countdown=2)
             )
 
             return Response(
                 {
-                    "remotely_computed_result": remotely_computed_result.get(
+                    "recalculation_results": recalculation_results.get(
                         timeout=10
                     ),  # wait max 10s before failing
                 }
