@@ -28,7 +28,7 @@ pytest==7.3.0
 pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 python-dateutil==2.8.2
 python-dotenv==1.0.0
-pytz==2022.7.1
+pytz==2023.3
 PyYAML==6.0
 requests==2.29.0
 rules==3.3
