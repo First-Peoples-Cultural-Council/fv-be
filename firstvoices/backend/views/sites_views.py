@@ -136,8 +136,10 @@ class MySitesViewSet(
     def get_queryset(self):
         # get the site objects filtered by the membership set for the user
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = Site.objects.filter(membership_set__user=self.request.user).order_by(
-            Upper("title")
+        queryset = (
+            Site.objects.filter(membership_set__user=self.request.user)
+            .select_related("language")
+            .order_by(Upper("title"))
         )
 
         # filter the list down to the sites the user has view permissions on
