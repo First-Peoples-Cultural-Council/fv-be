@@ -106,7 +106,9 @@ class TestAlphabetModel:
         IgnoredCharacterFactory(site=alphabet.site, title="/")
         assert alphabet.clean_confusables("A/A") == "a/a"
 
-    @pytest.mark.skip("g2p with regex escape ignores mapping with escaped in-chars")
+    @pytest.mark.skip(
+        "test bug: alphabetfactory incorrectly serializes regex chars in json field"
+    )
     @pytest.mark.django_db
     def test_clean_confusables_regex_escape(self):
         """Default confusables transducer ignores regex rules"""

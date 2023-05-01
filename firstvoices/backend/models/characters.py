@@ -195,8 +195,8 @@ class Alphabet(BaseSiteContentModel):
     """
 
     class Meta:
-        verbose_name = _("alphabet mapper")
-        verbose_name_plural = _("alphabet mappers")
+        verbose_name = _("alphabet")
+        verbose_name_plural = _("alphabet")
 
     logger = logging.getLogger(__name__)
     rules_permissions = {
@@ -261,7 +261,7 @@ class Alphabet(BaseSiteContentModel):
                 g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
             )
         else:
-            self.logger.warning("No confusable map found for site %s", self.site)
+            self.logger.warning("Empty confusable map for site %s", self.site)
             return None
 
     def clean_confusables(self, text: str) -> str:
@@ -270,9 +270,10 @@ class Alphabet(BaseSiteContentModel):
         converting all instances of confusables to instances of characters or
         variant characters.
         """
-        if self.preprocess_transducer:
+        if self.input_to_canonical_map:
             return self.preprocess_transducer(text).output_string
         else:
+            self.logger.debug("No confusables listed for site %s", self.site)
             return text
 
     @property
