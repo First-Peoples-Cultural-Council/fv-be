@@ -12,6 +12,7 @@ class RecalculateView(APIView):
 
     def get(self, request):
         try:
+            # delay 2 seconds and then fire (no reason to, just showing that you can)
             recalculation_results: AsyncResult = (
                 recalculate_custom_sort_order.apply_async(("test-site",), countdown=2)
             )

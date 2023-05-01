@@ -11,12 +11,12 @@ class ExampleAsyncTaskView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        locally_computed_result = some_expensive_operation("z")
+        locally_computed_result = some_expensive_operation("a")
 
         try:
             # delay 2 seconds and then fire (no reason to, just showing that you can)
             remotely_computed_result: AsyncResult = (
-                some_expensive_operation.apply_async(("zh",), countdown=2)
+                some_expensive_operation.apply_async(("b",), countdown=2)
             )
 
             return Response(
