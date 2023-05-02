@@ -4,13 +4,14 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppJson, AppMembership
+from backend.models.category import Category
 from backend.models.characters import (
     Alphabet,
     Character,
     CharacterVariant,
     IgnoredCharacter,
 )
-from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
+from backend.models.dictionary import DictionaryEntry
 from backend.models.sites import (
     Language,
     LanguageFamily,
@@ -92,14 +93,6 @@ class ControlledSiteContentFactory(DictionaryEntryFactory):
     pass
 
 
-class DictionaryEntryLinkFactory(DjangoModelFactory):
-    class Meta:
-        model = DictionaryEntryLink
-
-    from_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
-    to_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
-
-
 class LanguageFamilyFactory(DjangoModelFactory):
     class Meta:
         model = LanguageFamily
@@ -163,6 +156,25 @@ class AlphabetFactory(DjangoModelFactory):
         model = Alphabet
 
 
+class ParentCategoryFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Category title %03d" % n)
+    description = factory.Sequence(lambda n: "Category description %03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = Category
+
+
+class ChildCategoryFactory(ParentCategoryFactory):
+    parent = factory.SubFactory(ParentCategoryFactory)
+
+    class Meta:
+        model = Category
+
+
 def get_anonymous_user():
     return AnonymousUserFactory.build()
 
@@ -171,8 +183,9 @@ def get_non_member_user():
     return UserFactory.create()
 
 
-def get_site_with_member(site_visibility, user_role):
-    user = UserFactory.create()
+def get_site_with_member(site_visibility, user_role, user=None):
+    if user is None:
+        user = UserFactory.create()
     site = SiteFactory.create(visibility=site_visibility)
     MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user

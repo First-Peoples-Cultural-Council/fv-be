@@ -24,7 +24,7 @@ class BaseDictionaryContentModel(BaseModel):
     """
 
     dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="dictionary_%(class)s"
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="%(class)s_set"
     )
 
     @property
@@ -36,7 +36,7 @@ class BaseDictionaryContentModel(BaseModel):
         abstract = True
 
 
-class DictionaryNote(BaseDictionaryContentModel):
+class Note(BaseDictionaryContentModel):
     """Model for notes associated to each dictionary entry."""
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
@@ -46,7 +46,7 @@ class DictionaryNote(BaseDictionaryContentModel):
         return self.text
 
 
-class DictionaryAcknowledgement(BaseDictionaryContentModel):
+class Acknowledgement(BaseDictionaryContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
@@ -56,7 +56,7 @@ class DictionaryAcknowledgement(BaseDictionaryContentModel):
         return self.text
 
 
-class DictionaryTranslation(BaseDictionaryContentModel):
+class Translation(BaseDictionaryContentModel):
     """Model for translations associated to each dictionary entry."""
 
     class TranslationLanguages(models.TextChoices):
@@ -108,11 +108,8 @@ class Pronunciation(BaseDictionaryContentModel):
 
 
 class DictionaryEntry(BaseControlledSiteContentModel):
-    """Model for dictionary entries
-    TruncatingCharField for custom_order: For each unknown character, we get 2 characters in the custom order field
-    (one character and one flag) used for sorting purposes. There is not much use of retaining sorting information
-    after ~112 characters incase there are words which contain all 225 unknown characters. Thus, the field gets
-    truncated at max length.
+    """
+    Model for dictionary entries
     """
 
     class TypeOfDictionaryEntry(models.TextChoices):
@@ -120,9 +117,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         WORD = "WORD", _("Word")
         PHRASE = "PHRASE", _("Phrase")
 
-    # Fields
     # from dc:title, relatively more max_length due to phrases
-    # see fw-4196, max_length may be modified after doing some analysis on the length of current phrases
     title = models.CharField(max_length=TITLE_MAX_LENGTH)
     type = models.CharField(
         max_length=6,
@@ -130,22 +125,29 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         default=TypeOfDictionaryEntry.WORD,
     )
     # from fv-word:categories, fv-phrase:phrase_books
-    category = models.ForeignKey(
+    categories = models.ManyToManyField(
         Category,
         blank=True,
-        null=True,
-        on_delete=models.SET_NULL,
+        through="DictionaryEntryCategory",
         related_name="dictionary_entries",
     )
-    # from fv:custom_order
+    #  from fv:custom_order
+    #  For each unknown character, we get 2 characters in the custom order field
+    #  (one character and one flag) used for sorting purposes. There is not much use of retaining sorting information
+    #  after ~112 characters incase there are words which contain all 225 unknown characters. Thus, the field gets
+    #  truncated at max length.
     custom_order = TruncatingCharField(max_length=TITLE_MAX_LENGTH, blank=True)
+
     # from fv-word:available_in_games, fvaudience:games
     exclude_from_games = models.BooleanField(default=False)
+
     # from fvaudience:children fv:available_in_childrens_archive
     # exclude_from_kids can be a shared mixin for dictionary_entries, songs, stories and media
     exclude_from_kids = models.BooleanField(default=False)
+
     # from nxtag:tags
     batch_id = models.CharField(max_length=255, blank=True)
+
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField(
         "self",
@@ -160,7 +162,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         Character,
         blank=True,
         through="DictionaryEntryRelatedCharacter",
-        related_name="dictionary_entries",
+        related_name="related_dictionary_entries",
     )
 
     # Word of the day flag, if false, will not be included when looking for word-of-the-day
@@ -200,16 +202,27 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
 
 class DictionaryEntryLink(BaseSiteContentModel):
-    from_dictionary_entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name = _("related dictionary entry")
+        verbose_name_plural = _("related dictionary entries")
+
+    from_dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        on_delete=models.CASCADE,
+        related_name="dictionaryentrylink_set",
+    )
     to_dictionary_entry = models.ForeignKey(
         DictionaryEntry,
         on_delete=models.CASCADE,
-        related_name="incoming_related_entries",
+        related_name="incoming_dictionaryentrylink_set",
     )
 
     @property
     def site(self):
         return self.from_dictionary_entry.site
+
+    def __str__(self):
+        return f"{self.from_dictionary_entry} -> {self.to_dictionary_entry}"
 
 
 class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
@@ -218,24 +231,37 @@ class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
     """
 
     class Meta:
-        verbose_name = _("character related dictionary entry")
-        verbose_name_plural = _("character related dictionary entries")
+        verbose_name = _("character - dictionary entry relation")
+        verbose_name_plural = _("character - dictionary entry relations")
 
     character = models.ForeignKey(
         Character,
         blank=True,
         null=True,
         on_delete=models.CASCADE,
-        related_name="dictionary_entry_links",
     )
 
     dictionary_entry = models.ForeignKey(
-        DictionaryEntry,
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="character_links",
+        DictionaryEntry, blank=True, null=True, on_delete=models.CASCADE
     )
 
     def __str__(self):
         return f"{self.character} - {self.dictionary_entry}"
+
+
+class DictionaryEntryCategory(BaseDictionaryContentModel):
+    class Meta:
+        verbose_name = _("category - dictionary entry relation")
+        verbose_name_plural = _("category - dictionary entry relations")
+
+    dictionary_entry = models.ForeignKey(
+        DictionaryEntry,
+        on_delete=models.CASCADE,
+        related_name="dictionaryentrycategory_set",
+    )
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="dictionaryentrycategory_set"
+    )
+
+    def __str__(self):
+        return f"{self.category} - {self.dictionary_entry}"

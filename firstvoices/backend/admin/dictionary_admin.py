@@ -2,37 +2,36 @@ from django.contrib import admin
 
 from backend.models.category import Category
 from backend.models.dictionary import (
+    Acknowledgement,
     AlternateSpelling,
-    DictionaryAcknowledgement,
     DictionaryEntry,
+    DictionaryEntryCategory,
     DictionaryEntryLink,
-    DictionaryNote,
-    DictionaryTranslation,
+    DictionaryEntryRelatedCharacter,
+    Note,
     Pronunciation,
+    Translation,
 )
 from backend.models.part_of_speech import PartOfSpeech
 
 from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
-from .sites_admin import MembershipAdmin
 
 
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
     fields = ("text", "site") + BaseInlineAdmin.fields
-    readonly_fields = (
-        ("site",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
-    )
+    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields
 
 
 class NotesInline(BaseDictionaryInlineAdmin):
-    model = DictionaryNote
+    model = Note
 
 
 class AcknowledgementInline(BaseDictionaryInlineAdmin):
-    model = DictionaryAcknowledgement
+    model = Acknowledgement
 
 
 class TranslationInline(BaseDictionaryInlineAdmin):
-    model = DictionaryTranslation
+    model = Translation
     fields = (
         "language",
         "part_of_speech",
@@ -62,14 +61,33 @@ class CategoryInline(BaseDictionaryInlineAdmin):
     ordering = ["title"]
 
 
+class DictionaryEntryCharacterInline(BaseInlineAdmin):
+    model = DictionaryEntryRelatedCharacter
+    fields = ("character",) + BaseInlineAdmin.fields
+
+
+class DictionaryEntryCategoryInline(BaseInlineAdmin):
+    model = DictionaryEntryCategory
+    fields = ("category",) + BaseInlineAdmin.fields
+
+
+class DictionaryEntryLinkInline(BaseInlineAdmin):
+    model = DictionaryEntryLink
+    fk_name = "from_dictionary_entry"
+    fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
+
+
 @admin.register(DictionaryEntry)
 class DictionaryEntryAdmin(HiddenBaseAdmin):
     inlines = [
+        DictionaryEntryCategoryInline,
         TranslationInline,
         AlternateSpellingInline,
         PronunciationInline,
         NotesInline,
         AcknowledgementInline,
+        DictionaryEntryLinkInline,
+        DictionaryEntryCharacterInline,
     ]
     readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
 
@@ -84,9 +102,11 @@ class PartsOfSpeechAdmin(BaseAdmin):
 
 # Non-customized admin forms
 admin.site.register(Category, HiddenBaseAdmin)
-admin.site.register(DictionaryNote, HiddenBaseAdmin)
-admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
+admin.site.register(Note, HiddenBaseAdmin)
+admin.site.register(Acknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
-admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryCategory, HiddenBaseAdmin)
+admin.site.register(DictionaryEntryRelatedCharacter, HiddenBaseAdmin)
+admin.site.register(Translation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)

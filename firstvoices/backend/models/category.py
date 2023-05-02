@@ -1,9 +1,11 @@
+import rules
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
-from .base import BaseSiteContentModel
-from .constants import CATEGORY_POS_MAX_TITLE_LENGTH
+from backend import predicates
+from backend.models.base import BaseSiteContentModel
+from backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
 
 
 class Category(BaseSiteContentModel):
@@ -21,6 +23,13 @@ class Category(BaseSiteContentModel):
     class Meta:
         verbose_name = _("Category")
         verbose_name_plural = _("Categories")
+        unique_together = ("site", "title")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return self.title
