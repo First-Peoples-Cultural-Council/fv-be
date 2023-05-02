@@ -128,6 +128,12 @@ class CustomSorter(ArbSorter):
         custom_chars = [self.custom_sort_char(i) for i in values]
         return "".join(custom_chars)
 
+    def word_as_chars(self, word) -> list[chr]:
+        """Convert word into a list of characters for use in fv games."""
+        values = self.word_as_values(word)
+        chars = [self.ord_to_char_lookup[v] for v in values]
+        return chars
+
 
 def nfc(string: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))

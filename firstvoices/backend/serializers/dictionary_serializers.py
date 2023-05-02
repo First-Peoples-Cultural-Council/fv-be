@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from backend.models import category, dictionary
+from backend.models import Alphabet, category, dictionary
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     base_timestamp_fields,
@@ -60,6 +60,15 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     )
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
+    characters = serializers.SerializerMethodField()
+
+    def get_characters(self, entry):
+        if "⚑" in entry.custom_order:
+            return []
+        else:
+            alphabet = Alphabet.objects.filter(site=entry.site).first()
+            cs = alphabet.sorter
+            return cs.word_as_chars(entry.title)
 
     class Meta:
         model = dictionary.DictionaryEntry
@@ -80,4 +89,5 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "translations",
             "pronunciations",
             "site",
+            "characters",
         )
