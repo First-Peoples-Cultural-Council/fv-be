@@ -4,10 +4,10 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend import predicates
+from backend.managers.permissions import PermissionsManager
 
 from .base import BaseModel
 from .constants import CATEGORY_POS_MAX_TITLE_LENGTH
-from .managers import PermissionsManager
 
 
 class ParentManager(PermissionsManager):

@@ -7,8 +7,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
+from backend.managers.permissions import PermissionsManager
+
 from .constants import Visibility
-from .managers import PermissionsManager
 
 
 class BaseModel(RulesModel):
