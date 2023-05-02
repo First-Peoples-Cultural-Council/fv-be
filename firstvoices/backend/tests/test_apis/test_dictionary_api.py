@@ -92,6 +92,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
                 "language": None,
                 "visibility": "Public",
             },
+            "characters": [],
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }
@@ -303,3 +304,30 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_base_character_list_generation(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="bc a"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["characters"] == ["b", "c", " ", "a"]
