@@ -266,9 +266,15 @@ class Alphabet(BaseSiteContentModel):
         """
         if self.input_to_canonical_map:
             preprocess_settings = self.default_g2p_config["preprocess_config"]
-
+            # need to query for self in order to correctly grab property as dict
+            self_with_object = Alphabet.objects.only("input_to_canonical_map").get(
+                id=self.id
+            )
             return g2p.Transducer(
-                g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
+                g2p.Mapping(
+                    **preprocess_settings,
+                    mapping=self_with_object.input_to_canonical_map,
+                )
             )
         else:
             self.logger.warning("Empty confusable map for site %s", self.site)
