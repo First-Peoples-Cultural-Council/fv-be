@@ -158,7 +158,6 @@ class AlphabetFactory(DjangoModelFactory):
 
 class ParentCategoryFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
-    site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Category title %03d" % n)
     description = factory.Sequence(lambda n: "Category description %03d" % n)
     created_by = factory.SubFactory(UserFactory)

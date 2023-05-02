@@ -11,6 +11,7 @@ from backend.models.dictionary import (
     Note,
     Pronunciation,
     Translation,
+    WordOfTheDay,
 )
 from backend.models.part_of_speech import PartOfSpeech
 
@@ -75,6 +76,18 @@ class DictionaryEntryLinkInline(BaseInlineAdmin):
     model = DictionaryEntryLink
     fk_name = "from_dictionary_entry"
     fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
+
+
+class WordOfTheDayInline(BaseInlineAdmin):
+    @staticmethod
+    def get_site(self, obj):
+        return obj.site
+
+    model = WordOfTheDay
+    fields = (
+        "dictionary_entry",
+        "date",
+    ) + BaseInlineAdmin.fields
 
 
 @admin.register(DictionaryEntry)

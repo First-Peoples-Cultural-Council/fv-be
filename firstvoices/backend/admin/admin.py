@@ -9,7 +9,7 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .dictionary_admin import CategoryInline, DictionaryEntryInline
+from .dictionary_admin import CategoryInline, DictionaryEntryInline, WordOfTheDayInline
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 # Main Site admin settings. For related sites models, see .sites_admin
@@ -32,6 +32,7 @@ class SiteAdmin(BaseAdmin):
         SiteMenuInline,
         DictionaryEntryInline,
         CategoryInline,
+        WordOfTheDayInline,
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)

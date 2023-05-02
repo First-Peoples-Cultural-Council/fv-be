@@ -165,11 +165,8 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         related_name="related_dictionary_entries",
     )
 
-    # Word of the day flag, if false, will not be included when looking for word-of-the-day
-    wotd_enabled = models.BooleanField(default=True, blank=False)
-
-    # last day when this word was word-of-the-day
-    wotd_date = models.DateField(blank=True, null=True)
+    # Word of the day flag, if true, will not be included when looking for word-of-the-day
+    exclude_from_wotd = models.BooleanField(default=False, blank=False)
 
     class Meta:
         verbose_name = _("Dictionary Entry")
@@ -265,3 +262,19 @@ class DictionaryEntryCategory(BaseDictionaryContentModel):
 
     def __str__(self):
         return f"{self.category} - {self.dictionary_entry}"
+
+
+class WordOfTheDay(BaseSiteContentModel):
+    """
+    Table for word-of-the-day containing word and its respective date it was chosen to be wotd.
+    """
+
+    date = models.DateField(db_index=True)
+    dictionary_entry = models.ForeignKey(
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="%(class)s_set"
+    )
+
+    class Meta:
+        verbose_name = _("Word of the day")
+        verbose_name_plural = _("Word of the day")
+        unique_together = ("site", "date")

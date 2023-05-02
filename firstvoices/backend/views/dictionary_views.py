@@ -4,7 +4,7 @@ from django.utils.timezone import datetime, timedelta
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
 
-from backend.models import DictionaryEntry
+from backend.models.dictionary import DictionaryEntry, WordOfTheDay
 from backend.predicates import utils
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -83,12 +83,8 @@ class WordOfTheDayView(
     def get_suitable_queryset(site_slug):
         # Check if there is a word assigned word-of-the-day date of today
         today = datetime.today()
-        queryset = DictionaryEntry.objects.filter(
-            site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
-            wotd_enabled=True,
-            wotd_date=today,
-        )
+        wotd_obj = WordOfTheDay.objects.filter(site__slug=site_slug, date=today).first()
+        queryset = DictionaryEntry.objects.filter(id=wotd_obj.dictionary_entry.id)
         if queryset.count() > 0:
             return queryset
 
@@ -97,7 +93,6 @@ class WordOfTheDayView(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
             wotd_enabled=True,
-            wotd_date=None,
         )
         if queryset.count() > 0:
             return queryset
@@ -134,3 +129,7 @@ class WordOfTheDayView(
         # Pulling the first element from viewable words
         words = utils.filter_by_viewable(self.request.user, queryset)
         return words[:1]
+
+    # todo: Change view name, remove -list from the name
+    def get_view_name(self):
+        return "word-of-the-day"

@@ -1,9 +1,9 @@
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from backend.views.dictionary_views import DictionaryViewSet, WordOfTheDayView
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
+from backend.views.dictionary_views import DictionaryViewSet, WordOfTheDayView
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet

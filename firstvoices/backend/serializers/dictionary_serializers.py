@@ -80,5 +80,4 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "translations",
             "pronunciations",
             "site",
-            "wotd_date",
         )
