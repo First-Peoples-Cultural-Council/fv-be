@@ -84,38 +84,50 @@ class WordOfTheDayView(
         # Check if there is a word assigned word-of-the-day date of today
         today = datetime.today()
         wotd_obj = WordOfTheDay.objects.filter(site__slug=site_slug, date=today).first()
-        queryset = DictionaryEntry.objects.filter(id=wotd_obj.dictionary_entry.id)
-        if queryset.count() > 0:
-            return queryset
+        if wotd_obj is not None:
+            queryset = DictionaryEntry.objects.filter(id=wotd_obj.dictionary_entry.id)
+            if queryset.count() > 0:
+                return queryset
 
         # If no words found with today's date, Get words which have not yet been assigned word-of-the-day
         queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
-            wotd_enabled=True,
+            exclude_from_wotd=False,
+            wotd_set=None,
         )
         if queryset.count() > 0:
+            selected_word = queryset.first()
+            new_wotd_obj = WordOfTheDay(
+                date=today, dictionary_entry=selected_word, site=selected_word.site
+            )
+            new_wotd_obj.save()
             return queryset
 
         # If no words found satisfying any of the above condition, try to find wotd which has not been assigned a
         # date in the last year
-        last_year_date = today - timedelta(weeks=52)  # can only go upto weeks
-        queryset = DictionaryEntry.objects.filter(
-            site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
-            wotd_enabled=True,
-            wotd_date__lte=last_year_date,
+        last_year_date = today - timedelta(weeks=52)
+        old_wotd = (
+            WordOfTheDay.objects.filter(site__slug=site_slug, date__lte=last_year_date)
+            .order_by("date")
+            .first()
         )
-        if queryset.count() > 0:
-            return queryset
+        if old_wotd is not None:
+            queryset = DictionaryEntry.objects.filter(id=old_wotd.dictionary_entry.id)
+            WordOfTheDay.objects.filter(id=old_wotd.id).update(date=today)
+            if queryset.count() > 0:
+                return queryset
 
         # If there is no word that passes any of the above conditions, choose a word at random
         primary_keys_list = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
-            wotd_enabled=True,
+            exclude_from_wotd=False,
         ).values_list("id", flat=True)
         random_entry = choice(primary_keys_list)
+        WordOfTheDay.objects.filter(dictionary_entry__id=random_entry).update(
+            date=today
+        )
         return DictionaryEntry.objects.filter(id=random_entry)
 
     def get_queryset(self):
@@ -129,7 +141,3 @@ class WordOfTheDayView(
         # Pulling the first element from viewable words
         words = utils.filter_by_viewable(self.request.user, queryset)
         return words[:1]
-
-    # todo: Change view name, remove -list from the name
-    def get_view_name(self):
-        return "word-of-the-day"

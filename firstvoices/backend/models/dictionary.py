@@ -271,7 +271,7 @@ class WordOfTheDay(BaseSiteContentModel):
 
     date = models.DateField(db_index=True)
     dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="%(class)s_set"
+        "DictionaryEntry", on_delete=models.CASCADE, related_name="wotd_set"
     )
 
     class Meta:
