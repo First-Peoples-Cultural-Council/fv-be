@@ -92,8 +92,8 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
                 "language": None,
                 "visibility": "Public",
             },
-            "baseCharacters": "Due to this entry containing unknown characters, it cannot be used in games.",
-            "wordsInPhrase": "This entry is not a phrase.",
+            "baseCharacters": [],
+            "words": entry.title.split(" "),
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }
@@ -390,7 +390,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["wordsInPhrase"] == ["abc", "bca", "caba"]
+        assert response_data["results"][0]["words"] == ["abc", "bca", "caba"]
 
     @pytest.mark.django_db
     def test_phrase_word_list_with_variants(self):
@@ -422,4 +422,4 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["wordsInPhrase"] == ["xyy", "yyx", "xyy"]
+        assert response_data["results"][0]["words"] == ["xyy", "yyx", "xyy"]

@@ -61,31 +61,30 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
     base_characters = serializers.SerializerMethodField()
-    words_in_phrase = serializers.SerializerMethodField()
+    words = serializers.SerializerMethodField()
 
     @staticmethod
     def get_base_characters(entry):
         if "⚑" in entry.custom_order:
-            return "Due to this entry containing unknown characters, it cannot be used in games."
+            return []
         else:
             alphabet = Alphabet.objects.filter(site=entry.site).first()
             cs = alphabet.sorter
-            character_list = cs.word_as_chars(entry.title)
-            for i, char in enumerate(character_list):
-                character_list[i] = alphabet.presort_transducer(char).output_string
 
-            return character_list
+            # convert title to base characters
+            base_title = alphabet.presort_transducer(entry.title).output_string
+
+            return cs.word_as_chars(base_title)
 
     @staticmethod
-    def get_words_in_phrase(entry):
-        if entry.type != "PHRASE":
-            return "This entry is not a phrase."
-        else:
-            alphabet = Alphabet.objects.filter(site=entry.site).first()
-            word_list = entry.title.split(" ")
-            for i, word in enumerate(word_list):
-                word_list[i] = alphabet.presort_transducer(word).output_string
-            return word_list
+    def get_words(entry):
+        alphabet = Alphabet.objects.filter(site=entry.site).first()
+
+        # convert title to base characters
+        base_title = alphabet.presort_transducer(entry.title).output_string
+        word_list = base_title.split(" ")
+
+        return word_list
 
     class Meta:
         model = dictionary.DictionaryEntry
@@ -107,5 +106,5 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "pronunciations",
             "site",
             "base_characters",
-            "words_in_phrase",
+            "words",
         )
