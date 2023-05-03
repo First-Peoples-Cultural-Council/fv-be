@@ -7,7 +7,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
-from backend.managers.permissions import PermissionsManager
+from backend.permissions import managers
 
 from .constants import Visibility
 
@@ -16,7 +16,7 @@ class BaseModel(RulesModel):
     """
     Base model for all FirstVoices Backend models, with standard fields and support for rules-based permissions.
 
-    Date fields values are generated automatically, but user fields (created_by and last_modified_by) are required when
+    Date field values are generated automatically, but user fields (created_by and last_modified_by) are required when
     creating new data.
 
     Access rules can be configured using a declaration in the Meta class, like this example:
@@ -31,8 +31,8 @@ class BaseModel(RulesModel):
     class Meta:
         abstract = True
 
-    # The permissions manager adds functionality to filter a queryset based on user permissions.
-    objects = PermissionsManager()
+    # The permission manager only includes items the user has permission to view
+    objects = managers.PermissionsManager()
 
     # from uid (and seemingly not uid:uid)
     id = models.UUIDField(
@@ -76,6 +76,8 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
+    objects = managers.SiteContentPermissionsManager()
+
     site = models.ForeignKey(
         to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s_set"
     )
@@ -89,6 +91,8 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
 
     class Meta:
         abstract = True
+
+    objects = managers.ControlledSiteContentPermissionsManager()
 
     visibility = models.IntegerField(
         choices=Visibility.choices, default=Visibility.TEAM
@@ -107,8 +111,8 @@ def pre_save_for_fixtures(sender, instance, **kwargs):
 
 class TruncatingCharField(models.CharField):
     """
-    Custom field which auto truncates the value of a varchar field if it goes above a specific length.
-    Also strips any whites spaces in the beginning or in the end before enforcing max length.
+    Custom CharField which auto truncates the value if it goes above the max_length.
+    Strips any whitespace in the beginning or in the end before enforcing max length.
     Ref: https://docs.djangoproject.com/en/4.2/ref/models/fields/#django.db.models.Field.get_prep_value
     """
 
