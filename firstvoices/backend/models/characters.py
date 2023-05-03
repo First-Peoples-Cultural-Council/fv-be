@@ -87,7 +87,7 @@ class Character(BaseSiteContentModel):
         Validates that the site has not already reached the max character limit.
         """
         limit = CustomSorter.max_alphabet_length
-        if len(Character.objects.filter(site_id=self.site_id)) >= limit:
+        if Character.objects.filter(site_id=self.site_id).count() >= limit:
             raise ValidationError("Over maximum character limit: %s chars" % limit)
 
 
@@ -266,14 +266,11 @@ class Alphabet(BaseSiteContentModel):
         """
         if self.input_to_canonical_map:
             preprocess_settings = self.default_g2p_config["preprocess_config"]
-            # need to query for self in order to correctly grab property as dict
-            self_with_object = Alphabet.objects.only("input_to_canonical_map").get(
-                id=self.id
-            )
+
             return g2p.Transducer(
                 g2p.Mapping(
                     **preprocess_settings,
-                    mapping=self_with_object.input_to_canonical_map,
+                    mapping=self.input_to_canonical_map,
                 )
             )
         else:
