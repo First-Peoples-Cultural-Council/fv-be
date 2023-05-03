@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models import Site
-from backend.permissions.predicates import utils
+from backend.permissions import utils
 
 
 class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
