@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend import predicates
+from backend.permissions import predicates
 
 from .base import BaseModel
 from .constants import AppRole

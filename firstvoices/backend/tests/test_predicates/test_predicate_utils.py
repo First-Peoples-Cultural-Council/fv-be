@@ -1,7 +1,7 @@
 import pytest
 
 from backend.models.constants import AppRole, Role
-from backend.predicates import utils
+from backend.permissions.predicates import utils
 from backend.tests.factories import (
     AnonymousUserFactory,
     ControlledSiteContentFactory,
