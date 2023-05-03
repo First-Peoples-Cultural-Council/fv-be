@@ -79,10 +79,6 @@ class DictionaryEntryLinkInline(BaseInlineAdmin):
 
 
 class WordOfTheDayInline(BaseInlineAdmin):
-    @staticmethod
-    def get_site(self, obj):
-        return obj.site
-
     model = WordOfTheDay
     fields = (
         "dictionary_entry",
