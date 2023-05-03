@@ -7,9 +7,9 @@ from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
+from backend.permissions import predicates
 from backend.utils.character_utils import CustomSorter
 
-from .. import predicates
 from .app import AppJson
 from .base import BaseSiteContentModel
 from .constants import MAX_CHARACTER_LENGTH

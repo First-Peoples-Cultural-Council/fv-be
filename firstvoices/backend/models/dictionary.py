@@ -1,9 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
+from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
-from .. import predicates
 from .base import (
     BaseControlledSiteContentModel,
     BaseModel,

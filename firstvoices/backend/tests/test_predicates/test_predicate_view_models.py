@@ -1,7 +1,7 @@
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.predicates import view_models
+from backend.permissions.predicates import view_models
 from backend.tests.factories import (
     MembershipFactory,
     SiteFactory,
