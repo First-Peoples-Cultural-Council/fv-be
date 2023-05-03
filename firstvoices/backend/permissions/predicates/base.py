@@ -1,8 +1,7 @@
 from rules import predicate
 
 from backend.models.constants import AppRole, Role, Visibility
-
-from .utils import get_app_role, get_site_role
+from backend.permissions.utils import get_app_role, get_site_role
 
 #
 # visibility-based test_predicates
