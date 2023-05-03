@@ -278,3 +278,4 @@ class WordOfTheDay(BaseSiteContentModel):
         verbose_name = _("Word of the day")
         verbose_name_plural = _("Word of the day")
         unique_together = ("site", "date")
+        ordering = ["-date"]
