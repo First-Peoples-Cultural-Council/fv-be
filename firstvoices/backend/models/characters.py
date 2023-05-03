@@ -314,3 +314,21 @@ class Alphabet(BaseSiteContentModel):
         """
         text = self.presort_transducer(text).output_string
         return self.sorter.word_as_sort_string(text)
+
+    def get_character_list(self, text: str) -> list[str]:
+        """
+        Returns a list of characters in the text, split using the MTD splitter.
+        """
+        return self.sorter.word_as_chars(text)
+
+    def get_canonical_form(self, text: str) -> str:
+        """
+        Converts a string to a string with all confusables replaced with characters and character variants.
+        """
+        return self.preprocess_transducer(text).output_string
+
+    def get_base_form(self, text: str) -> str:
+        """
+        Converts a string to a string with all variant characters replaced with their base characters.
+        """
+        return self.presort_transducer(text).output_string

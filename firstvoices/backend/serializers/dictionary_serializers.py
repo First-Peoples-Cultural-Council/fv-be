@@ -69,19 +69,18 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             return []
         else:
             alphabet = Alphabet.objects.filter(site=entry.site).first()
-            cs = alphabet.sorter
 
             # convert title to base characters
-            base_title = alphabet.presort_transducer(entry.title).output_string
+            base_title = alphabet.get_base_form(entry.title)
 
-            return cs.word_as_chars(base_title)
+            return alphabet.get_character_list(base_title)
 
     @staticmethod
     def get_words(entry):
         alphabet = Alphabet.objects.filter(site=entry.site).first()
 
         # convert title to base characters
-        base_title = alphabet.presort_transducer(entry.title).output_string
+        base_title = alphabet.get_base_form(entry.title)
         word_list = base_title.split(" ")
 
         return word_list
