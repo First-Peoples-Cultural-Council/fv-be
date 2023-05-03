@@ -17,7 +17,7 @@ def is_visible_object(user):
 def has_visible_site(user):
     return (
         base.has_public_access_to_site(user)
-        | base.is_at_least_staff_admin
+        | base.is_at_least_staff_admin(user)
         | base.has_member_access_to_site(user)
         | base.has_team_access_to_site(user)
     )

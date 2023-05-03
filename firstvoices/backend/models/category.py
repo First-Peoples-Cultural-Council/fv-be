@@ -1,4 +1,3 @@
-import rules
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
@@ -25,7 +24,7 @@ class Category(BaseSiteContentModel):
         verbose_name_plural = _("Categories")
         unique_together = ("site", "title")
         rules_permissions = {
-            "view": rules.always_allow,
+            "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
