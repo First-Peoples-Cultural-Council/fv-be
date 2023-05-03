@@ -60,15 +60,32 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     )
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
-    characters = serializers.SerializerMethodField()
+    base_characters = serializers.SerializerMethodField()
+    words_in_phrase = serializers.SerializerMethodField()
 
-    def get_characters(self, entry):
+    @staticmethod
+    def get_base_characters(entry):
         if "⚑" in entry.custom_order:
-            return []
+            return "Due to this entry containing unknown characters, it cannot be used in games."
         else:
             alphabet = Alphabet.objects.filter(site=entry.site).first()
             cs = alphabet.sorter
-            return cs.word_as_chars(entry.title)
+            character_list = cs.word_as_chars(entry.title)
+            for i, char in enumerate(character_list):
+                character_list[i] = alphabet.presort_transducer(char).output_string
+
+            return character_list
+
+    @staticmethod
+    def get_words_in_phrase(entry):
+        if entry.type != "PHRASE":
+            return "This entry is not a phrase."
+        else:
+            alphabet = Alphabet.objects.filter(site=entry.site).first()
+            word_list = entry.title.split(" ")
+            for i, word in enumerate(word_list):
+                word_list[i] = alphabet.presort_transducer(word).output_string
+            return word_list
 
     class Meta:
         model = dictionary.DictionaryEntry
@@ -89,5 +106,6 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "translations",
             "pronunciations",
             "site",
-            "characters",
+            "base_characters",
+            "words_in_phrase",
         )

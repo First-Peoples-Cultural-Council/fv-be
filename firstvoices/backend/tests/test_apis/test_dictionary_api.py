@@ -92,7 +92,8 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
                 "language": None,
                 "visibility": "Public",
             },
-            "characters": [],
+            "baseCharacters": "Due to this entry containing unknown characters, it cannot be used in games.",
+            "wordsInPhrase": "This entry is not a phrase.",
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }
@@ -330,4 +331,95 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["characters"] == ["b", "c", " ", "a"]
+        assert response_data["results"][0]["baseCharacters"] == ["b", "c", " ", "a"]
+
+    @pytest.mark.django_db
+    def test_base_character_list_generation_with_variants(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        char = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterVariantFactory.create(
+            site=site, title="Y", base_character=char
+        )
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="yY x"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["baseCharacters"] == ["y", "y", " ", "x"]
+
+    @pytest.mark.django_db
+    def test_phrase_word_list(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="abc bca caba",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["wordsInPhrase"] == ["abc", "bca", "caba"]
+
+    @pytest.mark.django_db
+    def test_phrase_word_list_with_variants(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        char = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterVariantFactory.create(
+            site=site, title="Y", base_character=char
+        )
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xyY yYx xYy",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["wordsInPhrase"] == ["xyy", "yyx", "xyy"]
