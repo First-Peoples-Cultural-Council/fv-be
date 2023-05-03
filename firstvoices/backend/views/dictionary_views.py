@@ -69,7 +69,10 @@ class DictionaryViewSet(
     ),
 )
 class WordOfTheDayView(
-    SiteContentViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
 ):
     """
     Picks and returns word-of-the-day for a given site.
@@ -94,6 +97,9 @@ class WordOfTheDayView(
                 return queryset
 
         # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
+        # words_used = WordOfTheDay.objects.filter(site__slug=site_slug).values_list(
+        #     "dictionary_entry_id", flat=True
+        # )
         queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
@@ -135,6 +141,9 @@ class WordOfTheDayView(
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).values_list("id", flat=True)
+        if len(primary_keys_list) == 0:
+            # No words found
+            return DictionaryEntry.objects.none()
         random_entry = choice(primary_keys_list)
         selected_word = DictionaryEntry.objects.filter(id=random_entry)
         WordOfTheDay(

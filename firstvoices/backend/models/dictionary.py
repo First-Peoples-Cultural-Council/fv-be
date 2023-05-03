@@ -1,3 +1,4 @@
+import rules
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -279,3 +280,9 @@ class WordOfTheDay(BaseSiteContentModel):
         verbose_name_plural = _("Word of the day")
         unique_together = ("site", "date")
         ordering = ["-date"]
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": rules.always_allow,  # todo: Allow only a system user
+            "change": rules.always_allow,
+            "delete": rules.always_allow,
+        }
