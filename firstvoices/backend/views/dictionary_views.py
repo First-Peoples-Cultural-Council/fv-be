@@ -97,15 +97,14 @@ class WordOfTheDayView(
                 return queryset
 
         # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
-        # words_used = WordOfTheDay.objects.filter(site__slug=site_slug).values_list(
-        #     "dictionary_entry_id", flat=True
-        # )
+        words_used = WordOfTheDay.objects.filter(site__slug=site_slug).values_list(
+            "dictionary_entry_id", flat=True
+        )
         queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
-            wotd_set=None,
-        )
+        ).exclude(id__in=list(words_used))
         if queryset.count() > 0:
             selected_word = queryset.first()
             WordOfTheDay(
