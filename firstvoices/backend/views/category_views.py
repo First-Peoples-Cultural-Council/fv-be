@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.category import Category
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
     CategoryListSerializer,
@@ -50,11 +51,16 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
             # Check if type flags are present
             contains_flags = self.request.GET.get("contains", "").split("|")
 
-            if ("WORD" and "PHRASE") in contains_flags:
+            if all(
+                x in contains_flags
+                for x in [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
+            ):
+                print("X")
+                # Check if both keywords are present
                 list_queryset = list_queryset.filter(
                     Q(dictionary_entries__type="WORD")
                     | Q(dictionary_entries__type="PHRASE")
-                )
+                ).distinct("id")
             elif "WORD" in contains_flags:
                 list_queryset = list_queryset.filter(dictionary_entries__type="WORD")
             elif "PHRASE" in contains_flags:

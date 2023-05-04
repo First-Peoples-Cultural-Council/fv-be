@@ -107,15 +107,16 @@ class Pronunciation(BaseDictionaryContentModel):
         return self.text
 
 
+class TypeOfDictionaryEntry(models.TextChoices):
+    # Choices for Type
+    WORD = "WORD", _("Word")
+    PHRASE = "PHRASE", _("Phrase")
+
+
 class DictionaryEntry(BaseControlledSiteContentModel):
     """
     Model for dictionary entries
     """
-
-    class TypeOfDictionaryEntry(models.TextChoices):
-        # Choices for Type
-        WORD = "WORD", _("Word")
-        PHRASE = "PHRASE", _("Phrase")
 
     # from dc:title, relatively more max_length due to phrases
     title = models.CharField(max_length=TITLE_MAX_LENGTH)

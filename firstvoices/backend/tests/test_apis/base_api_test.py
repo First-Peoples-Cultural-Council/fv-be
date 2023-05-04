@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
@@ -40,8 +41,14 @@ class BaseSiteContentApiTest:
 
     client = None
 
-    def get_list_endpoint(self, site_slug):
-        return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
+    def get_list_endpoint(self, site_slug, query_kwargs=None):
+        """
+        query_kwargs accept query parameters e.g. query_kwargs={"contains": "WORD"}
+        """
+        url = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
+        if query_kwargs:
+            return f"{url}?{urlencode(query_kwargs)}"
+        return url
 
     def get_detail_endpoint(self, site_slug, key):
         return reverse(

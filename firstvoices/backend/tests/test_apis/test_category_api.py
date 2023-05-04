@@ -7,7 +7,9 @@ from rest_framework.test import APIClient
 
 from backend.models.category import Category
 from backend.models.constants import AppRole
-from backend.tests.factories import (  # DictionaryEntryFactory,
+from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.tests.factories import (
+    DictionaryEntryFactory,
     SiteFactory,
     UserFactory,
     get_app_admin,
@@ -125,7 +127,128 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         response = self.client.get(wrong_endpoint)
         assert response.status_code == 404
 
-    # @pytest.mark.django_db
-    # def test_contains_flag_word(self):
-    #
-    #     word_entry = DictionaryEntryFactory(site=self.site)
+    @pytest.mark.django_db
+    def test_contains_word(self):
+        word_entry = DictionaryEntryFactory(site=self.site)
+        category_word = ParentCategoryFactory(site=self.site)
+        category_word.dictionary_entries.add(word_entry)
+
+        # Testing for WORD flag
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug, query_kwargs={"contains": TypeOfDictionaryEntry.WORD}
+            )
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] > 0
+
+        assert response_data["results"][0] == {
+            "id": str(category_word.id),
+            "title": category_word.title,
+            "description": category_word.description,
+            "children": [],
+        }
+
+        # Testing for PHRASE flag, should not return anything
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug, query_kwargs={"contains": TypeOfDictionaryEntry.PHRASE}
+            )
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 0
+
+    @pytest.mark.django_db
+    def test_contains_phrase(self):
+        phrase_entry = DictionaryEntryFactory(
+            site=self.site, type=TypeOfDictionaryEntry.PHRASE
+        )
+        category_phrase = ParentCategoryFactory(site=self.site)
+        category_phrase.dictionary_entries.add(phrase_entry)
+
+        # Testing for PHRASE flag
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug, query_kwargs={"contains": TypeOfDictionaryEntry.PHRASE}
+            )
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] > 0
+
+        assert response_data["results"][0] == {
+            "id": str(category_phrase.id),
+            "title": category_phrase.title,
+            "description": category_phrase.description,
+            "children": [],
+        }
+
+        # Testing for WORD flag, should not return anything
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug, query_kwargs={"contains": TypeOfDictionaryEntry.WORD}
+            )
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 0
+
+    @pytest.mark.django_db
+    def test_contains_multiple(self):
+        word_entry = DictionaryEntryFactory(site=self.site)
+        phrase_entry = DictionaryEntryFactory(
+            site=self.site, type=TypeOfDictionaryEntry.PHRASE
+        )
+
+        category_word = ParentCategoryFactory(site=self.site)
+        category_phrase = ParentCategoryFactory(site=self.site)
+        category_both = ParentCategoryFactory(site=self.site)
+
+        category_word.dictionary_entries.add(word_entry)
+        category_phrase.dictionary_entries.add(phrase_entry)
+        category_both.dictionary_entries.add(word_entry, phrase_entry)
+
+        # Testing for PHRASE flag
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={
+                    "contains": f"{TypeOfDictionaryEntry.WORD}|{TypeOfDictionaryEntry.PHRASE}"
+                },
+            )
+        )
+        response_data = json.loads(response.content)
+
+        print(response_data)
+        assert response.status_code == 200
+        assert response_data["count"] == 3
+
+        ids_in_response = [
+            str(response_obj["id"]) for response_obj in response_data["results"]
+        ]
+        actual_ids = [
+            str(category_word.id),
+            str(category_phrase.id),
+            str(category_both.id),
+        ]
+
+        assert len(actual_ids) == len(ids_in_response)
+        # Checking all ids match up
+        difference = set(actual_ids) ^ set(ids_in_response)
+        assert not difference
+
+
+"""
+Test for
+1. Category 1 only contains word and return when asked for word, returns nothing for phrase
+2. Contains both word and phrase, still returns when asked for word, returns also for phrase, and also for both
+3. Contains only phrase, returns when asked for phrase, return nothing for word
+4. Also consider cases when there are child categories as well
+
+"""
