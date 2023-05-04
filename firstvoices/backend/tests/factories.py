@@ -114,6 +114,8 @@ class SiteMenuFactory(DjangoModelFactory):
     class Meta:
         model = SiteMenu
 
+    json = factory.Sequence(lambda n: "{'menu_json': %03d }" % n)
+
 
 class AppJsonFactory(DjangoModelFactory):
     class Meta:
