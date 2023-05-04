@@ -5,6 +5,25 @@ from backend.permissions.utils import get_app_role
 
 
 #
+# equivalents for built-in predicates
+#
+def always_allow(user=None):
+    return Q(id=F("id"))
+
+
+def always_deny(user=None):
+    return ~Q(id=F("id"))
+
+
+def always_true(user=None):
+    return always_allow()
+
+
+def always_false(user=None):
+    return always_deny()
+
+
+#
 # site-based filter
 #
 def has_site(site):
@@ -14,8 +33,6 @@ def has_site(site):
 #
 # visibility-based filters
 #
-
-
 def get_obj_visibility_query(visibility):
     return Q(visibility=visibility)
 
@@ -51,8 +68,6 @@ def has_team_site():
 #
 # role-based test_predicates
 #
-
-
 def get_site_role_at_least_filter(user, role):
     return Q(site__membership_set__user=user) & Q(site__membership_set__role__gte=role)
 
@@ -78,23 +93,23 @@ def is_at_least_language_admin(user):
 #
 def get_app_role_filter(user, app_role):
     if get_app_role(user) >= app_role:
-        return Q(id=F("id"))  # always true
+        return always_true()
     else:
-        return ~Q(id=F("id"))  # always false
+        return always_false()
 
 
 def is_at_least_staff_admin(user):
     return get_app_role_filter(user, AppRole.STAFF)
 
 
-def is_superadmin(user, obj):
+def is_superadmin(user):
     return get_app_role_filter(user, AppRole.SUPERADMIN)
 
 
 #
 # access-based filters
 #
-def has_public_access_to_obj(user):
+def has_public_access_to_obj(user=None):
     return is_public_obj() & has_public_site()
 
 
@@ -106,7 +121,7 @@ def has_team_access_to_obj(user):
     return is_at_least_assistant(user)
 
 
-def has_public_access_to_site(user):
+def has_public_access_to_site(user=None):
     return has_public_site()  # just a convenient alias
 
 
