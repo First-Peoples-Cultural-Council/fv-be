@@ -1,3 +1,4 @@
+from django.db.models import Q
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -44,11 +45,25 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
     def get_list_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            return (
-                Category.objects.filter(site__slug=site[0].slug)
-                .prefetch_related("children")
-                .exclude(parent__isnull=False)
+            list_queryset = Category.objects.filter(site__slug=site[0].slug)
+
+            # Check if type flags are present
+            contains_flags = self.request.GET.get("contains", "").split("|")
+
+            if ("WORD" and "PHRASE") in contains_flags:
+                list_queryset = list_queryset.filter(
+                    Q(dictionary_entries__type="WORD")
+                    | Q(dictionary_entries__type="PHRASE")
+                )
+            elif "WORD" in contains_flags:
+                list_queryset = list_queryset.filter(dictionary_entries__type="WORD")
+            elif "PHRASE" in contains_flags:
+                list_queryset = list_queryset.filter(dictionary_entries__type="PHRASE")
+
+            return list_queryset.prefetch_related("children").exclude(
+                parent__isnull=False
             )
+
         else:
             return Category.objects.none()
 
