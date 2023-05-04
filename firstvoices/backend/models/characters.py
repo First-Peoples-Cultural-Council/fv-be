@@ -2,6 +2,7 @@ import logging
 
 import g2p
 import yaml
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
@@ -57,6 +58,7 @@ class Character(BaseSiteContentModel):
         return f"{self.title} - {self.site}"
 
     def save(self, *args, **kwargs):
+        self.validate_character_limit()
         self.validate_title_uniqueness()
         super().save(*args, **kwargs)
 
@@ -79,6 +81,14 @@ class Character(BaseSiteContentModel):
                 "The title %s is already used by an IgnoredCharacter with the same site_id."
                 % self.title
             )
+
+    def validate_character_limit(self):
+        """
+        Validates that the site has not already reached the max character limit.
+        """
+        limit = CustomSorter.max_alphabet_length
+        if Character.objects.filter(site_id=self.site_id).count() >= limit:
+            raise ValidationError("Over maximum character limit: %s chars" % limit)
 
 
 class CharacterVariant(BaseSiteContentModel):
@@ -195,8 +205,8 @@ class Alphabet(BaseSiteContentModel):
     """
 
     class Meta:
-        verbose_name = _("alphabet mapper")
-        verbose_name_plural = _("alphabet mappers")
+        verbose_name = _("alphabet")
+        verbose_name_plural = _("alphabet")
 
     logger = logging.getLogger(__name__)
     rules_permissions = {
@@ -258,10 +268,13 @@ class Alphabet(BaseSiteContentModel):
             preprocess_settings = self.default_g2p_config["preprocess_config"]
 
             return g2p.Transducer(
-                g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
+                g2p.Mapping(
+                    **preprocess_settings,
+                    mapping=self.input_to_canonical_map,
+                )
             )
         else:
-            self.logger.warning("No confusable map found for site %s", self.site)
+            self.logger.warning("Empty confusable map for site %s", self.site)
             return None
 
     @property
