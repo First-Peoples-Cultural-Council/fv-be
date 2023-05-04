@@ -1,16 +1,36 @@
 import json
 
+import factory
 import pytest
+from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
+from backend.models.category import Category
 from backend.models.constants import AppRole
-from backend.tests.factories import (
-    ChildCategoryFactory,
-    ParentCategoryFactory,
+from backend.tests.factories import (  # DictionaryEntryFactory,
     SiteFactory,
+    UserFactory,
     get_app_admin,
 )
 from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+
+
+class ParentCategoryFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Category title %03d" % n)
+    description = factory.Sequence(lambda n: "Category description %03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = Category
+
+
+class ChildCategoryFactory(ParentCategoryFactory):
+    parent = factory.SubFactory(ParentCategoryFactory)
+
+    class Meta:
+        model = Category
 
 
 class TestCategoryEndpoints(BaseSiteContentApiTest):
@@ -104,3 +124,8 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         wrong_endpoint = self.get_detail_endpoint(self.site.slug, "54321")
         response = self.client.get(wrong_endpoint)
         assert response.status_code == 404
+
+    # @pytest.mark.django_db
+    # def test_contains_flag_word(self):
+    #
+    #     word_entry = DictionaryEntryFactory(site=self.site)
