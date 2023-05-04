@@ -119,6 +119,9 @@ class AppJsonFactory(DjangoModelFactory):
     class Meta:
         model = AppJson
 
+    key = factory.Sequence(lambda n: "AppJson %03d" % n)
+    json = factory.Sequence(lambda n: "{ 'value': %03d }" % n)
+
 
 class CharacterFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
