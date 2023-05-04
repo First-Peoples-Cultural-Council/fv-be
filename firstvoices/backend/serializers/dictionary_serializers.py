@@ -60,23 +60,44 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     )
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
-    base_characters = serializers.SerializerMethodField()
-    words = serializers.SerializerMethodField()
+    split_chars = serializers.SerializerMethodField()
+    split_chars_base = serializers.SerializerMethodField()
+    split_words = serializers.SerializerMethodField()
+    split_words_base = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_base_characters(entry):
-        if "⚑" in entry.custom_order:
+    def get_split_chars(entry):
+        alphabet = Alphabet.objects.filter(site=entry.site).first()
+        ignored_characters = alphabet.ignorable_characters.values_list(
+            "title", flat=True
+        )
+        has_ignored_char = any(char in ignored_characters for char in entry.title)
+        if "⚑" in entry.custom_order or has_ignored_char:
             return []
         else:
-            alphabet = Alphabet.objects.filter(site=entry.site).first()
+            return alphabet.get_character_list(entry.title)
 
+    @staticmethod
+    def get_split_chars_base(entry):
+        alphabet = Alphabet.objects.filter(site=entry.site).first()
+        ignored_characters = alphabet.ignorable_characters.values_list(
+            "title", flat=True
+        )
+        has_ignored_char = any(char in ignored_characters for char in entry.title)
+        if "⚑" in entry.custom_order or has_ignored_char:
+            return []
+        else:
             # convert title to base characters
             base_title = alphabet.get_base_form(entry.title)
 
             return alphabet.get_character_list(base_title)
 
     @staticmethod
-    def get_words(entry):
+    def get_split_words(entry):
+        return entry.title.split(" ")
+
+    @staticmethod
+    def get_split_words_base(entry):
         alphabet = Alphabet.objects.filter(site=entry.site).first()
 
         # convert title to base characters
@@ -104,6 +125,8 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "translations",
             "pronunciations",
             "site",
-            "base_characters",
-            "words",
+            "split_chars",
+            "split_chars_base",
+            "split_words",
+            "split_words_base",
         )
