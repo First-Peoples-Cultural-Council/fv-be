@@ -207,14 +207,15 @@ class Alphabet(BaseSiteContentModel):
     class Meta:
         verbose_name = _("alphabet")
         verbose_name_plural = _("alphabet")
+        rules_permissions = {
+            "view": predicates.is_superadmin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
 
     logger = logging.getLogger(__name__)
-    rules_permissions = {
-        "view": predicates.is_superadmin,
-        "add": predicates.is_superadmin,
-        "change": predicates.is_superadmin,
-        "delete": predicates.is_superadmin,
-    }
 
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters
