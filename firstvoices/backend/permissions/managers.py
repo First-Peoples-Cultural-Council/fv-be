@@ -13,14 +13,6 @@ class PermissionsManager(models.Manager):
     configuration by using the `PermissionFilterMixin`.
     """
 
-    # todo: deprecate and remove
-    def get_viewable_for_user(self, user):
-        """
-        Returns a queryset containing only objects that the given user has permission to view. This
-        does not filter related objects.
-        """
-        return self.get_queryset()
-
     def visible(self, user):
         """
         Returns a queryset containing only objects that the given user has permission to view. This

@@ -26,15 +26,17 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
 
     def list(self, request, *args, **kwargs):
         # apply view permissions
-        queryset = utils.filter_by_viewable(request.user, self.get_list_queryset())
+        queryset = utils.filter_by_viewable(self.request.user, self.get_list_queryset())
 
-        # paginate the queryset
+        # paginated response
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = self.get_serializer(
+                page, many=True, context={"request": request}
+            )
             return self.get_paginated_response(serializer.data)
 
-        # serialize and return the data, with context to support hyperlinking
+        # non-paginated response
         serializer = self.serializer_class(
             queryset, many=True, context={"request": request}
         )
