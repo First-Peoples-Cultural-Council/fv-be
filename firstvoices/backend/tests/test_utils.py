@@ -1,7 +1,5 @@
 from itertools import product
 
-import pytest
-
 from backend.utils.character_utils import ArbSorter, CustomSorter
 
 
@@ -46,12 +44,6 @@ class TestCharacterUtils:
         sorter = CustomSorter(order=alph)
         assert len(sorter.custom_order) == len(alph) + 1
         assert isinstance(sorter.custom_sort_char(150), str)
-
-    def test_custom_sorter_too_long_alphabet(self):
-        double_chars = [a + b for (a, b) in product(self.extra_chars, self.extra_chars)]
-        alph = self.chars + double_chars
-        with pytest.raises(ValueError):
-            CustomSorter(order=alph)
 
     def test_custom_sorter_oov_char(self):
         sorter = CustomSorter(order=self.chars)

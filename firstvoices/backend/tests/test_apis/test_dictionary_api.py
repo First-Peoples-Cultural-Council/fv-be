@@ -344,15 +344,24 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
         factories.CharacterFactory.create(site=site, title="x")
-        char = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterFactory.create(site=site, title="c")
+        aa = factories.CharacterFactory.create(site=site, title="aa")
+        h = factories.CharacterFactory.create(site=site, title="h")
+        ch = factories.CharacterFactory.create(site=site, title="ch")
+
         factories.CharacterVariantFactory.create(
-            site=site, title="Y", base_character=char
+            site=site, title="AA", base_character=aa
         )
+        factories.CharacterVariantFactory.create(
+            site=site, title="Ch", base_character=ch
+        )
+        factories.CharacterVariantFactory.create(site=site, title="H", base_character=h)
 
         factories.AlphabetFactory.create(site=site)
 
         factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="yY x"
+            site=site, visibility=Visibility.PUBLIC, title="ChxyAA hcH"
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -363,11 +372,29 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == ["y", "Y", " ", "x"]
-        assert response_data["results"][0]["splitCharsBase"] == ["y", "y", " ", "x"]
+        assert response_data["results"][0]["splitChars"] == [
+            "Ch",
+            "x",
+            "y",
+            "AA",
+            " ",
+            "h",
+            "c",
+            "H",
+        ]
+        assert response_data["results"][0]["splitCharsBase"] == [
+            "ch",
+            "x",
+            "y",
+            "aa",
+            " ",
+            "h",
+            "c",
+            "h",
+        ]
 
     @pytest.mark.django_db
-    def test_character_lists_unrecognized(self):
+    def test_character_lists_unrecognized_characters(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 

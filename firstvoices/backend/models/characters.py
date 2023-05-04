@@ -306,6 +306,19 @@ class Alphabet(BaseSiteContentModel):
             ignorable=[char.title for char in self.ignorable_characters],
         )
 
+    @property
+    def splitter(self) -> CustomSorter:
+        """
+        Returns a sorter object containing both base characters and character variants
+        to properly split text into characters using the MTD splitter.
+        """
+
+        return CustomSorter(
+            order=[char.title for char in self.base_characters]
+            + [char.title for char in self.variant_characters],
+            ignorable=[char.title for char in self.ignorable_characters],
+        )
+
     def __str__(self):
         return f"Alphabet and related functions for {self.site}"
 
@@ -332,13 +345,7 @@ class Alphabet(BaseSiteContentModel):
         """
         Returns a list of characters in the text, split using the MTD splitter.
         """
-        return self.sorter.word_as_chars(text)
-
-    def get_canonical_form(self, text: str) -> str:
-        """
-        Converts a string to a string with all confusables replaced with characters and character variants.
-        """
-        return self.preprocess_transducer(text).output_string
+        return self.splitter.word_as_chars(text)
 
     def get_base_form(self, text: str) -> str:
         """

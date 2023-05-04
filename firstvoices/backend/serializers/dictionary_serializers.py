@@ -87,10 +87,11 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         if "⚑" in entry.custom_order or has_ignored_char:
             return []
         else:
-            # convert title to base characters
-            base_title = alphabet.get_base_form(entry.title)
+            # split, then convert title to base characters
+            char_list = alphabet.get_character_list(entry.title)
+            base_chars = [alphabet.get_base_form(c) for c in char_list]
 
-            return alphabet.get_character_list(base_title)
+            return base_chars
 
     @staticmethod
     def get_split_words(entry):

@@ -129,34 +129,30 @@ class TestAlphabetModel:
 
     @pytest.mark.django_db
     def test_get_character_list(self, alphabet):
-        """Get list of characters in text, split with current alphabet and MTD splitter"""
-        CharacterFactory(site=alphabet.site, title="aa")
-        CharacterFactory(site=alphabet.site, title="ch")
+        """Get list of characters in text, split with current alphabet and MTD splitter, base and variant characters"""
+        aa = CharacterFactory(site=alphabet.site, title="aa")
+        ch = CharacterFactory(site=alphabet.site, title="ch")
         CharacterFactory(site=alphabet.site, title="c")
         CharacterFactory(site=alphabet.site, title="d")
-        CharacterFactory(site=alphabet.site, title="e")
-        s = "deaachcchd"
-        assert alphabet.get_character_list(s) == ["d", "e", "aa", "ch", "c", "ch", "d"]
+        e = CharacterFactory(site=alphabet.site, title="e")
+        CharacterVariantFactory(site=alphabet.site, title="AA", base_character=aa)
+        CharacterVariantFactory(site=alphabet.site, title="Ch", base_character=ch)
+        CharacterVariantFactory(site=alphabet.site, title="E", base_character=e)
 
-    @pytest.mark.django_db
-    def test_get_canonical_form(self):
-        """Get canonical form of text"""
-        alphabet = AlphabetFactory.create(
-            input_to_canonical_map=[
-                {"in": "á", "out": "a"},
-                {"in": "ᐱ", "out": "A"},
-                {"in": "_b", "out": "b"},
-                {"in": "č", "out": "cv"},
-            ],
-        )
-
-        a = CharacterFactory(site=alphabet.site, title="a")
-        CharacterFactory(site=alphabet.site, title="cv")
-        CharacterFactory(site=alphabet.site, title="b")
-        CharacterVariantFactory(site=alphabet.site, title="A", base_character=a)
-
-        s = "áx ᐱᐱᐱ"
-        assert alphabet.get_canonical_form(s) == "ax AAA"
+        s = "deaaChcchdAA CH"
+        assert alphabet.get_character_list(s) == [
+            "d",
+            "e",
+            "aa",
+            "Ch",
+            "c",
+            "ch",
+            "d",
+            "AA",
+            " ",
+            "C",
+            "H",
+        ]
 
     @pytest.mark.django_db
     def test_get_base_form(self, alphabet):
