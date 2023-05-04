@@ -5,7 +5,7 @@ from backend.permissions.utils import get_app_role, get_site_role
 
 
 #
-# visibility-based test_predicates
+# visibility-based predicates
 #
 @predicate
 def is_public_obj(user, obj):
@@ -46,7 +46,7 @@ def is_own_obj(user, obj):
 
 
 #
-# role-based test_predicates
+# role-based predicates
 #
 
 

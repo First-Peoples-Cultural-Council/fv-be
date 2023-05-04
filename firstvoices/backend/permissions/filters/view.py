@@ -1,7 +1,7 @@
 from . import base
 
 #
-# reusable view permission test_predicates
+# reusable view permission filters
 #
 
 
