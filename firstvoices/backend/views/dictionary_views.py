@@ -3,6 +3,7 @@ from secrets import choice
 from django.utils.timezone import datetime, timedelta
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
+from rest_framework.response import Response
 
 from backend.models.dictionary import DictionaryEntry, WordOfTheDay
 from backend.predicates import utils
@@ -150,14 +151,22 @@ class WordOfTheDayView(
         ).save()
         return selected_word
 
-    def get_queryset(self):
+    def list(self, request, *args, **kwargs):
+        # Overriding list method from FVPermissionViewSetMixin to only get the first word
         site = self.get_validated_site()
-        # Logic to select
+
+        # Logic to select queryset
         if site.count() > 0:
             queryset = self.get_suitable_queryset(site[0].slug)
         else:
             queryset = DictionaryEntry.objects.none()
 
-        # Pulling the first element from viewable words
-        words = utils.filter_by_viewable(self.request.user, queryset)
-        return words[:1]
+        # apply view permissions and get the first word
+        words = utils.filter_by_viewable(request.user, queryset)
+        first_word = words[:1]
+
+        # serialize and return the data, with context to support hyperlinking
+        serializer = self.serializer_class(
+            first_word, many=True, context={"request": request}
+        )
+        return Response(serializer.data)

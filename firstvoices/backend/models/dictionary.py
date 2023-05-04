@@ -282,7 +282,7 @@ class WordOfTheDay(BaseSiteContentModel):
         ordering = ["-date"]
         rules_permissions = {
             "view": rules.always_allow,
-            "add": rules.always_allow,  # todo: Allow only a system user
-            "change": rules.always_allow,
-            "delete": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
         }
