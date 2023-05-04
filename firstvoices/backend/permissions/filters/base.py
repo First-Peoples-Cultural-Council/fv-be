@@ -31,6 +31,16 @@ def has_site(site):
 
 
 #
+# user-based filter
+#
+def is_own_obj(user):
+    """
+    Will only work for models that have a "user" field, mainly Memberships.
+    """
+    return Q(user=user)
+
+
+#
 # visibility-based filters
 #
 def get_obj_visibility_query(visibility):
@@ -131,3 +141,8 @@ def has_member_access_to_site(user):
 
 def has_team_access_to_site(user):
     return is_at_least_assistant(user)
+
+
+def has_team_access_to_site_obj(user):
+    """Special case for getting the membership directly from a site model object"""
+    return Q(membership_set__user=user) & Q(membership_set__role__gte=Role.ASSISTANT)

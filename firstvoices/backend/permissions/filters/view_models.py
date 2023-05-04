@@ -11,7 +11,7 @@ def can_view_site_model(user):
         base.is_public_obj()
         | base.is_members_obj()
         | base.is_at_least_staff_admin(user)
-        | base.has_team_access_to_obj(user)
+        | base.has_team_access_to_site_obj(user)
     )
 
 
