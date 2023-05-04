@@ -3,7 +3,7 @@ from rules import Predicate
 from . import base
 
 #
-# reusable view permission test_predicates
+# reusable view permission predicates
 #
 
 is_visible_object = Predicate(

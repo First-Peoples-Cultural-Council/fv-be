@@ -3,7 +3,7 @@ from rules import Predicate
 from . import base
 
 #
-# model-specific view permission test_predicates
+# model-specific view permission predicates
 #
 
 # Site model is visible to all unless it has Team-only visibility

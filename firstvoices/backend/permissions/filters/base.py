@@ -76,7 +76,7 @@ def has_team_site():
 
 
 #
-# role-based test_predicates
+# role-based filters
 #
 def get_site_role_at_least_filter(user, role):
     return Q(site__membership_set__user=user) & Q(site__membership_set__role__gte=role)
