@@ -123,3 +123,45 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables(r"test.") == "testo"
         assert alphabet.clean_confusables(r"testing.") == "testing"
         assert alphabet.clean_confusables(r"\d\d") == "DD"
+
+    @pytest.mark.django_db
+    def test_get_character_list(self, alphabet):
+        """Get list of characters in text, split with current alphabet and MTD splitter"""
+        CharacterFactory(site=alphabet.site, title="aa")
+        CharacterFactory(site=alphabet.site, title="ch")
+        CharacterFactory(site=alphabet.site, title="c")
+        CharacterFactory(site=alphabet.site, title="d")
+        CharacterFactory(site=alphabet.site, title="e")
+        s = "deaachcchd"
+        assert alphabet.get_character_list(s) == ["d", "e", "aa", "ch", "c", "ch", "d"]
+
+    @pytest.mark.django_db
+    def test_get_canonical_form(self):
+        """Get canonical form of text"""
+        alphabet = AlphabetFactory.create(
+            input_to_canonical_map=[
+                {"in": "á", "out": "a"},
+                {"in": "ᐱ", "out": "A"},
+                {"in": "_b", "out": "b"},
+                {"in": "č", "out": "cv"},
+            ],
+        )
+
+        a = CharacterFactory(site=alphabet.site, title="a")
+        CharacterFactory(site=alphabet.site, title="cv")
+        CharacterFactory(site=alphabet.site, title="b")
+        CharacterVariantFactory(site=alphabet.site, title="A", base_character=a)
+
+        s = "áx ᐱᐱᐱ"
+        assert alphabet.get_canonical_form(s) == "ax AAA"
+
+    @pytest.mark.django_db
+    def test_get_base_form(self, alphabet):
+        """Get base form of text"""
+        x = CharacterFactory(site=alphabet.site, title="x")
+        y = CharacterFactory(site=alphabet.site, title="y")
+        CharacterVariantFactory(site=alphabet.site, title="X", base_character=x)
+        CharacterVariantFactory(site=alphabet.site, title="Y", base_character=y)
+
+        s = "XxYy"
+        assert alphabet.get_base_form(s) == "xxyy"

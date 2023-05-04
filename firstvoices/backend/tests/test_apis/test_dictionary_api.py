@@ -510,3 +510,75 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
         assert response_data["results"][0]["splitWords"] == ["abc"]
         assert response_data["results"][0]["splitWordsBase"] == ["abc"]
+
+    @pytest.mark.django_db
+    def test_word_lists_with_unknown_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        y = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterVariantFactory.create(site=site, title="Y", base_character=y)
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xyY yYx xYy Hello",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == [
+            "xyY",
+            "yYx",
+            "xYy",
+            "Hello",
+        ]
+        assert response_data["results"][0]["splitWordsBase"] == [
+            "xyy",
+            "yyx",
+            "xyy",
+            "Hello",
+        ]
+
+    @pytest.mark.django_db
+    def test_word_lists_with_ignored_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.IgnoredCharacterFactory.create(site=site, title="-")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xy-y -y-x x-y-",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == ["xy-y", "-y-x", "x-y-"]
+        assert response_data["results"][0]["splitWordsBase"] == ["xy-y", "-y-x", "x-y-"]

@@ -264,17 +264,6 @@ class Alphabet(BaseSiteContentModel):
             self.logger.warning("No confusable map found for site %s", self.site)
             return None
 
-    def clean_confusables(self, text: str) -> str:
-        """
-        Applies the mapper's confusable cleanup transducer to a string,
-        converting all instances of confusables to instances of characters or
-        variant characters.
-        """
-        if self.preprocess_transducer:
-            return self.preprocess_transducer(text).output_string
-        else:
-            return text
-
     @property
     def presort_transducer(self):
         """
@@ -293,9 +282,6 @@ class Alphabet(BaseSiteContentModel):
 
         return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
 
-    def __str__(self):
-        return f"Confusable mapper for {self.site}"
-
     @property
     def sorter(self) -> CustomSorter:
         """
@@ -306,6 +292,20 @@ class Alphabet(BaseSiteContentModel):
             order=[char.title for char in self.base_characters],
             ignorable=[char.title for char in self.ignorable_characters],
         )
+
+    def __str__(self):
+        return f"Alphabet and related functions for {self.site}"
+
+    def clean_confusables(self, text: str) -> str:
+        """
+        Applies the mapper's confusable cleanup transducer to a string,
+        converting all instances of confusables to instances of characters or
+        variant characters.
+        """
+        if self.preprocess_transducer:
+            return self.preprocess_transducer(text).output_string
+        else:
+            return text
 
     def get_custom_order(self, text: str) -> str:
         """
