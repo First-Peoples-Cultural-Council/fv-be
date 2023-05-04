@@ -27,7 +27,7 @@ def get_permitted_ids(user, queryset):
 class TestPermissionManager:
     # test all models
     # ... but skip User until fw-4165
-    models = [m for m in apps.get_app_config("backend").get_models() if not m == User]
+    models = [m for m in apps.get_app_config("backend").get_models() if m != User]
 
     @pytest.mark.parametrize(
         "model_cls",
