@@ -1,64 +1,20 @@
 import json
 
-import factory
 import pytest
-from factory.django import DjangoModelFactory
 
-from backend.models import dictionary
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
+from ..factories import (
+    AcknowledgementFactory,
+    AlternateSpellingFactory,
+    CategoryFactory,
+    DictionaryEntryCategoryFactory,
+    NoteFactory,
+    PronunciationFactory,
+    TranslationFactory,
+)
 from .base_api_test import BaseSiteControlledContentApiTest
-
-
-class AcknowledgementFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.Acknowledgement
-
-
-class AlternateSpellingFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.AlternateSpelling
-
-
-class NoteFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.Note
-
-
-class PronunciationFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.Pronunciation
-
-
-class TranslationFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.Translation
-
-
-class DictionaryEntryLinkFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.DictionaryEntryLink
-
-    from_dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
-    to_dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
-
-
-class CategoryFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.Category
-
-    title = factory.Sequence(lambda n: "Category %03d" % n)
-    created_by = factory.SubFactory(factories.UserFactory)
-    last_modified_by = factory.SubFactory(factories.UserFactory)
-
-
-class DictionaryEntryCategoryFactory(DjangoModelFactory):
-    class Meta:
-        model = dictionary.DictionaryEntryCategory
-
-    dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
-    category = factory.SubFactory(CategoryFactory)
 
 
 class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
