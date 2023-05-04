@@ -1,14 +1,16 @@
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
-from backend.permissions.filters.base import has_site
-from backend.permissions.filters.view import has_visible_site, is_visible_object
+from . import filters
 
 
 class PermissionsManager(models.Manager):
     """
-    Abstract manager that adds ability to filter models based on user permissions. Use the appropriate implementation
-    for your view permissions.
+    Model manager that adds the ability to apply a custom query filter, suitable for enforcing view permissions.
+    A function that returns a Q object must be configured on the model using the `view_permission_filter` property.
+    If using the RulesModel features, you can automatically set that property to match the `rules_permissions`
+    configuration by using the `PermissionFilterMixin`.
     """
 
     # todo: deprecate and remove
@@ -26,43 +28,36 @@ class PermissionsManager(models.Manager):
         """
         return self.get_queryset().filter(self.visible_as_filter(user))
 
-    def visible_by_site(self, user, site):
+    def visible_as_filter(self, user=AnonymousUser()):
         """
-        Returns a queryset containing only objects that the given user has permission to view on the
-        given site. This does not filter related objects.
+        Returns a Q object representing the visible permissions. This does not filter related objects.
         """
-        if site is None:
-            return self.get_queryset().none()
+        if hasattr(self.model, "view_permission_filter"):
+            return self.model.view_permission_filter(user)
+        else:
+            raise ImproperlyConfigured(
+                "Model [%s] does not have a view_permission_filter configured"
+                % self.model.name
+            )
 
-        return self.get_queryset().filter(self.visible_as_filter(user, site))
 
-    def visible_as_filter(self, user, site=None):
+class PermissionFilterMixin:
+    @classmethod
+    def preprocess_rules_permissions(cls, perms):
         """
-        Returns a Q object representing the visible permissions. Base classes must implement this method.
+        Extends the RulesModel features to autodiscover a query filter that matches the declared view permission.
+        Filter will be added as a class property called view_permission_filter, which is used by the PermissionsManager.
+
+        Query filters must be created in the filters package and have the same name as their equivalent predicate.
         """
-        # todo: automatically determine which filter to use here if possible (based on declared view permission in meta)
-        raise NotImplementedError()
+        if "view" in perms:
+            view_perm_name = perms["view"].name
 
-
-class SiteContentPermissionsManager(PermissionsManager):
-    """
-    Model manager that adds ability to filter models to match the has_visible_site permission.
-    """
-
-    def visible_as_filter(self, user=AnonymousUser(), site=None):
-        q = has_visible_site(user)
-        if site is not None:
-            q &= has_site(site)
-        return q
-
-
-class ControlledSiteContentPermissionsManager(PermissionsManager):
-    """
-    Model manager that adds ability to filter models to match the is_visible_object permission.
-    """
-
-    def visible_as_filter(self, user=AnonymousUser(), site=None):
-        q = is_visible_object(user)
-        if site is not None:
-            q &= has_site(site)
-        return q
+            if hasattr(filters, view_perm_name):
+                cls.view_permission_filter = getattr(filters, view_perm_name)
+            else:
+                raise ImproperlyConfigured(
+                    "Could not find an equivalent query filter for configured permission [{}] in {}".format(
+                        view_perm_name, cls.__name__
+                    )
+                )
