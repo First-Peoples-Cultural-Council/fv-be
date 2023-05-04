@@ -37,7 +37,7 @@ class PermissionsManager(models.Manager):
         else:
             raise ImproperlyConfigured(
                 "Model [%s] does not have a view_permission_filter configured"
-                % self.model.name
+                % self.model.__name__
             )
 
 
