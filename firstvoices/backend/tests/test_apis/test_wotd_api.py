@@ -29,21 +29,18 @@ class WordOfTheDayFactory(DjangoModelFactory):
 class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
     """
     Tests for the word-of-the-day API
-
-    4. Test getting back words that are not used till now
-    5. Test getting words not used within last year
-    6. Test getting random words in the end.
-
     """
 
     API_LIST_VIEW = "api:word-of-the-day-list"
 
     def setup_method(self):
-        self.public_client = APIClient()
+        self.client = APIClient()
         self.site, self.member_user = get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-        self.public_client.force_authenticate(user=self.member_user)
+        self.non_member_user = get_non_member_user()
+        self.client.force_authenticate(user=self.non_member_user)
+        self.today = datetime.today()
 
     @pytest.mark.django_db
     def test_detail_404_unknown_key(self):
@@ -75,13 +72,14 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
 
     @pytest.mark.django_db
     def test_wotd_today_date(self):
-        today = datetime.today()
-        dict_entry = DictionaryEntryFactory(site=self.site)
-        WordOfTheDayFactory(dictionary_entry=dict_entry, date=today, site=self.site)
-
-        response = self.public_client.get(
-            self.get_list_endpoint(site_slug=self.site.slug)
+        dict_entry = DictionaryEntryFactory(
+            site=self.site, visibility=Visibility.PUBLIC
         )
+        WordOfTheDayFactory(
+            dictionary_entry=dict_entry, date=self.today, site=self.site
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
@@ -92,9 +90,7 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
     def test_wotd_unused_words(self):
         # Creating 2 dictionary entries, one was used as a word of the day yesterday,
         # and there is one unused word which should be the word of the day for today.
-
-        today = datetime.today()
-        yesterday = today - timedelta(days=1)
+        yesterday = self.today - timedelta(days=1)
 
         dict_entry_1 = DictionaryEntryFactory.create(
             site=self.site, visibility=Visibility.PUBLIC
@@ -105,15 +101,65 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
         WordOfTheDayFactory.create(
             dictionary_entry=dict_entry_1, date=yesterday, site=self.site
         )
-        #
-        # d = DictionaryEntry.objects.all()
-        # x = WordOfTheDay.objects.all()
 
-        response = self.public_client.get(
-            self.get_list_endpoint(site_slug=self.site.slug)
-        )
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
 
         assert response_data_entry["id"] == str(dict_entry_2.id)
+
+    @pytest.mark.django_db
+    def test_words_not_used_in_last_year(self):
+        # Creating 2 dictionary entries, one of which are used in the last year
+        # and one which is not used within last year
+
+        within_last_year_date = self.today - timedelta(weeks=30)
+        before_last_year_date = self.today - timedelta(weeks=60)
+
+        dict_entry_1 = DictionaryEntryFactory.create(
+            site=self.site, visibility=Visibility.PUBLIC
+        )
+        dict_entry_2 = DictionaryEntryFactory.create(
+            site=self.site, visibility=Visibility.PUBLIC
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=within_last_year_date, site=self.site
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=before_last_year_date, site=self.site
+        )
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        response_data_entry = response_data[0]
+
+        assert response_data_entry["id"] == str(dict_entry_2.id)
+
+    @pytest.mark.django_db
+    def test_random_words_base_case(self):
+        # If no words passes any of the above cases, a random word will be chosen and returned
+
+        within_last_year_date_1 = self.today - timedelta(weeks=20)
+        within_last_year_date_2 = self.today - timedelta(weeks=15)
+
+        dict_entry_1 = DictionaryEntryFactory.create(
+            site=self.site, visibility=Visibility.PUBLIC
+        )
+        dict_entry_2 = DictionaryEntryFactory.create(
+            site=self.site, visibility=Visibility.PUBLIC
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=within_last_year_date_1, site=self.site
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=within_last_year_date_2, site=self.site
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        response_data_entry = response_data[0]
+
+        # any 1 of the 2 entries
+        assert response_data_entry["id"] in [str(dict_entry_1.id), str(dict_entry_2.id)]
