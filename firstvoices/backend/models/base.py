@@ -7,12 +7,12 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
-from backend.permissions import managers
+from backend.permissions.managers import PermissionFilterMixin, PermissionsManager
 
 from .constants import Visibility
 
 
-class BaseModel(RulesModel):
+class BaseModel(PermissionFilterMixin, RulesModel):
     """
     Base model for all FirstVoices Backend models, with standard fields and support for rules-based permissions.
 
@@ -31,8 +31,8 @@ class BaseModel(RulesModel):
     class Meta:
         abstract = True
 
-    # The permission manager only includes items the user has permission to view
-    objects = managers.PermissionsManager()
+    # The permission manager adds methods for accessing only the items that the user has permission to view
+    objects = PermissionsManager()
 
     # from uid (and seemingly not uid:uid)
     id = models.UUIDField(
@@ -76,8 +76,6 @@ class BaseSiteContentModel(BaseModel):
     class Meta:
         abstract = True
 
-    objects = managers.SiteContentPermissionsManager()
-
     site = models.ForeignKey(
         to="backend.Site", on_delete=models.CASCADE, related_name="%(class)s_set"
     )
@@ -91,8 +89,6 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
 
     class Meta:
         abstract = True
-
-    objects = managers.ControlledSiteContentPermissionsManager()
 
     visibility = models.IntegerField(
         choices=Visibility.choices, default=Visibility.TEAM
