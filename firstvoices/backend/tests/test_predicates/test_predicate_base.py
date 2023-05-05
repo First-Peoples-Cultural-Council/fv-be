@@ -1,5 +1,4 @@
 import pytest
-from django.core.management import call_command
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.predicates import base
@@ -206,21 +205,13 @@ class TestBaseAppRolePredicates:
 
 
 class TestBaseObjectAccessPredicates:
-    # The default g2p config is required for tests that use DictionaryEntry, as an Alphabet is created for custom sort.
-    @pytest.fixture
-    def g2p_db_setup(self, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
-
     @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.parametrize("obj_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.parametrize(
         "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
     )
     @pytest.mark.django_db
-    def test_has_member_access_true(
-        self, site_visibility, obj_visibility, role, g2p_db_setup
-    ):
+    def test_has_member_access_true(self, site_visibility, obj_visibility, role):
         site = SiteFactory.create(visibility=site_visibility)
         obj = ControlledSiteContentFactory.create(site=site, visibility=obj_visibility)
         member_user = UserFactory.create()
@@ -228,7 +219,7 @@ class TestBaseObjectAccessPredicates:
         assert base.has_member_access_to_obj(member_user, obj)
 
     @pytest.mark.django_db
-    def test_has_member_access_guest_user(self, g2p_db_setup):
+    def test_has_member_access_guest_user(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(
             site=site, visibility=Visibility.MEMBERS
@@ -237,7 +228,7 @@ class TestBaseObjectAccessPredicates:
         assert not base.has_member_access_to_obj(guest_user, obj)
 
     @pytest.mark.django_db
-    def test_has_member_access_non_member(self, g2p_db_setup):
+    def test_has_member_access_non_member(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(
             site=site, visibility=Visibility.MEMBERS
@@ -246,7 +237,7 @@ class TestBaseObjectAccessPredicates:
         assert not base.has_member_access_to_obj(non_member_user, obj)
 
     @pytest.mark.django_db
-    def test_has_member_access_for_member_of_wrong_site(self, g2p_db_setup):
+    def test_has_member_access_for_member_of_wrong_site(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(
             site=site, visibility=Visibility.MEMBERS
@@ -257,7 +248,7 @@ class TestBaseObjectAccessPredicates:
         assert not base.has_member_access_to_obj(other_member_user, obj)
 
     @pytest.mark.django_db
-    def test_has_member_access_wrong_object_visibility(self, g2p_db_setup):
+    def test_has_member_access_wrong_object_visibility(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         member_user = UserFactory.create()
@@ -265,7 +256,7 @@ class TestBaseObjectAccessPredicates:
         assert not base.has_member_access_to_obj(member_user, obj)
 
     @pytest.mark.django_db
-    def test_has_member_access_wrong_site_visibility(self, g2p_db_setup):
+    def test_has_member_access_wrong_site_visibility(self):
         site = SiteFactory.create(visibility=Visibility.TEAM)
         obj = ControlledSiteContentFactory.create(
             site=site, visibility=Visibility.MEMBERS
@@ -282,9 +273,7 @@ class TestBaseObjectAccessPredicates:
     )
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
-    def test_has_team_access_true(
-        self, site_visibility, obj_visibility, role, g2p_db_setup
-    ):
+    def test_has_team_access_true(self, site_visibility, obj_visibility, role):
         site = SiteFactory.create(visibility=site_visibility)
         obj = ControlledSiteContentFactory.create(site=site, visibility=obj_visibility)
         team_user = UserFactory.create()
@@ -292,7 +281,7 @@ class TestBaseObjectAccessPredicates:
         assert base.has_team_access_to_obj(team_user, obj)
 
     @pytest.mark.django_db
-    def test_has_team_access_wrong_role(self, g2p_db_setup):
+    def test_has_team_access_wrong_role(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         member_user = UserFactory.create()
@@ -300,21 +289,21 @@ class TestBaseObjectAccessPredicates:
         assert not base.has_team_access_to_obj(member_user, obj)
 
     @pytest.mark.django_db
-    def test_has_team_access_guest_user(self, g2p_db_setup):
+    def test_has_team_access_guest_user(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         guest_user = AnonymousUserFactory.build()
         assert not base.has_team_access_to_obj(guest_user, obj)
 
     @pytest.mark.django_db
-    def test_has_team_access_non_member(self, g2p_db_setup):
+    def test_has_team_access_non_member(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         non_member_user = UserFactory.create()
         assert not base.has_team_access_to_obj(non_member_user, obj)
 
     @pytest.mark.django_db
-    def test_team_is_blocked_from_team_content_on_other_sites(self, g2p_db_setup):
+    def test_team_is_blocked_from_team_content_on_other_sites(self):
         site1 = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(
             site=site1, visibility=Visibility.TEAM

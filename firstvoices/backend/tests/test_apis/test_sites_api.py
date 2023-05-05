@@ -1,14 +1,15 @@
 import json
 
 import pytest
-from rest_framework.reverse import reverse
-from rest_framework.test import APIClient
 
+from backend.models import AppJson
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
+from .base_api_test import BaseApiTest
 
-class TestSitesEndpoints:
+
+class TestSitesEndpoints(BaseApiTest):
     """
     End-to-end tests that the sites endpoints have the expected behaviour. Data formatting is checked in the
     serializer tests.
@@ -16,18 +17,13 @@ class TestSitesEndpoints:
 
     API_LIST_VIEW = "api:site-list"
     API_DETAIL_VIEW = "api:site-detail"
-    APP_NAME = "backend"
-
-    def setup_method(self):
-        self.client = APIClient()
-        self.endpoint = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
 
     @pytest.mark.django_db
     def test_list_empty(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.endpoint)
+        response = self.client.get(self.get_list_endpoint())
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -47,7 +43,7 @@ class TestSitesEndpoints:
 
         factories.LanguageFactory.create()
 
-        response = self.client.get(self.endpoint)
+        response = self.client.get(self.get_list_endpoint())
 
         assert response.status_code == 200
 
@@ -62,12 +58,11 @@ class TestSitesEndpoints:
 
         site_json = response_data[0]["sites"][0]
         assert site_json == {
-            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language0.title,
             "visibility": "Public",
-            "url": f"http://testserver/api/1.0/sites/{site.slug}",
+            "url": f"http://testserver/api/1.0/sites/{site.slug}/",
         }
 
     @pytest.mark.django_db
@@ -86,7 +81,7 @@ class TestSitesEndpoints:
         )
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.endpoint)
+        response = self.client.get(self.get_list_endpoint())
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -107,19 +102,22 @@ class TestSitesEndpoints:
         )
         menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
 
-        response = self.client.get(f"{self.endpoint}/{site.slug}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == {
-            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
             "visibility": "Members",
-            "url": f"http://testserver/api/1.0/sites/{site.slug}",
+            "url": f"http://testserver/api/1.0/sites/{site.slug}/",
             "menu": menu.json,
             "features": [],
+            "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
+            "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories/",
+            "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
+            "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored-characters/",
         }
 
     @pytest.mark.django_db
@@ -128,11 +126,9 @@ class TestSitesEndpoints:
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
-        menu = factories.AppJsonFactory.create(
-            key="default_site_menu", json='{"some": "json"}'
-        )
+        menu = AppJson.objects.get(key="default_site_menu")
 
-        response = self.client.get(f"{self.endpoint}/{site.slug}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -149,7 +145,7 @@ class TestSitesEndpoints:
         )
         factories.SiteFeatureFactory.create(site=site, key="key2", is_enabled=False)
 
-        response = self.client.get(f"{self.endpoint}/{site.slug}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -167,11 +163,11 @@ class TestSitesEndpoints:
         factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.endpoint}/{site.slug}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["id"] == str(site.id)
+        assert response_data["slug"] == str(site.slug)
 
     @pytest.mark.django_db
     def test_detail_403(self):
@@ -179,7 +175,7 @@ class TestSitesEndpoints:
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.endpoint}/{site.slug}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
         assert response.status_code == 403
 
@@ -188,6 +184,6 @@ class TestSitesEndpoints:
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.endpoint}1234/")
+        response = self.client.get(f"{self.get_detail_endpoint('fake-site')}")
 
         assert response.status_code == 404

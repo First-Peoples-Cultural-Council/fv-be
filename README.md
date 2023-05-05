@@ -35,39 +35,39 @@ ___
         - Add environment variables to the .envrc file and they will be loaded into your environment whenever you
           navigate your terminal to the root directory and any child directories.
 4. Install requirements
-    - `pip install -r requirements/local.txt`
+   - `pip install -r requirements.debug.txt`
 5. Install pre-commit hooks
     - `pre-commit install`
 6. Create a database in postgres, and note the name
     - `createdb --username=postgres <db name>`
 7. Configure environment variables. Required variables are:
-    - `DB_DATABASE`: `<db name>` when you created the database
-    - `DB_USERNAME`: the database admin username (usually `postgres`)
-    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
-    - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
-    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
-    - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account (used to access the admin panel and all
-      APIs).
-    - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
-    - (optional) `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account.
-    - If using [venv](https://docs.python.org/3/library/venv.html)
-        - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
-    - If using [direnv](https://direnv.net/)
-        - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
+   - `DB_DATABASE`: `<db name>` when you created the database
+   - `DB_USERNAME`: the database admin username (usually `postgres`)
+   - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
+   - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
+   - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
+   - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
+   - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
+   - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
+   - If using [venv](https://docs.python.org/3/library/venv.html)
+     - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
+   - If using [direnv](https://direnv.net/)
+     - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
 8. Apply migration
-    - Navigate to the `src` directory: `cd src`
-    - From the `src` directory: `python manage.py migrate`
-9. Run the server and set it to automatically refresh on changes
-    - Navigate to the `src` directory if you aren't already there: `cd src`
-    - `npm install`
-    - `npm run dev`
-10. (Optional) To load data from fixtures, use the following command (from inside the src directory) and replace the
-    fixture_name with fixtures available.
-    - `python manage.py loaddata fixture_name`
+   - Navigate to the `firstvoices` directory: `cd firstvoices`
+   - From the `firstvoices` directory: `python manage.py migrate`
+9. Start the server
+   - Navigate to the `firstvoices` directory if you aren't already there: `cd firstvoices`
+   - `python manage.py runserver`
+10. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
+    - `python manage.py loaddata <fixture_name>`
     - Fixtures available:
-        - `partsOfSpeech_initial.json`
+      - Default fixtures which are automatically loaded in migrations:
+        - `appjson-defaults.json`
         - `default_g2p_config.json`
-
+        - `partsOfSpeech_initial.json`
+      - Other:
+        - None
 ___
 
 ## IDE Linting and Formatting (Recommended)
@@ -208,16 +208,16 @@ the [Cookiecutter Django settings docs](http://cookiecutter-django.readthedocs.i
 
 ### Setting Up Your Users
 
-- To create a **superuser account**, with the environment variables you may have set earlier, use this command:
-  ```
-  cd src
-  python manage.py createsuperuser --noinput
-  ```
-  or if you want to supply the username and password manually:
-  ```
-  cd src
-  python manage.py createsuperuser
-  ```
+-   To create a **superuser account**, with the environment variables you may have set earlier, use this command:
+    ```
+    cd firstvoices
+    python manage.py createsuperuser --noinput
+    ```
+    or if you want to supply the username and password manually:
+    ```
+    cd firstvoices
+    python manage.py createsuperuser
+    ```
 
 - Normal users can be created using the admin panel, which can be accessed using the URL listed in
   the [Useful Local URLs on Startup](#useful-local-urls-on-startup) section. The admin panel can only be accessed when
@@ -232,43 +232,40 @@ For local development, a script has been created which will do the following:
 
 - Drops any existing databases named `fv_be`
 - Creates a fresh `fv_be` database
-- Deletes any migrations in the `src/firstvoices/backend/migrations` and `src/firstvoices/users/migrations` folders
 - Makes fresh migrations
-- Runs the migrations
+- Runs the migrations (the migrations add the default fixtures)
 - Creates a superuser using the following arguments:
-    - `-u <username> or --username <username>` to specify the username
-    - `-p <password> or --password <password>` to specify the password
-    - `-e <email> or --email <email>` to specify an optional email (a default will be used if not supplied)
-- If no arguments are supplied the script will create a superuser using the following environment variables if they are
-  set (as specified in the [Developer Setup Section](#developer-setup)):
-    - `DJANGO_SUPERUSER_USERNAME` to specify the username
-    - `DJANGO_SUPERUSER_PASSWORD` to specify the password
-    - `DJANGO_SUPERUSER_EMAIL` to specify an optional email
+  - `-u <username> or --username <username>` to specify the username
+  - `-p <password> or --password <password>` to specify the password
+  - `-e <email> or --email <email>` to specify an optional email (a default will be used, `admin@example.com`, if not supplied)
+- If no arguments are supplied the script will create a superuser using the following environment variables if they are set (as specified in the [Developer Setup Section](#developer-setup)):
+  - `DJANGO_SUPERUSER_USERNAME` to specify the username
+  - `DJANGO_SUPERUSER_PASSWORD` to specify the password
+  - `DJANGO_SUPERUSER_EMAIL` to specify an email
 - If no environment variables are set and no arguments are found then the script will fail to create a superuser.
 
 You may need to give the script executable permission on your machine by running the following command:
 
 ```
-chmod +x src/reset-local-database.sh
+chmod +x firstvoices/reset-local-database.sh
 ```
 
 An example command to run the script might look like the following:
 
 ```
-./src/reset-local-database.sh -u admin -p admin -e admin@example.com
+./firstvoices/reset-local-database.sh -u admin -p admin -e admin@example.com
 ```
 
 or if you have already set the environment variables locally:
 
 ```
-./src/reset-local-database.sh
+./firstvoices/reset-local-database.sh
 ```
 
 ### Setting Up Custom Order/Confusable Cleaning for Dictionary Entries
 
 To set up custom order/confusable cleaning locally, you will need to do the following:
-
-- Load the `default_g2p_config.json` fixture
+- Load the `default_g2p_config.json` fixture if it isn't already (it should get loaded during migrations).
 - Create `Character` models that correspond with the characters you will use in a site's alphabet.
     - Base characters are required, ignorables and variants are optional.
 - Create an `AlphabetMapper` class with an appropriate input to canonical mapping that defines confusables.
@@ -276,30 +273,14 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
       example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
     - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
 
-### Type checks
-
-Running type checks with mypy:
-
-- navigate to the `src` directory:
-
-```
-cd src
-```
-
-- run the checks:
-
-```
-mypy firstvoices
-```
-
 ### Test coverage
 
 To run the tests, check your test coverage, and generate an HTML coverage report:
 
-- navigate to the `src` directory:
+- navigate to the `firstvoices` directory:
 
 ```
-cd src
+cd firstvoices
 ```
 
 - Run the tests with coverage, generate an html results page, and open the results in a browser:
@@ -312,7 +293,7 @@ open htmlcov/index.html
 
 ### Running tests with pytest
 
-From the `src` project directory:
+From the `firstvoices` project directory:
 
 - Run all tests:
 
@@ -365,9 +346,10 @@ For async and periodic tasks to successfully execute, a worker process must be r
 virtual environment setup, execute `celery -A firstvoices worker -B` in the `./firstvoices` directory
 
 ## Useful Local URLs On Startup
-
-- Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users)
-  section): `localhost:8000/admin`
-- Base API list: `localhost:8000/api/2.0/`
-- Model API list view for any model type: `localhost:8000/api/2.0/<model type here>` for example to get a list of sites
-  models go to `localhost:8000/api/2.0/sites`
+- Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
+- Base API list: `localhost:8000/api/1.0/`
+- API docs page: `localhost:8000/api/docs/`
+- Sites Model API list view: `localhost:8000/api/1.0/sites` for example to get a list of sites models go to `localhost:8000/api/1.0/sites/`
+- Sites Model API detail view: `localhost:8000/api/1.0/sites/<site-slug>/` for example to get a detail view for a test site that you have created go to `localhost:8000/api/1.0/sites/test-site/`
+- Model API list view for a specific model type: `localhost:8000/api/1.0/sites/<site-slug>/<model type here>/` for example to get a list of dictionary models for a test site that you have created go to `localhost:8000/api/1.0/sites/test-site/dictionary/`
+- Model API detail view for a specific model of a type: `localhost:8000/api/1.0/sites/<site-slug>/<model type here>/<id>/` for example to get a detail view for a dictionary entry under a test site you have created go to `localhost:8000/api/1.0/sites/test-site/dictionary/983dc8d7-0878-4b2f-8c74-f9e10ec2e6fc/`

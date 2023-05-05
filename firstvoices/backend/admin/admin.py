@@ -1,39 +1,16 @@
 from django.contrib import admin
+from django.contrib.auth.models import Group
 
-from backend.models.category import Category
-from backend.models.dictionary import (
-    AlternateSpelling,
-    DictionaryAcknowledgement,
-    DictionaryEntry,
-    DictionaryNote,
-    DictionaryTranslation,
-    Pronunciation,
-)
-from backend.models.part_of_speech import PartOfSpeech
 from backend.models.sites import Site
 
-from .base_admin import BaseAdmin, HiddenBaseAdmin
+from .base_admin import BaseAdmin
 from .characters_admin import (
     CharacterInline,
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .dictionary_admin import (
-    CategoryInline,
-    DictionaryEntryHiddenBaseAdmin,
-    DictionaryEntryInline,
-    PartsOfSpeechAdmin,
-)
+from .dictionary_admin import CategoryInline, DictionaryEntryInline
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
-
-dictionary_models = [
-    DictionaryNote,
-    DictionaryAcknowledgement,
-    DictionaryTranslation,
-    AlternateSpelling,
-    Pronunciation,
-    DictionaryEntry,
-]
 
 # Main Site admin settings. For related sites models, see .sites_admin
 
@@ -60,14 +37,4 @@ class SiteAdmin(BaseAdmin):
     autocomplete_fields = ("language",)
 
 
-# admin.site.unregister(Group)
-
-# Dictionary models
-admin.site.register(DictionaryEntry, DictionaryEntryHiddenBaseAdmin)
-admin.site.register(Category, HiddenBaseAdmin)
-admin.site.register(DictionaryNote, HiddenBaseAdmin)
-admin.site.register(DictionaryAcknowledgement, HiddenBaseAdmin)
-admin.site.register(DictionaryTranslation, HiddenBaseAdmin)
-admin.site.register(AlternateSpelling, HiddenBaseAdmin)
-admin.site.register(Pronunciation, HiddenBaseAdmin)
-admin.site.register(PartOfSpeech, PartsOfSpeechAdmin)
+admin.site.unregister(Group)

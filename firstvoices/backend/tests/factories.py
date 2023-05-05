@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppJson, AppMembership
+from backend.models.category import Category
 from backend.models.characters import (
     Alphabet,
     Character,
@@ -44,6 +45,7 @@ class SiteFactory(DjangoModelFactory):
 
     title = factory.Sequence(lambda n: "Site %03d" % n)
     slug = factory.Sequence(lambda n: "site-%03d" % n)
+
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
 
@@ -77,14 +79,18 @@ class UncontrolledSiteContentFactory(SiteFeatureFactory):
     pass
 
 
-class ControlledSiteContentFactory(DjangoModelFactory):
-    site = factory.SubFactory(SiteFactory)
-
+class DictionaryEntryFactory(DjangoModelFactory):
     class Meta:
-        # use any concrete model that inherits from BaseControlledSiteContentModel
         model = DictionaryEntry
 
-    title = factory.Sequence(lambda n: "Controlled content %03d" % n)
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Dictionary entry %03d" % n)
+    custom_order = factory.Sequence(lambda n: "sort order %03d" % n)
+
+
+class ControlledSiteContentFactory(DictionaryEntryFactory):
+    # use any concrete model that inherits from BaseControlledSiteContentModel
+    pass
 
 
 class LanguageFamilyFactory(DjangoModelFactory):
@@ -150,6 +156,25 @@ class AlphabetFactory(DjangoModelFactory):
         model = Alphabet
 
 
+class ParentCategoryFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Category title %03d" % n)
+    description = factory.Sequence(lambda n: "Category description %03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = Category
+
+
+class ChildCategoryFactory(ParentCategoryFactory):
+    parent = factory.SubFactory(ParentCategoryFactory)
+
+    class Meta:
+        model = Category
+
+
 def get_anonymous_user():
     return AnonymousUserFactory.build()
 
@@ -158,8 +183,9 @@ def get_non_member_user():
     return UserFactory.create()
 
 
-def get_site_with_member(site_visibility, user_role):
-    user = UserFactory.create()
+def get_site_with_member(site_visibility, user_role, user=None):
+    if user is None:
+        user = UserFactory.create()
     site = SiteFactory.create(visibility=site_visibility)
     MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user

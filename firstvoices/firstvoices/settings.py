@@ -63,18 +63,6 @@ MIDDLEWARE = [
 
 CSRF_TRUSTED_ORIGINS = ["https://*.eks.firstvoices.io"]
 
-# local only
-if DEBUG:
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
-    INSTALLED_APPS += ["debug_toolbar"]
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
-    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
-    # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
-    DEBUG_TOOLBAR_CONFIG = {
-        "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
-        "SHOW_TEMPLATE_CONTEXT": True,
-    }
-
 ROOT_URLCONF = "firstvoices.urls"
 
 REST_FRAMEWORK = {
@@ -96,6 +84,31 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
 }
+
+# local only
+if DEBUG:
+    REST_FRAMEWORK.update(
+        {
+            "DEFAULT_RENDERER_CLASSES": (
+                "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+                "rest_framework.renderers.BrowsableAPIRenderer",
+            )
+        }
+    )
+
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
+    INSTALLED_APPS += ["debug_toolbar"]
+    INSTALLED_APPS += ["django_extensions"]
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
+    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+    # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
+    DEBUG_TOOLBAR_CONFIG = {
+        "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
+        "SHOW_TEMPLATE_CONTEXT": True,
+    }
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
+    INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
+
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
@@ -138,7 +151,10 @@ AUTH_USER_MODEL = "backend.User"
 
 JWT = jwt.config()
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", os.getenv("ALLOWED_ORIGIN")]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    os.getenv("ALLOWED_ORIGIN"),
+]
 
 LANGUAGE_CODE = "en-ca"
 

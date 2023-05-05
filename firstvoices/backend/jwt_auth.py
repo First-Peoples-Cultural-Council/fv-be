@@ -73,5 +73,12 @@ class UserAuthentication(authentication.BaseAuthentication):
             user = User.objects.get(id=user_token["sub"])
             return user, None
         except User.DoesNotExist:
-            user = User.objects.create(id=user_token["sub"])
-            return user, None
+            # resolve user info
+            userinfo_request = requests.get(
+                settings.JWT["USERINFO_URL"], headers={"Authorization": auth}
+            )
+
+            if userinfo_request.status_code == 200:
+                email = userinfo_request.json()["email"]
+                user = User.objects.create(id=user_token["sub"], email=email)
+                return user, None
