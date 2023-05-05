@@ -196,14 +196,6 @@ pre-commit run check-yaml -a
 
 ---
 
-## Configuration Settings
-
-A list of configuration settings and the environment variables that can be set to override the settings specified in the
-config files can be seen in
-the [Cookiecutter Django settings docs](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).
-
----
-
 ## Basic Commands
 
 ### Setting Up Your Users
@@ -269,8 +261,7 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
 - Create `Character` models that correspond with the characters you will use in a site's alphabet.
     - Base characters are required, ignorables and variants are optional.
 - Create an `AlphabetMapper` class with an appropriate input to canonical mapping that defines confusables.
-    - For
-      example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
+    - For example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
     - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
 
 ### Test coverage
