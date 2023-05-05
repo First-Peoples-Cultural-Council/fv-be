@@ -58,6 +58,7 @@ class TestSitesEndpoints(BaseApiTest):
 
         site_json = response_data[0]["sites"][0]
         assert site_json == {
+            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language0.title,
@@ -107,6 +108,7 @@ class TestSitesEndpoints(BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == {
+            "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
@@ -151,6 +153,7 @@ class TestSitesEndpoints(BaseApiTest):
         response_data = json.loads(response.content)
         assert response_data["features"] == [
             {
+                "id": str(enabled_feature.id),
                 "key": enabled_feature.key,
                 "isEnabled": True,
             }

@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -48,6 +49,10 @@ class DictionaryViewSet(
                     "translation_set",
                     "translation_set__part_of_speech",
                     "categories",
+                    Prefetch(
+                        "related_dictionary_entries",
+                        queryset=DictionaryEntry.objects.visible(self.request.user),
+                    ),
                 )
             )
         else:
