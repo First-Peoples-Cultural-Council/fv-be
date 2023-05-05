@@ -1,8 +1,11 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
+from backend.views.debug.async_example import ExampleAsyncTaskView
+from backend.views.debug.elastic_example import ExampleElasticSearch
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
@@ -26,7 +29,10 @@ sites_router.register(r"categories", CategoryViewSet, basename="category")
 
 app_name = "api"
 
-urlpatterns = []
+urlpatterns = [
+    path(r"debug/async", ExampleAsyncTaskView.as_view()),
+    path(r"debug/elastic", ExampleElasticSearch.as_view()),
+]
 
 urlpatterns += ROUTER.urls
 urlpatterns += sites_router.urls

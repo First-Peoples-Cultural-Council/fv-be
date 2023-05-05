@@ -251,6 +251,26 @@ pytest <path to file containing test> -k '<name of single test>'
 python manage.py reset_db -D test_fv_be
 ```
 
+## Docker
+
+The local docker-compose file sets up ancillary tools to support async task execution via celery, as well as a local
+ElasticSearch instance for testing.
+
+To run just `docker-compose up`. The default values in `settings.py` will fall back to appropriate values.
+
+If you prefer to run your own instances of `RabbitMQ`, `ElasticSearch`, or `Redis`, set the following environment vars (
+docker-compatible defaults shown):
+
+- `CELERY_BROKER_URL`=`"amqp://rabbitmq:rabbitmq@localhost:5672//fv"`
+- `CELERY_RESULT_BACKEND`=`"redis://localhost/0"`
+- `ELASTICSEARCH_HOST`=`"localhost"`
+- `ELASTICSEARCH_PRIMARY_INDEX`=`"fv"`
+
+## Celery
+
+For async and periodic tasks to successfully execute, a worker process must be running. In another terminal, with the
+virtual environment setup, execute `celery -A firstvoices worker -B` in the `./firstvoices` directory
+
 ## Useful Local URLs On Startup
 - Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
 - Base API list: `localhost:8000/api/1.0/`
