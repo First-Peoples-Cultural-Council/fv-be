@@ -114,10 +114,15 @@ class SiteMenuFactory(DjangoModelFactory):
     class Meta:
         model = SiteMenu
 
+    json = factory.Sequence(lambda n: "{'menu_json': %03d }" % n)
+
 
 class AppJsonFactory(DjangoModelFactory):
     class Meta:
         model = AppJson
+
+    key = factory.Sequence(lambda n: "AppJson %03d" % n)
+    json = factory.Sequence(lambda n: "{ 'value': %03d }" % n)
 
 
 class CharacterFactory(DjangoModelFactory):

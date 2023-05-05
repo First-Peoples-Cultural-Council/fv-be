@@ -1,14 +1,12 @@
 from rules import predicate
 
 from backend.models.constants import AppRole, Role, Visibility
+from backend.permissions.utils import get_app_role, get_site_role
 
-from .utils import get_app_role, get_site_role
 
 #
-# visibility-based test_predicates
+# visibility-based predicates
 #
-
-
 @predicate
 def is_public_obj(user, obj):
     return obj.visibility == Visibility.PUBLIC
@@ -48,7 +46,7 @@ def is_own_obj(user, obj):
 
 
 #
-# role-based test_predicates
+# role-based predicates
 #
 
 
@@ -85,7 +83,9 @@ def is_superadmin(user, obj):
 #
 # access-based predicates
 #
-has_public_access_to_obj = is_public_obj & has_public_site
+has_public_access_to_obj = predicate(
+    is_public_obj & has_public_site, name="has_public_access_to_obj"
+)
 has_member_access_to_obj = (
     is_at_least_member & ~is_team_obj & ~has_team_site
 )  # noqa E1130

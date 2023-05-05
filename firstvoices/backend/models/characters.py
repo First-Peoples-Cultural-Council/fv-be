@@ -7,9 +7,9 @@ from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
+from backend.permissions import predicates
 from backend.utils.character_utils import CustomSorter
 
-from .. import predicates
 from .app import AppJson
 from .base import BaseSiteContentModel
 from .constants import MAX_CHARACTER_LENGTH
@@ -207,14 +207,15 @@ class Alphabet(BaseSiteContentModel):
     class Meta:
         verbose_name = _("alphabet")
         verbose_name_plural = _("alphabet")
+        rules_permissions = {
+            "view": predicates.is_superadmin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
 
     logger = logging.getLogger(__name__)
-    rules_permissions = {
-        "view": predicates.is_superadmin,
-        "add": predicates.is_superadmin,
-        "change": predicates.is_superadmin,
-        "delete": predicates.is_superadmin,
-    }
 
     # from all fv-character:confusables for a site
     # JSON representation of a g2p mapping from confusable characters to canonical characters

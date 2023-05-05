@@ -1,8 +1,9 @@
+import rules
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend import predicates
+from backend.permissions import predicates
 
 from .base import BaseModel
 from .constants import AppRole
@@ -19,6 +20,12 @@ class AppJson(BaseModel):
     class Meta:
         verbose_name = _("backend json value")
         verbose_name_plural = _("backend json values")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return self.key
