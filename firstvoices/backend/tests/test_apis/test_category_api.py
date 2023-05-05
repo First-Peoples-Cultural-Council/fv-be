@@ -225,7 +225,6 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         )
         response_data = json.loads(response.content)
 
-        print(response_data)
         assert response.status_code == 200
         assert response_data["count"] == 3
 
@@ -243,12 +242,40 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         difference = set(actual_ids) ^ set(ids_in_response)
         assert not difference
 
+    @pytest.mark.django_db
+    def test_nested_categories(self):
+        word_entry_1 = DictionaryEntryFactory(site=self.site)
+        word_entry_2 = DictionaryEntryFactory(site=self.site)
 
-"""
-Test for
-1. Category 1 only contains word and return when asked for word, returns nothing for phrase
-2. Contains both word and phrase, still returns when asked for word, returns also for phrase, and also for both
-3. Contains only phrase, returns when asked for phrase, return nothing for word
-4. Also consider cases when there are child categories as well
+        parent_category = ParentCategoryFactory(site=self.site)
+        child_category = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category
+        )
 
-"""
+        parent_category.dictionary_entries.add(word_entry_1)
+        child_category.dictionary_entries.add(word_entry_2)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"contains": TypeOfDictionaryEntry.WORD},
+            )
+        )
+
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 2
+
+        ids_in_response = [
+            str(response_obj["id"]) for response_obj in response_data["results"]
+        ]
+        actual_ids = [
+            str(parent_category.id),
+            str(child_category.id),
+        ]
+
+        assert len(actual_ids) == len(ids_in_response)
+        # Checking all ids match up
+        difference = set(actual_ids) ^ set(ids_in_response)
+        assert not difference

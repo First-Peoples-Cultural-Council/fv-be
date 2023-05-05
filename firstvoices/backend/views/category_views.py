@@ -65,10 +65,9 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
                 list_queryset = list_queryset.filter(dictionary_entries__type="WORD")
             elif "PHRASE" in contains_flags:
                 list_queryset = list_queryset.filter(dictionary_entries__type="PHRASE")
-
-            return list_queryset.prefetch_related("children").exclude(
-                parent__isnull=False
-            )
+            else:
+                list_queryset = list_queryset.exclude(parent__isnull=False)
+            return list_queryset.prefetch_related("children")
 
         else:
             return Category.objects.none()
