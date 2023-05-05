@@ -2,18 +2,10 @@ import json
 
 import pytest
 
+from backend.models import dictionary
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from ..factories import (
-    AcknowledgementFactory,
-    AlternateSpellingFactory,
-    CategoryFactory,
-    DictionaryEntryCategoryFactory,
-    NoteFactory,
-    PronunciationFactory,
-    TranslationFactory,
-)
 from .base_api_test import BaseSiteControlledContentApiTest
 
 
@@ -125,10 +117,13 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
     @pytest.mark.parametrize(
         "field",
         [
-            {"factory": AlternateSpellingFactory, "name": "alternateSpellings"},
-            {"factory": AcknowledgementFactory, "name": "acknowledgements"},
-            {"factory": NoteFactory, "name": "notes"},
-            {"factory": PronunciationFactory, "name": "pronunciations"},
+            {
+                "factory": factories.AlternateSpellingFactory,
+                "name": "alternateSpellings",
+            },
+            {"factory": factories.AcknowledgementFactory, "name": "acknowledgements"},
+            {"factory": factories.NoteFactory, "name": "notes"},
+            {"factory": factories.PronunciationFactory, "name": "pronunciations"},
         ],
         ids=["alternateSpellings", "acknowledgements", "notes", "pronunciations"],
     )
@@ -168,7 +163,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
 
         text = "bon mots"
-        model = TranslationFactory.create(dictionary_entry=entry, text=text)
+        model = factories.TranslationFactory.create(dictionary_entry=entry, text=text)
 
         response = self.client.get(
             self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
@@ -195,11 +190,13 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site, visibility=Visibility.PUBLIC
         )
 
-        category1 = CategoryFactory(site=site, title="test category A")
-        CategoryFactory(site=site, title="test category B")
-        CategoryFactory(site=site)
+        category1 = factories.CategoryFactory(site=site, title="test category A")
+        factories.CategoryFactory(site=site, title="test category B")
+        factories.CategoryFactory(site=site)
 
-        DictionaryEntryCategoryFactory(category=category1, dictionary_entry=entry)
+        factories.DictionaryEntryCategoryFactory(
+            category=category1, dictionary_entry=entry
+        )
 
         response = self.client.get(
             self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
