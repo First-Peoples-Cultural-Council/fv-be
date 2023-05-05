@@ -1,12 +1,13 @@
 from secrets import choice
 
+from django.db.models import Prefetch
 from django.utils.timezone import datetime, timedelta
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
 from backend.models.dictionary import DictionaryEntry, WordOfTheDay
-from backend.predicates import utils
+from backend.permissions import utils
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -53,6 +54,10 @@ class DictionaryViewSet(
                     "translation_set",
                     "translation_set__part_of_speech",
                     "categories",
+                    Prefetch(
+                        "related_dictionary_entries",
+                        queryset=DictionaryEntry.objects.visible(self.request.user),
+                    ),
                 )
             )
         else:

@@ -2,9 +2,9 @@ import rules
 from django.db import models
 from django.utils.translation import gettext as _
 
+from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
-from .. import predicates
 from .base import (
     BaseControlledSiteContentModel,
     BaseModel,
@@ -40,6 +40,14 @@ class BaseDictionaryContentModel(BaseModel):
 class Note(BaseDictionaryContentModel):
     """Model for notes associated to each dictionary entry."""
 
+    class Meta:
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
     text = models.TextField()
 
@@ -50,6 +58,14 @@ class Note(BaseDictionaryContentModel):
 class Acknowledgement(BaseDictionaryContentModel):
     """Model for acknowledgments associated to each dictionary entry."""
 
+    class Meta:
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
 
@@ -59,6 +75,14 @@ class Acknowledgement(BaseDictionaryContentModel):
 
 class Translation(BaseDictionaryContentModel):
     """Model for translations associated to each dictionary entry."""
+
+    class Meta:
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     class TranslationLanguages(models.TextChoices):
         # Choices for Language
@@ -91,6 +115,14 @@ class Translation(BaseDictionaryContentModel):
 class AlternateSpelling(BaseDictionaryContentModel):
     """Model for alternate spellings associated to each dictionary entry."""
 
+    class Meta:
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
     text = models.CharField(max_length=TITLE_MAX_LENGTH)
 
@@ -100,6 +132,14 @@ class AlternateSpelling(BaseDictionaryContentModel):
 
 class Pronunciation(BaseDictionaryContentModel):
     """Model for pronunciations associated to each dictionary entry."""
+
+    class Meta:
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from fv-word:pronunciation
     text = models.CharField(max_length=TITLE_MAX_LENGTH)
@@ -199,10 +239,16 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         self.custom_order = alphabet.get_custom_order(self.title)
 
 
-class DictionaryEntryLink(BaseSiteContentModel):
+class DictionaryEntryLink(BaseModel):
     class Meta:
         verbose_name = _("related dictionary entry")
         verbose_name_plural = _("related dictionary entries")
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     from_dictionary_entry = models.ForeignKey(
         DictionaryEntry,
@@ -231,6 +277,12 @@ class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
     class Meta:
         verbose_name = _("character - dictionary entry relation")
         verbose_name_plural = _("character - dictionary entry relations")
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     character = models.ForeignKey(
         Character,
@@ -251,6 +303,12 @@ class DictionaryEntryCategory(BaseDictionaryContentModel):
     class Meta:
         verbose_name = _("category - dictionary entry relation")
         verbose_name_plural = _("category - dictionary entry relations")
+        rules_permissions = {
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     dictionary_entry = models.ForeignKey(
         DictionaryEntry,
@@ -277,7 +335,7 @@ class WordOfTheDay(BaseSiteContentModel):
 
     class Meta:
         verbose_name = _("Word of the day")
-        verbose_name_plural = _("Word of the day")
+        verbose_name_plural = _("Words of the day")
         unique_together = ("site", "date")
         ordering = ["-date"]
         rules_permissions = {

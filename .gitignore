@@ -291,3 +291,4 @@ firstvoices/firstvoices/static/webpack_bundles/
 webpack-stats.json
 
 firstvoices/static
+firstvoices/celerybeat-schedule.db

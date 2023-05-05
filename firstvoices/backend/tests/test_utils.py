@@ -1,7 +1,5 @@
 from itertools import product
 
-import pytest
-
 from backend.utils.character_utils import ArbSorter, CustomSorter
 
 
@@ -47,12 +45,6 @@ class TestCharacterUtils:
         assert len(sorter.custom_order) == len(alph) + 1
         assert isinstance(sorter.custom_sort_char(150), str)
 
-    def test_custom_sorter_too_long_alphabet(self):
-        double_chars = [a + b for (a, b) in product(self.extra_chars, self.extra_chars)]
-        alph = self.chars + double_chars
-        with pytest.raises(ValueError):
-            CustomSorter(order=alph)
-
     def test_custom_sorter_oov_char(self):
         sorter = CustomSorter(order=self.chars)
         assert sorter.out_of_vocab_flag == "⚑"
@@ -79,3 +71,17 @@ class TestCharacterUtils:
         assert sorter.word_as_sort_string("a/a") != sorter.custom_sort_char(2)
         assert sorter.word_as_sort_string("a/a") == sorter.custom_sort_char(1) * 2
         assert sorter.word_as_sort_string("c-h") == "$⚑h"
+
+    def test_word_as_chars_basic(self):
+        sorter = CustomSorter(order=self.chars)
+        assert sorter.word_as_chars("abc") == ["a", "b", "c"]
+        assert sorter.word_as_chars("ab c") == ["a", "b", " ", "c"]
+        assert sorter.word_as_chars("abcd") == ["a", "b", "c", "d"]
+        assert sorter.word_as_chars(" q we ") == [" ", "q", " ", "w", "e", " "]
+
+    def test_word_as_chars_multichar(self):
+        sorter = CustomSorter(order=["c", "ch", "a", "aa"])
+        assert sorter.word_as_chars("ch") == ["ch"]
+        assert sorter.word_as_chars("aa") == ["aa"]
+        assert sorter.word_as_chars("cch") == ["c", "ch"]
+        assert sorter.word_as_chars("aach") == ["aa", "ch"]

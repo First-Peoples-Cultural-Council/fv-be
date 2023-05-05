@@ -1,29 +1,19 @@
 import json
 
-import factory
 import pytest
 from django.utils.timezone import datetime, timedelta
-from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
-from backend.models.dictionary import WordOfTheDay
 from backend.tests.factories import (
     DictionaryEntryFactory,
     MembershipFactory,
     SiteFactory,
+    WordOfTheDayFactory,
     get_non_member_user,
     get_site_with_member,
 )
 from backend.tests.test_apis.base_api_test import BaseSiteControlledContentApiTest
-
-
-class WordOfTheDayFactory(DjangoModelFactory):
-    dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
-    date = datetime.today()
-
-    class Meta:
-        model = WordOfTheDay
 
 
 class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
