@@ -41,9 +41,9 @@ class PronunciationSerializer(serializers.ModelSerializer):
 class TranslationSerializer(serializers.ModelSerializer):
     part_of_speech = serializers.StringRelatedField()
 
-    class Meta:
+    class Meta(DictionaryContentMeta):
         model = dictionary.Translation
-        fields = ("id", "text", "language", "part_of_speech")
+        fields = DictionaryContentMeta.fields + ("language", "part_of_speech")
 
 
 class DictionaryEntrySummarySerializer(SiteContentLinkedTitleSerializer):
