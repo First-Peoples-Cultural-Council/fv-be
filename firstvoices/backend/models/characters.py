@@ -277,18 +277,6 @@ class Alphabet(BaseSiteContentModel):
             self.logger.warning("Empty confusable map for site %s", self.site)
             return None
 
-    def clean_confusables(self, text: str) -> str:
-        """
-        Applies the mapper's confusable cleanup transducer to a string,
-        converting all instances of confusables to instances of characters or
-        variant characters.
-        """
-        if self.input_to_canonical_map:
-            return self.preprocess_transducer(text).output_string
-        else:
-            self.logger.debug("No confusables listed for site %s", self.site)
-            return text
-
     @property
     def presort_transducer(self):
         """
@@ -307,9 +295,6 @@ class Alphabet(BaseSiteContentModel):
 
         return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
 
-    def __str__(self):
-        return f"Confusable mapper for {self.site}"
-
     @property
     def sorter(self) -> CustomSorter:
         """
@@ -321,6 +306,33 @@ class Alphabet(BaseSiteContentModel):
             ignorable=[char.title for char in self.ignorable_characters],
         )
 
+    @property
+    def splitter(self) -> CustomSorter:
+        """
+        Returns a sorter object containing both base characters and character variants
+        to properly split text into characters using the MTD splitter.
+        """
+
+        return CustomSorter(
+            order=[char.title for char in self.base_characters]
+            + [char.title for char in self.variant_characters],
+            ignorable=[char.title for char in self.ignorable_characters],
+        )
+
+    def __str__(self):
+        return f"Alphabet and related functions for {self.site}"
+
+    def clean_confusables(self, text: str) -> str:
+        """
+        Applies the mapper's confusable cleanup transducer to a string,
+        converting all instances of confusables to instances of characters or
+        variant characters.
+        """
+        if self.preprocess_transducer:
+            return self.preprocess_transducer(text).output_string
+        else:
+            return text
+
     def get_custom_order(self, text: str) -> str:
         """
         Convert a string to a custom-order string which follows the site custom alphabet order.
@@ -328,3 +340,15 @@ class Alphabet(BaseSiteContentModel):
         """
         text = self.presort_transducer(text).output_string
         return self.sorter.word_as_sort_string(text)
+
+    def get_character_list(self, text: str) -> list[str]:
+        """
+        Returns a list of characters in the text, split using the MTD splitter.
+        """
+        return self.splitter.word_as_chars(text)
+
+    def get_base_form(self, text: str) -> str:
+        """
+        Converts a string to a string with all variant characters replaced with their base characters.
+        """
+        return self.presort_transducer(text).output_string

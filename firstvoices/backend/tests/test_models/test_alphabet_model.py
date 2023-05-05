@@ -126,3 +126,41 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables(r"test.") == "testo"
         assert alphabet.clean_confusables(r"testing.") == "testing"
         assert alphabet.clean_confusables(r"\d\d") == "DD"
+
+    @pytest.mark.django_db
+    def test_get_character_list(self, alphabet):
+        """Get list of characters in text, split with current alphabet and MTD splitter, base and variant characters"""
+        aa = CharacterFactory(site=alphabet.site, title="aa")
+        ch = CharacterFactory(site=alphabet.site, title="ch")
+        CharacterFactory(site=alphabet.site, title="c")
+        CharacterFactory(site=alphabet.site, title="d")
+        e = CharacterFactory(site=alphabet.site, title="e")
+        CharacterVariantFactory(site=alphabet.site, title="AA", base_character=aa)
+        CharacterVariantFactory(site=alphabet.site, title="Ch", base_character=ch)
+        CharacterVariantFactory(site=alphabet.site, title="E", base_character=e)
+
+        s = "deaaChcchdAA CH"
+        assert alphabet.get_character_list(s) == [
+            "d",
+            "e",
+            "aa",
+            "Ch",
+            "c",
+            "ch",
+            "d",
+            "AA",
+            " ",
+            "C",
+            "H",
+        ]
+
+    @pytest.mark.django_db
+    def test_get_base_form(self, alphabet):
+        """Get base form of text"""
+        x = CharacterFactory(site=alphabet.site, title="x")
+        y = CharacterFactory(site=alphabet.site, title="y")
+        CharacterVariantFactory(site=alphabet.site, title="X", base_character=x)
+        CharacterVariantFactory(site=alphabet.site, title="Y", base_character=y)
+
+        s = "XxYy"
+        assert alphabet.get_base_form(s) == "xxyy"

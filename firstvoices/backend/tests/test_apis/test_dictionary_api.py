@@ -92,6 +92,10 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
                 "language": None,
                 "visibility": "Public",
             },
+            "splitChars": [],
+            "splitCharsBase": [],
+            "splitWords": entry.title.split(" "),
+            "splitWordsBase": entry.title.split(" "),
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
         }
@@ -303,3 +307,305 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_character_lists_generation(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="bc a"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitChars"] == ["b", "c", " ", "a"]
+        assert response_data["results"][0]["splitCharsBase"] == ["b", "c", " ", "a"]
+
+    @pytest.mark.django_db
+    def test_character_lists_generation_with_variants(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterFactory.create(site=site, title="c")
+        aa = factories.CharacterFactory.create(site=site, title="aa")
+        h = factories.CharacterFactory.create(site=site, title="h")
+        ch = factories.CharacterFactory.create(site=site, title="ch")
+
+        factories.CharacterVariantFactory.create(
+            site=site, title="AA", base_character=aa
+        )
+        factories.CharacterVariantFactory.create(
+            site=site, title="Ch", base_character=ch
+        )
+        factories.CharacterVariantFactory.create(site=site, title="H", base_character=h)
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="ChxyAA hcH"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitChars"] == [
+            "Ch",
+            "x",
+            "y",
+            "AA",
+            " ",
+            "h",
+            "c",
+            "H",
+        ]
+        assert response_data["results"][0]["splitCharsBase"] == [
+            "ch",
+            "x",
+            "y",
+            "aa",
+            " ",
+            "h",
+            "c",
+            "h",
+        ]
+
+    @pytest.mark.django_db
+    def test_character_lists_unrecognized_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="abc"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitChars"] == []
+        assert response_data["results"][0]["splitCharsBase"] == []
+
+    @pytest.mark.django_db
+    def test_character_lists_with_ignored_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.IgnoredCharacterFactory.create(site=site, title="-")
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="x-y"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitChars"] == []
+        assert response_data["results"][0]["splitCharsBase"] == []
+
+    @pytest.mark.django_db
+    def test_word_lists(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="abc bca caba",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == ["abc", "bca", "caba"]
+        assert response_data["results"][0]["splitWordsBase"] == ["abc", "bca", "caba"]
+
+    @pytest.mark.django_db
+    def test_word_lists_with_variants(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        char = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterVariantFactory.create(
+            site=site, title="Y", base_character=char
+        )
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xyY yYx xYy",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == ["xyY", "yYx", "xYy"]
+        assert response_data["results"][0]["splitWordsBase"] == ["xyy", "yyx", "xyy"]
+
+    @pytest.mark.django_db
+    def test_word_lists_single_word(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="abc",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == ["abc"]
+        assert response_data["results"][0]["splitWordsBase"] == ["abc"]
+
+    @pytest.mark.django_db
+    def test_word_lists_with_unknown_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        y = factories.CharacterFactory.create(site=site, title="y")
+        factories.CharacterVariantFactory.create(site=site, title="Y", base_character=y)
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xyY yYx xYy Hello",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == [
+            "xyY",
+            "yYx",
+            "xYy",
+            "Hello",
+        ]
+        assert response_data["results"][0]["splitWordsBase"] == [
+            "xyy",
+            "yyx",
+            "xyy",
+            "Hello",
+        ]
+
+    @pytest.mark.django_db
+    def test_word_lists_with_ignored_characters(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        factories.CharacterFactory.create(site=site, title="x")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.IgnoredCharacterFactory.create(site=site, title="-")
+
+        factories.AlphabetFactory.create(site=site)
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            title="xy-y -y-x x-y-",
+            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitWords"] == ["xy-y", "-y-x", "x-y-"]
+        assert response_data["results"][0]["splitWordsBase"] == ["xy-y", "-y-x", "x-y-"]
