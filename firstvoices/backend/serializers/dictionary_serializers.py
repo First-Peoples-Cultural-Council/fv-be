@@ -10,7 +10,7 @@ from backend.serializers.site_serializers import SiteSummarySerializer
 
 
 class DictionaryContentMeta:
-    fields = ("text",)
+    fields = ("id", "text")
 
 
 class AcknowledgementSerializer(serializers.ModelSerializer):
@@ -43,7 +43,12 @@ class TranslationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = dictionary.Translation
-        fields = ("text", "language", "part_of_speech")
+        fields = ("id", "text", "language", "part_of_speech")
+
+
+class DictionaryEntrySummarySerializer(SiteContentLinkedTitleSerializer):
+    class Meta(SiteContentLinkedTitleSerializer.Meta):
+        model = dictionary.DictionaryEntry
 
 
 class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
@@ -60,6 +65,9 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     )
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
+    related_entries = DictionaryEntrySummarySerializer(
+        source="related_dictionary_entries", many=True
+    )
 
     class Meta:
         model = dictionary.DictionaryEntry
@@ -73,7 +81,7 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
             "categories",
             "exclude_from_games",
             "exclude_from_kids",
-            # "related_entries",
+            "related_entries",
             "acknowledgements",
             "alternate_spellings",
             "notes",
