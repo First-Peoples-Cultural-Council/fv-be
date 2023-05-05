@@ -24,7 +24,7 @@ psycopg2-binary==2.9.6
 pycparser==2.21
 PyJWT==2.6.0
 pyrsistent==0.19.3
-pytest==7.3.0
+pytest==7.3.1
 pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 python-dateutil==2.8.2
 python-dotenv==1.0.0
