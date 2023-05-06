@@ -353,3 +353,6 @@ class Alphabet(BaseSiteContentModel):
         Converts a string to a string with all variant characters replaced with their base characters.
         """
         return self.presort_transducer(text).output_string
+
+    def get_numerical_sort_form(self, text):
+        return self.sorter.word_as_values(text)

@@ -83,6 +83,9 @@ REST_FRAMEWORK = {
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+    "JSON_UNDERSCOREIZE": {
+        "ignore_fields": ("site_data_export",),
+    },
 }
 
 # local only
