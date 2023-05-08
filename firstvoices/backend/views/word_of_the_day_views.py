@@ -92,8 +92,8 @@ class WordOfTheDayView(
         if len(primary_keys_list) == 0:
             # No words found
             return DictionaryEntry.objects.none()
-        random_entry = choice(primary_keys_list)
-        random_word = DictionaryEntry.objects.get(id=random_entry)
+        random_word_id = choice(primary_keys_list)
+        random_word = DictionaryEntry.objects.get(id=random_word_id)
         wotd_entry = WordOfTheDay(
             date=today, dictionary_entry=random_word, site=random_word.site
         )
