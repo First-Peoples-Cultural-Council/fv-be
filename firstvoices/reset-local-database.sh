@@ -121,6 +121,16 @@ case $yn in
       exit $retval
     fi
 
+    # Create an app level superuser membership model for the admin user.
+    printf '\n\n'
+    printf 'Adding app Superadmin membership to superuser account.\n'
+    python $SCRIPT_DIR/manage.py shell < create_local_superadmin_membership.py
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Superuser membership creation failed: exit code $retval\n"
+      exit $retval
+    fi
+
     # Reset the test database
     printf '\n'
     printf 'Flushing test database.\n'
