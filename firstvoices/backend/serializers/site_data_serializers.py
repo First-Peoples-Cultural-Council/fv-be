@@ -1,11 +1,10 @@
-from collections import OrderedDict
 from datetime import datetime
 
-from rest_framework import pagination, serializers
+from rest_framework import serializers
 
 from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry
-from backend.predicates import utils
+from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
 
@@ -42,17 +41,11 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
 
         queryset = site.dictionaryentry_set
         request = self.context.get("request")
-        serializer = DictionaryEntryDataSerializer(
+        dictionary_entries = DictionaryEntryDataSerializer(
             queryset, many=True, context={"request": request}
-        )
+        ).data
 
-        paginator = DictionaryEntryPaginator()
-        paginated_data = paginator.paginate_queryset(
-            queryset=serializer.data, request=request
-        )
-        dictionary_entries = paginator.get_paginated_response(paginated_data)
-
-        return {"config": config, "paginatedDictionaryData": dictionary_entries}
+        return {"config": config, "data": dictionary_entries}
 
     class Meta:
         model = Site
@@ -160,22 +153,16 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         return dictionaryentry.title
 
     def get_sort_form(self, dictionaryentry):
-        request = self.context.get("request")
-        alphabet_mapper = utils.filter_by_viewable(
-            request.user, dictionaryentry.site.alphabet_set.all()
-        ).first()
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
         if alphabet_mapper is not None:
-            return alphabet_mapper.get_sort_form(dictionaryentry.title)
+            return alphabet_mapper.get_base_form(dictionaryentry.title)
         else:
             return dictionaryentry.title
 
     def get_sorting_form(self, dictionaryentry):
-        request = self.context.get("request")
-        alphabet_mapper = utils.filter_by_viewable(
-            request.user, dictionaryentry.site.alphabet_set.all()
-        ).first()
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
         if alphabet_mapper is not None:
-            sort_form = alphabet_mapper.get_sort_form(dictionaryentry.title)
+            sort_form = alphabet_mapper.get_base_form(dictionaryentry.title)
             return alphabet_mapper.get_numerical_sort_form(sort_form)
         else:
             return dictionaryentry.title
@@ -195,28 +182,4 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             "compare_form",
             "sort_form",
             "sorting_form",
-        )
-
-
-class DictionaryEntryPaginator(pagination.PageNumberPagination):
-    def get_paginated_response(self, data):
-        return OrderedDict(
-            [
-                ("count", self.page.paginator.count),
-                ("pages", self.page.paginator.num_pages),
-                ("pageSize", self.get_page_size(self.request)),
-                (
-                    "next",
-                    self.page.next_page_number() if self.page.has_next() else None,
-                ),
-                ("next_url", self.get_next_link()),
-                (
-                    "previous",
-                    self.page.previous_page_number()
-                    if self.page.has_previous()
-                    else None,
-                ),
-                ("previous_url", self.get_previous_link()),
-                ("data", data),
-            ]
         )

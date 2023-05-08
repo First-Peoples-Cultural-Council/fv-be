@@ -3,7 +3,7 @@ from rest_framework import mixins, serializers, viewsets
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.dictionary import DictionaryEntry
-from backend.predicates import utils
+from backend.permissions import utils
 from backend.serializers.site_data_serializers import SiteDataSerializer
 from backend.views.base_views import SiteContentViewSetMixin
 
