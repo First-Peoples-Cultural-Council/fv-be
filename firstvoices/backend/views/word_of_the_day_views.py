@@ -108,10 +108,7 @@ class WordOfTheDayView(
         site = self.get_validated_site()
 
         # Logic to select queryset
-        if site.count() > 0:
-            queryset = self.get_suitable_queryset(site[0].slug)
-        else:
-            queryset = DictionaryEntry.objects.none()
+        queryset = self.get_suitable_queryset(site[0].slug)
 
         # apply view permissions and get the first word
         words = utils.filter_by_viewable(request.user, queryset)
