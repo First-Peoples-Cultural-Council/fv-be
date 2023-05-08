@@ -65,6 +65,9 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     )
     categories = CategorySerializer(many=True)
     site = SiteSummarySerializer()
+    related_entries = DictionaryEntrySummarySerializer(
+        source="related_dictionary_entries", many=True
+    )
     split_chars = serializers.SerializerMethodField()
     split_chars_base = serializers.SerializerMethodField()
     split_words = serializers.SerializerMethodField()
@@ -111,10 +114,6 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         word_list = base_title.split(" ")
 
         return word_list
-
-    related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True
-    )
 
     class Meta:
         model = dictionary.DictionaryEntry

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from backend.models.app import AppJson
+from backend.models.app import AppJson, AppMembership
 
 from .base_admin import BaseAdmin
 
@@ -18,4 +18,20 @@ class AppJsonAdmin(BaseAdmin):
     search_fields = (
         "key",
         "json",
+    )
+
+
+@admin.register(AppMembership)
+class AppMembershipAdmin(BaseAdmin):
+    fields = (
+        "user",
+        "role",
+    )
+    list_display = (
+        "user",
+        "role",
+    ) + BaseAdmin.list_display
+    search_fields = (
+        "user",
+        "role",
     )

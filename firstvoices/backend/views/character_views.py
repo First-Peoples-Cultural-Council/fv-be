@@ -1,6 +1,8 @@
+from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models import DictionaryEntry
 from backend.models.characters import Character, IgnoredCharacter
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
@@ -44,6 +46,12 @@ class CharactersViewSet(
                 Character.objects.filter(site__slug=site[0].slug)
                 .order_by("sort_order")
                 .prefetch_related("variants")
+                .prefetch_related(
+                    Prefetch(
+                        "related_dictionary_entries",
+                        queryset=DictionaryEntry.objects.visible(self.request.user),
+                    )
+                )
             )
         else:
             return Character.objects.none()

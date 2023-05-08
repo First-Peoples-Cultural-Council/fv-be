@@ -15,7 +15,7 @@ click-repl==0.2.0
 coloredlogs==14.0
 cron-descriptor==1.2.35
 cryptography==40.0.2
-Django==4.1.7
+Django==4.2.1
 django-celery-beat==2.5.0
 django-cors-headers==3.14.0
 django-debug-toolbar==4.0.0
@@ -82,7 +82,7 @@ tqdm==4.65.0
 tzdata==2023.3
 unicodecsv==0.14.1
 uritemplate==4.1.1
-urllib3==1.26.15
+urllib3==2.0.2
 vine==5.0.0
 wcwidth==0.2.6
 Werkzeug==2.0.3
