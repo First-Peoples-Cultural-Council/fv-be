@@ -6,10 +6,11 @@ from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.debug.async_example import ExampleAsyncTaskView
 from backend.views.debug.elastic_example import ExampleElasticSearch
-from backend.views.dictionary_views import DictionaryViewSet, WordOfTheDayView
+from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
+from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
 ROUTER = DefaultRouter(trailing_slash=True)

@@ -212,6 +212,7 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
+        ordering = ["title"]
         rules_permissions = {
             "view": predicates.is_visible_object,
             "add": predicates.is_superadmin,  # permissions will change when we add a write API
@@ -339,7 +340,7 @@ class WordOfTheDay(BaseSiteContentModel):
         unique_together = ("site", "date")
         ordering = ["-date"]
         rules_permissions = {
-            "view": rules.always_allow,
+            "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,

@@ -23,6 +23,7 @@ class Category(BaseSiteContentModel):
         verbose_name = _("Category")
         verbose_name_plural = _("Categories")
         unique_together = ("site", "title")
+        ordering = ["title"]
         rules_permissions = {
             "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
