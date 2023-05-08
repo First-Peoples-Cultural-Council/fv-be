@@ -1,8 +1,8 @@
 from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import viewsets
 
-from backend.models import DictionaryEntry
+from backend.models.dictionary import DictionaryEntry
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -26,7 +26,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     ),
 )
 class DictionaryViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
+    FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.ModelViewSet
 ):
     """
     Dictionary entry information.

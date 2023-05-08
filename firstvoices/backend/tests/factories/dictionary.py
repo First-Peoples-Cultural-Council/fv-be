@@ -1,4 +1,5 @@
 import factory
+from django.utils.timezone import datetime
 from factory.django import DjangoModelFactory
 
 from backend.models import PartOfSpeech, dictionary
@@ -75,3 +76,11 @@ class PartOfSpeechFactory(DjangoModelFactory):
     title = factory.Sequence(lambda n: "Part of Speech %03d" % n)
     created_by = factory.SubFactory(factories.UserFactory)
     last_modified_by = factory.SubFactory(factories.UserFactory)
+
+
+class WordOfTheDayFactory(DjangoModelFactory):
+    dictionary_entry = factory.SubFactory(factories.DictionaryEntryFactory)
+    date = datetime.today()
+
+    class Meta:
+        model = dictionary.WordOfTheDay

@@ -34,6 +34,7 @@ class PartOfSpeech(BaseModel):
     class Meta:
         verbose_name = _("Part Of Speech")
         verbose_name_plural = _("Parts Of Speech")
+        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,
