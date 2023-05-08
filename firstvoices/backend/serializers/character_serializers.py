@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
+from backend.serializers.dictionary_serializers import DictionaryEntrySummarySerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
@@ -21,6 +22,9 @@ class CharacterVariantSerializer(serializers.ModelSerializer):
 class CharacterDetailSerializer(serializers.ModelSerializer):
     url = SiteHyperlinkedIdentityField(view_name="api:character-detail")
     variants = CharacterVariantSerializer(many=True)
+    related_entries = DictionaryEntrySummarySerializer(
+        source="related_dictionary_entries", many=True
+    )
 
     class Meta:
         model = Character
@@ -32,6 +36,5 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
             "approximate_form",
             "notes",
             "variants",
-            # related dictionary entries will be added in a future PR
-            # "related_dictionary_entries",
+            "related_entries",
         ]
