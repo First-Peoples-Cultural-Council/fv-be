@@ -73,8 +73,10 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
 
-        assert response_data_entry["id"] == str(dict_entry.id)
+        assert response_data_entry["date"] == str(self.today.date())
+        assert dictionary_entry["id"] == str(dict_entry.id)
 
     @pytest.mark.django_db
     def test_wotd_unused_words(self):
@@ -96,8 +98,10 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
 
-        assert response_data_entry["id"] == str(dict_entry_2.id)
+        assert response_data_entry["date"] == str(self.today.date())
+        assert dictionary_entry["id"] == str(dict_entry_2.id)
 
     @pytest.mark.django_db
     def test_words_not_used_in_last_year(self):
@@ -123,12 +127,14 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
 
-        assert response_data_entry["id"] == str(dict_entry_2.id)
+        assert response_data_entry["date"] == str(self.today.date())
+        assert dictionary_entry["id"] == str(dict_entry_2.id)
 
     @pytest.mark.django_db
     def test_random_words_base_case(self):
-        # If no words passes any of the above cases, a random word will be chosen and returned
+        # If no words pass any of the above cases, a random word will be chosen and returned
 
         within_last_year_date_1 = self.today - timedelta(weeks=20)
         within_last_year_date_2 = self.today - timedelta(weeks=15)
@@ -143,13 +149,16 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
             dictionary_entry=dict_entry_1, date=within_last_year_date_1, site=self.site
         )
         WordOfTheDayFactory.create(
-            dictionary_entry=dict_entry_1, date=within_last_year_date_2, site=self.site
+            dictionary_entry=dict_entry_2, date=within_last_year_date_2, site=self.site
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         assert response.status_code == 200
         response_data = json.loads(response.content)
         response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
+
+        assert response_data_entry["date"] == str(self.today.date())
 
         # any 1 of the 2 entries
-        assert response_data_entry["id"] in [str(dict_entry_1.id), str(dict_entry_2.id)]
+        assert dictionary_entry["id"] in [str(dict_entry_1.id), str(dict_entry_2.id)]

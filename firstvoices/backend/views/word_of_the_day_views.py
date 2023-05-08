@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from backend.models.dictionary import DictionaryEntry, WordOfTheDay
 from backend.permissions import utils
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
+from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
@@ -15,7 +15,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     list=extend_schema(
         description="Returns a word of the day for the given site.",
         responses={
-            200: DictionaryEntryDetailSerializer,
+            200: WordOfTheDayListSerializer,
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
@@ -32,62 +32,58 @@ class WordOfTheDayView(
     """
 
     http_method_names = ["get"]
-    serializer_class = DictionaryEntryDetailSerializer
+    serializer_class = WordOfTheDayListSerializer
     pagination_class = None
+    model = WordOfTheDay
+    queryset = ""
 
     @staticmethod
-    def get_suitable_queryset(site_slug):
-        # Case 1. Check if there is a word assigned word-of-the-day date of today
-        today = datetime.today()
-        selected_word = WordOfTheDay.objects.filter(
-            site__slug=site_slug, date=today
-        ).first()
-        if selected_word:
-            queryset = DictionaryEntry.objects.filter(
-                id=selected_word.dictionary_entry.id
-            )
-            if queryset.count() > 0:
-                return queryset
-
-        # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
+    def get_unassigned_word(site_slug, today):
+        # Returns words which have not yet been assigned as a word of the day
+        # also adds a word of the day entry for it
         words_used = WordOfTheDay.objects.filter(site__slug=site_slug).values_list(
             "dictionary_entry_id", flat=True
         )
-        queryset = DictionaryEntry.objects.filter(
+        dictionary_entry_queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).exclude(id__in=list(words_used))
-        if queryset.count() > 0:
-            selected_word = queryset.first()
-            WordOfTheDay(
+        if dictionary_entry_queryset.count() > 0:
+            selected_word = dictionary_entry_queryset.first()
+            wotd_entry = WordOfTheDay(
                 date=today, dictionary_entry=selected_word, site=selected_word.site
-            ).save()
-            return queryset
+            )
+            wotd_entry.save()
+            return WordOfTheDay.objects.filter(id=wotd_entry.id)
+        else:
+            return WordOfTheDay.objects.none()
 
-        # Case 3. If no words found satisfying any of the above condition, try to find wotd which has not
-        # been assigned a date in the last year
-        last_year_date = today - timedelta(weeks=52)
-        selected_word = (
+    @staticmethod
+    def get_wotd_before_date(site_slug, today, given_date):
+        # returns words which have been assigned word of the day before the given date
+        # also adds a word of the day entry for it
+        oldest_word = (
             WordOfTheDay.objects.filter(site__slug=site_slug)
             .order_by("-date")
             .distinct()
-            .filter(date__lte=last_year_date)
+            .filter(date__lte=given_date)
             .last()
         )
-        if selected_word:
-            queryset = DictionaryEntry.objects.filter(
-                id=selected_word.dictionary_entry.id
+        if oldest_word:
+            wotd_entry = WordOfTheDay(
+                date=today,
+                dictionary_entry=oldest_word.dictionary_entry,
+                site=oldest_word.dictionary_entry.site,
             )
-            if queryset.count() > 0:
-                WordOfTheDay(
-                    date=today,
-                    dictionary_entry=selected_word.dictionary_entry,
-                    site=selected_word.dictionary_entry.site,
-                ).save()
-                return queryset
+            wotd_entry.save()
+            return WordOfTheDay.objects.filter(id=wotd_entry.id)
+        else:
+            return WordOfTheDay.objects.none()
 
-        # Case 4. If there is no word that passes any of the above conditions, choose a word at random
+    @staticmethod
+    def get_random_word_as_wotd(site_slug, today):
+        # Returns a random word and adds a word of the day entry for it
         primary_keys_list = DictionaryEntry.objects.filter(
             site__slug=site_slug,
             type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
@@ -97,10 +93,32 @@ class WordOfTheDayView(
             # No words found
             return DictionaryEntry.objects.none()
         random_entry = choice(primary_keys_list)
-        selected_word = DictionaryEntry.objects.filter(id=random_entry)
-        WordOfTheDay(
-            date=today, dictionary_entry=selected_word, site=selected_word.site
-        ).save()
+        random_word = DictionaryEntry.objects.get(id=random_entry)
+        wotd_entry = WordOfTheDay(
+            date=today, dictionary_entry=random_word, site=random_word.site
+        )
+        wotd_entry.save()
+        return WordOfTheDay.objects.filter(id=wotd_entry.id)
+
+    def get_selected_word(self, site_slug):
+        # Goes over a few conditions to find a suitable word of the day
+
+        # Case 1. Check if there is a word assigned word-of-the-day date of today
+        today = datetime.today()
+        selected_word = WordOfTheDay.objects.filter(site__slug=site_slug, date=today)
+        if selected_word.count() == 0:
+            # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
+            selected_word = self.get_unassigned_word(site_slug, today)
+        if selected_word.count() == 0:
+            # Case 3. If no words found satisfying any of the above condition, try to find wotd which has not
+            # been assigned a date in the last year
+            last_year_date = today - timedelta(weeks=52)
+            selected_word = self.get_wotd_before_date(site_slug, today, last_year_date)
+        if selected_word.count() == 0:
+            # Case 4. If there is no word that passes any of the above conditions, choose a word at random
+            random_word = self.get_random_word_as_wotd(site_slug, today)
+            return random_word
+
         return selected_word
 
     def list(self, request, *args, **kwargs):
@@ -108,14 +126,11 @@ class WordOfTheDayView(
         site = self.get_validated_site()
 
         # Logic to select queryset
-        queryset = self.get_suitable_queryset(site[0].slug)
-
-        # apply view permissions and get the first word
-        words = utils.filter_by_viewable(request.user, queryset)
-        first_word = words[:1]
+        selected_word = self.get_selected_word(site[0].slug)
+        queryset = utils.filter_by_viewable(request.user, selected_word)
 
         # serialize and return the data, with context to support hyperlinking
         serializer = self.serializer_class(
-            first_word, many=True, context={"request": request}
+            queryset, many=True, context={"request": request}
         )
         return Response(serializer.data)
