@@ -56,17 +56,8 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
 
 
 class CategoriesDataSerializer(serializers.ModelSerializer):
-    category = serializers.SerializerMethodField()
-    parent_category = serializers.SerializerMethodField()
-
-    def get_category(self, category):
-        return category.title
-
-    def get_parent_category(self, category):
-        if category.parent is not None:
-            return category.parent.title
-        else:
-            return None
+    category = serializers.CharField(source="title")
+    parent_category = serializers.CharField(source="parent")
 
     class Meta:
         model = Category
@@ -78,26 +69,20 @@ class CategoriesDataSerializer(serializers.ModelSerializer):
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     source = serializers.SerializerMethodField()
-    entryID = serializers.SerializerMethodField()
-    word = serializers.SerializerMethodField()
+    entryID = serializers.UUIDField(source="id")
+    word = serializers.CharField(source="title")
     definition = serializers.SerializerMethodField()
     audio = serializers.SerializerMethodField()
     img = serializers.SerializerMethodField()
     theme = CategoriesDataSerializer(source="categories", many=True)
     secondary_theme = serializers.SerializerMethodField()
     optional = serializers.SerializerMethodField()
-    compare_form = serializers.SerializerMethodField()
+    compare_form = serializers.CharField(source="title")
     sort_form = serializers.SerializerMethodField()
     sorting_form = serializers.SerializerMethodField()
 
     def get_source(self, dictionaryentry):
         return dict_entry_type_mtd_conversion(dictionaryentry.type)
-
-    def get_entryID(self, dictionaryentry):
-        return dictionaryentry.id
-
-    def get_word(self, dictionaryentry):
-        return dictionaryentry.title
 
     def get_definition(self, dictionaryentry):
         if dictionaryentry.translation_set.first() is not None:
@@ -105,6 +90,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         else:
             return None
 
+    # These are placeholder values and need to be updated when the audio models have been implemented.
     def get_audio(self, dictionaryentry):
         return [
             {
@@ -114,6 +100,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             }
         ]
 
+    # These are placeholder values and need to be updated when the image models have been implemented.
     def get_img(self, dictionaryentry):
         return (
             "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/5c9eef16-4665-40b9-89ce-debc0301f93b/file:content"
@@ -151,9 +138,6 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
                 ),
             },
         )
-
-    def get_compare_form(self, dictionaryentry):
-        return dictionaryentry.title
 
     def get_sort_form(self, dictionaryentry):
         alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()

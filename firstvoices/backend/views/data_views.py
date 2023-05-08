@@ -20,10 +20,10 @@ def dict_entry_type_mtd_conversion(type):
 
 @extend_schema_view(
     list=extend_schema(
-        description="Returns a site data object in the MTD format to be used in PWAs. The endpoint returns a config "
-        "containing the alphabet and site info, as well as data containing an export of site dictionary "
-        "entries and categories. Additional information on the MTD format can be found on the Mother "
-        "Tongues documentation: https://docs.mothertongues.org/docs/mtd-guides-prepare",
+        description="Returns a site data object in the MTD format. The endpoint returns a config containing the "
+        "alphabet and site info, as well as data containing an export of site dictionary entries and "
+        "categories. Additional information on the MTD format can be found on the Mother Tongues "
+        "documentation: https://docs.mothertongues.org/docs/mtd-guides-prepare",
         responses={
             200: inline_serializer(
                 name="InlineUserSerializer",
