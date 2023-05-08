@@ -38,8 +38,11 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
             "L2": {"name": "English"},
             "build": datetime.now().strftime("%Y%m%d%H%M"),
         }
-
-        queryset = site.dictionaryentry_set
+        queryset = (
+            site.dictionaryentry_set
+            if site is not None and site.dictionaryentry_set is not None
+            else None
+        )
         request = self.context.get("request")
         dictionary_entries = DictionaryEntryDataSerializer(
             queryset, many=True, context={"request": request}

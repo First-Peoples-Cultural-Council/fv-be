@@ -39,7 +39,7 @@ class TestSitesDataEndpoint:
         self.user = factories.get_non_member_user()
         self.client.force_authenticate(user=self.user)
 
-    def isTimeFormat(self, input):
+    def is_time_format(self, input):
         try:
             time.strptime(input, "%Y%m%d%H%M")
             return True
@@ -76,7 +76,7 @@ class TestSitesDataEndpoint:
             "transducers": {},
         }
         assert config["L2"] == {"name": "English"}
-        assert self.isTimeFormat(config["build"])
+        assert self.is_time_format(config["build"])
 
     @pytest.mark.django_db
     def test_full_config(self):
@@ -97,7 +97,7 @@ class TestSitesDataEndpoint:
             "transducers": {},
         }
         assert config["L2"] == {"name": "English"}
-        assert self.isTimeFormat(config["build"])
+        assert self.is_time_format(config["build"])
 
     @pytest.mark.django_db
     def test_dictionary_empty(self):
