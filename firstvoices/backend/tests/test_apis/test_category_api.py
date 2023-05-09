@@ -189,7 +189,6 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         category_phrase.dictionary_entries.add(phrase_entry)
         category_both.dictionary_entries.add(word_entry, phrase_entry)
 
-        # Testing for PHRASE flag
         response = self.client.get(
             self.get_list_endpoint(
                 self.site.slug,
