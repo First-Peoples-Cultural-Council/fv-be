@@ -33,13 +33,5 @@ def filter_by_viewable(user, queryset):
     """
     Returns a new queryset containing items from queryset that the user has permission to view
     """
-
-    # see fw-4255-- we should do this via a query filter rather than post-processing the entire table
-    allowed_ids = [
-        obj.id for obj in queryset if user.has_perm(obj.get_perm("view"), obj)
-    ]
-
-    if len(allowed_ids) < queryset.count():
-        return queryset.filter(id__in=allowed_ids)
-    else:
-        return queryset.all()
+    view_permission_filter = queryset.model.objects.visible_as_filter(user)
+    return queryset.filter(view_permission_filter)

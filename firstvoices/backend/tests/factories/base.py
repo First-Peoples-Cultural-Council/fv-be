@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppJson, AppMembership
+from backend.models.category import Category
 from backend.models.characters import (
     Alphabet,
     Character,
@@ -113,10 +114,15 @@ class SiteMenuFactory(DjangoModelFactory):
     class Meta:
         model = SiteMenu
 
+    json = factory.Sequence(lambda n: "{'menu_json': %03d }" % n)
+
 
 class AppJsonFactory(DjangoModelFactory):
     class Meta:
         model = AppJson
+
+    key = factory.Sequence(lambda n: "AppJson %03d" % n)
+    json = factory.Sequence(lambda n: "{ 'value': %03d }" % n)
 
 
 class CharacterFactory(DjangoModelFactory):
@@ -153,6 +159,24 @@ class AlphabetFactory(DjangoModelFactory):
 
     class Meta:
         model = Alphabet
+
+
+class ParentCategoryFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Category title %03d" % n)
+    description = factory.Sequence(lambda n: "Category description %03d" % n)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = Category
+
+
+class ChildCategoryFactory(ParentCategoryFactory):
+    parent = factory.SubFactory(ParentCategoryFactory)
+
+    class Meta:
+        model = Category
 
 
 def get_anonymous_user():

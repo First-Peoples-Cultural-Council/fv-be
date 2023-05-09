@@ -3,8 +3,6 @@ from django.db import models
 
 from backend.managers.user import UserManager
 
-from .role import Role
-
 
 class User(AbstractUser):
     """
@@ -64,13 +62,6 @@ class User(AbstractUser):
     @property
     def natural_key(self):
         return (self.id,)
-
-    @property
-    def roles(self):
-        """
-        Roles
-        """
-        return Role.objects.filter(user_roles__user_id=self.id)
 
     class Meta:
         db_table = "user"

@@ -4,7 +4,7 @@ from django.core.validators import validate_slug
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend import predicates
+from backend.permissions import predicates
 
 from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
@@ -167,6 +167,9 @@ class Membership(BaseSiteContentModel):
     def __str__(self):
         return f"{self.user} ({self.site} {self.get_role_display()})"
 
+    def __repr__(self):
+        return str(self)
+
 
 class SiteFeature(BaseSiteContentModel):
     """Represents a feature flag for a site"""
@@ -181,7 +184,7 @@ class SiteFeature(BaseSiteContentModel):
         verbose_name_plural = _("site features")
         unique_together = ("site", "key")
         rules_permissions = {
-            "view": rules.always_allow,
+            "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
@@ -202,6 +205,12 @@ class SiteMenu(BaseModel):
     class Meta:
         verbose_name = _("site menu")
         verbose_name_plural = _("site menus")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     def __str__(self):
         return f"Menu JSON for {self.site.title}"

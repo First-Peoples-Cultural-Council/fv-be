@@ -1,3 +1,4 @@
+import logging
 import re
 import unicodedata
 
@@ -95,6 +96,8 @@ class CustomSorter(ArbSorter):
     space = " "
     out_of_vocab_flag = unicodedata.lookup("BLACK FLAG")
 
+    logger = logging.getLogger(__name__)
+
     def __init__(self, order: list[str], ignorable: list[str] | None = None):
         order = [self.space] + order
         self._init_custom_order(len(order))
@@ -108,7 +111,7 @@ class CustomSorter(ArbSorter):
             if i not in self.exclude_chars
         ]
         if alphabet_length > len(custom_char_range):
-            raise ValueError(
+            self.logger.warning(
                 "Alphabet length ({}) exceeds possible custom order ({})".format(
                     alphabet_length, self.max_alphabet_length
                 )
@@ -127,6 +130,12 @@ class CustomSorter(ArbSorter):
         values = self.word_as_values(word)
         custom_chars = [self.custom_sort_char(i) for i in values]
         return "".join(custom_chars)
+
+    def word_as_chars(self, word) -> list[str]:
+        """Convert word into a list of characters for use in fv games."""
+        values = self.word_as_values(word)
+        chars = [self.ord_to_char_lookup[v] for v in values]
+        return chars
 
 
 def nfc(string: str) -> str:

@@ -55,12 +55,17 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
                 x in contains_flags
                 for x in [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
             ):
-                print("X")
-                # Check if both keywords are present
-                list_queryset = list_queryset.filter(
-                    Q(dictionary_entries__type="WORD")
-                    | Q(dictionary_entries__type="PHRASE")
-                ).distinct("id")
+                # If both keywords are present
+                # the distinct expression should match the leftmost order_by expression
+                # ref: https://docs.djangoproject.com/en/dev/ref/models/querysets/#distinct
+                list_queryset = (
+                    list_queryset.filter(
+                        Q(dictionary_entries__type="WORD")
+                        | Q(dictionary_entries__type="PHRASE")
+                    )
+                    .order_by("id")
+                    .distinct("id")
+                )
             elif "WORD" in contains_flags:
                 list_queryset = list_queryset.filter(dictionary_entries__type="WORD")
             elif "PHRASE" in contains_flags:

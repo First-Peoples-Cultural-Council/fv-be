@@ -15,7 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import SiteFeature
-from backend.predicates import utils
+from backend.permissions import utils
 from backend.serializers.site_serializers import (
     Site,
     SiteDetailSerializer,

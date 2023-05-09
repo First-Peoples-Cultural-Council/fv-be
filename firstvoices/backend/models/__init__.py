@@ -18,6 +18,4 @@ from .dictionary import (  # noqa F401
     Translation,
 )
 from .part_of_speech import PartOfSpeech  # noqa F401
-from .role import Role  # noqa F401
 from .sites import Membership, Site  # noqa F401
-from .user_role import UserRole  # noqa F401

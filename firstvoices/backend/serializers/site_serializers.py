@@ -20,6 +20,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Site
         fields = (
+            "id",
             "title",
             "slug",
             "language",
@@ -29,6 +30,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
 
 
 class FeatureFlagSerializer(serializers.Serializer):
+    id = serializers.CharField()
     key = serializers.CharField()
     is_enabled = serializers.BooleanField()
 
