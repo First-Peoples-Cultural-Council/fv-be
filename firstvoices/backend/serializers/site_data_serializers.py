@@ -149,8 +149,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     def get_sorting_form(self, dictionaryentry):
         alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
         if alphabet_mapper is not None:
-            sort_form = alphabet_mapper.get_base_form(dictionaryentry.title)
-            return alphabet_mapper.get_numerical_sort_form(sort_form)
+            return alphabet_mapper.get_numerical_sort_form(dictionaryentry.title)
         else:
             return dictionaryentry.title
 
