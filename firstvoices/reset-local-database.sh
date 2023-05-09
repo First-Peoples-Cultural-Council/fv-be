@@ -124,7 +124,7 @@ case $yn in
     # Create an app level superuser membership model for the admin user.
     printf '\n\n'
     printf 'Adding app Superadmin membership to superuser account.\n'
-    python $SCRIPT_DIR/manage.py shell < create_local_superadmin_membership.py
+    python $SCRIPT_DIR/manage.py shell < $SCRIPT_DIR/scripts/create_local_superadmin_membership.py
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Superuser membership creation failed: exit code $retval\n"
