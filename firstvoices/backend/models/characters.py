@@ -214,7 +214,6 @@ class Alphabet(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
-
     logger = logging.getLogger(__name__)
 
     # from all fv-character:confusables for a site
@@ -353,3 +352,6 @@ class Alphabet(BaseSiteContentModel):
         Converts a string to a string with all variant characters replaced with their base characters.
         """
         return self.presort_transducer(text).output_string
+
+    def get_numerical_sort_form(self, text):
+        return self.sorter.word_as_values(self.get_base_form(text))
