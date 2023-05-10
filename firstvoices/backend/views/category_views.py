@@ -30,7 +30,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
 
-    def get_queryset(self):
+    def get_detail_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
             return (
