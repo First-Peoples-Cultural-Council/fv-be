@@ -14,5 +14,8 @@ user = User.objects.filter(id=id).first()
 try:
     membership = AppMembership(user=user, role=AppRole.SUPERADMIN)
     membership.save()
-except IntegrityError:
-    print("Superuser membership already added with the given DJANGO_SUPERUSER_EMAIL.")
+except IntegrityError as e:
+    if "unique constraint" in e.args[0]:  # Check if it is a unique constraint violation
+        print(
+            "Superuser membership already added with the given DJANGO_SUPERUSER_EMAIL."
+        )
