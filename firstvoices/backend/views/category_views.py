@@ -1,9 +1,16 @@
+import itertools
+
 from django.db.models import Q
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.category import Category
-from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
     CategoryListSerializer,
@@ -19,6 +26,23 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             403: OpenApiResponse(description="Todo: Not authorized for this Site."),
             404: OpenApiResponse(description="Todo: Site not found."),
         },
+        parameters=[
+            OpenApiParameter(
+                name="contains",
+                description="filter by type of dictionary entry associated with it",
+                required=False,
+                type=str,
+                examples=[
+                    OpenApiExample("WORD", value="WORD"),
+                    OpenApiExample("PHRASE", value="PHRASE"),
+                    OpenApiExample(
+                        "WORD|PHRASE",
+                        value="WORD|PHRASE",
+                        description="Contains both. Order is not relevant here.",
+                    ),
+                ],
+            )
+        ],
     ),
     retrieve=extend_schema(
         description="Details about a specific category.",
@@ -46,36 +70,37 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
     def get_list_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            list_queryset = Category.objects.filter(site__slug=site[0].slug)
+            valid_inputs = ["WORD", "PHRASE"]
+
+            list_queryset = Category.objects.filter(
+                site__slug=site[0].slug
+            ).prefetch_related("children")
+            query = Q()
 
             # Check if type flags are present
-            contains_flags = self.request.GET.get("contains", "").split("|")
+            contains_flags = [
+                flag
+                for flag in self.request.GET.get("contains", "").split("|")
+                if len(flag)
+            ]
 
-            if all(
-                x in contains_flags
-                for x in [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
-            ):
-                # If both keywords are present
-                # the distinct expression should match the leftmost order_by expression
-                # ref: https://docs.djangoproject.com/en/dev/ref/models/querysets/#distinct
-                list_queryset = (
-                    list_queryset.filter(
-                        Q(dictionary_entries__type="WORD")
-                        | Q(dictionary_entries__type="PHRASE")
-                    )
-                    .order_by("id")
-                    .distinct("id")
-                )
-            elif "WORD" in contains_flags:
-                list_queryset = list_queryset.filter(dictionary_entries__type="WORD")
-            elif "PHRASE" in contains_flags:
-                list_queryset = list_queryset.filter(dictionary_entries__type="PHRASE")
-            else:
-                list_queryset = list_queryset.exclude(parent__isnull=False)
-            return list_queryset.prefetch_related("children")
+            if len(contains_flags) > 0:
+                for flag in contains_flags:
+                    # Check if flag is in valid_inputs and then add
+                    if flag in valid_inputs:
+                        query.add(Q(dictionary_entries__type=flag), Q.OR)
+                if len(query) == 0:  # Only invalid flags were supplied
+                    return Category.objects.none()
 
-        else:
-            return Category.objects.none()
+            all_categories = list_queryset.filter(query).order_by("id").distinct("id")
+            child_categories = [
+                category.children.all().values_list("id", flat=True)
+                for category in all_categories
+                if len(category.children.all())
+            ]
+            flat_child_ids_list = list(itertools.chain(*child_categories))
+
+            return all_categories.exclude(id__in=flat_child_ids_list)
 
     def get_serializer_class(self):
         if self.action == "list":
