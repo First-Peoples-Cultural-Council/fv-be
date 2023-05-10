@@ -63,10 +63,14 @@ class WordOfTheDayView(
     def get_wotd_before_date(site_slug, today, given_date):
         # returns words which have been assigned word of the day before the given date
         # also adds a word of the day entry for it
-        oldest_word = (
+        sorted_words_list = (
             WordOfTheDay.objects.filter(site__slug=site_slug)
-            .order_by("-date")
-            .distinct()
+            .order_by("dictionary_entry__id", "-date")
+            .distinct("dictionary_entry__id")
+            .values_list("id", flat=True)
+        )
+        oldest_word = (
+            WordOfTheDay.objects.filter(id__in=sorted_words_list)
             .filter(date__lte=given_date)
             .last()
         )
