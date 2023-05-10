@@ -1,5 +1,7 @@
 import os
 
+from django.db.utils import IntegrityError
+
 from backend.models import User
 from backend.models.app import AppMembership
 from backend.models.constants import AppRole
@@ -9,5 +11,11 @@ from backend.models.constants import AppRole
 id = os.getenv("DJANGO_SUPERUSER_EMAIL")
 user = User.objects.filter(id=id).first()
 
-membership = AppMembership(user=user, role=AppRole.SUPERADMIN)
-membership.save()
+try:
+    membership = AppMembership(user=user, role=AppRole.SUPERADMIN)
+    membership.save()
+except IntegrityError as e:
+    if "unique constraint" in e.args[0]:  # Check if it is a unique constraint violation
+        print(
+            "Superuser membership already added with the given DJANGO_SUPERUSER_EMAIL."
+        )
