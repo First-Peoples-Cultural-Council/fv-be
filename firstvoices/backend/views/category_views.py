@@ -92,7 +92,7 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
 
             filtered_categories = (
                 list_queryset.filter(query).order_by("id").distinct("id")
-            )
+            )  # Relevant categories which satisfy the query
             child_categories = [
                 category.children.all().values_list("id", flat=True)
                 for category in filtered_categories
@@ -101,12 +101,14 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
             flat_child_ids_list = list(itertools.chain(*child_categories))
 
             return filtered_categories.filter(
-                ~Q(id__in=flat_child_ids_list)
+                ~Q(
+                    id__in=flat_child_ids_list
+                )  # Remove duplicate child entries being shown at top level
             ).prefetch_related(
                 Prefetch(
                     "children",
                     queryset=Category.objects.filter(id__in=filtered_categories),
-                )
+                )  # Filter child categories
             )
 
     def get_serializer_class(self):
