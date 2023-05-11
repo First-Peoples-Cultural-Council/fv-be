@@ -180,7 +180,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "FirstVoices Backend API",
     "DESCRIPTION": description,
     "VERSION": "2.0.0",
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Fixtures directory for initial data
