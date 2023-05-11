@@ -59,7 +59,11 @@ class UserAuthentication(authentication.BaseAuthentication):
                 audience=settings.JWT["AUDIENCE"],
                 options={"verify_exp": True},
             )
-        except (jwt.InvalidTokenError, jwt.ExpiredSignature, jwt.DecodeError) as exc:
+        except (
+            jwt.InvalidTokenError,
+            jwt.ExpiredSignatureError,
+            jwt.DecodeError,
+        ) as exc:
             token_validation_errors.append(exc)
             raise Exception(exc)
 
