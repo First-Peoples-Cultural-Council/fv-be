@@ -79,8 +79,8 @@ REST_FRAMEWORK = {
         "backend.jwt_auth.UserAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "UNAUTHENTICATED_USER": None,
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
     "JSON_UNDERSCOREIZE": {
