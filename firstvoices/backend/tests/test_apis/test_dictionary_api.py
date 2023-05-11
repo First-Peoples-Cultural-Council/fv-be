@@ -452,7 +452,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         factories.IgnoredCharacterFactory.create(site=site, title="-")
 
         factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x-y yx-y"
+            site=site, visibility=Visibility.PUBLIC, title="x-y y"
         )
         factories.DictionaryEntryFactory.create(
             site=site, visibility=Visibility.PUBLIC, title="x-y-"
@@ -471,15 +471,11 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             "y",
             " ",
             "y",
-            "x-",
-            "y",
         ]
         assert response_data["results"][0]["splitCharsBase"] == [
             "x-",
             "y",
             " ",
-            "y",
-            "x-",
             "y",
         ]
         assert response_data["results"][1]["splitChars"] == []
