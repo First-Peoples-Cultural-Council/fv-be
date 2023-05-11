@@ -24,6 +24,19 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         self.client.force_authenticate(user=self.user)
         self.site = SiteFactory.create()
 
+    def get_categories_with_word_phrase(self):
+        word_entry = DictionaryEntryFactory(site=self.site)
+        category_word = ParentCategoryFactory(site=self.site)
+        category_word.dictionary_entries.add(word_entry)
+
+        phrase_entry = DictionaryEntryFactory(
+            site=self.site, type=TypeOfDictionaryEntry.PHRASE
+        )
+        category_phrase = ParentCategoryFactory(site=self.site)
+        category_phrase.dictionary_entries.add(phrase_entry)
+
+        return word_entry, phrase_entry, category_word, category_phrase
+
     @pytest.mark.django_db
     def test_list_empty(self):
         """
@@ -142,15 +155,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the word associated with it
 
-        word_entry = DictionaryEntryFactory(site=self.site)
-        category_word = ParentCategoryFactory(site=self.site)
-        category_word.dictionary_entries.add(word_entry)
-
-        phrase_entry = DictionaryEntryFactory(
-            site=self.site, type=TypeOfDictionaryEntry.PHRASE
-        )
-        category_phrase = ParentCategoryFactory(site=self.site)
-        category_phrase.dictionary_entries.add(phrase_entry)
+        _, _, category_word, category_phrase = self.get_categories_with_word_phrase()
 
         response = self.client.get(
             self.get_list_endpoint(self.site.slug, query_kwargs={"contains": flag})
@@ -169,15 +174,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the phrase associated with it
 
-        word_entry = DictionaryEntryFactory(site=self.site)
-        category_word = ParentCategoryFactory(site=self.site)
-        category_word.dictionary_entries.add(word_entry)
-
-        phrase_entry = DictionaryEntryFactory(
-            site=self.site, type=TypeOfDictionaryEntry.PHRASE
-        )
-        category_phrase = ParentCategoryFactory(site=self.site)
-        category_phrase.dictionary_entries.add(phrase_entry)
+        _, _, category_word, category_phrase = self.get_categories_with_word_phrase()
 
         # Testing for PHRASE flag
         response = self.client.get(
@@ -191,17 +188,13 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     def test_contains_multiple(self):
-        word_entry = DictionaryEntryFactory(site=self.site)
-        phrase_entry = DictionaryEntryFactory(
-            site=self.site, type=TypeOfDictionaryEntry.PHRASE
-        )
-
-        category_word = ParentCategoryFactory(site=self.site)
-        category_phrase = ParentCategoryFactory(site=self.site)
+        (
+            word_entry,
+            phrase_entry,
+            category_word,
+            category_phrase,
+        ) = self.get_categories_with_word_phrase()
         category_both = ParentCategoryFactory(site=self.site)
-
-        category_word.dictionary_entries.add(word_entry)
-        category_phrase.dictionary_entries.add(phrase_entry)
         category_both.dictionary_entries.add(word_entry, phrase_entry)
 
         response = self.client.get(
