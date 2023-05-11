@@ -3,6 +3,7 @@ import json
 import jwt
 import requests
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.plumbing import build_bearer_security_scheme_object
 from rest_framework import authentication, exceptions
@@ -29,7 +30,7 @@ class UserAuthentication(authentication.BaseAuthentication):
         auth = request.META.get("HTTP_AUTHORIZATION", None)
 
         if not auth:
-            return None, None
+            return AnonymousUser(), None
 
         try:
             scheme, token = auth.split()
