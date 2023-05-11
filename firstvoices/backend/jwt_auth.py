@@ -3,7 +3,6 @@ import json
 import jwt
 import requests
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from rest_framework import authentication, exceptions
 
 from backend.models import User
@@ -28,7 +27,7 @@ class UserAuthentication(authentication.BaseAuthentication):
         auth = request.META.get("HTTP_AUTHORIZATION", None)
 
         if not auth:
-            return AnonymousUser, None
+            return None, None
 
         try:
             scheme, token = auth.split()
