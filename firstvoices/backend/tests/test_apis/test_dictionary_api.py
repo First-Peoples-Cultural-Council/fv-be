@@ -440,6 +440,52 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["results"][0]["splitCharsBase"] == []
 
     @pytest.mark.django_db
+    def test_character_lists_ignored_character_edge_case(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        factories.CharacterFactory.create(site=site, title="x-")
+        factories.CharacterFactory.create(site=site, title="y")
+        factories.IgnoredCharacterFactory.create(site=site, title="-")
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="x-y yx-y"
+        )
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="x-y-"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 2
+        assert len(response_data["results"]) == 2
+
+        assert response_data["results"][0]["splitChars"] == [
+            "x-",
+            "y",
+            " ",
+            "y",
+            "x-",
+            "y",
+        ]
+        assert response_data["results"][0]["splitCharsBase"] == [
+            "x-",
+            "y",
+            " ",
+            "y",
+            "x-",
+            "y",
+        ]
+        assert response_data["results"][1]["splitChars"] == []
+        assert response_data["results"][1]["splitCharsBase"] == []
+
+    @pytest.mark.django_db
     def test_word_lists(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
