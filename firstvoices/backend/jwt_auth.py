@@ -87,6 +87,10 @@ class UserAuthentication(authentication.BaseAuthentication):
 
 
 class JWTScheme(OpenApiAuthenticationExtension):
+    """
+    Extension for API documentation generator, to document JWT auth scheme.
+    """
+
     target_class = "backend.jwt_auth.UserAuthentication"
     name = "jwtAuth"
 
