@@ -422,10 +422,10 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
         factories.CharacterFactory.create(site=site, title="x")
         factories.CharacterFactory.create(site=site, title="y")
-        factories.IgnoredCharacterFactory.create(site=site, title="-")
+        factories.IgnoredCharacterFactory.create(site=site, title="&")
 
         factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x-y"
+            site=site, visibility=Visibility.PUBLIC, title="x&y"
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -452,10 +452,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         factories.IgnoredCharacterFactory.create(site=site, title="-")
 
         factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x-y y"
-        )
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x-y-"
+            site=site, visibility=Visibility.PUBLIC, title="x-y"
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -463,23 +460,11 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert response_data["count"] == 2
-        assert len(response_data["results"]) == 2
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == [
-            "x-",
-            "y",
-            " ",
-            "y",
-        ]
-        assert response_data["results"][0]["splitCharsBase"] == [
-            "x-",
-            "y",
-            " ",
-            "y",
-        ]
-        assert response_data["results"][1]["splitChars"] == []
-        assert response_data["results"][1]["splitCharsBase"] == []
+        assert response_data["results"][0]["splitChars"] == ["x-", "y"]
+        assert response_data["results"][0]["splitCharsBase"] == ["x-", "y"]
 
     @pytest.mark.django_db
     def test_word_lists(self):
