@@ -7,10 +7,14 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import logging
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from . import database, jwt
 
@@ -196,3 +200,31 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+
+# Sentry monitoring configuration settings.
+# See docs at https://docs.sentry.io/platforms/python/guides/django/
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # The minimum logging level to capture as breadcrumbs
+    event_level=logging.ERROR,  # The minimum logging level to send as events
+)
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    environment=os.getenv(
+        "SENTRY_ENVIRONMENT"
+    ),  # Sends information to this environment on the dashboard
+    release=os.getenv("SENTRY_RELEASE"),  # Tags information with this release version
+    traces_sample_rate=1.0,  # The percentage of traces to send to sentry (min 0.0, max 1.0)
+    send_default_pii=False,  # Disables the sending of personally identifiable information (see
+    # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
+    request_bodies="never",  # Disables the sending of request bodies
+    include_local_variables=False,  # Disables the sending of local variables in the stack trace
+    integrations=[
+        sentry_logging,
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
+            signals_spans=True,
+            cache_spans=True,
+        ),
+    ],
+)
