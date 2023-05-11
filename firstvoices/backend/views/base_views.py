@@ -17,16 +17,26 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     model permissions are registered using ``rules.contrib.models.RulesModelMixin``.
     """
 
-    # Method to override the list queryset to implement different querysets for list and retrieve respectively
+    def get_queryset(self):
+        """
+        Allows implementing different querysets for list and detail
+        """
+        if self.action == "list":
+            return self.get_list_queryset()
+        else:
+            return self.get_detail_queryset()
+
     def get_list_queryset(self):
-        """
-        Defaults to main queryset.
-        """
-        return self.get_queryset()
+        """Defaults to basic get_queryset behaviour"""
+        return super().get_queryset()
+
+    def get_detail_queryset(self):
+        """Defaults to basic get_queryset behaviour"""
+        return super().get_queryset()
 
     def list(self, request, *args, **kwargs):
         # apply view permissions
-        queryset = utils.filter_by_viewable(request.user, self.get_list_queryset())
+        queryset = utils.filter_by_viewable(request.user, self.get_queryset())
 
         # paginated response
         page = self.paginate_queryset(queryset)
