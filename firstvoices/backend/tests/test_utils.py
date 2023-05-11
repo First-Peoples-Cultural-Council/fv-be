@@ -85,3 +85,9 @@ class TestCharacterUtils:
         assert sorter.word_as_chars("aa") == ["aa"]
         assert sorter.word_as_chars("cch") == ["c", "ch"]
         assert sorter.word_as_chars("aach") == ["aa", "ch"]
+
+    def test_word_as_chars_special_characters(self):
+        sorter = CustomSorter(order=["a", "aa", "c", "ch.", "h", "x-", "y", "-", "."])
+        assert sorter.word_as_chars("x-y") == ["x-", "y"]
+        assert sorter.word_as_chars("cch..") == ["c", "ch.", "."]
+        assert sorter.word_as_chars("c-h") == ["c", "-", "h"]
