@@ -155,7 +155,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the word associated with it
 
-        _, _, category_word, category_phrase = self.get_categories_with_word_phrase()
+        _, _, category_word, _ = self.get_categories_with_word_phrase()
 
         response = self.client.get(
             self.get_list_endpoint(self.site.slug, query_kwargs={"contains": flag})
@@ -174,7 +174,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the phrase associated with it
 
-        _, _, category_word, category_phrase = self.get_categories_with_word_phrase()
+        _, _, _, category_phrase = self.get_categories_with_word_phrase()
 
         # Testing for PHRASE flag
         response = self.client.get(
