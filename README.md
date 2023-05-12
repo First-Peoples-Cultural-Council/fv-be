@@ -66,6 +66,15 @@ ___
         - `partsOfSpeech_initial.json`
       - Other:
         - None
+    11. (Optional) To run ElasticSearch, RabbitMQ and redis, the following command needs to be run from the fv-be folder.
+        `docker-compose up -d` which will run all the mentioned docker services.
+        To run a specific service for some testing purposes, use the following command:
+        `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
+        1. For ElasticSearch, to confirm the service is up and running, visit
+            http://localhost:9200/ and verify the status.
+
+
+
 
 ___
 
