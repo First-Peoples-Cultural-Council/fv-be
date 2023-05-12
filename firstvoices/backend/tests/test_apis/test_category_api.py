@@ -210,16 +210,16 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         assert response.status_code == 200
         assert response_data["count"] == 3
 
-        ids_in_response = [
+        response_ids = [
             str(response_obj["id"]) for response_obj in response_data["results"]
         ]
-        actual_ids = [
+        expected_ids = [
             str(category_word.id),
             str(category_phrase.id),
             str(category_both.id),
         ]
 
-        assert set(actual_ids) == set(ids_in_response)
+        assert set(expected_ids) == set(response_ids)
 
     @pytest.mark.django_db
     def test_only_child_categories_contain_dictionary_entries(self):
@@ -255,17 +255,15 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         response_data = json.loads(response.content)
         assert response.status_code == 200
 
-        result_categories_count = response_data["count"]
-        result_categories_ids = [
-            category["id"] for category in response_data["results"]
-        ]
-        actual_categories_ids = [
+        response_categories_count = response_data["count"]
+        response_ids = [category["id"] for category in response_data["results"]]
+        expected_ids = [
             str(child_category_word.id),
             str(child_category_both.id),
         ]
 
-        assert result_categories_count == 2
-        assert set(actual_categories_ids) == set(result_categories_ids)
+        assert response_categories_count == 2
+        assert set(expected_ids) == set(response_ids)
 
     @pytest.mark.django_db
     def test_both_children_and_parent_categories_contain_dictionary_entries(self):
@@ -304,11 +302,11 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
 
         assert response.status_code == 200
 
-        result_parent_entry = response_data["results"][0]
-        result_child_count = len(result_parent_entry["children"])
-        result_child_ids = [child["id"] for child in result_parent_entry["children"]]
-        actual_child_ids = [str(child_category_word.id), str(child_category_both.id)]
+        response_parent_entry = response_data["results"][0]
+        response_child_category_count = len(response_parent_entry["children"])
+        response_ids = [child["id"] for child in response_parent_entry["children"]]
+        expected_ids = [str(child_category_word.id), str(child_category_both.id)]
 
-        assert result_parent_entry["id"] == str(parent_category.id)
-        assert result_child_count == 2
-        assert set(actual_child_ids) == set(result_child_ids)
+        assert response_parent_entry["id"] == str(parent_category.id)
+        assert response_child_category_count == 2
+        assert set(expected_ids) == set(response_ids)
