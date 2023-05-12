@@ -3,6 +3,7 @@ from django.http import Http404
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
+from backend import permissions
 from backend.models import Site
 from backend.permissions import utils
 
@@ -65,8 +66,10 @@ class SiteContentViewSetMixin:
         if len(site) == 0:
             raise Http404
 
-        allowed_site = utils.filter_by_viewable(self.request.user, site)
-        if len(allowed_site) == 0:
+        # Check if site content is visible. This uses a different permission rule than for viewing the fields on the
+        # Site model itself, which are mainly used in site listings. That's why we're checking is_visible_object
+        # rather than the model's view permission.
+        if permissions.predicates.is_visible_site_object(self.request.user, site[0]):
+            return site
+        else:
             raise PermissionDenied
-
-        return allowed_site
