@@ -43,7 +43,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
 
         character_json = response_data["results"][0]
         assert character_json == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(character0.id), site_slug=site.slug)}",
             "id": str(character0.id),
             "title": "Ch0",
             "sortOrder": 1,
@@ -100,14 +100,14 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         }
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))
+            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)}",
             "id": str(character.id),
             "title": "Ch0",
             "sortOrder": 1,
@@ -143,7 +143,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character0.id))
+            self.get_detail_endpoint(key=str(character0.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -184,7 +184,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))
+            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -208,7 +208,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         character = factories.CharacterFactory.create()
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug="invalid", key=character.id)
+            self.get_detail_endpoint(key=character.id, site_slug="invalid")
         )
 
         assert response.status_code == 404
@@ -224,7 +224,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))
+            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 403
@@ -241,14 +241,14 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))
+            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 403
 
         factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(character.id))
+            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200

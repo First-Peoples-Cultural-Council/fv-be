@@ -38,7 +38,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
 
         ignored_character_json = response_data["results"][0]
         assert ignored_character_json == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(ignored_character0.id), site_slug=site.slug)}",
             "id": str(ignored_character0.id),
             "title": "/",
         }
@@ -72,7 +72,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))
+            self.get_detail_endpoint(key=str(ignored_character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 403
@@ -85,7 +85,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
         ignored = factories.IgnoredCharacterFactory.create(title="/", site=site)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug="invalid", key=ignored.id)
+            self.get_detail_endpoint(key=ignored.id, site_slug="invalid")
         )
 
         assert response.status_code == 404
@@ -101,7 +101,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
 
         response = self.client.get(
             self.get_detail_endpoint(
-                site_slug=site.slug, key=str(ignored_character0.id)
+                key=str(ignored_character0.id), site_slug=site.slug
             )
         )
 
@@ -109,7 +109,7 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
 
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character0.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(ignored_character0.id), site_slug=site.slug)}",
             "id": str(ignored_character0.id),
             "title": "/",
         }
@@ -124,20 +124,20 @@ class TestIgnoredCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))
+            self.get_detail_endpoint(key=str(ignored_character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 403
 
         factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))
+            self.get_detail_endpoint(key=str(ignored_character.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(ignored_character.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(ignored_character.id), site_slug=site.slug)}",
             "id": str(ignored_character.id),
             "title": "/",
         }

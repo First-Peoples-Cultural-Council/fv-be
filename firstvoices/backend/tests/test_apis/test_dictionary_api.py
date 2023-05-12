@@ -19,7 +19,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
     def get_expected_response(self, entry, site):
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)}",
             "id": str(entry.id),
             "title": entry.title,
             "type": "WORD",
@@ -107,7 +107,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -142,7 +142,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         model = field["factory"].create(dictionary_entry=entry, text=text)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -166,7 +166,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         model = factories.TranslationFactory.create(dictionary_entry=entry, text=text)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -199,7 +199,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -237,7 +237,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -268,7 +268,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -286,7 +286,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
         )
 
         assert response.status_code == 403
@@ -299,7 +299,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         entry = factories.DictionaryEntryFactory.create(visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug="fake-site", key=str(entry.id))
+            self.get_detail_endpoint(key=str(entry.id), site_slug="fake-site")
         )
 
         assert response.status_code == 404

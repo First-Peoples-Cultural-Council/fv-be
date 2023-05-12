@@ -20,10 +20,10 @@ class BaseApiTest:
 
     client = None
 
-    def get_list_endpoint(self):
+    def get_list_endpoint(self, **kwargs):
         return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
 
-    def get_detail_endpoint(self, key):
+    def get_detail_endpoint(self, key, **kwargs):
         return reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
 
     def setup_method(self):
@@ -50,7 +50,7 @@ class BaseSiteContentApiTest:
             return f"{url}?{urlencode(query_kwargs)}"
         return url
 
-    def get_detail_endpoint(self, site_slug, key):
+    def get_detail_endpoint(self, key, site_slug):
         return reverse(
             self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[site_slug, key]
         )
@@ -101,7 +101,7 @@ class BaseSiteContentApiTest:
         self.client.force_authenticate(user=user)
 
         response = self.client.get(
-            self.get_detail_endpoint(site_slug=site.slug, key="fake-key")
+            self.get_detail_endpoint(key="fake-key", site_slug=site.slug)
         )
 
         assert response.status_code == 404
