@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from backend.models import dictionary
 from backend.models.constants import Role, Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 
 from .base_api_test import BaseSiteControlledContentApiTest
@@ -483,7 +483,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="abc bca caba",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -516,7 +516,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xyY yYx xYy",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -547,7 +547,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="abc",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -578,7 +578,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xyY yYx xYy Hello",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -619,7 +619,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xy-y -y-x x-y-",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))

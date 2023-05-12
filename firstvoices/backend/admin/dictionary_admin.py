@@ -98,6 +98,7 @@ class DictionaryEntryAdmin(HiddenBaseAdmin):
         DictionaryEntryLinkInline,
         DictionaryEntryCharacterInline,
     ]
+    list_display = ("title",) + HiddenBaseAdmin.list_display
     readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
 
 

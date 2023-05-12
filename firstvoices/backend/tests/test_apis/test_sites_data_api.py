@@ -6,11 +6,11 @@ from django.utils import timezone
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
+from backend.models import PartOfSpeech
+from backend.models.constants import Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-
-from ...models import DictionaryEntry, PartOfSpeech
-from ...models.constants import Visibility
-from ..factories import (
+from backend.tests.factories import (
     AcknowledgementFactory,
     CategoryFactory,
     CharacterFactory,
@@ -117,13 +117,13 @@ class TestSitesDataEndpoint:
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             title="title_one",
         )
         entry_two = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
             title="title_two",
         )
 
@@ -207,7 +207,7 @@ class TestSitesDataEndpoint:
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
         )
 
         translation = TranslationFactory.create(
@@ -230,13 +230,13 @@ class TestSitesDataEndpoint:
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
         )
 
         entry_two = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
         )
 
         category1 = CategoryFactory(site=site, title="test category A")
@@ -272,7 +272,7 @@ class TestSitesDataEndpoint:
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
         )
 
         acknowledgement = AcknowledgementFactory.create(
@@ -320,7 +320,7 @@ class TestSitesDataEndpoint:
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             title="Abc",
         )
 

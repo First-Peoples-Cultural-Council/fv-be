@@ -5,7 +5,11 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
-from backend.models.dictionary import DictionaryEntry, WordOfTheDay
+from backend.models.dictionary import (
+    DictionaryEntry,
+    TypeOfDictionaryEntry,
+    WordOfTheDay,
+)
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -46,7 +50,7 @@ class WordOfTheDayView(
         )
         dictionary_entry_queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).exclude(id__in=list(words_used))
         if dictionary_entry_queryset.count() > 0:
@@ -92,7 +96,7 @@ class WordOfTheDayView(
         # Returns a random word and adds a word of the day entry for it
         primary_keys_list = DictionaryEntry.objects.filter(
             site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).values_list("id", flat=True)
         if len(primary_keys_list) == 0:
