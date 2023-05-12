@@ -8,9 +8,7 @@ from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
 
 
 class CustomOrderRecalculatePreviewView(APIView):
-    # TODO: Add permission classes, superadmin only
-    permission_classes = [permissions.AllowAny]
-    authentication_classes = []
+    permission_classes = [permissions.IsAdminUser]
 
     @staticmethod
     def get(request, site_slug: str):
