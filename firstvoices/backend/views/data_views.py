@@ -1,9 +1,9 @@
+from django.db.models import Prefetch
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import mixins, serializers, viewsets
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.dictionary import DictionaryEntry
-from backend.permissions import utils
 from backend.serializers.site_data_serializers import SiteDataSerializer
 from backend.views.base_views import SiteContentViewSetMixin
 
@@ -46,10 +46,13 @@ class SitesDataViewSet(
 
     def get_queryset(self):
         sites = (
-            utils.filter_by_viewable(self.request.user, self.get_validated_site())
+            self.get_validated_site()
             .select_related("language")
             .prefetch_related(
-                "dictionaryentry_set",
+                Prefetch(
+                    "dictionaryentry_set",
+                    queryset=DictionaryEntry.objects.visible(self.request.user),
+                ),
                 "character_set",
                 "dictionaryentry_set__translation_set__part_of_speech",
                 "alphabet_set",

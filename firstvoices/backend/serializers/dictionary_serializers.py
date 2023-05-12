@@ -79,11 +79,16 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         ignored_characters = alphabet.ignorable_characters.values_list(
             "title", flat=True
         )
-        has_ignored_char = any(char in ignored_characters for char in entry.title)
-        if "⚑" in entry.custom_order or has_ignored_char:
+
+        if "⚑" in entry.custom_order:
             return []
         else:
-            return alphabet.get_character_list(entry.title)
+            char_list = alphabet.get_character_list(entry.title)
+            has_ignored_char = set(char_list).intersection(set(ignored_characters))
+            if has_ignored_char:
+                return []
+            else:
+                return char_list
 
     @staticmethod
     def get_split_chars_base(entry):
@@ -91,15 +96,17 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         ignored_characters = alphabet.ignorable_characters.values_list(
             "title", flat=True
         )
-        has_ignored_char = any(char in ignored_characters for char in entry.title)
-        if "⚑" in entry.custom_order or has_ignored_char:
+        if "⚑" in entry.custom_order:
             return []
         else:
-            # split, then convert title to base characters
+            # split, check for ignored, then convert title to base characters
             char_list = alphabet.get_character_list(entry.title)
-            base_chars = [alphabet.get_base_form(c) for c in char_list]
-
-            return base_chars
+            has_ignored_char = set(char_list).intersection(set(ignored_characters))
+            if has_ignored_char:
+                return []
+            else:
+                base_chars = [alphabet.get_base_form(c) for c in char_list]
+                return base_chars
 
     @staticmethod
     def get_split_words(entry):

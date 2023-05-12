@@ -38,12 +38,13 @@ ___
    - `pre-commit install`
 6. Create a database in postgres, and note the name
    - `createdb --username=postgres <db name>`
-7. Configure environment variables. Required variables are:
+7. Configure required environment variables:
    - `DB_DATABASE`: `<db name>` when you created the database
    - `DB_USERNAME`: the database admin username (usually `postgres`)
    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
    - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
+1. Configure optional environment variables (used for the reset-local-database.sh script):
    - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
    - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
    - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
