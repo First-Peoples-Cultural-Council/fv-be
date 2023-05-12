@@ -74,9 +74,8 @@ class WordOfTheDayView(
             .values_list("dictionary_entry__id", flat=True)
         )
         random_old_word = (
-            WordOfTheDay.objects.exclude(
-                dictionary_entry__id__in=words_used_since_given_date
-            )
+            WordOfTheDay.objects.filter(site__slug=site_slug)
+            .exclude(dictionary_entry__id__in=words_used_since_given_date)
             .order_by("?")
             .first()
         )
