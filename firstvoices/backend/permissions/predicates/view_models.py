@@ -12,7 +12,7 @@ can_view_site_model = Predicate(
         base.is_public_obj
         | base.is_members_obj
         | base.is_at_least_staff_admin
-        | base.has_team_access_to_obj
+        | base.has_team_access
     ),
     name="can_view_site_model",
 )

@@ -67,11 +67,15 @@ class BaseSiteContentApiTest:
 
         assert response.status_code == 404
 
+    @pytest.mark.parametrize(
+        "visibility",
+        [Visibility.MEMBERS, Visibility.TEAM],
+    )
     @pytest.mark.django_db
-    def test_list_403_site_not_visible(self):
+    def test_list_403_site_not_visible(self, visibility):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        site = factories.SiteFactory.create(visibility=visibility)
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 

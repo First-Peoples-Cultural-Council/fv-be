@@ -89,8 +89,10 @@ has_public_access_to_obj = predicate(
 has_member_access_to_obj = (
     is_at_least_member & ~is_team_obj & ~has_team_site
 )  # noqa E1130
-has_team_access_to_obj = is_at_least_assistant
+has_team_access = is_at_least_assistant
 
 has_public_access_to_site = has_public_site  # just a convenient alias
 has_member_access_to_site = is_at_least_member & ~has_team_site  # noqa E1130
-has_team_access_to_site = is_at_least_assistant
+
+has_public_access_to_site_obj = predicate(is_public_obj)
+has_member_access_to_site_obj = is_at_least_member & ~is_team_obj  # noqa E1130
