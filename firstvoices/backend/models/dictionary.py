@@ -345,3 +345,6 @@ class WordOfTheDay(BaseSiteContentModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+
+    def __str__(self):
+        return f"{self.dictionary_entry} - {self.date}"

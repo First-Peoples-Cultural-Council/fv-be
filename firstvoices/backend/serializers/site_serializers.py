@@ -46,6 +46,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
     ignored_characters = serializers.SerializerMethodField()
     dictionary = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
+    word_of_the_day = serializers.SerializerMethodField()
 
     def get_menu(self, site):
         return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
@@ -66,6 +67,9 @@ class SiteDetailSerializer(SiteSummarySerializer):
     def get_categories(self, site):
         return self.get_site_content_link(site, "api:category-list")
 
+    def get_word_of_the_day(self, site):
+        return self.get_site_content_link(site, "api:word-of-the-day-list")
+
     def get_site_content_link(self, site, view_name):
         return reverse(
             view_name,
@@ -81,4 +85,5 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "ignored_characters",
             "dictionary",
             "categories",
+            "word_of_the_day",
         )

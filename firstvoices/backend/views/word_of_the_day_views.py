@@ -61,20 +61,26 @@ class WordOfTheDayView(
 
     @staticmethod
     def get_wotd_before_date(site_slug, today, given_date):
-        # returns words which have been assigned word of the day before the given date
-        # also adds a word of the day entry for it
-        oldest_word = (
+        # filters words which have been used since the given date, then picks a random word from the older words
+        words_used_since_given_date = (
             WordOfTheDay.objects.filter(site__slug=site_slug)
-            .order_by("-date")
-            .distinct()
-            .filter(date__lte=given_date)
-            .last()
+            .filter(date__gte=given_date)
+            .order_by("dictionary_entry__id")
+            .distinct("dictionary_entry__id")
+            .values_list("dictionary_entry__id", flat=True)
         )
-        if oldest_word:
+        random_old_word = (
+            WordOfTheDay.objects.exclude(
+                dictionary_entry__id__in=words_used_since_given_date
+            )
+            .order_by("?")
+            .first()
+        )
+        if random_old_word:
             wotd_entry = WordOfTheDay(
                 date=today,
-                dictionary_entry=oldest_word.dictionary_entry,
-                site=oldest_word.dictionary_entry.site,
+                dictionary_entry=random_old_word.dictionary_entry,
+                site=random_old_word.dictionary_entry.site,
             )
             wotd_entry.save()
             return WordOfTheDay.objects.filter(id=wotd_entry.id)

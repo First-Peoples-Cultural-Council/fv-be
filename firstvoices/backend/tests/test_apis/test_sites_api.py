@@ -120,6 +120,7 @@ class TestSitesEndpoints(BaseApiTest):
             "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories/",
             "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
             "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored-characters/",
+            "wordOfTheDay": f"http://testserver/api/1.0/sites/{site.slug}/word-of-the-day/",
         }
 
     @pytest.mark.django_db
