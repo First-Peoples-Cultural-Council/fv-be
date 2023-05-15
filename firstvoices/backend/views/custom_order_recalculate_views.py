@@ -1,5 +1,5 @@
 from celery.result import AsyncResult
-from rest_framework import permissions
+from django.core.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -8,8 +8,12 @@ from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
 
 
 class CustomOrderRecalculatePreviewView(APIView):
-    permission_classes = [permissions.IsAdminUser]
     task_id = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.has_perm("has_superadmin_access"):
+            raise PermissionDenied()
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, site_slug: str):
         result = (
