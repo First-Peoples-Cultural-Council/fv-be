@@ -70,7 +70,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         child_category = ChildCategoryFactory.create(
             site=self.site, parent=parent_category
         )
-        detail_endpoint = self.get_detail_endpoint(self.site.slug, parent_category.id)
+        detail_endpoint = self.get_detail_endpoint(parent_category.id, self.site.slug)
         response = self.client.get(detail_endpoint)
 
         assert response.status_code == 200
@@ -96,7 +96,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
             site=self.site, parent=parent_category
         )
 
-        detail_endpoint = self.get_detail_endpoint(self.site.slug, child_category.id)
+        detail_endpoint = self.get_detail_endpoint(child_category.id, self.site.slug)
 
         response = self.client.get(detail_endpoint)
         assert response.status_code == 200
@@ -111,7 +111,7 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     def test_detail_404(self):
-        wrong_endpoint = self.get_detail_endpoint(self.site.slug, "54321")
+        wrong_endpoint = self.get_detail_endpoint("54321", self.site.slug)
         response = self.client.get(wrong_endpoint)
         assert response.status_code == 404
 
