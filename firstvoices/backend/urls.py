@@ -36,7 +36,7 @@ sites_router.register(r"data", SitesDataViewSet, basename="data")
 app_name = "api"
 
 urlpatterns = [
-    path("debug/elastic-example", ExampleElasticSearch.as_view()),
+    path("debug/elastic", ExampleElasticSearch.as_view()),
     path(
         "sites/<str:site_slug>/dictionary-cleanup/preview",
         CustomOrderRecalculatePreviewView.as_view(),

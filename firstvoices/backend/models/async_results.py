@@ -8,10 +8,6 @@ from backend.permissions import predicates
 class CustomOrderRecalculationPreviewResult(BaseSiteContentModel):
     """Model to store custom order recalculation preview results."""
 
-    # Fields
-    date = models.DateTimeField(auto_now_add=True)
-    result = models.JSONField()
-
     class Meta:
         verbose_name = _("custom order recalculation preview result")
         verbose_name_plural = _("custom order recalculation preview results")
@@ -21,6 +17,9 @@ class CustomOrderRecalculationPreviewResult(BaseSiteContentModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+
+    date = models.DateTimeField(auto_now_add=True)
+    result = models.JSONField()
 
     def __str__(self):
         return self.site.title + " - " + str(self.date)
