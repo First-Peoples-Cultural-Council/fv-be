@@ -2,13 +2,13 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import Visibility
 from backend.tests import factories
 
-from .base_api_test import BaseSiteControlledContentApiTest
+from .base_api_test import BaseUncontrolledSiteContentApiTest
 
 
-class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
+class TestCharactersEndpoints(BaseUncontrolledSiteContentApiTest):
     """
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
@@ -17,103 +17,20 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
     API_DETAIL_VIEW = "api:character-detail"
     CHARACTER_NOTE = "Test note"
 
-    @pytest.mark.django_db
-    def test_list_with_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        character0 = factories.CharacterFactory.create(
-            title="Ch0",
-            site=site,
-            sort_order=1,
-            approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
-        )
-        factories.CharacterFactory.create(
-            title="Ch1", site=site, sort_order=2, approximate_form="Ch1", notes=""
+    def create_minimal_instance(self, site, visibility):
+        return factories.CharacterFactory.create(
+            site=site, note="a note", approximate_form="approx"
         )
 
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 2
-        assert response_data["count"] == 2
-
-        character_json = response_data["results"][0]
-        assert character_json == {
-            "url": f"http://testserver{self.get_detail_endpoint(key=str(character0.id), site_slug=site.slug)}",
-            "id": str(character0.id),
-            "title": "Ch0",
-            "sortOrder": 1,
-            "approximateForm": "Ch0",
-            "notes": self.CHARACTER_NOTE,
+    def get_expected_response(self, instance, site):
+        return {
+            "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
+            "id": str(instance.id),
+            "title": instance.title,
+            "sortOrder": instance.sort_order,
+            "approximateForm": instance.approximate_form,
+            "note": instance.note,
             "variants": [],
-            "relatedEntries": [],
-        }
-
-    # Test that users can only access characters if they have the correct role in a site
-    @pytest.mark.django_db
-    def test_list_permissions(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.TEAM)
-        factories.CharacterFactory.create(
-            title="Ch0",
-            site=site,
-            sort_order=1,
-            approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 403
-
-        factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 1
-        assert response_data["count"] == 1
-
-    @pytest.mark.django_db
-    def test_detail(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        character = factories.CharacterFactory.create(
-            title="Ch0",
-            site=site,
-            sort_order=1,
-            approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
-        )
-        factories.CharacterVariantFactory.create(
-            title="Ch0v0", base_character=character
-        )
-
-        variant_json = {
-            "title": "Ch0v0",
-        }
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data == {
-            "url": f"http://testserver{self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)}",
-            "id": str(character.id),
-            "title": "Ch0",
-            "sortOrder": 1,
-            "approximateForm": "Ch0",
-            "notes": self.CHARACTER_NOTE,
-            "variants": [variant_json],
             "relatedEntries": [],
         }
 
@@ -128,11 +45,11 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
+            note=self.CHARACTER_NOTE,
         )
 
         character1 = factories.CharacterFactory.create(
-            title="Ch1", site=site, sort_order=2, approximate_form="Ch1", notes=""
+            title="Ch1", site=site, sort_order=2, approximate_form="Ch1", note=""
         )
 
         variant = factories.CharacterVariantFactory.create(
@@ -143,7 +60,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(character0.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=character0.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -168,7 +85,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
             site=site,
             sort_order=1,
             approximate_form="Ch0",
-            notes=self.CHARACTER_NOTE,
+            note=self.CHARACTER_NOTE,
         )
 
         entry1 = factories.DictionaryEntryFactory.create(
@@ -184,7 +101,7 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=character.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -199,57 +116,3 @@ class TestCharactersEndpoints(BaseSiteControlledContentApiTest):
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry1.id)}/",
             }
         ]
-
-    @pytest.mark.django_db
-    def test_detail_404_site_not_found(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        factories.SiteFactory(visibility=Visibility.PUBLIC)
-        character = factories.CharacterFactory.create()
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=character.id, site_slug="invalid")
-        )
-
-        assert response.status_code == 404
-
-    @pytest.mark.django_db
-    def test_detail_403(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.TEAM)
-        character = factories.CharacterFactory.create(title="Ch0", site=site)
-        factories.CharacterVariantFactory.create(
-            title="Ch0v0", base_character=character
-        )
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 403
-
-    # Test that users can only access character detail if they have the correct role in a site
-    @pytest.mark.django_db
-    def test_detail_permissions(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory(visibility=Visibility.TEAM)
-        character = factories.CharacterFactory.create(title="Ch0", site=site)
-        factories.CharacterVariantFactory.create(
-            title="Ch0v0", base_character=character
-        )
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 403
-
-        factories.MembershipFactory(user=user, site=site, role=Role.LANGUAGE_ADMIN)
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(character.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        assert json.loads(response.content)["id"] == str(character.id)

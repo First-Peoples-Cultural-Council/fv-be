@@ -6,10 +6,10 @@ from backend.models.constants import Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 
-from .base_api_test import BaseSiteControlledContentApiTest
+from .base_api_test import BaseControlledSiteContentApiTest
 
 
-class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
+class TestDictionaryEndpoint(BaseControlledSiteContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -17,9 +17,12 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
     API_LIST_VIEW = "api:dictionaryentry-list"
     API_DETAIL_VIEW = "api:dictionaryentry-detail"
 
+    def create_minimal_instance(self, site, visibility):
+        return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+
     def get_expected_response(self, entry, site):
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=entry.id, site_slug=site.slug)}",
             "id": str(entry.id),
             "title": entry.title,
             "type": "WORD",
@@ -51,30 +54,6 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         }
 
     @pytest.mark.django_db
-    def test_list_full(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.MEMBERS
-        )
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.TEAM)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0] == self.get_expected_response(entry, site)
-
-    @pytest.mark.django_db
     def test_list_permissions(self):
         # create some visible words and some invisible words
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
@@ -94,25 +73,6 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
         assert response_data["count"] == 1, "did not filter out blocked sites"
         assert len(response_data["results"]) == 1, "did not include available site"
-
-    @pytest.mark.django_db
-    def test_detail(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data == self.get_expected_response(entry, site)
 
     @pytest.mark.parametrize(
         "field",
@@ -142,7 +102,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         model = field["factory"].create(dictionary_entry=entry, text=text)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -166,7 +126,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         model = factories.TranslationFactory.create(dictionary_entry=entry, text=text)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -199,7 +159,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -237,7 +197,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -268,41 +228,12 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["id"] == str(entry.id)
-
-    @pytest.mark.django_db
-    def test_detail_403_entry_not_visible(self):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(
-            visibility=Visibility.TEAM, site=site
-        )
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug=site.slug)
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_detail_404_unknown_site(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=str(entry.id), site_slug="fake-site")
-        )
-
-        assert response.status_code == 404
 
     @pytest.mark.django_db
     def test_character_lists_generation(self):
