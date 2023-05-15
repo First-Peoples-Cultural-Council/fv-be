@@ -20,10 +20,10 @@ class BaseApiTest:
 
     client = None
 
-    def get_list_endpoint(self, **kwargs):
+    def get_list_endpoint(self):
         return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
 
-    def get_detail_endpoint(self, key, **kwargs):
+    def get_detail_endpoint(self, key):
         return reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
 
     def setup_method(self):
@@ -63,7 +63,7 @@ class BaseSiteContentApiTest:
         self.client.force_authenticate(user=user)
         site = factories.SiteFactory.create(visibility=site_visibility)
 
-        return site, user
+        return site
 
     def create_minimal_instance(self, site, visibility):
         raise NotImplementedError()
@@ -95,14 +95,14 @@ class ListApiTestMixin:
     )
     @pytest.mark.django_db
     def test_list_403_site_not_visible(self, visibility):
-        site, user = self.create_site_with_non_member(visibility)
+        site = self.create_site_with_non_member(visibility)
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 403
 
     @pytest.mark.django_db
     def test_list_empty(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
@@ -139,7 +139,7 @@ class ListApiTestMixin:
 
     @pytest.mark.django_db
     def test_list_minimal(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
@@ -166,7 +166,7 @@ class DetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_404_unknown_key(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
         response = self.client.get(
             self.get_detail_endpoint(key="fake-key", site_slug=site.slug)
         )
@@ -175,7 +175,7 @@ class DetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_404_site_not_found(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -186,7 +186,7 @@ class DetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_403_site_not_visible(self):
-        site, user = self.create_site_with_non_member(Visibility.MEMBERS)
+        site = self.create_site_with_non_member(Visibility.MEMBERS)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
@@ -223,8 +223,6 @@ class DetailApiTestMixin:
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
         response = self.client.get(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
@@ -233,7 +231,7 @@ class DetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_minimal(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -249,7 +247,7 @@ class DetailApiTestMixin:
 class ListPermissionsApiTestMixin:
     @pytest.mark.django_db
     def test_list_permissions(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         self.create_minimal_instance(site=site, visibility=Visibility.MEMBERS)
@@ -276,7 +274,7 @@ class DetailPermissionsApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_403_entry_not_visible(self):
-        site, user = self.create_site_with_non_member(Visibility.PUBLIC)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
