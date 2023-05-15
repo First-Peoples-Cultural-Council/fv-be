@@ -148,15 +148,16 @@ class Pronunciation(BaseDictionaryContentModel):
         return self.text
 
 
+class TypeOfDictionaryEntry(models.TextChoices):
+    # Choices for Type
+    WORD = "WORD", _("Word")
+    PHRASE = "PHRASE", _("Phrase")
+
+
 class DictionaryEntry(BaseControlledSiteContentModel):
     """
     Model for dictionary entries
     """
-
-    class TypeOfDictionaryEntry(models.TextChoices):
-        # Choices for Type
-        WORD = "WORD", _("Word")
-        PHRASE = "PHRASE", _("Phrase")
 
     # from dc:title, relatively more max_length due to phrases
     title = models.CharField(max_length=TITLE_MAX_LENGTH)
@@ -345,3 +346,6 @@ class WordOfTheDay(BaseSiteContentModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+
+    def __str__(self):
+        return f"{self.dictionary_entry} - {self.date}"

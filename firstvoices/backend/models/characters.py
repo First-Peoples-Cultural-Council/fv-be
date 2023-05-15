@@ -311,12 +311,13 @@ class Alphabet(BaseSiteContentModel):
         """
         Returns a sorter object containing both base characters and character variants
         to properly split text into characters using the MTD splitter.
+        Ignored characters are added to the order list to ensure they are not removed by the splitter.
         """
 
         return CustomSorter(
             order=[char.title for char in self.base_characters]
-            + [char.title for char in self.variant_characters],
-            ignorable=[char.title for char in self.ignorable_characters],
+            + [char.title for char in self.variant_characters]
+            + [char.title for char in self.ignorable_characters]
         )
 
     def __str__(self):

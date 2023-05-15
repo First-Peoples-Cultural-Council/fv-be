@@ -79,8 +79,8 @@ REST_FRAMEWORK = {
         "backend.jwt_auth.UserAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "UNAUTHENTICATED_USER": None,
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
     "JSON_UNDERSCOREIZE": {
@@ -180,7 +180,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "FirstVoices Backend API",
     "DESCRIPTION": description,
     "VERSION": "2.0.0",
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Fixtures directory for initial data

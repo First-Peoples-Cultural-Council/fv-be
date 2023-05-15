@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from backend.models import dictionary
 from backend.models.constants import Role, Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 
 from .base_api_test import BaseSiteControlledContentApiTest
@@ -422,6 +422,33 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
 
         factories.CharacterFactory.create(site=site, title="x")
         factories.CharacterFactory.create(site=site, title="y")
+        factories.IgnoredCharacterFactory.create(site=site, title="&")
+
+        factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, title="x&y"
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0]["splitChars"] == []
+        assert response_data["results"][0]["splitCharsBase"] == []
+
+    @pytest.mark.django_db
+    def test_character_lists_ignored_character_edge_case(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        factories.CharacterFactory.create(site=site, title="x-")
+        factories.CharacterFactory.create(site=site, title="y")
         factories.IgnoredCharacterFactory.create(site=site, title="-")
 
         factories.DictionaryEntryFactory.create(
@@ -436,8 +463,8 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == []
-        assert response_data["results"][0]["splitCharsBase"] == []
+        assert response_data["results"][0]["splitChars"] == ["x-", "y"]
+        assert response_data["results"][0]["splitCharsBase"] == ["x-", "y"]
 
     @pytest.mark.django_db
     def test_word_lists(self):
@@ -456,7 +483,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="abc bca caba",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -489,7 +516,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xyY yYx xYy",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -520,7 +547,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="abc",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -551,7 +578,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xyY yYx xYy Hello",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -592,7 +619,7 @@ class TestDictionaryEndpoint(BaseSiteControlledContentApiTest):
             site=site,
             visibility=Visibility.PUBLIC,
             title="xy-y -y-x x-y-",
-            type=dictionary.DictionaryEntry.TypeOfDictionaryEntry.PHRASE,
+            type=TypeOfDictionaryEntry.PHRASE,
         )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))

@@ -3,6 +3,9 @@ import json
 import jwt
 import requests
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
+from drf_spectacular.plumbing import build_bearer_security_scheme_object
 from rest_framework import authentication, exceptions
 
 from backend.models import User
@@ -27,7 +30,7 @@ class UserAuthentication(authentication.BaseAuthentication):
         auth = request.META.get("HTTP_AUTHORIZATION", None)
 
         if not auth:
-            raise exceptions.AuthenticationFailed("Authorization header required")
+            return AnonymousUser(), None
 
         try:
             scheme, token = auth.split()
@@ -59,7 +62,7 @@ class UserAuthentication(authentication.BaseAuthentication):
                 audience=settings.JWT["AUDIENCE"],
                 options={"verify_exp": True},
             )
-        except (jwt.InvalidTokenError, jwt.ExpiredSignature, jwt.DecodeError) as exc:
+        except jwt.InvalidTokenError as exc:
             token_validation_errors.append(exc)
             raise Exception(exc)
 
@@ -82,3 +85,17 @@ class UserAuthentication(authentication.BaseAuthentication):
                 email = userinfo_request.json()["email"]
                 user = User.objects.create(id=user_token["sub"], email=email)
                 return user, None
+
+
+class JWTScheme(OpenApiAuthenticationExtension):
+    """
+    Extension for API documentation generator, to document JWT auth scheme.
+    """
+
+    target_class = "backend.jwt_auth.UserAuthentication"
+    name = "jwtAuth"
+
+    def get_security_definition(self, auto_schema):
+        return build_bearer_security_scheme_object(
+            header_name="AUTHORIZATION", token_prefix="Bearer", bearer_format="JWT"
+        )

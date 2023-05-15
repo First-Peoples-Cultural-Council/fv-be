@@ -5,7 +5,11 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
-from backend.models.dictionary import DictionaryEntry, WordOfTheDay
+from backend.models.dictionary import (
+    DictionaryEntry,
+    TypeOfDictionaryEntry,
+    WordOfTheDay,
+)
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -46,7 +50,7 @@ class WordOfTheDayView(
         )
         dictionary_entry_queryset = DictionaryEntry.objects.filter(
             site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).exclude(id__in=list(words_used))
         if dictionary_entry_queryset.count() > 0:
@@ -61,20 +65,25 @@ class WordOfTheDayView(
 
     @staticmethod
     def get_wotd_before_date(site_slug, today, given_date):
-        # returns words which have been assigned word of the day before the given date
-        # also adds a word of the day entry for it
-        oldest_word = (
+        # filters words which have been used since the given date, then picks a random word from the older words
+        words_used_since_given_date = (
             WordOfTheDay.objects.filter(site__slug=site_slug)
-            .order_by("-date")
-            .distinct()
-            .filter(date__lte=given_date)
-            .last()
+            .filter(date__gte=given_date)
+            .order_by("dictionary_entry__id")
+            .distinct("dictionary_entry__id")
+            .values_list("dictionary_entry__id", flat=True)
         )
-        if oldest_word:
+        random_old_word = (
+            WordOfTheDay.objects.filter(site__slug=site_slug)
+            .exclude(dictionary_entry__id__in=words_used_since_given_date)
+            .order_by("?")
+            .first()
+        )
+        if random_old_word:
             wotd_entry = WordOfTheDay(
                 date=today,
-                dictionary_entry=oldest_word.dictionary_entry,
-                site=oldest_word.dictionary_entry.site,
+                dictionary_entry=random_old_word.dictionary_entry,
+                site=random_old_word.dictionary_entry.site,
             )
             wotd_entry.save()
             return WordOfTheDay.objects.filter(id=wotd_entry.id)
@@ -86,7 +95,7 @@ class WordOfTheDayView(
         # Returns a random word and adds a word of the day entry for it
         primary_keys_list = DictionaryEntry.objects.filter(
             site__slug=site_slug,
-            type=DictionaryEntry.TypeOfDictionaryEntry.WORD,
+            type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
         ).values_list("id", flat=True)
         if len(primary_keys_list) == 0:

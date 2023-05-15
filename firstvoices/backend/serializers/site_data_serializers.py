@@ -3,16 +3,16 @@ from datetime import datetime
 from rest_framework import serializers
 
 from backend.models import Category, Site
-from backend.models.dictionary import DictionaryEntry
+from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
 
 def dict_entry_type_mtd_conversion(type):
     match type:
-        case DictionaryEntry.TypeOfDictionaryEntry.WORD:
+        case TypeOfDictionaryEntry.WORD:
             return "words"
-        case DictionaryEntry.TypeOfDictionaryEntry.PHRASE:
+        case TypeOfDictionaryEntry.PHRASE:
             return "phrases"
         case _:
             return None

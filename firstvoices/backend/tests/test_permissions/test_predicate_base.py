@@ -278,7 +278,7 @@ class TestBaseObjectAccessPredicates:
         obj = ControlledSiteContentFactory.create(site=site, visibility=obj_visibility)
         team_user = UserFactory.create()
         MembershipFactory(site=site, user=team_user, role=role)
-        assert base.has_team_access_to_obj(team_user, obj)
+        assert base.has_team_access(team_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_wrong_role(self):
@@ -286,21 +286,21 @@ class TestBaseObjectAccessPredicates:
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         member_user = UserFactory.create()
         MembershipFactory(site=site, user=member_user, role=Role.MEMBER)
-        assert not base.has_team_access_to_obj(member_user, obj)
+        assert not base.has_team_access(member_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_guest_user(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         guest_user = AnonymousUserFactory.build()
-        assert not base.has_team_access_to_obj(guest_user, obj)
+        assert not base.has_team_access(guest_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_non_member(self):
         site = SiteFactory.create(visibility=Visibility.PUBLIC)
         obj = ControlledSiteContentFactory.create(site=site, visibility=Visibility.TEAM)
         non_member_user = UserFactory.create()
-        assert not base.has_team_access_to_obj(non_member_user, obj)
+        assert not base.has_team_access(non_member_user, obj)
 
     @pytest.mark.django_db
     def test_team_is_blocked_from_team_content_on_other_sites(self):
@@ -372,7 +372,7 @@ class TestBaseSiteAccessPredicates:
         obj = UncontrolledSiteContentFactory.create(site=site)
         team_user = UserFactory.create()
         MembershipFactory(site=site, user=team_user, role=role)
-        assert base.has_team_access_to_site(team_user, obj)
+        assert base.has_team_access(team_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_wrong_role(self):
@@ -380,21 +380,21 @@ class TestBaseSiteAccessPredicates:
         obj = UncontrolledSiteContentFactory.create(site=site)
         member_user = UserFactory.create()
         MembershipFactory(site=site, user=member_user, role=Role.MEMBER)
-        assert not base.has_team_access_to_site(member_user, obj)
+        assert not base.has_team_access(member_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_guest_user(self):
         site = SiteFactory.create(visibility=Visibility.TEAM)
         obj = UncontrolledSiteContentFactory.create(site=site)
         guest_user = AnonymousUserFactory.build()
-        assert not base.has_team_access_to_site(guest_user, obj)
+        assert not base.has_team_access(guest_user, obj)
 
     @pytest.mark.django_db
     def test_has_team_access_non_member(self):
         site = SiteFactory.create(visibility=Visibility.TEAM)
         obj = UncontrolledSiteContentFactory.create(site=site)
         non_member_user = UserFactory.create()
-        assert not base.has_team_access_to_site(non_member_user, obj)
+        assert not base.has_team_access(non_member_user, obj)
 
     @pytest.mark.django_db
     def test_team_has_member_access_on_different_site(self):

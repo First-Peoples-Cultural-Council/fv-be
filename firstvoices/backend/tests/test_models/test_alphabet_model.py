@@ -164,3 +164,20 @@ class TestAlphabetModel:
 
         s = "XxYy"
         assert alphabet.get_base_form(s) == "xxyy"
+
+    @pytest.mark.django_db
+    def test_get_base_form_with_special_characters(self, alphabet):
+        """Get base form of text with confusables applied"""
+        CharacterFactory(site=alphabet.site, title="-")
+        CharacterFactory(site=alphabet.site, title=".")
+        CharacterFactory(site=alphabet.site, title="&")
+        a = CharacterFactory(site=alphabet.site, title="a")
+        b = CharacterFactory(site=alphabet.site, title="b")
+        c = CharacterFactory(site=alphabet.site, title="c")
+        CharacterVariantFactory(site=alphabet.site, title="A", base_character=a)
+        CharacterVariantFactory(site=alphabet.site, title="B", base_character=b)
+        CharacterVariantFactory(site=alphabet.site, title="C", base_character=c)
+
+        s = "ABC-.-&"
+        base = alphabet.get_base_form(s)
+        assert base == "abc-.-&"
