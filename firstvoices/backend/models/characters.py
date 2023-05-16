@@ -52,7 +52,7 @@ class Character(BaseSiteContentModel):
     approximate_form = models.CharField(max_length=MAX_CHARACTER_LENGTH, blank=True)
 
     # from fv:notes
-    notes = models.TextField(blank=True)
+    note = models.TextField(blank=True)
 
     def __str__(self):
         return f"{self.title} - {self.site}"

@@ -34,7 +34,7 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
             "title",
             "sort_order",
             "approximate_form",
-            "notes",
+            "note",
             "variants",
             "related_entries",
         ]
