@@ -221,27 +221,6 @@ class Alphabet(BaseSiteContentModel):
     input_to_canonical_map = models.JSONField(default=list)
 
     @property
-    def base_characters(self):
-        """
-        Characters for the site in sort order.
-        """
-        return Character.objects.filter(site=self.site).order_by("sort_order")
-
-    @property
-    def variant_characters(self):
-        """
-        All variant characters for the site.
-        """
-        return CharacterVariant.objects.filter(site=self.site)
-
-    @property
-    def ignorable_characters(self):
-        """
-        Ignorable characters for the site.
-        """
-        return IgnoredCharacter.objects.filter(site=self.site)
-
-    @property
     def default_g2p_config(self):
         """
         Returns default G2P configurations for required mappers, customized with site name and slug.
@@ -277,17 +256,26 @@ class Alphabet(BaseSiteContentModel):
             self.logger.warning("Empty confusable map for site %s", self.site)
             return None
 
-    @property
-    def presort_transducer(self):
+    def presort_transducer(self, context):
         """
         Returns a variant-to-base G2P transducer, built from Characters and CharacterVariants.
         """
+        base_characters = (
+            context["base_characters"]
+            if context is not None and "base_characters" in context
+            else Character.objects.filter(site=self.site).order_by("sort_order")
+        )
         base_character_map = [
-            {"in": char.title, "out": char.title} for char in self.base_characters
+            {"in": char.title, "out": char.title} for char in base_characters
         ]
+        character_variants = (
+            context["character_variants"]
+            if context is not None and "character_variants" in context
+            else CharacterVariant.objects.filter(site=self.site)
+        )
         variant_character_map = [
             {"in": variant.title, "out": variant.base_character.title}
-            for variant in self.variant_characters
+            for variant in character_variants
         ]
         full_map = base_character_map + variant_character_map
 
@@ -295,29 +283,50 @@ class Alphabet(BaseSiteContentModel):
 
         return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
 
-    @property
-    def sorter(self) -> CustomSorter:
+    def sorter(self, context) -> CustomSorter:
         """
         Returns a sorter object which can be called to provide custom sort values based on the site alphabet.
         """
-
+        base_characters = (
+            context["base_characters"]
+            if context is not None and "base_characters" in context
+            else Character.objects.filter(site=self.site).order_by("sort_order")
+        )
+        ignorable_characters = (
+            context["ignorable_characters"]
+            if context is not None and "ignorable_characters" in context
+            else IgnoredCharacter.objects.filter(site=self.site)
+        )
         return CustomSorter(
-            order=[char.title for char in self.base_characters],
-            ignorable=[char.title for char in self.ignorable_characters],
+            order=[char.title for char in base_characters],
+            ignorable=[char.title for char in ignorable_characters],
         )
 
-    @property
-    def splitter(self) -> CustomSorter:
+    def splitter(self, context) -> CustomSorter:
         """
         Returns a sorter object containing both base characters and character variants
         to properly split text into characters using the MTD splitter.
         Ignored characters are added to the order list to ensure they are not removed by the splitter.
         """
-
+        base_characters = (
+            context["base_characters"]
+            if context is not None and "base_characters" in context
+            else Character.objects.filter(site=self.site).order_by("sort_order")
+        )
+        character_variants = (
+            context["character_variants"]
+            if context is not None and "character_variants" in context
+            else CharacterVariant.objects.filter(site=self.site)
+        )
+        ignorable_characters = (
+            context["ignorable_characters"]
+            if context is not None and "ignorable_characters" in context
+            else IgnoredCharacter.objects.filter(site=self.site)
+        )
         return CustomSorter(
-            order=[char.title for char in self.base_characters]
-            + [char.title for char in self.variant_characters]
-            + [char.title for char in self.ignorable_characters]
+            order=[char.title for char in base_characters]
+            + [char.title for char in character_variants]
+            + [char.title for char in ignorable_characters]
         )
 
     def __str__(self):
@@ -334,25 +343,27 @@ class Alphabet(BaseSiteContentModel):
         else:
             return text
 
-    def get_custom_order(self, text: str) -> str:
+    def get_custom_order(self, text: str, context=None) -> str:
         """
         Convert a string to a custom-order string which follows the site custom alphabet order.
         Sort is insensitive to character variants (such as uppercase), and ignores ignorable characters.
         """
-        text = self.presort_transducer(text).output_string
-        return self.sorter.word_as_sort_string(text)
+        presort_transducer = self.presort_transducer(context)
+        text = presort_transducer(text).output_string
+        return self.sorter(context).word_as_sort_string(text)
 
-    def get_character_list(self, text: str) -> list[str]:
+    def get_character_list(self, text: str, context=None) -> list[str]:
         """
         Returns a list of characters in the text, split using the MTD splitter.
         """
-        return self.splitter.word_as_chars(text)
+        return self.splitter(context).word_as_chars(text)
 
-    def get_base_form(self, text: str) -> str:
+    def get_base_form(self, text: str, context=None) -> str:
         """
         Converts a string to a string with all variant characters replaced with their base characters.
         """
-        return self.presort_transducer(text).output_string
+        presort_transducer = self.presort_transducer(context)
+        return presort_transducer(text).output_string
 
-    def get_numerical_sort_form(self, text):
-        return self.sorter.word_as_values(self.get_base_form(text))
+    def get_numerical_sort_form(self, text, context=None):
+        return self.sorter(context).word_as_values(self.get_base_form(text, context))

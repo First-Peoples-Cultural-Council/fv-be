@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from backend.models import Alphabet, category, dictionary
+from backend.models import Alphabet, IgnoredCharacter, category, dictionary
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     base_timestamp_fields,
@@ -73,53 +73,62 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     split_words = serializers.SerializerMethodField()
     split_words_base = serializers.SerializerMethodField()
 
-    @staticmethod
-    def get_split_chars(entry):
-        alphabet = Alphabet.objects.filter(site=entry.site).first()
-        ignored_characters = alphabet.ignorable_characters.values_list(
-            "title", flat=True
+    def retrieve_model_or_context(self, model_name, site):
+        if self.context is None or model_name not in self.context:
+            if model_name == "alphabet":
+                return Alphabet.objects.filter(site=site).first()
+            if model_name == "ignored_characters":
+                return IgnoredCharacter.objects.filter(site=site).values_list(
+                    "title", flat=True
+                )
+        else:
+            return self.context[model_name]
+
+    def get_split_chars(self, entry):
+        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
+        ignored_characters = self.retrieve_model_or_context(
+            "ignored_characters", entry.site
         )
 
         if "⚑" in entry.custom_order:
             return []
         else:
-            char_list = alphabet.get_character_list(entry.title)
+            char_list = alphabet.get_character_list(entry.title, self.context)
             has_ignored_char = set(char_list).intersection(set(ignored_characters))
             if has_ignored_char:
                 return []
             else:
                 return char_list
 
-    @staticmethod
-    def get_split_chars_base(entry):
-        alphabet = Alphabet.objects.filter(site=entry.site).first()
-        ignored_characters = alphabet.ignorable_characters.values_list(
-            "title", flat=True
+    def get_split_chars_base(self, entry):
+        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
+        ignored_characters = self.retrieve_model_or_context(
+            "ignored_characters", entry.site
         )
         if "⚑" in entry.custom_order:
             return []
         else:
             # split, check for ignored, then convert title to base characters
-            char_list = alphabet.get_character_list(entry.title)
+            char_list = alphabet.get_character_list(entry.title, self.context)
             has_ignored_char = set(char_list).intersection(set(ignored_characters))
             if has_ignored_char:
                 return []
             else:
-                base_chars = [alphabet.get_base_form(c) for c in char_list]
+                base_chars = [
+                    alphabet.get_base_form(c, self.context) for c in char_list
+                ]
                 return base_chars
 
     @staticmethod
     def get_split_words(entry):
         return entry.title.split(" ")
 
-    @staticmethod
-    def get_split_words_base(entry):
-        alphabet = Alphabet.objects.filter(site=entry.site).first()
+    def get_split_words_base(self, entry):
+        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
 
         # convert title to base characters
-        base_title = alphabet.get_base_form(entry.title)
+        base_title = alphabet.get_base_form(entry.title, self.context)
         word_list = base_title.split(" ")
-
         return word_list
 
     class Meta:
