@@ -39,9 +39,6 @@ class BaseModel(PermissionFilterMixin, RulesModel):
         primary_key=True, default=uuid.uuid4, editable=False, db_index=True
     )
 
-    # from isTrashed
-    is_trashed = models.BooleanField(default=False)
-
     # from dc:creator
     created_by = models.ForeignKey(
         get_user_model(),
