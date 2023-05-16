@@ -117,3 +117,8 @@ class TruncatingCharField(models.CharField):
         if value:
             return value.strip()[: self.max_length]
         return value
+
+
+class AudienceMixin:
+    exclude_from_games = models.BooleanField(default=False)
+    exclude_from_kids = models.BooleanField(default=False)
