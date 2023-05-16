@@ -4,11 +4,12 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
+from backend.views.data_views import SitesDataViewSet
 from backend.views.debug.async_example import ExampleAsyncTaskView
 from backend.views.debug.elastic_example import ExampleElasticSearch
-from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
+from backend.views.search.custom_search_views import CustomSearchViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -19,6 +20,7 @@ ROUTER.register(r"user", UserViewSet, basename=r"user")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"sites", SiteViewSet, basename="site")
+ROUTER.register(r"search", CustomSearchViewSet, basename="search")
 
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
