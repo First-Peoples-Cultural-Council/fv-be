@@ -37,11 +37,11 @@ class CustomOrderRecalculatePreviewView(APIView):
 
         # If there is a result, add it to the response
         if result:
-            preview_info["last_recalculation_date"] = result.date
-            preview_info["last_recalculation_result"] = result.result
+            preview_info["latest_recalculation_date"] = result.date
+            preview_info["latest_recalculation_result"] = result.result
         else:
-            preview_info["last_recalculation_date"] = None
-            preview_info["last_recalculation_result"] = {}
+            preview_info["latest_recalculation_date"] = None
+            preview_info["latest_recalculation_result"] = {}
 
         return Response(preview_info, status=200)
 
