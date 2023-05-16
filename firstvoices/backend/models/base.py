@@ -119,6 +119,9 @@ class TruncatingCharField(models.CharField):
         return value
 
 
-class AudienceMixin:
+class AudienceMixin(models.Model):
+    class Meta:
+        abstract = True
+
     exclude_from_games = models.BooleanField(default=False)
     exclude_from_kids = models.BooleanField(default=False)
