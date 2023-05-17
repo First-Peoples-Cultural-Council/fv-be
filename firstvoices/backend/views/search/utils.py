@@ -4,6 +4,9 @@ from backend.search_indexes.dictionary_documents import (
 
 
 def hydrate_objects(raw_objects):
+    """
+    Adding required properties to raw objects returned form elastic-search.
+    """
     complete_objects = []
 
     for obj in raw_objects:
@@ -28,7 +31,7 @@ def hydrate_objects(raw_objects):
                     )
             complete_object["translations"] = translations
 
-            # todo: Add related audio and other required fields
+            # todo: Add related audio, url, and other required fields
 
         complete_objects.append(complete_object)
 
