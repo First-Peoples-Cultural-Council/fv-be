@@ -3,6 +3,7 @@ from elasticsearch_dsl import Search
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search_indexes.dictionary_documents import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
@@ -28,7 +29,7 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if len(doc_types):
             doc_types = doc_types.split("|")
         else:
-            doc_types = ["WORD", "PHRASE"]
+            doc_types = TypeOfDictionaryEntry.values
 
         return {"q": q, "doc_types": doc_types}
 
@@ -42,12 +43,16 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "WORD" in search_params["doc_types"]
             and "PHRASE" not in search_params["doc_types"]
         ):
-            search_query = search_query.exclude("term", dictionary_entry__type="PHRASE")
+            search_query = search_query.exclude(
+                "term", dictionary_entry__type=TypeOfDictionaryEntry.PHRASE
+            )
         elif (
             "PHRASE" in search_params["doc_types"]
             and "WORD" not in search_params["doc_types"]
         ):
-            search_query = search_query.exclude("term", dictionary_entry__type="WORD")
+            search_query = search_query.exclude(
+                "term", dictionary_entry__type=TypeOfDictionaryEntry.WORD
+            )
 
         response = search_query.execute()
         if response["hits"]["total"]["value"]:
@@ -65,22 +70,6 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # todo: Apply view permissions
 
         # todo: Apply pagination
-
-        # {
-        #     _id: 12321,
-        #     _type: dictionary_entry,
-        #     _score
-        #     _title,
-        #     _translation,
-        #     _url
-        # },
-        # {
-        #     _id: 12321,
-        #     _type: Song,
-        #     _score
-        #     _title,
-        #     _not_translation
-        # }
 
         # Structuring response
         return Response(data=hydrated_objects)
