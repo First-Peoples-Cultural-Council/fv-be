@@ -116,7 +116,6 @@ if DEBUG:
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
 
-
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -174,7 +173,7 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ADMIN_URL = "admin/"
+ADMIN_URL = os.getenv("DJANGO_ADMIN_URL", "admin/")
 
 with open(str(BASE_DIR / "firstvoices" / "templates" / "api-description.md")) as f:
     description = f.read()
