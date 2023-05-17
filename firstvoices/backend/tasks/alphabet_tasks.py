@@ -29,11 +29,14 @@ def recalculate_custom_order_preview(site_slug: str):
         if "⚑" in new_order:
             entries_with_unknown_chars.append(entry)
 
-        if (
-            result["previous_custom_order"] != result["new_custom_order"]
-            or result["title"] != result["cleaned_title"]
-        ):
-            updated_entries.append(result)
+        updated_entries.append(result)
+
+    updated_entries = [
+        entry
+        for entry in updated_entries
+        if entry["previous_custom_order"] != entry["new_custom_order"]
+        or entry["cleaned_title"] != entry["title"]
+    ]
 
     # Then get the count of unknown characters
     unknown_character_count = {}
