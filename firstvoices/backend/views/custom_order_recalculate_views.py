@@ -31,9 +31,9 @@ class CustomOrderRecalculatePreviewView(APIView):
         # If there is a task_id, check the status of the task and add it to the response
         if self.task_id:
             async_result = AsyncResult(self.task_id)
-            preview_info = {"recalculate_preview_task_status": async_result.status}
+            preview_info = {"preview_current_task_status": async_result.status}
         else:
-            preview_info = {"recalculate_preview_task_status": "Not started."}
+            preview_info = {"preview_current_task_status": "Not started."}
 
         # If there is a result, add it to the response
         if result:
@@ -61,9 +61,7 @@ class CustomOrderRecalculatePreviewView(APIView):
                 {"message": "Successfully saved recalculation results"}, status=201
             )
 
-        except recalculate_custom_order_preview.OperationalError as err:
-            # log this meaningfully, or just don't catch it
-            print(err)
+        except recalculate_custom_order_preview.OperationalError:
             return Response(
                 {"message": "An error occurred while dispatching remote task"},
                 status=503,
