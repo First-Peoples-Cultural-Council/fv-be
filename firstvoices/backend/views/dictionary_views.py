@@ -2,10 +2,13 @@ from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import viewsets
 
-from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    DictionarySerializerContextMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 
 
 @extend_schema_view(
@@ -27,7 +30,10 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     ),
 )
 class DictionaryViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.ModelViewSet
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    DictionarySerializerContextMixin,
+    viewsets.ModelViewSet,
 ):
     """
     Dictionary entry information.
@@ -58,27 +64,3 @@ class DictionaryViewSet(
             )
         else:
             return DictionaryEntry.objects.none()
-
-    def get_serializer_context(self):
-        """
-        A helper function to gather additional model context which can be reused for multiple dictionary entries.
-        """
-
-        site = self.get_validated_site()[0]
-
-        context = super().get_serializer_context()
-
-        alphabet = Alphabet.objects.filter(site=site).first()
-        ignored_characters = IgnoredCharacter.objects.filter(site=site).values_list(
-            "title", flat=True
-        )
-        base_characters = Character.objects.filter(site=site).order_by("sort_order")
-        character_variants = CharacterVariant.objects.filter(site=site)
-        ignorable_characters = IgnoredCharacter.objects.filter(site=site)
-
-        context["alphabet"] = alphabet
-        context["ignored_characters"] = ignored_characters
-        context["base_characters"] = base_characters
-        context["character_variants"] = character_variants
-        context["ignorable_characters"] = ignorable_characters
-        return context
