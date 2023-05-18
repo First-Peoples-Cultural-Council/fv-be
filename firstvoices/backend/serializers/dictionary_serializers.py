@@ -1,6 +1,8 @@
+import logging
+
 from rest_framework import serializers
 
-from backend.models import Alphabet, IgnoredCharacter, category, dictionary
+from backend.models import category, dictionary
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     base_timestamp_fields,
@@ -73,27 +75,34 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
     split_words = serializers.SerializerMethodField()
     split_words_base = serializers.SerializerMethodField()
 
-    def retrieve_model_or_context(self, model_name, site):
-        if self.context is None or model_name not in self.context:
-            if model_name == "alphabet":
-                return Alphabet.objects.filter(site=site).first()
-            if model_name == "ignored_characters":
-                return IgnoredCharacter.objects.filter(site=site).values_list(
-                    "title", flat=True
-                )
-        else:
+    logger = logging.getLogger(__name__)
+
+    def retrieve_model_or_context(self, model_name):
+        if self.context is not None and model_name in self.context:
             return self.context[model_name]
+        else:
+            self.logger.error(
+                f"({model_name}) context could not be found for view ({self.context['view'].__class__.__name__})"
+            )
+            return []
 
     def get_split_chars(self, entry):
-        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
-        ignored_characters = self.retrieve_model_or_context(
-            "ignored_characters", entry.site
-        )
+        alphabet = self.retrieve_model_or_context("alphabet")
+        ignored_characters = self.retrieve_model_or_context("ignored_characters")
 
         if "⚑" in entry.custom_order:
             return []
         else:
-            char_list = alphabet.get_character_list(entry.title, self.context)
+            char_list = (
+                []
+                if alphabet == []
+                else alphabet.get_character_list(
+                    entry.title,
+                    self.context["base_characters"],
+                    self.context["character_variants"],
+                    self.context["ignorable_characters"],
+                )
+            )
             has_ignored_char = set(char_list).intersection(set(ignored_characters))
             if has_ignored_char:
                 return []
@@ -101,21 +110,33 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
                 return char_list
 
     def get_split_chars_base(self, entry):
-        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
-        ignored_characters = self.retrieve_model_or_context(
-            "ignored_characters", entry.site
-        )
+        alphabet = self.retrieve_model_or_context("alphabet")
+        ignored_characters = self.retrieve_model_or_context("ignored_characters")
         if "⚑" in entry.custom_order:
             return []
         else:
             # split, check for ignored, then convert title to base characters
-            char_list = alphabet.get_character_list(entry.title, self.context)
+            char_list = (
+                []
+                if alphabet == []
+                else alphabet.get_character_list(
+                    entry.title,
+                    self.context["base_characters"],
+                    self.context["character_variants"],
+                    self.context["ignorable_characters"],
+                )
+            )
             has_ignored_char = set(char_list).intersection(set(ignored_characters))
             if has_ignored_char:
                 return []
             else:
                 base_chars = [
-                    alphabet.get_base_form(c, self.context) for c in char_list
+                    alphabet.get_base_form(
+                        c,
+                        self.context["base_characters"],
+                        self.context["character_variants"],
+                    )
+                    for c in char_list
                 ]
                 return base_chars
 
@@ -124,10 +145,15 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
         return entry.title.split(" ")
 
     def get_split_words_base(self, entry):
-        alphabet = self.retrieve_model_or_context("alphabet", entry.site)
-
+        alphabet = self.retrieve_model_or_context("alphabet")
+        if alphabet == []:
+            return entry.title
         # convert title to base characters
-        base_title = alphabet.get_base_form(entry.title, self.context)
+        base_title = alphabet.get_base_form(
+            entry.title,
+            self.context["base_characters"],
+            self.context["character_variants"],
+        )
         word_list = base_title.split(" ")
         return word_list
 
