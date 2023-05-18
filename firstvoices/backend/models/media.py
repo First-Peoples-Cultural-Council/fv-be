@@ -1,5 +1,6 @@
 from django.db import models
 
+from ..permissions import predicates
 from .base import BaseSiteContentModel
 
 
@@ -15,12 +16,20 @@ class Image(BaseSiteContentModel):
 
     # from fvpicture
 
+    class Meta:
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
     # from dc:title
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, blank=True, null=True)
 
     # organizes file uploads into site folders. Could also add a subfolder for each media type (/site/images/file.jpg)
     # from fvm:content, see fw-4352 for migration details
-    content = models.ImageField(upload_to=user_directory_path)
+    content = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
 
     def delete(self, using=None, keep_parents=False):
         """
