@@ -52,9 +52,7 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Adding data to objects
         hydrated_objects = hydrate_objects(raw_objects)
 
-        # todo: Apply view permissions
-
-        # todo: Apply pagination
+        # view permissions and pagination to be applied
 
         # Structuring response
         return Response(data=hydrated_objects)

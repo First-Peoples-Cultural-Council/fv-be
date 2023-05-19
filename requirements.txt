@@ -19,6 +19,7 @@ Django==4.2.1
 django-celery-beat==2.5.0
 django-cors-headers==4.0.0
 django-debug-toolbar==4.1.0
+django-elasticsearch-dsl==7.3
 django-timezone-field==5.0
 djangorestframework==3.14.0
 djangorestframework-camel-case==1.4.2

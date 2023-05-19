@@ -23,9 +23,7 @@ class DictionaryEntryDocument(Document):
             "title",
             "type",
         ]
-        related_models = [
-            Translation
-        ]  # todo: Discuss which models should trigger re-index
+        related_models = [Translation]  # Discuss which models should trigger re-index
 
     def get_instances_from_related(self, related_instance):
         """

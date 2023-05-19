@@ -31,7 +31,7 @@ def hydrate_objects(raw_objects):
                     )
             complete_object["translations"] = translations
 
-            # todo: Add related audio, url, and other required fields
+            # related audio, url, and other required fields to be added after discussion
 
         complete_objects.append(complete_object)
 
