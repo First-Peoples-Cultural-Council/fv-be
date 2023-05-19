@@ -26,7 +26,7 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Function to process and return search params in a structured format.
         """
         input_q = self.request.GET.get("q", "")
-        clean_q = input_q.trim().lower()
+        clean_q = input_q.strip().lower()
 
         return {"q": clean_q}
 

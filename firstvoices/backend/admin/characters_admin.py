@@ -39,7 +39,7 @@ class CharacterAdmin(BaseSiteContentAdmin):
         "sort_order",
         "approximate_form",
         "site",
-        "notes",
+        "note",
     )
     list_display = (
         "title",
@@ -83,7 +83,7 @@ class CharacterInline(BaseInlineAdmin):
         "title",
         "sort_order",
         "approximate_form",
-        "notes",
+        "note",
     ) + BaseInlineAdmin.fields
     ordering = ("sort_order",)
     readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields

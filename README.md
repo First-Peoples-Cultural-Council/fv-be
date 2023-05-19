@@ -44,21 +44,26 @@ ___
    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
    - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
-1. Configure optional environment variables (used for the reset-local-database.sh script):
+8. Configure optional environment variables as needed (used for the reset-local-database.sh script and Sentry):
    - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
    - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
    - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
+   - `SENTRY_DSN`: the data source name that tells the Sentry SDK where to send events (to upload to the dashboard). If this is not set then events will not be sent to a dashboard.
+   - `SENTRY_ENVIRONMENT`: a string specifying the name of the environment to tag Sentry events with (defaults to `production` if not set).
+   - `SENTRY_RELEASE`: a custom release version to tag Sentry events with (defaults to the commit SHA if not set).
+   - `SENTRY_TRACES_SAMPLE_RATE`: the sample rate for error events, in the range of 0.0 to 1.0 (defaults to 1.0 if not set, meaning 100% of the errors are sent).
+   - `DJANGO_ADMIN_URL`: sets the URL of the admin panel for security purposes (defaults to `admin/` if not set).
    - If using [venv](https://docs.python.org/3/library/venv.html)
      - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
    - If using [direnv](https://direnv.net/)
      - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
-8. Apply migration
+9. Apply migration
    - Navigate to the `firstvoices` directory: `cd firstvoices`
    - From the `firstvoices` directory: `python manage.py migrate`
-9. Start the server
+10. Start the server
    - Navigate to the `firstvoices` directory if you aren't already there: `cd firstvoices`
    - `python manage.py runserver`
-10. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
+11. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
     - `python manage.py loaddata <fixture_name>`
     - Fixtures available:
       - Default fixtures which are automatically loaded in migrations:

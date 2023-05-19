@@ -7,10 +7,14 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import logging
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from . import database, jwt
 
@@ -113,7 +117,6 @@ if DEBUG:
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
 
-
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -157,6 +160,7 @@ JWT = jwt.config()
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://localhost:3000",
     os.getenv("ALLOWED_ORIGIN"),
 ]
 
@@ -170,7 +174,7 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ADMIN_URL = "admin/"
+ADMIN_URL = os.getenv("DJANGO_ADMIN_URL", "admin/")
 
 with open(str(BASE_DIR / "firstvoices" / "templates" / "api-description.md")) as f:
     description = f.read()
@@ -206,3 +210,33 @@ ELASTICSEARCH_DSL = {
         "hosts": ELASTICSEARCH_HOST,
     },
 }
+
+# Sentry monitoring configuration settings.
+# See docs at https://docs.sentry.io/platforms/python/guides/django/
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # The minimum logging level to capture as breadcrumbs
+    event_level=logging.ERROR,  # The minimum logging level to send as events
+)
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    environment=os.getenv(
+        "SENTRY_ENVIRONMENT"
+    ),  # Sends information to this environment on the dashboard
+    release=os.getenv("SENTRY_RELEASE"),  # Tags information with this release version
+    traces_sample_rate=os.getenv(
+        "SENTRY_TRACES_SAMPLE_RATE", 1.0
+    ),  # The percentage of traces to send to sentry (min 0.0, max 1.0)
+    send_default_pii=False,  # Disables the sending of personally identifiable information (see
+    # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
+    request_bodies="never",  # Disables the sending of request bodies
+    include_local_variables=False,  # Disables the sending of local variables in the stack trace
+    integrations=[
+        sentry_logging,
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
+            signals_spans=True,
+            cache_spans=True,
+        ),
+    ],
+)

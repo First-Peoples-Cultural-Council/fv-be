@@ -13,10 +13,10 @@ from backend.tests.factories import (
     get_non_member_user,
     get_site_with_member,
 )
-from backend.tests.test_apis.base_api_test import BaseSiteControlledContentApiTest
+from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
 
 
-class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
+class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):
     """
     Tests for the word-of-the-day API
     """
@@ -31,11 +31,6 @@ class TestWordOfTheDayEndpoint(BaseSiteControlledContentApiTest):
         self.non_member_user = get_non_member_user()
         self.client.force_authenticate(user=self.non_member_user)
         self.today = datetime.today()
-
-    @pytest.mark.django_db
-    def test_detail_404_unknown_key(self):
-        # Ignoring test since there is no detail view for this endpoint
-        pass
 
     @pytest.mark.django_db
     def test_list_empty(self):
