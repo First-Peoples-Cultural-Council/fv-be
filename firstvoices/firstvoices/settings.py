@@ -200,7 +200,7 @@ ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
 ELASTICSEARCH_DEFAULT_CONFIG = {
     "number_of_shards": 1,
     "number_of_replicas": 0,
-}
+}  # to be discussed
 ELASTICSEARCH_DSL = {
     "default": {
         "hosts": ELASTICSEARCH_HOST,
