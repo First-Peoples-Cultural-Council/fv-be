@@ -29,7 +29,7 @@ class Person(BaseSiteContentModel):
     # from FVContributor dc:description
     bio = models.CharField(max_length=500)
 
-    def __str__(self):
+    def __unicode__(self):
         return f"{self.name} ({self.site})"
 
 
@@ -43,7 +43,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         abstract = True
 
     # see specific media models for migration info
-    acknowledgement = models.TextField(max_length=500)
+    acknowledgement = models.TextField(max_length=500, blank=True)
 
     # from dc:title
     title = models.CharField(max_length=200)
@@ -92,17 +92,33 @@ class Audio(MediaBase):
 
     # acknowledgment from fvm:recorder
     # from fvm:source
-    speakers = models.ManyToManyField(Person, through="AudioSpeaker")
+    speakers = models.ManyToManyField(
+        Person, through="AudioSpeaker", null=True, related_name="audio_set"
+    )
 
-    def __str__(self):
+    def __unicode__(self):
         return f"{self.title} / {self.site} (Audio)"
 
 
 class AudioSpeaker(BaseSiteContentModel):
-    audio = models.ForeignKey(Audio, on_delete=models.CASCADE)
-    speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name = _("Audio Speaker")
+        verbose_name_plural = _("Audio Speakers")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
-    def __str__(self):
+    audio = models.ForeignKey(
+        Audio, on_delete=models.CASCADE, related_name="audiospeaker_set"
+    )
+    speaker = models.ForeignKey(
+        Person, on_delete=models.CASCADE, related_name="audiospeaker_set"
+    )
+
+    def __unicode__(self):
         return f"Audio Speaker {self.audio.title} - ({self.speaker.name})"
 
 
@@ -124,7 +140,7 @@ class Image(MediaBase):
     # from fvm:content
     content = models.ImageField(upload_to=media_directory_path)
 
-    def __str__(self):
+    def __unicode__(self):
         return f"{self.title} / {self.site} (Image)"
 
 
@@ -143,5 +159,5 @@ class Video(MediaBase):
 
     # acknowledgement from fvm:recorder, fvm:source
 
-    def __str__(self):
+    def __unicode__(self):
         return f"{self.title} / {self.site} (Video)"
