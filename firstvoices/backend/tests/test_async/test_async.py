@@ -1,27 +1,125 @@
+import json
+from unittest.mock import ANY
+
 import pytest
 
-from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
+from backend.models.constants import AppRole, Visibility
 from backend.tests import factories
+from backend.tests.test_apis.base_api_test import BaseApiTest
 
 
-class TestCustomOrderRecalculatePreview:
-    @pytest.fixture
-    def celery_config(self):
-        yield {
-            "broker_url": "amqp://rabbitmq:rabbitmq@localhost:5672//fv",
-            "result_backend": "redis://localhost/0",
-        }
+class TestCustomOrderRecalculatePreview(BaseApiTest):
+    API_LIST_VIEW = "api:site-list"
+    API_DETAIL_VIEW = "api:site-detail"
 
     @pytest.fixture
     def site(self):
-        return factories.SiteFactory.create(slug="test")
+        return factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
     @pytest.fixture
     def alphabet(self, site):
         return factories.AlphabetFactory.create(site=site)
 
+    @pytest.mark.django_db
+    def test_recalculate_preview_get_404(self):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            f"{self.get_detail_endpoint('missing-slug')}dictionary-cleanup/preview"
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_post_404(self):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            f"{self.get_detail_endpoint('missing-slug')}dictionary-cleanup/preview"
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_get_403(self, site):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_post_403(self, site, alphabet):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_get_empty(self, site, alphabet):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        assert user.has_perm("views.has_custom_order_access", site)
+
+        response = self.client.get(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+        response_data = json.loads(response.content)
+        assert response.status_code == 404
+        assert response_data == {
+            "message": "No recalculation results found for this site."
+        }
+
     @pytest.mark.django_db(transaction=True)
-    def test_recalculate_preview_callback(self, celery_worker, site, alphabet):
-        result = recalculate_custom_order_preview.apply_async(args=["test"])
-        result.wait(timeout=10)
-        assert result.status == "SUCCESS"
+    def test_recalculate_preview_post(self, celery_worker, site, alphabet):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        assert user.has_perm("views.has_custom_order_access", site)
+
+        factories.DictionaryEntryFactory.create(site=site, title="test")
+
+        response = self.client.post(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+
+        response_data = json.loads(response.content)
+        assert response.status_code == 201
+        assert response_data == {"message": "Successfully saved recalculation results"}
+
+    @pytest.mark.django_db(transaction=True)
+    def test_recalculate_preview_full(self, celery_worker, site, alphabet):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        assert user.has_perm("views.has_custom_order_access", site)
+
+        factories.DictionaryEntryFactory.create(site=site, title="test")
+
+        response_post = self.client.post(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+        response_post_data = json.loads(response_post.content)
+
+        assert response_post.status_code == 201
+        assert response_post_data == {
+            "message": "Successfully saved recalculation results"
+        }
+
+        response_get = self.client.get(
+            f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
+        )
+        response_get_data = json.loads(response_get.content)
+
+        assert response_get.status_code == 200
+        assert response_get_data == {
+            "previewCurrentTaskStatus": "Not started.",
+            "latestRecalculationDate": ANY,
+            "latestRecalculationResult": {
+                "updatedEntries": [],
+                "unknownCharacterCount": {"⚑e": 1, "⚑s": 1, "⚑t": 2},
+            },
+        }
