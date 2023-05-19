@@ -9,8 +9,8 @@ from backend.tests.test_apis.base_api_test import BaseApiTest
 
 
 class TestCustomOrderRecalculatePreview(BaseApiTest):
-    API_LIST_VIEW = "api:site-list"
     API_DETAIL_VIEW = "api:site-detail"
+    SUPERADMIN_PERMISSION = "views.has_custom_order_access"
 
     @pytest.fixture
     def site(self):
@@ -64,7 +64,7 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
     def test_recalculate_preview_get_empty(self, site, alphabet):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm("views.has_custom_order_access", site)
+        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         response = self.client.get(
             f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
@@ -75,11 +75,13 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
             "message": "No recalculation results found for this site."
         }
 
-    @pytest.mark.django_db(transaction=True)
-    def test_recalculate_preview_post(self, celery_worker, site, alphabet):
+    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
+    def test_recalculate_preview_post(
+        self, celery_worker, site, alphabet, django_db_serialized_rollback
+    ):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm("views.has_custom_order_access", site)
+        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
 
@@ -91,11 +93,13 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
         assert response.status_code == 201
         assert response_data == {"message": "Successfully saved recalculation results"}
 
-    @pytest.mark.django_db(transaction=True)
-    def test_recalculate_preview_full(self, celery_worker, site, alphabet):
+    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
+    def test_recalculate_preview_full(
+        self, celery_worker, site, alphabet, django_db_serialized_rollback
+    ):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm("views.has_custom_order_access", site)
+        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
 
