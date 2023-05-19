@@ -12,7 +12,11 @@ from backend.models.dictionary import (
 )
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    DictionarySerializerContextMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 
 
 @extend_schema_view(
@@ -29,6 +33,7 @@ class WordOfTheDayView(
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     mixins.ListModelMixin,
+    DictionarySerializerContextMixin,
     viewsets.GenericViewSet,
 ):
     """
@@ -140,6 +145,6 @@ class WordOfTheDayView(
 
         # serialize and return the data, with context to support hyperlinking
         serializer = self.serializer_class(
-            queryset, many=True, context={"request": request}
+            queryset, many=True, context=self.get_serializer_context()
         )
         return Response(serializer.data)

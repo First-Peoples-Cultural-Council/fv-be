@@ -4,7 +4,11 @@ from rest_framework import viewsets
 
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    DictionarySerializerContextMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 
 
 @extend_schema_view(
@@ -26,7 +30,10 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     ),
 )
 class DictionaryViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.ModelViewSet
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    DictionarySerializerContextMixin,
+    viewsets.ModelViewSet,
 ):
     """
     Dictionary entry information.
