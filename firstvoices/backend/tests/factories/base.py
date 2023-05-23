@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppJson, AppMembership
+from backend.models.async_results import CustomOrderRecalculationPreviewResult
 from backend.models.category import Category
 from backend.models.characters import (
     Alphabet,
@@ -170,6 +171,16 @@ class ParentCategoryFactory(DjangoModelFactory):
 
     class Meta:
         model = Category
+
+
+class CustomOrderRecalculationPreviewResultFactory(DjangoModelFactory):
+    class Meta:
+        model = CustomOrderRecalculationPreviewResult
+
+    site = factory.SubFactory(SiteFactory)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
+    result = {"test": "test"}
 
 
 class ChildCategoryFactory(ParentCategoryFactory):

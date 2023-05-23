@@ -16,7 +16,6 @@ class BaseModelFactory(DjangoModelFactory):
 
 
 class SiteContentFactory(BaseModelFactory):
-    title = factory.Sequence(lambda n: "Model %03d" % n)
     site = factory.SubFactory(factories.SiteFactory)
 
 
