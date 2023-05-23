@@ -10,14 +10,12 @@ from .characters import (  # noqa F401
     IgnoredCharacter,
 )
 from .dictionary import (  # noqa F401
+    Acknowledgement,
     AlternateSpelling,
-    DictionaryAcknowledgement,
     DictionaryEntry,
-    DictionaryNote,
-    DictionaryTranslation,
+    Note,
     Pronunciation,
+    Translation,
 )
 from .part_of_speech import PartOfSpeech  # noqa F401
-from .role import Role  # noqa F401
 from .sites import Membership, Site  # noqa F401
-from .user_role import UserRole  # noqa F401

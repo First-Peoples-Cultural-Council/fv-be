@@ -1,5 +1,4 @@
 import pytest
-from django.core.management import call_command
 
 from backend.models.characters import AppJson
 from backend.tests.factories import (
@@ -12,35 +11,30 @@ from backend.tests.factories import (
 
 class TestAlphabetModel:
     @pytest.fixture
-    def g2p_db_setup(self, django_db_blocker):
-        with django_db_blocker.unblock():
-            call_command("loaddata", "default_g2p_config.json")
-
-    @pytest.fixture
     def alphabet(self):
         return AlphabetFactory.create()
 
     @pytest.mark.django_db
-    def test_load_config_fixture(self, g2p_db_setup):
+    def test_load_config_fixture(self):
         """Default g2p config settings loaded from fixture"""
         settings = AppJson.objects.get(key="default_g2p_config").json
         assert settings is not None
         assert "preprocess_config" in settings
 
     @pytest.mark.django_db
-    def test_sort_no_characters(self, alphabet, g2p_db_setup):
+    def test_sort_no_characters(self, alphabet):
         """When no characters are defined, alphabet uses basic sort"""
         assert alphabet.get_custom_order("a") < alphabet.get_custom_order("b")
 
     @pytest.mark.django_db
-    def test_sort_characters(self, alphabet, g2p_db_setup):
+    def test_sort_characters(self, alphabet):
         """When characters are defined, alphabet uses custom sort"""
         CharacterFactory(site=alphabet.site, title="b", sort_order=1)
         CharacterFactory(site=alphabet.site, title="a", sort_order=2)
         assert alphabet.get_custom_order("a") > alphabet.get_custom_order("b")
 
     @pytest.mark.django_db
-    def test_sort_variant_insensitive(self, alphabet, g2p_db_setup):
+    def test_sort_variant_insensitive(self, alphabet):
         """When variants are defined, their sort equals base character sort"""
         char_a = CharacterFactory(site=alphabet.site, title="a")
         CharacterVariantFactory(site=alphabet.site, title="A", base_character=char_a)
@@ -50,7 +44,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("aAᐱ*") == alphabet.get_custom_order("ᐱaA*")
 
     @pytest.mark.django_db
-    def test_sort_skip_ignorables(self, alphabet, g2p_db_setup):
+    def test_sort_skip_ignorables(self, alphabet):
         """When ignorable characters are defined, they are ignored from sort"""
         CharacterFactory(site=alphabet.site, title="a")
         IgnoredCharacterFactory(site=alphabet.site, title="x")
@@ -60,7 +54,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("xaxaxax") == alphabet.get_custom_order("aaa")
 
     @pytest.mark.django_db
-    def test_sort_regex_insensitive(self, alphabet, g2p_db_setup):
+    def test_sort_regex_insensitive(self, alphabet):
         """Regex characters are escaped in variant-character transductions"""
         char_a = CharacterFactory(site=alphabet.site, title="A")
         char_o = CharacterFactory(site=alphabet.site, title="o")
@@ -74,7 +68,7 @@ class TestAlphabetModel:
         assert alphabet.get_custom_order("\n\n") != alphabet.get_custom_order("nn")
 
     @pytest.mark.django_db
-    def test_clean_confusables_basic(self, g2p_db_setup):
+    def test_clean_confusables_basic(self):
         """Apply confusable transducer as defined in alphabet"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
@@ -94,7 +88,7 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables("ᐱ/_/b/č") == "A/_/b/cv"
 
     @pytest.mark.django_db
-    def test_clean_confusables_no_feeding(self, g2p_db_setup):
+    def test_clean_confusables_no_feeding(self):
         """Default confusables transducer does not allow multi-rule application"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
@@ -112,9 +106,12 @@ class TestAlphabetModel:
         IgnoredCharacterFactory(site=alphabet.site, title="/")
         assert alphabet.clean_confusables("A/A") == "a/a"
 
-    @pytest.mark.skip("g2p with regex escape ignores mapping with escaped in-chars")
+    @pytest.mark.skip(
+        "test bug: incorrect serialization when reading json from testdb and building transducer. "
+        "requires manual test."
+    )
     @pytest.mark.django_db
-    def test_clean_confusables_regex_escape(self, g2p_db_setup):
+    def test_clean_confusables_regex_escape(self):
         """Default confusables transducer ignores regex rules"""
         alphabet = AlphabetFactory.create(
             input_to_canonical_map=[
@@ -129,3 +126,58 @@ class TestAlphabetModel:
         assert alphabet.clean_confusables(r"test.") == "testo"
         assert alphabet.clean_confusables(r"testing.") == "testing"
         assert alphabet.clean_confusables(r"\d\d") == "DD"
+
+    @pytest.mark.django_db
+    def test_get_character_list(self, alphabet):
+        """Get list of characters in text, split with current alphabet and MTD splitter, base and variant characters"""
+        aa = CharacterFactory(site=alphabet.site, title="aa")
+        ch = CharacterFactory(site=alphabet.site, title="ch")
+        CharacterFactory(site=alphabet.site, title="c")
+        CharacterFactory(site=alphabet.site, title="d")
+        e = CharacterFactory(site=alphabet.site, title="e")
+        CharacterVariantFactory(site=alphabet.site, title="AA", base_character=aa)
+        CharacterVariantFactory(site=alphabet.site, title="Ch", base_character=ch)
+        CharacterVariantFactory(site=alphabet.site, title="E", base_character=e)
+
+        s = "deaaChcchdAA CH"
+        assert alphabet.get_character_list(s) == [
+            "d",
+            "e",
+            "aa",
+            "Ch",
+            "c",
+            "ch",
+            "d",
+            "AA",
+            " ",
+            "C",
+            "H",
+        ]
+
+    @pytest.mark.django_db
+    def test_get_base_form(self, alphabet):
+        """Get base form of text"""
+        x = CharacterFactory(site=alphabet.site, title="x")
+        y = CharacterFactory(site=alphabet.site, title="y")
+        CharacterVariantFactory(site=alphabet.site, title="X", base_character=x)
+        CharacterVariantFactory(site=alphabet.site, title="Y", base_character=y)
+
+        s = "XxYy"
+        assert alphabet.get_base_form(s) == "xxyy"
+
+    @pytest.mark.django_db
+    def test_get_base_form_with_special_characters(self, alphabet):
+        """Get base form of text with confusables applied"""
+        CharacterFactory(site=alphabet.site, title="-")
+        CharacterFactory(site=alphabet.site, title=".")
+        CharacterFactory(site=alphabet.site, title="&")
+        a = CharacterFactory(site=alphabet.site, title="a")
+        b = CharacterFactory(site=alphabet.site, title="b")
+        c = CharacterFactory(site=alphabet.site, title="c")
+        CharacterVariantFactory(site=alphabet.site, title="A", base_character=a)
+        CharacterVariantFactory(site=alphabet.site, title="B", base_character=b)
+        CharacterVariantFactory(site=alphabet.site, title="C", base_character=c)
+
+        s = "ABC-.-&"
+        base = alphabet.get_base_form(s)
+        assert base == "abc-.-&"

@@ -2,10 +2,12 @@ import logging
 
 import g2p
 import yaml
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext as _
 
+from backend.permissions import predicates
 from backend.utils.character_utils import CustomSorter
 
 from .app import AppJson
@@ -31,6 +33,12 @@ class Character(BaseSiteContentModel):
                 fields=["sort_order", "site_id"], name="unique_character_sort_order"
             ),
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from dc:title
     # Unique with site_id
@@ -44,12 +52,13 @@ class Character(BaseSiteContentModel):
     approximate_form = models.CharField(max_length=MAX_CHARACTER_LENGTH, blank=True)
 
     # from fv:notes
-    notes = models.TextField(blank=True)
+    note = models.TextField(blank=True)
 
     def __str__(self):
         return f"{self.title} - {self.site}"
 
     def save(self, *args, **kwargs):
+        self.validate_character_limit()
         self.validate_title_uniqueness()
         super().save(*args, **kwargs)
 
@@ -73,6 +82,14 @@ class Character(BaseSiteContentModel):
                 % self.title
             )
 
+    def validate_character_limit(self):
+        """
+        Validates that the site has not already reached the max character limit.
+        """
+        limit = CustomSorter.max_alphabet_length
+        if Character.objects.filter(site_id=self.site_id).count() >= limit:
+            raise ValidationError("Over maximum character limit: %s chars" % limit)
+
 
 class CharacterVariant(BaseSiteContentModel):
     """
@@ -87,6 +104,12 @@ class CharacterVariant(BaseSiteContentModel):
                 fields=["title", "site_id"], name="unique_character_variant"
             )
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from fvcharacter: upper_case_character
     # Unique with site_id
@@ -139,6 +162,12 @@ class IgnoredCharacter(BaseSiteContentModel):
                 fields=["title", "site_id"], name="unique_ignored_character"
             )
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     # from fv-alphabet:ignored_characters
     # Unique with site_id
@@ -176,8 +205,14 @@ class Alphabet(BaseSiteContentModel):
     """
 
     class Meta:
-        verbose_name = _("alphabet mapper")
-        verbose_name_plural = _("alphabet mappers")
+        verbose_name = _("alphabet")
+        verbose_name_plural = _("alphabet")
+        rules_permissions = {
+            "view": predicates.is_superadmin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
 
     logger = logging.getLogger(__name__)
 
@@ -233,11 +268,92 @@ class Alphabet(BaseSiteContentModel):
             preprocess_settings = self.default_g2p_config["preprocess_config"]
 
             return g2p.Transducer(
-                g2p.Mapping(**preprocess_settings, mapping=self.input_to_canonical_map)
+                g2p.Mapping(
+                    **preprocess_settings,
+                    mapping=self.input_to_canonical_map,
+                )
             )
         else:
-            self.logger.warning("No confusable map found for site %s", self.site)
+            self.logger.warning("Empty confusable map for site %s", self.site)
             return None
+
+    def presort_transducer(self, base_characters=None, character_variants=None):
+        """
+        Returns a variant-to-base G2P transducer, built from Characters and CharacterVariants.
+        """
+        base_characters = (
+            base_characters if base_characters is not None else self.base_characters
+        )
+        base_character_map = (
+            [{"in": char.title, "out": char.title} for char in base_characters]
+            if base_characters is not None
+            else []
+        )
+        character_variants = (
+            character_variants
+            if character_variants is not None
+            else self.variant_characters
+        )
+        variant_character_map = (
+            [
+                {"in": variant.title, "out": variant.base_character.title}
+                for variant in character_variants
+            ]
+            if character_variants is not None
+            else []
+        )
+        full_map = base_character_map + variant_character_map
+
+        presort_settings = self.default_g2p_config["presort_config"]
+
+        return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
+
+    def sorter(self, base_characters=None, ignorable_characters=None) -> CustomSorter:
+        """
+        Returns a sorter object which can be called to provide custom sort values based on the site alphabet.
+        """
+        base_characters = (
+            base_characters if base_characters is not None else self.base_characters
+        )
+        ignorable_characters = (
+            ignorable_characters
+            if ignorable_characters is not None
+            else self.ignorable_characters
+        )
+        return CustomSorter(
+            order=[char.title for char in base_characters],
+            ignorable=[char.title for char in ignorable_characters],
+        )
+
+    def splitter(
+        self, base_characters=None, character_variants=None, ignorable_characters=None
+    ) -> CustomSorter:
+        """
+        Returns a sorter object containing both base characters and character variants
+        to properly split text into characters using the MTD splitter.
+        Ignored characters are added to the order list to ensure they are not removed by the splitter.
+        """
+        base_characters = (
+            base_characters if base_characters is not None else self.base_characters
+        )
+        character_variants = (
+            character_variants
+            if character_variants is not None
+            else self.variant_characters
+        )
+        ignorable_characters = (
+            ignorable_characters
+            if ignorable_characters is not None
+            else self.ignorable_characters
+        )
+        return CustomSorter(
+            order=[char.title for char in base_characters]
+            + [char.title for char in character_variants]
+            + [char.title for char in ignorable_characters]
+        )
+
+    def __str__(self):
+        return f"Alphabet and related functions for {self.site}"
 
     def clean_confusables(self, text: str) -> str:
         """
@@ -250,42 +366,57 @@ class Alphabet(BaseSiteContentModel):
         else:
             return text
 
-    @property
-    def presort_transducer(self):
-        """
-        Returns a variant-to-base G2P transducer, built from Characters and CharacterVariants.
-        """
-        base_character_map = [
-            {"in": char.title, "out": char.title} for char in self.base_characters
-        ]
-        variant_character_map = [
-            {"in": variant.title, "out": variant.base_character.title}
-            for variant in self.variant_characters
-        ]
-        full_map = base_character_map + variant_character_map
-
-        presort_settings = self.default_g2p_config["presort_config"]
-
-        return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
-
-    def __str__(self):
-        return f"Confusable mapper for {self.site}"
-
-    @property
-    def sorter(self) -> CustomSorter:
-        """
-        Returns a sorter object which can be called to provide custom sort values based on the site alphabet.
-        """
-
-        return CustomSorter(
-            order=[char.title for char in self.base_characters],
-            ignorable=[char.title for char in self.ignorable_characters],
-        )
-
-    def get_custom_order(self, text: str) -> str:
+    def get_custom_order(
+        self,
+        text: str,
+        base_characters=None,
+        character_variants=None,
+        ignorable_characters=None,
+    ) -> str:
         """
         Convert a string to a custom-order string which follows the site custom alphabet order.
         Sort is insensitive to character variants (such as uppercase), and ignores ignorable characters.
         """
-        text = self.presort_transducer(text).output_string
-        return self.sorter.word_as_sort_string(text)
+        presort_transducer = self.presort_transducer(
+            base_characters, character_variants
+        )
+        text = presort_transducer(text).output_string
+        return self.sorter(base_characters, ignorable_characters).word_as_sort_string(
+            text
+        )
+
+    def get_character_list(
+        self,
+        text: str,
+        base_characters=None,
+        character_variants=None,
+        ignorable_characters=None,
+    ) -> list[str]:
+        """
+        Returns a list of characters in the text, split using the MTD splitter.
+        """
+        return self.splitter(
+            base_characters, character_variants, ignorable_characters
+        ).word_as_chars(text)
+
+    def get_base_form(
+        self, text: str, base_characters=None, character_variants=None
+    ) -> str:
+        """
+        Converts a string to a string with all variant characters replaced with their base characters.
+        """
+        presort_transducer = self.presort_transducer(
+            base_characters, character_variants
+        )
+        return presort_transducer(text).output_string
+
+    def get_numerical_sort_form(
+        self,
+        text,
+        base_characters=None,
+        character_variants=None,
+        ignorable_characters=None,
+    ):
+        return self.sorter(base_characters, ignorable_characters).word_as_values(
+            self.get_base_form(text, base_characters, character_variants)
+        )

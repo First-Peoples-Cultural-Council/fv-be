@@ -3,14 +3,15 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend import predicates
+from backend.permissions import predicates
+from backend.permissions.managers import PermissionsManager
 
 from .base import BaseModel
 from .constants import CATEGORY_POS_MAX_TITLE_LENGTH
-from .managers import PermissionsManager
 
 
 class ParentManager(PermissionsManager):
+    use_in_migrations = True
     """Manager to convert foreign key relationship to natural keys for fixtures to load correctly."""
 
     def get_by_natural_key(self, title):
@@ -33,6 +34,7 @@ class PartOfSpeech(BaseModel):
     class Meta:
         verbose_name = _("Part Of Speech")
         verbose_name_plural = _("Parts Of Speech")
+        ordering = ["title"]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,

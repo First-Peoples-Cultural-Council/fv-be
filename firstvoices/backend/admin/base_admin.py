@@ -17,7 +17,6 @@ class BaseAdmin(admin.ModelAdmin):
     )
     list_display = (
         "id",
-        "is_trashed",
         "created_by",
         "created",
         "last_modified_by",
@@ -56,6 +55,11 @@ class BaseInlineAdmin(admin.TabularInline):
     readonly_fields = (
         "admin_link",
         "item_id",
+        "id",
+        "created",
+        "created_by",
+        "last_modified_by",
+        "last_modified",
     )
     can_delete = False
     fields = (
@@ -65,7 +69,6 @@ class BaseInlineAdmin(admin.TabularInline):
         "created_by",
         "last_modified",
         "last_modified_by",
-        "is_trashed",
     )
 
     def item_id(self, instance):

@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
 from backend.tests.factories import (
@@ -6,6 +7,7 @@ from backend.tests.factories import (
     CharacterVariantFactory,
     IgnoredCharacterFactory,
 )
+from backend.utils.character_utils import CustomSorter
 
 
 class TestCharacterModel:
@@ -57,3 +59,15 @@ class TestCharacterModel:
         ichar = IgnoredCharacterFactory.create(site=char.site)
         with pytest.raises(IntegrityError):
             CharacterVariantFactory.create(title=ichar.title, base_character=char)
+
+    @pytest.mark.django_db
+    def test_character_limit(self):
+        """Can't create more characters on a site than custom sort can handle"""
+        limit = CustomSorter.max_alphabet_length
+
+        char = CharacterFactory.create(title="c0")
+        for n in range(1, limit):
+            CharacterFactory.create(site=char.site, title="c" + str(n))
+
+        with pytest.raises(ValidationError):
+            CharacterFactory.create(site=char.site, title="c" + str(limit))

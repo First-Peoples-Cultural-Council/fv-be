@@ -7,15 +7,16 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
+from backend.permissions.managers import PermissionFilterMixin, PermissionsManager
+
 from .constants import Visibility
-from .managers import PermissionsManager
 
 
-class BaseModel(RulesModel):
+class BaseModel(PermissionFilterMixin, RulesModel):
     """
     Base model for all FirstVoices Backend models, with standard fields and support for rules-based permissions.
 
-    Date fields values are generated automatically, but user fields (created_by and last_modified_by) are required when
+    Date field values are generated automatically, but user fields (created_by and last_modified_by) are required when
     creating new data.
 
     Access rules can be configured using a declaration in the Meta class, like this example:
@@ -30,16 +31,13 @@ class BaseModel(RulesModel):
     class Meta:
         abstract = True
 
-    # The permissions manager adds functionality to filter a queryset based on user permissions.
+    # The permission manager adds methods for accessing only the items that the user has permission to view
     objects = PermissionsManager()
 
     # from uid (and seemingly not uid:uid)
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False, db_index=True
     )
-
-    # from isTrashed
-    is_trashed = models.BooleanField(default=False)
 
     # from dc:creator
     created_by = models.ForeignKey(
@@ -106,8 +104,8 @@ def pre_save_for_fixtures(sender, instance, **kwargs):
 
 class TruncatingCharField(models.CharField):
     """
-    Custom field which auto truncates the value of a varchar field if it goes above a specific length.
-    Also strips any whites spaces in the beginning or in the end before enforcing max length.
+    Custom CharField which auto truncates the value if it goes above the max_length.
+    Strips any whitespace in the beginning or in the end before enforcing max length.
     Ref: https://docs.djangoproject.com/en/4.2/ref/models/fields/#django.db.models.Field.get_prep_value
     """
 

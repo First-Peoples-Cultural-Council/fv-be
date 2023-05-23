@@ -74,7 +74,7 @@ case $yn in
     # Drop the existing database
     printf '\n'
     printf 'Removing existing fv_be database.\n'
-    dropdb -f fv_be
+    dropdb -f fv_be --if-exists
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Database removal failed: exit code $retval\n"
@@ -88,38 +88,6 @@ case $yn in
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Database creation failed: exit code $retval\n"
-      exit $retval
-    fi
-
-    # Note: this should be removed once we begin commiting migrations. See FW-4240
-    # Delete any existing backend migrations files
-    printf '\n\n'
-    printf 'Removing existing backend migrations.\n'
-    find $SCRIPT_DIR/firstvoices/backend/migrations/ -not -name '__init__.py' -delete
-    retval=$?
-    if [ $retval -ne 0 ]; then
-      printf "Backend migration removal failed: exit code $retval\n"
-      exit $retval
-    fi
-
-    # Note: this should be removed once we begin commiting migrations. See FW-4240
-    # Delete any existing users migrations files
-    printf '\n\n'
-    printf 'Removing existing users migrations.\n'
-    find $SCRIPT_DIR/firstvoices/users/migrations/ -not -name '__init__.py' -delete
-    retval=$?
-    if [ $retval -ne 0 ]; then
-      printf "Users migration removal failed: exit code $retval\n"
-      exit $retval
-    fi
-
-    # Make new users migrations
-    printf '\n\n'
-    printf 'Generating users migrations.\n'
-    python $SCRIPT_DIR/manage.py makemigrations users
-    retval=$?
-    if [ $retval -ne 0 ]; then
-      printf "Users migration generation failed: exit code $retval\n"
       exit $retval
     fi
 
@@ -153,25 +121,28 @@ case $yn in
       exit $retval
     fi
 
-    # Load required db fixtures
+    # Create an app level superuser membership model for the admin user.
     printf '\n\n'
-    printf 'Loading required fixture: default_g2p_config\n'
-    python $SCRIPT_DIR/manage.py loaddata default_g2p_config.json
+    printf 'Adding app Superadmin membership to superuser account.\n'
+    python $SCRIPT_DIR/manage.py shell < $SCRIPT_DIR/scripts/create_local_superadmin_membership.py
     retval=$?
     if [ $retval -ne 0 ]; then
-      printf "Failed loading fixture default_g2p_config: exit code $retval\n"
+      printf "Superuser membership creation failed: exit code $retval\n"
       exit $retval
     fi
 
     # Reset the test database
     printf '\n'
     printf 'Flushing test database.\n'
-    dropdb test_fv_be
+    dropdb test_fv_be --if-exists
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Test database cleanup failed: exit code $retval\n"
       exit $retval
     fi
+
+    printf '\n'
+    printf 'Local reset completed successfully.\n'
     ;;
 
   [Nn]* )

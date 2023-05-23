@@ -7,10 +7,14 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import logging
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from . import database, jwt
 
@@ -63,18 +67,6 @@ MIDDLEWARE = [
 
 CSRF_TRUSTED_ORIGINS = ["https://*.eks.firstvoices.io"]
 
-# local only
-if DEBUG:
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
-    INSTALLED_APPS += ["debug_toolbar"]
-    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
-    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
-    # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
-    DEBUG_TOOLBAR_CONFIG = {
-        "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
-        "SHOW_TEMPLATE_CONTEXT": True,
-    }
-
 ROOT_URLCONF = "firstvoices.urls"
 
 REST_FRAMEWORK = {
@@ -91,11 +83,38 @@ REST_FRAMEWORK = {
         "backend.jwt_auth.UserAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "UNAUTHENTICATED_USER": None,
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+    "JSON_UNDERSCOREIZE": {
+        "ignore_fields": ("site_data_export",),
+    },
 }
+
+# local only
+if DEBUG:
+    REST_FRAMEWORK.update(
+        {
+            "DEFAULT_RENDERER_CLASSES": (
+                "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+                "rest_framework.renderers.BrowsableAPIRenderer",
+            )
+        }
+    )
+
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
+    INSTALLED_APPS += ["debug_toolbar"]
+    INSTALLED_APPS += ["django_extensions"]
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
+    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+    # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
+    DEBUG_TOOLBAR_CONFIG = {
+        "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
+        "SHOW_TEMPLATE_CONTEXT": True,
+    }
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
+    INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
@@ -138,7 +157,11 @@ AUTH_USER_MODEL = "backend.User"
 
 JWT = jwt.config()
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", os.getenv("ALLOWED_ORIGIN")]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    os.getenv("ALLOWED_ORIGIN"),
+]
 
 LANGUAGE_CODE = "en-ca"
 
@@ -150,7 +173,7 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ADMIN_URL = "admin/"
+ADMIN_URL = os.getenv("DJANGO_ADMIN_URL", "admin/")
 
 with open(str(BASE_DIR / "firstvoices" / "templates" / "api-description.md")) as f:
     description = f.read()
@@ -161,7 +184,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "FirstVoices Backend API",
     "DESCRIPTION": description,
     "VERSION": "2.0.0",
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Fixtures directory for initial data
@@ -177,3 +200,33 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+
+# Sentry monitoring configuration settings.
+# See docs at https://docs.sentry.io/platforms/python/guides/django/
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # The minimum logging level to capture as breadcrumbs
+    event_level=logging.ERROR,  # The minimum logging level to send as events
+)
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    environment=os.getenv(
+        "SENTRY_ENVIRONMENT"
+    ),  # Sends information to this environment on the dashboard
+    release=os.getenv("SENTRY_RELEASE"),  # Tags information with this release version
+    traces_sample_rate=os.getenv(
+        "SENTRY_TRACES_SAMPLE_RATE", 1.0
+    ),  # The percentage of traces to send to sentry (min 0.0, max 1.0)
+    send_default_pii=False,  # Disables the sending of personally identifiable information (see
+    # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
+    request_bodies="never",  # Disables the sending of request bodies
+    include_local_variables=False,  # Disables the sending of local variables in the stack trace
+    integrations=[
+        sentry_logging,
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
+            signals_spans=True,
+            cache_spans=True,
+        ),
+    ],
+)
