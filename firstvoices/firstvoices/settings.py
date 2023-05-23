@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rules.apps.AutodiscoverRulesConfig",
     "backend",
-    "django_elasticsearch_dsl",
     "healthcheck",
 ]
 
@@ -201,15 +200,6 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
-ELASTICSEARCH_DEFAULT_CONFIG = {
-    "number_of_shards": 1,
-    "number_of_replicas": 0,
-}  # to be discussed
-ELASTICSEARCH_DSL = {
-    "default": {
-        "hosts": ELASTICSEARCH_HOST,
-    },
-}
 
 # Sentry monitoring configuration settings.
 # See docs at https://docs.sentry.io/platforms/python/guides/django/

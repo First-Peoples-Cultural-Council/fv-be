@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
+from backend.search_indices.dictionary_entry_document import save_to_index
 from backend.utils.character_utils import clean_input
 
 from .base import (
@@ -230,6 +231,9 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         self.clean_title(alphabet)
         self.set_custom_order(alphabet)
         super().save(*args, **kwargs)
+
+        # Add document to es index
+        save_to_index(self.id, self.title, self.type)
 
     def clean_title(self, alphabet):
         # strip whitespace and normalize

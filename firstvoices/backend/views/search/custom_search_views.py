@@ -3,7 +3,7 @@ from elasticsearch_dsl import Search
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
-from backend.search_indexes.dictionary_documents import (
+from backend.search_indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
 from backend.views.search.utils import hydrate_objects
@@ -38,10 +38,9 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         s = self.get_elasticsearch_client()
         search_params = self.get_search_params()
         search_query = s.query("match", title=search_params["q"])
-
+        raw_objects = []
         response = search_query.execute()
         if response["hits"]["total"]["value"]:
-            raw_objects = []
             for hit in response["hits"]["hits"]:
                 raw_objects.append(hit)
         return raw_objects
