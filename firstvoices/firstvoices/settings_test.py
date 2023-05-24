@@ -17,5 +17,6 @@ REST_FRAMEWORK.update(  # noqa F405
     }
 )
 
-# Disabled AWS file storage during tests
-# DEFAULT_FILE_STORAGE = ""
+# Disable AWS file storage during tests
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+MEDIA_ROOT = BASE_DIR / "backend" / "tests" / "tmp"  # noqa F405

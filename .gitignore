@@ -292,3 +292,7 @@ webpack-stats.json
 
 firstvoices/static
 firstvoices/celerybeat-schedule.db
+
+
+# tmp files for tests
+firstvoices/backend/tests/tmp/
