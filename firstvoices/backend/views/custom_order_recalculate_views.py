@@ -1,6 +1,6 @@
 import rules
 from celery.result import AsyncResult
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -59,7 +59,7 @@ class CustomOrderRecalculatePreviewView(APIView):
         # Check that the site exists
         try:
             site = Site.objects.get(slug=site_slug)
-        except Site.DoesNotExist:
+        except ObjectDoesNotExist:
             return Response({"message": "Site not found"}, status=404)
 
         # Call the recalculation preview task
@@ -85,7 +85,7 @@ class CustomOrderRecalculatePreviewView(APIView):
 
 
 class CustomOrderRecalculateView(APIView):
-    task_id = None
+    tasks = []
 
     @staticmethod
     def check_superadmin_status(request):
@@ -96,12 +96,20 @@ class CustomOrderRecalculateView(APIView):
         # Check Superadmin status
         self.check_superadmin_status(request)
 
+        # Check that the site exists
+        try:
+            Site.objects.get(slug=site_slug)
+        except ObjectDoesNotExist:
+            return Response({"message": "Site not found"}, status=404)
+
         # Return the status of any ongoing recalculation task
-        if self.task_id:
-            async_result = AsyncResult(self.task_id)
-            return Response({"current_recalculation_task_status": async_result.status})
-        else:
-            return Response({"current_recalculation_task_status": "Not started."})
+        for task in self.tasks:
+            if task["site"] == site_slug:
+                async_result = AsyncResult(task["task_id"])
+                return Response(
+                    {"current_recalculation_task_status": async_result.status}
+                )
+        return Response({"current_recalculation_task_status": "Not started."})
 
     def post(self, request, site_slug: str):
         # Check Superadmin status
@@ -110,13 +118,14 @@ class CustomOrderRecalculateView(APIView):
         # Check that the site exists
         try:
             Site.objects.get(slug=site_slug)
-        except Site.DoesNotExist:
+        except ObjectDoesNotExist:
             return Response({"message": "Site not found"}, status=404)
 
         # Call the recalculation task
         try:
             recalculation_results = recalculate_custom_order.apply_async((site_slug,))
-            self.task_id = recalculation_results.task_id
+            task = {"task_id": recalculation_results.task_id, "site": site_slug}
+            self.tasks.append(task)
 
             return Response(
                 {"recalculation_results": recalculation_results.get(timeout=360)}

@@ -1,6 +1,9 @@
 import pytest
 
-from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
+from backend.tasks.alphabet_tasks import (
+    recalculate_custom_order,
+    recalculate_custom_order_preview,
+)
 from backend.tests import factories
 
 
@@ -15,7 +18,7 @@ class TestAlphabetTasks:
 
     @pytest.mark.django_db
     def test_recalulate_preview_empty(self, site, alphabet):
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site.slug)
 
         assert result == {"unknown_character_count": {}, "updated_entries": []}
 
@@ -98,3 +101,63 @@ class TestAlphabetTasks:
                 },
             ],
         }
+
+    @pytest.mark.django_db
+    def test_recalulate_empty(self, site, alphabet):
+        result = recalculate_custom_order(site.slug)
+
+        assert result == []
+
+    @pytest.mark.django_db
+    def test_recalulate_updated_order(self, site, alphabet):
+        factories.DictionaryEntryFactory.create(site=site, title="abc")
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+
+        result = recalculate_custom_order("test")
+        assert result == [
+            {
+                "title": "abc",
+                "cleaned_title": "abc",
+                "new_custom_order": "!#$",
+                "previous_custom_order": "⚑a⚑b⚑c",
+            }
+        ]
+
+    @pytest.mark.django_db
+    def test_recalulate_updated_confusables(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="A")
+        factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
+        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        alphabet.save()
+
+        result = recalculate_custom_order("test")
+        assert result == [
+            {
+                "title": "ᐱᐱᐱ",
+                "cleaned_title": "AAA",
+                "new_custom_order": "!!!",
+                "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+            }
+        ]
+
+    @pytest.mark.django_db
+    def test_recalulate_updated_all(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="A")
+        factories.DictionaryEntryFactory.create(site=site, title="ᐱbcd")
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        alphabet.save()
+
+        result = recalculate_custom_order("test")
+        assert result == [
+            {
+                "title": "ᐱbcd",
+                "cleaned_title": "Abcd",
+                "new_custom_order": "!$%⚑d",
+                "previous_custom_order": "⚑ᐱ⚑b⚑c⚑d",
+            }
+        ]
