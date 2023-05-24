@@ -1,11 +1,11 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models import DictionaryEntry
+from backend.tests.factories import RelatedMediaBaseFactory
 from backend.tests.factories.access import SiteFactory
 
 
-class DictionaryEntryFactory(DjangoModelFactory):
+class DictionaryEntryFactory(RelatedMediaBaseFactory):
     class Meta:
         model = DictionaryEntry
 

@@ -47,3 +47,40 @@ class AudioSpeakerFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     audio = factory.SubFactory(AudioFactory)
     speaker = factory.SubFactory(PersonFactory)
+
+
+class RelatedMediaBaseFactory(DjangoModelFactory):
+    class Meta:
+        abstract = True
+
+    @factory.post_generation
+    def related_audio(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+        if extracted:
+            # A list of image were passed in, use them
+            for e in extracted:
+                self.related_audio.add(e)
+
+    @factory.post_generation
+    def related_images(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            # A list of image were passed in, use them
+            for e in extracted:
+                self.related_images.add(e)
+
+    @factory.post_generation
+    def related_videos(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            # A list of image were passed in, use them
+            for e in extracted:
+                self.related_videos.add(e)

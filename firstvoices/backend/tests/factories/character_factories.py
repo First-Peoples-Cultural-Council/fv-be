@@ -2,10 +2,11 @@ import factory
 from factory.django import DjangoModelFactory
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter
+from backend.tests.factories import RelatedMediaBaseFactory
 from backend.tests.factories.access import SiteFactory
 
 
-class CharacterFactory(DjangoModelFactory):
+class CharacterFactory(RelatedMediaBaseFactory):
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
