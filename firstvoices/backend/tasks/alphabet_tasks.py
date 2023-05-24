@@ -10,8 +10,8 @@ def recalculate_custom_order_preview(site_slug: str):
     preview = {}
 
     # First, get the changes in custom order and title for every entry, and store entries with unknown characters
-    entries_with_unknown_chars = []
     updated_entries = []
+    unknown_character_count = {}
     for entry in DictionaryEntry.objects.filter(site=site):
         result = {
             "title": entry.title,
@@ -23,31 +23,24 @@ def recalculate_custom_order_preview(site_slug: str):
         cleaned_title = alphabet.clean_confusables(entry.title)
         new_order = alphabet.get_custom_order(cleaned_title)
 
-        result["cleaned_title"] = cleaned_title
-        result["new_custom_order"] = new_order
+        if new_order != entry.custom_order:
+            result["new_custom_order"] = new_order
+        if cleaned_title != entry.title:
+            result["cleaned_title"] = cleaned_title
 
+        # Count unknown characters remaining in each entry, first split by character, then apply custom order
+        # If a "⚑" is in the custom order, it means that the character is unknown
         if "⚑" in new_order:
-            entries_with_unknown_chars.append(entry)
+            chars = alphabet.get_character_list(entry.title)
+            for char in chars:
+                custom_order = alphabet.get_custom_order(char)
+                if "⚑" in custom_order:
+                    if custom_order not in unknown_character_count:
+                        unknown_character_count[custom_order] = 0
+                    unknown_character_count[custom_order] += 1
 
-        updated_entries.append(result)
-
-    updated_entries = [
-        entry
-        for entry in updated_entries
-        if entry["previous_custom_order"] != entry["new_custom_order"]
-        or entry["cleaned_title"] != entry["title"]
-    ]
-
-    # Then get the count of unknown characters
-    unknown_character_count = {}
-    for entry in entries_with_unknown_chars:
-        chars = alphabet.get_character_list(entry.title)
-        for char in chars:
-            custom_order = alphabet.get_custom_order(char)
-            if "⚑" in custom_order:
-                if custom_order not in unknown_character_count:
-                    unknown_character_count[custom_order] = 0
-                unknown_character_count[custom_order] += 1
+        if result["new_custom_order"] or result["cleaned_title"]:
+            updated_entries.append(result)
 
     preview["unknown_character_count"] = unknown_character_count
     preview["updated_entries"] = updated_entries

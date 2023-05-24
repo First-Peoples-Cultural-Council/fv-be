@@ -72,6 +72,10 @@ class CustomOrderRecalculatePreviewView(APIView):
             )
             self.task_id = recalculation_results.task_id
 
+            # Delete any previous results
+            CustomOrderRecalculationPreviewResult.objects.filter(site=site).delete()
+
+            # Save the result to the database
             CustomOrderRecalculationPreviewResult.objects.create(
                 site=site, result=recalculation_results.get(timeout=360)
             )

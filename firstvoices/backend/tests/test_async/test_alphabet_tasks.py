@@ -42,7 +42,7 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "abc",
-                    "cleaned_title": "abc",
+                    "cleaned_title": "",
                     "new_custom_order": "!#$",
                     "previous_custom_order": "⚑a⚑b⚑c",
                 }
@@ -86,7 +86,7 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "abcd",
-                    "cleaned_title": "abcd",
+                    "cleaned_title": "",
                     "new_custom_order": "#$%⚑d",
                     "previous_custom_order": "⚑a⚑b⚑c⚑d",
                 },
