@@ -19,11 +19,6 @@ class Person(BaseSiteContentModel):
         }
 
     # from dc:title
-    title = models.CharField(max_length=200, blank=True, null=True)
-
-    # organizes file uploads into site folders. Could also add a subfolder for each media type (/site/images/file.jpg)
-    # from fvm:content, see fw-4352 for migration details
-    content = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
     name = models.CharField(max_length=200)
 
     # from FVContributor dc:description
