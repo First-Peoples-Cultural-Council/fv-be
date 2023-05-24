@@ -13,9 +13,10 @@ from backend.utils.character_utils import CustomSorter
 from .app import AppJson
 from .base import BaseSiteContentModel
 from .constants import MAX_CHARACTER_LENGTH
+from .media import RelatedMediaMixin
 
 
-class Character(BaseSiteContentModel):
+class Character(RelatedMediaMixin, BaseSiteContentModel):
     """
     Represents an alphabet character in a site.
     """
@@ -53,6 +54,10 @@ class Character(BaseSiteContentModel):
 
     # from fv:notes
     note = models.TextField(blank=True)
+
+    # related_audio from fv:related_audio
+    # related_images from fv:related_pictures
+    # related_videos from fv:related_videos
 
     def __str__(self):
         return f"{self.title} - {self.site}"
