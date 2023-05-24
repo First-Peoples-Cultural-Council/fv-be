@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.contrib.auth import get_user_model
@@ -62,6 +63,8 @@ class BaseModel(PermissionFilterMixin, RulesModel):
 
     # from dc:lastContributor
     last_modified = models.DateTimeField(auto_now=True, db_index=True)
+
+    logger = logging.getLogger(__name__)
 
 
 class BaseSiteContentModel(BaseModel):
