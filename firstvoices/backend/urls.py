@@ -8,7 +8,6 @@ from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
 )
 from backend.views.data_views import SitesDataViewSet
-from backend.views.debug.elastic_example import ExampleElasticSearch
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
@@ -36,7 +35,6 @@ sites_router.register(r"data", SitesDataViewSet, basename="data")
 app_name = "api"
 
 urlpatterns = [
-    path("debug/elastic", ExampleElasticSearch.as_view()),
     path(
         "sites/<str:site_slug>/dictionary-cleanup/preview",
         CustomOrderRecalculatePreviewView.as_view(),

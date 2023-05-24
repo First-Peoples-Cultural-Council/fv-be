@@ -70,9 +70,11 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
             f"{self.get_detail_endpoint(site.slug)}dictionary-cleanup/preview"
         )
         response_data = json.loads(response.content)
-        assert response.status_code == 404
+        assert response.status_code == 200
         assert response_data == {
-            "message": "No recalculation results found for this site."
+            "previewCurrentTaskStatus": "Not started.",
+            "latestRecalculationDate": None,
+            "latestRecalculationResult": {},
         }
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
@@ -90,8 +92,8 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
         )
 
         response_data = json.loads(response.content)
-        assert response.status_code == 201
-        assert response_data == {"message": "Successfully saved recalculation results"}
+        assert response.status_code == 202
+        assert response_data == {"message": "Recalculation preview has been queued."}
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_preview_full(
@@ -108,9 +110,9 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
         )
         response_post_data = json.loads(response_post.content)
 
-        assert response_post.status_code == 201
+        assert response_post.status_code == 202
         assert response_post_data == {
-            "message": "Successfully saved recalculation results"
+            "message": "Recalculation preview has been queued."
         }
 
         response_get = self.client.get(

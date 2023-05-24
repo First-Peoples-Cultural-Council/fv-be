@@ -1,6 +1,7 @@
 import rules
 from celery.result import AsyncResult
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.http import Http404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,16 +10,26 @@ from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
 
 
 class CustomOrderRecalculatePreviewView(APIView):
+    CURRENT_TASK_STATUS_KEY = "preview_current_task_status"
+    LATEST_RECALCULATION_DATE_KEY = "latest_recalculation_date"
+    LATEST_RECALCULATION_RESULT_KEY = "latest_recalculation_result"
+
     task_id = None
 
     @staticmethod
-    def check_superadmin_status(request):
+    def check_permission(request):
         if not rules.has_perm("views.has_custom_order_access", request.user):
             raise PermissionDenied()
 
     def get(self, request, site_slug: str):
         # Check Superadmin status
-        self.check_superadmin_status(request)
+        self.check_permission(request)
+
+        # Check that the site exists
+        try:
+            Site.objects.get(slug=site_slug)
+        except ObjectDoesNotExist:
+            raise Http404
 
         result = (
             CustomOrderRecalculationPreviewResult.objects.filter(site__slug=site_slug)
@@ -26,38 +37,32 @@ class CustomOrderRecalculatePreviewView(APIView):
             .first()
         )
 
-        # If there is no result and no task_id, then there are no recalculation results for this site
-        if not self.task_id and not result:
-            return Response(
-                {"message": "No recalculation results found for this site."}, status=404
-            )
-
         # If there is a task_id, check the status of the task and add it to the response
         if self.task_id:
             async_result = AsyncResult(self.task_id)
-            preview_info = {"preview_current_task_status": async_result.status}
+            preview_info = {self.CURRENT_TASK_STATUS_KEY: async_result.status}
         else:
-            preview_info = {"preview_current_task_status": "Not started."}
+            preview_info = {self.CURRENT_TASK_STATUS_KEY: "Not started."}
 
         # If there is a result, add it to the response
         if result:
-            preview_info["latest_recalculation_date"] = result.date
-            preview_info["latest_recalculation_result"] = result.result
+            preview_info[self.LATEST_RECALCULATION_DATE_KEY] = result.date
+            preview_info[self.LATEST_RECALCULATION_RESULT_KEY] = result.result
         else:
-            preview_info["latest_recalculation_date"] = None
-            preview_info["latest_recalculation_result"] = {}
+            preview_info[self.LATEST_RECALCULATION_DATE_KEY] = None
+            preview_info[self.LATEST_RECALCULATION_RESULT_KEY] = {}
 
         return Response(preview_info, status=200)
 
     def post(self, request, site_slug: str):
         # Check Superadmin status
-        self.check_superadmin_status(request)
+        self.check_permission(request)
 
         # Check that the site exists
         try:
             site = Site.objects.get(slug=site_slug)
-        except Site.DoesNotExist:
-            return Response({"message": "Site not found"}, status=404)
+        except ObjectDoesNotExist:
+            raise Http404
 
         # Call the recalculation preview task
         try:
@@ -71,11 +76,11 @@ class CustomOrderRecalculatePreviewView(APIView):
             )
 
             return Response(
-                {"message": "Successfully saved recalculation results"}, status=201
+                {"message": "Recalculation preview has been queued."}, status=202
             )
 
         except recalculate_custom_order_preview.OperationalError:
             return Response(
                 {"message": "An error occurred while dispatching remote task"},
-                status=503,
+                status=500,
             )
