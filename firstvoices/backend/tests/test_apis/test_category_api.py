@@ -5,9 +5,15 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.tests.factories import DictionaryEntryFactory, SiteFactory, get_app_admin
-from backend.tests.factories.base import ChildCategoryFactory, ParentCategoryFactory
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.factories import (
+    ChildCategoryFactory,
+    DictionaryEntryFactory,
+    ParentCategoryFactory,
+    SiteFactory,
+    get_app_admin,
+)
+
+from .base_api_test import BaseSiteContentApiTest
 
 
 class TestCategoryEndpoints(BaseSiteContentApiTest):
