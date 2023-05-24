@@ -92,16 +92,16 @@ class CustomOrderRecalculateView(APIView):
         if not rules.has_perm("views.has_custom_order_access", request.user):
             raise PermissionDenied()
 
-    def get(self, request):
+    def get(self, request, site_slug: str):
         # Check Superadmin status
         self.check_superadmin_status(request)
 
         # Return the status of any ongoing recalculation task
         if self.task_id:
             async_result = AsyncResult(self.task_id)
-            return Response({"current_task_status": async_result.status})
+            return Response({"current_recalculation_task_status": async_result.status})
         else:
-            return Response({"current_task_status": "Not started."})
+            return Response({"current_recalculation_task_status": "Not started."})
 
     def post(self, request, site_slug: str):
         # Check Superadmin status

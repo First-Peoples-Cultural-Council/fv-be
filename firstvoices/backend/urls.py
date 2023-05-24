@@ -6,6 +6,7 @@ from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
+    CustomOrderRecalculateView,
 )
 from backend.views.data_views import SitesDataViewSet
 from backend.views.debug.elastic_example import ExampleElasticSearch
@@ -37,6 +38,10 @@ app_name = "api"
 
 urlpatterns = [
     path("debug/elastic", ExampleElasticSearch.as_view()),
+    path(
+        "sites/<str:site_slug>/dictionary-cleanup",
+        CustomOrderRecalculateView.as_view(),
+    ),
     path(
         "sites/<str:site_slug>/dictionary-cleanup/preview",
         CustomOrderRecalculatePreviewView.as_view(),
