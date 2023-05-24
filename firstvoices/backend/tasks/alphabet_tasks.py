@@ -53,3 +53,28 @@ def recalculate_custom_order_preview(site_slug: str):
     preview["updated_entries"] = updated_entries
 
     return preview
+
+
+@shared_task
+def recalculate_custom_order(site_slug: str):
+    site = Site.objects.get(slug=site_slug)
+    results = []
+
+    # Return the results of the recalculation i.e. the changes in custom order and title for every entry
+    for entry in DictionaryEntry.objects.filter(site=site):
+        result = {
+            "title": entry.title,
+            "cleaned_title": "",
+            "previous_custom_order": entry.custom_order,
+            "new_custom_order": "",
+        }
+        entry.save()
+        result["new_custom_order"] = entry.custom_order
+        result["cleaned_title"] = entry.title
+        if (
+            result["previous_custom_order"] != result["new_custom_order"]
+            or result["cleaned_title"] != result["title"]
+        ):
+            results.append(result)
+
+    return results
