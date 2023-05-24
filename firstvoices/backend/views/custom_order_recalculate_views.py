@@ -2,6 +2,7 @@ import rules
 from celery.result import AsyncResult
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.http import Http404
+from rest_framework.exceptions import server_error
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -76,11 +77,8 @@ class CustomOrderRecalculatePreviewView(APIView):
             )
 
             return Response(
-                {"message": "Recalculation preview has been queued."}, status=202
+                {"message": "Recalculation preview has been queued."}, status=201
             )
 
         except recalculate_custom_order_preview.OperationalError:
-            return Response(
-                {"message": "An error occurred while dispatching remote task"},
-                status=500,
-            )
+            raise server_error()

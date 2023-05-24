@@ -92,7 +92,7 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
         )
 
         response_data = json.loads(response.content)
-        assert response.status_code == 202
+        assert response.status_code == 201
         assert response_data == {"message": "Recalculation preview has been queued."}
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
@@ -110,7 +110,7 @@ class TestCustomOrderRecalculatePreview(BaseApiTest):
         )
         response_post_data = json.loads(response_post.content)
 
-        assert response_post.status_code == 202
+        assert response_post.status_code == 201
         assert response_post_data == {
             "message": "Recalculation preview has been queued."
         }
