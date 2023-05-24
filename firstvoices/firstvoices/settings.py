@@ -230,3 +230,17 @@ sentry_sdk.init(
         ),
     ],
 )
+
+
+# File hosting on AWS S3
+# See: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("MEDIA_UPLOAD_S3_BUCKET")
+AWS_S3_REGION_NAME = os.getenv("MEDIA_UPLOAD_S3_REGION")
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_AUTH = True  # this is the default setting, just being explicit
+AWS_QUERYSTRING_EXPIRE = (
+    60 * 60
+)  # seconds until a query string expires; this is the default setting
