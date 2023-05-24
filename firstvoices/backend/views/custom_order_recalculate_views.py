@@ -10,6 +10,8 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order_preview,
 )
 
+SITE_NOT_FOUND = {"message": "Site not found."}
+
 
 class CustomOrderRecalculatePreviewView(APIView):
     task_id = None
@@ -60,7 +62,7 @@ class CustomOrderRecalculatePreviewView(APIView):
         try:
             site = Site.objects.get(slug=site_slug)
         except ObjectDoesNotExist:
-            return Response({"message": "Site not found"}, status=404)
+            return Response(SITE_NOT_FOUND, status=404)
 
         # Call the recalculation preview task
         try:
@@ -100,7 +102,7 @@ class CustomOrderRecalculateView(APIView):
         try:
             Site.objects.get(slug=site_slug)
         except ObjectDoesNotExist:
-            return Response({"message": "Site not found"}, status=404)
+            return Response(SITE_NOT_FOUND, status=404)
 
         # Return the status of any ongoing recalculation task
         for task in self.tasks:
@@ -119,7 +121,7 @@ class CustomOrderRecalculateView(APIView):
         try:
             Site.objects.get(slug=site_slug)
         except ObjectDoesNotExist:
-            return Response({"message": "Site not found"}, status=404)
+            return Response(SITE_NOT_FOUND, status=404)
 
         # Call the recalculation task
         try:

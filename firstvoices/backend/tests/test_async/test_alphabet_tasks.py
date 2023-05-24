@@ -8,6 +8,8 @@ from backend.tests import factories
 
 
 class TestAlphabetTasks:
+    CONFUSABLE_CUSTOM_ORDER = "⚑ᐱ⚑ᐱ⚑ᐱ"
+
     @pytest.fixture
     def site(self):
         return factories.SiteFactory.create(slug="test")
@@ -67,7 +69,7 @@ class TestAlphabetTasks:
                     "title": "ᐱᐱᐱ",
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
-                    "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                    "previous_custom_order": self.CONFUSABLE_CUSTOM_ORDER,
                 }
             ],
         }
@@ -97,7 +99,7 @@ class TestAlphabetTasks:
                     "title": "ᐱᐱᐱ",
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
-                    "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                    "previous_custom_order": self.CONFUSABLE_CUSTOM_ORDER,
                 },
             ],
         }
@@ -138,7 +140,7 @@ class TestAlphabetTasks:
                 "title": "ᐱᐱᐱ",
                 "cleaned_title": "AAA",
                 "new_custom_order": "!!!",
-                "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                "previous_custom_order": self.CONFUSABLE_CUSTOM_ORDER,
             }
         ]
 
