@@ -1,11 +1,6 @@
-from elasticsearch_dsl import Document, Index, Text, connections
-
-from firstvoices.settings import ELASTICSEARCH_HOST
+from elasticsearch_dsl import Document, Index, Text
 
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entry"
-
-# Establish connection
-connections.configure(default={"hosts": ELASTICSEARCH_HOST})
 
 # Defining index and settings
 dictionary_entries = Index(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)

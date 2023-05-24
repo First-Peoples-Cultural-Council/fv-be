@@ -46,6 +46,8 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return raw_objects
 
     def list(self, request):
+        # Raise 500 if elasticsearch is not running, or return an empty list ?
+
         raw_objects = self.get_raw_objects()
 
         # Adding data to objects
