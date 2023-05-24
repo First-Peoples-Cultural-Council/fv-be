@@ -200,6 +200,8 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+ELASTICSEARCH_DEFAULT_CONFIG = {"shards": 1, "replicas": 0}
+
 
 # Sentry monitoring configuration settings.
 # See docs at https://docs.sentry.io/platforms/python/guides/django/

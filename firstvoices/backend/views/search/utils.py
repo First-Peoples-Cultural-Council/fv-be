@@ -30,14 +30,15 @@ def hydrate_objects(raw_objects):
                 .prefetch_related("translation_set")
                 .first()
             )
-            translation_entries = db_object.translation_set.all()
-            translations = []
-            if len(translation_entries):
-                for translation in translation_entries:
-                    translations.append(
-                        {"id": translation.id, "text": translation.text}
-                    )
-            complete_object["translations"] = translations
+            if db_object:
+                translation_entries = db_object.translation_set.all()
+                translations = []
+                if len(translation_entries):
+                    for translation in translation_entries:
+                        translations.append(
+                            {"id": translation.id, "text": translation.text}
+                        )
+                complete_object["translations"] = translations
 
         complete_objects.append(complete_object)
 

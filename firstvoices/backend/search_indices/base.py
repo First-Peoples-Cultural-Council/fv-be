@@ -10,10 +10,9 @@ def elasticsearch_running():
     try:
         es = Elasticsearch([ELASTICSEARCH_HOST], verify_certs=True)
         if not es.ping():
-            raise ValueError(
-                "Connection Refused"
-            )  # This string is also present in NewConnectionError
+            raise ValueError("Connection Refused")
         connections.configure(default={"hosts": ELASTICSEARCH_HOST})
+        return True
     except (ConnectionError, ValueError):
         logger = logging.getLogger(__name__)
         logger.warning(

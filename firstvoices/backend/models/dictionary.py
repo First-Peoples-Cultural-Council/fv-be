@@ -249,6 +249,14 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     def set_custom_order(self, alphabet):
         self.custom_order = alphabet.get_custom_order(self.title)
 
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
+        # Deleting entry from elasticsearch
+        if elasticsearch_running():
+            index_entry = DictionaryEntryDocument.get(id=self.id)
+            index_entry.delete()
+
 
 class DictionaryEntryLink(BaseModel):
     class Meta:
