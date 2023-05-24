@@ -88,7 +88,7 @@ class Audio(MediaBase):
     # acknowledgment from fvm:recorder
     # from fvm:source
     speakers = models.ManyToManyField(
-        Person, through="AudioSpeaker", related_name="audio_set"
+        Person, through="AudioSpeaker", related_name="audio_set", blank=True
     )
 
     def __unicode__(self):
@@ -166,6 +166,6 @@ class RelatedMediaMixin(models.Model):
     class Meta:
         abstract = True
 
-    related_audio = models.ManyToManyField(Audio)
-    related_images = models.ManyToManyField(Image)
-    related_videos = models.ManyToManyField(Video)
+    related_audio = models.ManyToManyField(Audio, blank=True)
+    related_images = models.ManyToManyField(Image, blank=True)
+    related_videos = models.ManyToManyField(Video, blank=True)
