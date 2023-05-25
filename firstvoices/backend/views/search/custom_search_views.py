@@ -1,8 +1,8 @@
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
-from backend.views.search.search_query_builder import get_search_query
-from backend.views.search.utils import hydrate_objects
+from backend.search.query_builder import get_search_query
+from backend.search.utils.object_utils import hydrate_objects
 
 
 class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

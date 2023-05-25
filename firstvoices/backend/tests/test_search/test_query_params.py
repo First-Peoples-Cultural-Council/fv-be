@@ -1,6 +1,6 @@
 import pytest
 
-from backend.views.search.search_query_builder import get_search_query
+from backend.search.query_builder import get_search_query
 
 
 class TestQueryParams:

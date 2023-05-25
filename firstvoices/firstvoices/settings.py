@@ -123,7 +123,12 @@ if DEBUG:
         "disable_existing_loggers": False,
         "handlers": {"console": {"class": "logging.StreamHandler"}},
         "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {ELASTICSEARCH_LOGGER: {"handlers": ["console"], "level": "INFO"}},
+        "loggers": {
+            ELASTICSEARCH_LOGGER: {
+                "handlers": ["console"],
+                "level": "INFO",  # Change level to INFO to view connection requests
+            }
+        },
     }
 
 AUTHENTICATION_BACKENDS = [
