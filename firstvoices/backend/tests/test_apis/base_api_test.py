@@ -244,7 +244,12 @@ class DetailApiTestMixin:
         assert response_data == self.get_expected_detail_response(instance, site)
 
 
-class ListPermissionsApiTestMixin:
+class ControlledListApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
+    """
+
     @pytest.mark.django_db
     def test_list_permissions(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
@@ -266,10 +271,10 @@ class ListPermissionsApiTestMixin:
         )
 
 
-class DetailPermissionsApiTestMixin:
+class ControlledDetailApiTestMixin:
     """
-    Additional test cases for items with their own visibility settings, suitable for testing APIs related to
-    BaseControlledSiteContentModel.
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
     """
 
     @pytest.mark.django_db
@@ -285,17 +290,15 @@ class DetailPermissionsApiTestMixin:
         assert response.status_code == 403
 
 
-class BaseControlledSiteContentApiTest(
-    ListApiTestMixin,
-    ListPermissionsApiTestMixin,
-    DetailApiTestMixin,
-    DetailPermissionsApiTestMixin,
-    BaseSiteContentApiTest,
+class BaseReadOnlyUncontrolledSiteContentApiTest(
+    ListApiTestMixin, DetailApiTestMixin, BaseSiteContentApiTest
 ):
     pass
 
 
-class BaseUncontrolledSiteContentApiTest(
-    ListApiTestMixin, DetailApiTestMixin, BaseSiteContentApiTest
+class BaseReadOnlyControlledSiteContentApiTest(
+    ControlledListApiTestMixin,
+    ControlledDetailApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     pass
