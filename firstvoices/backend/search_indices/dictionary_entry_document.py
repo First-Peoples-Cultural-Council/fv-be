@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Document, Index, Text
+from elasticsearch_dsl import Document, Index, Keyword, Text
 
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -16,7 +16,7 @@ dictionary_entries.settings(
 class DictionaryEntryDocument(Document):
     _id = Text()
     title = Text()
-    type = Text()
+    type = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
