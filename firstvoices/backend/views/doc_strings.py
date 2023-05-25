@@ -1,14 +1,21 @@
 from django.utils.translation import gettext as _
 
-success_list_200 = _(
+success_200_list = _(
     "Success. List may be empty if no resources are available for the current user."
 )
-success_item_200 = _("Success. Some field content may be hidden due to permissions.")
+success_200_detail = _("Success. Some field content may be hidden due to permissions.")
+success_200_edit = _("Success. Updated resource in response.")
+
 success_201 = _("Created. New resource in response.")
 
-error_validation_400 = _("Error. Invalid request.")
-error_403 = _("Error. Not authorized.")
-error_404 = _("Error. Not found.")
+success_204_deleted = _(
+    "Success. Resource destroyed, if it existed. No content in response."
+)
 
-site_content_list_error_403 = _("Error. Not authorized for this site.")
-site_content_list_error_404 = _("Error. Site not found.")
+error_400_validation = _("Error. Invalid data.")
+
+error_403 = _("Error. Not authorized.")
+error_403_site_access_denied = _("Error. Not authorized for this site.")
+
+error_404 = _("Error. Not found.")
+error_404_missing_site = _("Error. Site not found.")
