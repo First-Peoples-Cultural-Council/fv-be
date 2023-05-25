@@ -98,3 +98,52 @@ class TestAlphabetTasks:
                 },
             ],
         }
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_unaffected(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+        factories.DictionaryEntryFactory.create(site=site, title="abc")
+        factories.DictionaryEntryFactory.create(site=site, title="cab")
+        factories.CharacterFactory.create(site=site, title="d")
+
+        result = recalculate_custom_order_preview("test")
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [],
+        }
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_unknown_unaffected(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+        factories.DictionaryEntryFactory.create(site=site, title="abcx")
+        factories.CharacterFactory.create(site=site, title="d")
+
+        result = recalculate_custom_order_preview("test")
+        assert result == {
+            "unknown_character_count": {"⚑x": 1},
+            "updated_entries": [],
+        }
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_no_unknown(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.DictionaryEntryFactory.create(site=site, title="aab")
+        factories.CharacterFactory.create(site=site, title="aa")
+
+        result = recalculate_custom_order_preview("test")
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [
+                {
+                    "title": "aab",
+                    "cleaned_title": "",
+                    "previous_custom_order": "!!#",
+                    "new_custom_order": "$#",
+                }
+            ],
+        }
