@@ -180,7 +180,7 @@ class CustomOrderRecalculationPreviewResultFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
-    result = {"test": "test"}
+    latest_recalculation_result = {"test": "test"}
 
 
 class ChildCategoryFactory(ParentCategoryFactory):

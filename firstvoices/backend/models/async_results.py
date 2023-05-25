@@ -18,8 +18,9 @@ class CustomOrderRecalculationPreviewResult(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
-    date = models.DateTimeField(auto_now_add=True)
-    result = models.JSONField()
+    latest_recalculation_date = models.DateTimeField(auto_now_add=True)
+    latest_recalculation_result = models.JSONField()
+    task_id = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.site.title + " - " + str(self.date)

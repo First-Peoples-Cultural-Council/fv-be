@@ -1,83 +1,48 @@
-import rules
-from celery.result import AsyncResult
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.http import Http404
-from rest_framework.exceptions import server_error
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
-from backend.models import CustomOrderRecalculationPreviewResult, Site
+from backend.models import CustomOrderRecalculationPreviewResult
+from backend.serializers.async_results_serializers import (
+    CustomOrderRecalculationPreviewResultDetailSerializer,
+)
 from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.exceptions import CeleryError
 
 
-class CustomOrderRecalculatePreviewView(APIView):
-    CURRENT_TASK_STATUS_KEY = "preview_current_task_status"
-    LATEST_RECALCULATION_DATE_KEY = "latest_recalculation_date"
-    LATEST_RECALCULATION_RESULT_KEY = "latest_recalculation_result"
+class CustomOrderRecalculatePreviewView(
+    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
+):
+    http_method_names = ["get", "post"]
+    serializer_class = CustomOrderRecalculationPreviewResultDetailSerializer
 
-    task_id = None
-
-    @staticmethod
-    def check_permission(request):
-        if not rules.has_perm("views.has_custom_order_access", request.user):
-            raise PermissionDenied()
-
-    def get(self, request, site_slug: str):
-        # Check Superadmin status
-        self.check_permission(request)
-
-        # Check that the site exists
-        try:
-            Site.objects.get(slug=site_slug)
-        except ObjectDoesNotExist:
-            raise Http404
-
-        result = (
-            CustomOrderRecalculationPreviewResult.objects.filter(site__slug=site_slug)
-            .order_by("-date")
-            .first()
-        )
-
-        # If there is a task_id, check the status of the task and add it to the response
-        if self.task_id:
-            async_result = AsyncResult(self.task_id)
-            preview_info = {self.CURRENT_TASK_STATUS_KEY: async_result.status}
+    def get_queryset(self):
+        site = self.get_validated_site()
+        if site.count() > 0:
+            return CustomOrderRecalculationPreviewResult.objects.filter(
+                site__slug=site[0].slug
+            ).order_by("-latest_recalculation_date")
         else:
-            preview_info = {self.CURRENT_TASK_STATUS_KEY: "Not started."}
+            return CustomOrderRecalculationPreviewResult.objects.none()
 
-        # If there is a result, add it to the response
-        if result:
-            preview_info[self.LATEST_RECALCULATION_DATE_KEY] = result.date
-            preview_info[self.LATEST_RECALCULATION_RESULT_KEY] = result.result
-        else:
-            preview_info[self.LATEST_RECALCULATION_DATE_KEY] = None
-            preview_info[self.LATEST_RECALCULATION_RESULT_KEY] = {}
-
-        return Response(preview_info, status=200)
-
-    def post(self, request, site_slug: str):
-        # Check Superadmin status
-        self.check_permission(request)
-
-        # Check that the site exists
-        try:
-            site = Site.objects.get(slug=site_slug)
-        except ObjectDoesNotExist:
-            raise Http404
+    def create(self, request, *args, **kwargs):
+        site = self.get_validated_site()
+        site_slug = site[0].slug
 
         # Call the recalculation preview task
         try:
             recalculation_results = recalculate_custom_order_preview.apply_async(
                 (site_slug,)
             )
-            self.task_id = recalculation_results.task_id
 
             # Delete any previous results
-            CustomOrderRecalculationPreviewResult.objects.filter(site=site).delete()
+            CustomOrderRecalculationPreviewResult.objects.filter(site=site[0]).delete()
 
             # Save the result to the database
             CustomOrderRecalculationPreviewResult.objects.create(
-                site=site, result=recalculation_results.get(timeout=360)
+                site=site[0],
+                latest_recalculation_result=recalculation_results.get(timeout=360),
+                task_id=recalculation_results.task_id,
             )
 
             return Response(
@@ -85,4 +50,4 @@ class CustomOrderRecalculatePreviewView(APIView):
             )
 
         except recalculate_custom_order_preview.OperationalError:
-            raise server_error()
+            raise CeleryError()

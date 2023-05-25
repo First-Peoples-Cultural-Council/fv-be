@@ -1,4 +1,3 @@
-from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
@@ -31,15 +30,15 @@ sites_router.register(
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+sites_router.register(
+    r"dictionary-cleanup/preview",
+    CustomOrderRecalculatePreviewView,
+    basename="dictionary-cleanup/preview",
+)
 
 app_name = "api"
 
-urlpatterns = [
-    path(
-        "sites/<str:site_slug>/dictionary-cleanup/preview",
-        CustomOrderRecalculatePreviewView.as_view(),
-    ),
-]
+urlpatterns = []
 
 urlpatterns += ROUTER.urls
 urlpatterns += sites_router.urls
