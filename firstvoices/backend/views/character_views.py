@@ -4,6 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models import DictionaryEntry
 from backend.models.characters import Character, IgnoredCharacter
+from backend.models.media import Audio, Image, Video
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
     IgnoredCharacterSerializer,
@@ -50,7 +51,19 @@ class CharactersViewSet(
                     Prefetch(
                         "related_dictionary_entries",
                         queryset=DictionaryEntry.objects.visible(self.request.user),
-                    )
+                    ),
+                    Prefetch(
+                        "related_audio",
+                        queryset=Audio.objects.visible(self.request.user),
+                    ),
+                    Prefetch(
+                        "related_images",
+                        queryset=Image.objects.visible(self.request.user),
+                    ),
+                    Prefetch(
+                        "related_videos",
+                        queryset=Video.objects.visible(self.request.user),
+                    ),
                 )
             )
         else:

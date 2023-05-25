@@ -14,6 +14,7 @@ from .base import (
 )
 from .category import Category
 from .characters import Alphabet, Character
+from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
 
 TITLE_MAX_LENGTH = 225
@@ -155,7 +156,7 @@ class TypeOfDictionaryEntry(models.TextChoices):
     PHRASE = "PHRASE", _("Phrase")
 
 
-class DictionaryEntry(AudienceMixin, BaseControlledSiteContentModel):
+class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteContentModel):
     """
     Model for dictionary entries
     """
@@ -181,10 +182,6 @@ class DictionaryEntry(AudienceMixin, BaseControlledSiteContentModel):
     #  truncated at max length.
     custom_order = TruncatingCharField(max_length=TITLE_MAX_LENGTH, blank=True)
 
-    # exclude_from_games from fv-word:available_in_games, fvaudience:games
-
-    # exclude_from_kids from fvaudience:children fv:available_in_childrens_archive
-
     # from nxtag:tags
     batch_id = models.CharField(max_length=255, blank=True)
 
@@ -207,6 +204,12 @@ class DictionaryEntry(AudienceMixin, BaseControlledSiteContentModel):
 
     # Word of the day flag, if true, will not be included when looking for word-of-the-day
     exclude_from_wotd = models.BooleanField(default=False, blank=False)
+
+    # exclude_from_games from fv-word:available_in_games, fvaudience:games
+    # exclude_from_kids from fvaudience:children fv:available_in_childrens_archive
+    # related_audio from fv:related_audio
+    # related_images from fv:related_pictures
+    # related_videos from fv:related_videos
 
     class Meta:
         verbose_name = _("Dictionary Entry")
