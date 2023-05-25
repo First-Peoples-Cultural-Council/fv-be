@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from celery import shared_task
 
 from backend.models import Alphabet, DictionaryEntry, Site
@@ -7,18 +9,20 @@ from backend.models import Alphabet, DictionaryEntry, Site
 def recalculate_custom_order_preview(site_slug: str):
     site = Site.objects.get(slug=site_slug)
     alphabet = Alphabet.objects.get(site=site)
-    preview = {}
+    preview = OrderedDict()
 
     # First, get the changes in custom order and title for every entry, and store entries with unknown characters
     updated_entries = []
     unknown_character_count = {}
     for entry in DictionaryEntry.objects.filter(site=site):
-        result = {
-            "title": entry.title,
-            "cleaned_title": "",
-            "previous_custom_order": entry.custom_order,
-            "new_custom_order": "",
-        }
+        result = OrderedDict(
+            {
+                "title": entry.title,
+                "cleaned_title": "",
+                "previous_custom_order": entry.custom_order,
+                "new_custom_order": "",
+            }
+        )
 
         cleaned_title = alphabet.clean_confusables(entry.title)
         new_order = alphabet.get_custom_order(cleaned_title)

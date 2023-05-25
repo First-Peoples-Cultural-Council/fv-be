@@ -8,7 +8,7 @@ from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseApiTest
 
 
-class TestCustomOrderRecalculatePreview(BaseApiTest):
+class TestDictionaryCleanupPreview(BaseApiTest):
     API_DETAIL_VIEW = "api:site-detail"
     SUPERADMIN_PERMISSION = "views.has_custom_order_access"
 
