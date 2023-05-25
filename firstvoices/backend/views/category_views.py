@@ -1,6 +1,7 @@
 import itertools
 
 from django.db.models import Prefetch, Q
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -18,19 +19,24 @@ from backend.serializers.category_serializers import (
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
+from . import doc_strings
+
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of categories associated with the specified site.",
+        description=_("A list of categories associated with the specified site."),
         responses={
-            200: CategoryListSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site."),
-            404: OpenApiResponse(description="Todo: Site not found."),
+            200: OpenApiResponse(
+                description=doc_strings.success_list_200,
+                response=CategoryListSerializer,
+            ),
+            403: OpenApiResponse(description=doc_strings.site_content_list_error_403),
+            404: OpenApiResponse(description=doc_strings.site_content_list_error_404),
         },
         parameters=[
             OpenApiParameter(
                 name="contains",
-                description="filter by type of dictionary entry associated with it",
+                description=_("Filter by type of dictionary entry associated with it"),
                 required=False,
                 type=str,
                 examples=[
@@ -39,18 +45,23 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
                     OpenApiExample(
                         "WORD|PHRASE",
                         value="WORD|PHRASE",
-                        description="Contains both. Order is not relevant here.",
+                        description=_(
+                            "Contains any of the specified types. Order is not relevant."
+                        ),
                     ),
                 ],
             )
         ],
     ),
     retrieve=extend_schema(
-        description="Details about a specific category.",
+        description=_("Details about a specific category."),
         responses={
-            200: CategoryDetailSerializer,
-            403: OpenApiResponse(description="Todo: Error Not Authorized"),
-            404: OpenApiResponse(description="Todo: Not Found"),
+            200: OpenApiResponse(
+                description=doc_strings.success_item_200,
+                response=CategoryDetailSerializer,
+            ),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
 )
