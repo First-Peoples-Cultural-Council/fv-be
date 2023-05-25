@@ -1,5 +1,5 @@
 from backend.models.dictionary import DictionaryEntry
-from backend.search_indices.dictionary_entry_document import (
+from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
 

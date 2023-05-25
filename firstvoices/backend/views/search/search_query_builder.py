@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 
-from backend.search_indices.dictionary_entry_document import (
+from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
 

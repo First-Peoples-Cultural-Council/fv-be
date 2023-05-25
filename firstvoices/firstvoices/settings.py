@@ -92,6 +92,9 @@ REST_FRAMEWORK = {
     },
 }
 
+# LOGGERS
+ELASTICSEARCH_LOGGER = "elasticsearch"
+
 # local only
 if DEBUG:
     REST_FRAMEWORK.update(
@@ -115,6 +118,13 @@ if DEBUG:
     }
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {"console": {"class": "logging.StreamHandler"}},
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {ELASTICSEARCH_LOGGER: {"handlers": ["console"], "level": "INFO"}},
+    }
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",

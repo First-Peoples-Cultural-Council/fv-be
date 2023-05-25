@@ -3,8 +3,8 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
-from backend.search_indices.base import elasticsearch_running
-from backend.search_indices.dictionary_entry_document import DictionaryEntryDocument
+from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
+from backend.search.utils import elasticsearch_running
 from backend.utils.character_utils import clean_input
 
 from .base import (
