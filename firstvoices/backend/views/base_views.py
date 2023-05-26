@@ -106,11 +106,11 @@ class DictionarySerializerContextMixin:
 
 
 class ListViewOnlyModelViewSet(
-    GenericViewSet,
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
     mixins.ListModelMixin,
+    GenericViewSet,
 ):
     """
     A custom viewset that provides all ModelViewSet functionality except for retrieve (detail view).
