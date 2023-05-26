@@ -6,9 +6,12 @@ from backend.models.constants import Visibility
 from backend.tests import factories
 
 from .base_api_test import BaseUncontrolledSiteContentApiTest
+from .base_media_test import RelatedMediaTestMixin
 
 
-class TestCharactersEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestCharactersEndpoints(
+    RelatedMediaTestMixin, BaseUncontrolledSiteContentApiTest
+):
     """
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
@@ -22,6 +25,21 @@ class TestCharactersEndpoints(BaseUncontrolledSiteContentApiTest):
             site=site, note="a note", approximate_form="approx"
         )
 
+    def create_instance_with_media(
+        self,
+        site,
+        visibility,
+        related_images=None,
+        related_audio=None,
+        related_videos=None,
+    ):
+        return factories.CharacterFactory.create(
+            site=site,
+            related_images=related_images,
+            related_audio=related_audio,
+            related_videos=related_videos,
+        )
+
     def get_expected_response(self, instance, site):
         return {
             "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
@@ -32,6 +50,9 @@ class TestCharactersEndpoints(BaseUncontrolledSiteContentApiTest):
             "note": instance.note,
             "variants": [],
             "relatedEntries": [],
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
         }
 
     @pytest.mark.django_db

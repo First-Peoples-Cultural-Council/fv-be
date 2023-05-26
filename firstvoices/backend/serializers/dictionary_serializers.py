@@ -8,6 +8,7 @@ from backend.serializers.base_serializers import (
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.site_serializers import SiteSummarySerializer
 
 
@@ -53,7 +54,9 @@ class DictionaryEntrySummarySerializer(SiteContentLinkedTitleSerializer):
         model = dictionary.DictionaryEntry
 
 
-class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
+class DictionaryEntryDetailSerializer(
+    RelatedMediaSerializerMixin, serializers.HyperlinkedModelSerializer
+):
     url = SiteHyperlinkedIdentityField(view_name="api:dictionaryentry-detail")
     visibility = serializers.CharField(source="get_visibility_display")
     translations = TranslationSerializer(source="translation_set", many=True)
@@ -159,25 +162,29 @@ class DictionaryEntryDetailSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = dictionary.DictionaryEntry
-        fields = base_timestamp_fields + (
-            "url",
-            "id",
-            "title",
-            "type",
-            "custom_order",
-            "visibility",
-            "categories",
-            "exclude_from_games",
-            "exclude_from_kids",
-            "related_entries",
-            "acknowledgements",
-            "alternate_spellings",
-            "notes",
-            "translations",
-            "pronunciations",
-            "site",
-            "split_chars",
-            "split_chars_base",
-            "split_words",
-            "split_words_base",
+        fields = (
+            base_timestamp_fields
+            + RelatedMediaSerializerMixin.Meta.fields
+            + (
+                "url",
+                "id",
+                "title",
+                "type",
+                "custom_order",
+                "visibility",
+                "categories",
+                "exclude_from_games",
+                "exclude_from_kids",
+                "related_entries",
+                "acknowledgements",
+                "alternate_spellings",
+                "notes",
+                "translations",
+                "pronunciations",
+                "site",
+                "split_chars",
+                "split_chars_base",
+                "split_words",
+                "split_words_base",
+            )
         )
