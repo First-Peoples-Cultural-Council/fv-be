@@ -9,7 +9,7 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
 
 
-def get_session():
+def get_aws_resource():
     """
     Gets a boto3 AWS session which can be used to access various AWS services.
 
@@ -33,10 +33,26 @@ def get_session():
         )
         return False
 
-    return boto3.Session(
+    session = boto3.Session(
         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     )
+
+    return session.resource("s3")
+
+
+def get_bucket():
+    s3 = get_aws_resource()
+    if s3 is False:
+        logger.error("Could not get AWS session.")
+        return False
+
+    bucket = s3.Bucket(os.getenv("EXPORT_DATA_S3_BUCKET"))
+    if bucket is False:
+        logger.error("Could not get AWS Bucket.")
+        return False
+
+    return bucket
 
 
 def download_file_from_s3(key):
@@ -57,7 +73,7 @@ def download_file_from_s3(key):
         r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}", file_name
     ).group(0)
 
-    client = get_session().resource("s3").meta.client
+    client = get_aws_resource().meta.client
     if not client:
         logger.error(
             f"Could not get client. File ({file_name}) was not downloaded successfully."
@@ -92,15 +108,7 @@ def download_directory_from_s3(directory_name):
     :return: True if the files were successfully downloaded, else False.
     """
 
-    s3 = get_session().resource("s3")
-    if not s3:
-        logger.error("Could not get AWS session.")
-        return False
-
-    bucket = s3.Bucket(os.getenv("EXPORT_DATA_S3_BUCKET"))
-    if not bucket:
-        logger.error("Could not get AWS Bucket.")
-        return False
+    bucket = get_bucket()
 
     objects = bucket.objects.filter(Prefix=directory_name)
     for file in objects:
@@ -118,15 +126,7 @@ def download_exports_after_timestamp(timestamp):
     :return: True if the files were successfully downloaded, else False.
     """
 
-    s3 = get_session().resource("s3")
-    if not s3:
-        logger.error("Could not get AWS session.")
-        return False
-
-    bucket = s3.Bucket(os.getenv("EXPORT_DATA_S3_BUCKET"))
-    if not bucket:
-        logger.error("Could not get AWS Bucket.")
-        return False
+    bucket = get_bucket()
 
     objects = bucket.objects.all()
 
@@ -141,4 +141,36 @@ def download_exports_after_timestamp(timestamp):
 
     for file in objects_after_timestamp:
         download_file_from_s3(file.key)
+    return True
+
+
+def download_latest_exports():
+    """
+    Downloads all files from the S3 bucket that have the single latest timestamp in their key (directory). Files are
+    stored in the "scripts/export_data/<timestamp for the files>/" directory.
+
+    :return: True if the files were successfully downloaded, else False.
+    """
+
+    bucket = get_bucket()
+
+    objects = bucket.objects.all()
+
+    latest_timestamp = None
+    output_keys = []
+    for file in objects:
+        timestamp = re.search(
+            r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}", file.key
+        ).group(0)
+        if latest_timestamp is None or datetime.fromisoformat(
+            timestamp
+        ) > datetime.fromisoformat(latest_timestamp):
+            latest_timestamp = timestamp
+            output_keys.clear()
+            output_keys.append(file.key)
+        elif timestamp == latest_timestamp:
+            output_keys.append(file.key)
+
+    for key in output_keys:
+        download_file_from_s3(key)
     return True
