@@ -13,6 +13,7 @@ from pathlib import Path
 
 import sentry_sdk
 from dotenv import load_dotenv
+from elasticsearch_dsl import connections
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -216,6 +217,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
 ELASTICSEARCH_DEFAULT_CONFIG = {"shards": 1, "replicas": 0}
+connections.configure(default={"hosts": ELASTICSEARCH_HOST})
 
 
 # Sentry monitoring configuration settings.

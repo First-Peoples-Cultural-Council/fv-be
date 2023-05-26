@@ -1,11 +1,14 @@
+import logging
+
 import rules
 from django.db import models
 from django.utils.translation import gettext as _
+from elasticsearch.exceptions import ConnectionError, NotFoundError
 
 from backend.permissions import predicates
 from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
-from backend.search.utils.search_utils import elasticsearch_running
 from backend.utils.character_utils import clean_input
+from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 from .base import (
     BaseControlledSiteContentModel,
@@ -234,11 +237,16 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         super().save(*args, **kwargs)
 
         # Add document to es index
-        if elasticsearch_running():
+        try:
             index_entry = DictionaryEntryDocument(
                 _id=self.id, title=self.title, type=self.type
             )
             index_entry.save()
+        except ConnectionError:
+            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+            logger.warning(
+                "Elasticsearch server down. Documents will not be indexed or returned from search."
+            )
 
     def clean_title(self, alphabet):
         # strip whitespace and normalize
@@ -250,12 +258,21 @@ class DictionaryEntry(BaseControlledSiteContentModel):
         self.custom_order = alphabet.get_custom_order(self.title)
 
     def delete(self, *args, **kwargs):
-        # Deleting entry from elasticsearch
-        if elasticsearch_running() and DictionaryEntryDocument.exists(id=self.id):
-            index_entry = DictionaryEntryDocument.get(id=self.id)
+        try:
+            obj_id = (
+                self.id
+            )  # Getting it before since self will be deleted after the delete statement
+            super().delete(*args, **kwargs)
+            index_entry = DictionaryEntryDocument.get(id=obj_id)
             index_entry.delete()
-
-        super().delete(*args, **kwargs)
+        except ConnectionError:
+            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+            logger.warning(
+                "Elasticsearch server down. Documents will not be indexed or returned from search."
+            )
+        except NotFoundError:
+            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+            logger.warning("Indexed document not found. Cannot delete from index.")
 
 
 class DictionaryEntryLink(BaseModel):
