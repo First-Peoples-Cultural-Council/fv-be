@@ -1,6 +1,8 @@
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
+from rest_framework import mixins
 from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend import permissions
@@ -101,3 +103,17 @@ class DictionarySerializerContextMixin:
         context["character_variants"] = character_variants
         context["ignorable_characters"] = ignorable_characters
         return context
+
+
+class ListViewOnlyModelViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    GenericViewSet,
+):
+    """
+    A custom viewset that provides all ModelViewSet functionality except for retrieve (detail view).
+    """
+
+    pass
