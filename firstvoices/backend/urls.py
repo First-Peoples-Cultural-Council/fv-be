@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
@@ -5,6 +6,7 @@ from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
+    CustomOrderRecalculateView,
 )
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
@@ -38,7 +40,12 @@ sites_router.register(
 
 app_name = "api"
 
-urlpatterns = []
+urlpatterns = [
+    path(
+        "sites/<str:site_slug>/dictionary-cleanup/",
+        CustomOrderRecalculateView.as_view(),
+    ),
+]
 
 urlpatterns += ROUTER.urls
 urlpatterns += sites_router.urls
