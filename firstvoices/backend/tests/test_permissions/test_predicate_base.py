@@ -92,14 +92,14 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_member(user, obj)
+        assert base.has_at_least_member_membership(user, obj)
 
     @pytest.mark.django_db
     def test_is_at_least_member_false(self):
         user = UserFactory.create(id=1)
         site = SiteFactory.create(id=1)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_member(user, obj) is False
+        assert base.has_at_least_member_membership(user, obj) is False
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
@@ -108,7 +108,7 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=role)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_assistant(user, obj)
+        assert base.has_at_least_assistant_membership(user, obj)
 
     @pytest.mark.django_db
     def test_is_at_least_assistant_false(self):
@@ -116,7 +116,7 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=Role.MEMBER)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_assistant(user, obj) is False
+        assert base.has_at_least_assistant_membership(user, obj) is False
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
@@ -125,7 +125,7 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=role)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_editor(user, obj)
+        assert base.has_at_least_editor_membership(user, obj)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
@@ -134,7 +134,7 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=role)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_editor(user, obj) is False
+        assert base.has_at_least_editor_membership(user, obj) is False
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.LANGUAGE_ADMIN])
@@ -143,7 +143,7 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=role)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_language_admin(user, obj)
+        assert base.has_at_least_language_admin_membership(user, obj)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
@@ -152,16 +152,16 @@ class TestBaseSiteRolePredicates:
         site = SiteFactory.create(id=1)
         MembershipFactory.create(user=user, site=site, role=role)
         obj = ControlledSiteContentFactory.build(site=site)
-        assert base.is_at_least_language_admin(user, obj) is False
+        assert base.has_at_least_language_admin_membership(user, obj) is False
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "predicate",
         [
-            base.is_at_least_member,
-            base.is_at_least_assistant,
-            base.is_at_least_editor,
-            base.is_at_least_language_admin,
+            base.has_at_least_member_membership,
+            base.has_at_least_assistant_membership,
+            base.has_at_least_editor_membership,
+            base.has_at_least_language_admin_membership,
         ],
     )
     def test_is_anonymous(self, predicate):
