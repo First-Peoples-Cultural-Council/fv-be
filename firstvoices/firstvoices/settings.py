@@ -196,3 +196,6 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+
+# Disallow exports unless you have write permission
+IMPORT_EXPORT_EXPORT_PERMISSION_CODE = "change"
