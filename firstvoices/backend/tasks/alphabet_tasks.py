@@ -18,6 +18,7 @@ def recalculate_custom_order_preview(site_slug: str):
         result = OrderedDict(
             {
                 "title": entry.title,
+                "is_title_updated": False,
                 "cleaned_title": "",
                 "previous_custom_order": entry.custom_order,
                 "new_custom_order": "",
@@ -31,6 +32,7 @@ def recalculate_custom_order_preview(site_slug: str):
             result["new_custom_order"] = new_order
         if cleaned_title != entry.title:
             result["cleaned_title"] = cleaned_title
+            result["is_title_updated"] = True
 
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
         # If a "⚑" is in the custom order, it means that the character is unknown

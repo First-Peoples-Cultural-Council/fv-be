@@ -42,6 +42,7 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "abc",
+                    "is_title_updated": False,
                     "cleaned_title": "",
                     "new_custom_order": "!#$",
                     "previous_custom_order": "⚑a⚑b⚑c",
@@ -62,6 +63,7 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "ᐱᐱᐱ",
+                    "is_title_updated": True,
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
                     "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
@@ -86,12 +88,14 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "abcd",
+                    "is_title_updated": False,
                     "cleaned_title": "",
                     "new_custom_order": "#$%⚑d",
                     "previous_custom_order": "⚑a⚑b⚑c⚑d",
                 },
                 {
                     "title": "ᐱᐱᐱ",
+                    "is_title_updated": True,
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
                     "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
@@ -141,6 +145,7 @@ class TestAlphabetTasks:
             "updated_entries": [
                 {
                     "title": "aab",
+                    "is_title_updated": False,
                     "cleaned_title": "",
                     "previous_custom_order": "!!#",
                     "new_custom_order": "$#",

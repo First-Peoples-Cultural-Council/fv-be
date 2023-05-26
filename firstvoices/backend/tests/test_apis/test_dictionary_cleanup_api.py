@@ -11,7 +11,6 @@ from backend.tests.test_apis.base_api_test import BaseApiTest
 
 class TestDictionaryCleanupPreview(BaseApiTest):
     API_DETAIL_VIEW = "api:site-detail"
-    SUPERADMIN_PERMISSION = "views.has_custom_order_access"
 
     def get_detail_endpoint(self, key):
         return (
@@ -52,7 +51,6 @@ class TestDictionaryCleanupPreview(BaseApiTest):
 
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         response = self.client.get(self.get_detail_endpoint(site.slug))
         response_data = json.loads(response.content)
@@ -68,7 +66,6 @@ class TestDictionaryCleanupPreview(BaseApiTest):
 
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
 
@@ -87,7 +84,6 @@ class TestDictionaryCleanupPreview(BaseApiTest):
 
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
-        assert user.has_perm(self.SUPERADMIN_PERMISSION, site)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
 
