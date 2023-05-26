@@ -3,6 +3,7 @@ import json
 import pytest
 from rest_framework.test import APIClient
 
+from backend.models.category import Category
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests.factories import (
@@ -25,6 +26,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     API_LIST_VIEW = "api:category-list"
     API_DETAIL_VIEW = "api:category-detail"
+    model = Category
 
     def setup_method(self):
         self.client = APIClient()
@@ -51,6 +53,25 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "description": instance.description,
             "children": [],
         }
+
+    def get_valid_data(self, site):
+        parent = CategoryFactory.create(site=site)
+
+        return {
+            "title": "Cool new title",
+            "description": "Cool new description",
+            "parent_id": str(parent.id),
+        }
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        assert actual_instance.title == expected_data["title"]
+        assert actual_instance.description == expected_data["description"]
+        assert str(actual_instance.parent.id) == expected_data["parent_id"]
+
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["description"] == expected_data["description"]
+        assert actual_response["parent"]["id"] == expected_data["parent_id"]
 
     def get_categories_with_word_phrase(self):
         word_entry = DictionaryEntryFactory(site=self.site)
@@ -173,7 +194,11 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "title": child_category.title,
             "description": child_category.description,
             "children": [],
-            "parent": str(parent_category.id),
+            "parent": {
+                "id": str(parent_category.id),
+                "title": parent_category.title,
+                "url": f"http://testserver{self.get_detail_endpoint(parent_category.id, parent_category.site.slug)}",
+            },
         }
 
     @pytest.mark.django_db
