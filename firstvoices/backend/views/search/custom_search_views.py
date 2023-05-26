@@ -17,27 +17,20 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         return {"q": input_q}
 
-    def get_raw_objects(self):
-        """
-        Function to build and execute the search query.
-        Returns raw objects returned from elastic-search.
-        """
-        search_params = self.get_search_params()
-        search_query = get_search_query(q=search_params["q"])
-        raw_objects = []
-        response = search_query.execute()
-        if response["hits"]["total"]["value"]:
-            for hit in response["hits"]["hits"]:
-                raw_objects.append(hit)
-        return raw_objects
-
     def list(self, request):
         # Raise 500 if elasticsearch is not running, or return an empty list ?
 
-        raw_objects = self.get_raw_objects()
+        search_params = self.get_search_params()
+
+        # Get search query
+        search_query = get_search_query(q=search_params["q"])
+
+        # Get search results
+        response = search_query.execute()
+        search_results = response["hits"]["hits"]
 
         # Adding data to objects
-        hydrated_objects = hydrate_objects(raw_objects)
+        hydrated_objects = hydrate_objects(search_results)
 
         # view permissions and pagination to be applied
 

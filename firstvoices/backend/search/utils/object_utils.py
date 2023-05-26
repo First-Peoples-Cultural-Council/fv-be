@@ -4,13 +4,13 @@ from backend.search.indices.dictionary_entry_document import (
 )
 
 
-def hydrate_objects(raw_objects):
+def hydrate_objects(search_results):
     """
     Adding required properties to raw objects returned form elastic-search.
     """
     complete_objects = []
 
-    for obj in raw_objects:
+    for obj in search_results:
         complete_object = {
             "id": obj["_id"],
             "score": obj["_score"],
