@@ -8,6 +8,8 @@ from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
+TIMESTAMP_REGEX_STRING = r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}"
+
 
 def get_aws_resource():
     """
@@ -68,10 +70,8 @@ def download_file_from_s3(key):
         logger.error("Missing key for file to download.")
         return False
 
-    file_name = re.sub(r".*\/", "", key)
-    timestamp = re.search(
-        r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}", file_name
-    ).group(0)
+    file_name = re.search(r"/(.{1,1024}\.csv)$", key).group(1)
+    timestamp = re.search(TIMESTAMP_REGEX_STRING, file_name).group(0)
 
     client = get_aws_resource().meta.client
     if not client:
@@ -93,7 +93,7 @@ def download_file_from_s3(key):
             f"Downloaded file ({file_name}) to ({storage_directory}) successfully."
         )
     except ClientError as e:
-        logging.error(f"Object ({key}) was not downloaded from AWS successfully.", e)
+        logger.error(f"Object ({key}) was not downloaded from AWS successfully. {e}")
         return False
     return True
 
@@ -133,9 +133,7 @@ def download_exports_after_timestamp(timestamp):
     objects_after_timestamp = [
         file
         for file in objects
-        if datetime.fromisoformat(
-            re.search(r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}", file.key).group(0)
-        )
+        if datetime.fromisoformat(re.search(TIMESTAMP_REGEX_STRING, file.key).group(0))
         >= datetime.fromisoformat(timestamp)
     ]
 
@@ -159,9 +157,7 @@ def download_latest_exports():
     latest_timestamp = None
     output_keys = []
     for file in objects:
-        timestamp = re.search(
-            r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}", file.key
-        ).group(0)
+        timestamp = re.search(TIMESTAMP_REGEX_STRING, file.key).group(0)
         if latest_timestamp is None or datetime.fromisoformat(
             timestamp
         ) > datetime.fromisoformat(latest_timestamp):
@@ -174,3 +170,7 @@ def download_latest_exports():
     for key in output_keys:
         download_file_from_s3(key)
     return True
+
+
+if __name__ == "__main__":
+    download_latest_exports()
