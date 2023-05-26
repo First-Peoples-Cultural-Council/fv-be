@@ -1,6 +1,7 @@
 import rules
 from celery.result import AsyncResult
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -80,7 +81,7 @@ class CustomOrderRecalculateView(APIView):
         try:
             Site.objects.get(slug=site_slug)
         except ObjectDoesNotExist:
-            return Response({"message": "Site not found."}, status=404)
+            raise Http404
 
         # Return the status of any ongoing recalculation task
         for task in self.tasks:
@@ -99,7 +100,7 @@ class CustomOrderRecalculateView(APIView):
         try:
             Site.objects.get(slug=site_slug)
         except ObjectDoesNotExist:
-            return Response({"message": "Site not found."}, status=404)
+            raise Http404
 
         # Call the recalculation task
         try:
@@ -108,7 +109,8 @@ class CustomOrderRecalculateView(APIView):
             self.tasks.append(task)
 
             return Response(
-                {"recalculation_results": recalculation_results.get(timeout=360)}
+                {"recalculation_results": recalculation_results.get(timeout=360)},
+                status=200,
             )
 
         except recalculate_custom_order_preview.OperationalError:

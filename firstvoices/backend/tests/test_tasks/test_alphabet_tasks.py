@@ -8,6 +8,8 @@ from backend.tests import factories
 
 
 class TestAlphabetTasks:
+    CONFUSABLE_PREV_CUSTOM_ORDER = "⚑ᐱ⚑ᐱ⚑ᐱ"
+
     @pytest.fixture
     def site(self):
         return factories.SiteFactory.create(slug="test")
@@ -18,7 +20,7 @@ class TestAlphabetTasks:
 
     @pytest.mark.django_db
     def test_recalulate_preview_empty(self, site, alphabet):
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
 
         assert result == {"unknown_character_count": {}, "updated_entries": []}
 
@@ -26,7 +28,7 @@ class TestAlphabetTasks:
     def test_recalulate_preview_unknown_only(self, site, alphabet):
         factories.DictionaryEntryFactory.create(site=site, title="abc")
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {"⚑a": 1, "⚑b": 1, "⚑c": 1},
             "updated_entries": [],
@@ -39,7 +41,7 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -60,7 +62,7 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -69,7 +71,7 @@ class TestAlphabetTasks:
                     "is_title_updated": True,
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
-                    "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                    "previous_custom_order": self.CONFUSABLE_PREV_CUSTOM_ORDER,
                 }
             ],
         }
@@ -85,7 +87,7 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {"⚑d": 1},
             "updated_entries": [
@@ -101,7 +103,7 @@ class TestAlphabetTasks:
                     "is_title_updated": True,
                     "cleaned_title": "AAA",
                     "new_custom_order": "!!!",
-                    "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                    "previous_custom_order": self.CONFUSABLE_PREV_CUSTOM_ORDER,
                 },
             ],
         }
@@ -115,7 +117,7 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="cab")
         factories.CharacterFactory.create(site=site, title="d")
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [],
@@ -129,7 +131,7 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="abcx")
         factories.CharacterFactory.create(site=site, title="d")
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {"⚑x": 1},
             "updated_entries": [],
@@ -142,7 +144,7 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="aab")
         factories.CharacterFactory.create(site=site, title="aa")
 
-        result = recalculate_custom_order_preview("test")
+        result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -169,7 +171,7 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
 
-        result = recalculate_custom_order("test")
+        result = recalculate_custom_order(site.slug)
         assert result == [
             {
                 "title": "abc",
@@ -186,13 +188,13 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order("test")
+        result = recalculate_custom_order(site.slug)
         assert result == [
             {
                 "title": "ᐱᐱᐱ",
                 "cleaned_title": "AAA",
                 "new_custom_order": "!!!",
-                "previous_custom_order": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                "previous_custom_order": self.CONFUSABLE_PREV_CUSTOM_ORDER,
             }
         ]
 
@@ -206,12 +208,50 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order("test")
+        result = recalculate_custom_order(site.slug)
         assert result == [
             {
                 "title": "ᐱbcd",
                 "cleaned_title": "Abcd",
                 "new_custom_order": "!$%⚑d",
                 "previous_custom_order": "⚑ᐱ⚑b⚑c⚑d",
+            }
+        ]
+
+    @pytest.mark.django_db
+    def test_recalulate_unaffected(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+        factories.DictionaryEntryFactory.create(site=site, title="abc")
+        factories.DictionaryEntryFactory.create(site=site, title="cab")
+
+        result = recalculate_custom_order(site.slug)
+        assert result == []
+
+    @pytest.mark.django_db
+    def test_recalulate_unknown_unaffected(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.CharacterFactory.create(site=site, title="c")
+        factories.DictionaryEntryFactory.create(site=site, title="abcx")
+
+        result = recalculate_custom_order(site.slug)
+        assert result == []
+
+    @pytest.mark.django_db
+    def test_recalulate_multichar(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        factories.DictionaryEntryFactory.create(site=site, title="aab")
+        factories.CharacterFactory.create(site=site, title="aa")
+
+        result = recalculate_custom_order(site_slug=site.slug)
+        assert result == [
+            {
+                "title": "aab",
+                "cleaned_title": "aab",
+                "previous_custom_order": "!!#",
+                "new_custom_order": "$#",
             }
         ]

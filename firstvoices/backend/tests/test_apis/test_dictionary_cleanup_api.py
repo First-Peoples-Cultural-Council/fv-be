@@ -135,7 +135,7 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         assert response_get_data["results"] == []
 
 
-class TestCustomOrderRecalculate(BaseApiTest):
+class TestDictionaryCleanup(BaseApiTest):
     API_DETAIL_VIEW = "api:site-detail"
     SUPERADMIN_PERMISSION = "views.has_custom_order_access"
 
@@ -166,7 +166,7 @@ class TestCustomOrderRecalculate(BaseApiTest):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.get_detail_endpoint("missing-slug"))
+        response = self.client.post(self.get_detail_endpoint("missing-slug"))
         assert response.status_code == 404
 
     @pytest.mark.django_db
