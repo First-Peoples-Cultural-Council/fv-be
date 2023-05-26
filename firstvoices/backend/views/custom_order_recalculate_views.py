@@ -1,17 +1,20 @@
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 
 from backend.models import CustomOrderRecalculationPreviewResult
 from backend.serializers.async_results_serializers import (
     CustomOrderRecalculationPreviewResultDetailSerializer,
 )
 from backend.tasks.alphabet_tasks import recalculate_custom_order_preview
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    FVPermissionViewSetMixin,
+    ListViewOnlyModelViewSet,
+    SiteContentViewSetMixin,
+)
 from backend.views.exceptions import CeleryError
 
 
 class CustomOrderRecalculatePreviewView(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
+    FVPermissionViewSetMixin, SiteContentViewSetMixin, ListViewOnlyModelViewSet
 ):
     http_method_names = ["get", "post"]
     serializer_class = CustomOrderRecalculationPreviewResultDetailSerializer
