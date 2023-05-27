@@ -1,9 +1,9 @@
 from backend.tests import factories
 
-from .base_api_test import BaseUncontrolledSiteContentApiTest
+from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
 
 
-class TestIgnoredCharactersEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestIgnoredCharactersEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
     """
     End-to-end tests that the characters endpoints have the expected behaviour.
     """
