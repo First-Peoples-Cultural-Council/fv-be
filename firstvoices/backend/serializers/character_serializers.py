@@ -3,6 +3,7 @@ from rest_framework import serializers
 from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
 from backend.serializers.dictionary_serializers import DictionaryEntrySummarySerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 
 
 class IgnoredCharacterSerializer(serializers.ModelSerializer):
@@ -19,7 +20,9 @@ class CharacterVariantSerializer(serializers.ModelSerializer):
         fields = ["title"]
 
 
-class CharacterDetailSerializer(serializers.ModelSerializer):
+class CharacterDetailSerializer(
+    RelatedMediaSerializerMixin, serializers.ModelSerializer
+):
     url = SiteHyperlinkedIdentityField(view_name="api:character-detail")
     variants = CharacterVariantSerializer(many=True)
     related_entries = DictionaryEntrySummarySerializer(
@@ -28,7 +31,7 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Character
-        fields = [
+        fields = RelatedMediaSerializerMixin.Meta.fields + (
             "url",
             "id",
             "title",
@@ -37,4 +40,4 @@ class CharacterDetailSerializer(serializers.ModelSerializer):
             "note",
             "variants",
             "related_entries",
-        ]
+        )
