@@ -28,6 +28,7 @@ class DictionaryEntryDocument(Document):
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 
 
+# Signal to update the entry in index
 @receiver(post_save, sender=DictionaryEntry)
 def update_index(sender, instance, **kwargs):
     # Add document to es index
@@ -39,10 +40,11 @@ def update_index(sender, instance, **kwargs):
     except ConnectionError:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
-            "Elasticsearch server down. Documents will not be indexed or returned from search."
+            "Elasticsearch server down. Document could not be updated in index."
         )
 
 
+# Delete entry from index
 @receiver(post_delete, sender=DictionaryEntry)
 def delete_from_index(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -52,7 +54,7 @@ def delete_from_index(sender, instance, **kwargs):
         index_entry.delete()
     except ConnectionError:
         logger.warning(
-            "Elasticsearch server down. Documents will not be indexed or returned from search."
+            "Elasticsearch server down. Documents could not be deleted in index."
         )
     except NotFoundError:
         logger.warning("Indexed document not found. Cannot delete from index.")
