@@ -3,20 +3,22 @@ import json
 import pytest
 from rest_framework.test import APIClient
 
-from backend.models.constants import AppRole
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests.factories import (
+    CategoryFactory,
     ChildCategoryFactory,
     DictionaryEntryFactory,
+    MembershipFactory,
     ParentCategoryFactory,
     SiteFactory,
     get_app_admin,
+    get_non_member_user,
 )
+from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
 
-from .base_api_test import BaseSiteContentApiTest
 
-
-class TestCategoryEndpoints(BaseSiteContentApiTest):
+class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     """
     End-to-end tests that the category endpoints have the expected behaviour.
     """
@@ -29,6 +31,26 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
         self.user = get_app_admin(AppRole.STAFF)
         self.client.force_authenticate(user=self.user)
         self.site = SiteFactory.create()
+
+    def create_minimal_instance(self, site, visibility=None):
+        return CategoryFactory(site=site)
+
+    def get_expected_detail_response(self, instance, site):
+        return {
+            "id": str(instance.id),
+            "title": instance.title,
+            "description": instance.description,
+            "children": [],
+            "parent": None,
+        }
+
+    def get_expected_list_response_item(self, instance, site):
+        return {
+            "id": str(instance.id),
+            "title": instance.title,
+            "description": instance.description,
+            "children": [],
+        }
 
     def get_categories_with_word_phrase(self):
         word_entry = DictionaryEntryFactory(site=self.site)
@@ -46,10 +68,49 @@ class TestCategoryEndpoints(BaseSiteContentApiTest):
     @pytest.mark.django_db
     def test_list_empty(self):
         """
-        Since categories are always generated when a site is initialized. Thus, there will generally not be a case
-        where an empty category list exists. Overriding this test case from baseclass and marking it passed.
+        Skipping, since categories are always generated when a site is initialized.
         """
         pass
+
+    @pytest.mark.django_db
+    def test_list_minimal(self):
+        """
+        Skipping, since categories are always generated when a site is initialized.
+        """
+        pass
+
+    @pytest.mark.parametrize("role", Role)
+    @pytest.mark.django_db
+    def test_list_member_access(self, role):
+        """
+        Overriding to assert non-empty list, since categories are always added when a site is created.
+        """
+        site = SiteFactory.create(visibility=Visibility.MEMBERS)
+        user = get_non_member_user()
+        MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 15
+
+    @pytest.mark.django_db
+    def test_list_team_access(self):
+        """
+        Overriding to assert non-empty list, since categories are always added when a site is created.
+        """
+        site = SiteFactory.create(visibility=Visibility.TEAM)
+        user = get_non_member_user()
+        MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 15
 
     @pytest.mark.django_db
     def test_category_list_full(self):
