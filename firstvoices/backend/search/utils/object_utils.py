@@ -2,11 +2,12 @@ from backend.models.dictionary import DictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
+from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 
 
-def get_object(objects, id):
-    # Function to return db object from list of objects
-    filtered_objects = [obj for obj in objects if str(obj.id) == id]
+def get_object(objects, object_id):
+    # Function to find and return database object from list of objects
+    filtered_objects = [obj for obj in objects if str(obj.id) == object_id]
 
     if len(filtered_objects):
         return filtered_objects[0]
@@ -14,29 +15,22 @@ def get_object(objects, id):
         return None
 
 
-def get_translations(dictionary_entry):
-    translations = []
-    translation_entries = dictionary_entry.translation_set.all()
-    if len(translation_entries):
-        for translation in translation_entries:
-            translations.append({"id": translation.id, "text": translation.text})
-    return translations
-
-
-def hydrate_objects(search_results):
+def hydrate_objects(search_results, request):
     """
-    Adding required properties to raw objects returned form elastic-search.
+    To enhance the raw objects returned from ElasticSearch, we add the necessary properties.
+    First, we segregate all the IDs from the search results into separate lists based on their respective models.
+    Next, we query the database using these IDs. Once we retrieve the objects from the database, we iterate over the
+    search results and include a serialized object for each entry.
     """
     complete_objects = []
-
-    # Separating objects ids into lists according to their data types
     dictionary_search_results_ids = []
 
+    # Separating object IDs into lists based on their data types
     for obj in search_results:
         if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             dictionary_search_results_ids.append(obj["_id"])
 
-    # Fetch objects from db
+    # Fetching objects from the database
     dictionary_objects = list(
         DictionaryEntry.objects.filter(
             id__in=dictionary_search_results_ids
@@ -44,19 +38,17 @@ def hydrate_objects(search_results):
     )
 
     for obj in search_results:
-        complete_object = {
-            "id": obj["_id"],
-            "score": obj["_score"],
-            "title": obj["_source"]["title"],
-        }
-
-        # DictionaryEntry
+        # Handling DictionaryEntry objects
         if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
-            # Adding type
             dictionary_entry = get_object(dictionary_objects, obj["_id"])
-            complete_object["type"] = dictionary_entry.type
-            complete_object["translations"] = get_translations(dictionary_entry)
+            request.parser_context["kwargs"]["site_slug"] = dictionary_entry.site.slug
 
-        complete_objects.append(complete_object)
+            # Serializing and adding the object to complete_objects
+            complete_objects.append(
+                DictionaryEntryDetailSerializer(
+                    dictionary_entry,
+                    context={"request": request, "view": "custom_search"},
+                ).data
+            )
 
     return complete_objects

@@ -36,7 +36,7 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         search_results = response["hits"]["hits"]
 
         # Adding data to objects
-        hydrated_objects = hydrate_objects(search_results)
+        hydrated_objects = hydrate_objects(search_results, request)
 
         # view permissions and pagination to be applied
 
