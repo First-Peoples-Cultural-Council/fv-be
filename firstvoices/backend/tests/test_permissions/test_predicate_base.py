@@ -204,6 +204,23 @@ class TestBaseAppRolePredicates:
         assert not base.is_superadmin(user, obj)
 
 
+class TestBaseComboRolePredicates:
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "predicate",
+        [
+            base.is_at_least_member,
+            base.is_at_least_assistant,
+            base.is_at_least_editor,
+            base.is_at_least_language_admin,
+        ],
+    )
+    def test_is_at_least_x_for_app_admin(self, predicate):
+        user = get_app_admin(AppRole.STAFF)
+        obj = SiteFactory.create()
+        assert predicate(user, obj)
+
+
 class TestBaseObjectAccessPredicates:
     @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.parametrize("obj_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
