@@ -29,9 +29,9 @@ def get_aws_resource():
         )
         return False
 
-    if os.getenv("EXPORT_DATA_S3_BUCKET") is None:
+    if os.getenv("DATA_S3_BUCKET") is None:
         logger.error(
-            'Please set the "EXPORT_DATA_S3_BUCKET" environment variable to access AWS.'
+            'Please set the "DATA_S3_BUCKET" environment variable to access AWS.'
         )
         return False
 
@@ -49,7 +49,7 @@ def get_bucket():
         logger.error("Could not get AWS session.")
         return False
 
-    bucket = s3.Bucket(os.getenv("EXPORT_DATA_S3_BUCKET"))
+    bucket = s3.Bucket(os.getenv("DATA_S3_BUCKET"))
     if bucket is False:
         logger.error("Could not get AWS Bucket.")
         return False
@@ -59,7 +59,7 @@ def get_bucket():
 
 def download_file_from_s3(key):
     """
-    Downloads a single file from the S3 bucket specified by the EXPORT_DATA_S3_BUCKET environment variable given an
+    Downloads a single file from the S3 bucket specified by the DATA_S3_BUCKET environment variable given an
     object key. Files are stored in the "scripts/export_data/<timestamp for the file>/" directory.
 
     :param key: The object key string for the file.
@@ -87,7 +87,7 @@ def download_file_from_s3(key):
         os.makedirs(storage_directory)
     try:
         client.download_file(
-            os.getenv("EXPORT_DATA_S3_BUCKET"), key, f"{storage_directory}/{file_name}"
+            os.getenv("DATA_S3_BUCKET"), key, f"{storage_directory}/{file_name}"
         )
         logger.info(
             f"Downloaded file ({file_name}) to ({storage_directory}) successfully."

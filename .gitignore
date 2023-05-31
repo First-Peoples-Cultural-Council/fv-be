@@ -298,4 +298,4 @@ firstvoices/celerybeat-schedule.db
 firstvoices/backend/tests/tmp/
 
 # Downloaded export data directory
-/firstvoices/scripts/utils/export_data/
+firstvoices/scripts/utils/export_data/
