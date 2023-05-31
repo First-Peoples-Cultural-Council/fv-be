@@ -20,6 +20,12 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
     model permissions are registered using ``rules.contrib.models.RulesModelMixin``.
     """
 
+    permission_type_map = {
+        **AutoPermissionViewSetMixin.permission_type_map,
+        "get_preview": "view",
+        "create_preview": "add",
+    }
+
     def get_queryset(self):
         """
         Allows implementing different querysets for list and detail

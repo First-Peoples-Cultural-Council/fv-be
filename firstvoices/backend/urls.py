@@ -1,13 +1,9 @@
-from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
-from backend.views.custom_order_recalculate_views import (
-    CustomOrderRecalculatePreviewView,
-    CustomOrderRecalculateView,
-)
+from backend.views.custom_order_recalculate_views import CustomOrderRecalculateViewset
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
@@ -33,19 +29,12 @@ sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentr
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
 sites_router.register(
-    r"dictionary-cleanup/preview",
-    CustomOrderRecalculatePreviewView,
-    basename="dictionary-cleanup/preview",
+    r"dictionary-cleanup", CustomOrderRecalculateViewset, basename="dictionary-cleanup"
 )
 
 app_name = "api"
 
-urlpatterns = [
-    path(
-        "sites/<str:site_slug>/dictionary-cleanup/",
-        CustomOrderRecalculateView.as_view(),
-    ),
-]
+urlpatterns = []
 
 urlpatterns += ROUTER.urls
 urlpatterns += sites_router.urls
