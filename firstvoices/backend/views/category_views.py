@@ -85,7 +85,7 @@ from . import doc_strings
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
 )
