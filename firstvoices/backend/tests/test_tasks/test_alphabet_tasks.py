@@ -162,7 +162,10 @@ class TestAlphabetTasks:
     def test_recalulate_empty(self, site, alphabet):
         result = recalculate_custom_order(site.slug)
 
-        assert result == []
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_updated_order(self, site, alphabet):
@@ -172,14 +175,18 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="c")
 
         result = recalculate_custom_order(site.slug)
-        assert result == [
-            {
-                "title": "abc",
-                "cleaned_title": "abc",
-                "new_custom_order": "!#$",
-                "previous_custom_order": "⚑a⚑b⚑c",
-            }
-        ]
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [
+                {
+                    "title": "abc",
+                    "cleaned_title": "",
+                    "is_title_updated": False,
+                    "new_custom_order": "!#$",
+                    "previous_custom_order": "⚑a⚑b⚑c",
+                }
+            ],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_updated_confusables(self, site, alphabet):
@@ -189,14 +196,18 @@ class TestAlphabetTasks:
         alphabet.save()
 
         result = recalculate_custom_order(site.slug)
-        assert result == [
-            {
-                "title": "ᐱᐱᐱ",
-                "cleaned_title": "AAA",
-                "new_custom_order": "!!!",
-                "previous_custom_order": self.CONFUSABLE_PREV_CUSTOM_ORDER,
-            }
-        ]
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [
+                {
+                    "title": "ᐱᐱᐱ",
+                    "cleaned_title": "AAA",
+                    "is_title_updated": True,
+                    "new_custom_order": "!!!",
+                    "previous_custom_order": self.CONFUSABLE_PREV_CUSTOM_ORDER,
+                }
+            ],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_updated_all(self, site, alphabet):
@@ -209,14 +220,18 @@ class TestAlphabetTasks:
         alphabet.save()
 
         result = recalculate_custom_order(site.slug)
-        assert result == [
-            {
-                "title": "ᐱbcd",
-                "cleaned_title": "Abcd",
-                "new_custom_order": "!$%⚑d",
-                "previous_custom_order": "⚑ᐱ⚑b⚑c⚑d",
-            }
-        ]
+        assert result == {
+            "unknown_character_count": {"⚑d": 1},
+            "updated_entries": [
+                {
+                    "title": "ᐱbcd",
+                    "cleaned_title": "Abcd",
+                    "is_title_updated": True,
+                    "new_custom_order": "!$%⚑d",
+                    "previous_custom_order": "⚑ᐱ⚑b⚑c⚑d",
+                }
+            ],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_unaffected(self, site, alphabet):
@@ -227,7 +242,10 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="cab")
 
         result = recalculate_custom_order(site.slug)
-        assert result == []
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_unknown_unaffected(self, site, alphabet):
@@ -237,7 +255,14 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="abcx")
 
         result = recalculate_custom_order(site.slug)
-        assert result == []
+        assert (
+            result
+            == result
+            == {
+                "unknown_character_count": {"⚑x": 1},
+                "updated_entries": [],
+            }
+        )
 
     @pytest.mark.django_db
     def test_recalulate_multichar(self, site, alphabet):
@@ -247,11 +272,15 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="aa")
 
         result = recalculate_custom_order(site_slug=site.slug)
-        assert result == [
-            {
-                "title": "aab",
-                "cleaned_title": "aab",
-                "previous_custom_order": "!!#",
-                "new_custom_order": "$#",
-            }
-        ]
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [
+                {
+                    "title": "aab",
+                    "cleaned_title": "",
+                    "is_title_updated": False,
+                    "previous_custom_order": "!!#",
+                    "new_custom_order": "$#",
+                }
+            ],
+        }

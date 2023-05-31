@@ -3,7 +3,6 @@ from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
 from backend.serializers.async_results_serializers import (
-    CustomOrderRecalculationPreviewResultSerializer,
     CustomOrderRecalculationResultSerializer,
 )
 from backend.tasks.alphabet_tasks import (
@@ -59,13 +58,7 @@ class CustomOrderRecalculateViewset(
         except recalculate_custom_order_preview.OperationalError:
             raise CeleryError()
 
-    @action(
-        methods=["get"],
-        detail=False,
-        url_path="preview",
-        url_name="preview",
-        serializer_class=CustomOrderRecalculationPreviewResultSerializer,
-    )
+    @action(methods=["get"], detail=False, url_path="preview", url_name="preview")
     def get_preview(self, request, *args, **kwargs):
         site = self.get_validated_site()
         if site.count() > 0:
@@ -75,9 +68,7 @@ class CustomOrderRecalculateViewset(
         else:
             queryset = CustomOrderRecalculationResult.objects.none()
 
-        serializer = CustomOrderRecalculationPreviewResultSerializer(
-            queryset, many=True
-        )
+        serializer = CustomOrderRecalculationResultSerializer(queryset, many=True)
         return Response(serializer.data, status=200)
 
     @get_preview.mapping.post

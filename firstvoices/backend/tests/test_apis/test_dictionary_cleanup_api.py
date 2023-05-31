@@ -248,14 +248,16 @@ class TestDictionaryCleanup(BaseApiTest):
                 "currentTaskStatus": "SUCCESS",
                 "latestRecalculationDate": ANY,
                 "latestRecalculationResult": {
+                    "unknownCharacterCount": {},
                     "updatedEntries": [
                         {
                             "title": "tèst",
                             "cleanedTitle": "test",
+                            "isTitleUpdated": True,
                             "previousCustomOrder": "⚑t⚑è⚑s⚑t",
                             "newCustomOrder": "!#$!",
                         },
-                    ]
+                    ],
                 },
             }
         ]
