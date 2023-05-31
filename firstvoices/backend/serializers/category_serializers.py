@@ -14,24 +14,23 @@ class LinkedCategorySerializer(SiteContentLinkedTitleSerializer):
         model = Category
 
 
-class ChildCategoryListSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
+class ChildCategoryListSerializer(SiteContentLinkedTitleSerializer):
     title = serializers.CharField(
         max_length=CATEGORY_POS_MAX_TITLE_LENGTH,
         validators=[UniqueForSite(queryset=Category.objects.all())],
     )
     description = serializers.CharField(required=False)
 
-    class Meta:
+    class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Category
-        fields = ["id", "title", "description"]
+        fields = SiteContentLinkedTitleSerializer.Meta.fields + ("description",)
 
 
 class ParentCategoryListSerializer(ChildCategoryListSerializer):
     children = ChildCategoryListSerializer(many=True, read_only=True)
 
     class Meta(ChildCategoryListSerializer.Meta):
-        fields = ChildCategoryListSerializer.Meta.fields + ["children"]
+        fields = ChildCategoryListSerializer.Meta.fields + ("children",)
 
 
 class CategoryDetailSerializer(
@@ -51,7 +50,7 @@ class CategoryDetailSerializer(
     )
 
     class Meta(ParentCategoryListSerializer.Meta):
-        fields = ParentCategoryListSerializer.Meta.fields + [
+        fields = ParentCategoryListSerializer.Meta.fields + (
             "parent",
             "parent_id",
-        ]
+        )

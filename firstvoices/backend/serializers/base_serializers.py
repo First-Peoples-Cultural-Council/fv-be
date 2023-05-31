@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from ..models import Site
+from backend.models import Site
+
 from . import fields
 from .serializer_utils import get_site_from_context
 
@@ -14,6 +15,8 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
     """
 
     serializer_url_field = fields.SiteHyperlinkedIdentityField
+
+    id = serializers.UUIDField(read_only=True)
 
     def build_url_field(self, field_name, model_class):
         """
@@ -30,7 +33,7 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
 
 class UpdateSiteContentSerializerMixin:
     """
-    A mixin for ModelSerializers that sets the required fields for SiteContent models
+    A mixin for ModelSerializers that sets the required fields for subclasses of BaseSiteContentModel
     """
 
     def update(self, instance, validated_data):
