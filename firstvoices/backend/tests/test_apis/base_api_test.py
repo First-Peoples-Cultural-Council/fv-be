@@ -375,10 +375,10 @@ class UpdateApiTestMixin:
     def get_updated_instance(self, original_instance):
         return self.model.objects.filter(pk=original_instance.pk).first()
 
-    def assert_updated_instance(expected_data, actual_instance):
+    def assert_updated_instance(self, expected_data, actual_instance):
         raise NotImplementedError()
 
-    def assert_update_response(expected_data, actual_response):
+    def assert_update_response(self, expected_data, actual_response):
         raise NotImplementedError()
 
     @pytest.mark.django_db

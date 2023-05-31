@@ -47,7 +47,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "parent": None,
         }
 
-    def get_valid_data(self, site):
+    def get_valid_data(self, site=None):
         parent = CategoryFactory.create(site=site)
 
         return {
