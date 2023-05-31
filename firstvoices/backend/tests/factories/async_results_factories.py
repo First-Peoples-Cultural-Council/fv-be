@@ -5,7 +5,7 @@ from backend.models import CustomOrderRecalculationResult
 from backend.tests.factories.access import SiteFactory, UserFactory
 
 
-class CustomOrderRecalculationPreviewResultFactory(DjangoModelFactory):
+class CustomOrderRecalculationResultFactory(DjangoModelFactory):
     class Meta:
         model = CustomOrderRecalculationResult
 
