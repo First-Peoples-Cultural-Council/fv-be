@@ -3,6 +3,7 @@ from unittest.mock import ANY
 
 import pytest
 
+from backend.models import DictionaryEntry
 from backend.models.constants import AppRole, Visibility
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseApiTest
@@ -133,7 +134,7 @@ class TestDictionaryCleanup(BaseApiTest):
         assert response_get_data == [
             {
                 "site": site.title,
-                "currentPreviewTaskStatus": "SUCCESS",
+                "currentTaskStatus": "SUCCESS",
                 "latestRecalculationDate": ANY,
                 "latestRecalculationResult": {
                     "updatedEntries": [],
@@ -221,7 +222,7 @@ class TestDictionaryCleanup(BaseApiTest):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
-        factories.DictionaryEntryFactory.create(site=site, title="tèst")
+        entry = factories.DictionaryEntryFactory.create(site=site, title="tèst")
         factories.CharacterFactory.create(site=site, title="t")
         factories.CharacterFactory.create(site=site, title="e")
         factories.CharacterFactory.create(site=site, title="s")
@@ -261,6 +262,75 @@ class TestDictionaryCleanup(BaseApiTest):
                 },
             }
         ]
+        assert DictionaryEntry.objects.get(id=entry.id).title == "test"
+        assert DictionaryEntry.objects.get(id=entry.id).custom_order == "!#$!"
+
+    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
+    def test_recalculate_e2e_multiple_entries(
+        self, celery_worker, django_db_serialized_rollback
+    ):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
+        alphabet = factories.AlphabetFactory.create(site=site)
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site, title="tèst")
+        entry2 = factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
+        factories.CharacterFactory.create(site=site, title="t")
+        factories.CharacterFactory.create(site=site, title="e")
+        factories.CharacterFactory.create(site=site, title="s")
+        factories.CharacterFactory.create(site=site, title="A")
+        alphabet.input_to_canonical_map = [
+            {"in": "è", "out": "e"},
+            {"in": "ᐱ", "out": "A"},
+        ]
+        alphabet.save()
+
+        response_post = self.client.post(
+            self.get_cleanup_endpoint(site.slug, is_preview=False)
+        )
+
+        response_post_data = json.loads(response_post.content)
+        assert response_post.status_code == 201
+        assert response_post_data == {"message": "Recalculation has been queued."}
+
+        response_get = self.client.get(
+            self.get_cleanup_endpoint(site.slug, is_preview=False)
+        )
+
+        response_get_data = json.loads(response_get.content)
+        assert response_get.status_code == 200
+        assert response_get_data["results"] == [
+            {
+                "site": site.title,
+                "currentTaskStatus": "SUCCESS",
+                "latestRecalculationDate": ANY,
+                "latestRecalculationResult": {
+                    "unknownCharacterCount": {},
+                    "updatedEntries": [
+                        {
+                            "title": "tèst",
+                            "cleanedTitle": "test",
+                            "isTitleUpdated": True,
+                            "previousCustomOrder": "⚑t⚑è⚑s⚑t",
+                            "newCustomOrder": "!#$!",
+                        },
+                        {
+                            "title": "ᐱᐱᐱ",
+                            "cleanedTitle": "AAA",
+                            "isTitleUpdated": True,
+                            "previousCustomOrder": "⚑ᐱ⚑ᐱ⚑ᐱ",
+                            "newCustomOrder": "%%%",
+                        },
+                    ],
+                },
+            }
+        ]
+        assert DictionaryEntry.objects.get(id=entry.id).title == "test"
+        assert DictionaryEntry.objects.get(id=entry.id).custom_order == "!#$!"
+        assert DictionaryEntry.objects.get(id=entry2.id).title == "AAA"
+        assert DictionaryEntry.objects.get(id=entry2.id).custom_order == "%%%"
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_permissions(
