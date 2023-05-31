@@ -255,14 +255,10 @@ class TestAlphabetTasks:
         factories.DictionaryEntryFactory.create(site=site, title="abcx")
 
         result = recalculate_custom_order(site.slug)
-        assert (
-            result
-            == result
-            == {
-                "unknown_character_count": {"⚑x": 1},
-                "updated_entries": [],
-            }
-        )
+        assert result == {
+            "unknown_character_count": {"⚑x": 1},
+            "updated_entries": [],
+        }
 
     @pytest.mark.django_db
     def test_recalulate_multichar(self, site, alphabet):
