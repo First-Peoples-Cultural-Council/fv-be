@@ -40,7 +40,7 @@ def update_index(sender, instance, **kwargs):
     except ConnectionError:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
-            "Elasticsearch server down. Document could not be updated in index."
+            f"Elasticsearch server down. Document could not be updated in index. document id: {instance.id}"
         )
 
 
@@ -54,7 +54,9 @@ def delete_from_index(sender, instance, **kwargs):
         index_entry.delete()
     except ConnectionError:
         logger.warning(
-            "Elasticsearch server down. Documents could not be deleted in index."
+            f"Elasticsearch server down. Documents could not be deleted in index. document id: {instance.id}"
         )
     except NotFoundError:
-        logger.warning("Indexed document not found. Cannot delete from index.")
+        logger.warning(
+            f"Indexed document not found. Cannot delete from index. document id: {instance.id}"
+        )
