@@ -170,7 +170,3 @@ def download_latest_exports():
     for key in output_keys:
         download_file_from_s3(key)
     return True
-
-
-if __name__ == "__main__":
-    download_latest_exports()
