@@ -1,9 +1,6 @@
 from rest_framework import serializers
 
-from backend.models import Site
-
 from . import fields
-from .serializer_utils import get_site_from_context
 
 base_timestamp_fields = ("created", "last_modified")
 base_id_fields = ("id", "title", "url")
@@ -37,7 +34,5 @@ class UpdateSiteContentSerializerMixin:
     """
 
     def update(self, instance, validated_data):
-        site_slug = get_site_from_context(self)
-        validated_data["site"] = Site.objects.filter(slug=site_slug).first()
         validated_data["last_modified_by"] = self.context["request"].user
         return super().update(instance, validated_data)
