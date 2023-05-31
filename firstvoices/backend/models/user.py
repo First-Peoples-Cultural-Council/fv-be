@@ -52,12 +52,8 @@ class User(AbstractUser):
     def is_authenticated(self):
         return True
 
-    @property
-    def groups(self):
-        return None
-
     def __str__(self):
-        return str(self.id)
+        return str(self.email)
 
     @property
     def natural_key(self):
