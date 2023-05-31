@@ -1,5 +1,11 @@
+import sys
+from io import BytesIO
+
+from django.conf import settings
+from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
 from django.db import models
 from django.utils.translation import gettext as _
+from PIL import Image as PILImage
 
 from ..permissions import predicates
 from .base import AudienceMixin, BaseSiteContentModel
@@ -58,7 +64,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
 
     def delete(self, using=None, keep_parents=False):
         """
-        Deletes the associated media file when the instance is deleted, to prevent orphans.
+        Deletes the associated media files when the instance is deleted, to prevent orphans.
         """
         result = super().delete(using, keep_parents)
         try:
@@ -135,8 +141,106 @@ class Image(MediaBase):
     # from fvm:content
     content = models.ImageField(upload_to=media_directory_path)
 
+    thumbnail = models.ImageField(upload_to=media_directory_path, blank=True)
+    small = models.ImageField(upload_to=media_directory_path, blank=True)
+    medium = models.ImageField(upload_to=media_directory_path, blank=True)
+
     def __str__(self):
         return f"{self.title} / {self.site} (Image)"
+
+    def generate_resized_images(self):
+        """
+        A function to generate a set of resized images when an Image model is saved
+        """
+        for size_name, max_size in settings.CURRENT_MAX_IMAGE_SIZES.items():
+            output_img = BytesIO()
+
+            img = PILImage.open(self.content)
+            image_name = self.content.name.split(".")[0]
+
+            if img.width >= img.height:
+                # If the input image is larger than the max size, scale down the output image.
+                if img.width > max_size:
+                    output_size = (
+                        max_size,
+                        round(img.height / (img.width / max_size)),
+                    )
+                else:
+                    output_size = (img.width, img.height)
+            else:
+                # If the input image is larger than the max size, scale down the output image.
+                if img.height > max_size:
+                    output_size = (
+                        round(img.width / (img.height / max_size)),
+                        max_size,
+                    )
+                else:
+                    output_size = (img.width, img.height)
+
+            img.thumbnail(output_size)
+            # Remove transparency values if they exist so that the image can be converted to JPEG.
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.save(output_img, format="JPEG", quality=90)
+
+            # Set the model field to the newly generated image.
+            setattr(
+                self,
+                size_name,
+                InMemoryUploadedFile(
+                    output_img,
+                    "ImageField",
+                    f"{image_name}_{size_name}.jpg",
+                    "image/jpeg",
+                    sys.getsizeof(output_img),
+                    None,
+                ),
+            )
+
+    def save(self, **kwargs):
+        # Boolean which returns True if the image is new, otherwise false.
+        is_new = self._state.adding is True
+        # Boolean which returns True if the image file has been updated, otherwise false (returns true for a new image).
+        content_updated = hasattr(self.content, "file") and isinstance(
+            self.content.file, UploadedFile
+        )
+
+        # If the main image file was updated then delete the old image files from AWS
+        if content_updated and not is_new:
+            try:
+                old_image = Image.objects.get(pk=self.pk)
+                old_image.content.delete(save=False)
+                self.thumbnail.delete(save=False)
+                self.small.delete(save=False)
+                self.medium.delete(save=False)
+            except Exception as e:
+                # this will only happen for connection or permission errors, so it's a warning
+                self.logger.warn(
+                    f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
+                )
+
+        # If the image is new or the file has been updated then generate new resized images
+        if is_new or content_updated:
+            self.generate_resized_images()
+
+        super().save()
+
+    def delete(self, using=None, keep_parents=False):
+        """
+        Deletes the associated media files when the instance is deleted, to prevent orphans.
+        """
+        result = super().delete(using, keep_parents)
+        try:
+            self.thumbnail.delete(save=False)
+            self.small.delete(save=False)
+            self.medium.delete(save=False)
+        except Exception as e:
+            # this will only happen for connection or permission errors, so it's a warning
+            self.logger.warn(
+                f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
+            )
+
+        return result
 
 
 class Video(MediaBase):
