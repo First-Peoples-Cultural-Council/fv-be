@@ -20,8 +20,6 @@ class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return {"q": input_q}
 
     def list(self, request):
-        # Raise 500 if elasticsearch is not running, or return an empty list ?
-
         search_params = self.get_search_params()
 
         # Get search query

@@ -45,10 +45,15 @@ def hydrate_objects(search_results, request):
 
             # Serializing and adding the object to complete_objects
             complete_objects.append(
-                DictionaryEntryDetailSerializer(
-                    dictionary_entry,
-                    context={"request": request, "view": "custom_search"},
-                ).data
+                {
+                    "_id": obj["_id"],
+                    "score": obj["_score"],
+                    "type": "dictionary_entry",
+                    "entry": DictionaryEntryDetailSerializer(
+                        dictionary_entry,
+                        context={"request": request, "view": "custom_search"},
+                    ).data,
+                }
             )
 
     return complete_objects
