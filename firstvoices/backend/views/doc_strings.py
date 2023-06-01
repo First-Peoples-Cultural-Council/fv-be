@@ -8,9 +8,7 @@ success_200_edit = _("Success. Updated resource in response.")
 
 success_201 = _("Created. New resource in response.")
 
-success_204_deleted = _(
-    "Success. Resource destroyed, if it existed. No content in response."
-)
+success_204_deleted = _("Success. Resource destroyed. No content in response.")
 
 error_400_validation = _("Error. Invalid data.")
 

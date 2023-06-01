@@ -15,7 +15,7 @@ from backend.models.category import Category
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
-    CategoryListSerializer,
+    ParentCategoryListSerializer,
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -28,7 +28,7 @@ from . import doc_strings
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
-                response=CategoryListSerializer,
+                response=ParentCategoryListSerializer,
             ),
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
@@ -64,6 +64,18 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
+    update=extend_schema(
+        description=_("Edit a category."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=CategoryDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+    ),
     destroy=extend_schema(
         description=_("Delete a category."),
         responses={
@@ -73,12 +85,12 @@ from . import doc_strings
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
 )
 class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet):
-    http_method_names = ["get", "delete"]
+    http_method_names = ["get", "put", "delete"]
     valid_inputs = TypeOfDictionaryEntry.values
 
     def get_detail_queryset(self):
@@ -132,7 +144,6 @@ class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelVi
 
     def get_serializer_class(self):
         if self.action == "list":
-            return CategoryListSerializer
-        if self.action == "retrieve":
+            return ParentCategoryListSerializer
+        else:
             return CategoryDetailSerializer
-        return CategoryListSerializer

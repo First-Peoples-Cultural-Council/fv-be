@@ -13,6 +13,8 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
 
     serializer_url_field = fields.SiteHyperlinkedIdentityField
 
+    id = serializers.UUIDField(read_only=True)
+
     def build_url_field(self, field_name, model_class):
         """
         Add our namespace to the view_name
@@ -24,3 +26,13 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = base_id_fields
+
+
+class UpdateSerializerMixin:
+    """
+    A mixin for ModelSerializers that sets the required fields for subclasses of BaseModel
+    """
+
+    def update(self, instance, validated_data):
+        validated_data["last_modified_by"] = self.context["request"].user
+        return super().update(instance, validated_data)

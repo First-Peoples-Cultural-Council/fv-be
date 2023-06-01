@@ -38,19 +38,16 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
         return super().get_queryset()
 
     def list(self, request, *args, **kwargs):
-        # apply view permissions
+        # permissions
         queryset = utils.filter_by_viewable(request.user, self.get_queryset())
 
-        # paginated response
+        # pagination
         page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True)
+
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        # non-paginated response
-        serializer = self.serializer_class(
-            queryset, many=True, context={"request": request}
-        )
         return Response(serializer.data)
 
 
@@ -59,8 +56,19 @@ class SiteContentViewSetMixin:
     Provides common methods for handling site content, usually for data models that use the BaseSiteContentModel.
     """
 
+    def get_site_slug(self):
+        return self.kwargs["site_slug"]
+
+    def get_serializer_context(self):
+        """
+        Add the site to the extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context["site"] = self.get_validated_site().first()
+        return context
+
     def get_validated_site(self):
-        site_slug = self.kwargs["site_slug"]
+        site_slug = self.get_site_slug()
         site = Site.objects.filter(slug=site_slug)
 
         if len(site) == 0:
