@@ -59,7 +59,6 @@ def get_search_query(q=""):
                 }
             }
         )
-        # todo: Translation fields are to be added to model
         fuzzy_match_translation_query = Q(
             {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
         )
