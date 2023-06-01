@@ -18,13 +18,13 @@ from backend.views.user import UserViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
+
 ROUTER = CustomRouter()
-ROUTER.register(r"user", UserViewSet, basename=r"user")
-ROUTER.register(r"search", BaseSearchViewSet, basename="search")
-ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
+ROUTER.register(r"search", CustomSearchViewSet, basename="search")
 ROUTER.register(r"user", UserViewSet, basename=r"user")
+
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 
 # site-level APIs
@@ -38,7 +38,6 @@ sites_router.register(
     CustomOrderRecalculatePreviewView,
     basename="dictionary-cleanup-preview",
 )
-sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(
     r"dictionary-cleanup",
     CustomOrderRecalculateView,
@@ -48,6 +47,7 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
 sites_router.register(r"people", PersonViewSet, basename="person")
+sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 
 app_name = "api"
