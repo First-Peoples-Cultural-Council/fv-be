@@ -4,7 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppMembership
-from backend.models.sites import Membership, Site
+from backend.models.sites import Language, LanguageFamily, Membership, Site
 
 
 class AnonymousUserFactory(DjangoModelFactory):
@@ -24,12 +24,28 @@ class UserFactory(DjangoModelFactory):
     email = factory.Sequence(lambda n: "user%03d@email.com" % n)
 
 
+class LanguageFamilyFactory(DjangoModelFactory):
+    class Meta:
+        model = LanguageFamily
+
+    title = factory.Sequence(lambda n: "Language Family %03d" % n)
+
+
+class LanguageFactory(DjangoModelFactory):
+    class Meta:
+        model = Language
+
+    title = factory.Sequence(lambda n: "Language %03d" % n)
+    language_family = factory.SubFactory(LanguageFamilyFactory)
+
+
 class SiteFactory(DjangoModelFactory):
     class Meta:
         model = Site
 
     title = factory.Sequence(lambda n: "Site %03d" % n)
     slug = factory.Sequence(lambda n: "site-%03d" % n)
+    language = factory.SubFactory(LanguageFactory)
 
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
