@@ -13,6 +13,7 @@ from pathlib import Path
 
 import sentry_sdk
 from dotenv import load_dotenv
+from elasticsearch_dsl import connections
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -92,6 +93,9 @@ REST_FRAMEWORK = {
     },
 }
 
+# LOGGERS
+ELASTICSEARCH_LOGGER = "elasticsearch"
+
 # local only
 if DEBUG:
     REST_FRAMEWORK.update(
@@ -115,6 +119,18 @@ if DEBUG:
     }
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {"console": {"class": "logging.StreamHandler"}},
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            ELASTICSEARCH_LOGGER: {
+                "handlers": ["console"],
+                "level": "INFO",  # Change level to INFO to view connection requests
+            }
+        },
+    }
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
@@ -200,6 +216,9 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+ELASTICSEARCH_DEFAULT_CONFIG = {"shards": 1, "replicas": 0}
+connections.configure(default={"hosts": ELASTICSEARCH_HOST})
+
 
 # Sentry monitoring configuration settings.
 # See docs at https://docs.sentry.io/platforms/python/guides/django/
