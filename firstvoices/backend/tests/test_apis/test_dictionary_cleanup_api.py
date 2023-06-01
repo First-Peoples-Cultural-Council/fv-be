@@ -11,6 +11,10 @@ from backend.tests.test_apis.base_api_test import BaseApiTest
 
 class TestDictionaryCleanup(BaseApiTest):
     API_DETAIL_VIEW = "api:site-detail"
+    RECALCULATION_CONFIRMATION_MESSAGE = {"message": "Recalculation has been queued."}
+    RECALCULATION_PREVIEW_CONFIRMATION_MESSAGE = {
+        "message": "Recalculation preview has been queued."
+    }
 
     def get_cleanup_endpoint(self, key, is_preview):
         if is_preview:
@@ -84,7 +88,7 @@ class TestDictionaryCleanup(BaseApiTest):
 
         response_data = json.loads(response.content)
         assert response.status_code == 201
-        assert response_data == {"message": "Recalculation preview has been queued."}
+        assert response_data == self.RECALCULATION_PREVIEW_CONFIRMATION_MESSAGE
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_preview_full(
@@ -106,10 +110,7 @@ class TestDictionaryCleanup(BaseApiTest):
         response_post_data = json.loads(response_post.content)
 
         assert response_post.status_code == 201
-        assert response_post_data == {
-            "message": "Recalculation preview has been queued."
-        }
-
+        assert response_post_data == self.RECALCULATION_PREVIEW_CONFIRMATION_MESSAGE
         response_get = self.client.get(
             self.get_cleanup_endpoint(site.slug, is_preview=True)
         )
@@ -146,9 +147,7 @@ class TestDictionaryCleanup(BaseApiTest):
         response_post_data = json.loads(response_post.content)
 
         assert response_post.status_code == 201
-        assert response_post_data == {
-            "message": "Recalculation preview has been queued."
-        }
+        assert response_post_data == self.RECALCULATION_PREVIEW_CONFIRMATION_MESSAGE
 
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
@@ -229,7 +228,7 @@ class TestDictionaryCleanup(BaseApiTest):
 
         response_data = json.loads(response.content)
         assert response.status_code == 201
-        assert response_data == {"message": "Recalculation has been queued."}
+        assert response_data == self.RECALCULATION_CONFIRMATION_MESSAGE
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_e2e(self, celery_worker, django_db_serialized_rollback):
@@ -252,7 +251,7 @@ class TestDictionaryCleanup(BaseApiTest):
 
         response_post_data = json.loads(response_post.content)
         assert response_post.status_code == 201
-        assert response_post_data == {"message": "Recalculation has been queued."}
+        assert response_post_data == self.RECALCULATION_CONFIRMATION_MESSAGE
 
         response_get = self.client.get(
             self.get_cleanup_endpoint(site.slug, is_preview=False)
@@ -310,7 +309,7 @@ class TestDictionaryCleanup(BaseApiTest):
 
         response_post_data = json.loads(response_post.content)
         assert response_post.status_code == 201
-        assert response_post_data == {"message": "Recalculation has been queued."}
+        assert response_post_data == self.RECALCULATION_CONFIRMATION_MESSAGE
 
         response_get = self.client.get(
             self.get_cleanup_endpoint(site.slug, is_preview=False)
