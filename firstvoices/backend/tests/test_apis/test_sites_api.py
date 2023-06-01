@@ -12,8 +12,7 @@ from .base_api_test import BaseApiTest
 
 class TestSitesEndpoints(BaseApiTest):
     """
-    End-to-end tests that the sites endpoints have the expected behaviour. Data formatting is checked in the
-    serializer tests.
+    End-to-end tests that the sites endpoints have the expected behaviour.
     """
 
     API_LIST_VIEW = "api:site-list"
