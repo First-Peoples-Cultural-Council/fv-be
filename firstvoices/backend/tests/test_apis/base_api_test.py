@@ -311,60 +311,6 @@ class WriteApiTestMixin:
         return site
 
 
-class CreateApiTestMixin:
-    """
-    For use with BaseSiteContentApiTest
-    """
-
-    @pytest.mark.django_db
-    def test_create_invalid_400(self):
-        site = self.create_site_with_non_member(Visibility.PUBLIC)
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_invalid_data()),
-            content_type=self.content_type_json,
-        )
-
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_create_private_site_403(self):
-        site = self.create_site_with_non_member(Visibility.MEMBERS)
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_create_site_missing_404(self):
-        site = self.create_site_with_non_member(Visibility.MEMBERS)
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug="missing-site"),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
-        )
-
-        assert response.status_code == 404
-
-    @pytest.mark.django_db
-    def test_create_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
-        )
-
-        assert response.status_code == 201
-
-
 class UpdateApiTestMixin:
     """
     For use with BaseSiteContentApiTest
