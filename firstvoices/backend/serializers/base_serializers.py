@@ -28,9 +28,9 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
         fields = base_id_fields
 
 
-class UpdateSiteContentSerializerMixin:
+class UpdateSerializerMixin:
     """
-    A mixin for ModelSerializers that sets the required fields for subclasses of BaseSiteContentModel
+    A mixin for ModelSerializers that sets the required fields for subclasses of BaseModel
     """
 
     def update(self, instance, validated_data):
