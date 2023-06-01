@@ -26,7 +26,8 @@ def get_indices():
 
 def get_cleaned_search_term(q):
     """
-    clean incoming string
+    clean incoming string.
+    case-sensitivity handled by analyzer in the search document.
     """
     return q.strip()
 
