@@ -1,24 +1,108 @@
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404
 from rest_framework import mixins
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend import permissions
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
 
+http_methods_except_patch = [
+    "get",
+    "post",
+    "put",
+    "delete",
+    "head",
+    "options",
+    "trace",
+]
 
-class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
+
+class FVPermissionViewSetMixin:
     """
+    Forked from ``rules.contrib.rest_framework.AutoPermissionViewSetMixin`` to provide extension points.
+
     Enforces object-level permissions in ``rest_framework.viewsets.ViewSet``,
     deriving the permission type from the particular action to be performed. List results are
     filtered to only include permitted items.
 
     As with ``rules.contrib.views.AutoPermissionRequiredMixin``, this only works when
     model permissions are registered using ``rules.contrib.models.RulesModelMixin``.
+
+    Override ``get_object_for_create_permission`` to check 'create' permissions
+    on an object if desired (defaults to a None object).
     """
+
+    # Maps API actions to model permission types. None as value skips permission
+    # checks for the particular action.
+    # This map needs to be extended when custom actions are implemented
+    # using the @action decorator.
+    # Extend or replace it in subclasses like so:
+    # permission_type_map = {
+    #     **AutoPermissionViewSetMixin.permission_type_map,
+    #     "close": "change",
+    #     "reopen": "change",
+    # }
+    permission_type_map = {
+        "create": "add",
+        "destroy": "delete",
+        "list": None,
+        "partial_update": "change",
+        "retrieve": "view",
+        "update": "change",
+    }
+
+    def initial(self, *args, **kwargs):
+        """Ensures user has permission to perform the requested action."""
+        super().initial(*args, **kwargs)
+
+        if not self.request.user:
+            # No user, don't check permission
+            return
+
+        # Get the handler for the HTTP method in use
+        try:
+            if self.request.method.lower() not in self.http_method_names:
+                raise AttributeError
+            handler = getattr(self, self.request.method.lower())
+        except AttributeError:
+            # method not supported, will be denied anyway
+            return
+
+        try:
+            perm_type = self.permission_type_map[self.action]
+        except KeyError:
+            raise ImproperlyConfigured(
+                "FVPermissionViewSetMixin tried to authorize a request with the "
+                "{!r} action, but permission_type_map only contains: {!r}".format(
+                    self.action, self.permission_type_map
+                )
+            )
+        if perm_type is None:
+            # Skip permission checking for this action
+            return
+
+        # Determine whether we've to check object permissions (for detail actions)
+        obj = None
+        extra_actions = self.get_extra_actions()
+        # We have to access the unbound function via __func__
+        if handler.__func__ in extra_actions:
+            if handler.detail:
+                obj = self.get_object()
+        elif self.action == "create":
+            obj = self.get_object_for_create_permission()
+        elif self.action not in ("create", "list"):
+            obj = self.get_object()
+
+        # Finally, check permission
+        perm = self.get_queryset().model.get_perm(perm_type)
+        if not self.request.user.has_perm(perm, obj):
+            raise PermissionDenied
+
+    def get_object_for_create_permission(self):
+        """Subclasses can override to return an object to be used for checking create permissions"""
+        return None
 
     def get_queryset(self):
         """
@@ -53,7 +137,7 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
 
 class SiteContentViewSetMixin:
     """
-    Provides common methods for handling site content, usually for data models that use the BaseSiteContentModel.
+    Provides common methods for handling site content, usually for data models that use the ``BaseSiteContentModel``.
     """
 
     def get_site_slug(self):
@@ -81,6 +165,10 @@ class SiteContentViewSetMixin:
             return site
         else:
             raise PermissionDenied
+
+    def get_object_for_create_permission(self):
+        """Check create permissions based on the relevant site"""
+        return self.get_validated_site().first()
 
 
 class DictionarySerializerContextMixin:
