@@ -4,6 +4,7 @@ from backend.models import media
 
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
+    SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     UpdateSerializerMixin,
 )
@@ -20,7 +21,7 @@ class PersonSerializer(
         fields = ("url", "id", "name", "bio")
 
 
-class MediaSerializer(serializers.ModelSerializer):
+class MediaSerializer(SiteContentLinkedTitleSerializer):
     """
     Stub serializer that produces id-title objects.
     """
@@ -28,7 +29,7 @@ class MediaSerializer(serializers.ModelSerializer):
     content = serializers.FileField(source="original.content")
 
     class Meta:
-        fields = ("id", "title", "content")
+        fields = SiteContentLinkedTitleSerializer.Meta.fields + ("content",)
 
 
 class AudioSerializer(MediaSerializer):
@@ -44,6 +45,7 @@ class ImageSerializer(MediaSerializer):
 
     class Meta(MediaSerializer.Meta):
         model = media.Image
+        fields = MediaSerializer.Meta.fields
 
 
 class VideoSerializer(MediaSerializer):

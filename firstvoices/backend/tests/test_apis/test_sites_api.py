@@ -134,27 +134,32 @@ class TestSitesEndpoints(BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
+
+        site_url = f"http://testserver/api/1.0/sites/{site.slug}"
         assert response_data == {
             "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
             "visibility": "Members",
-            "url": f"http://testserver/api/1.0/sites/{site.slug}",
+            "url": site_url,
             "menu": menu.json,
             "features": [],
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
-            "data": f"http://testserver/api/1.0/sites/{site.slug}/data",
-            "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary",
-            "dictionaryCleanup": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup",
-            "dictionaryCleanupPreview": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/preview",
-            "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories",
-            "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters",
-            "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored-characters",
-            "people": f"http://testserver/api/1.0/sites/{site.slug}/people",
-            "wordOfTheDay": f"http://testserver/api/1.0/sites/{site.slug}/word-of-the-day",
+            "audio": f"{site_url}/audio",
+            "categories": f"{site_url}/categories",
+            "characters": f"{site_url}/characters",
+            "data": f"{site_url}/data",
+            "dictionary": f"{site_url}/dictionary",
+            "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
+            "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "ignoredCharacters": f"{site_url}/ignored-characters",
+            "images": f"{site_url}/images",
+            "people": f"{site_url}/people",
+            "videos": f"{site_url}/videos",
+            "wordOfTheDay": f"{site_url}/word-of-the-day",
         }
 
     @pytest.mark.django_db

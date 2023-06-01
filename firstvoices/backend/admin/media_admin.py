@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from embed_video.admin import AdminVideoMixin
+
 from backend.admin import BaseSiteContentAdmin, HiddenBaseAdmin
 from backend.models.media import (
     Audio,
@@ -10,7 +11,8 @@ from backend.models.media import (
     Image,
     ImageFile,
     Person,
-    Video, VideoFile,
+    Video,
+    VideoFile,
 )
 
 
