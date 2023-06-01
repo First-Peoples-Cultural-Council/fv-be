@@ -43,7 +43,6 @@ class TestDictionaryCleanup(BaseApiTest):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
-        # FIXME: a keyError is being thrown when checking permissions with a non-member user
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
@@ -65,7 +64,7 @@ class TestDictionaryCleanup(BaseApiTest):
         )
         response_data = json.loads(response.content)
         assert response.status_code == 200
-        assert response_data == []
+        assert response_data["results"] == []
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_preview_post(
@@ -117,7 +116,7 @@ class TestDictionaryCleanup(BaseApiTest):
         response_get_data = json.loads(response_get.content)
 
         assert response_get.status_code == 200
-        assert response_get_data == [
+        assert response_get_data["results"] == [
             {
                 "site": site.title,
                 "currentTaskStatus": "SUCCESS",
@@ -187,7 +186,6 @@ class TestDictionaryCleanup(BaseApiTest):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
-        # FIXME: a keyError is being thrown when checking permissions with a non-member user
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 

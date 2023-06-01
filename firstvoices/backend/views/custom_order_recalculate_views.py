@@ -11,7 +11,7 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order_preview,
 )
 from backend.views.base_views import (
-    FVPermissionViewSetMixin,
+    CustomOrderFVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
     SiteContentViewSetMixin,
 )
@@ -19,7 +19,9 @@ from backend.views.exceptions import CeleryError
 
 
 class CustomOrderRecalculateViewset(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ListViewOnlyModelViewSet
+    CustomOrderFVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    ListViewOnlyModelViewSet,
 ):
     http_method_names = ["get", "post"]
     serializer_class = CustomOrderRecalculationResultSerializer
