@@ -3,33 +3,36 @@ from rest_framework.reverse import reverse
 
 from backend.models.app import AppJson
 from backend.models.sites import Site
+from backend.serializers.base_serializers import base_id_fields
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 
 
-class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
+class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    Minimal info about a site, suitable for serializing a site as a related field.
+    """
+
+    url = serializers.HyperlinkedIdentityField(
+        view_name="api:site-detail", lookup_field="slug"
+    )
+    language = serializers.StringRelatedField()
+    visibility = serializers.CharField(source="get_visibility_display")
+
+    class Meta:
+        model = Site
+        fields = base_id_fields + ("slug", "visibility", "language")
+
+
+class SiteSummarySerializer(LinkedSiteSerializer):
     """
     Serializes public, non-access-controlled information about a site object. This includes the type of info
     required for an "Explore Languages" type interface.
     """
 
-    visibility = serializers.CharField(source="get_visibility_display")
-    url = serializers.HyperlinkedIdentityField(
-        view_name="api:site-detail", lookup_field="slug"
-    )
-    language = serializers.StringRelatedField()
     logo = ImageSerializer()
 
-    class Meta:
-        model = Site
-        fields = (
-            "id",
-            "title",
-            "slug",
-            "language",
-            "visibility",
-            "url",
-            "logo",
-        )
+    class Meta(LinkedSiteSerializer.Meta):
+        fields = LinkedSiteSerializer.Meta.fields + ("logo",)
 
 
 class FeatureFlagSerializer(serializers.Serializer):

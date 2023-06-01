@@ -9,7 +9,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
-from backend.serializers.site_serializers import SiteSummarySerializer
+from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
 class DictionaryContentMeta:
@@ -69,7 +69,7 @@ class DictionaryEntryDetailSerializer(
         source="alternatespelling_set", many=True
     )
     categories = CategorySerializer(many=True)
-    site = SiteSummarySerializer()
+    site = LinkedSiteSerializer()
     related_entries = DictionaryEntrySummarySerializer(
         source="related_dictionary_entries", many=True
     )
