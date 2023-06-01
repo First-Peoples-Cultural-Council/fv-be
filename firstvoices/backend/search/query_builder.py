@@ -1,12 +1,12 @@
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Q, Search
 
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
 
 
-def get_elasticsearch_client():
+def get_search_object():
     client = Elasticsearch()
     indices = get_indices()
     s = Search(using=client, index=indices)
@@ -24,24 +24,64 @@ def get_indices():
     return list_of_indices
 
 
-def get_wildcard_search_term(q):
+def get_cleaned_search_term(q):
     """
-    clean incoming string, and prepare it for a wildcard search.
+    clean incoming string
     """
-    q = q.strip().lower()
-    if q == "":
-        return q
-    q = "*" + q + "*"
-    return q
+    return q.strip()
 
 
 def get_search_query(q=""):
-    search_query = get_elasticsearch_client()
+    search_query = get_search_object()
+    search_term = get_cleaned_search_term(q)
 
-    search_term = get_wildcard_search_term(q)
     if search_term:
-        search_query = search_query.query("wildcard", title=search_term)
+        # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
+        fuzzy_match_title_query = Q(
+            {
+                "fuzzy": {
+                    "title": {
+                        "value": search_term,
+                        "fuzziness": "2",  # Documentation recommends "AUTO" for this param
+                    }
+                }
+            }
+        )
+        exact_match_title_query = Q(
+            {
+                "match_phrase": {
+                    "title": {
+                        "query": search_term,
+                        "slop": 3,  # How far apart the terms can be in order to match
+                        "boost": 1.3,
+                    }
+                }
+            }
+        )
+        # todo: Translation fields are to be added to model
+        fuzzy_match_translation_query = Q(
+            {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
+        )
+        exact_match_translation_query = Q(
+            {
+                "match_phrase": {
+                    "translation": {"query": search_term, "slop": 3, "boost": 1.1}
+                }
+            }
+        )
+        search_query = search_query.query(
+            Q(
+                "bool",
+                should=[
+                    fuzzy_match_title_query,
+                    exact_match_title_query,
+                    fuzzy_match_translation_query,
+                    exact_match_translation_query,
+                ],
+                minimum_should_match=1,
+            )
+        )
     else:
-        search_query = search_query.query("wildcard", title="*")
+        search_query = search_query.query()
 
     return search_query
