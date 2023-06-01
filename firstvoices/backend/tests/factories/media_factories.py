@@ -1,4 +1,5 @@
 import factory
+from django.conf import settings
 from factory.django import DjangoModelFactory
 
 from backend.models.media import Audio, AudioSpeaker, Image, Person, Video
@@ -12,6 +13,18 @@ class ImageFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Image-%03d" % n)
     content = factory.django.ImageField()
+    thumbnail = factory.django.ImageField(
+        width=settings.CURRENT_MAX_IMAGE_SIZES["thumbnail"],
+        height=settings.CURRENT_MAX_IMAGE_SIZES["thumbnail"],
+    )
+    small = factory.django.ImageField(
+        width=settings.CURRENT_MAX_IMAGE_SIZES["small"],
+        height=settings.CURRENT_MAX_IMAGE_SIZES["small"],
+    )
+    medium = factory.django.ImageField(
+        width=settings.CURRENT_MAX_IMAGE_SIZES["medium"],
+        height=settings.CURRENT_MAX_IMAGE_SIZES["medium"],
+    )
 
 
 class VideoFactory(DjangoModelFactory):
