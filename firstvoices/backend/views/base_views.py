@@ -51,8 +51,6 @@ class FVPermissionViewSetMixin:
         "partial_update": "change",
         "retrieve": "view",
         "update": "change",
-        "get_preview": None,
-        "create_preview": "add",
     }
 
     def initial(self, *args, **kwargs):
