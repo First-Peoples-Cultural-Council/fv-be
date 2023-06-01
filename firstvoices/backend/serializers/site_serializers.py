@@ -3,6 +3,7 @@ from rest_framework.reverse import reverse
 
 from backend.models.app import AppJson
 from backend.models.sites import Site
+from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 
 
 class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -16,6 +17,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
+    logo = ImageSerializer()
 
     class Meta:
         model = Site
@@ -26,6 +28,7 @@ class SiteSummarySerializer(serializers.HyperlinkedModelSerializer):
             "language",
             "visibility",
             "url",
+            "logo",
         )
 
 
@@ -47,6 +50,8 @@ class SiteDetailSerializer(SiteSummarySerializer):
     dictionary = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     word_of_the_day = serializers.SerializerMethodField()
+    banner_image = ImageSerializer()
+    banner_video = VideoSerializer()
 
     def get_menu(self, site):
         return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
@@ -86,4 +91,6 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "dictionary",
             "categories",
             "word_of_the_day",
+            "banner_image",
+            "banner_video",
         )

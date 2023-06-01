@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+import backend.tests.factories.access
 from backend.models import AppJson
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
@@ -34,14 +35,18 @@ class TestSitesEndpoints(BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        language0 = factories.LanguageFactory.create(title="Language 0")
+        language0 = backend.tests.factories.access.LanguageFactory.create(
+            title="Language 0"
+        )
         site = factories.SiteFactory(language=language0, visibility=Visibility.PUBLIC)
         factories.SiteFactory(language=language0, visibility=Visibility.MEMBERS)
 
-        language1 = factories.LanguageFactory.create(title="Language 1")
+        language1 = backend.tests.factories.access.LanguageFactory.create(
+            title="Language 1"
+        )
         factories.SiteFactory(language=language1, visibility=Visibility.MEMBERS)
 
-        factories.LanguageFactory.create()
+        backend.tests.factories.access.LanguageFactory.create()
 
         response = self.client.get(self.get_list_endpoint())
 
@@ -63,17 +68,18 @@ class TestSitesEndpoints(BaseApiTest):
             "slug": site.slug,
             "language": language0.title,
             "visibility": "Public",
+            "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}/",
         }
 
     @pytest.mark.django_db
     def test_list_permissions(self):
-        language0 = factories.LanguageFactory.create()
+        language0 = backend.tests.factories.access.LanguageFactory.create()
         team_site = factories.SiteFactory(
             language=language0, visibility=Visibility.TEAM
         )
 
-        language1 = factories.LanguageFactory.create()
+        language1 = backend.tests.factories.access.LanguageFactory.create()
         factories.SiteFactory(language=language1, visibility=Visibility.TEAM)
 
         user = factories.get_non_member_user()
@@ -92,12 +98,33 @@ class TestSitesEndpoints(BaseApiTest):
             len(response_data[0]["sites"]) == 1
         ), "did not include available Team site"
 
+    @pytest.mark.parametrize("visibility", [Visibility.PUBLIC, Visibility.MEMBERS])
+    @pytest.mark.django_db
+    def test_list_logo(self, visibility):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=visibility)
+        image = factories.ImageFactory(site=site)
+        site.logo = image
+        site.save()
+
+        response = self.client.get(f"{self.get_list_endpoint()}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data) == 1
+        assert len(response_data[0]["sites"]) == 1
+        assert response_data[0]["sites"][0]["logo"] == self.get_expected_media_response(
+            image
+        )
+
     @pytest.mark.django_db
     def test_detail(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        language = factories.LanguageFactory.create()
+        language = backend.tests.factories.access.LanguageFactory.create()
         site = factories.SiteFactory.create(
             language=language, visibility=Visibility.MEMBERS
         )
@@ -116,6 +143,9 @@ class TestSitesEndpoints(BaseApiTest):
             "url": f"http://testserver/api/1.0/sites/{site.slug}/",
             "menu": menu.json,
             "features": [],
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
             "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
             "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories/",
             "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
@@ -159,6 +189,59 @@ class TestSitesEndpoints(BaseApiTest):
                 "isEnabled": True,
             }
         ]
+
+    def get_expected_media_response(self, media_instance):
+        return {
+            "id": str(media_instance.id),
+            "title": media_instance.title,
+            "content": f"http://testserver{media_instance.content.url}",
+        }
+
+    @pytest.mark.django_db
+    def test_detail_logo(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        image = factories.ImageFactory()
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS, logo=image)
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["logo"] == self.get_expected_media_response(image)
+
+    @pytest.mark.django_db
+    def test_detail_banner_image(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        image = factories.ImageFactory()
+        site = factories.SiteFactory.create(
+            visibility=Visibility.MEMBERS, banner_image=image
+        )
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["bannerImage"] == self.get_expected_media_response(image)
+
+    @pytest.mark.django_db
+    def test_detail_banner_video(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        video = factories.VideoFactory()
+        site = factories.SiteFactory.create(
+            visibility=Visibility.MEMBERS, banner_video=video
+        )
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["bannerVideo"] == self.get_expected_media_response(video)
 
     @pytest.mark.django_db
     def test_detail_team_access(self):
