@@ -2,6 +2,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
+from backend.permissions import utils
 from backend.serializers.async_results_serializers import (
     CustomOrderRecalculationResultSerializer,
 )
@@ -60,6 +61,7 @@ class CustomOrderRecalculateViewset(
 
     @action(methods=["get"], detail=False, url_path="preview", url_name="preview")
     def get_preview(self, request, *args, **kwargs):
+        # Get queryset
         site = self.get_validated_site()
         if site.count() > 0:
             queryset = CustomOrderRecalculationResult.objects.filter(
@@ -68,8 +70,18 @@ class CustomOrderRecalculateViewset(
         else:
             queryset = CustomOrderRecalculationResult.objects.none()
 
-        serializer = CustomOrderRecalculationResultSerializer(queryset, many=True)
-        return Response(serializer.data, status=200)
+        # List queryset the same way as list() method
+        queryset = utils.filter_by_viewable(request.user, queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # non-paginated response
+        serializer = self.serializer_class(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
     @get_preview.mapping.post
     @action(detail=False)

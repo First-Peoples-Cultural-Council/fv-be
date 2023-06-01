@@ -39,26 +39,12 @@ class TestDictionaryCleanup(BaseApiTest):
         assert response.status_code == 404
 
     @pytest.mark.django_db
-    def test_recalculate_preview_get_403(self):
-        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
-        factories.AlphabetFactory.create(site=site)
-
-        # FIXME: a keyError is being thrown when checking permissions with a non-member user
-        user = factories.get_anonymous_user()
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(
-            self.get_cleanup_endpoint(site.slug, is_preview=True)
-        )
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
     def test_recalculate_preview_post_403(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
         # FIXME: a keyError is being thrown when checking permissions with a non-member user
-        user = factories.get_anonymous_user()
+        user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         response = self.client.post(
@@ -143,6 +129,39 @@ class TestDictionaryCleanup(BaseApiTest):
             }
         ]
 
+    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
+    def test_recalculate_preview_permissions(
+        self, celery_worker, django_db_serialized_rollback
+    ):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        factories.DictionaryEntryFactory.create(site=site, title="test")
+
+        response_post = self.client.post(
+            self.get_cleanup_endpoint(site.slug, is_preview=True)
+        )
+        response_post_data = json.loads(response_post.content)
+
+        assert response_post.status_code == 201
+        assert response_post_data == {
+            "message": "Recalculation preview has been queued."
+        }
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        response_get = self.client.get(
+            self.get_cleanup_endpoint(site.slug, is_preview=True)
+        )
+        response_get_data = json.loads(response_get.content)
+
+        assert response_get.status_code == 200
+        assert response_get_data["results"] == []
+
     @pytest.mark.django_db
     def test_recalculate_get_404(self):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
@@ -169,7 +188,7 @@ class TestDictionaryCleanup(BaseApiTest):
         factories.AlphabetFactory.create(site=site)
 
         # FIXME: a keyError is being thrown when checking permissions with a non-member user
-        user = factories.get_anonymous_user()
+        user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         response = self.client.post(

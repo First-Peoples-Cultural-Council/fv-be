@@ -22,7 +22,7 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
 
     permission_type_map = {
         **AutoPermissionViewSetMixin.permission_type_map,
-        "get_preview": "view",
+        "get_preview": None,
         "create_preview": "add",
     }
 
