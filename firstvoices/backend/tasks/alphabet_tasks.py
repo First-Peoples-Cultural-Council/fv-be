@@ -18,22 +18,19 @@ def recalculate_custom_order_preview(site_slug: str):
     updated_entries = []
     unknown_character_count = {}
     for entry in DictionaryEntry.objects.filter(site=site):
-        result = {
-            "title": entry.title,
-            "cleaned_title": "",
-            "is_title_updated": False,
-            "previous_custom_order": entry.custom_order,
-            "new_custom_order": "",
-        }
+        original_title = entry.title
+        original_custom_order = entry.custom_order
 
         cleaned_title = alphabet.clean_confusables(entry.title)
         new_order = alphabet.get_custom_order(cleaned_title)
 
-        if new_order != entry.custom_order:
-            result["new_custom_order"] = new_order
-        if cleaned_title != entry.title:
-            result["cleaned_title"] = cleaned_title
-            result["is_title_updated"] = True
+        append_updated_entry(
+            updated_entries,
+            original_title,
+            original_custom_order,
+            cleaned_title,
+            new_order,
+        )
 
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
         # If a "⚑" is in the custom order, it means that the character is unknown
@@ -45,9 +42,6 @@ def recalculate_custom_order_preview(site_slug: str):
                     if custom_order not in unknown_character_count:
                         unknown_character_count[custom_order] = 0
                     unknown_character_count[custom_order] += 1
-
-        if result["new_custom_order"] or result["cleaned_title"]:
-            updated_entries.append(result)
 
     preview["unknown_character_count"] = unknown_character_count
     preview["updated_entries"] = updated_entries
@@ -71,13 +65,8 @@ def recalculate_custom_order(site_slug: str):
 
     # Return the results of the recalculation i.e. the changes in custom order and title for every entry
     for entry in DictionaryEntry.objects.filter(site=site):
-        result = {
-            "title": entry.title,
-            "cleaned_title": "",
-            "is_title_updated": False,
-            "previous_custom_order": entry.custom_order,
-            "new_custom_order": "",
-        }
+        original_title = entry.title
+        original_custom_order = entry.custom_order
 
         # Save the entry to recalculate custom order and clean title
         entry.save()
@@ -85,11 +74,13 @@ def recalculate_custom_order(site_slug: str):
         cleaned_title = entry.title
         new_order = entry.custom_order
 
-        if result["previous_custom_order"] != new_order:
-            result["new_custom_order"] = new_order
-        if result["title"] != cleaned_title:
-            result["cleaned_title"] = cleaned_title
-            result["is_title_updated"] = True
+        append_updated_entry(
+            updated_entries,
+            original_title,
+            original_custom_order,
+            cleaned_title,
+            new_order,
+        )
 
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
         if "⚑" in new_order:
@@ -101,10 +92,28 @@ def recalculate_custom_order(site_slug: str):
                         unknown_character_count[custom_order] = 0
                     unknown_character_count[custom_order] += 1
 
-        if result["new_custom_order"] or result["cleaned_title"]:
-            updated_entries.append(result)
-
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries
 
     return results
+
+
+def append_updated_entry(
+    updated_entries, original_title, original_custom_order, cleaned_title, new_order
+):
+    result = {
+        "title": original_title,
+        "cleaned_title": "",
+        "is_title_updated": False,
+        "previous_custom_order": original_custom_order,
+        "new_custom_order": "",
+    }
+
+    if result["previous_custom_order"] != new_order:
+        result["new_custom_order"] = new_order
+    if result["title"] != cleaned_title:
+        result["cleaned_title"] = cleaned_title
+        result["is_title_updated"] = True
+
+    if result["new_custom_order"] or result["cleaned_title"]:
+        updated_entries.append(result)
