@@ -7,6 +7,8 @@ from scripts.utils.aws_download_utils import (
     download_latest_exports,
 )
 
+from backend.models.category import Category
+from backend.models.sites import Site
 from backend.resources.sites import SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
@@ -45,8 +47,10 @@ import_resources = [
 ]
 
 
-# TODO: Delete the database so it is clean
-logger.info("Deleting existing data...")
+# Drop existing data
+logger.info("Deleting existing site data...")
+Category.objects.filter(parent__isnull=False).delete()  # see FW-4460
+Site.objects.all().delete()  # we can expand the scope of deletion as needed
 
 
 # Match export files with the correct model resource and import them
@@ -69,15 +73,17 @@ for key, resource in import_resources:
             table = tablib.import_set(f, format="csv")
 
         # raise errors to halt the import if an issue occurs
-        result = resource.import_data(dataset=table, dry_run=True, raise_errors=True)
-        # FIX: fix settings -- turn off dry run
+        result = resource.import_data(dataset=table, dry_run=False, raise_errors=True)
         logger.info(
             " ".join([f"{type}: {total}" for type, total in result.totals.items()])
         )
 
 
-# # TODO: if import is successful, delete the export from local? move to "DONE" location in aws?
-# # ??? if import failed, what to do with local copy vs AWS?
-
 for file in unmatched_files:
     logger.warn(f"\n{file} not imported (no resource defined)")
+
+
+# Clean up artifacts
+for file in os.listdir(current_export_dir):
+    os.remove(os.path.join(current_export_dir, file))
+os.rmdir(current_export_dir)
