@@ -2,6 +2,7 @@ from backend.models.dictionary import DictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
+from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 
 
@@ -48,7 +49,7 @@ def hydrate_objects(search_results, request):
                 {
                     "_id": obj["_id"],
                     "score": obj["_score"],
-                    "type": "dictionary_entry",
+                    "type": SearchIndexEntryTypes.DICTIONARY_ENTRY,
                     "entry": DictionaryEntryDetailSerializer(
                         dictionary_entry,
                         context={"request": request, "view": "custom_search"},

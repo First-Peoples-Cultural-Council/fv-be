@@ -11,6 +11,7 @@ from rest_framework import mixins, serializers, viewsets
 from rest_framework.response import Response
 
 from backend.search.query_builder import get_search_query
+from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.views.exceptions import ElasticSearchConnectionError
 
@@ -24,7 +25,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 fields={
                     "id": serializers.CharField(),
                     "score": serializers.FloatField(),
-                    "type": serializers.CharField(),
+                    "type": serializers.ChoiceField(
+                        choices=SearchIndexEntryTypes.choices
+                    ),
                     "entry": serializers.DictField(),
                 },
             ),

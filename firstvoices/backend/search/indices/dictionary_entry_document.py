@@ -6,7 +6,11 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Document, Index, Keyword, Text
 
 from backend.models.dictionary import DictionaryEntry, Translation
-from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
+from backend.search.utils.constants import (
+    ES_CONNECTION_ERROR,
+    ES_NOT_FOUND_ERROR,
+    SearchIndexEntryTypes,
+)
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG, ELASTICSEARCH_LOGGER
 
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entry"
@@ -42,7 +46,7 @@ def update_index(sender, instance, **kwargs):
     except ConnectionError:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
-            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
 
 
@@ -56,14 +60,14 @@ def delete_from_index(sender, instance, **kwargs):
         index_entry.delete()
     except ConnectionError:
         logger.warning(
-            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR
             % (
                 "dictionary_entry_delete",
-                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
                 instance.id,
             )
         )
@@ -79,13 +83,15 @@ def update_translation(sender, instance, **kwargs):
         dictionary_entry_doc = DictionaryEntryDocument.get(id=dictionary_entry.id)
         dictionary_entry_doc.update(translation=instance.text)
     except ConnectionError:
-        logger.warning(ES_CONNECTION_ERROR % instance.id)
+        logger.warning(
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+        )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR
             % (
                 "translation_post_save",
-                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
                 dictionary_entry.id,
             )
         )
@@ -102,14 +108,14 @@ def delete_translation(sender, instance, **kwargs):
         dictionary_entry_doc.update(translation=None)
     except ConnectionError:
         logger.warning(
-            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR
             % (
                 "translation_post_delete",
-                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
                 dictionary_entry.id,
             )
         )
