@@ -47,7 +47,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
         ],
     ),
 )
-class CustomSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
 

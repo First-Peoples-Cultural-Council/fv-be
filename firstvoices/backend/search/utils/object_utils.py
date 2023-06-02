@@ -52,7 +52,7 @@ def hydrate_objects(search_results, request):
                     "type": SearchIndexEntryTypes.DICTIONARY_ENTRY,
                     "entry": DictionaryEntryDetailSerializer(
                         dictionary_entry,
-                        context={"request": request, "view": "custom_search"},
+                        context={"request": request, "view": "search"},
                     ).data,
                 }
             )
