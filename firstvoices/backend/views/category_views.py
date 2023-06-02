@@ -17,7 +17,11 @@ from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
     ParentCategoryListSerializer,
 )
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    http_methods_except_patch,
+)
 
 from . import doc_strings
 
@@ -64,6 +68,17 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
+    create=extend_schema(
+        description=_("Add a category."),
+        responses={
+            201: OpenApiResponse(
+                description=doc_strings.success_201, response=CategoryDetailSerializer
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+    ),
     update=extend_schema(
         description=_("Edit a category."),
         responses={
@@ -89,8 +104,8 @@ from . import doc_strings
         },
     ),
 )
-class CategoryViewSet(FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet):
-    http_method_names = ["get", "put", "delete"]
+class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
+    http_method_names = http_methods_except_patch
     valid_inputs = TypeOfDictionaryEntry.values
 
     def get_detail_queryset(self):

@@ -3,6 +3,7 @@ from rest_framework import serializers
 from backend.models.category import Category
 from backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
 from backend.serializers.base_serializers import (
+    CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
 )
@@ -33,7 +34,11 @@ class ParentCategoryListSerializer(ChildCategoryListSerializer):
         fields = ChildCategoryListSerializer.Meta.fields + ("children",)
 
 
-class CategoryDetailSerializer(UpdateSerializerMixin, ParentCategoryListSerializer):
+class CategoryDetailSerializer(
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
+    ParentCategoryListSerializer,
+):
     parent = LinkedCategorySerializer(read_only=True)
     parent_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
