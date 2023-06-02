@@ -36,7 +36,7 @@ class UserForeignKeyWidget(ForeignKeyWidget):
 
     def clean(self, value, row=None, **kwargs):
         if self.create:
-            user, is_new = self.model.objects.get_or_create(
+            user, _ = self.model.objects.get_or_create(
                 **{self.field: value}, defaults={"id": value}
             )
             return user
