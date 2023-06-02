@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -18,6 +19,46 @@ from backend.views.base_views import (
 from backend.views.exceptions import CeleryError
 
 
+@extend_schema_view(
+    list=extend_schema(
+        description="Returns the most recent custom order recalculation results for the specified site.",
+        responses={
+            200: CustomOrderRecalculationResultSerializer,
+            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+    create=extend_schema(
+        description="Queues a custom order recalculation task for the specified site.",
+        responses={
+            201: OpenApiResponse(description="Recalculation has been queued."),
+            403: OpenApiResponse(
+                description="Todo: Action not authorized for this User"
+            ),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+    get_preview=extend_schema(
+        description="Returns the most recent custom order recalculation preview results for the specified site. "
+        "Preview results are not saved to the database.",
+        responses={
+            200: CustomOrderRecalculationResultSerializer,
+            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+    create_preview=extend_schema(
+        description="Queues a custom order recalculation preview task for the specified site. "
+        "dictionary-cleanup/preview and dictionary-cleanup/create_preview are the same endpoint.",
+        responses={
+            201: OpenApiResponse(description="Recalculation preview has been queued."),
+            403: OpenApiResponse(
+                description="Todo: Action not authorized for this User"
+            ),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+)
 class CustomOrderRecalculateViewset(
     CustomOrderFVPermissionViewSetMixin,
     SiteContentViewSetMixin,
@@ -86,7 +127,7 @@ class CustomOrderRecalculateViewset(
         return Response(serializer.data)
 
     @get_preview.mapping.post
-    @action(detail=False)
+    @action(detail=False, methods=["post"])
     def create_preview(self, request, *args, **kwargs):
         site = self.get_validated_site()
         site_slug = site[0].slug
