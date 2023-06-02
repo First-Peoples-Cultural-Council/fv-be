@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from backend.models.app import AppJson, AppMembership
+from backend.models.app import AppImportStatus, AppJson, AppMembership
 
 from .base_admin import BaseAdmin
 
@@ -35,3 +35,18 @@ class AppMembershipAdmin(BaseAdmin):
         "user",
         "role",
     )
+
+
+@admin.register(AppImportStatus)
+class AppImportStatusAdmin(BaseAdmin):
+    fields = (
+        "label",
+        "warnings",
+        "successful",
+    )
+    list_display = (
+        "label",
+        "warnings",
+        "successful",
+    ) + BaseAdmin.list_display
+    search_fields = ("label",)
