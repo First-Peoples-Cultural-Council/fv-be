@@ -3,6 +3,7 @@ import json
 import pytest
 from rest_framework.test import APIClient
 
+from backend.models.category import Category
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests.factories import (
@@ -25,6 +26,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     API_LIST_VIEW = "api:category-list"
     API_DETAIL_VIEW = "api:category-detail"
+    model = Category
 
     def setup_method(self):
         self.client = APIClient()
@@ -37,6 +39,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def get_expected_detail_response(self, instance, site):
         return {
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
             "id": str(instance.id),
             "title": instance.title,
             "description": instance.description,
@@ -44,13 +47,24 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "parent": None,
         }
 
-    def get_expected_list_response_item(self, instance, site):
+    def get_valid_data(self, site=None):
+        parent = CategoryFactory.create(site=site)
+
         return {
-            "id": str(instance.id),
-            "title": instance.title,
-            "description": instance.description,
-            "children": [],
+            "title": "Cool new title",
+            "description": "Cool new description",
+            "parent_id": str(parent.id),
         }
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        assert actual_instance.title == expected_data["title"]
+        assert actual_instance.description == expected_data["description"]
+        assert str(actual_instance.parent.id) == expected_data["parent_id"]
+
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["description"] == expected_data["description"]
+        assert actual_response["parent"]["id"] == expected_data["parent_id"]
 
     def get_categories_with_word_phrase(self):
         word_entry = DictionaryEntryFactory(site=self.site)
@@ -125,6 +139,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         category_json = response_data["results"][0]
         # Testing general structure of the response json.
         # Specific testing done in the retrieve view test
+        assert "url" in category_json
         assert "id" in category_json
         assert "title" in category_json
         assert "children" in category_json
@@ -132,7 +147,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert "description" in category_json
 
     @pytest.mark.django_db
-    def test_detail_parent_category(self):
+    def test_detail_has_children(self):
         parent_category = ParentCategoryFactory.create(site=self.site)
         child_category = ChildCategoryFactory.create(
             site=self.site, parent=parent_category
@@ -142,22 +157,17 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data == {
-            "id": str(parent_category.id),
-            "title": parent_category.title,
-            "description": parent_category.description,
-            "children": [
-                {
-                    "id": str(child_category.id),
-                    "title": child_category.title,
-                    "description": child_category.description,
-                }
-            ],
-            "parent": None,
-        }
+        assert response_data["children"] == [
+            {
+                "url": f"http://testserver{self.get_detail_endpoint(child_category.id, child_category.site.slug)}",
+                "id": str(child_category.id),
+                "title": child_category.title,
+                "description": child_category.description,
+            }
+        ]
 
     @pytest.mark.django_db
-    def test_detail_children_category(self):
+    def test_detail_has_parent(self):
         parent_category = ParentCategoryFactory.create(site=self.site)
         child_category = ChildCategoryFactory.create(
             site=self.site, parent=parent_category
@@ -168,12 +178,10 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         response = self.client.get(detail_endpoint)
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data == {
-            "id": str(child_category.id),
-            "title": child_category.title,
-            "description": child_category.description,
-            "children": [],
-            "parent": str(parent_category.id),
+        assert response_data["parent"] == {
+            "id": str(parent_category.id),
+            "title": parent_category.title,
+            "url": f"http://testserver{self.get_detail_endpoint(parent_category.id, parent_category.site.slug)}",
         }
 
     @pytest.mark.django_db

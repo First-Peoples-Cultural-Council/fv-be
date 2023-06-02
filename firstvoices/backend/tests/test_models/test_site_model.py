@@ -1,6 +1,10 @@
+import pytest
+from django.db import IntegrityError
+
 from backend.models.constants import AppRole
 from backend.models.sites import Site
 from backend.models.utils import load_data
+from backend.tests import factories
 from backend.tests.factories import get_app_admin
 
 
@@ -23,3 +27,22 @@ class TestSiteModel:
         default_categories = load_data("default_categories.json")
 
         assert len(default_categories) == len(categories)
+
+    @pytest.mark.django_db
+    def test_only_one_banner(self):
+        """Verify that you can't add both a banner image and a banner video."""
+        admin_user = get_app_admin(AppRole.STAFF)
+        video = factories.VideoFactory()
+        image = factories.ImageFactory()
+
+        site = Site(
+            title="Site 1",
+            slug="site_1",
+            created_by=admin_user,
+            last_modified_by=admin_user,
+            banner_image=image,
+            banner_video=video,
+        )
+
+        with pytest.raises(IntegrityError):
+            site.save()

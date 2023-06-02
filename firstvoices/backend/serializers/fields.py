@@ -1,15 +1,15 @@
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
+from backend.serializers.utils import get_site_from_context
+
 
 class SiteHyperlinkedRelatedField(NestedHyperlinkedRelatedField):
     """
-    Supports nested URLs. Will use the view kwarg values named in parent_lookup_kwargs as literal
-    values when reversing the URL, to eliminate extra database queries. This means this will only work within
-    views that have the same nested structure as the target URL (links to objects in the same site). For use in other
-    contexts, see NestedHyperlinkedRelatedField, which uses model attribute lookups instead of url kwarg lookups.
+    Supports nested URLs. Will use the site provided in the serializer context when reversing the URL, to eliminate
+    extra database queries. This means this will only work within views that have the same nested url structure as the
+    target URL (links to objects in the same site). For use in other contexts, see NestedHyperlinkedRelatedField,
+    which uses model attribute lookups instead of url kwarg lookups.
     """
-
-    parent_lookup_kwargs = {"site_slug": "site_slug"}
 
     def get_url(self, obj, view_name, request, format):
         """
@@ -26,29 +26,18 @@ class SiteHyperlinkedRelatedField(NestedHyperlinkedRelatedField):
         lookup_value = getattr(obj, self.lookup_field)
         kwargs = {self.lookup_url_kwarg: lookup_value}
 
-        # all levels will be treated as site values, so this is effectively a single-level lookup
-        for parent_lookup_kwarg in list(self.parent_lookup_kwargs.keys()):
-            underscored_lookup = self.parent_lookup_kwargs[parent_lookup_kwarg]
-
-            try:
-                # use the Django ORM to lookup this value, e.g., obj.parent.pk
-                lookup_value = request.parser_context["kwargs"][underscored_lookup]
-            except AttributeError:
-                # Not nested. Act like a standard HyperlinkedRelatedField
-                return super().get_url(obj, view_name, request, format)
-
-            # store the lookup_name and value in kwargs, which is later passed to the reverse method
-            kwargs.update({parent_lookup_kwarg: lookup_value})
+        # add the site lookup
+        kwargs.update({"site_slug": get_site_from_context(self).slug})
 
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class SiteHyperlinkedIdentityField(SiteHyperlinkedRelatedField):
     """
-    Supports nested URLs. Will use the view kwarg values named in parent_lookup_kwargs as literal
-    values when reversing the URL, to eliminate extra database queries. This means this will only work within
-    views that have the same nested structure as the target URL. For use in other contexts, see
-    NestedHyperlinkedIdentityField.
+    Supports nested URLs. Will use the site provided in the serializer context when reversing the URL, to eliminate
+    extra database queries. This means this will only work within views that have the same nested url structure as the
+    target URL (links to objects in the same site). For use in other contexts, see NestedHyperlinkedRelatedField,
+    which uses model attribute lookups instead of url kwarg lookups.
     """
 
     def __init__(self, view_name=None, **kwargs):

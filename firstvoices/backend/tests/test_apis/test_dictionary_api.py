@@ -60,7 +60,7 @@ class TestDictionaryEndpoint(
                 "title": site.title,
                 "slug": site.slug,
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/",
-                "language": None,
+                "language": site.language.title,
                 "visibility": "Public",
             },
             "splitChars": [],
