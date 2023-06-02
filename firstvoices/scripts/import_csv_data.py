@@ -1,83 +1,83 @@
+import logging
 import os
 
 import tablib
+from scripts.utils.aws_download_utils import (
+    EXPORT_STORAGE_DIRECTORY,
+    download_latest_exports,
+)
 
 from backend.resources.sites import SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
 
-Designate the list of import tasks/models and their order
-For each model, grab files from import todo area
-    parse the filenames to know what kinds of imports they are
-Delete the existing database
-Start with general-FV level content (e.g. sites) -- for each file:
-    If there's an error, halt the entire import (for now)
-    if successful, save the data into the db
-Then do site-wise content (tbd)
+Locally downloads import files from AWS, then matches them with the right
+backend model resource to import with. Deletes the database, then imports
+model-by-model in a specified order into the clean space.
+Halts the process when encountering any data/validation error.
 
 Run with:
     python manage.py shell < scripts/import_csv_data.py
+
+??? should this be a custom manage.py command?
 """
 
+logger = logging.getLogger(__name__)
 
-# Get Nuxeo data from AWS
-# FIX: add download_latest here
+# Check that export data exists, if not then download it from AWS
+if not os.path.exists(EXPORT_STORAGE_DIRECTORY):
+    download_latest_exports()
 
-data_dir = os.path.join(os.getcwd(), "scripts", "utils", "export_data")
-# FIX: need a function to generate the same dir that aws saves to
-data_export_list = os.listdir(data_dir)
+available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
+if not available_exports:
+    download_latest_exports()
+    available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
+elif len(available_exports) > 1:
+    raise ValueError("Multiple potential nuxeo exports found, aborting.")
 
-if len(data_export_list) == 0:
-    raise ValueError("No nuxeo export data found in AWS bucket.")
-if len(data_export_list) > 1:
-    raise ValueError("Multiple potential nuxeo exports found.")
-
-current_export_dir = os.path.join(data_dir, data_export_list[-1])
-unmatched_files = os.listdir(current_export_dir)
-# if not unmatched_files:
-#     raise ValueError("Nuxeo export contains no files to be imported.")
-# FIX: is this necessary
+current_export_dir = os.path.join(EXPORT_STORAGE_DIRECTORY, available_exports[0])
 
 
-# Match export files with model resources for import, in import order
+# List model resources in the correct order to import them
 import_resources = [
     ("sites", SiteResource()),
     # more to be added
 ]
-# ??? should we import by model or by site? currently by model b/c easier
 
-files_to_import = {}
-for prefix, _ in import_resources:
-    # Parse files to import with this resource
-    matched_files = [f for f in unmatched_files if f.startswith(prefix)]
-    if not matched_files:
-        pass  # ??? raise some kind of warning?
-
-    files_to_import[prefix] = matched_files
-
-    for f in matched_files:
-        unmatched_files.remove(f)
 
 # TODO: Delete the database so it is clean
-print("Deleting existing data...")
+logger.info("Deleting existing data...")
 
-# Perform the import
-for prefix, resource in import_resources:
-    print(f"\nImporting {prefix} models...")
 
-    for file in files_to_import[prefix]:
-        print(f"Importing file: {file}")
+# Match export files with the correct model resource and import them
+unmatched_files = os.listdir(current_export_dir)
+
+for key, resource in import_resources:
+    logger.info(f"Importing {key} models...")
+
+    # Parse files to import with this resource
+    matched_files = [f for f in unmatched_files if f.startswith(key)]
+    unmatched_files = [f for f in unmatched_files if f not in matched_files]
+
+    if not matched_files:
+        logger.warn(f"No '{key}' files found to import")
+
+    # Perform import
+    for file in matched_files:
+        logger.info(f"Importing file: {file}")
         with open(os.path.join(current_export_dir, file)) as f:
             table = tablib.import_set(f, format="csv")
-        result = resource.import_data(dataset=table, dry_run=True, raise_errors=False)
-        # FIX: fix settings -- we should raise errors for now, currently off
 
-        for type, total in result.totals.items():
-            print(f"{type}: {total}")
+        # raise errors to halt the import if an issue occurs
+        result = resource.import_data(dataset=table, dry_run=True, raise_errors=True)
+        # FIX: fix settings -- turn off dry run
+        logger.info(
+            " ".join([f"{type}: {total}" for type, total in result.totals.items()])
+        )
 
-if unmatched_files:
-    print(f"\n{len(unmatched_files)} files could not be imported (no resource defined)")
-    print(unmatched_files)
 
-# if import is successful, delete the export from local, and move to "DONE" in aws
-# if import failed, retain local and don't move in AWS
+# # TODO: if import is successful, delete the export from local? move to "DONE" location in aws?
+# # ??? if import failed, what to do with local copy vs AWS?
+
+for file in unmatched_files:
+    logger.warn(f"\n{file} not imported (no resource defined)")
