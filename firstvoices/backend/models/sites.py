@@ -2,12 +2,15 @@ import rules
 from django.contrib.auth import get_user_model
 from django.core.validators import validate_slug
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
 
+from . import Image
 from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
+from .media import Video
 from .utils import load_default_categories
 
 
@@ -93,6 +96,13 @@ class Site(BaseModel):
             "delete": predicates.is_superadmin,
         }
 
+        constraints = [
+            models.CheckConstraint(
+                check=(Q(banner_image__isnull=True) | Q(banner_video__isnull=True)),
+                name="only_one_banner",
+            )
+        ]
+
     # from dc:title
     title = models.CharField(max_length=200, unique=True)
 
@@ -118,7 +128,32 @@ class Site(BaseModel):
     # from fvdialect:contact_email
     contact_email = models.EmailField(null=True, blank=True)
 
-    # see fw-4130, add logo field when media is ready / from fvdialect:logo
+    # from fvdialect:logo
+    logo = models.OneToOneField(
+        Image,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="site_logo_of",
+    )
+
+    # from fvdialect:background_top_image
+    banner_image = models.OneToOneField(
+        Image,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="site_banner_of",
+    )
+
+    # from fvdialect:background_top_video
+    banner_video = models.OneToOneField(
+        Video,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="site_banner_of",
+    )
 
     @property
     def language_family(self):

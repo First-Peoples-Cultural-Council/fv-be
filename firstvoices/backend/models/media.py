@@ -24,7 +24,7 @@ class Person(BaseSiteContentModel):
     # from FVContributor dc:description
     bio = models.CharField(max_length=500)
 
-    def __unicode__(self):
+    def __str__(self):
         return f"{self.name} ({self.site})"
 
 
@@ -91,7 +91,7 @@ class Audio(MediaBase):
         Person, through="AudioSpeaker", related_name="audio_set", blank=True
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return f"{self.title} / {self.site} (Audio)"
 
 
@@ -113,7 +113,7 @@ class AudioSpeaker(BaseSiteContentModel):
         Person, on_delete=models.CASCADE, related_name="audiospeaker_set"
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return f"Audio Speaker {self.audio.title} - ({self.speaker.name})"
 
 
@@ -135,7 +135,7 @@ class Image(MediaBase):
     # from fvm:content
     content = models.ImageField(upload_to=media_directory_path)
 
-    def __unicode__(self):
+    def __str__(self):
         return f"{self.title} / {self.site} (Image)"
 
 
@@ -154,7 +154,7 @@ class Video(MediaBase):
 
     # acknowledgement from fvm:recorder, fvm:source
 
-    def __unicode__(self):
+    def __str__(self):
         return f"{self.title} / {self.site} (Video)"
 
 

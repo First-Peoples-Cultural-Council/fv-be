@@ -51,22 +51,22 @@ def is_own_obj(user, obj):
 
 
 @predicate
-def is_at_least_member(user, obj):
+def has_at_least_member_membership(user, obj):
     return get_site_role(user, obj) >= Role.MEMBER
 
 
 @predicate
-def is_at_least_assistant(user, obj):
+def has_at_least_assistant_membership(user, obj):
     return get_site_role(user, obj) >= Role.ASSISTANT
 
 
 @predicate
-def is_at_least_editor(user, obj):
+def has_at_least_editor_membership(user, obj):
     return get_site_role(user, obj) >= Role.EDITOR
 
 
 @predicate
-def is_at_least_language_admin(user, obj):
+def has_at_least_language_admin_membership(user, obj):
     return get_site_role(user, obj) >= Role.LANGUAGE_ADMIN
 
 
@@ -81,18 +81,41 @@ def is_superadmin(user, obj):
 
 
 #
+# role predicates for site + app roles
+#
+is_at_least_member = predicate(
+    has_at_least_member_membership | is_at_least_staff_admin, name="is_at_least_member"
+)
+is_at_least_assistant = predicate(
+    has_at_least_assistant_membership | is_at_least_staff_admin,
+    name="is_at_least_assistant",
+)
+is_at_least_editor = predicate(
+    has_at_least_editor_membership | is_at_least_staff_admin, name="is_at_least_editor"
+)
+is_at_least_language_admin = predicate(
+    has_at_least_language_admin_membership | is_at_least_staff_admin,
+    name="is_at_least_language_admin",
+)
+
+
+#
 # access-based predicates
 #
 has_public_access_to_obj = predicate(
     is_public_obj & has_public_site, name="has_public_access_to_obj"
 )
 has_member_access_to_obj = (
-    is_at_least_member & ~is_team_obj & ~has_team_site
+    has_at_least_member_membership & ~is_team_obj & ~has_team_site
 )  # noqa E1130
-has_team_access = is_at_least_assistant
+has_team_access = has_at_least_assistant_membership
 
 has_public_access_to_site = has_public_site  # just a convenient alias
-has_member_access_to_site = is_at_least_member & ~has_team_site  # noqa E1130
+has_member_access_to_site = (
+    has_at_least_member_membership & ~has_team_site
+)  # noqa E1130
 
 has_public_access_to_site_obj = predicate(is_public_obj)
-has_member_access_to_site_obj = is_at_least_member & ~is_team_obj  # noqa E1130
+has_member_access_to_site_obj = (
+    has_at_least_member_membership & ~is_team_obj
+)  # noqa E1130
