@@ -5,7 +5,7 @@ from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 
 
@@ -290,6 +290,168 @@ class ControlledDetailApiTestMixin:
         assert response.status_code == 403
 
 
+class WriteApiTestMixin:
+    """Common functions for Create and Update tests"""
+
+    content_type_json = "application/json"
+
+    def get_invalid_data(self):
+        """Returns an invalid data object suitable for failing create/update requests"""
+        return {}
+
+    def get_valid_data(self, site=None):
+        """Returns a valid data object suitable for create/update requests"""
+        raise NotImplementedError
+
+    def create_site_with_app_admin(self, site_visibility, role=AppRole.SUPERADMIN):
+        user = factories.get_app_admin(role)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=site_visibility)
+
+        return site
+
+
+class CreateApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest
+    """
+
+    @pytest.mark.django_db
+    def test_update_invalid_400(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=json.dumps(self.get_invalid_data()),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_create_private_site_403(self):
+        site = self.create_site_with_non_member(Visibility.MEMBERS)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_create_site_missing_404(self):
+        site = self.create_site_with_non_member(Visibility.MEMBERS)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug="missing-site"),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_create_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 201
+
+
+class UpdateApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest
+    """
+
+    model = None
+
+    def get_updated_instance(self, original_instance):
+        return self.model.objects.filter(pk=original_instance.pk).first()
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        raise NotImplementedError()
+
+    def assert_update_response(self, expected_data, actual_response):
+        raise NotImplementedError()
+
+    @pytest.mark.django_db
+    def test_update_invalid_400(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            data=json.dumps(self.get_invalid_data()),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_update_403(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_update_site_missing_404(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug="missing-site"),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_instance_missing_404(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key="missing-instance", site_slug=site.slug),
+            data=json.dumps(self.get_valid_data(site)),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            data=json.dumps(data),
+            content_type=self.content_type_json,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_updated_instance(data, self.get_updated_instance(instance))
+        self.assert_update_response(data, response_data)
+
+
 class DestroyApiTestMixin:
     """
     For use with BaseSiteContentApiTest
@@ -358,7 +520,11 @@ class BaseReadOnlyUncontrolledSiteContentApiTest(
 
 
 class BaseUncontrolledSiteContentApiTest(
-    DestroyApiTestMixin, BaseReadOnlyUncontrolledSiteContentApiTest
+    WriteApiTestMixin,
+    CreateApiTestMixin,
+    UpdateApiTestMixin,
+    DestroyApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     pass
 

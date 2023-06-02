@@ -82,19 +82,19 @@ def get_site_role_at_least_filter(user, role):
     return Q(site__membership_set__user=user) & Q(site__membership_set__role__gte=role)
 
 
-def is_at_least_member(user):
+def has_at_least_member_membership(user):
     return get_site_role_at_least_filter(user, Role.MEMBER)
 
 
-def is_at_least_assistant(user):
+def has_at_least_assistant_membership(user):
     return get_site_role_at_least_filter(user, Role.ASSISTANT)
 
 
-def is_at_least_editor(user):
+def has_at_least_editor_membership(user):
     return get_site_role_at_least_filter(user, Role.EDITOR)
 
 
-def is_at_least_language_admin(user):
+def has_at_least_language_admin_membership(user):
     return get_site_role_at_least_filter(user, Role.LANGUAGE_ADMIN)
 
 
@@ -117,6 +117,27 @@ def is_superadmin(user):
 
 
 #
+# Role-based filters for site + app role combos
+#
+
+
+def is_at_least_member(user):
+    return has_at_least_member_membership(user) | is_at_least_staff_admin(user)
+
+
+def is_at_least_assistant(user):
+    return has_at_least_assistant_membership(user) | is_at_least_staff_admin(user)
+
+
+def is_at_least_editor(user):
+    return has_at_least_editor_membership(user) | is_at_least_staff_admin(user)
+
+
+def is_at_least_language_admin(user):
+    return has_at_least_language_admin_membership(user) | is_at_least_staff_admin(user)
+
+
+#
 # access-based filters
 #
 def has_public_access_to_obj(user=None):
@@ -124,11 +145,11 @@ def has_public_access_to_obj(user=None):
 
 
 def has_member_access_to_obj(user):
-    return is_at_least_member(user) & ~is_team_obj() & ~has_team_site()
+    return has_at_least_member_membership(user) & ~is_team_obj() & ~has_team_site()
 
 
 def has_team_access_to_obj(user):
-    return is_at_least_assistant(user)
+    return has_at_least_assistant_membership(user)
 
 
 def has_public_access_to_site(user=None):
@@ -136,11 +157,11 @@ def has_public_access_to_site(user=None):
 
 
 def has_member_access_to_site(user):
-    return is_at_least_member(user) & ~has_team_site()
+    return has_at_least_member_membership(user) & ~has_team_site()
 
 
 def has_team_access_to_site(user):
-    return is_at_least_assistant(user)
+    return has_at_least_assistant_membership(user)
 
 
 def has_team_access_to_site_obj(user):

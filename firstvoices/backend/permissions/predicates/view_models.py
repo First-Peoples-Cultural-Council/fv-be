@@ -19,6 +19,10 @@ can_view_site_model = Predicate(
 
 # Membership model is visible to admins, and relevant user
 can_view_membership_model = Predicate(
-    (base.is_at_least_staff_admin | base.is_at_least_language_admin | base.is_own_obj),
+    (
+        base.is_at_least_staff_admin
+        | base.has_at_least_language_admin_membership
+        | base.is_own_obj
+    ),
     name="can_view_membership_model",
 )
