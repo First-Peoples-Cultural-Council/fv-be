@@ -6,6 +6,7 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Document, Index, Keyword, Text
 
 from backend.models.dictionary import DictionaryEntry, Translation
+from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG, ELASTICSEARCH_LOGGER
 
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entry"
@@ -41,7 +42,7 @@ def update_index(sender, instance, **kwargs):
     except ConnectionError:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
-            f"Elasticsearch server down. Document could not be updated in index. document id: {instance.id}"
+            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
         )
 
 
@@ -55,11 +56,16 @@ def delete_from_index(sender, instance, **kwargs):
         index_entry.delete()
     except ConnectionError:
         logger.warning(
-            f"Elasticsearch server down. Documents could not be deleted in index. document id: {instance.id}"
+            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
         )
     except NotFoundError:
         logger.warning(
-            f"Indexed document not found. Cannot delete from index. document id: {instance.id}"
+            ES_NOT_FOUND_ERROR
+            % (
+                "dictionary_entry_delete",
+                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                instance.id,
+            )
         )
 
 
@@ -73,13 +79,15 @@ def update_translation(sender, instance, **kwargs):
         dictionary_entry_doc = DictionaryEntryDocument.get(id=dictionary_entry.id)
         dictionary_entry_doc.update(translation=instance.text)
     except ConnectionError:
-        logger.warning(
-            f"Elasticsearch server down. Translation could not be updated in index. document id: {instance.id}"
-        )
+        logger.warning(ES_CONNECTION_ERROR % instance.id)
     except NotFoundError:
         logger.warning(
-            f"Indexed document not found. Cannot updated dictionary_entry with translation. "
-            f"document id: {dictionary_entry.id}"
+            ES_NOT_FOUND_ERROR
+            % (
+                "translation_post_save",
+                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                dictionary_entry.id,
+            )
         )
 
 
@@ -94,10 +102,14 @@ def delete_translation(sender, instance, **kwargs):
         dictionary_entry_doc.update(translation=None)
     except ConnectionError:
         logger.warning(
-            f"Elasticsearch server down. Translation could not be updated in index. document id: {instance.id}"
+            ES_CONNECTION_ERROR % (ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id)
         )
     except NotFoundError:
         logger.warning(
-            f"Indexed document not found. Cannot remove translation from dictionary_entry. "
-            f"document id: {dictionary_entry.id}"
+            ES_NOT_FOUND_ERROR
+            % (
+                "translation_post_delete",
+                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+                dictionary_entry.id,
+            )
         )
