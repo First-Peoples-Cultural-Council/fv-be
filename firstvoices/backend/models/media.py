@@ -123,6 +123,32 @@ class AudioSpeaker(BaseSiteContentModel):
         return f"Audio Speaker {self.audio.title} - ({self.speaker.name})"
 
 
+def get_output_image_size(max_size, input_width, input_height):
+    """
+    Returns the output image size given a max size to scale the image to. The largest dimension of the input image is
+    scaled down to the max size setting and the other dimension is scaled down, keeping the original aspect ratio.
+    The original size is used if the input image is smaller in both dimensions than the max size.
+
+    :param max_size: The maximum size (width or height) of the output image.
+    :param input_width: The input image width.
+    :param input_height: The input image height.
+    :return: The output image size as a tuple (width, height).
+    """
+    if input_width >= input_height:
+        if input_width > max_size:
+            return (
+                max_size,
+                round(input_height / (input_width / max_size)),
+            )
+    else:
+        if input_height > max_size:
+            return (
+                round(input_width / (input_height / max_size)),
+                max_size,
+            )
+    return input_width, input_height
+
+
 class Image(MediaBase):
     # from fvpicture
 
@@ -152,30 +178,13 @@ class Image(MediaBase):
         """
         A function to generate a set of resized images when an Image model is saved
         """
-        for size_name, max_size in settings.CURRENT_MAX_IMAGE_SIZES.items():
+        for size_name, max_size in settings.IMAGE_SIZES.items():
             output_img = BytesIO()
 
             img = PILImage.open(self.content)
             image_name = self.content.name.split(".")[0]
 
-            if img.width >= img.height:
-                # If the input image is larger than the max size, scale down the output image.
-                if img.width > max_size:
-                    output_size = (
-                        max_size,
-                        round(img.height / (img.width / max_size)),
-                    )
-                else:
-                    output_size = (img.width, img.height)
-            else:
-                # If the input image is larger than the max size, scale down the output image.
-                if img.height > max_size:
-                    output_size = (
-                        round(img.width / (img.height / max_size)),
-                        max_size,
-                    )
-                else:
-                    output_size = (img.width, img.height)
+            output_size = get_output_image_size(max_size, img.width, img.height)
 
             img.thumbnail(output_size)
             # Remove transparency values if they exist so that the image can be converted to JPEG.

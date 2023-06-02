@@ -265,4 +265,4 @@ AWS_QUERYSTRING_EXPIRE = (
 )  # seconds until a query string expires; this is the default setting
 
 # Image thumbnail generation settings
-CURRENT_MAX_IMAGE_SIZES = {"thumbnail": 100, "small": 560, "medium": 1000}
+IMAGE_SIZES = {"thumbnail": 100, "small": 560, "medium": 1000}

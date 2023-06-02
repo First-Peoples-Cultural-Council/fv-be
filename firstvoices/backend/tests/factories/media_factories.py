@@ -14,16 +14,16 @@ class ImageFactory(DjangoModelFactory):
     title = factory.Sequence(lambda n: "Image-%03d" % n)
     content = factory.django.ImageField()
     thumbnail = factory.django.ImageField(
-        width=settings.CURRENT_MAX_IMAGE_SIZES["thumbnail"],
-        height=settings.CURRENT_MAX_IMAGE_SIZES["thumbnail"],
+        width=settings.IMAGE_SIZES["thumbnail"],
+        height=settings.IMAGE_SIZES["thumbnail"],
     )
     small = factory.django.ImageField(
-        width=settings.CURRENT_MAX_IMAGE_SIZES["small"],
-        height=settings.CURRENT_MAX_IMAGE_SIZES["small"],
+        width=settings.IMAGE_SIZES["small"],
+        height=settings.IMAGE_SIZES["small"],
     )
     medium = factory.django.ImageField(
-        width=settings.CURRENT_MAX_IMAGE_SIZES["medium"],
-        height=settings.CURRENT_MAX_IMAGE_SIZES["medium"],
+        width=settings.IMAGE_SIZES["medium"],
+        height=settings.IMAGE_SIZES["medium"],
     )
 
 

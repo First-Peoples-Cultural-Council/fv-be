@@ -38,7 +38,7 @@ class TestMediaModels:
 
 
 class TestImageModel:
-    image_sizes = list(settings.CURRENT_MAX_IMAGE_SIZES.keys())
+    image_sizes = list(settings.IMAGE_SIZES.keys())
 
     @pytest.mark.parametrize("image_size", image_sizes)
     @pytest.mark.django_db
@@ -53,10 +53,8 @@ class TestImageModel:
         assert generated_image.file
         assert f"/{site.slug}/" in generated_image.path
         assert f"_{image_size}" in generated_image.path
-        assert generated_image.width == settings.CURRENT_MAX_IMAGE_SIZES[image_size]
-        assert (
-            generated_image.height == settings.CURRENT_MAX_IMAGE_SIZES[image_size] / 2
-        )
+        assert generated_image.width == settings.IMAGE_SIZES[image_size]
+        assert generated_image.height == settings.IMAGE_SIZES[image_size] / 2
 
         # Check resized images when the height of the input image is larger
         image_two = factories.ImageFactory.create(
@@ -66,10 +64,5 @@ class TestImageModel:
         assert generated_image_two.file
         assert f"/{site.slug}/" in generated_image_two.path
         assert f"_{image_size}" in generated_image_two.path
-        assert (
-            generated_image_two.width
-            == settings.CURRENT_MAX_IMAGE_SIZES[image_size] / 2
-        )
-        assert (
-            generated_image_two.height == settings.CURRENT_MAX_IMAGE_SIZES[image_size]
-        )
+        assert generated_image_two.width == settings.IMAGE_SIZES[image_size] / 2
+        assert generated_image_two.height == settings.IMAGE_SIZES[image_size]
