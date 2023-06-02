@@ -17,7 +17,6 @@ class BaseAdmin(admin.ModelAdmin):
     )
     list_display = (
         "id",
-        "is_trashed",
         "created_by",
         "created",
         "last_modified_by",
@@ -70,7 +69,6 @@ class BaseInlineAdmin(admin.TabularInline):
         "created_by",
         "last_modified",
         "last_modified_by",
-        "is_trashed",
     )
 
     def item_id(self, instance):

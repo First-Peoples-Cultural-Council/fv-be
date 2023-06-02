@@ -3,8 +3,13 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import viewsets
 
 from backend.models.dictionary import DictionaryEntry
+from backend.models.media import Audio, Image, Video
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    DictionarySerializerContextMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 
 
 @extend_schema_view(
@@ -26,7 +31,10 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     ),
 )
 class DictionaryViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.ModelViewSet
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    DictionarySerializerContextMixin,
+    viewsets.ModelViewSet,
 ):
     """
     Dictionary entry information.
@@ -52,6 +60,18 @@ class DictionaryViewSet(
                     Prefetch(
                         "related_dictionary_entries",
                         queryset=DictionaryEntry.objects.visible(self.request.user),
+                    ),
+                    Prefetch(
+                        "related_audio",
+                        queryset=Audio.objects.visible(self.request.user),
+                    ),
+                    Prefetch(
+                        "related_images",
+                        queryset=Image.objects.visible(self.request.user),
+                    ),
+                    Prefetch(
+                        "related_videos",
+                        queryset=Video.objects.visible(self.request.user),
                     ),
                 )
             )

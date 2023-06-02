@@ -21,10 +21,4 @@ from backend.views.base_views import FVPermissionViewSetMixin
 class PartsOfSpeechViewSet(FVPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
     serializer_class = PartsOfSpeechSerializer
-    queryset = PartOfSpeech.objects.prefetch_related("children").all()
-
-    @staticmethod
-    def get_list_queryset():
-        return PartOfSpeech.objects.prefetch_related("children").exclude(
-            parent__isnull=False
-        )
+    queryset = PartOfSpeech.objects.prefetch_related("parent").all()

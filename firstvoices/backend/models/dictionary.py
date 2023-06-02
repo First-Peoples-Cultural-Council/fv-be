@@ -6,6 +6,7 @@ from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
 from .base import (
+    AudienceMixin,
     BaseControlledSiteContentModel,
     BaseModel,
     BaseSiteContentModel,
@@ -13,6 +14,7 @@ from .base import (
 )
 from .category import Category
 from .characters import Alphabet, Character
+from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
 
 TITLE_MAX_LENGTH = 225
@@ -154,7 +156,7 @@ class TypeOfDictionaryEntry(models.TextChoices):
     PHRASE = "PHRASE", _("Phrase")
 
 
-class DictionaryEntry(BaseControlledSiteContentModel):
+class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteContentModel):
     """
     Model for dictionary entries
     """
@@ -180,13 +182,6 @@ class DictionaryEntry(BaseControlledSiteContentModel):
     #  truncated at max length.
     custom_order = TruncatingCharField(max_length=TITLE_MAX_LENGTH, blank=True)
 
-    # from fv-word:available_in_games, fvaudience:games
-    exclude_from_games = models.BooleanField(default=False)
-
-    # from fvaudience:children fv:available_in_childrens_archive
-    # exclude_from_kids can be a shared mixin for dictionary_entries, songs, stories and media
-    exclude_from_kids = models.BooleanField(default=False)
-
     # from nxtag:tags
     batch_id = models.CharField(max_length=255, blank=True)
 
@@ -209,6 +204,12 @@ class DictionaryEntry(BaseControlledSiteContentModel):
 
     # Word of the day flag, if true, will not be included when looking for word-of-the-day
     exclude_from_wotd = models.BooleanField(default=False, blank=False)
+
+    # exclude_from_games from fv-word:available_in_games, fvaudience:games
+    # exclude_from_kids from fvaudience:children fv:available_in_childrens_archive
+    # related_audio from fv:related_audio
+    # related_images from fv:related_pictures
+    # related_videos from fv:related_videos
 
     class Meta:
         verbose_name = _("Dictionary Entry")

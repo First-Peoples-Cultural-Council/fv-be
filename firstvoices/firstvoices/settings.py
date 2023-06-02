@@ -7,10 +7,15 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import logging
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from elasticsearch_dsl import connections
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from . import database, jwt
 
@@ -88,6 +93,9 @@ REST_FRAMEWORK = {
     },
 }
 
+# LOGGERS
+ELASTICSEARCH_LOGGER = "elasticsearch"
+
 # local only
 if DEBUG:
     REST_FRAMEWORK.update(
@@ -111,7 +119,18 @@ if DEBUG:
     }
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
-
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {"console": {"class": "logging.StreamHandler"}},
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            ELASTICSEARCH_LOGGER: {
+                "handlers": ["console"],
+                "level": "INFO",  # Change level to INFO to view connection requests
+            }
+        },
+    }
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
@@ -156,6 +175,7 @@ JWT = jwt.config()
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://localhost:3000",
     os.getenv("ALLOWED_ORIGIN"),
 ]
 
@@ -169,7 +189,7 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ADMIN_URL = "admin/"
+ADMIN_URL = os.getenv("DJANGO_ADMIN_URL", "admin/")
 
 with open(str(BASE_DIR / "firstvoices" / "templates" / "api-description.md")) as f:
     description = f.read()
@@ -196,6 +216,54 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+ELASTICSEARCH_DEFAULT_CONFIG = {"shards": 1, "replicas": 0}
+connections.configure(default={"hosts": ELASTICSEARCH_HOST})
+
+
+# Sentry monitoring configuration settings.
+# See docs at https://docs.sentry.io/platforms/python/guides/django/
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # The minimum logging level to capture as breadcrumbs
+    event_level=logging.ERROR,  # The minimum logging level to send as events
+)
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    environment=os.getenv(
+        "SENTRY_ENVIRONMENT"
+    ),  # Sends information to this environment on the dashboard
+    release=os.getenv("SENTRY_RELEASE"),  # Tags information with this release version
+    traces_sample_rate=os.getenv(
+        "SENTRY_TRACES_SAMPLE_RATE", 1.0
+    ),  # The percentage of traces to send to sentry (min 0.0, max 1.0)
+    send_default_pii=False,  # Disables the sending of personally identifiable information (see
+    # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
+    request_bodies="never",  # Disables the sending of request bodies
+    include_local_variables=False,  # Disables the sending of local variables in the stack trace
+    integrations=[
+        sentry_logging,
+        DjangoIntegration(
+            transaction_style="url",
+            middleware_spans=True,
+            signals_spans=True,
+            cache_spans=True,
+        ),
+    ],
+)
+
+
+# File hosting on AWS S3
+# See: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("MEDIA_UPLOAD_S3_BUCKET")
+AWS_S3_REGION_NAME = os.getenv("MEDIA_UPLOAD_S3_REGION")
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_AUTH = True  # this is the default setting, just being explicit
+AWS_QUERYSTRING_EXPIRE = (
+    60 * 60
+)  # seconds until a query string expires; this is the default setting
+
 
 # Disallow exports unless you have write permission
 IMPORT_EXPORT_EXPORT_PERMISSION_CODE = "change"

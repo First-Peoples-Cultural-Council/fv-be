@@ -6,10 +6,13 @@ from backend.models.constants import Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 
-from .base_api_test import BaseControlledSiteContentApiTest
+from .base_api_test import BaseReadOnlyControlledSiteContentApiTest
+from .base_media_test import RelatedMediaTestMixin
 
 
-class TestDictionaryEndpoint(BaseControlledSiteContentApiTest):
+class TestDictionaryEndpoint(
+    RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentApiTest
+):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -19,6 +22,22 @@ class TestDictionaryEndpoint(BaseControlledSiteContentApiTest):
 
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+
+    def create_instance_with_media(
+        self,
+        site,
+        visibility,
+        related_images=None,
+        related_audio=None,
+        related_videos=None,
+    ):
+        return factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=visibility,
+            related_images=related_images,
+            related_audio=related_audio,
+            related_videos=related_videos,
+        )
 
     def get_expected_response(self, entry, site):
         return {
@@ -51,6 +70,9 @@ class TestDictionaryEndpoint(BaseControlledSiteContentApiTest):
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
             "relatedEntries": [],
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
         }
 
     @pytest.mark.django_db

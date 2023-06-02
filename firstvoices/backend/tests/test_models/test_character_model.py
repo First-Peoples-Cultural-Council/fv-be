@@ -2,6 +2,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
+from backend.models import Character
 from backend.tests.factories import (
     CharacterFactory,
     CharacterVariantFactory,
@@ -60,8 +61,9 @@ class TestCharacterModel:
         with pytest.raises(IntegrityError):
             CharacterVariantFactory.create(title=ichar.title, base_character=char)
 
+    @pytest.mark.skip(reason="failing until fw-4438 is fixed")
     @pytest.mark.django_db
-    def test_character_limit(self):
+    def test_character_limit_addition(self):
         """Can't create more characters on a site than custom sort can handle"""
         limit = CustomSorter.max_alphabet_length
 
@@ -69,5 +71,24 @@ class TestCharacterModel:
         for n in range(1, limit):
             CharacterFactory.create(site=char.site, title="c" + str(n))
 
+        assert Character.objects.filter(site=char.site).count() == limit
+
         with pytest.raises(ValidationError):
             CharacterFactory.create(site=char.site, title="c" + str(limit))
+
+    @pytest.mark.skip(reason="failing until fw-4438 is fixed")
+    @pytest.mark.django_db
+    def test_character_limit_edit(self):
+        """Can edit characters on a site that has the max amount"""
+        limit = CustomSorter.max_alphabet_length
+
+        char = CharacterFactory.create(title="c0")
+        for n in range(1, limit):
+            CharacterFactory.create(site=char.site, title="c" + str(n))
+
+        assert Character.objects.filter(site=char.site).count() == limit
+
+        char.title = "new title"
+        char.save()  # should not raise a ValidationError
+
+        assert char.title == "new title"

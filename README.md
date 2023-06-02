@@ -13,7 +13,7 @@ ___
 ## Developer setup
 
 1. Clone the repo: `git clone https://github.com/First-Peoples-Cultural-Council/fv-be.git`
-2. Install prereqs:
+1. Install prereqs:
    - [Python 3.10+](python.org)
      - (Recommended: [pyenv](https://github.com/pyenv/pyenv) to install and manage current Python versions)
    - [PostgreSQL](https://www.postgresql.org/)
@@ -23,7 +23,7 @@ ___
        - `brew services start postgresql` to start the service and autostart on system startup.
        - `brew services stop postgresql` to stop the service.
      - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
-3. (Recommended) Create and activate a virtual environment in the root of the project
+1. (Recommended) Create and activate a virtual environment in the root of the project
    - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
    - If using [venv](https://docs.python.org/3/library/venv.html)
      - python -m venv <name for your venv>
@@ -32,33 +32,44 @@ ___
      - Install direnv as explained in the [official installation docs](https://direnv.net/docs/installation.html).
      - Create a .envrc file in the root project directory
      - Add environment variables to the .envrc file and they will be loaded into your environment whenever you navigate your terminal to the root directory and any child directories.
-4. Install requirements
+1. Install requirements
    - `pip install -r requirements.debug.txt`
-5. Install pre-commit hooks
+1. Install pre-commit hooks
    - `pre-commit install`
-6. Create a database in postgres, and note the name
+1. Create a database in postgres, and note the name
    - `createdb --username=postgres <db name>`
-7. Configure required environment variables:
+1. Configure required environment variables for the database:
    - `DB_DATABASE`: `<db name>` when you created the database
    - `DB_USERNAME`: the database admin username (usually `postgres`)
    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
    - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
-1. Configure optional environment variables (used for the reset-local-database.sh script):
+1. Configure required environment variables for media file storage:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `MEDIA_UPLOAD_S3_BUCKET`
+   - `MEDIA_UPLOAD_S3_REGION`
+1. Configure optional environment variables as needed (used for the reset-local-database.sh script and Sentry):
    - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
    - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
    - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
+   - `SENTRY_DSN`: the data source name that tells the Sentry SDK where to send events (to upload to the dashboard). If this is not set then events will not be sent to a dashboard.
+   - `SENTRY_ENVIRONMENT`: a string specifying the name of the environment to tag Sentry events with (defaults to `production` if not set).
+   - `SENTRY_RELEASE`: a custom release version to tag Sentry events with (defaults to the commit SHA if not set).
+   - `SENTRY_TRACES_SAMPLE_RATE`: the sample rate for error events, in the range of 0.0 to 1.0 (defaults to 1.0 if not set, meaning 100% of the errors are sent).
+   - `DJANGO_ADMIN_URL`: sets the URL of the admin panel for security purposes (defaults to `admin/` if not set).
+   - `DATA_S3_BUCKET`: the name of the S3 Bucket that export data is stored in (if using the aws_download_utils.py script to download export data).
    - If using [venv](https://docs.python.org/3/library/venv.html)
      - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
    - If using [direnv](https://direnv.net/)
      - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
-8. Apply migration
+1. Apply migration
    - Navigate to the `firstvoices` directory: `cd firstvoices`
    - From the `firstvoices` directory: `python manage.py migrate`
-9. Start the server
+1. Start the server
    - Navigate to the `firstvoices` directory if you aren't already there: `cd firstvoices`
    - `python manage.py runserver`
-10. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
+1. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
     - `python manage.py loaddata <fixture_name>`
     - Fixtures available:
       - Default fixtures which are automatically loaded in migrations:
@@ -67,15 +78,12 @@ ___
         - `partsOfSpeech_initial.json`
       - Other:
         - None
-    11. (Optional) To run ElasticSearch, RabbitMQ and redis, the following command needs to be run from the fv-be folder.
-        `docker-compose up -d` which will run all the mentioned docker services.
-        To run a specific service for some testing purposes, use the following command:
-        `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
-        1. For ElasticSearch, to confirm the service is up and running, visit
-            http://localhost:9200/ and verify the status.
-
-
-
+1. (Optional) To run ElasticSearch, RabbitMQ and redis, the following command needs to be run from the fv-be folder.
+    `docker-compose up -d` which will run all the mentioned docker services.
+    To run a specific service for some testing purposes, use the following command:
+    `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
+    1. For ElasticSearch, to confirm the service is up and running, visit
+        http://localhost:9200/ and verify the status.
 
 ___
 

@@ -3,15 +3,15 @@ from rest_framework import serializers
 from backend.models.part_of_speech import PartOfSpeech
 
 
-class PartsOfSpeechChildrenSerializer(serializers.ModelSerializer):
+class PartsOfSpeechParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PartOfSpeech
         fields = ["id", "title"]
 
 
 class PartsOfSpeechSerializer(serializers.ModelSerializer):
-    children = PartsOfSpeechChildrenSerializer(many=True)
+    parent = PartsOfSpeechParentSerializer()
 
     class Meta:
         model = PartOfSpeech
-        fields = ["id", "title", "children"]
+        fields = ["id", "title", "parent"]

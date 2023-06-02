@@ -215,7 +215,7 @@ class DetailApiTestMixin:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_list_team_access(self):
+    def test_detail_team_access(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
         user = factories.get_non_member_user()
         factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
@@ -244,7 +244,12 @@ class DetailApiTestMixin:
         assert response_data == self.get_expected_detail_response(instance, site)
 
 
-class ListPermissionsApiTestMixin:
+class ControlledListApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
+    """
+
     @pytest.mark.django_db
     def test_list_permissions(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
@@ -266,10 +271,10 @@ class ListPermissionsApiTestMixin:
         )
 
 
-class DetailPermissionsApiTestMixin:
+class ControlledDetailApiTestMixin:
     """
-    Additional test cases for items with their own visibility settings, suitable for testing APIs related to
-    BaseControlledSiteContentModel.
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
     """
 
     @pytest.mark.django_db
@@ -285,17 +290,90 @@ class DetailPermissionsApiTestMixin:
         assert response.status_code == 403
 
 
-class BaseControlledSiteContentApiTest(
-    ListApiTestMixin,
-    ListPermissionsApiTestMixin,
-    DetailApiTestMixin,
-    DetailPermissionsApiTestMixin,
-    BaseSiteContentApiTest,
+class DestroyApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest
+    """
+
+    @pytest.mark.django_db
+    def test_destroy_success_204(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""  # 0 bytes
+
+    @pytest.mark.django_db
+    def test_destroy_denied_403(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_destroy_missing_404(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key="missing-instance", site_slug=site.slug)
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_destroy_site_missing_404(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=instance.id, site_slug="missing-site")
+        )
+
+        assert response.status_code == 404
+
+
+class BaseReadOnlyUncontrolledSiteContentApiTest(
+    ListApiTestMixin, DetailApiTestMixin, BaseSiteContentApiTest
 ):
     pass
 
 
 class BaseUncontrolledSiteContentApiTest(
-    ListApiTestMixin, DetailApiTestMixin, BaseSiteContentApiTest
+    DestroyApiTestMixin, BaseReadOnlyUncontrolledSiteContentApiTest
+):
+    pass
+
+
+class BaseReadOnlyControlledSiteContentApiTest(
+    ControlledListApiTestMixin,
+    ControlledDetailApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+):
+    pass
+
+
+class BaseControlledSiteContentApiTest(
+    ControlledListApiTestMixin,
+    ControlledDetailApiTestMixin,
+    BaseUncontrolledSiteContentApiTest,
 ):
     pass

@@ -34,13 +34,6 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
 
 @admin.register(Character)
 class CharacterAdmin(BaseSiteContentAdmin):
-    fields = (
-        "title",
-        "sort_order",
-        "approximate_form",
-        "site",
-        "note",
-    )
     list_display = (
         "title",
         "sort_order",

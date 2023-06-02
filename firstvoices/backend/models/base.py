@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.contrib.auth import get_user_model
@@ -39,9 +40,6 @@ class BaseModel(PermissionFilterMixin, RulesModel):
         primary_key=True, default=uuid.uuid4, editable=False, db_index=True
     )
 
-    # from isTrashed
-    is_trashed = models.BooleanField(default=False)
-
     # from dc:creator
     created_by = models.ForeignKey(
         get_user_model(),
@@ -65,6 +63,8 @@ class BaseModel(PermissionFilterMixin, RulesModel):
 
     # from dc:lastContributor
     last_modified = models.DateTimeField(auto_now=True, db_index=True)
+
+    logger = logging.getLogger(__name__)
 
 
 class BaseSiteContentModel(BaseModel):
@@ -117,3 +117,11 @@ class TruncatingCharField(models.CharField):
         if value:
             return value.strip()[: self.max_length]
         return value
+
+
+class AudienceMixin(models.Model):
+    class Meta:
+        abstract = True
+
+    exclude_from_games = models.BooleanField(default=False)
+    exclude_from_kids = models.BooleanField(default=False)

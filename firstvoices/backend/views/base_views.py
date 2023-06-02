@@ -1,10 +1,12 @@
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
+from rest_framework import mixins
 from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend import permissions
-from backend.models import Site
+from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
 
 
@@ -42,9 +44,7 @@ class FVPermissionViewSetMixin(AutoPermissionViewSetMixin):
         # paginated response
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(
-                page, many=True, context={"request": request}
-            )
+            serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
         # non-paginated response
@@ -73,3 +73,47 @@ class SiteContentViewSetMixin:
             return site
         else:
             raise PermissionDenied
+
+
+class DictionarySerializerContextMixin:
+    """
+    Adds context to a view which is passed to the dictionary serializer to remove the need for duplicate queries.
+    """
+
+    def get_serializer_context(self):
+        """
+        A helper function to gather additional model context which can be reused for multiple dictionary entries.
+        """
+
+        site = self.get_validated_site()[0]
+
+        context = super().get_serializer_context()
+
+        alphabet = Alphabet.objects.filter(site=site).first()
+        ignored_characters = IgnoredCharacter.objects.filter(site=site).values_list(
+            "title", flat=True
+        )
+        base_characters = Character.objects.filter(site=site).order_by("sort_order")
+        character_variants = CharacterVariant.objects.filter(site=site)
+        ignorable_characters = IgnoredCharacter.objects.filter(site=site)
+
+        context["alphabet"] = alphabet
+        context["ignored_characters"] = ignored_characters
+        context["base_characters"] = base_characters
+        context["character_variants"] = character_variants
+        context["ignorable_characters"] = ignorable_characters
+        return context
+
+
+class ListViewOnlyModelViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    GenericViewSet,
+):
+    """
+    A custom viewset that provides all ModelViewSet functionality except for retrieve (detail view).
+    """
+
+    pass

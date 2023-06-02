@@ -43,7 +43,7 @@ class LanguageAdmin(BaseAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(BaseSiteContentAdmin):
-    fields = ("user", "site", "role", "is_trashed")
+    fields = ("user", "site", "role")
     list_display = ("user", "role") + BaseSiteContentAdmin.list_display
     search_fields = (
         "id",
