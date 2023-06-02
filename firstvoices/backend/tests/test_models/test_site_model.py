@@ -30,7 +30,7 @@ class TestSiteModel:
 
     @pytest.mark.django_db
     def test_only_one_banner(self):
-        """Verify the number of default categories being added when a site is created."""
+        """Verify that you can't add both a banner image and a banner video."""
         admin_user = get_app_admin(AppRole.STAFF)
         video = factories.VideoFactory()
         image = factories.ImageFactory()
