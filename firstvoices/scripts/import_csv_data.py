@@ -7,6 +7,7 @@ from scripts.utils.aws_download_utils import (
     download_latest_exports,
 )
 
+from backend.models.app import AppImportStatus
 from backend.models.category import Category
 from backend.models.sites import Site
 from backend.resources.sites import SiteResource
@@ -20,8 +21,6 @@ Halts the process when encountering any data/validation error.
 
 Run with:
     python manage.py shell < scripts/import_csv_data.py
-
-??? should this be a custom manage.py command?
 """
 
 logger = logging.getLogger(__name__)
@@ -38,6 +37,8 @@ elif len(available_exports) > 1:
     raise ValueError("Multiple potential nuxeo exports found, aborting.")
 
 current_export_dir = os.path.join(EXPORT_STORAGE_DIRECTORY, available_exports[0])
+
+status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[0]}")
 
 
 # List model resources in the correct order to import them
@@ -65,6 +66,8 @@ for key, resource in import_resources:
 
     if not matched_files:
         logger.warn(f"No '{key}' files found to import")
+        status.warnings = True
+        status.save()
 
     # Perform import
     for file in matched_files:
@@ -81,9 +84,13 @@ for key, resource in import_resources:
 
 for file in unmatched_files:
     logger.warn(f"\n{file} not imported (no resource defined)")
+    status.warnings = True
 
 
-# Clean up artifacts
+# Clean up artifacts and update import status
+status.successful = True
+status.save()
+
 for file in os.listdir(current_export_dir):
     os.remove(os.path.join(current_export_dir, file))
 os.rmdir(current_export_dir)
