@@ -104,7 +104,7 @@ class TestDictionaryCleanup(BaseApiTest):
         )
 
         response_data = json.loads(response.content)
-        assert response.status_code == 201
+        assert response.status_code == 202
         assert response_data == result
 
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
@@ -146,7 +146,7 @@ class TestDictionaryCleanup(BaseApiTest):
         )
 
         response_post_data = json.loads(response_post.content)
-        assert response_post.status_code == 201
+        assert response_post.status_code == 202
         assert response_post_data == message
 
         response_get = self.client.get(
@@ -217,7 +217,7 @@ class TestDictionaryCleanup(BaseApiTest):
         )
         response_post_data = json.loads(response_post.content)
 
-        assert response_post.status_code == 201
+        assert response_post.status_code == 202
         assert response_post_data == message
 
         user = factories.get_non_member_user()

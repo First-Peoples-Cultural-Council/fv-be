@@ -90,8 +90,6 @@ class FVPermissionViewSetMixin:
         if handler.__func__ in extra_actions:
             if handler.detail:
                 obj = self.get_object()
-            elif "create" in self.action:
-                obj = self.get_object_for_create_permission()
         elif self.action == "create":
             obj = self.get_object_for_create_permission()
         elif self.action not in ("create", "list"):
@@ -167,20 +165,6 @@ class SiteContentViewSetMixin:
             return site
         else:
             raise PermissionDenied
-
-    def get_object_for_create_permission(self):
-        """Check create permissions based on the relevant site"""
-        return self.get_validated_site().first()
-
-
-class CustomOrderFVPermissionViewSetMixin(FVPermissionViewSetMixin):
-    """Overrides the FVPermissionViewSetMixin to include custom order related functions and permission objects"""
-
-    permission_type_map = {
-        **FVPermissionViewSetMixin.permission_type_map,
-        "get_preview": None,
-        "create_preview": "add",
-    }
 
     def get_object_for_create_permission(self):
         """Check create permissions based on the relevant site"""

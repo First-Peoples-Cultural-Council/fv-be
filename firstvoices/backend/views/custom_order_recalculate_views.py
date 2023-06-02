@@ -1,9 +1,7 @@
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
-from backend.permissions import utils
 from backend.serializers.async_results_serializers import (
     CustomOrderRecalculationResultSerializer,
 )
@@ -12,7 +10,7 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order_preview,
 )
 from backend.views.base_views import (
-    CustomOrderFVPermissionViewSetMixin,
+    FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
     SiteContentViewSetMixin,
 )
@@ -31,27 +29,7 @@ from backend.views.exceptions import CeleryError
     create=extend_schema(
         description="Queues a custom order recalculation task for the specified site.",
         responses={
-            201: OpenApiResponse(description="Recalculation has been queued."),
-            403: OpenApiResponse(
-                description="Todo: Action not authorized for this User"
-            ),
-            404: OpenApiResponse(description="Todo: Site not found"),
-        },
-    ),
-    get_preview=extend_schema(
-        description="Returns the most recent custom order recalculation preview results for the specified site. "
-        "Preview results are not saved to the database.",
-        responses={
-            200: CustomOrderRecalculationResultSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
-        },
-    ),
-    create_preview=extend_schema(
-        description="Queues a custom order recalculation preview task for the specified site. "
-        "dictionary-cleanup/preview and dictionary-cleanup/create_preview are the same endpoint.",
-        responses={
-            201: OpenApiResponse(description="Recalculation preview has been queued."),
+            202: OpenApiResponse(description="Recalculation has been queued."),
             403: OpenApiResponse(
                 description="Todo: Action not authorized for this User"
             ),
@@ -59,13 +37,16 @@ from backend.views.exceptions import CeleryError
         },
     ),
 )
-class CustomOrderRecalculateViewset(
-    CustomOrderFVPermissionViewSetMixin,
+class CustomOrderRecalculateView(
+    FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     ListViewOnlyModelViewSet,
 ):
     http_method_names = ["get", "post"]
     serializer_class = CustomOrderRecalculationResultSerializer
+
+    def get_view_name(self):
+        return "Custom Order Recalculation Results"
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -97,14 +78,46 @@ class CustomOrderRecalculateViewset(
                 is_preview=False,
             )
 
-            return Response({"message": "Recalculation has been queued."}, status=201)
+            return Response({"message": "Recalculation has been queued."}, status=202)
 
         except recalculate_custom_order_preview.OperationalError:
             raise CeleryError()
 
-    @action(methods=["get"], detail=False, url_path="preview", url_name="preview")
-    def get_preview(self, request, *args, **kwargs):
-        # Get queryset
+
+@extend_schema_view(
+    list=extend_schema(
+        description="Returns the most recent custom order recalculation preview results for the specified site. "
+        "Preview results are not saved to the database.",
+        responses={
+            200: CustomOrderRecalculationResultSerializer,
+            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+    create=extend_schema(
+        description="Queues a custom order recalculation preview task for the specified site. "
+        "dictionary-cleanup/preview and dictionary-cleanup/create_preview are the same endpoint.",
+        responses={
+            202: OpenApiResponse(description="Recalculation preview has been queued."),
+            403: OpenApiResponse(
+                description="Todo: Action not authorized for this User"
+            ),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+    ),
+)
+class CustomOrderRecalculatePreviewView(
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    ListViewOnlyModelViewSet,
+):
+    http_method_names = ["get", "post"]
+    serializer_class = CustomOrderRecalculationResultSerializer
+
+    def get_view_name(self):
+        return "Custom Order Recalculation Preview Results"
+
+    def get_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
             queryset = CustomOrderRecalculationResult.objects.filter(
@@ -113,22 +126,9 @@ class CustomOrderRecalculateViewset(
         else:
             queryset = CustomOrderRecalculationResult.objects.none()
 
-        # List queryset the same way as list() method
-        queryset = utils.filter_by_viewable(request.user, queryset)
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+        return queryset
 
-        # non-paginated response
-        serializer = self.serializer_class(
-            queryset, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
-
-    @get_preview.mapping.post
-    @action(detail=False, methods=["post"])
-    def create_preview(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         site = self.get_validated_site()
         site_slug = site[0].slug
 
@@ -152,7 +152,7 @@ class CustomOrderRecalculateViewset(
             )
 
             return Response(
-                {"message": "Recalculation preview has been queued."}, status=201
+                {"message": "Recalculation preview has been queued."}, status=202
             )
 
         except recalculate_custom_order_preview.OperationalError:
