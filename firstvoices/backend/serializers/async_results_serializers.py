@@ -49,3 +49,27 @@ class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
             "latest_recalculation_date",
             "latest_recalculation_result",
         ]
+
+
+class CustomOrderRecalculationPreviewResultSerializer(
+    CustomOrderRecalculationResultSerializer
+):
+    current_preview_task_status = serializers.SerializerMethodField()
+    latest_recalculation_preview_result = serializers.JSONField(
+        source="latest_recalculation_result"
+    )
+    latest_recalculation_preview_date = serializers.DateTimeField(
+        source="latest_recalculation_date"
+    )
+
+    def get_current_preview_task_status(self, obj):
+        return self.get_current_task_status(obj)
+
+    class Meta:
+        model = CustomOrderRecalculationResult
+        fields = [
+            "site",
+            "current_preview_task_status",
+            "latest_recalculation_preview_date",
+            "latest_recalculation_preview_result",
+        ]

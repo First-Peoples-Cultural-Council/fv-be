@@ -3,6 +3,7 @@ from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
 from backend.serializers.async_results_serializers import (
+    CustomOrderRecalculationPreviewResultSerializer,
     CustomOrderRecalculationResultSerializer,
 )
 from backend.tasks.alphabet_tasks import (
@@ -112,7 +113,7 @@ class CustomOrderRecalculatePreviewView(
     ListViewOnlyModelViewSet,
 ):
     http_method_names = ["get", "post"]
-    serializer_class = CustomOrderRecalculationResultSerializer
+    serializer_class = CustomOrderRecalculationPreviewResultSerializer
 
     def get_view_name(self):
         return "Custom Order Recalculation Preview Results"
