@@ -32,9 +32,12 @@ def get_cleaned_search_term(q):
     return q.strip()
 
 
-def get_search_query(q=""):
+def get_search_query(q="", site_slug=""):
     search_query = get_search_object()
     search_term = get_cleaned_search_term(q)
+
+    if site_slug:
+        search_query = search_query.filter("term", site_slug=site_slug)
 
     if search_term:
         # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields

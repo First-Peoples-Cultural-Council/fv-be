@@ -56,14 +56,17 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Function to return search params in a structured format.
         """
         input_q = self.request.GET.get("q", "")
+        site_slug = self.request.GET.get("site_slug", "")
 
-        return {"q": input_q}
+        return {"q": input_q, "site_slug": site_slug}
 
     def list(self, request):
         search_params = self.get_search_params()
 
         # Get search query
-        search_query = get_search_query(q=search_params["q"])
+        search_query = get_search_query(
+            q=search_params["q"], site_slug=search_params["site_slug"]
+        )
 
         # Get search results
         try:

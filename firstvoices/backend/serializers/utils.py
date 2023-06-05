@@ -1,2 +1,5 @@
 def get_site_from_context(serializer):
-    return serializer.context["site"]
+    if "site" in serializer.context:
+        return serializer.context["site"]
+    else:
+        return None
