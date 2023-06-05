@@ -11,7 +11,7 @@ from backend.search.indices.dictionary_entry_document import (
 def validate_site(site_slug):
     site = Site.objects.filter(slug=site_slug)
     if len(site) == 0:
-        raise Http404  # This should inform user about invalid site_slug supplied
+        raise Http404
     return site_slug
 
 

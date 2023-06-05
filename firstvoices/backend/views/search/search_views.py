@@ -43,7 +43,14 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample("ball", value="ball"),
                     OpenApiExample("quick brown fox", value="quick brown fox"),
                 ],
-            )
+            ),
+            OpenApiParameter(
+                name="site_slug",
+                description="site_slug to filter results by a specific site",
+                required=False,
+                type=str,
+                examples=[OpenApiExample("sample_site_1", value="sample_site_1")],
+            ),
         ],
     ),
 )

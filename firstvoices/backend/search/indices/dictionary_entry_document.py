@@ -25,7 +25,7 @@ dictionary_entries.settings(
 
 @dictionary_entries.document
 class DictionaryEntryDocument(Document):
-    # generic fields
+    # generic fields, will be moved to a base search document once we have songs and stories
     _id = Text()
     site_slug = Keyword()
 
