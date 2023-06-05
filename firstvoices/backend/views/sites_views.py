@@ -94,8 +94,15 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         """
         # custom queryset to avoid prefetching from unneeded tables (list view has less detail)
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = Site.objects.select_related("language").order_by(
-            Upper("language__title"), Upper("title")
+        queryset = (
+            Site.objects.select_related("language")
+            .order_by(Upper("language__title"), Upper("title"))
+            .prefetch_related(
+                Prefetch(
+                    "sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                )
+            )
         )
 
         # apply permissions

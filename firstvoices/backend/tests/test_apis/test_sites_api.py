@@ -69,6 +69,7 @@ class TestSitesEndpoints(BaseApiTest):
             "visibility": "Public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+            "features": [],
         }
 
     @pytest.mark.django_db
