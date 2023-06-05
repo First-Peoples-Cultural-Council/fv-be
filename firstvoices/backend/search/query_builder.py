@@ -8,13 +8,6 @@ from backend.search.indices.dictionary_entry_document import (
 )
 
 
-def validate_site(site_slug):
-    site = Site.objects.filter(slug=site_slug)
-    if len(site) == 0:
-        raise Http404
-    return site_slug
-
-
 def get_search_object():
     client = Elasticsearch()
     indices = get_indices()
@@ -33,6 +26,64 @@ def get_indices():
     return list_of_indices
 
 
+def get_query_with_search_term(search_query, search_term):
+    # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
+    fuzzy_match_title_query = Q(
+        {
+            "fuzzy": {
+                "title": {
+                    "value": search_term,
+                    "fuzziness": "2",  # Documentation recommends "AUTO" for this param
+                }
+            }
+        }
+    )
+    exact_match_title_query = Q(
+        {
+            "match_phrase": {
+                "title": {
+                    "query": search_term,
+                    "slop": 3,  # How far apart the terms can be in order to match
+                    "boost": 1.3,
+                }
+            }
+        }
+    )
+    fuzzy_match_translation_query = Q(
+        {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
+    )
+    exact_match_translation_query = Q(
+        {
+            "match_phrase": {
+                "translation": {"query": search_term, "slop": 3, "boost": 1.1}
+            }
+        }
+    )
+    search_query = search_query.query(
+        Q(
+            "bool",
+            should=[
+                fuzzy_match_title_query,
+                exact_match_title_query,
+                fuzzy_match_translation_query,
+                exact_match_translation_query,
+            ],
+            minimum_should_match=1,
+        )
+    )
+    return search_query
+
+
+def get_query_with_site_filter(search_query, site_slug):
+    # Validate site exists
+    site_count = Site.objects.filter(slug=site_slug).count()
+    if site_count == 0:
+        raise Http404
+    # Add filter if site is valid
+    search_query = search_query.filter("term", site_slug=site_slug)
+    return search_query
+
+
 def get_cleaned_search_term(q):
     """
     clean incoming string.
@@ -45,56 +96,14 @@ def get_search_query(q="", site_slug=""):
     search_query = get_search_object()
     search_term = get_cleaned_search_term(q)
 
-    if site_slug:
-        site_slug = validate_site(site_slug)
-        search_query = search_query.filter("term", site_slug=site_slug)
-
+    # Building initial query with search term, else build empty query
     if search_term:
-        # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
-        fuzzy_match_title_query = Q(
-            {
-                "fuzzy": {
-                    "title": {
-                        "value": search_term,
-                        "fuzziness": "2",  # Documentation recommends "AUTO" for this param
-                    }
-                }
-            }
-        )
-        exact_match_title_query = Q(
-            {
-                "match_phrase": {
-                    "title": {
-                        "query": search_term,
-                        "slop": 3,  # How far apart the terms can be in order to match
-                        "boost": 1.3,
-                    }
-                }
-            }
-        )
-        fuzzy_match_translation_query = Q(
-            {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
-        )
-        exact_match_translation_query = Q(
-            {
-                "match_phrase": {
-                    "translation": {"query": search_term, "slop": 3, "boost": 1.1}
-                }
-            }
-        )
-        search_query = search_query.query(
-            Q(
-                "bool",
-                should=[
-                    fuzzy_match_title_query,
-                    exact_match_title_query,
-                    fuzzy_match_translation_query,
-                    exact_match_translation_query,
-                ],
-                minimum_should_match=1,
-            )
-        )
+        search_query = get_query_with_search_term(search_query, search_term)
     else:
         search_query = search_query.query()
+
+    # Add site filter if parameter provided in url
+    if site_slug:
+        search_query = get_query_with_site_filter(search_query, site_slug)
 
     return search_query
