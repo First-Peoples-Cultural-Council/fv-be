@@ -96,8 +96,7 @@ class CustomOrderRecalculateView(
         },
     ),
     create=extend_schema(
-        description="Queues a custom order recalculation preview task for the specified site. "
-        "dictionary-cleanup/preview and dictionary-cleanup/create_preview are the same endpoint.",
+        description="Queues a custom order recalculation preview task for the specified site. ",
         responses={
             202: OpenApiResponse(description="Recalculation preview has been queued."),
             403: OpenApiResponse(
