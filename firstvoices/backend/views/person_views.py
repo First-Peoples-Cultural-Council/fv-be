@@ -60,7 +60,7 @@ from . import doc_strings
         },
     ),
     destroy=extend_schema(
-        description=_("Delete a category."),
+        description=_("Delete a person."),
         responses={
             204: OpenApiResponse(
                 description=doc_strings.success_204_deleted,
