@@ -47,6 +47,15 @@ def has_team_site(user, obj):
 
 
 @predicate
+def has_saved_team_site(user, obj):
+    """
+    Checks the site visibility of the saved version of the given obj, not the version in memory.
+    """
+    saved = type(obj).objects.filter(pk=obj.pk).first()
+    return saved.site.visibility == Visibility.TEAM
+
+
+@predicate
 def is_own_obj(user, obj):
     """
     Will only work for models that have a "user" field, mainly Memberships.

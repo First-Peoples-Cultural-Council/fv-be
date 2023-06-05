@@ -4,9 +4,9 @@ from . import base
 
 
 @predicate
-def can_add_core_language_data(user, obj):
+def can_add_core_uncontrolled_data(user, obj):
     """
-    Same as ``can_edit_core_language_data`` but does not check the visibility of the object that is saved in the db.
+    Same as ``can_edit_core_uncontrolled_data`` but does not check the visibility of the object that is saved in the db.
 
     - Assistant has permission for Team-visibility data
     - Editor, Language Admin, and Superadmin have permission
@@ -16,15 +16,15 @@ def can_add_core_language_data(user, obj):
         | base.is_superadmin(user, obj)
         | (
             base.has_at_least_assistant_membership(user, obj)
-            & base.is_team_obj(user, obj)
+            & base.is_team_obj(user, obj)  # will be called with a site object
         )
     )
 
 
 @predicate
-def can_edit_core_language_data(user, obj):
+def can_edit_core_uncontrolled_data(user, obj):
     """
-    Same as ``can_add_core_language_data`` but also checks the visibility of the object that is saved in the db.
+    Same as ``can_add_core_uncontrolled_data`` but also checks the visibility of the object that is saved in the db.
 
     - Assistant has permission for Team-visibility data
     - Editor, Language Admin, and Superadmin have permission
@@ -34,7 +34,7 @@ def can_edit_core_language_data(user, obj):
         | base.is_superadmin(user, obj)
         | (
             base.has_at_least_assistant_membership(user, obj)
-            & base.is_team_obj(user, obj)
-            & base.is_saved_team_obj(user, obj)
+            & base.has_team_site(user, obj)
+            & base.has_saved_team_site(user, obj)
         )
     )

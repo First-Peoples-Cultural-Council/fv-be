@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
 from backend.tests.factories import (
@@ -53,6 +54,14 @@ class RelatedMediaTestMixin:
             "content": f"http://testserver{audio.content.url}",
             "speakers": [
                 {
+                    "url": "http://testserver"
+                    + {
+                        reverse(
+                            "api:person-detail",
+                            current_app="backend",
+                            args=[speaker.site.slug, str(speaker.id)],
+                        )
+                    },
                     "id": str(speaker.id),
                     "name": speaker.name,
                     "bio": speaker.bio,
