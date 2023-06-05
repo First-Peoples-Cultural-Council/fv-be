@@ -23,6 +23,12 @@ class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
         fields = base_id_fields + ("slug", "visibility", "language")
 
 
+class FeatureFlagSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    key = serializers.CharField()
+    is_enabled = serializers.BooleanField()
+
+
 class SiteSummarySerializer(LinkedSiteSerializer):
     """
     Serializes public, non-access-controlled information about a site object. This includes the type of info
@@ -30,15 +36,10 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     """
 
     logo = ImageSerializer()
+    features = FeatureFlagSerializer(source="sitefeature_set", many=True)
 
     class Meta(LinkedSiteSerializer.Meta):
-        fields = LinkedSiteSerializer.Meta.fields + ("logo",)
-
-
-class FeatureFlagSerializer(serializers.Serializer):
-    id = serializers.CharField()
-    key = serializers.CharField()
-    is_enabled = serializers.BooleanField()
+        fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
 
 
 class SiteDetailSerializer(SiteSummarySerializer):
@@ -46,7 +47,6 @@ class SiteDetailSerializer(SiteSummarySerializer):
     Serializes basic details about a site object, including access-controlled related information.
     """
 
-    features = FeatureFlagSerializer(source="sitefeature_set", many=True)
     menu = serializers.SerializerMethodField()
     characters = serializers.SerializerMethodField()
     ignored_characters = serializers.SerializerMethodField()
@@ -88,7 +88,6 @@ class SiteDetailSerializer(SiteSummarySerializer):
     class Meta(SiteSummarySerializer.Meta):
         fields = SiteSummarySerializer.Meta.fields + (
             "menu",
-            "features",
             "characters",
             "ignored_characters",
             "dictionary",
