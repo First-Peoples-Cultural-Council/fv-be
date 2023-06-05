@@ -27,11 +27,7 @@ class SiteHyperlinkedRelatedField(NestedHyperlinkedRelatedField):
         kwargs = {self.lookup_url_kwarg: lookup_value}
 
         # add the site lookup
-        try:
-            kwargs.update({"site_slug": get_site_from_context(self).slug})
-        except AttributeError:
-            # If site not present
-            kwargs.update({"site_slug": None})
+        kwargs.update({"site_slug": get_site_from_context(self).slug})
 
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 

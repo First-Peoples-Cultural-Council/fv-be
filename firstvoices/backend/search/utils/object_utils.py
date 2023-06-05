@@ -51,7 +51,11 @@ def hydrate_objects(search_results, request):
                     "type": SearchIndexEntryTypes.DICTIONARY_ENTRY,
                     "entry": DictionaryEntryDetailSerializer(
                         dictionary_entry,
-                        context={"request": request, "view": "search"},
+                        context={
+                            "request": request,
+                            "view": "search",
+                            "site_slug": obj["_source"]["site_slug"],
+                        },
                     ).data,
                 }
             )
