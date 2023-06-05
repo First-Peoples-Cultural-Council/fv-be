@@ -17,33 +17,32 @@ from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
 ROUTER = DefaultRouter(trailing_slash=True)
-ROUTER.register(r"user", UserViewSet, basename=r"user")
-ROUTER.register(r"search", SearchViewSet, basename="search")
-ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
+ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
+ROUTER.register(r"search", SearchViewSet, basename="search")
+ROUTER.register(r"user", UserViewSet, basename=r"user")
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
-sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
-sites_router.register(r"characters", CharactersViewSet, basename="character")
-sites_router.register(
-    r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
-)
-sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
+sites_router.register(r"characters", CharactersViewSet, basename="character")
+sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
-
+sites_router.register(
+    r"dictionary-cleanup",
+    CustomOrderRecalculatePreviewView,
+    basename="dictionary-cleanup",
+)
 sites_router.register(
     r"dictionary-cleanup/preview",
     CustomOrderRecalculatePreviewView,
     basename="dictionary-cleanup/preview",
 )
 sites_router.register(
-    r"dictionary-cleanup",
-    CustomOrderRecalculateView,
-    basename="dictionary-cleanup",
+    r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
+sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 
 app_name = "api"
 
