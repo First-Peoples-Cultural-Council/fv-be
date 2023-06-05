@@ -50,6 +50,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
     menu = serializers.SerializerMethodField()
     characters = serializers.SerializerMethodField()
     ignored_characters = serializers.SerializerMethodField()
+    data = serializers.SerializerMethodField()
     dictionary = serializers.SerializerMethodField()
     dictionary_cleanup = serializers.SerializerMethodField()
     dictionary_cleanup_preview = serializers.SerializerMethodField()
@@ -70,6 +71,9 @@ class SiteDetailSerializer(SiteSummarySerializer):
 
     def get_ignored_characters(self, site):
         return self.get_site_content_link(site, "api:ignoredcharacter-list")
+
+    def get_data(self, site):
+        return self.get_site_content_link(site, "api:data-list")
 
     def get_dictionary(self, site):
         return self.get_site_content_link(site, "api:dictionaryentry-list")
@@ -99,6 +103,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "features",
             "characters",
             "ignored_characters",
+            "data",
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",

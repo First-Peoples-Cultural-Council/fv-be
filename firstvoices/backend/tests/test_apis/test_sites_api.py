@@ -145,6 +145,7 @@ class TestSitesEndpoints(BaseApiTest):
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
+            "data": f"http://testserver/api/1.0/sites/{site.slug}/data/",
             "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
             "dictionaryCleanup": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/",
             "dictionaryCleanupPreview": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/preview/",
