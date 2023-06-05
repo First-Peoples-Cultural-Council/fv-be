@@ -117,27 +117,6 @@ def is_superadmin(user):
 
 
 #
-# Role-based filters for site + app role combos
-#
-
-
-def is_at_least_member(user):
-    return has_at_least_member_membership(user) | is_at_least_staff_admin(user)
-
-
-def is_at_least_assistant(user):
-    return has_at_least_assistant_membership(user) | is_at_least_staff_admin(user)
-
-
-def is_at_least_editor(user):
-    return has_at_least_editor_membership(user) | is_at_least_staff_admin(user)
-
-
-def is_at_least_language_admin(user):
-    return has_at_least_language_admin_membership(user) | is_at_least_staff_admin(user)
-
-
-#
 # access-based filters
 #
 def has_public_access_to_obj(user=None):

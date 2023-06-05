@@ -66,7 +66,7 @@ def has_at_least_editor_membership(user, obj):
 
 
 @predicate
-def has_at_least_language_admin_membership(user, obj):
+def has_language_admin_membership(user, obj):
     return get_site_role(user, obj) >= Role.LANGUAGE_ADMIN
 
 
@@ -78,25 +78,6 @@ def is_at_least_staff_admin(user, obj):
 @predicate
 def is_superadmin(user, obj):
     return get_app_role(user) == AppRole.SUPERADMIN
-
-
-#
-# role predicates for site + app roles
-#
-is_at_least_member = predicate(
-    has_at_least_member_membership | is_at_least_staff_admin, name="is_at_least_member"
-)
-is_at_least_assistant = predicate(
-    has_at_least_assistant_membership | is_at_least_staff_admin,
-    name="is_at_least_assistant",
-)
-is_at_least_editor = predicate(
-    has_at_least_editor_membership | is_at_least_staff_admin, name="is_at_least_editor"
-)
-is_at_least_language_admin = predicate(
-    has_at_least_language_admin_membership | is_at_least_staff_admin,
-    name="is_at_least_language_admin",
-)
 
 
 #
