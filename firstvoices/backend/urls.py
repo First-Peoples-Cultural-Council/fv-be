@@ -42,6 +42,7 @@ sites_router.register(
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
+# sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 
 app_name = "api"
