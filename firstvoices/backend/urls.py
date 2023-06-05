@@ -10,6 +10,7 @@ from backend.views.custom_order_recalculate_views import (
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
+from backend.views.person_views import PersonViewSet
 from backend.views.search.search_views import SearchViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
@@ -42,7 +43,7 @@ sites_router.register(
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
-# sites_router.register(r"people", PersonViewSet, basename="person")
+sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 
 app_name = "api"

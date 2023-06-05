@@ -7,7 +7,8 @@ from django.db import models
 from django.utils.translation import gettext as _
 from PIL import Image as PILImage
 
-from ..permissions import predicates
+from backend.permissions import predicates
+
 from .base import AudienceMixin, BaseSiteContentModel
 
 
@@ -19,9 +20,9 @@ class Person(BaseSiteContentModel):
         verbose_name_plural = _("People")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.is_at_least_language_admin,  # todo: real permissions
+            "change": predicates.is_at_least_language_admin,
+            "delete": predicates.is_at_least_language_admin,
         }
 
     # from dc:title
