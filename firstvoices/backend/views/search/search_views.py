@@ -63,7 +63,7 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Function to return search params in a structured format.
         """
         input_q = self.request.GET.get("q", "")
-        site_slug = self.request.GET.get("site_slug", "")
+        site_slug = self.request.GET.get("site", "")
 
         return {"q": input_q, "site_slug": site_slug}
 
