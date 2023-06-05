@@ -20,9 +20,9 @@ class Person(BaseSiteContentModel):
         verbose_name_plural = _("People")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_at_least_language_admin,  # todo: real permissions
-            "change": predicates.is_at_least_language_admin,
-            "delete": predicates.is_at_least_language_admin,
+            "add": predicates.can_add_core_language_data,
+            "change": predicates.can_edit_core_language_data,
+            "delete": predicates.can_edit_core_language_data,
         }
 
     # from dc:title
