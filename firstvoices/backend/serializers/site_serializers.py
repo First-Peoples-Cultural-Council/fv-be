@@ -50,7 +50,10 @@ class SiteDetailSerializer(SiteSummarySerializer):
     menu = serializers.SerializerMethodField()
     characters = serializers.SerializerMethodField()
     ignored_characters = serializers.SerializerMethodField()
+    data = serializers.SerializerMethodField()
     dictionary = serializers.SerializerMethodField()
+    dictionary_cleanup = serializers.SerializerMethodField()
+    dictionary_cleanup_preview = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     word_of_the_day = serializers.SerializerMethodField()
     banner_image = ImageSerializer()
@@ -69,8 +72,17 @@ class SiteDetailSerializer(SiteSummarySerializer):
     def get_ignored_characters(self, site):
         return self.get_site_content_link(site, "api:ignoredcharacter-list")
 
+    def get_data(self, site):
+        return self.get_site_content_link(site, "api:data-list")
+
     def get_dictionary(self, site):
         return self.get_site_content_link(site, "api:dictionaryentry-list")
+
+    def get_dictionary_cleanup(self, site):
+        return self.get_site_content_link(site, "api:dictionary-cleanup-list")
+
+    def get_dictionary_cleanup_preview(self, site):
+        return self.get_site_content_link(site, "api:dictionary-cleanup/preview-list")
 
     def get_categories(self, site):
         return self.get_site_content_link(site, "api:category-list")
@@ -90,7 +102,10 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "menu",
             "characters",
             "ignored_characters",
+            "data",
             "dictionary",
+            "dictionary_cleanup",
+            "dictionary_cleanup_preview",
             "categories",
             "word_of_the_day",
             "banner_image",
