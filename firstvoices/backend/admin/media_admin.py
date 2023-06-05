@@ -4,7 +4,6 @@ from backend.admin import BaseSiteContentAdmin
 from backend.models.media import Audio, AudioSpeaker, Image, Person, Video
 
 
-@admin.register(Image)
 @admin.register(Video)
 @admin.register(Audio)
 class MediaAdmin(BaseSiteContentAdmin):
@@ -12,6 +11,25 @@ class MediaAdmin(BaseSiteContentAdmin):
         "site",
         "title",
         "content",
+    )
+    list_display = ("title",) + BaseSiteContentAdmin.list_display
+    search_fields = ("title",)
+
+
+@admin.register(Image)
+class ImageAdmin(BaseSiteContentAdmin):
+    fields = (
+        "site",
+        "title",
+        "content",
+        "thumbnail",
+        "small",
+        "medium",
+    )
+    readonly_fields = (
+        "thumbnail",
+        "small",
+        "medium",
     )
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
