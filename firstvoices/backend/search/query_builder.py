@@ -1,9 +1,18 @@
+from django.http import Http404
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Q, Search
 
+from backend.models.sites import Site
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
+
+
+def validate_site(site_slug):
+    site = Site.objects.filter(slug=site_slug)
+    if len(site) == 0:
+        raise Http404  # This should inform user about invalid site_slug supplied
+    return site_slug
 
 
 def get_search_object():
@@ -37,6 +46,7 @@ def get_search_query(q="", site_slug=""):
     search_term = get_cleaned_search_term(q)
 
     if site_slug:
+        site_slug = validate_site(site_slug)
         search_query = search_query.filter("term", site_slug=site_slug)
 
     if search_term:
