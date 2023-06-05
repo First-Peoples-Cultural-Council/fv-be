@@ -263,3 +263,6 @@ AWS_QUERYSTRING_AUTH = True  # this is the default setting, just being explicit
 AWS_QUERYSTRING_EXPIRE = (
     60 * 60
 )  # seconds until a query string expires; this is the default setting
+
+# Image thumbnail generation settings
+IMAGE_SIZES = {"thumbnail": 100, "small": 560, "medium": 1000}
