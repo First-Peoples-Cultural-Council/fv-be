@@ -21,7 +21,7 @@ can_view_site_model = Predicate(
 can_view_membership_model = Predicate(
     (
         base.is_at_least_staff_admin
-        | base.has_at_least_language_admin_membership
+        | base.has_language_admin_membership
         | base.is_own_obj
     ),
     name="can_view_membership_model",
