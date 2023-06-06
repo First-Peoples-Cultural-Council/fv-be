@@ -28,17 +28,17 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
-sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
-sites_router.register(
-    r"dictionary-cleanup",
-    CustomOrderRecalculatePreviewView,
-    basename="dictionary-cleanup",
-)
+sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
     CustomOrderRecalculatePreviewView,
     basename="dictionary-cleanup/preview",
+)
+sites_router.register(
+    r"dictionary-cleanup",
+    CustomOrderRecalculateView,
+    basename="dictionary-cleanup",
 )
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
