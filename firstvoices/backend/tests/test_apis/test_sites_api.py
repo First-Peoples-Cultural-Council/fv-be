@@ -69,6 +69,7 @@ class TestSitesEndpoints(BaseApiTest):
             "visibility": "Public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+            "features": [],
         }
 
     @pytest.mark.django_db
@@ -145,7 +146,10 @@ class TestSitesEndpoints(BaseApiTest):
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
+            "data": f"http://testserver/api/1.0/sites/{site.slug}/data/",
             "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
+            "dictionaryCleanup": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/",
+            "dictionaryCleanupPreview": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/preview/",
             "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories/",
             "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
             "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored-characters/",

@@ -26,9 +26,9 @@ class Category(BaseSiteContentModel):
         ordering = ["title"]
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_at_least_language_admin,
-            "change": predicates.is_at_least_language_admin,
-            "delete": predicates.is_at_least_language_admin,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
         }
 
     def __str__(self):

@@ -5,6 +5,7 @@ from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
+    CustomOrderRecalculateView,
 )
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
@@ -33,12 +34,18 @@ sites_router.register(
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+
 sites_router.register(
     r"dictionary-cleanup/preview",
     CustomOrderRecalculatePreviewView,
     basename="dictionary-cleanup/preview",
 )
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
+sites_router.register(
+    r"dictionary-cleanup",
+    CustomOrderRecalculateView,
+    basename="dictionary-cleanup",
+)
 
 app_name = "api"
 
