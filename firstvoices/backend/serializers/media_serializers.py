@@ -2,11 +2,22 @@ from rest_framework import serializers
 
 from backend.models import media
 
+from .base_serializers import (
+    CreateSiteContentSerializerMixin,
+    SiteContentUrlMixin,
+    UpdateSerializerMixin,
+)
 
-class PersonSerializer(serializers.ModelSerializer):
+
+class PersonSerializer(
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
+    SiteContentUrlMixin,
+    serializers.ModelSerializer,
+):
     class Meta:
         model = media.Person
-        fields = ("id", "name", "bio")
+        fields = ("url", "id", "name", "bio")
 
 
 class MediaSerializer(serializers.ModelSerializer):

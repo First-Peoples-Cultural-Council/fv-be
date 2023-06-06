@@ -23,6 +23,15 @@ def is_team_obj(user, obj):
 
 
 @predicate
+def is_saved_team_obj(user, obj):
+    """
+    Checks the visibility of the saved version of the given obj, not the version in memory.
+    """
+    saved = type(obj).objects.filter(pk=obj.pk).first()
+    return saved.visibility == Visibility.TEAM
+
+
+@predicate
 def has_public_site(user, obj):
     return obj.site.visibility == Visibility.PUBLIC
 
@@ -35,6 +44,15 @@ def has_members_site(user, obj):
 @predicate
 def has_team_site(user, obj):
     return obj.site.visibility == Visibility.TEAM
+
+
+@predicate
+def has_saved_team_site(user, obj):
+    """
+    Checks the site visibility of the saved version of the given obj, not the version in memory.
+    """
+    saved = type(obj).objects.filter(pk=obj.pk).first()
+    return saved.site.visibility == Visibility.TEAM
 
 
 @predicate
