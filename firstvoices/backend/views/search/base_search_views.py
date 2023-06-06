@@ -43,18 +43,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample("ball", value="ball"),
                     OpenApiExample("quick brown fox", value="quick brown fox"),
                 ],
-            ),
-            OpenApiParameter(
-                name="site_slug",
-                description="site_slug to filter results by a specific site",
-                required=False,
-                type=str,
-                examples=[OpenApiExample("sample_site_1", value="sample_site_1")],
-            ),
+            )
         ],
     ),
 )
-class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
 
@@ -63,11 +56,11 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Function to return search params in a structured format.
         """
         input_q = self.request.GET.get("q", "")
-        site_slug = self.request.GET.get("site", "")
 
-        return {"q": input_q, "site_slug": site_slug}
+        search_params = {"q": input_q, "site_slug": ""}
+        return search_params
 
-    def list(self, request):
+    def list(self, request, **kwargs):
         search_params = self.get_search_params()
 
         # Get search query
@@ -86,7 +79,4 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
 
-        # view permissions and pagination to be applied
-
-        # Structuring response
         return Response(data=hydrated_objects)
