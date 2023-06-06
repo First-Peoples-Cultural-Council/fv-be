@@ -55,6 +55,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
     dictionary_cleanup = serializers.SerializerMethodField()
     dictionary_cleanup_preview = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
+    people = serializers.SerializerMethodField()
     word_of_the_day = serializers.SerializerMethodField()
     banner_image = ImageSerializer()
     banner_video = VideoSerializer()
@@ -87,6 +88,9 @@ class SiteDetailSerializer(SiteSummarySerializer):
     def get_categories(self, site):
         return self.get_site_content_link(site, "api:category-list")
 
+    def get_people(self, site):
+        return self.get_site_content_link(site, "api:person-list")
+
     def get_word_of_the_day(self, site):
         return self.get_site_content_link(site, "api:word-of-the-day-list")
 
@@ -107,6 +111,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
             "categories",
+            "people",
             "word_of_the_day",
             "banner_image",
             "banner_video",

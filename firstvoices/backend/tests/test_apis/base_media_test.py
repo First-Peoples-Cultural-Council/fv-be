@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
 from backend.tests.factories import (
@@ -47,12 +48,16 @@ class RelatedMediaTestMixin:
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert len(response_data["relatedAudio"]) == 1
+
+        app = "backend"
         assert response_data["relatedAudio"][0] == {
             "id": str(audio.id),
             "title": audio.title,
             "content": f"http://testserver{audio.content.url}",
             "speakers": [
                 {
+                    "url": "http://testserver"
+                    + f"{reverse('api:person-detail',current_app=app,args=[speaker.site.slug, str(speaker.id)],)}",
                     "id": str(speaker.id),
                     "name": speaker.name,
                     "bio": speaker.bio,
