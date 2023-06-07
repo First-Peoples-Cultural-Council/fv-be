@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
+from backend.search.utils.query_builder_utils import get_valid_document_types
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -57,7 +58,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
-        search_params = {"q": input_q, "site_slug": ""}
+        input_types = self.request.GET.get("types", "")
+        valid_types = get_valid_document_types(input_types)
+
+        search_params = {"q": input_q, "types": valid_types, "site_slug": ""}
         return search_params
 
     def list(self, request, **kwargs):
@@ -65,7 +69,9 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # Get search query
         search_query = get_search_query(
-            q=search_params["q"], site_slug=search_params["site_slug"]
+            q=search_params["q"],
+            site_slug=search_params["site_slug"],
+            types=search_params["types"],
         )
 
         # Get search results

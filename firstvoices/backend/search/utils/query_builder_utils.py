@@ -3,17 +3,38 @@ from elasticsearch_dsl import Q
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
+from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 
-def get_indices():
+def get_valid_document_types(input_types):
+    allowed_values = VALID_DOCUMENT_TYPES
+
+    if not input_types:
+        return allowed_values
+
+    values = input_types.split(",")
+    selected_values = [
+        value.strip().lower()
+        for value in values
+        if value.strip().lower() in allowed_values
+    ]
+    return selected_values
+
+
+def get_indices(types):
     """
     Returns list of indices to go through depending on the docType
     WORD|PHRASE = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
     SONG = ELASTICSEARCH_SONG_INDEX
     STORY = ELASTICSEARCH_STORY_INDEX
     """
-    list_of_indices = [ELASTICSEARCH_DICTIONARY_ENTRY_INDEX]
-    return list_of_indices
+    indices = set()
+
+    for docType in types:
+        if docType == "WORD" or docType == "PHRASE":
+            indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+
+    return list(indices)
 
 
 def get_cleaned_search_term(q):
