@@ -13,21 +13,13 @@ class TestValidDocumentTypes:
             ("PHRASES, WORDS", ["phrases", "words"]),
             ("WORDS, PHRASES", ["words", "phrases"]),
             ("WordS, PhrASes", ["words", "phrases"]),
-        ],
-    )
-    def test_doc_type_mixed_cases(self, input_types, expected_types):
-        actual_types = get_valid_document_types(input_types)
-        assert expected_types == actual_types
-
-    @pytest.mark.parametrize(
-        "input_types, expected_types",
-        [
-            ("xyz_type", []),
+            ("xyz_type", None),
             ("memory, WORDS", ["words"]),
             ("storage, PHRASES, WORDS", ["phrases", "words"]),
         ],
     )
-    def test_ignore_invalid_types(self, input_types, expected_types):
+    def test_mixed_input_doc_types(self, input_types, expected_types):
+        # test for all caps, mixed cases, invalid types, and combination of invalid and valid types
         actual_types = get_valid_document_types(input_types)
         assert expected_types == actual_types
 
