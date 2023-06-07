@@ -58,14 +58,18 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
-        input_types = self.request.GET.get("types", "")
-        valid_types = get_valid_document_types(input_types)
+        input_types_str = self.request.GET.get("types", "")
+        valid_types_list = get_valid_document_types(input_types_str)
 
-        search_params = {"q": input_q, "types": valid_types, "site_slug": ""}
+        search_params = {"q": input_q, "types": valid_types_list, "site_slug": ""}
         return search_params
 
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+
+        # If no valid types are passed, return emtpy list as a response
+        if not search_params["types"]:
+            return Response(data=[])
 
         # Get search query
         search_query = get_search_query(

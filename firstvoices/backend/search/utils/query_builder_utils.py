@@ -18,6 +18,10 @@ def get_valid_document_types(input_types):
         for value in values
         if value.strip().lower() in allowed_values
     ]
+
+    if len(selected_values) == 0:
+        return None
+
     return selected_values
 
 
