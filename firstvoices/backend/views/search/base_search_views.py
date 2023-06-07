@@ -39,12 +39,49 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 name="q",
                 description="search term",
                 required=False,
+                default="",
                 type=str,
                 examples=[
                     OpenApiExample("ball", value="ball"),
                     OpenApiExample("quick brown fox", value="quick brown fox"),
                 ],
-            )
+            ),
+            OpenApiParameter(
+                name="types",
+                description="filter by document types",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="retrieves results from all types of documents.",
+                    ),
+                    OpenApiExample(
+                        "words, phrases",
+                        value="words, phrases",
+                        description="searches for documents in both the words and phrases document types.",
+                    ),
+                    OpenApiExample(
+                        "words",
+                        value="words, phrases",
+                        description="specifically looks for documents in the words document type.",
+                    ),
+                    OpenApiExample(
+                        "words, invalid_type",
+                        value="words",
+                        description="filters out the invalid document types and returns results only "
+                        "for the valid types, such as words",
+                    ),
+                    OpenApiExample(
+                        "invalid_type",
+                        value="None",
+                        description="if no valid document types are provided, the API returns an empty"
+                        " set of results.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
