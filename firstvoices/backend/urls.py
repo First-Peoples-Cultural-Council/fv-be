@@ -11,16 +11,19 @@ from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
-from backend.views.search.search_views import SearchViewSet
+from backend.views.search.base_search_views import BaseSearchViewSet
+from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
 ROUTER = DefaultRouter(trailing_slash=True)
+ROUTER.register(r"user", UserViewSet, basename=r"user")
+ROUTER.register(r"search", BaseSearchViewSet, basename="search")
+ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
-ROUTER.register(r"search", SearchViewSet, basename="search")
 ROUTER.register(r"user", UserViewSet, basename=r"user")
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 
@@ -35,6 +38,7 @@ sites_router.register(
     CustomOrderRecalculatePreviewView,
     basename="dictionary-cleanup/preview",
 )
+sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(
     r"dictionary-cleanup",
     CustomOrderRecalculateView,
