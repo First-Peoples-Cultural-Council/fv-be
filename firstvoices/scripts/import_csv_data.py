@@ -66,7 +66,7 @@ for key, resource in import_resources:
 
     if not matched_files:
         logger.warn(f"No '{key}' files found to import")
-        status.warnings = True
+        status.no_warnings = False
         status.save()
 
     # Perform import
@@ -84,7 +84,7 @@ for key, resource in import_resources:
 
 for file in unmatched_files:
     logger.warn(f"\n{file} not imported (no resource defined)")
-    status.warnings = True
+    status.no_warnings = False
 
 
 # Clean up artifacts and update import status

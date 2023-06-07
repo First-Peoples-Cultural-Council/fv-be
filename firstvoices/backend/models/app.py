@@ -63,13 +63,13 @@ class AppImportStatus(BaseModel):
 
     label = models.CharField(max_length=150)
     successful = models.BooleanField(default=False)
-    warnings = models.BooleanField(default=False)
+    no_warnings = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("import status")
         verbose_name_plural = _("import statuses")
         rules_permissions = {
-            "view": rules.always_allow,
+            "view": predicates.is_at_least_staff_admin,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,

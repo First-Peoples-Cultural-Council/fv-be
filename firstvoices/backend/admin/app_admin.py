@@ -41,12 +41,17 @@ class AppMembershipAdmin(BaseAdmin):
 class AppImportStatusAdmin(BaseAdmin):
     fields = (
         "label",
-        "warnings",
+        "no_warnings",
         "successful",
     )
     list_display = (
         "label",
-        "warnings",
+        "no_warnings",
         "successful",
     ) + BaseAdmin.list_display
+    readonly_fields = (
+        "label",
+        "no_warnings",
+        "successful",
+    ) + BaseAdmin.readonly_fields
     search_fields = ("label",)
