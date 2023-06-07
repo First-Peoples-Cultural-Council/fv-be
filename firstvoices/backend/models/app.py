@@ -56,3 +56,24 @@ class AppMembership(BaseModel):
 
     def __str__(self):
         return f"{self.user} ({self.get_role_display()})"
+
+
+class AppImportStatus(BaseModel):
+    """Represents the status of manual data imports, such as nuxeo imports."""
+
+    label = models.CharField(max_length=150)
+    successful = models.BooleanField(default=False)
+    no_warnings = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("import status")
+        verbose_name_plural = _("import statuses")
+        rules_permissions = {
+            "view": predicates.is_at_least_staff_admin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
+    def __str__(self):
+        return f"Import: {self.label}"

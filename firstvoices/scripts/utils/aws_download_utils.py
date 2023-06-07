@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 TIMESTAMP_REGEX_STRING = r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}"
 
+EXPORT_STORAGE_DIRECTORY = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "export_data"
+)
+
 
 def get_aws_resource():
     """
@@ -80,9 +84,7 @@ def download_file_from_s3(key):
         )
         return False
 
-    storage_directory = (
-        f"{os.path.dirname(os.path.abspath(__file__))}/export_data/{timestamp}"
-    )
+    storage_directory = os.path.join(EXPORT_STORAGE_DIRECTORY, timestamp)
     if not os.path.exists(storage_directory):
         os.makedirs(storage_directory)
     try:
