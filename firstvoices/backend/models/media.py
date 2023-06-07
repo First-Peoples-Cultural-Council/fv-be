@@ -1,12 +1,15 @@
 import datetime
+import os.path
 import posixpath
 import sys
+import tempfile
 from io import BytesIO
 
 import magic
+import ffmpeg
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models
+from django.db import models, NotSupportedError
 from django.utils.translation import gettext as _
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
@@ -58,6 +61,9 @@ class FileBase(BaseSiteContentModel):
         return f"{self.content.name} ({self.site})"
 
     def save(self, **kwargs):
+        if not self._state.adding:
+            raise NotSupportedError("Editing existing files is not supported at this time. Please create a new file if you would like to update a media file.")
+
         """
         Sets mimetype based on the file contents
         """
@@ -420,8 +426,135 @@ class Video(MediaBase):
 
     # acknowledgement from fvm:recorder, fvm:source
 
+    thumbnail = models.OneToOneField(
+        ImageFile,
+        related_name="video_thumbnail",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    small = models.OneToOneField(
+        ImageFile,
+        related_name="video_small",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    medium = models.OneToOneField(
+        ImageFile,
+        related_name="video_medium",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+
     def __str__(self):
         return f"{self.title} / {self.site} (Video)"
+
+    def _add_media(self):
+        super()._add_media()
+        self.generate_resized_images()
+
+    def _update_media(self):
+        super()._update_media()
+        self.generate_resized_images()
+
+    def _delete_related_media(self, instance):
+        """
+        Deletes additional thumbnail models.
+        """
+        super()._delete_related_media(instance)
+        instance.thumbnail.delete()
+        instance.small.delete()
+        instance.medium.delete()
+
+    def generate_resized_images(self):
+        """
+        A function to generate a set of resized images when a Video model is saved
+        """
+
+        # Open a temp directory to hold the video file before reading it into ffmpeg
+        with tempfile.TemporaryDirectory() as temp_dir:
+            original = self.original.content
+            file_name = os.path.basename(original.name).split(".")[0]
+            input_name = original.name.split(".")[0]
+            input_extension = "." + original.name.split(".")[1]
+            temp_file = tempfile.NamedTemporaryFile(suffix=input_extension)
+            original.file.seek(0)
+            image_file = original.file.read()
+            temp_file.write(image_file)
+
+            # Read the video width and height from the file
+            try:
+                probe = ffmpeg.probe(temp_file.name)
+                video_stream = next(
+                    (
+                        stream
+                        for stream in probe["streams"]
+                        if stream["codec_type"] == "video"
+                    ),
+                    None,
+                )
+                width = int(video_stream["width"])
+                height = int(video_stream["height"])
+            except ffmpeg.Error as e:
+                self.logger.error(
+                    f"Failed to probe video file using ffmpeg [{original.name}]. \n"
+                    f"Error: {e}\n"
+                    f"{e.stderr.decode('utf8')}\n"
+                )
+
+            # Iterate over each of the output image sizes.
+            for size_name, max_size in settings.IMAGE_SIZES.items():
+                output_size = get_output_image_size(max_size, width, height)
+                output_filename = f"{file_name}_{size_name}.jpg"
+                temp_output_image_path = f"{temp_dir}/{output_filename}"
+
+                # Generate an output image using ffmpeg
+                try:
+                    (
+                        ffmpeg.input(temp_file.name)
+                        .filter("scale", output_size[0], -1)
+                        .output(temp_output_image_path, vframes=1)
+                        .overwrite_output()
+                        .run(capture_stdout=True, capture_stderr=True)
+                    )
+                except ffmpeg.Error as e:
+                    self.logger.error(
+                        f"Failed to generate image for video file [{original.name}].\n"
+                        f"Error: {e}\n"
+                        f"{e.stderr.decode('utf8')}\n"
+                    )
+
+                # Set the model field to the newly generated image.
+                output_image = open(temp_output_image_path, "rb")
+                thumbnail_name = f"{input_name}_{size_name}.jpg"
+                image_file_model = self.add_image_file(
+                    thumbnail_name, output_image, output_size
+                )
+                setattr(self, size_name, image_file_model)
+
+    def add_image_file(self, file_name, output_img, output_size):
+        content = InMemoryUploadedFile(
+            file=output_img,
+            field_name="ImageField",
+            name=file_name,
+            content_type="image/jpeg",
+            size=sys.getsizeof(output_img),
+            charset=None,
+        )
+
+        model = ImageFile(
+            content=content,
+            site=self.site,
+            created_by=self.created_by,
+            last_modified_by=self.last_modified_by,
+            height=output_size[1],
+            width=output_size[0],
+        )
+        model.save()
+
+        return model
 
 
 class EmbeddedVideo(MediaBase):

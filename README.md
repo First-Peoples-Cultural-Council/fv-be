@@ -5,6 +5,7 @@ Backend for the FirstVoices application
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
+[![Run Pytest](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml/badge.svg?branch=main)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml)
 
 License: Apache Software License 2.0
 
@@ -23,6 +24,11 @@ License: Apache Software License 2.0
        - `brew services start postgresql` to start the service and autostart on system startup.
        - `brew services stop postgresql` to stop the service.
      - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
+   - [FFmpeg](http://ffmpeg.org/)
+     - Recommended Mac installation: Using Homebrew
+       - brew update
+       - brew install ffmpeg
+     - For other operating systems see [the official downloads page](https://ffmpeg.org/download.html).
 1. (Recommended) Create and activate a virtual environment in the root of the project
    - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
    - If using [venv](https://docs.python.org/3/library/venv.html)

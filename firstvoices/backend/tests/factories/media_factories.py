@@ -3,10 +3,8 @@ import sys
 
 import factory
 
-from django.conf import settings
 from embed_video.fields import EmbedVideoField
 from django.core.files.uploadedfile import InMemoryUploadedFile
-
 from factory.django import DjangoModelFactory
 
 from backend.models.media import (
@@ -83,6 +81,9 @@ class VideoFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Video-%03d" % n)
     original = factory.SubFactory(VideoFileFactory)
+    thumbnail = factory.SubFactory(ImageFileFactory)
+    small = factory.SubFactory(ImageFileFactory)
+    medium = factory.SubFactory(ImageFileFactory)
 
 
 class EmbeddedVideoFactory(DjangoModelFactory):
