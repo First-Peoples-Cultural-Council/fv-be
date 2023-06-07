@@ -16,16 +16,18 @@ def get_search_object():
     return s
 
 
-def get_search_query(q="", site_slug=""):
-    search_query = get_search_object()
-    search_term = get_cleaned_search_term(q)
-
+def get_search_query(q=None, site_slug=None):
     # Building initial query
+    search_query = get_search_object()
     search_query = search_query.query()
 
-    # Building initial query with search term
-    if search_term:
-        search_query = search_query.query(get_search_term_query(search_term))
+    # Adding search term
+    if q:
+        cleaned_search_term = get_cleaned_search_term(q)
+        if cleaned_search_term:
+            search_query = search_query.query(
+                get_search_term_query(cleaned_search_term)
+            )
 
     # Add site filter if parameter provided in url
     if site_slug:

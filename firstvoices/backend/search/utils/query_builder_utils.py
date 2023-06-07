@@ -1,7 +1,5 @@
-from django.http import Http404
 from elasticsearch_dsl import Q
 
-from backend.models.sites import Site
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
@@ -72,9 +70,4 @@ def get_search_term_query(search_term):
 
 
 def get_site_filter_query(site_slug):
-    # Validate site exists
-    site_count = Site.objects.filter(slug=site_slug).count()
-    if site_count == 0:
-        raise Http404
-    # Add filter if site is valid
     return Q("bool", filter=[Q("term", site_slug=site_slug)])
