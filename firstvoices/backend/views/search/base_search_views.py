@@ -79,4 +79,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
 
+        page = self.paginate_queryset(hydrated_objects)
+        if page is not None:
+            return self.get_paginated_response(data=hydrated_objects)
+
         return Response(data=hydrated_objects)
