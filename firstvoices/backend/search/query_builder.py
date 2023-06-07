@@ -20,8 +20,8 @@ def get_search_object(indices):
 def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES):
     # Building initial query
     indices = get_indices(types)
-    search_query = get_search_object(indices)
-    search_query = search_query.query()
+    search_object = get_search_object(indices)
+    search_query = search_object.query()
 
     # Adding search term
     if q:
