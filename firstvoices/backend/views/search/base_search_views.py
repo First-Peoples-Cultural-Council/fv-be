@@ -47,7 +47,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
         ],
     ),
 )
-class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
 
@@ -57,13 +57,16 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
-        return {"q": input_q}
+        search_params = {"q": input_q, "site_slug": ""}
+        return search_params
 
-    def list(self, request):
+    def list(self, request, **kwargs):
         search_params = self.get_search_params()
 
         # Get search query
-        search_query = get_search_query(q=search_params["q"])
+        search_query = get_search_query(
+            q=search_params["q"], site_slug=search_params["site_slug"]
+        )
 
         # Get search results
         try:
@@ -76,7 +79,4 @@ class SearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
 
-        # view permissions and pagination to be applied
-
-        # Structuring response
         return Response(data=hydrated_objects)

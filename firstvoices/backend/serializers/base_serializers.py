@@ -7,14 +7,12 @@ base_timestamp_fields = ("created", "last_modified")
 base_id_fields = ("id", "title", "url")
 
 
-class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
+class SiteContentUrlMixin:
     """
-    Serializer that produces standard id-title-url objects for site content models.
+    Mixin to configure url identity field for site content models
     """
 
     serializer_url_field = fields.SiteHyperlinkedIdentityField
-
-    id = serializers.UUIDField(read_only=True)
 
     def build_url_field(self, field_name, model_class):
         """
@@ -24,6 +22,16 @@ class SiteContentLinkedTitleSerializer(serializers.ModelSerializer):
         field_kwargs["view_name"] = "api:" + field_kwargs["view_name"]
 
         return field_class, field_kwargs
+
+
+class SiteContentLinkedTitleSerializer(
+    SiteContentUrlMixin, serializers.ModelSerializer
+):
+    """
+    Serializer that produces standard id-title-url objects for site content models.
+    """
+
+    id = serializers.UUIDField(read_only=True)
 
     class Meta:
         fields = base_id_fields

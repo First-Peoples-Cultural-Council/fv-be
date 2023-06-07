@@ -267,3 +267,6 @@ AWS_QUERYSTRING_EXPIRE = (
 
 # Disallow exports unless you have write permission
 IMPORT_EXPORT_EXPORT_PERMISSION_CODE = "change"
+
+# Image thumbnail generation settings
+IMAGE_SIZES = {"thumbnail": 100, "small": 560, "medium": 1000}

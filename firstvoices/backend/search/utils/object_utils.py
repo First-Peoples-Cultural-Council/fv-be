@@ -42,7 +42,6 @@ def hydrate_objects(search_results, request):
         # Handling DictionaryEntry objects
         if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             dictionary_entry = get_object(dictionary_objects, obj["_id"])
-            request.parser_context["kwargs"]["site_slug"] = dictionary_entry.site.slug
 
             # Serializing and adding the object to complete_objects
             complete_objects.append(
@@ -52,7 +51,11 @@ def hydrate_objects(search_results, request):
                     "type": SearchIndexEntryTypes.DICTIONARY_ENTRY,
                     "entry": DictionaryEntryDetailSerializer(
                         dictionary_entry,
-                        context={"request": request, "view": "search"},
+                        context={
+                            "request": request,
+                            "view": "search",
+                            "site_slug": obj["_source"]["site_slug"],
+                        },
                     ).data,
                 }
             )

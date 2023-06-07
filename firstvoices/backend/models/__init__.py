@@ -1,7 +1,7 @@
 from .user import User  # noqa F401  # isort:skip
 
 from .app import AppJson  # noqa F401
-from .async_results import CustomOrderRecalculationPreviewResult  # noqa F401
+from .async_results import CustomOrderRecalculationResult  # noqa F401
 from .base import BaseModel  # noqa F401
 from .category import Category  # noqa F401
 from .characters import (  # noqa F401

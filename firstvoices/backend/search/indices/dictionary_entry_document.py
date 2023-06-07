@@ -25,9 +25,13 @@ dictionary_entries.settings(
 
 @dictionary_entries.document
 class DictionaryEntryDocument(Document):
+    # generic fields, will be moved to a base search document once we have songs and stories
     _id = Text()
-    title = Text(analyzer="standard", ignore_above=256)
+    site_slug = Keyword()
+
+    # Dictionary Related fields
     type = Keyword()
+    title = Text(analyzer="standard", ignore_above=256)
     translation = Text(analyzer="standard", ignore_above=256)
 
     class Index:
@@ -40,7 +44,10 @@ def update_index(sender, instance, **kwargs):
     # Add document to es index
     try:
         index_entry = DictionaryEntryDocument(
-            _id=instance.id, title=instance.title, type=instance.type
+            _id=instance.id,
+            site_slug=instance.site.slug,
+            title=instance.title,
+            type=instance.type,
         )
         index_entry.save()
     except ConnectionError:

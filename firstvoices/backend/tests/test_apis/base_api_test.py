@@ -459,11 +459,7 @@ class DestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_success_204(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
-        )
-        self.client.force_authenticate(user=user)
-
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.delete(
@@ -486,10 +482,7 @@ class DestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_missing_404(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
-        )
-        self.client.force_authenticate(user=user)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         response = self.client.delete(
             self.get_detail_endpoint(key="missing-instance", site_slug=site.slug)
@@ -499,10 +492,7 @@ class DestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_site_missing_404(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
-        )
-        self.client.force_authenticate(user=user)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 

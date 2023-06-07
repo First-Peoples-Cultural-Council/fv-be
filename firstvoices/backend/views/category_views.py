@@ -96,7 +96,6 @@ from . import doc_strings
         responses={
             204: OpenApiResponse(
                 description=doc_strings.success_204_deleted,
-                response=CategoryDetailSerializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
