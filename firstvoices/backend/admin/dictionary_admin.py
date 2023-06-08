@@ -15,7 +15,12 @@ from backend.models.dictionary import (
 )
 from backend.models.part_of_speech import PartOfSpeech
 
-from .base_admin import BaseAdmin, BaseInlineAdmin, HiddenBaseAdmin
+from .base_admin import (
+    BaseAdmin,
+    BaseInlineAdmin,
+    BaseSiteContentAdmin,
+    HiddenBaseAdmin,
+)
 
 
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
@@ -87,7 +92,7 @@ class WordOfTheDayInline(BaseInlineAdmin):
 
 
 @admin.register(DictionaryEntry)
-class DictionaryEntryAdmin(HiddenBaseAdmin):
+class DictionaryEntryAdmin(BaseSiteContentAdmin):
     inlines = [
         DictionaryEntryCategoryInline,
         TranslationInline,
@@ -98,8 +103,8 @@ class DictionaryEntryAdmin(HiddenBaseAdmin):
         DictionaryEntryLinkInline,
         DictionaryEntryCharacterInline,
     ]
-    list_display = ("title",) + HiddenBaseAdmin.list_display
-    readonly_fields = ("custom_order",) + HiddenBaseAdmin.readonly_fields
+    list_display = ("title",) + BaseSiteContentAdmin.list_display
+    readonly_fields = ("custom_order",) + BaseSiteContentAdmin.readonly_fields
 
 
 @admin.register(PartOfSpeech)
