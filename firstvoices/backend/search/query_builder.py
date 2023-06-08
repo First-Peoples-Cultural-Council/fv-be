@@ -1,4 +1,3 @@
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Q, Search
 
 from backend.models.dictionary import TypeOfDictionaryEntry
@@ -12,8 +11,7 @@ from backend.search.utils.query_builder_utils import (
 
 
 def get_search_object(indices):
-    client = Elasticsearch()
-    s = Search(using=client, index=indices)
+    s = Search(index=indices)
     return s
 
 
