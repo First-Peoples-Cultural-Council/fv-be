@@ -1,4 +1,4 @@
-    from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search
 
 from backend.search.utils.query_builder_utils import (
     get_cleaned_search_term,
