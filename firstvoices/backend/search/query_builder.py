@@ -1,5 +1,4 @@
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+    from elasticsearch_dsl import Search
 
 from backend.search.utils.query_builder_utils import (
     get_cleaned_search_term,
@@ -10,9 +9,8 @@ from backend.search.utils.query_builder_utils import (
 
 
 def get_search_object():
-    client = Elasticsearch()
     indices = get_indices()
-    s = Search(using=client, index=indices)
+    s = Search(index=indices)
     return s
 
 
