@@ -235,6 +235,11 @@ class TestDictionaryEndpoint(
                 "id": str(entry2.id),
                 "title": entry2.title,
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry2.id)}/",
+                "translations": [],
+                "relatedImages": [],
+                "relatedAudio": [],
+                "relatedVideos": [],
+                "type": entry2.type,
             }
         ]
 
