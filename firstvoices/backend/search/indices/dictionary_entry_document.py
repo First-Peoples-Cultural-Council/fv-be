@@ -108,6 +108,9 @@ def update_translation(sender, instance, **kwargs):
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
         )
+        if not existing_entry:
+            raise NotFoundError
+
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
         dictionary_entry_doc.update(
             translation=" ".join(translations_text),
@@ -145,6 +148,9 @@ def update_notes(sender, instance, **kwargs):
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
         )
+        if not existing_entry:
+            raise NotFoundError
+
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
         dictionary_entry_doc.update(note=" ".join(notes_text))
     except ConnectionError:
