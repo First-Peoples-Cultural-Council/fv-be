@@ -10,6 +10,9 @@ ES_NOT_FOUND_ERROR = (
     "operation: %s. %s id: %s"
 )
 
+# Page size
+ES_PAGE_SIZE = 10
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")
