@@ -1,5 +1,6 @@
 from elasticsearch_dsl import Q
 
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
@@ -47,6 +48,18 @@ def get_cleaned_search_term(q):
     case-sensitivity handled by analyzer in the search document.
     """
     return q.strip()
+
+
+def get_types_query(types):
+    # Adding type filters
+    # If only one of the "words" or "phrases" is present, we need to filter out the other one
+    # no action required if both are present
+    if "words" in types and "phrases" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
+    elif "phrases" in types and "words" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    else:
+        return None
 
 
 def get_search_term_query(search_term):

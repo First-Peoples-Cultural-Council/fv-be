@@ -1,30 +1,18 @@
-from elasticsearch_dsl import Q, Search
+from elasticsearch_dsl import Search
 
-from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import (
     get_cleaned_search_term,
     get_indices,
     get_search_term_query,
     get_site_filter_query,
+    get_types_query,
 )
 
 
 def get_search_object(indices):
     s = Search(index=indices)
     return s
-
-
-def get_types_query(types):
-    # Adding type filters
-    # If only one of the "words" or "phrases" is present, we need to filter out the other one
-    # no action required if both are present
-    if "words" in types and "phrases" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
-    elif "phrases" in types and "words" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
-    else:
-        return None
 
 
 def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES):

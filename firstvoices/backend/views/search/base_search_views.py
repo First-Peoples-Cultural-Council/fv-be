@@ -71,7 +71,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "words, invalid_type",
                         value="words",
-                        description="filters out the invalid document types and returns results only "
+                        description="Ignores invalid document types and returns results only "
                         "for the valid types, such as words",
                     ),
                     OpenApiExample(
