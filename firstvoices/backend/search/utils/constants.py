@@ -1,6 +1,9 @@
 from django.db.models import TextChoices
 from django.utils.translation import gettext as _
 
+# Index names
+ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entry"
+
 # Error messages
 ES_CONNECTION_ERROR = (
     "Elasticsearch server down. Document could not be updated in index. %s id: %s"

@@ -42,7 +42,7 @@ def get_search_term_query(search_term):
                 "title": {
                     "query": search_term,
                     "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": 1.3,
+                    "boost": 1.1,
                 }
             }
         }
@@ -57,6 +57,24 @@ def get_search_term_query(search_term):
             }
         }
     )
+    multi_match_query = Q(
+        {
+            "multi_match": {
+                "query": search_term,
+                "fields": ["title", "full_text_search_field"],
+                "type": "phrase",
+                "operator": "OR",
+                "boost": 1.3,
+            }
+        }
+    )
+    text_search_field_match_query = Q(
+        {
+            "match_phrase": {
+                "full_text_search_field": {"query": search_term, "boost": 1.5}
+            }
+        }
+    )
     return Q(
         "bool",
         should=[
@@ -64,6 +82,8 @@ def get_search_term_query(search_term):
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
+            multi_match_query,
+            text_search_field_match_query,
         ],
         minimum_should_match=1,
     )
