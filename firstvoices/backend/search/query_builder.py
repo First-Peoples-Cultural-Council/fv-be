@@ -15,6 +15,18 @@ def get_search_object(indices):
     return s
 
 
+def get_types_query(types):
+    # Adding type filters
+    # If only one of the "words" or "phrases" is present, we need to filter out the other one
+    # no action required if both are present
+    if "words" in types and "phrases" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
+    elif "phrases" in types and "words" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    else:
+        return None
+
+
 def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES):
     # Building initial query
     indices = get_indices(types)
@@ -33,14 +45,8 @@ def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES):
     if site_slug:
         search_query = search_query.query(get_site_filter_query(site_slug))
 
-    # Adding type filters
-    # If only one of the "words" or "phrases" is present, we need to filter out the other one
-    # no action required if both are present
-    if "words" in types and "phrases" not in types:
-        search_query = search_query.query(
-            ~Q("match", type=TypeOfDictionaryEntry.PHRASE)
-        )
-    elif "phrases" in types and "words" not in types:
-        search_query = search_query.query(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    types_query = get_types_query(types)
+    if types_query:
+        search_query = search_query.query(get_types_query(types))
 
     return search_query

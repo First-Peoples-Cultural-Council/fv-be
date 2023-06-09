@@ -65,7 +65,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                     OpenApiExample(
                         "words",
-                        value="words, phrases",
+                        value="words",
                         description="specifically looks for documents in the words document type.",
                     ),
                     OpenApiExample(
