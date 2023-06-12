@@ -1,19 +1,45 @@
 from elasticsearch_dsl import Q
 
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
+from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 
-def get_indices():
+def get_valid_document_types(input_types):
+    allowed_values = VALID_DOCUMENT_TYPES
+
+    if not input_types:
+        return allowed_values
+
+    values = input_types.split(",")
+    selected_values = [
+        value.strip().lower()
+        for value in values
+        if value.strip().lower() in allowed_values
+    ]
+
+    if len(selected_values) == 0:
+        return None
+
+    return selected_values
+
+
+def get_indices(types):
     """
     Returns list of indices to go through depending on the docType
     WORD|PHRASE = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
     SONG = ELASTICSEARCH_SONG_INDEX
     STORY = ELASTICSEARCH_STORY_INDEX
     """
-    list_of_indices = [ELASTICSEARCH_DICTIONARY_ENTRY_INDEX]
-    return list_of_indices
+    indices = set()
+
+    for doc_type in types:
+        if doc_type == "WORD" or doc_type == "PHRASE":
+            indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+
+    return list(indices)
 
 
 def get_cleaned_search_term(q):
@@ -22,6 +48,18 @@ def get_cleaned_search_term(q):
     case-sensitivity handled by analyzer in the search document.
     """
     return q.strip()
+
+
+def get_types_query(types):
+    # Adding type filters
+    # If only one of the "words" or "phrases" is present, we need to filter out the other one
+    # no action required if both are present
+    if "words" in types and "phrases" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
+    elif "phrases" in types and "words" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    else:
+        return None
 
 
 def get_search_term_query(search_term):
