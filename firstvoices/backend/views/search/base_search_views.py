@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
+from backend.search.utils.query_builder_utils import get_valid_document_types
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -38,12 +39,49 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 name="q",
                 description="search term",
                 required=False,
+                default="",
                 type=str,
                 examples=[
                     OpenApiExample("ball", value="ball"),
                     OpenApiExample("quick brown fox", value="quick brown fox"),
                 ],
-            )
+            ),
+            OpenApiParameter(
+                name="types",
+                description="filter by document types",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="retrieves results from all types of documents.",
+                    ),
+                    OpenApiExample(
+                        "words, phrases",
+                        value="words, phrases",
+                        description="searches for documents in both the words and phrases document types.",
+                    ),
+                    OpenApiExample(
+                        "words",
+                        value="words",
+                        description="specifically looks for documents in the words document type.",
+                    ),
+                    OpenApiExample(
+                        "words, invalid_type",
+                        value="words",
+                        description="Ignores invalid document types and returns results only "
+                        "for the valid types, such as words",
+                    ),
+                    OpenApiExample(
+                        "invalid_type",
+                        value="None",
+                        description="if no valid document types are provided, the API returns an empty"
+                        " set of results.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -57,15 +95,24 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
-        search_params = {"q": input_q, "site_slug": ""}
+        input_types_str = self.request.GET.get("types", "")
+        valid_types_list = get_valid_document_types(input_types_str)
+
+        search_params = {"q": input_q, "types": valid_types_list, "site_slug": ""}
         return search_params
 
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
 
+        # If no valid types are passed, return emtpy list as a response
+        if not search_params["types"]:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
-            q=search_params["q"], site_slug=search_params["site_slug"]
+            q=search_params["q"],
+            site_slug=search_params["site_slug"],
+            types=search_params["types"],
         )
 
         # Get search results

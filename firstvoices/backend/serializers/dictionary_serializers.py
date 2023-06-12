@@ -49,9 +49,21 @@ class TranslationSerializer(serializers.ModelSerializer):
         fields = DictionaryContentMeta.fields + ("language", "part_of_speech")
 
 
-class DictionaryEntrySummarySerializer(SiteContentLinkedTitleSerializer):
+class DictionaryEntrySummarySerializer(
+    RelatedMediaSerializerMixin, SiteContentLinkedTitleSerializer
+):
+    translations = TranslationSerializer(source="translation_set", many=True)
+
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = dictionary.DictionaryEntry
+        fields = (
+            (
+                "translations",
+                "type",
+            )
+            + RelatedMediaSerializerMixin.Meta.fields
+            + SiteContentLinkedTitleSerializer.Meta.fields
+        )
 
 
 class DictionaryEntryDetailSerializer(
