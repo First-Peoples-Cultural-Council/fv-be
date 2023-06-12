@@ -1,12 +1,32 @@
+import logging
+
+from elasticsearch_dsl import Search
+
 from backend.models.dictionary import DictionaryEntry
-from backend.search.indices.dictionary_entry_document import (
+from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ES_CONNECTION_ERROR,
+    SearchIndexEntryTypes,
 )
-from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
+from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-def get_object(objects, object_id):
+def get_object_from_index(index, document_id):
+    try:
+        s = Search(index=index)
+        response = s.query("match", document_id=document_id).execute()
+        hits = response["hits"]["hits"]
+
+        return hits[0] if hits else None
+    except ConnectionError:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id)
+        )
+
+
+def get_object_by_id(objects, object_id):
     # Function to find and return database object from list of objects
     filtered_objects = [obj for obj in objects if str(obj.id) == object_id]
 
@@ -29,7 +49,7 @@ def hydrate_objects(search_results, request):
     # Separating object IDs into lists based on their data types
     for obj in search_results:
         if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
-            dictionary_search_results_ids.append(obj["_id"])
+            dictionary_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
     dictionary_objects = list(
@@ -41,7 +61,9 @@ def hydrate_objects(search_results, request):
     for obj in search_results:
         # Handling DictionaryEntry objects
         if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
-            dictionary_entry = get_object(dictionary_objects, obj["_id"])
+            dictionary_entry = get_object_by_id(
+                dictionary_objects, obj["_source"]["document_id"]
+            )
 
             # Serializing and adding the object to complete_objects
             complete_objects.append(
