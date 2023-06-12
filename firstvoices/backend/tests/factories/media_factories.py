@@ -1,8 +1,16 @@
 import factory
 from django.conf import settings
+from embed_video.fields import EmbedVideoField
 from factory.django import DjangoModelFactory
 
-from backend.models.media import Audio, AudioSpeaker, Image, Person, Video
+from backend.models.media import (
+    Audio,
+    AudioSpeaker,
+    EmbeddedVideo,
+    Image,
+    Person,
+    Video,
+)
 from backend.tests.factories.access import SiteFactory
 
 
@@ -34,6 +42,15 @@ class VideoFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Video-%03d" % n)
     content = factory.django.FileField()
+
+
+class EmbeddedVideoFactory(DjangoModelFactory):
+    class Meta:
+        model = EmbeddedVideo
+
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Embedded-Video-%03d" % n)
+    content = EmbedVideoField("https://www.youtube.com/")
 
 
 class PersonFactory(DjangoModelFactory):
