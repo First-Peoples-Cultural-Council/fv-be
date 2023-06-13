@@ -1,7 +1,12 @@
 import factory
 import pytest
 from django.conf import settings
-from embed_video.backends import UnknownBackendException, detect_backend
+from embed_video.backends import (
+    UnknownBackendException,
+    VimeoBackend,
+    YoutubeBackend,
+    detect_backend,
+)
 from embed_video.fields import EmbedVideoField
 
 from backend.tests import factories
@@ -89,9 +94,15 @@ class TestEmbeddedVideoModel:
         except UnknownBackendException:
             assert True
 
-    @pytest.mark.parametrize("url", ["https://www.youtube.com/", "https://vimeo.com/"])
+    @pytest.mark.parametrize(
+        "url, backend_class",
+        [
+            ("https://www.youtube.com/", YoutubeBackend),
+            ("https://vimeo.com/", VimeoBackend),
+        ],
+    )
     @pytest.mark.django_db
-    def test_embeded_valid_base_site(self, url):
+    def test_embeded_valid_base_site(self, url, backend_class):
         site = factories.SiteFactory.create()
 
         try:
@@ -99,7 +110,7 @@ class TestEmbeddedVideoModel:
             embedded_video = factories.EmbeddedVideoFactory.create(
                 site=site, content=content_field
             )
-            detect_backend(embedded_video.content.verbose_name)
-            assert True
+            backend = detect_backend(embedded_video.content.verbose_name)
+            assert isinstance(backend, backend_class)
         except UnknownBackendException:
             assert False
