@@ -107,14 +107,14 @@ def get_search_term_query(search_term, domain):
     subqueries = [multi_match_query, text_search_field_match_query]
 
     subquery_domains = {
-        SearchDomains.BOTH: [
+        "both": [
             fuzzy_match_title_query,
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
         ],
-        SearchDomains.LANGUAGE: [fuzzy_match_title_query, exact_match_title_query],
-        SearchDomains.ENGLISH: [
+        "language": [fuzzy_match_title_query, exact_match_title_query],
+        "english": [
             fuzzy_match_translation_query,
             exact_match_translation_query,
         ],
