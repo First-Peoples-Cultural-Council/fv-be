@@ -9,7 +9,7 @@ from backend.search.indices.dictionary_entry_document import (
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 
-class SearchDomain(Enum):
+class SearchDomains(Enum):
     BOTH = "both"
     LANGUAGE = "language"
     ENGLISH = "english"
@@ -107,14 +107,14 @@ def get_search_term_query(search_term, domain):
     subqueries = [multi_match_query, text_search_field_match_query]
 
     subquery_domains = {
-        SearchDomain.BOTH: [
+        SearchDomains.BOTH: [
             fuzzy_match_title_query,
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
         ],
-        SearchDomain.LANGUAGE: [fuzzy_match_title_query, exact_match_title_query],
-        SearchDomain.ENGLISH: [
+        SearchDomains.LANGUAGE: [fuzzy_match_title_query, exact_match_title_query],
+        SearchDomains.ENGLISH: [
             fuzzy_match_translation_query,
             exact_match_translation_query,
         ],
@@ -157,9 +157,9 @@ def get_valid_domain(input_domain_str):
     string_lower = input_domain_str.lower()
 
     if (
-        string_lower == SearchDomain.BOTH
-        or string_lower == SearchDomain.LANGUAGE
-        or string_lower == SearchDomain.ENGLISH
+        string_lower == SearchDomains.BOTH
+        or string_lower == SearchDomains.LANGUAGE
+        or string_lower == SearchDomains.ENGLISH
     ):
         return string_lower
     else:  # if empty string is passed, or invalid option is passed
