@@ -56,7 +56,7 @@ def update_index(sender, instance, **kwargs):
                 site_slug=instance.site.slug, title=instance.title, type=instance.type
             )
         else:
-            # Create new entry if it doesnt exists
+            # Create new entry if it doesn't exist
             index_entry = DictionaryEntryDocument(
                 document_id=instance.id,
                 site_slug=instance.site.slug,
