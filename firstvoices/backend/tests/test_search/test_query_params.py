@@ -87,7 +87,7 @@ class TestQueryParams:
 
 class TestDomain:
     expected_fuzzy_match_string = (
-        "'fuzzy': {'title': {'value': 'test_query', " "'fuzziness': '2'}}"
+        "'fuzzy': {'title': {'value': 'test_query', 'fuzziness': '2'}}"
     )
     expected_exact_match_string = (
         "'match_phrase': {'title': {'query': 'test_query', 'slop': 3, 'boost': 1.1}}"
