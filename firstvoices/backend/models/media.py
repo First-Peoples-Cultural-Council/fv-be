@@ -130,8 +130,6 @@ class VideoFile(VisualFileBase):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-    # todo: set the height and width on save
-
 
 class MediaBase(AudienceMixin, BaseSiteContentModel):
     class Meta:
@@ -174,6 +172,9 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         return is_content_updated
 
     def _add_media(self):
+        """
+        Subclasses can override to handle tasks associated with adding media. E.g., generating thumbnails.
+        """
         pass
 
     def _update_media(self):
@@ -377,7 +378,7 @@ class Image(MediaBase):
         return output_img
 
     def add_image_file(self, file_name, output_img, output_size):
-        file = InMemoryUploadedFile(
+        content = InMemoryUploadedFile(
             file=output_img,
             field_name="ImageField",
             name=file_name,
@@ -387,7 +388,7 @@ class Image(MediaBase):
         )
 
         model = ImageFile(
-            content=file,
+            content=content,
             site=self.site,
             created_by=self.created_by,
             last_modified_by=self.last_modified_by,
