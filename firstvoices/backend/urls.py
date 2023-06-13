@@ -1,6 +1,6 @@
-from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+from backend.router import CustomRouter
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.custom_order_recalculate_views import (
@@ -18,7 +18,7 @@ from backend.views.user import UserViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
-ROUTER = DefaultRouter(trailing_slash=True)
+ROUTER = CustomRouter()
 ROUTER.register(r"user", UserViewSet, basename=r"user")
 ROUTER.register(r"search", BaseSearchViewSet, basename="search")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
