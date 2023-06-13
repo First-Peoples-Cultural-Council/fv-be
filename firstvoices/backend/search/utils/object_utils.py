@@ -83,3 +83,26 @@ def hydrate_objects(search_results, request):
             )
 
     return complete_objects
+
+
+def get_translation_and_part_of_speech_text(dictionary_entry_instance):
+    translation_set = dictionary_entry_instance.translation_set.all()
+    translations = []
+    part_of_speech_titles = []
+    for t in translation_set:
+        translations.append(t.text)
+        if t.part_of_speech:
+            part_of_speech_titles.append(t.part_of_speech.title)
+
+    translations_text = " ".join(translations)
+    part_of_speech_text = " ".join(part_of_speech_titles)
+
+    return translations_text, part_of_speech_text
+
+
+def get_notes_text(dictionary_entry_instance):
+    notes_set = dictionary_entry_instance.note_set.all()
+    notes_text = []
+    for note in notes_set:
+        notes_text.append(note.text)
+    return " ".join(notes_text)

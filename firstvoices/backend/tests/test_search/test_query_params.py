@@ -83,3 +83,70 @@ class TestQueryParams:
         assert expected_exact_match_translation_string in str(search_query)
         assert expected_multi_match_string in str(search_query)
         assert expected_match_full_text_search_string in str(search_query)
+
+
+class TestDomain:
+    expected_fuzzy_match_string = (
+        "'fuzzy': {'title': {'value': 'test_query', 'fuzziness': '2'}}"
+    )
+    expected_exact_match_string = (
+        "'match_phrase': {'title': {'query': 'test_query', 'slop': 3, 'boost': 1.1}}"
+    )
+    expected_fuzzy_match_translation_string = (
+        "'fuzzy': {'translation': {'value': 'test_query', 'fuzziness': '2'}}"
+    )
+    expected_exact_match_translation_string = (
+        "'match_phrase': {'translation': {'query': "
+        "'test_query', 'slop': 3, 'boost': 1.1}}"
+    )
+    expected_multi_match_string = (
+        "'multi_match': {'query': 'test_query', 'fields': ['title', "
+        "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.3}"
+    )
+    expected_match_full_text_search_string = (
+        "'match_phrase': {'full_text_search_field': {'query': 'test_query', 'boost': "
+        "1.5}}"
+    )
+
+    def test_english(self):
+        # relates to: SearchQueryTest.java - testEnglish()
+        search_query = get_search_query(q="test_query", domain="english")
+        search_query = search_query.to_dict()
+
+        # defaults to be tested once
+        assert self.expected_multi_match_string in str(search_query)
+        assert self.expected_match_full_text_search_string in str(search_query)
+
+        # should contain translation matching
+        assert self.expected_exact_match_translation_string in str(search_query)
+        assert self.expected_fuzzy_match_translation_string in str(search_query)
+
+        # should not contain title matching
+        assert self.expected_exact_match_string not in str(search_query)
+        assert self.expected_fuzzy_match_string not in str(search_query)
+
+    def test_language(self):
+        # relates to: SearchQueryTest.java - testLanguage()
+        search_query = get_search_query(q="test_query", domain="language")
+        search_query = search_query.to_dict()
+
+        # should contain title matching
+        assert self.expected_exact_match_string in str(search_query)
+        assert self.expected_fuzzy_match_string in str(search_query)
+
+        # should not contain translation matching
+        assert self.expected_exact_match_translation_string not in str(search_query)
+        assert self.expected_fuzzy_match_translation_string not in str(search_query)
+
+    def test_both(self):
+        # relates to: SearchQueryTest.java - testBoth()
+        search_query = get_search_query(q="test_query")  # default domain is "both"
+        search_query = search_query.to_dict()
+
+        # should contain title matching
+        assert self.expected_exact_match_string in str(search_query)
+        assert self.expected_fuzzy_match_string in str(search_query)
+
+        # should also contain translation matching
+        assert self.expected_exact_match_translation_string in str(search_query)
+        assert self.expected_fuzzy_match_translation_string in str(search_query)
