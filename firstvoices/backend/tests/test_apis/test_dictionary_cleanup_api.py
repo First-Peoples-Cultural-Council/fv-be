@@ -11,13 +11,12 @@ from backend.tests.test_apis.base_api_test import BaseApiTest
 
 
 class TestDictionaryCleanupPreview(BaseApiTest):
-    API_DETAIL_VIEW = "api:site-detail"
+    API_DETAIL_VIEW = "api:dictionary-cleanup-preview-list"
     SUCCESS_MESSAGE = {"message": "Recalculation preview has been queued."}
 
-    def get_detail_endpoint(self, key):
-        return (
-            reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
-            + "dictionary-cleanup/preview/"
+    def get_detail_endpoint(self, site_slug):
+        return reverse(
+            self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[site_slug]
         )
 
     def get_expected_response(self, site):
@@ -178,13 +177,8 @@ class TestDictionaryCleanupPreview(BaseApiTest):
 
 
 class TestDictionaryCleanup(TestDictionaryCleanupPreview):
+    API_DETAIL_VIEW = "api:dictionary-cleanup-list"
     SUCCESS_MESSAGE = {"message": "Recalculation has been queued."}
-
-    def get_detail_endpoint(self, key):
-        return (
-            reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
-            + "dictionary-cleanup/"
-        )
 
     def get_expected_response(self, site):
         response = super().get_expected_response(site=site)
