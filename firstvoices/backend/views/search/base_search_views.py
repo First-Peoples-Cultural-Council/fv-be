@@ -59,29 +59,29 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "",
                         value="",
-                        description="retrieves results from all types of documents.",
+                        description="Retrieves results from all types of documents.",
                     ),
                     OpenApiExample(
                         "words, phrases",
                         value="words, phrases",
-                        description="searches for documents in both the words and phrases document types.",
+                        description="Searches for documents in both the Words and Phrases document types.",
                     ),
                     OpenApiExample(
                         "words",
                         value="words",
-                        description="specifically looks for documents in the words document type.",
+                        description="Specifically looks for documents in the Words document type.",
                     ),
                     OpenApiExample(
                         "words, invalid_type",
                         value="words",
-                        description="Ignores invalid document types and returns results only "
-                        "for the valid types, such as words",
+                        description="Ignores invalid document types and returns results "
+                        "only for the valid types, such as words.",
                     ),
                     OpenApiExample(
                         "invalid_type",
                         value="None",
-                        description="if no valid document types are provided, the API returns an empty"
-                        " set of results.",
+                        description="If no valid document types are provided, "
+                        "the API returns an empty set of results.",
                     ),
                 ],
             ),
@@ -95,17 +95,17 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "both",
                         value="both",
-                        description="Search in both language and english domain.",
+                        description="Searches in both the Language and English domains.",
                     ),
                     OpenApiExample(
                         "english",
                         value="english",
-                        description="Search focussed on translations.",
+                        description="Performs a search focused on translations.",
                     ),
                     OpenApiExample(
                         "language",
                         value="language",
-                        description="Search focussed on titles/language.",
+                        description="Performs a search focused on titles and language.",
                     ),
                 ],
             ),
