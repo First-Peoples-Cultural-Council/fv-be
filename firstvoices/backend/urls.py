@@ -36,7 +36,7 @@ sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentr
 sites_router.register(
     r"dictionary-cleanup/preview",
     CustomOrderRecalculatePreviewView,
-    basename="dictionary-cleanup/preview",
+    basename="dictionary-cleanup-preview",
 )
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(
