@@ -33,7 +33,7 @@ class Person(BaseSiteContentModel):
     name = models.CharField(max_length=200)
 
     # from FVContributor dc:description
-    bio = models.CharField(max_length=500)
+    bio = models.CharField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} ({self.site})"
