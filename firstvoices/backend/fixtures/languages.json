@@ -1,0 +1,308 @@
+[
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Anishinaabemowin",
+      "alternate_names": "Saulteau, Saulteaux, Ojibwe, Ojibway, Ojibwa, Plains Ojibway",
+      "language_family": ["Algonquian"],
+      "language_code": "oji"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "nēhiyawēwin",
+      "alternate_names": "Nehiyawewin, ᓀᐦᐃᔭᐍᐏᐣ, Plains Cree, Cree",
+      "language_family": ["Algonquian"],
+      "language_code": "crk"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Dakelh",
+      "alternate_names": "Dakeł, Carrier, ᑕᗸᒡ, Taculli, Takulie",
+      "language_family": ["Na-Dene"],
+      "language_code": "crx, caf"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Dane-Ẕaa",
+      "alternate_names": "Dane-zaa Ẕáágéʔ, Beaver, Dunne-za, ᑕᓀ ᖚ",
+      "language_family": ["Na-Dene"],
+      "language_code": "bea"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Danezāgé’",
+      "alternate_names": "Kaska, Kaska Dena",
+      "language_family": ["Na-Dene"],
+      "language_code": "kkz"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Dene K’e",
+      "alternate_names": "Slavey, Slave, Dene K’eh, Dene, Dené, Dené Tha’, Dené Dháh, Dene Zhatıé, Acha'otinne",
+      "language_family": ["Na-Dene"],
+      "language_code": "den"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Lingít",
+      "alternate_names": "Tlingit",
+      "language_family": ["Na-Dene"],
+      "language_code": "tli"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Nedut’en / Witsuwit’en",
+      "alternate_names": "Nedut’en, Nadot’en, Witsuwit’en, Babine, Nat’oot’en, Wet'suwet'en",
+      "language_family": ["Na-Dene"],
+      "language_code": "bcr"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Southern Tutchone",
+      "alternate_names": "",
+      "language_family": ["Na-Dene"],
+      "language_code": "tce"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Tāłtān",
+      "alternate_names": "Tahltan, Didene k’eh, Nahanni",
+      "language_family": ["Na-Dene"],
+      "language_code": "tht"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Tse’khene",
+      "alternate_names": "Sekani, Tsek’ene, Tsek’ehne, Sékanais",
+      "language_family": ["Na-Dene"],
+      "language_code": "sek"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Tsilhqot’in",
+      "alternate_names": "Chilcotin, Tsilhqut’in, Tzilkotin",
+      "language_family": ["Na-Dene"],
+      "language_code": "clc"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Ktunaxa",
+      "alternate_names": "Kootenay, Kootenai, Kutenai",
+      "language_family": ["Ktunaxa"],
+      "language_code": "kut"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Éy7á7juuthem",
+      "alternate_names": "Comox, Island Comox, Mainland Comox, Sliammon, Comox-Sliammon",
+      "language_family": ["Salishan"],
+      "language_code": "coo"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Hul’q’umi’num’ / Halq’eméylem / hən̓q̓əmin̓əm",
+      "alternate_names": "Hul’q’umi’num’, Halq’eméylem, hən̓q̓əmin̓əm, Halkomelem, Island Hul’q’umi’num’, Upriver Halq’eméylem, Downriver hən̓q̓əmin̓əm",
+      "language_family": ["Salishan"],
+      "language_code": "hur"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Nłeʔkepmxcín",
+      "alternate_names": "Nlaka’pamux, Nlha7kápmx, Thompson Salish",
+      "language_family": ["Salishan"],
+      "language_code": "thp"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Nsyilxcən",
+      "alternate_names": "Okanagan, Colville-Okanagan",
+      "language_family": ["Salishan"],
+      "language_code": "oka"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Nuxalk",
+      "alternate_names": "Bella Coola",
+      "language_family": ["Salishan"],
+      "language_code": "blc"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Secwepemctsín",
+      "alternate_names": "Shuswap, Secwepemc",
+      "language_family": ["Salishan"],
+      "language_code": "shs"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "SENĆOŦEN / Malchosen / Lekwungen / Semiahmoo / T’Sou-ke",
+      "alternate_names": "SENĆOŦEN, Malchosen, Lekwungen, Semiahmoo, T’Sou-ke, Straits Salish, Northern Straits Salish, Saanich, Tah-tu-lo, Sooke, Songhees",
+      "language_family": ["Salishan"],
+      "language_code": "str"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "she shashishalhem",
+      "alternate_names": "sháshishálem, Sechelt",
+      "language_family": ["Salishan"],
+      "language_code": "sec"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Sḵwx̱wú7mesh sníchim",
+      "alternate_names": "Squamish",
+      "language_family": ["Salishan"],
+      "language_code": "squ"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "St̓át̓imcets",
+      "alternate_names": "Sƛ̓aƛ̓imxǝc, Ucwalmícwts, Lillooet, St̓át̓imc, Statimc, Stl’atl’imx, Stl’atl’imc, Sƛ’aƛ’imxǝc, Stlatliumh, Slatlemuk",
+      "language_family": ["Salishan"],
+      "language_code": "lil"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Gitsenimx̱",
+      "alternate_names": "Gitxsanimx̱, Gitxsanimax̱, Gitksan, Gitxsan, Gitxsen",
+      "language_family": ["Tsimshianic"],
+      "language_code": "git"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Nisg̱a’a",
+      "alternate_names": "Niska, Nass, Nisga’a, Nishga, Niska’, Nisk’a’",
+      "language_family": ["Tsimshianic"],
+      "language_code": "ncg"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Sgüüx̣s",
+      "alternate_names": "Southern Tsimshian, Klemtu, Ski:xs",
+      "language_family": ["Tsimshianic"],
+      "language_code": "tsi-sou"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Sm'algyax",
+      "alternate_names": "Tsimshian, Coast Tsimshian",
+      "language_family": ["Tsimshianic"],
+      "language_code": "tsi"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "diitiidʔaaʔtx̣",
+      "alternate_names": "Diidiitidq, Ditidaht, Nitinaht, Nitinat, Ditidaht-Pacheedaht",
+      "language_family": ["Wakashan"],
+      "language_code": "dtd"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Haíłzaqvḷa",
+      "alternate_names": "Heiltsuk, Xai'xais, Bella Bella, Híɫzaqvḷa, Hailhzaqvla, Haíhlzaqvḷa, Heiltsukv, Heiltsukvla",
+      "language_family": ["Wakashan"],
+      "language_code": "hei"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "Kwak̕wala",
+      "alternate_names": "Kwakiutl, Kwakwaka’wakw",
+      "language_family": ["Wakashan"],
+      "language_code": "kwk"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "nuučaan̓uɫ",
+      "alternate_names": "Nuu-chah-nulth, Nootka",
+      "language_family": ["Wakashan"],
+      "language_code": "nuk"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "’Wuik̓ala",
+      "alternate_names": "Oowekyala, Wuikyala, ’Uik̓ala, Oowekyala, Oweek’ala, Owekeeno",
+      "language_family": ["Wakashan"],
+      "language_code": "hei-wui"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "X̄enaksialak̓ala / X̄a’islak̓ala",
+      "alternate_names": "Haisla, Kitimat, Kitlope, Northern Kwakiutl",
+      "language_family": ["Wakashan"],
+      "language_code": "has"
+    }
+  },
+  {
+    "model": "backend.language",
+    "fields": {
+      "title": "X̱aad Kil / X̱aaydaa Kil",
+      "alternate_names": "Haida",
+      "language_family": ["Haida"],
+      "language_code": "hai"
+    }
+  }
+]

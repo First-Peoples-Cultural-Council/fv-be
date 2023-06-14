@@ -1,0 +1,51 @@
+[
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Salishan",
+      "alternate_names": "Salish"
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Wakashan",
+      "alternate_names": ""
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Na-Dene",
+      "alternate_names": "Athabaskan-Eyak-Tlingit, Athabascan-Eyak-Tlingit, Na-Dené, Dene, Athabaskan, Athabaskan, Athapaskan, Athapascan"
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Tsimshianic",
+      "alternate_names": ""
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Algonquian",
+      "alternate_names": "Algonkian"
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Ktunaxa",
+      "alternate_names": "Kootenay, Kootenai, Kutenai"
+    }
+  },
+  {
+    "model": "backend.languagefamily",
+    "fields": {
+      "title": "Haida",
+      "alternate_names": "X̱aad Kil, X̱aayda Kil"
+    }
+  }
+]
