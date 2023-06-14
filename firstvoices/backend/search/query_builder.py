@@ -15,18 +15,18 @@ def get_search_object(indices):
     return s
 
 
-def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES):
+def get_search_query(q=None, site_slug=None, types=VALID_DOCUMENT_TYPES, domain="both"):
     # Building initial query
     indices = get_indices(types)
     search_object = get_search_object(indices)
     search_query = search_object.query()
 
-    # Adding search term
+    # Adding search term and domain filter
     if q:
         cleaned_search_term = get_cleaned_search_term(q)
         if cleaned_search_term:
             search_query = search_query.query(
-                get_search_term_query(cleaned_search_term)
+                get_search_term_query(cleaned_search_term, domain)
             )
 
     # Add site filter if parameter provided in url

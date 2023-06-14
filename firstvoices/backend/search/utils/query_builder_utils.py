@@ -1,3 +1,5 @@
+from enum import Enum
+
 from elasticsearch_dsl import Q
 
 from backend.models.dictionary import TypeOfDictionaryEntry
@@ -7,23 +9,10 @@ from backend.search.indices.dictionary_entry_document import (
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 
-def get_valid_document_types(input_types):
-    allowed_values = VALID_DOCUMENT_TYPES
-
-    if not input_types:
-        return allowed_values
-
-    values = input_types.split(",")
-    selected_values = [
-        value.strip().lower()
-        for value in values
-        if value.strip().lower() in allowed_values
-    ]
-
-    if len(selected_values) == 0:
-        return None
-
-    return selected_values
+class SearchDomains(Enum):
+    BOTH = "both"
+    LANGUAGE = "language"
+    ENGLISH = "english"
 
 
 def get_indices(types):
@@ -50,6 +39,7 @@ def get_cleaned_search_term(q):
     return q.strip()
 
 
+# sub-queries utils
 def get_types_query(types):
     # Adding type filters
     # If only one of the "words" or "phrases" is present, we need to filter out the other one
@@ -62,7 +52,7 @@ def get_types_query(types):
         return None
 
 
-def get_search_term_query(search_term):
+def get_search_term_query(search_term, domain):
     # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
     fuzzy_match_title_query = Q(
         {
@@ -113,19 +103,64 @@ def get_search_term_query(search_term):
             }
         }
     )
-    return Q(
-        "bool",
-        should=[
+
+    subqueries = [multi_match_query, text_search_field_match_query]
+
+    subquery_domains = {
+        "both": [
             fuzzy_match_title_query,
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
-            multi_match_query,
-            text_search_field_match_query,
         ],
+        "language": [fuzzy_match_title_query, exact_match_title_query],
+        "english": [
+            fuzzy_match_translation_query,
+            exact_match_translation_query,
+        ],
+    }
+
+    subqueries += subquery_domains.get(domain, [])
+
+    return Q(
+        "bool",
+        should=subqueries,
         minimum_should_match=1,
     )
 
 
 def get_site_filter_query(site_slug):
     return Q("bool", filter=[Q("term", site_slug=site_slug)])
+
+
+# Search params validation
+def get_valid_document_types(input_types):
+    allowed_values = VALID_DOCUMENT_TYPES
+
+    if not input_types:
+        return allowed_values
+
+    values = input_types.split(",")
+    selected_values = [
+        value.strip().lower()
+        for value in values
+        if value.strip().lower() in allowed_values
+    ]
+
+    if len(selected_values) == 0:
+        return None
+
+    return selected_values
+
+
+def get_valid_domain(input_domain_str):
+    string_lower = input_domain_str.lower()
+
+    if (
+        string_lower == SearchDomains.BOTH
+        or string_lower == SearchDomains.LANGUAGE
+        or string_lower == SearchDomains.ENGLISH
+    ):
+        return string_lower
+    else:  # if empty string is passed, or invalid option is passed
+        return "both"
