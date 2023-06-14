@@ -1,14 +1,16 @@
+import datetime
+import posixpath
 import sys
 from io import BytesIO
 
+import magic
 from django.conf import settings
-from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
 from django.utils.translation import gettext as _
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
 
-import backend.permissions.predicates.edit
 from backend.permissions import predicates
 
 from .base import AudienceMixin, BaseSiteContentModel
@@ -22,52 +24,50 @@ class Person(BaseSiteContentModel):
         verbose_name_plural = _("People")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": backend.permissions.predicates.edit.can_add_core_uncontrolled_data,
-            "change": backend.permissions.predicates.edit.can_edit_core_uncontrolled_data,
-            "delete": backend.permissions.predicates.edit.can_edit_core_uncontrolled_data,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
     # from dc:title
     name = models.CharField(max_length=200)
 
     # from FVContributor dc:description
-    bio = models.CharField(max_length=500)
+    bio = models.CharField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} ({self.site})"
 
 
 def media_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT/<site slug>/<filename>
-    return f"{instance.site.slug}/{filename}"
+    # file will be uploaded to MEDIA_ROOT/<site slug>/<datestamp>/<filename>
+    site_slug = instance.site.slug
+    dirname = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+    filename = posixpath.join(site_slug, dirname, filename)
+    return filename
 
 
-class MediaBase(AudienceMixin, BaseSiteContentModel):
+class FileBase(BaseSiteContentModel):
     class Meta:
         abstract = True
 
-    # see specific media models for migration info
-    acknowledgement = models.TextField(max_length=500, blank=True)
-
-    # from dc:title
-    title = models.CharField(max_length=200)
-
-    # from dc:description
-    description = models.CharField(max_length=500, blank=True)
-
-    # exclude_from_games from fv-word:available_in_games, fvaudience:games
-
-    # exclude_from_kids from fvaudience:children fvm:child_focused
-
-    # from fvm:shared
-    is_shared = models.BooleanField(default=False)
-
-    # from fvm:content
     content = models.FileField(upload_to=media_directory_path)
+    mimetype = models.CharField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.content.name} ({self.site})"
+
+    def save(self, **kwargs):
+        """
+        Sets mimetype based on the file contents
+        """
+        with self.content.file.open(mode="rb") as fb:
+            self.mimetype = magic.from_buffer(fb.read(2048), mime=True)
+            super().save(**kwargs)
 
     def delete(self, using=None, keep_parents=False):
         """
-        Deletes the associated media files when the instance is deleted, to prevent orphans.
+        Deletes the associated files when the instance is deleted, to prevent orphans.
         """
         result = super().delete(using, keep_parents)
         try:
@@ -81,6 +81,140 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         return result
 
 
+class File(FileBase):
+    class Meta:
+        verbose_name = _("File")
+        verbose_name_plural = _("Files")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
+        }
+
+
+class VisualFileBase(FileBase):
+    """A File model with additional height and width properties"""
+
+    class Meta:
+        abstract = True
+
+    height = models.IntegerField(blank=True, null=True)
+    width = models.IntegerField(blank=True, null=True)
+
+
+class ImageFile(VisualFileBase):
+    content = models.ImageField(
+        upload_to=media_directory_path, height_field="height", width_field="width"
+    )
+
+    class Meta:
+        verbose_name = _("Image File")
+        verbose_name_plural = _("Image Files")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
+        }
+
+
+class VideoFile(VisualFileBase):
+    class Meta:
+        verbose_name = _("Video File")
+        verbose_name_plural = _("Video Files")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
+        }
+
+
+class MediaBase(AudienceMixin, BaseSiteContentModel):
+    class Meta:
+        abstract = True
+
+    # from fvm:content
+    original = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+
+    # from dc:title
+    title = models.CharField(max_length=200)
+
+    # from dc:description
+    description = models.CharField(max_length=500, blank=True)
+
+    # see specific media models for migration info
+    acknowledgement = models.TextField(max_length=500, blank=True)
+
+    # exclude_from_games from fv-word:available_in_games, fvaudience:games
+
+    # exclude_from_kids from fvaudience:children fvm:child_focused
+
+    # from fvm:shared
+    is_shared = models.BooleanField(default=False)
+
+    def save(self, **kwargs):
+        if self._state.adding:
+            self._add_media()
+
+        elif self._is_updating_original():
+            self._update_media()
+
+        super().save(**kwargs)
+
+    def _is_updating_original(self):
+        if self._state.adding:
+            return False
+
+        old_instance = self._get_saved_instance()
+        is_content_updated = self.original.pk != old_instance.original.pk
+        return is_content_updated
+
+    def _add_media(self):
+        """
+        Subclasses can override to handle tasks associated with adding media. E.g., generating thumbnails.
+        """
+        pass
+
+    def _update_media(self):
+        self._delete_old_media()
+
+    def _delete_old_media(self):
+        """
+        Deletes the old file model when the "original" field is updated, to prevent orphans.
+        """
+        old_instance = self._get_saved_instance()
+        try:
+            self._delete_related_media(old_instance)
+        except Exception as e:
+            # this will only happen for connection or permission errors, so it's a warning
+            self.logger.warn(
+                f"Failed to delete associated file model when updating [{str(self)}]. Error: {e} "
+            )
+
+    def _get_saved_instance(self):
+        return self.__class__.objects.get(pk=self.pk)
+
+    def _delete_related_media(self, instance):
+        instance.original.delete()
+
+    def delete(self, using=None, keep_parents=False):
+        """
+        Deletes the associated file model when the instance is deleted, to prevent orphans.
+        """
+        result = super().delete(using, keep_parents)
+        try:
+            self._delete_related_media(self)
+        except Exception as e:
+            # this will only happen for connection or permission errors, so it's a warning
+            self.logger.warn(
+                f"Failed to delete associated file model when deleting [{str(self)}]. Error: {e} "
+            )
+
+        return result
+
+
 class Audio(MediaBase):
     # from fvaudio
 
@@ -89,12 +223,13 @@ class Audio(MediaBase):
         verbose_name_plural = _("Audio")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
     # acknowledgment from fvm:recorder
+
     # from fvm:source
     speakers = models.ManyToManyField(
         Person, through="AudioSpeaker", related_name="audio_set", blank=True
@@ -110,9 +245,9 @@ class AudioSpeaker(BaseSiteContentModel):
         verbose_name_plural = _("Audio Speakers")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
     audio = models.ForeignKey(
@@ -160,99 +295,109 @@ class Image(MediaBase):
         verbose_name_plural = _("Images")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
     # acknowledgement from fvm:recorder, fvm:source
 
     # from fvm:content
-    content = models.ImageField(upload_to=media_directory_path)
+    original = models.OneToOneField(
+        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
+    )
 
-    thumbnail = models.ImageField(upload_to=media_directory_path, blank=True)
-    small = models.ImageField(upload_to=media_directory_path, blank=True)
-    medium = models.ImageField(upload_to=media_directory_path, blank=True)
+    thumbnail = models.OneToOneField(
+        ImageFile,
+        related_name="image_thumbnail",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    small = models.OneToOneField(
+        ImageFile,
+        related_name="image_small",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    medium = models.OneToOneField(
+        ImageFile,
+        related_name="image_medium",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return f"{self.title} / {self.site} (Image)"
+
+    def _add_media(self):
+        super()._add_media()
+        self.generate_resized_images()
+
+    def _update_media(self):
+        super()._update_media()
+        self.generate_resized_images()
+
+    def _delete_related_media(self, instance):
+        """
+        Deletes additional thumbnail models.
+        """
+        super()._delete_related_media(instance)
+        instance.thumbnail.delete()
+        instance.small.delete()
+        instance.medium.delete()
 
     def generate_resized_images(self):
         """
         A function to generate a set of resized images when an Image model is saved
         """
         for size_name, max_size in settings.IMAGE_SIZES.items():
-            output_img = BytesIO()
+            original = self.original.content
+            image_name = original.name.split(".")[0]
+            thumbnail_name = f"{image_name}_{size_name}.jpg"
 
-            img = PILImage.open(self.content)
-            image_name = self.content.name.split(".")[0]
+            with PILImage.open(original.file.open(mode="rb")) as img:
+                output_size = get_output_image_size(max_size, img.width, img.height)
+                output_img = self.create_thumbnail(img, output_size)
 
-            output_size = get_output_image_size(max_size, img.width, img.height)
-
-            img.thumbnail(output_size)
-            # Remove transparency values if they exist so that the image can be converted to JPEG.
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            img.save(output_img, format="JPEG", quality=90)
-
-            # Set the model field to the newly generated image.
-            setattr(
-                self,
-                size_name,
-                InMemoryUploadedFile(
-                    output_img,
-                    "ImageField",
-                    f"{image_name}_{size_name}.jpg",
-                    "image/jpeg",
-                    sys.getsizeof(output_img),
-                    None,
-                ),
+            image_file_model = self.add_image_file(
+                thumbnail_name, output_img, output_size
             )
 
-    def save(self, **kwargs):
-        # Boolean which returns True if the image is new, otherwise false.
-        is_new = self._state.adding is True
-        # Boolean which returns True if the image file has been updated, otherwise false (returns true for a new image).
-        content_updated = hasattr(self.content, "file") and isinstance(
-            self.content.file, UploadedFile
+            setattr(self, size_name, image_file_model)
+
+    def create_thumbnail(self, img, output_size):
+        output_img = BytesIO()
+        img.thumbnail(output_size)
+        # Remove transparency values if they exist so that the image can be converted to JPEG.
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        img.save(output_img, format="JPEG", quality=90)
+        return output_img
+
+    def add_image_file(self, file_name, output_img, output_size):
+        content = InMemoryUploadedFile(
+            file=output_img,
+            field_name="ImageField",
+            name=file_name,
+            content_type="image/jpeg",
+            size=sys.getsizeof(output_img),
+            charset=None,
         )
 
-        # If the main image file was updated then delete the old image files from AWS
-        if content_updated and not is_new:
-            try:
-                old_image = Image.objects.get(pk=self.pk)
-                old_image.content.delete(save=False)
-                self.thumbnail.delete(save=False)
-                self.small.delete(save=False)
-                self.medium.delete(save=False)
-            except Exception as e:
-                # this will only happen for connection or permission errors, so it's a warning
-                self.logger.warn(
-                    f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
-                )
+        model = ImageFile(
+            content=content,
+            site=self.site,
+            created_by=self.created_by,
+            last_modified_by=self.last_modified_by,
+            height=output_size[1],
+            width=output_size[0],
+        )
+        model.save()
 
-        # If the image is new or the file has been updated then generate new resized images
-        if is_new or content_updated:
-            self.generate_resized_images()
-
-        super().save()
-
-    def delete(self, using=None, keep_parents=False):
-        """
-        Deletes the associated media files when the instance is deleted, to prevent orphans.
-        """
-        result = super().delete(using, keep_parents)
-        try:
-            self.thumbnail.delete(save=False)
-            self.small.delete(save=False)
-            self.medium.delete(save=False)
-        except Exception as e:
-            # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
-                f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
-            )
-
-        return result
+        return model
 
 
 class Video(MediaBase):
@@ -263,10 +408,15 @@ class Video(MediaBase):
         verbose_name_plural = _("Videos")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
         }
+
+    # from fvm:content
+    original = models.OneToOneField(
+        VideoFile, related_name="video", null=True, on_delete=models.SET_NULL
+    )
 
     # acknowledgement from fvm:recorder, fvm:source
 

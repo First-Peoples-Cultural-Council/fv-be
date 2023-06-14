@@ -75,6 +75,7 @@ python-crontab==2.7.1
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 python-engineio==3.14.2
+python-magic==0.4.27
 python-socketio==4.6.1
 pytz==2023.3
 PyYAML==6.0
