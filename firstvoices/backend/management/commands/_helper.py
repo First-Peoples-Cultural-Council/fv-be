@@ -12,8 +12,6 @@ from backend.search.utils.object_utils import (
     get_translation_and_part_of_speech_text,
 )
 
-ENTRIES_PER_PAGE = 100
-
 
 def rebuild_index(index, index_document):
     es = connections.get_connection()
