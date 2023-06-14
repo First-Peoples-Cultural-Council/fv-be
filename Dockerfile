@@ -7,6 +7,7 @@ ENV DEBUG_DISABLE=True
 WORKDIR /app
 RUN apk add build-base
 RUN apk add libffi-dev
+RUN apk add libmagic
 RUN pip3 install gunicorn
 
 COPY requirements.txt /app
@@ -28,4 +29,3 @@ COPY --from=static-collector /app/firstvoices/static /srv
 FROM django-common as django-runtime
 EXPOSE 8000
 CMD ["gunicorn"  , "-b", "0.0.0.0:8000", "firstvoices.wsgi:application"]
-

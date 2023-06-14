@@ -4,7 +4,7 @@ asgiref==3.7.2
 async-timeout==4.0.2
 attrs==23.1.0
 billiard==3.6.4.0
-boto3==1.26.152
+boto3==1.26.153
 botocore>=1.29.139
 celery==5.2.7
 certifi==2023.5.7
@@ -19,8 +19,9 @@ cron-descriptor==1.4.0
 cryptography==41.0.1
 Django==4.2.2
 django-celery-beat==2.5.0
-django-cors-headers==4.0.0
+django-cors-headers==4.1.0
 django-debug-toolbar==4.1.0
+django-embed-video==1.4.8
 django-import-export==3.2.0
 django-storages==1.13.2
 django-timezone-field==5.0
@@ -74,6 +75,7 @@ python-crontab==2.7.1
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 python-engineio==3.14.2
+python-magic==0.4.27
 python-socketio==4.6.1
 pytz==2023.3
 PyYAML==6.0

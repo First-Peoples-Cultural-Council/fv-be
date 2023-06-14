@@ -53,7 +53,7 @@ class RelatedMediaTestMixin:
         assert response_data["relatedAudio"][0] == {
             "id": str(audio.id),
             "title": audio.title,
-            "content": f"http://testserver{audio.content.url}",
+            "content": f"http://testserver{audio.original.content.url}",
             "speakers": [
                 {
                     "url": "http://testserver"
@@ -93,5 +93,5 @@ class RelatedMediaTestMixin:
         assert response_data[media_key][0] == {
             "id": str(media_instance.id),
             "title": media_instance.title,
-            "content": f"http://testserver{media_instance.content.url}",
+            "content": f"http://testserver{media_instance.original.content.url}",
         }
