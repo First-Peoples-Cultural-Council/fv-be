@@ -1,7 +1,16 @@
 from django.contrib import admin
+from django.utils.html import format_html
+from embed_video.admin import AdminVideoMixin
 
 from backend.admin import BaseSiteContentAdmin
-from backend.models.media import Audio, AudioSpeaker, Image, Person, Video
+from backend.models.media import (
+    Audio,
+    AudioSpeaker,
+    EmbeddedVideo,
+    Image,
+    Person,
+    Video,
+)
 
 
 @admin.register(Video)
@@ -33,6 +42,26 @@ class ImageAdmin(BaseSiteContentAdmin):
     )
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
+
+
+@admin.register(EmbeddedVideo)
+class EmbeddedVideoAdmin(BaseSiteContentAdmin, AdminVideoMixin):
+    fields = (
+        "site",
+        "title",
+        "content",
+    )
+    list_display = (
+        "title",
+        "content_url",
+    ) + BaseSiteContentAdmin.list_display
+    search_fields = (
+        "title",
+        "content",
+    )
+
+    def content_url(self, obj):
+        return format_html("<a href='{url}'>{url}</a>", url=obj.content)
 
 
 @admin.register(AudioSpeaker)

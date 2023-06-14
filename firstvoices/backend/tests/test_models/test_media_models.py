@@ -1,6 +1,13 @@
 import factory
 import pytest
 from django.conf import settings
+from embed_video.backends import (
+    UnknownBackendException,
+    VimeoBackend,
+    YoutubeBackend,
+    detect_backend,
+)
+from embed_video.fields import EmbedVideoField
 
 from backend.tests import factories
 
@@ -66,3 +73,44 @@ class TestImageModel:
         assert f"_{image_size}" in generated_image_two.path
         assert generated_image_two.width == settings.IMAGE_SIZES[image_size] / 2
         assert generated_image_two.height == settings.IMAGE_SIZES[image_size]
+
+
+class TestEmbeddedVideoModel:
+    @pytest.mark.parametrize(
+        "url",
+        ["", "not valid", "https://www.invalid-url.com/", "https://soundcloud.com/"],
+    )
+    @pytest.mark.django_db
+    def test_embeded_invalid_base_site(self, url):
+        site = factories.SiteFactory.create()
+
+        try:
+            content_field = EmbedVideoField(url)
+            embedded_video = factories.EmbeddedVideoFactory.create(
+                site=site, content=content_field
+            )
+            detect_backend(embedded_video.content.verbose_name)
+            assert False
+        except UnknownBackendException:
+            assert True
+
+    @pytest.mark.parametrize(
+        "url, backend_class",
+        [
+            ("https://www.youtube.com/", YoutubeBackend),
+            ("https://vimeo.com/", VimeoBackend),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_embeded_valid_base_site(self, url, backend_class):
+        site = factories.SiteFactory.create()
+
+        try:
+            content_field = EmbedVideoField(url)
+            embedded_video = factories.EmbeddedVideoFactory.create(
+                site=site, content=content_field
+            )
+            backend = detect_backend(embedded_video.content.verbose_name)
+            assert isinstance(backend, backend_class)
+        except UnknownBackendException:
+            assert False

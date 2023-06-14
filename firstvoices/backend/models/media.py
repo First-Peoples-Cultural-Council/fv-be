@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
 from django.db import models
 from django.utils.translation import gettext as _
+from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
 
 import backend.permissions.predicates.edit
@@ -271,6 +272,23 @@ class Video(MediaBase):
 
     def __str__(self):
         return f"{self.title} / {self.site} (Video)"
+
+
+class EmbeddedVideo(MediaBase):
+    class Meta:
+        verbose_name = _("Embedded Video")
+        verbose_name_plural = _("Embedded Videos")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_superadmin,  # permissions will change when we add a write API
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
+    content = EmbedVideoField()
+
+    def __str__(self):
+        return f"{self.title} / {self.site} (Embedded Video)"
 
 
 class RelatedMediaMixin(models.Model):
