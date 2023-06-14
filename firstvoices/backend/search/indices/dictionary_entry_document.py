@@ -12,7 +12,11 @@ from backend.search.utils.constants import (
     ES_NOT_FOUND_ERROR,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.object_utils import get_object_from_index
+from backend.search.utils.object_utils import (
+    get_notes_text,
+    get_object_from_index,
+    get_translation_and_part_of_speech_text,
+)
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG, ELASTICSEARCH_LOGGER
 
 # Defining index and settings
@@ -49,11 +53,22 @@ def update_index(sender, instance, **kwargs):
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id
         )
+        (
+            translations_text,
+            part_of_speech_text,
+        ) = get_translation_and_part_of_speech_text(instance)
+        notes_text = get_notes_text(instance)
+
         if existing_entry:
             # Check if object is already indexed, then update
             index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
             index_entry.update(
-                site_slug=instance.site.slug, title=instance.title, type=instance.type
+                site_slug=instance.site.slug,
+                title=instance.title,
+                type=instance.type,
+                translation=translations_text,
+                part_of_speech=part_of_speech_text,
+                note=notes_text,
             )
         else:
             # Create new entry if it doesnt exists
@@ -62,6 +77,9 @@ def update_index(sender, instance, **kwargs):
                 site_slug=instance.site.slug,
                 title=instance.title,
                 type=instance.type,
+                translation=translations_text,
+                part_of_speech=part_of_speech_text,
+                note=notes_text,
             )
             index_entry.save()
     except ConnectionError:
@@ -94,15 +112,10 @@ def delete_from_index(sender, instance, **kwargs):
 def update_translation(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
-    translation_set = dictionary_entry.translation_set.all()
 
-    translations_text = []
-    part_of_speech_titles = []
-
-    for t in translation_set:
-        translations_text.append(t.text)
-        if t.part_of_speech:
-            part_of_speech_titles.append(t.part_of_speech.title)
+    translations_text, part_of_speech_text = get_translation_and_part_of_speech_text(
+        dictionary_entry
+    )
 
     try:
         existing_entry = get_object_from_index(
@@ -113,8 +126,8 @@ def update_translation(sender, instance, **kwargs):
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
         dictionary_entry_doc.update(
-            translation=" ".join(translations_text),
-            part_of_speech=" ".join(part_of_speech_titles),
+            translation=translations_text,
+            part_of_speech=part_of_speech_text,
         )
     except ConnectionError:
         logger.warning(
@@ -137,12 +150,7 @@ def update_translation(sender, instance, **kwargs):
 def update_notes(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
-    notes_set = dictionary_entry.note_set.all()
-
-    notes_text = []
-
-    for note in notes_set:
-        notes_text.append(note.text)
+    notes_text = get_notes_text(dictionary_entry)
 
     try:
         existing_entry = get_object_from_index(
@@ -152,7 +160,7 @@ def update_notes(sender, instance, **kwargs):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(note=" ".join(notes_text))
+        dictionary_entry_doc.update(note=notes_text)
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)

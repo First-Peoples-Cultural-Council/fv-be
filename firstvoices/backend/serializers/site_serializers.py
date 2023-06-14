@@ -83,7 +83,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
         return self.get_site_content_link(site, "api:dictionary-cleanup-list")
 
     def get_dictionary_cleanup_preview(self, site):
-        return self.get_site_content_link(site, "api:dictionary-cleanup/preview-list")
+        return self.get_site_content_link(site, "api:dictionary-cleanup-preview-list")
 
     def get_categories(self, site):
         return self.get_site_content_link(site, "api:category-list")

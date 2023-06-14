@@ -13,7 +13,10 @@ from rest_framework.response import Response
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
-from backend.search.utils.query_builder_utils import get_valid_document_types
+from backend.search.utils.query_builder_utils import (
+    get_valid_document_types,
+    get_valid_domain,
+)
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -56,29 +59,53 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "",
                         value="",
-                        description="retrieves results from all types of documents.",
+                        description="Retrieves results from all types of documents.",
                     ),
                     OpenApiExample(
                         "words, phrases",
                         value="words, phrases",
-                        description="searches for documents in both the words and phrases document types.",
+                        description="Searches for documents in both the Words and Phrases document types.",
                     ),
                     OpenApiExample(
                         "words",
                         value="words",
-                        description="specifically looks for documents in the words document type.",
+                        description="Specifically looks for documents in the Words document type.",
                     ),
                     OpenApiExample(
                         "words, invalid_type",
                         value="words",
-                        description="Ignores invalid document types and returns results only "
-                        "for the valid types, such as words",
+                        description="Ignores invalid document types and returns results "
+                        "only for the valid types, such as words.",
                     ),
                     OpenApiExample(
                         "invalid_type",
                         value="None",
-                        description="if no valid document types are provided, the API returns an empty"
-                        " set of results.",
+                        description="If no valid document types are provided, "
+                        "the API returns an empty set of results.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="domain",
+                description="search domain",
+                required=False,
+                default="both",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "both",
+                        value="both",
+                        description="Searches in both the Language and English domains.",
+                    ),
+                    OpenApiExample(
+                        "english",
+                        value="english",
+                        description="Performs a search focused on translations.",
+                    ),
+                    OpenApiExample(
+                        "language",
+                        value="language",
+                        description="Performs a search focused on titles and language.",
                     ),
                 ],
             ),
@@ -98,7 +125,16 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         input_types_str = self.request.GET.get("types", "")
         valid_types_list = get_valid_document_types(input_types_str)
 
-        search_params = {"q": input_q, "types": valid_types_list, "site_slug": ""}
+        input_domain_str = self.request.GET.get("domain", "")
+        valid_domain = get_valid_domain(input_domain_str)
+
+        search_params = {
+            "q": input_q,
+            "site_slug": "",
+            "types": valid_types_list,
+            "domain": valid_domain,
+        }
+
         return search_params
 
     def list(self, request, **kwargs):
@@ -113,6 +149,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             q=search_params["q"],
             site_slug=search_params["site_slug"],
             types=search_params["types"],
+            domain=search_params["domain"],
         )
 
         # Get search results
