@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0034_load_languagefamily_language_data"),
+        ("backend", "0036_load_languagefamily_language_data"),
     ]
 
     operations = [

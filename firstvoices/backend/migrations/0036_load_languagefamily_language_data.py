@@ -52,7 +52,7 @@ def populate_dates(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0033_alter_languagefamily_managers"),
+        ("backend", "0035_alter_languagefamily_managers"),
     ]
 
     operations = [
