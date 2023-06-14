@@ -13,7 +13,8 @@ class Command(BaseCommand):
         "dictionary_entries": {
             "index": dictionary_entries,
             "document": DictionaryEntryDocument,
-        }
+        },
+        # Songs and stories to be added later
     }
 
     def add_arguments(self, parser):
@@ -25,7 +26,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        # If a index name is supplied, only rebuild that, else rebuild all
+        # If an index name is supplied, only rebuild that, else rebuild all
         index_name = options["index_name"]
 
         if index_name:

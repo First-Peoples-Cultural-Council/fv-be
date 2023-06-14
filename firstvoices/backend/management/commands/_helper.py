@@ -2,7 +2,14 @@ from django.core.paginator import Paginator
 from elasticsearch.exceptions import NotFoundError
 
 from backend.models.dictionary import DictionaryEntry
-from backend.search.indices.dictionary_entry_document import dictionary_entries
+from backend.search.indices.dictionary_entry_document import (
+    DictionaryEntryDocument,
+    dictionary_entries,
+)
+from backend.search.utils.object_utils import (
+    get_notes_text,
+    get_translation_and_part_of_speech_text,
+)
 
 ENTRIES_PER_PAGE = 100
 
@@ -39,16 +46,19 @@ def add_dictionary_entries_to_index():
 
         # Loop through each object on the current page
         for entry in page_objects:
-            print(entry)
             # Add dictionary entry to index
-            # translations_text, part_of_speech_text = get_translation_and_part_of_speech_text(instance)
-            # notes_text = get_notes_text(instance)
-            # index_entry = DictionaryEntryDocument(
-            #     document_id=entry.id,
-            #     site_slug=entry.site.slug,
-            #     title=entry.title,
-            #     type=entry.type,
-            #     translation=translations_text,
-            #     part_of_speech=part_of_speech_text,
-            #     note=notes_text,
-            # )
+            (
+                translations_text,
+                part_of_speech_text,
+            ) = get_translation_and_part_of_speech_text(entry)
+            notes_text = get_notes_text(entry)
+            index_entry = DictionaryEntryDocument(
+                document_id=entry.id,
+                site_slug=entry.site.slug,
+                title=entry.title,
+                type=entry.type,
+                translation=translations_text,
+                part_of_speech=part_of_speech_text,
+                note=notes_text,
+            )
+            index_entry.save()
