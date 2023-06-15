@@ -4,7 +4,7 @@ from backend.models import media
 
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
-    SiteContentLinkedTitleSerializer,
+    ExternalSiteContentUrlMixin,
     SiteContentUrlMixin,
     UpdateSerializerMixin,
 )
@@ -21,15 +21,20 @@ class PersonSerializer(
         fields = ("url", "id", "name", "bio")
 
 
-class MediaSerializer(SiteContentLinkedTitleSerializer):
+class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
     """
-    Stub serializer that produces id-title objects.
+    Serializer for media objects. Supports serializing models from different sites, since media can be shared.
     """
 
     content = serializers.FileField(source="original.content")
 
     class Meta:
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + ("content",)
+        fields = (
+            "id",
+            "url",
+            "title",
+            "content",
+        )
 
 
 class AudioSerializer(MediaSerializer):
