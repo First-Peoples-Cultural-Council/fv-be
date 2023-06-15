@@ -13,6 +13,9 @@ ES_NOT_FOUND_ERROR = (
 # Page size
 ES_PAGE_SIZE = 10
 
+# Number of results to return
+ES_MAX_RESULTS = 1000
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")

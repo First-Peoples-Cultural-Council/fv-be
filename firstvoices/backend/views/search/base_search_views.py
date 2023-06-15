@@ -12,9 +12,12 @@ from rest_framework.response import Response
 
 from backend import pagination
 from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import ES_PAGE_SIZE, SearchIndexEntryTypes
+from backend.search.utils.constants import (
+    ES_MAX_RESULTS,
+    ES_PAGE_SIZE,
+    SearchIndexEntryTypes,
+)
 from backend.search.utils.object_utils import hydrate_objects
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -57,7 +60,6 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
     pagination_class = SearchViewPagination
-    serializer_class = DictionaryEntryDetailSerializer
 
     def get_search_params(self):
         """
@@ -78,7 +80,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # Get search results
         try:
-            response = search_query[0:1000].execute()
+            response = search_query[0:ES_MAX_RESULTS].execute()
         except ConnectionError:
             raise ElasticSearchConnectionError()
 
@@ -88,10 +90,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         hydrated_objects = hydrate_objects(search_results, request)
 
         page = self.paginate_queryset(hydrated_objects)
-        # TODO: Use dictionary entry serializer to properly serialize search results
-        # rather than just returning hydrated objects
-        # serializer = self.get_serializer(page, many=True)
         if page is not None:
-            return self.get_paginated_response(data=hydrated_objects)
+            return self.get_paginated_response(data=page)
 
         return Response(data=hydrated_objects)
