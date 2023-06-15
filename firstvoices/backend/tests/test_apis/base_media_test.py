@@ -25,19 +25,59 @@ class MediaTestMixin:
 
         return {
             "id": str(instance.id),
-            "title": instance.title,
-            "content": f"http://testserver{instance.original.content.url}",
             "url": f"http://testserver{url}",
+            "title": instance.title,
         }
 
+    def get_file_data(self, file):
+        return {
+            "path": f"http://testserver{file.content.url}",
+            "mimetype": file.mimetype,
+        }
+
+    def get_visual_file_data(self, file):
+        return {
+            "path": f"http://testserver{file.content.url}",
+            "mimetype": file.mimetype,
+            "height": file.height,
+            "width": file.width,
+        }
+
+    def get_media_thumbnail_data(self, instance):
+        return {
+            "thumbnail": self.get_visual_file_data(instance.thumbnail),
+            "small": self.get_visual_file_data(instance.small),
+            "medium": self.get_visual_file_data(instance.medium),
+        }
+
+    def get_visual_media_data(self, instance, view_name):
+        data = self.get_basic_media_data(instance, view_name=view_name)
+        thumbnail_data = self.get_media_thumbnail_data(instance)
+        return (
+            data
+            | thumbnail_data
+            | {
+                "original": self.get_visual_file_data(instance.original),
+            }
+        )
+
     def get_expected_image_data(self, instance):
-        return self.get_basic_media_data(instance, view_name="api:image-detail")
+        return self.get_visual_media_data(instance, view_name="api:image-detail")
 
     def get_expected_video_data(self, instance):
-        return self.get_basic_media_data(instance, view_name="api:video-detail")
+        # return self.get_visual_media_data(instance, view_name="api:video-detail")
+        # use first line instead when thumbnail generation is available
+        data = self.get_basic_media_data(instance, view_name="api:video-detail")
+        return data | {
+            "original": self.get_visual_file_data(instance.original),
+            "thumbnail": self.get_visual_file_data(instance.original),
+            "small": self.get_visual_file_data(instance.original),
+            "medium": self.get_visual_file_data(instance.original),
+        }
 
     def get_expected_audio_data(self, instance, speaker):
         data = self.get_basic_media_data(instance, view_name="api:audio-detail")
+        data["original"] = self.get_file_data(instance.original)
 
         if speaker:
             speaker_url = reverse(
