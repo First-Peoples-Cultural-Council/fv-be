@@ -3,9 +3,9 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import viewsets
 
 from backend.models.media import Image
+from backend.serializers.media_serializers import ImageSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
-from ..serializers.media_serializers import ImageSerializer
 from . import doc_strings
 
 

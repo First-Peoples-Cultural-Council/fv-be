@@ -2,14 +2,14 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models.media import Person
+from backend.serializers.media_serializers import PersonSerializer
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     http_methods_except_patch,
 )
 
-from ..models.media import Person
-from ..serializers.media_serializers import PersonSerializer
 from . import doc_strings
 
 

@@ -3,9 +3,9 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import viewsets
 
 from backend.models.media import Audio
+from backend.serializers.media_serializers import AudioSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
-from ..serializers.media_serializers import AudioSerializer
 from . import doc_strings
 
 
