@@ -27,6 +27,11 @@ class MediaTestMixin:
             "id": str(instance.id),
             "url": f"http://testserver{url}",
             "title": instance.title,
+            "description": instance.description,
+            "acknowledgement": instance.acknowledgement,
+            "excludeFromGames": instance.exclude_from_games,
+            "excludeFromKids": instance.exclude_from_kids,
+            "isShared": instance.is_shared,
         }
 
     def get_file_data(self, file):

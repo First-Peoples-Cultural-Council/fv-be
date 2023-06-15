@@ -49,7 +49,14 @@ class MediaImageFileSerializer(MediaVideoFileSerializer):
 
 class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
     class Meta:
-        fields = base_id_fields + ("original",)
+        fields = base_id_fields + (
+            "description",
+            "acknowledgement",
+            "exclude_from_games",
+            "exclude_from_kids",
+            "is_shared",
+            "original",
+        )
 
 
 class AudioSerializer(MediaSerializer):
