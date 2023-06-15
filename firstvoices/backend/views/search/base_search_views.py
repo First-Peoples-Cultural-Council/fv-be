@@ -23,6 +23,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
 
 class SearchViewPagination(pagination.PageNumberPagination):
     page_size = ES_PAGE_SIZE
+    max_page_size = ES_MAX_RESULTS
 
 
 @extend_schema_view(

@@ -11,10 +11,10 @@ ES_NOT_FOUND_ERROR = (
 )
 
 # Page size
-ES_PAGE_SIZE = 10
+ES_PAGE_SIZE = 25
 
 # Number of results to return
-ES_MAX_RESULTS = 1000
+ES_MAX_RESULTS = 100
 
 
 class SearchIndexEntryTypes(TextChoices):
