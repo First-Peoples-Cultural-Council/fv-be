@@ -2,9 +2,9 @@ import json
 
 import pytest
 
+from backend.models.constants import Visibility
 from backend.tests import factories
 
-from ...models.constants import Visibility
 from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
 from .base_media_test import MediaTestMixin
 
