@@ -6,7 +6,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0034_remove_audio_content_remove_image_content_and_more"),
+        ("backend", "0035_rename_medium_id_image_medium_and_more"),
     ]
 
     operations = [
