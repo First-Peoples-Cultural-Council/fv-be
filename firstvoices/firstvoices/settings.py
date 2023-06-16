@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "rules.apps.AutodiscoverRulesConfig",
     "backend",
     "healthcheck",
+    "embed_video",
 ]
 
 MIDDLEWARE = [
@@ -67,6 +68,10 @@ MIDDLEWARE = [
 ]
 
 CSRF_TRUSTED_ORIGINS = ["https://*.eks.firstvoices.io"]
+
+USE_X_FORWARDED_HOST = True
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ROOT_URLCONF = "firstvoices.urls"
 
@@ -270,3 +275,9 @@ IMPORT_EXPORT_EXPORT_PERMISSION_CODE = "change"
 
 # Image thumbnail generation settings
 IMAGE_SIZES = {"thumbnail": 100, "small": 560, "medium": 1000}
+
+# Backends allowed for embedded videos. Custom backends can be created if other video sites are needed.
+EMBED_VIDEO_BACKENDS = (
+    "embed_video.backends.YoutubeBackend",
+    "embed_video.backends.VimeoBackend",
+)

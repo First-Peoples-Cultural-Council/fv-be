@@ -2,19 +2,18 @@
 
 Backend for the FirstVoices application
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
+[![Run Pytest](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml/badge.svg?branch=main)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml)
 
 License: Apache Software License 2.0
 
-___
+---
 
 ## Developer setup
 
 1. Clone the repo: `git clone https://github.com/First-Peoples-Cultural-Council/fv-be.git`
 1. Install prereqs:
-   - [Python 3.10+](python.org)
+   - [Python 3.10+](https://www.python.org/)
      - (Recommended: [pyenv](https://github.com/pyenv/pyenv) to install and manage current Python versions)
    - [PostgreSQL](https://www.postgresql.org/)
      - Recommended Mac installation: Using Homebrew
@@ -23,6 +22,16 @@ ___
        - `brew services start postgresql` to start the service and autostart on system startup.
        - `brew services stop postgresql` to stop the service.
      - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
+   - [FFmpeg](http://ffmpeg.org/)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install ffmpeg`
+     - For other operating systems see [the official downloads page](https://ffmpeg.org/download.html).
+   - [libmagic library for python-magic wrapper](https://github.com/ahupp/python-magic)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install libmagic`
+     - For other operating systems see [the installation page in the README](https://github.com/ahupp/python-magic#installation).
 1. (Recommended) Create and activate a virtual environment in the root of the project
    - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
    - If using [venv](https://docs.python.org/3/library/venv.html)
@@ -70,52 +79,64 @@ ___
    - Navigate to the `firstvoices` directory if you aren't already there: `cd firstvoices`
    - `python manage.py runserver`
 1. (Optional) To load data from fixtures, use the following command (from inside the `firstvoices` directory) and replace `<fixture_name>` with fixtures available.
-    - `python manage.py loaddata <fixture_name>`
-    - Fixtures available:
-      - Default fixtures which are automatically loaded in migrations:
-        - `appjson-defaults.json`
-        - `default_g2p_config.json`
-        - `partsOfSpeech_initial.json`
-      - Other:
-        - None
+   - `python manage.py loaddata <fixture_name>`
+   - Fixtures available:
+     - Default fixtures which are automatically loaded in migrations:
+       - `appjson-defaults.json`
+       - `default_g2p_config.json`
+       - `partsOfSpeech_initial.json`
+       - `language_families.json`
+       - `languages.json`
+     - Other:
+       - None
 1. (Optional) To run ElasticSearch, RabbitMQ and redis, the following command needs to be run from the fv-be folder.
-    `docker-compose up -d` which will run all the mentioned docker services.
-    To run a specific service for some testing purposes, use the following command:
-    `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
-    1. For ElasticSearch, to confirm the service is up and running, visit
-        http://localhost:9200/ and verify the status.
+   `docker-compose up -d` which will run all the mentioned docker services.
+   To run a specific service for some testing purposes, use the following command:
+   `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
+   1. For ElasticSearch, to confirm the service is up and running, visit
+      http://localhost:9200/ and verify the status.
 
-___
+---
 
 ## IDE Linting and Formatting (Recommended)
+
 These instruction include the steps needed to set up your local IDE so that you will get warnings if any changes are not up to the linting and formatting standards.
 The pre-commit hooks will ensure that your code changes are up to these standards, but setting up the following in your IDE will help to catch any issues earlier.
 
 **(Recommended before staging and committing files with git):** The entire suite of pre-commit hooks can be run manually by running the following commands from the root project directory:
 
 On all files in the project, including any unstaged files:
+
 ```
 pre-commit run -a
 ```
+
 On all files that are staged with git:
+
 ```
 pre-commit run
 ```
+
 On individual files:
+
 ```
 pre-commit run --files <filepath>
 ```
 
 ### Flake8
+
 Flake8 is a Python wrapper which combines several linting tools into one. More details about Flake8 can be found on [the official Flake8 GitHub page](https://github.com/PyCQA/flake8).
 
 The Flake8 pre-commit hook can be executed on all files with the following command:
+
 ```
 pre-commit run flake8 -a
 ```
 
 #### PyCharm Setup
+
 The following steps will enable automatic Flake8 checks during editing. General PyCharm instructions can be found in the [File Watchers](https://www.jetbrains.com/help/pycharm/tutorial-file-watchers-in-product.html) and [Inspections](https://www.jetbrains.com/help/pycharm/inspections-settings.html) documentation.
+
 1. Find the location of your Flake8 installation: `which flake8`
 2. Install and enable the [File Watchers](https://plugins.jetbrains.com/plugin/7177-file-watchers) plugin in PyCharm if it isn't already.
 3. Go to Settings -> Tools -> File Watchers and add a new custom file watcher with the following values:
@@ -132,10 +153,12 @@ The following steps will enable automatic Flake8 checks during editing. General 
    - Optionally, set the severity to a higher level such as `Warning` or `Error`.
 
 #### VSCode Setup
+
 The following steps will enable automatic Flake8 checks during editing. General VSCode linting instructions can be found in the [linting documentation](https://code.visualstudio.com/docs/python/linting).
+
 1. Enable linting in VSCode:
-    - Open the command palette `command-p on Mac or control-shift-p on Windows`
-    - Select the `> Python: Select Linter` command and then select `flake8` to enable flake8 linting.
+   - Open the command palette `command-p on Mac or control-shift-p on Windows`
+   - Select the `> Python: Select Linter` command and then select `flake8` to enable flake8 linting.
 2. Install the flake8 linting extension if prompted by clicking the prompt that appears in the bottom right corner after step 1.
 3. Set the linter to run on file save:
    - Open the command palette `command-p on Mac or control-shift-p on Windows`
@@ -145,29 +168,41 @@ The following steps will enable automatic Flake8 checks during editing. General 
 4. Flake8 issues will now be highlighted in the code and displayed in the problems panel which can be opened with `shift-command-m on Mac or control-shift-m on Windows`
 
 ### Other Tools
+
 The following tools are included in the pre-commit hooks and can be run individually if needed.
 
 #### [Black](https://github.com/psf/black): A Python code formatter that will ensure a consistent style throughout the code base.
+
 ```
 pre-commit run black -a
 ```
+
 #### [pyupgrade](https://github.com/asottile/pyupgrade): A tool to automatically upgrade old Python syntax to newer versions.
+
 ```
 pre-commit run pyupgrade -a
 ```
+
 #### [isort](https://github.com/PyCQA/isort): A utility to automatically sort and organize Python imports.
+
 ```
 pre-commit run trailing-whitespace -a
 ```
+
 #### [Trailing Whitespace](https://github.com/pre-commit/pre-commit-hooks#trailing-whitespace): Trims trailing whitespace from the ends of lines.
+
 ```
 pre-commit run trailing-whitespace -a
 ```
+
 #### [end-of-file-fixer](https://github.com/pre-commit/pre-commit-hooks#end-of-file-fixer): Ensures files end with a newline character.
+
 ```
 pre-commit run end-of-file-fixer -a
 ```
+
 #### [check-yaml](https://github.com/pre-commit/pre-commit-hooks#check-yaml): Verifies YAML files for syntax correctness.
+
 ```
 pre-commit run check-yaml -a
 ```
@@ -178,23 +213,28 @@ pre-commit run check-yaml -a
 
 ### Setting Up Your Users
 
--   To create a **superuser account**, with the environment variables you may have set earlier, use this command:
-    ```
-    cd firstvoices
-    python manage.py createsuperuser --noinput
-    ```
-    or if you want to supply the username and password manually:
-    ```
-    cd firstvoices
-    python manage.py createsuperuser
-    ```
+- To create a **superuser account**, with the environment variables you may have set earlier, use this command:
+
+  ```
+  cd firstvoices
+  python manage.py createsuperuser --noinput
+  ```
+
+  or if you want to supply the username and password manually:
+
+  ```
+  cd firstvoices
+  python manage.py createsuperuser
+  ```
 
 - Normal users can be created using the admin panel, which can be accessed using the URL listed in the [Useful Local URLs on Startup](#useful-local-urls-on-startup) section. The admin panel can only be accessed when logged in as a superuser or staff user.
 
 For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
 
 ### Local Database Cleanup Script
+
 For local development, a script has been created which will do the following:
+
 - Drops any existing databases named `fv_be`
 - Creates a fresh `fv_be` database
 - Makes fresh migrations
@@ -210,27 +250,33 @@ For local development, a script has been created which will do the following:
 - If no environment variables are set and no arguments are found then the script will fail to create a superuser.
 
 You may need to give the script executable permission on your machine by running the following command:
+
 ```
 chmod +x firstvoices/reset-local-database.sh
 ```
+
 An example command to run the script might look like the following:
+
 ```
 ./firstvoices/reset-local-database.sh -u admin -p admin -e admin@example.com
 ```
+
 or if you have already set the environment variables locally:
+
 ```
 ./firstvoices/reset-local-database.sh
 ```
 
 ### Setting Up Custom Order/Confusable Cleaning for Dictionary Entries
+
 To set up custom order/confusable cleaning locally, you will need to do the following:
+
 - Load the `default_g2p_config.json` fixture if it isn't already (it should get loaded during migrations).
 - Create `Character` models that correspond with the characters you will use in a site's alphabet.
-    - Base characters are required, ignorables and variants are optional.
+  - Base characters are required, ignorables and variants are optional.
 - Create an `Alphabet` class with an appropriate input to canonical mapping that defines confusables.
-    - For example: ```[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]```
-    - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
-
+  - For example: `[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]`
+  - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
 
 ### Building Elasticsearch Index
 To build/rebuild elasticsearch indices:
@@ -247,11 +293,15 @@ Currently, the following indices are supported:
 ### Test coverage
 
 To run the tests, check your test coverage, and generate an HTML coverage report:
+
 - navigate to the `firstvoices` directory:
+
 ```
 cd firstvoices
 ```
+
 - Run the tests with coverage, generate an html results page, and open the results in a browser:
+
 ```
 coverage run -m pytest
 coverage html
@@ -259,24 +309,35 @@ open htmlcov/index.html
 ```
 
 ### Running tests with pytest
+
 From the `firstvoices` project directory:
+
 - Run all tests:
+
 ```
 pytest
 ```
+
 - Run a set of tests in a directory:
+
 ```
 pytest <path to directory>
 ```
+
 - Run a single file:
+
 ```
 pytest <path to file>
 ```
+
 - Run a single test:
+
 ```
 pytest <path to file containing test> -k '<name of single test>'
 ```
+
 - Reset the test database:
+
 ```
 python manage.py reset_db -D test_fv_be
 ```
@@ -302,6 +363,7 @@ For async and periodic tasks to successfully execute, a worker process must be r
 virtual environment setup, execute `celery -A firstvoices worker -B` in the `./firstvoices` directory
 
 ## Useful Local URLs On Startup
+
 - Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
 - Base API list: `localhost:8000/api/1.0/`
 - API docs page: `localhost:8000/api/docs/`

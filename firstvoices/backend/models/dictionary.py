@@ -226,7 +226,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         return self.title
 
     def save(self, *args, **kwargs):
-        alphabet, created = Alphabet.objects.get_or_create(site_id=self.site_id)
+        alphabet, _ = Alphabet.objects.get_or_create(site_id=self.site_id)
 
         self.clean_title(alphabet)
         self.set_custom_order(alphabet)

@@ -25,6 +25,8 @@ class MediaSerializer(serializers.ModelSerializer):
     Stub serializer that produces id-title objects.
     """
 
+    content = serializers.FileField(source="original.content")
+
     class Meta:
         fields = ("id", "title", "content")
 
@@ -38,6 +40,8 @@ class AudioSerializer(MediaSerializer):
 
 
 class ImageSerializer(MediaSerializer):
+    content = serializers.ImageField(source="original.content")
+
     class Meta(MediaSerializer.Meta):
         model = media.Image
 

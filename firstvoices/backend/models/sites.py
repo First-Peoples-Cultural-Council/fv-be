@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
+from backend.permissions.managers import PermissionsManager
 
 from . import Image
 from .base import BaseModel, BaseSiteContentModel
@@ -14,12 +15,21 @@ from .media import Video
 from .utils import load_default_categories
 
 
+class LanguageFamilyManager(PermissionsManager):
+    """Manager allowing foreign key relationship to use natural key when loading fixtures"""
+
+    use_in_migrations = True
+
+    def get_by_natural_key(self, title):
+        return self.get(title=title)
+
+
 class LanguageFamily(BaseModel):
     """
     Represents a Language Family.
     """
 
-    # from FVLanguageFamily type
+    objects = LanguageFamilyManager()
 
     class Meta:
         verbose_name = _("language family")
@@ -31,12 +41,12 @@ class LanguageFamily(BaseModel):
             "delete": predicates.is_superadmin,
         }
 
-    # from parent_languages.csv OR from fvdialect:language_family on one of the
-    # linked sites (via one of the linked languages)
     title = models.CharField(max_length=200, unique=True)
 
-    # from dc:title
     alternate_names = models.TextField(max_length=200, blank=True)
+
+    def natural_key(self):
+        return (self.title,)
 
     def __str__(self):
         return self.title
@@ -46,8 +56,6 @@ class Language(BaseModel):
     """
     Represents a Language.
     """
-
-    # from fvlanguage type
 
     class Meta:
         verbose_name = _("language")
@@ -59,18 +67,14 @@ class Language(BaseModel):
             "delete": predicates.is_superadmin,
         }
 
-    # from parent_languages.csv OR from fvdialect:parent_language on one of the linked sites
     title = models.CharField(max_length=200, unique=True)
 
-    # from dc:title
     alternate_names = models.CharField(max_length=200, blank=True)
 
-    # from fva:family
     language_family = models.ForeignKey(
         LanguageFamily, on_delete=models.PROTECT, related_name="languages"
     )
 
-    # from fvdialect:bcp_47
     # BCP 47 Spec: https://www.ietf.org/rfc/bcp/bcp47.txt
     language_code = models.CharField(max_length=20, blank=True)
 
@@ -115,7 +119,7 @@ class Site(BaseModel):
         unique=True,
     )
 
-    # from fva:language
+    # from fvdialect:parent_language
     language = models.ForeignKey(
         Language, null=True, blank=True, on_delete=models.SET_NULL, related_name="sites"
     )

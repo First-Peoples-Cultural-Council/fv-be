@@ -198,7 +198,7 @@ class TestSitesEndpoints(BaseApiTest):
         return {
             "id": str(media_instance.id),
             "title": media_instance.title,
-            "content": f"http://testserver{media_instance.content.url}",
+            "content": f"http://testserver{media_instance.original.content.url}",
         }
 
     @pytest.mark.django_db
