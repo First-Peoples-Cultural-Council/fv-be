@@ -5,11 +5,11 @@ import sys
 import tempfile
 from io import BytesIO
 
-import magic
 import ffmpeg
+import magic
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models, NotSupportedError
+from django.db import NotSupportedError, models
 from django.utils.translation import gettext as _
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
@@ -62,7 +62,10 @@ class FileBase(BaseSiteContentModel):
 
     def save(self, **kwargs):
         if not self._state.adding:
-            raise NotSupportedError("Editing existing files is not supported at this time. Please create a new file if you would like to update a media file.")
+            raise NotSupportedError(
+                "Editing existing files is not supported at this time. Please create a new file if you would like to "
+                "update a media file."
+            )
 
         """
         Sets mimetype based on the file contents

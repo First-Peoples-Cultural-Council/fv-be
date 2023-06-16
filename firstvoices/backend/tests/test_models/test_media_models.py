@@ -129,10 +129,10 @@ class TestVideoModel:
     def create_site_and_video(self, video_size):
         site = factories.SiteFactory.create()
 
-        video_file = factories.VideoFileFactory.create(content=get_video_content(video_size))
-        video = factories.VideoFactory.create(
-            site=site, original=video_file
+        video_file = factories.VideoFileFactory.create(
+            content=get_video_content(video_size)
         )
+        video = factories.VideoFactory.create(site=site, original=video_file)
         return site, video
 
     @pytest.mark.django_db
@@ -284,6 +284,7 @@ class TestVideoModel:
         )
         assert generated_images[0].width <= settings.IMAGE_SIZES["thumbnail"]
         assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
+
 
 class TestImageModel:
     image_sizes = list(settings.IMAGE_SIZES.keys())

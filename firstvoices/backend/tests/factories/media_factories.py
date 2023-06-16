@@ -2,9 +2,8 @@ import os
 import sys
 
 import factory
-
-from embed_video.fields import EmbedVideoField
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from embed_video.fields import EmbedVideoField
 from factory.django import DjangoModelFactory
 
 from backend.models.media import (
