@@ -70,15 +70,7 @@ class MediaTestMixin:
         return self.get_visual_media_data(instance, view_name="api:image-detail")
 
     def get_expected_video_data(self, instance):
-        # return self.get_visual_media_data(instance, view_name="api:video-detail")
-        # use first line instead when thumbnail generation is available
-        data = self.get_basic_media_data(instance, view_name="api:video-detail")
-        return data | {
-            "original": self.get_visual_file_data(instance.original),
-            "thumbnail": self.get_visual_file_data(instance.original),
-            "small": self.get_visual_file_data(instance.original),
-            "medium": self.get_visual_file_data(instance.original),
-        }
+        return self.get_visual_media_data(instance, view_name="api:video-detail")
 
     def get_expected_audio_data(self, instance, speaker):
         data = self.get_basic_media_data(instance, view_name="api:audio-detail")

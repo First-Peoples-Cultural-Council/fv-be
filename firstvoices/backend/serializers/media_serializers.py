@@ -93,11 +93,6 @@ class VideoSerializer(MediaWithThumbnailsSerializer):
 
     original = MediaVideoFileSerializer()
 
-    # remove these when thumbnail generation is available
-    thumbnail = MediaImageFileSerializer(source="original")
-    small = MediaImageFileSerializer(source="original")
-    medium = MediaImageFileSerializer(source="original")
-
     class Meta(MediaWithThumbnailsSerializer.Meta):
         model = media.Video
 
