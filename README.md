@@ -2,8 +2,6 @@
 
 Backend for the FirstVoices application
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
 [![Run Pytest](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml/badge.svg?branch=main)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml)
 
