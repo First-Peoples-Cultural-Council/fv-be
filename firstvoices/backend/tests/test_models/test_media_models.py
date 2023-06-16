@@ -189,7 +189,7 @@ class TestVideoModel:
     def test_resize_images_large_input_video(self):
         site, video = self.create_site_and_video("large")
 
-        generated_images = self.check_image(video, video.site)
+        generated_images = self.check_image(video, site)
 
         assert generated_images[2].width == settings.IMAGE_SIZES["medium"]
         assert (
