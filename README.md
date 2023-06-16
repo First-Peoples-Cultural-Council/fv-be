@@ -13,7 +13,7 @@ License: Apache Software License 2.0
 
 1. Clone the repo: `git clone https://github.com/First-Peoples-Cultural-Council/fv-be.git`
 1. Install prereqs:
-   - [Python 3.10+](python.org)
+   - [Python 3.10+](https://www.python.org/)
      - (Recommended: [pyenv](https://github.com/pyenv/pyenv) to install and manage current Python versions)
    - [PostgreSQL](https://www.postgresql.org/)
      - Recommended Mac installation: Using Homebrew
@@ -24,9 +24,14 @@ License: Apache Software License 2.0
      - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
    - [FFmpeg](http://ffmpeg.org/)
      - Recommended Mac installation: Using Homebrew
-       - brew update
-       - brew install ffmpeg
+       - `brew update`
+       - `brew install ffmpeg`
      - For other operating systems see [the official downloads page](https://ffmpeg.org/download.html).
+   - [libmagic library for python-magic wrapper](https://github.com/ahupp/python-magic)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install libmagic`
+     - For other operating systems see [the installation page in the README](https://github.com/ahupp/python-magic#installation).
 1. (Recommended) Create and activate a virtual environment in the root of the project
    - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
    - If using [venv](https://docs.python.org/3/library/venv.html)
