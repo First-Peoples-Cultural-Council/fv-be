@@ -18,14 +18,14 @@ class SearchDomains(Enum):
 def get_indices(types):
     """
     Returns list of indices to go through depending on the docType
-    WORD|PHRASE = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
-    SONG = ELASTICSEARCH_SONG_INDEX
-    STORY = ELASTICSEARCH_STORY_INDEX
+    words|phrases = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
+    songs = ELASTICSEARCH_SONG_INDEX
+    stories = ELASTICSEARCH_STORY_INDEX
     """
     indices = set()
 
     for doc_type in types:
-        if doc_type == "WORD" or doc_type == "PHRASE":
+        if doc_type == "words" or doc_type == "phrases":
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
 
     return list(indices)

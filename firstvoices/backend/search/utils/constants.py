@@ -4,7 +4,7 @@ from django.utils.translation import gettext as _
 VALID_DOCUMENT_TYPES = ["words", "phrases"]
 
 # Index names
-ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entry"
+ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"
 
 # Error messages
 ES_CONNECTION_ERROR = (

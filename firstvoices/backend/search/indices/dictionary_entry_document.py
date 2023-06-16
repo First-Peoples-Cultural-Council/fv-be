@@ -3,7 +3,7 @@ import logging
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Document, Index, Keyword, Text
+from elasticsearch_dsl import Document, Keyword, Text
 
 from backend.models.dictionary import DictionaryEntry, Note, Translation
 from backend.search.utils.constants import (
@@ -17,17 +17,9 @@ from backend.search.utils.object_utils import (
     get_object_from_index,
     get_translation_and_part_of_speech_text,
 )
-from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG, ELASTICSEARCH_LOGGER
-
-# Defining index and settings
-dictionary_entries = Index(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
-dictionary_entries.settings(
-    number_of_shards=ELASTICSEARCH_DEFAULT_CONFIG["shards"],
-    number_of_replicas=ELASTICSEARCH_DEFAULT_CONFIG["replicas"],
-)
+from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-@dictionary_entries.document
 class DictionaryEntryDocument(Document):
     # generic fields, will be moved to a base search document once we have songs and stories
     document_id = Text()
