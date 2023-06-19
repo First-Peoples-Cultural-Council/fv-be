@@ -8,6 +8,11 @@ from backend.search.indices.dictionary_entry_document import (
 )
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
+BASE_BOOST = 1.0  # default value of boost
+FULL_TEXT_SEARCH_BOOST = 1.1
+FUZZY_MATCH_BOOST = 1.2
+EXACT_MATCH_BOOST = 1.5
+
 
 class SearchDomains(Enum):
     BOTH = "both"
@@ -60,6 +65,7 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "value": search_term,
                     "fuzziness": "2",  # Documentation recommends "AUTO" for this param
+                    "boost": FUZZY_MATCH_BOOST,
                 }
             }
         }
@@ -70,18 +76,30 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "query": search_term,
                     "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": 1.1,
+                    "boost": EXACT_MATCH_BOOST,
                 }
             }
         }
     )
     fuzzy_match_translation_query = Q(
-        {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
+        {
+            "fuzzy": {
+                "translation": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_BOOST,
+                }
+            }
+        }
     )
     exact_match_translation_query = Q(
         {
             "match_phrase": {
-                "translation": {"query": search_term, "slop": 3, "boost": 1.1}
+                "translation": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_BOOST,
+                }
             }
         }
     )
@@ -92,19 +110,19 @@ def get_search_term_query(search_term, domain):
                 "fields": ["title", "full_text_search_field"],
                 "type": "phrase",
                 "operator": "OR",
-                "boost": 1.3,
+                "boost": FULL_TEXT_SEARCH_BOOST,
             }
         }
     )
     text_search_field_match_query = Q(
         {
             "match_phrase": {
-                "full_text_search_field": {"query": search_term, "boost": 1.5}
+                "full_text_search_field": {"query": search_term, "boost": BASE_BOOST}
             }
         }
     )
 
-    subqueries = [multi_match_query, text_search_field_match_query]
+    subqueries = []
 
     subquery_domains = {
         "both": [
@@ -112,6 +130,8 @@ def get_search_term_query(search_term, domain):
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
+            multi_match_query,
+            text_search_field_match_query,
         ],
         "language": [fuzzy_match_title_query, exact_match_title_query],
         "english": [
@@ -157,9 +177,9 @@ def get_valid_domain(input_domain_str):
     string_lower = input_domain_str.lower()
 
     if (
-        string_lower == SearchDomains.BOTH
-        or string_lower == SearchDomains.LANGUAGE
-        or string_lower == SearchDomains.ENGLISH
+        string_lower == SearchDomains.BOTH.value
+        or string_lower == SearchDomains.LANGUAGE.value
+        or string_lower == SearchDomains.ENGLISH.value
     ):
         return string_lower
     else:  # if empty string is passed, or invalid option is passed
