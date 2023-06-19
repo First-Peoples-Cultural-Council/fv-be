@@ -174,7 +174,10 @@ def get_valid_document_types(input_types):
 
 
 def get_valid_domain(input_domain_str):
-    string_lower = input_domain_str.lower()
+    string_lower = input_domain_str.strip().lower()
+
+    if not string_lower:
+        return "both"
 
     if (
         string_lower == SearchDomains.BOTH.value
@@ -182,5 +185,5 @@ def get_valid_domain(input_domain_str):
         or string_lower == SearchDomains.ENGLISH.value
     ):
         return string_lower
-    else:  # if empty string is passed, or invalid option is passed
-        return "both"
+    else:  # if invalid string is passed
+        return None

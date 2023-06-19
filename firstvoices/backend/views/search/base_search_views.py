@@ -93,6 +93,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 type=str,
                 examples=[
                     OpenApiExample(
+                        "",
+                        value="",
+                        description="Defaults to both.",
+                    ),
+                    OpenApiExample(
                         "both",
                         value="both",
                         description="Searches in both the Language and English domains.",
@@ -106,6 +111,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         "language",
                         value="language",
                         description="Performs a search focused on titles and language.",
+                    ),
+                    OpenApiExample(
+                        "invalid_domain",
+                        value="None",
+                        description="If invalid domain is passed, the API returns an empty set of results.",
                     ),
                 ],
             ),
@@ -142,6 +152,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # If no valid types are passed, return emtpy list as a response
         if not search_params["types"]:
+            return Response(data=[])
+
+        # If invalid domain is passed, return emtpy list as a response
+        if not search_params["domain"]:
             return Response(data=[])
 
         # Get search query
