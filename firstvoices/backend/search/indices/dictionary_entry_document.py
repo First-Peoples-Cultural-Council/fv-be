@@ -6,6 +6,7 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Document, Keyword, Text
 
 from backend.models.dictionary import DictionaryEntry, Note, Translation
+from backend.models.sites import Site
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
@@ -166,3 +167,66 @@ def update_notes(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
+
+
+@receiver(post_save, sender=Site)
+def update_site(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    dictionary_entries_set = instance.dictionaryentry_set.all()
+
+    for dictionary_entry in dictionary_entries_set:
+        try:
+            existing_entry = get_object_from_index(
+                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            )
+            if not existing_entry:
+                raise NotFoundError
+
+            dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
+            dictionary_entry_doc.update(site_slug=instance.slug)
+        except ConnectionError:
+            logger.warning(
+                ES_CONNECTION_ERROR
+                % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            )
+        except NotFoundError:
+            logger.warning(
+                ES_NOT_FOUND_ERROR
+                % (
+                    "sites_update_signal",
+                    SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                    dictionary_entry.id,
+                )
+            )
+
+
+# If a site is deleted, delete all docs from index related to site
+@receiver(post_delete, sender=Site)
+def delete_related_docs(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    dictionary_entries_set = instance.dictionaryentry_set.all()
+
+    for dictionary_entry in dictionary_entries_set:
+        try:
+            existing_entry = get_object_from_index(
+                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            )
+            if not existing_entry:
+                raise NotFoundError
+
+            dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
+            dictionary_entry_doc.delete()
+        except ConnectionError:
+            logger.warning(
+                ES_CONNECTION_ERROR
+                % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            )
+        except NotFoundError:
+            logger.warning(
+                ES_NOT_FOUND_ERROR
+                % (
+                    "sites_delete_signal",
+                    SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                    dictionary_entry.id,
+                )
+            )
