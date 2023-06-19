@@ -21,9 +21,6 @@ def rebuild_index(index_name, index_document):
 
     # Get the latest index
     current_index = get_current_index(es, index_name)
-    if current_index:
-        # If current index present, try removing alias
-        current_index.delete_alias(using=es, name=index_name, ignore=404)
 
     # Create new index with current timestamp
     current_timestamp = timezone.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -34,16 +31,17 @@ def rebuild_index(index_name, index_document):
         number_of_replicas=ELASTICSEARCH_DEFAULT_CONFIG["replicas"],
     )
 
-    # adding document and alias
+    # Appointing the new index as the 'write' index while rebuilding
     new_index.document(index_document)
-    new_index = add_alias(new_index, index_name)
+    new_index = add_write_alias(new_index, index_name)
     new_index.create()
 
-    # Index all documents in this index
+    # Add all documents to the new index
     try:
         if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
     except errors.BulkIndexError as e:
+        # Alias configuration error
         if "multiple indices" in str(e):
             raise CommandError(
                 "There are multiple indices with same alias. Try clearing all indices and then "
@@ -51,16 +49,24 @@ def rebuild_index(index_name, index_document):
             )
     except Exception as e:
         # Any other exception due to which we are not able to build a new index or add documents to it
-        # Attach alias back to current index so search keeps working
-        add_alias(current_index, index_name)
+        # delete the new index so the current index is default index for both read and write
+        new_index.delete(ignore=404)
         raise CommandError(
-            "The following error occurred while indexing documents. Adding alias back to current index. "
+            "The following error occurred while indexing documents. Deleting new index, "
+            + "making current index default. "
             + str(e)
         )
 
     # Removing old index
     if current_index:
         current_index.delete(ignore=404)
+
+    # Removing and adding alias back to new index
+    # This is done to remove the write rule added to this index
+    # Only one index can be appointed as write index, for future rebuilding this rule needs to be removed
+    # if we have only one index, it's write index by default
+    new_index.delete_alias(using=es, name=index_name, ignore=404)
+    new_index.put_alias(using=es, name=index_name)
 
     # Songs and stories to be added later
 
@@ -99,9 +105,11 @@ def dictionary_entry_iterator():
         yield index_entry.to_dict(True)
 
 
-def add_alias(index, index_name):
+def add_write_alias(index, index_name):
+    alias_config = {"is_write_index": True}
+
     if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
-        index.aliases(dictionary_entries={})
+        index.aliases(dictionary_entries=alias_config)
     return index
 
 
