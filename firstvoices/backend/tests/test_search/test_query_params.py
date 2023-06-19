@@ -113,10 +113,6 @@ class TestDomain:
         search_query = get_search_query(q="test_query", domain="english")
         search_query = search_query.to_dict()
 
-        # defaults to be tested once
-        assert self.expected_multi_match_string in str(search_query)
-        assert self.expected_match_full_text_search_string in str(search_query)
-
         # should contain translation matching
         assert self.expected_exact_match_translation_string in str(search_query)
         assert self.expected_fuzzy_match_translation_string in str(search_query)
@@ -150,3 +146,7 @@ class TestDomain:
         # should also contain translation matching
         assert self.expected_exact_match_translation_string in str(search_query)
         assert self.expected_fuzzy_match_translation_string in str(search_query)
+
+        # Should also contain the full text search matches
+        assert self.expected_multi_match_string in str(search_query)
+        assert self.expected_match_full_text_search_string in str(search_query)

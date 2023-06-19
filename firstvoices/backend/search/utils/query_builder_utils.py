@@ -104,7 +104,7 @@ def get_search_term_query(search_term, domain):
         }
     )
 
-    subqueries = [multi_match_query, text_search_field_match_query]
+    subqueries = []
 
     subquery_domains = {
         "both": [
@@ -112,6 +112,8 @@ def get_search_term_query(search_term, domain):
             exact_match_title_query,
             fuzzy_match_translation_query,
             exact_match_translation_query,
+            multi_match_query,
+            text_search_field_match_query,
         ],
         "language": [fuzzy_match_title_query, exact_match_title_query],
         "english": [
