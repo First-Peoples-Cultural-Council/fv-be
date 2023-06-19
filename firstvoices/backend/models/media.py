@@ -128,6 +128,15 @@ class ImageFile(VisualFileBase):
         }
 
 
+def get_local_video_file(original):
+    input_extension = "." + original.name.split(".")[1]
+    temp_file = tempfile.NamedTemporaryFile(suffix=input_extension)
+    original.file.seek(0)
+    image_file = original.file.read()
+    temp_file.write(image_file)
+    return temp_file
+
+
 class VideoFile(VisualFileBase):
     class Meta:
         verbose_name = _("Video File")
@@ -138,6 +147,31 @@ class VideoFile(VisualFileBase):
             "change": predicates.can_edit_core_uncontrolled_data,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
+
+    def save(self, **kwargs):
+        try:
+            with get_local_video_file(self.content) as temp_file:
+                video_info = self.get_video_info(temp_file)
+
+            self.width = int(video_info["width"])
+            self.height = int(video_info["height"])
+
+        except ffmpeg.Error as e:
+            self.logger.error(
+                f"Failed to probe video file using ffmpeg [{self.content.name}]. \n"
+                f"Error: {e}\n"
+                f"{e.stderr.decode('utf8')}\n"
+            )
+
+        super().save(**kwargs)
+
+    def get_video_info(self, temp_file):
+        probe = ffmpeg.probe(temp_file.name)
+        video_stream = next(
+            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
+            None,
+        )
+        return video_stream
 
 
 class MediaBase(AudienceMixin, BaseSiteContentModel):
@@ -270,7 +304,7 @@ class AudioSpeaker(BaseSiteContentModel):
         return f"Audio Speaker {self.audio.title} - ({self.speaker.name})"
 
 
-def get_output_image_size(max_size, input_width, input_height):
+def get_output_dimensions(max_size, input_width, input_height):
     """
     Returns the output image size given a max size to scale the image to. The largest dimension of the input image is
     scaled down to the max size setting and the other dimension is scaled down, keeping the original aspect ratio.
@@ -401,7 +435,7 @@ class Image(ThumbnailMixin, MediaBase):
             thumbnail_name = f"{image_name}_{size_name}.jpg"
 
             with PILImage.open(original.file.open(mode="rb")) as img:
-                output_size = get_output_image_size(max_size, img.width, img.height)
+                output_size = get_output_dimensions(max_size, img.width, img.height)
                 output_img = self.create_thumbnail(img, output_size)
 
             image_file_model = self.add_image_file(
@@ -447,67 +481,64 @@ class Video(ThumbnailMixin, MediaBase):
         """
         A function to generate a set of resized images when a Video model is saved
         """
+        width = self.original.width
+        height = self.original.height
 
-        # Open a temp directory to hold the video file before reading it into ffmpeg
+        # Iterate over each of the output image sizes.
+        for size_name, max_size in settings.IMAGE_SIZES.items():
+            output_dimensions = get_output_dimensions(max_size, width, height)
+            self.add_thumbnail(self.original.content, output_dimensions, size_name)
+
+    def add_thumbnail(self, original_file, output_dimensions, size_name):
         with tempfile.TemporaryDirectory() as temp_dir:
-            original = self.original.content
-            file_name = os.path.basename(original.name).split(".")[0]
-            input_name = original.name.split(".")[0]
-            input_extension = "." + original.name.split(".")[1]
-            temp_file = tempfile.NamedTemporaryFile(suffix=input_extension)
-            original.file.seek(0)
-            image_file = original.file.read()
-            temp_file.write(image_file)
+            thumbnail_temp_path = self.get_thumbnail_temp_path(
+                original_file, size_name, temp_dir
+            )
+            self.write_thumbnail_file(
+                original_file, output_dimensions, thumbnail_temp_path
+            )
 
-            # Read the video width and height from the file
+            thumbnail_name = self.get_thumbnail_file_name(original_file, size_name)
+            self.set_thumbnail_attribute(
+                size_name, output_dimensions, thumbnail_temp_path, thumbnail_name
+            )
+
+    def get_thumbnail_file_name(self, original_file, size_name):
+        input_name = original_file.name.split(".")[0]
+        thumbnail_name = f"{input_name}_{size_name}.jpg"
+        return thumbnail_name
+
+    def get_thumbnail_temp_path(self, original_file, size_name, temp_dir):
+        file_name = os.path.basename(original_file.name).split(".")[0]
+        output_filename = f"{file_name}_{size_name}.jpg"
+        temp_output_image_path = f"{temp_dir}/{output_filename}"
+        return temp_output_image_path
+
+    def write_thumbnail_file(self, original_file, output_dimensions, output_path):
+        with get_local_video_file(original_file) as temp_file:
             try:
-                probe = ffmpeg.probe(temp_file.name)
-                video_stream = next(
-                    (
-                        stream
-                        for stream in probe["streams"]
-                        if stream["codec_type"] == "video"
-                    ),
-                    None,
+                (
+                    ffmpeg.input(temp_file.name)
+                    .filter("scale", output_dimensions[0], -1)
+                    .output(output_path, vframes=1)
+                    .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
                 )
-                width = int(video_stream["width"])
-                height = int(video_stream["height"])
             except ffmpeg.Error as e:
                 self.logger.error(
-                    f"Failed to probe video file using ffmpeg [{original.name}]. \n"
+                    f"Failed to generate image for video file [{original_file.name}].\n"
                     f"Error: {e}\n"
                     f"{e.stderr.decode('utf8')}\n"
                 )
 
-            # Iterate over each of the output image sizes.
-            for size_name, max_size in settings.IMAGE_SIZES.items():
-                output_size = get_output_image_size(max_size, width, height)
-                output_filename = f"{file_name}_{size_name}.jpg"
-                temp_output_image_path = f"{temp_dir}/{output_filename}"
-
-                # Generate an output image using ffmpeg
-                try:
-                    (
-                        ffmpeg.input(temp_file.name)
-                        .filter("scale", output_size[0], -1)
-                        .output(temp_output_image_path, vframes=1)
-                        .overwrite_output()
-                        .run(capture_stdout=True, capture_stderr=True)
-                    )
-                except ffmpeg.Error as e:
-                    self.logger.error(
-                        f"Failed to generate image for video file [{original.name}].\n"
-                        f"Error: {e}\n"
-                        f"{e.stderr.decode('utf8')}\n"
-                    )
-
-                # Set the model field to the newly generated image.
-                output_image = open(temp_output_image_path, "rb")
-                thumbnail_name = f"{input_name}_{size_name}.jpg"
-                image_file_model = self.add_image_file(
-                    thumbnail_name, output_image, output_size
-                )
-                setattr(self, size_name, image_file_model)
+    def set_thumbnail_attribute(
+        self, attribute_name, dimensions, thumbnail_file_path, thumbnail_name
+    ):
+        with open(thumbnail_file_path, "rb") as output_image:
+            image_file_model = self.add_image_file(
+                thumbnail_name, output_image, dimensions
+            )
+            setattr(self, attribute_name, image_file_model)
 
 
 class EmbeddedVideo(MediaBase):
