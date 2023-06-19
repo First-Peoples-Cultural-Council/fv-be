@@ -164,9 +164,9 @@ def get_valid_domain(input_domain_str):
     string_lower = input_domain_str.lower()
 
     if (
-        string_lower == SearchDomains.BOTH
-        or string_lower == SearchDomains.LANGUAGE
-        or string_lower == SearchDomains.ENGLISH
+        string_lower == SearchDomains.BOTH.value
+        or string_lower == SearchDomains.LANGUAGE.value
+        or string_lower == SearchDomains.ENGLISH.value
     ):
         return string_lower
     else:  # if empty string is passed, or invalid option is passed
