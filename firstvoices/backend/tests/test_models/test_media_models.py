@@ -52,6 +52,8 @@ class TestFileModels:
         site = factories.SiteFactory.create()
         instance = factories.VideoFileFactory.create(site=site)
         assert instance.mimetype == "video/mp4"
+        assert instance.height == 46
+        assert instance.width == 80
 
     @pytest.mark.parametrize("media_factory", file_model_factories)
     @pytest.mark.django_db
