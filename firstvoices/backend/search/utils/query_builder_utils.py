@@ -60,6 +60,7 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "value": search_term,
                     "fuzziness": "2",  # Documentation recommends "AUTO" for this param
+                    "boost": 1.2,
                 }
             }
         }
@@ -70,18 +71,22 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "query": search_term,
                     "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": 1.1,
+                    "boost": 1.5,
                 }
             }
         }
     )
     fuzzy_match_translation_query = Q(
-        {"fuzzy": {"translation": {"value": search_term, "fuzziness": "2"}}}
+        {
+            "fuzzy": {
+                "translation": {"value": search_term, "fuzziness": "2", "boost": 1.2}
+            }
+        }
     )
     exact_match_translation_query = Q(
         {
             "match_phrase": {
-                "translation": {"query": search_term, "slop": 3, "boost": 1.1}
+                "translation": {"query": search_term, "slop": 3, "boost": 1.5}
             }
         }
     )
@@ -92,14 +97,14 @@ def get_search_term_query(search_term, domain):
                 "fields": ["title", "full_text_search_field"],
                 "type": "phrase",
                 "operator": "OR",
-                "boost": 1.3,
+                "boost": 1.1,
             }
         }
     )
     text_search_field_match_query = Q(
         {
             "match_phrase": {
-                "full_text_search_field": {"query": search_term, "boost": 1.5}
+                "full_text_search_field": {"query": search_term, "boost": 1.0}
             }
         }
     )

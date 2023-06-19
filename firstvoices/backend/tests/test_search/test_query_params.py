@@ -19,25 +19,26 @@ class TestQueryParams:
         search_query = search_query.to_dict()
 
         expected_fuzzy_match_title_string = (
-            "'fuzzy': {'title': {'value': 'test', 'fuzziness': '2'}}"
+            "'fuzzy': {'title': {'value': 'test', 'fuzziness': '2', 'boost': 1.2}}"
         )
         expected_exact_match_title_string = (
-            "'match_phrase': {'title': {'query': 'test', 'slop': 3, 'boost': 1.1}}"
+            "'match_phrase': {'title': {'query': 'test', 'slop': 3, 'boost': 1.5}}"
         )
         expected_fuzzy_match_translation_string = (
-            "'fuzzy': {'translation': {'value': 'test', 'fuzziness': '2'}}"
+            "'fuzzy': {'translation': {'value': 'test', 'fuzziness': '2', "
+            "'boost': 1.2}}"
         )
         expected_exact_match_translation_string = (
             "'match_phrase': {'translation': {'query': "
-            "'test', 'slop': 3, 'boost': 1.1}}"
+            "'test', 'slop': 3, 'boost': 1.5}}"
         )
         expected_multi_match_string = (
             "'multi_match': {'query': 'test', 'fields': ['title', "
-            "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.3}"
+            "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.1}"
         )
         expected_match_full_text_search_string = (
             "'match_phrase': {'full_text_search_field': "
-            "{'query': 'test', 'boost': 1.5}}"
+            "{'query': 'test', 'boost': 1.0}}"
         )
 
         assert expected_fuzzy_match_title_string in str(search_query)
@@ -54,27 +55,27 @@ class TestQueryParams:
 
         expected_fuzzy_match_string = (
             "'fuzzy': {'title': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
-            "'fuzziness': '2'}}"
+            "'fuzziness': '2', 'boost': 1.2}}"
         )
         expected_exact_match_string = (
             "'match_phrase': {'title': {'query': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.1}}"
+            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.5}}"
         )
         expected_fuzzy_match_translation_string = (
             "'fuzzy': {'translation': {'value': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'fuzziness': '2'}}"
+            "'A Valid Query **With $@&*456Ŧ specials!', 'fuzziness': '2', 'boost': 1.2}}"
         )
         expected_exact_match_translation_string = (
             "'match_phrase': {'translation': {'query': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.1}}"
+            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.5}}"
         )
         expected_multi_match_string = (
             "'multi_match': {'query': 'A Valid Query **With $@&*456Ŧ specials!', 'fields': ['title', "
-            "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.3}"
+            "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.1}"
         )
         expected_match_full_text_search_string = (
             "'match_phrase': {'full_text_search_field': {'query': 'A Valid Query **With $@&*456Ŧ specials!', 'boost': "
-            "1.5}}"
+            "1.0}}"
         )
 
         assert expected_fuzzy_match_string in str(search_query)
@@ -87,25 +88,26 @@ class TestQueryParams:
 
 class TestDomain:
     expected_fuzzy_match_string = (
-        "'fuzzy': {'title': {'value': 'test_query', 'fuzziness': '2'}}"
+        "'fuzzy': {'title': {'value': 'test_query', 'fuzziness': '2', 'boost': 1.2}}"
     )
     expected_exact_match_string = (
-        "'match_phrase': {'title': {'query': 'test_query', 'slop': 3, 'boost': 1.1}}"
+        "'match_phrase': {'title': {'query': 'test_query', 'slop': 3, 'boost': 1.5}}"
     )
     expected_fuzzy_match_translation_string = (
-        "'fuzzy': {'translation': {'value': 'test_query', 'fuzziness': '2'}}"
+        "'fuzzy': {'translation': {'value': 'test_query', 'fuzziness': '2',"
+        " 'boost': 1.2}}"
     )
     expected_exact_match_translation_string = (
         "'match_phrase': {'translation': {'query': "
-        "'test_query', 'slop': 3, 'boost': 1.1}}"
+        "'test_query', 'slop': 3, 'boost': 1.5}}"
     )
     expected_multi_match_string = (
         "'multi_match': {'query': 'test_query', 'fields': ['title', "
-        "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.3}"
+        "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.1}"
     )
     expected_match_full_text_search_string = (
         "'match_phrase': {'full_text_search_field': {'query': 'test_query', 'boost': "
-        "1.5}}"
+        "1.0}}"
     )
 
     def test_english(self):
