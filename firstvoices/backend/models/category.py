@@ -16,7 +16,11 @@ class Category(BaseSiteContentModel):
     # i.e. A category may have a parent, but the parent category cannot have a parent itself. (i.e. no grandparents).
     # This is enforced in the clean method.
     parent = models.ForeignKey(
-        "self", blank=True, null=True, on_delete=models.PROTECT, related_name="children"
+        "self",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="children",
     )
 
     class Meta:
