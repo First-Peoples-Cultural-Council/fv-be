@@ -279,6 +279,18 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
   - For example: `[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]`
   - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
 
+### Building Elasticsearch Index
+To build/rebuild elasticsearch indices:
+1. Make sure the elasticsearch server is running. The instructions can be found in this file
+on how to start the server locally if required.
+2. Run the following command from `firstvoices/` folder:
+`python3 manage.py rebuild_index`
+3. A success message should be displayed if the process gets completed.
+4. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
+Currently, the following indices are supported:
+   1. `dictionary_entries`
+
+
 ### Test coverage
 
 To run the tests, check your test coverage, and generate an HTML coverage report:
