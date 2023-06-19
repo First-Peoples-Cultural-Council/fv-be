@@ -138,7 +138,9 @@ class TestDomain:
 
     def test_both(self):
         # relates to: SearchQueryTest.java - testBoth()
-        search_query = get_search_query(q="test_query")  # default domain is "both"
+        search_query = get_search_query(
+            q="test_query", domain="both"
+        )  # default domain is "both"
         search_query = search_query.to_dict()
 
         # should contain title matching

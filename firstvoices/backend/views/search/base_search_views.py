@@ -144,6 +144,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if not search_params["types"]:
             return Response(data=[])
 
+        # If invalid domain is passed, return emtpy list as a response
+        if not search_params["domain"]:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
             q=search_params["q"],
