@@ -8,6 +8,11 @@ from backend.search.indices.dictionary_entry_document import (
 )
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
+BASE_BOOST = 1.0  # default value of boost
+FULL_TEXT_SEARCH_BOOST = 1.1
+FUZZY_MATCH_BOOST = 1.2
+EXACT_MATCH_BOOST = 1.5
+
 
 class SearchDomains(Enum):
     BOTH = "both"
@@ -60,7 +65,7 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "value": search_term,
                     "fuzziness": "2",  # Documentation recommends "AUTO" for this param
-                    "boost": 1.2,
+                    "boost": FUZZY_MATCH_BOOST,
                 }
             }
         }
@@ -71,7 +76,7 @@ def get_search_term_query(search_term, domain):
                 "title": {
                     "query": search_term,
                     "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": 1.5,
+                    "boost": EXACT_MATCH_BOOST,
                 }
             }
         }
@@ -79,14 +84,22 @@ def get_search_term_query(search_term, domain):
     fuzzy_match_translation_query = Q(
         {
             "fuzzy": {
-                "translation": {"value": search_term, "fuzziness": "2", "boost": 1.2}
+                "translation": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_BOOST,
+                }
             }
         }
     )
     exact_match_translation_query = Q(
         {
             "match_phrase": {
-                "translation": {"query": search_term, "slop": 3, "boost": 1.5}
+                "translation": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_BOOST,
+                }
             }
         }
     )
@@ -97,14 +110,14 @@ def get_search_term_query(search_term, domain):
                 "fields": ["title", "full_text_search_field"],
                 "type": "phrase",
                 "operator": "OR",
-                "boost": 1.1,
+                "boost": FULL_TEXT_SEARCH_BOOST,
             }
         }
     )
     text_search_field_match_query = Q(
         {
             "match_phrase": {
-                "full_text_search_field": {"query": search_term, "boost": 1.0}
+                "full_text_search_field": {"query": search_term, "boost": BASE_BOOST}
             }
         }
     )
