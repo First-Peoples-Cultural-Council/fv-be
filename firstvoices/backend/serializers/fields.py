@@ -1,3 +1,5 @@
+from rest_framework import serializers
+from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
 from backend.serializers.utils import get_site_from_context
@@ -45,3 +47,27 @@ class SiteHyperlinkedIdentityField(SiteHyperlinkedRelatedField):
         kwargs["read_only"] = True
         kwargs["source"] = "*"
         super().__init__(view_name=view_name, **kwargs)
+
+
+class SiteViewLinkField(serializers.Field):
+    """
+    Read-only field that returns a url to a site content view for the
+    view_name, and the site in context. Only works for site serializers.
+    """
+
+    def __init__(self, view_name, **kwargs):
+        self.view_name = view_name
+        kwargs["source"] = "*"
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def bind(self, field_name, parent):
+        super().bind(field_name, parent)
+
+    def to_representation(self, value):
+        site = self.parent.instance
+        return reverse(
+            self.view_name,
+            args=[site.slug],
+            request=self.context["request"],
+        )

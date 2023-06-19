@@ -26,7 +26,6 @@ FROM $caddy_image AS static-runtime
 COPY --from=django-common /app/Caddyfile /etc/caddy
 COPY --from=static-collector /app/firstvoices/static /srv
 
-
 # or django-runtime for the api server. this is last so that it's the default if no target specified
 FROM django-common AS django-runtime
 EXPOSE 8000

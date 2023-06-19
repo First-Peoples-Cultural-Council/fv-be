@@ -35,7 +35,7 @@ def recalculate_custom_order_preview(site_slug: str):
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
         # If a "⚑" is in the custom order, it means that the character is unknown
         if "⚑" in new_order:
-            chars = alphabet.get_character_list(entry.title)
+            chars = alphabet.get_character_list(cleaned_title)
             for char in chars:
                 custom_order = alphabet.get_custom_order(char)
                 if "⚑" in custom_order:

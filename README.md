@@ -18,6 +18,7 @@ License: Apache Software License 2.0
    - [PostgreSQL](https://www.postgresql.org/)
      - Recommended Mac installation: Using Homebrew
        - `brew update`
+       - `brew install libmagic`
        - `brew install postgresql`
        - `brew services start postgresql` to start the service and autostart on system startup.
        - `brew services stop postgresql` to stop the service.
