@@ -76,7 +76,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": obj["_source"]["site_slug"],
+                            "site_slug": dictionary_entry.site.slug,
                         },
                     ).data,
                 }

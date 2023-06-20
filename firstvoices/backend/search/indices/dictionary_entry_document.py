@@ -24,7 +24,7 @@ from firstvoices.settings import ELASTICSEARCH_LOGGER
 class DictionaryEntryDocument(Document):
     # generic fields, will be moved to a base search document once we have songs and stories
     document_id = Text()
-    site_slug = Keyword()
+    site_id = Keyword()
     full_text_search_field = Text()
 
     # Dictionary Related fields
@@ -56,7 +56,7 @@ def update_index(sender, instance, **kwargs):
             # Check if object is already indexed, then update
             index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
             index_entry.update(
-                site_slug=instance.site.slug,
+                site_id=str(instance.site.id),
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
@@ -66,8 +66,8 @@ def update_index(sender, instance, **kwargs):
         else:
             # Create new entry if it doesn't exist
             index_entry = DictionaryEntryDocument(
-                document_id=instance.id,
-                site_slug=instance.site.slug,
+                document_id=str(instance.id),
+                site_id=str(instance.site.id),
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
@@ -167,37 +167,6 @@ def update_notes(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
-
-
-@receiver(post_save, sender=Site)
-def update_site(sender, instance, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entries_set = instance.dictionaryentry_set.all()
-
-    for dictionary_entry in dictionary_entries_set:
-        try:
-            existing_entry = get_object_from_index(
-                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
-            )
-            if not existing_entry:
-                raise NotFoundError
-
-            dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-            dictionary_entry_doc.update(site_slug=instance.slug)
-        except ConnectionError:
-            logger.warning(
-                ES_CONNECTION_ERROR
-                % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
-            )
-        except NotFoundError:
-            logger.warning(
-                ES_NOT_FOUND_ERROR
-                % (
-                    "sites_update_signal",
-                    SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                    dictionary_entry.id,
-                )
-            )
 
 
 # If a site is deleted, delete all docs from index related to site
