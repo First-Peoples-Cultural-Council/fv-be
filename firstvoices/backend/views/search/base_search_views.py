@@ -17,6 +17,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_document_types,
     get_valid_domain,
 )
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -38,6 +39,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             403: OpenApiResponse(description="Todo: Not authorized"),
         },
         parameters=[
+            site_slug_parameter,
             OpenApiParameter(
                 name="q",
                 description="search term",
