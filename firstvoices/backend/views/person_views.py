@@ -1,11 +1,5 @@
 from django.utils.translation import gettext as _
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.media import Person
@@ -17,6 +11,7 @@ from backend.views.base_views import (
 )
 
 from . import doc_strings
+from .api_doc_variables import id_parameter, site_slug_parameter
 
 
 @extend_schema_view(
@@ -30,11 +25,7 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
         description=_("Details about a specific person."),
@@ -47,12 +38,8 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
     create=extend_schema(
@@ -66,12 +53,8 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
     update=extend_schema(
@@ -86,12 +69,8 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
     destroy=extend_schema(
@@ -105,12 +84,8 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
 )

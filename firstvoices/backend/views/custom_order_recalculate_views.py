@@ -1,10 +1,4 @@
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
@@ -16,6 +10,7 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,
 )
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
@@ -32,11 +27,7 @@ from backend.views.exceptions import CeleryError
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
     create=extend_schema(
         description="Queues a custom order recalculation task for the specified site.",
@@ -47,11 +38,7 @@ from backend.views.exceptions import CeleryError
             ),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
 )
 class CustomOrderRecalculateView(
@@ -110,11 +97,7 @@ class CustomOrderRecalculateView(
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
     create=extend_schema(
         description="Queues a custom order recalculation preview task for the specified site. ",
@@ -125,11 +108,7 @@ class CustomOrderRecalculateView(
             ),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
 )
 class CustomOrderRecalculatePreviewView(

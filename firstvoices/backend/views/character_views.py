@@ -1,11 +1,5 @@
 from django.db.models import Prefetch
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import DictionaryEntry
@@ -15,6 +9,7 @@ from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
     IgnoredCharacterSerializer,
 )
+from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
@@ -26,11 +21,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
         description="Details about a specific character in the specified site",
@@ -40,12 +31,8 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             404: OpenApiResponse(description="Todo: Site not found"),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
 )
@@ -97,11 +84,7 @@ class CharactersViewSet(
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
         description="Details about an ignored character in the specified site",
@@ -111,12 +94,8 @@ class CharactersViewSet(
             404: OpenApiResponse(description="Todo: Site not found"),
         },
         parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            ),
-            OpenApiParameter(
-                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
-            ),
+            site_slug_parameter,
+            id_parameter,
         ],
     ),
 )

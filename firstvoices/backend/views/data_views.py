@@ -1,16 +1,11 @@
 from django.db.models import Prefetch
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    extend_schema,
-    extend_schema_view,
-    inline_serializer,
-)
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import mixins, serializers, viewsets
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.site_data_serializers import SiteDataSerializer
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 
 
@@ -38,11 +33,7 @@ def dict_entry_type_mtd_conversion(type):
                 },
             ),
         },
-        parameters=[
-            OpenApiParameter(
-                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
-            )
-        ],
+        parameters=[site_slug_parameter],
     ),
 )
 class SitesDataViewSet(
