@@ -195,3 +195,11 @@ def get_valid_domain(input_domain_str):
         return string_lower
     else:  # if invalid string is passed
         return None
+
+
+def get_valid_boolean(input_str):
+    # Python treats bool("False") as true, thus manual verification
+    if str(input_str).strip().lower() in ["true"]:
+        return True
+    else:
+        return False

@@ -14,6 +14,7 @@ from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
+    get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
 )
@@ -139,7 +140,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         valid_domain = get_valid_domain(input_domain_str)
 
         kids_flag = self.request.GET.get("kids", False)
+        kids_flag = get_valid_boolean(kids_flag)
+
         games_flag = self.request.GET.get("games", False)
+        games_flag = get_valid_boolean(games_flag)
 
         search_params = {
             "q": input_q,
