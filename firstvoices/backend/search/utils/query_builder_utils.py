@@ -153,6 +153,14 @@ def get_site_filter_query(site_slug):
     return Q("bool", filter=[Q("term", site_slug=site_slug)])
 
 
+def get_kids_query(kids):
+    return Q("bool", filter=[Q("term", exclude_from_kids=not kids)])
+
+
+def get_games_query(games):
+    return Q("bool", filter=[Q("term", exclude_from_games=not games)])
+
+
 # Search params validation
 def get_valid_document_types(input_types):
     allowed_values = VALID_DOCUMENT_TYPES

@@ -138,11 +138,16 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)
 
+        kids_flag = self.request.GET.get("kids", False)
+        games_flag = self.request.GET.get("games", False)
+
         search_params = {
             "q": input_q,
             "site_slug": "",
             "types": valid_types_list,
             "domain": valid_domain,
+            "kids": kids_flag,
+            "games": games_flag,
         }
 
         return search_params
@@ -164,6 +169,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             site_slug=search_params["site_slug"],
             types=search_params["types"],
             domain=search_params["domain"],
+            kids=search_params["kids"],
+            games=search_params["games"],
         )
 
         # Get search results
