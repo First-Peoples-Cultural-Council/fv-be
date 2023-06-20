@@ -1,4 +1,10 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
@@ -26,6 +32,11 @@ from backend.views.exceptions import CeleryError
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     create=extend_schema(
         description="Queues a custom order recalculation task for the specified site.",
@@ -36,6 +47,11 @@ from backend.views.exceptions import CeleryError
             ),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
 )
 class CustomOrderRecalculateView(
@@ -94,6 +110,11 @@ class CustomOrderRecalculateView(
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     create=extend_schema(
         description="Queues a custom order recalculation preview task for the specified site. ",
@@ -104,6 +125,11 @@ class CustomOrderRecalculateView(
             ),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
 )
 class CustomOrderRecalculatePreviewView(

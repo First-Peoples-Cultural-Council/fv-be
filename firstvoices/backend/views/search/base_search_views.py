@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -38,6 +39,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
             403: OpenApiResponse(description="Todo: Not authorized"),
         },
         parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
             OpenApiParameter(
                 name="q",
                 description="search term",

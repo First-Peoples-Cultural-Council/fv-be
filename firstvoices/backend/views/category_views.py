@@ -2,6 +2,7 @@ import itertools
 
 from django.db.models import Prefetch, Q
 from django.utils.translation import gettext as _
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -39,6 +40,9 @@ from . import doc_strings
         },
         parameters=[
             OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
                 name="contains",
                 description=_("Filter by type of dictionary entry associated with it"),
                 required=False,
@@ -54,7 +58,7 @@ from . import doc_strings
                         ),
                     ),
                 ],
-            )
+            ),
         ],
     ),
     retrieve=extend_schema(
@@ -67,6 +71,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
     create=extend_schema(
         description=_("Add a category."),
@@ -78,6 +90,11 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     update=extend_schema(
         description=_("Edit a category."),
@@ -90,6 +107,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
     destroy=extend_schema(
         description=_("Delete a category."),
@@ -101,6 +126,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
 )
 class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):

@@ -1,5 +1,11 @@
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import viewsets
 
 from backend.models.media import Image
@@ -17,6 +23,11 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     retrieve=extend_schema(
         description=_("An image from the specified site."),
@@ -25,6 +36,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
 )
 class ImageViewSet(

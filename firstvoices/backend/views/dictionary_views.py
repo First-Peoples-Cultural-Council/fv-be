@@ -1,5 +1,11 @@
 from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import viewsets
 
 from backend.models.dictionary import DictionaryEntry
@@ -20,6 +26,11 @@ from backend.views.base_views import (
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     retrieve=extend_schema(
         description="A dictionary entry from the specified site.",
@@ -28,6 +39,14 @@ from backend.views.base_views import (
             403: OpenApiResponse(description="Todo: Error Not Authorized"),
             404: OpenApiResponse(description="Todo: Not Found"),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
 )
 class DictionaryViewSet(

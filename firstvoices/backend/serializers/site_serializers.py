@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from backend.models.app import AppJson
@@ -42,6 +44,22 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
 
 
+@extend_schema_serializer(
+    exclude_fields=(
+        "audio",
+        "categories",
+        "characters",
+        "data",
+        "dictionary",
+        "dictionary_cleanup",
+        "dictionary_cleanup_preview",
+        "ignored_characters",
+        "images",
+        "people",
+        "videos",
+        "word_of_the_day",
+    ),
+)
 class SiteDetailSerializer(SiteSummarySerializer):
     """
     Serializes basic details about a site object, including access-controlled related information.
@@ -67,6 +85,7 @@ class SiteDetailSerializer(SiteSummarySerializer):
     videos = SiteViewLinkField(view_name="api:video-list")
     word_of_the_day = SiteViewLinkField(view_name="api:word-of-the-day-list")
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_menu(self, site):
         return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
 

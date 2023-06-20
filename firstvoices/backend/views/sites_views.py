@@ -52,7 +52,7 @@ def group_sites_by_language(request, sites):
         "under 'Other'.",
         responses={
             200: inline_serializer(
-                name="InlineLanguageSerializer",
+                name="SitesInlineLanguageSerializer",
                 fields={
                     "language": serializers.CharField(),
                     "sites": SiteSummarySerializer(many=True),
@@ -120,7 +120,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         "membership to any site then the list will be empty.",
         responses={
             200: inline_serializer(
-                name="InlineLanguageSerializer",
+                name="MySitesInlineLanguageSerializer",
                 fields={
                     "language": serializers.CharField(),
                     "sites": SiteSummarySerializer(many=True),

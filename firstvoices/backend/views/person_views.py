@@ -1,5 +1,11 @@
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.media import Person
@@ -24,6 +30,11 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            )
+        ],
     ),
     retrieve=extend_schema(
         description=_("Details about a specific person."),
@@ -35,6 +46,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
     create=extend_schema(
         description=_("Add a person."),
@@ -46,6 +65,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
     update=extend_schema(
         description=_("Edit a person."),
@@ -58,6 +85,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
     destroy=extend_schema(
         description=_("Delete a person."),
@@ -69,6 +104,14 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            OpenApiParameter(
+                name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                name="id", type=OpenApiTypes.UUID, location=OpenApiParameter.PATH
+            ),
+        ],
     ),
 )
 class PersonViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):

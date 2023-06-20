@@ -1,5 +1,7 @@
 import logging
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import category, dictionary
@@ -101,6 +103,7 @@ class DictionaryEntryDetailSerializer(
             )
             return []
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_chars(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         ignored_characters = self.get_model_from_context("ignored_characters")
@@ -124,6 +127,7 @@ class DictionaryEntryDetailSerializer(
             else:
                 return char_list
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_chars_base(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         ignored_characters = self.get_model_from_context("ignored_characters")
@@ -156,9 +160,11 @@ class DictionaryEntryDetailSerializer(
                 return base_chars
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_words(entry):
         return entry.title.split(" ")
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_words_base(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         if alphabet == []:
