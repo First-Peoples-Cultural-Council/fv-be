@@ -1,7 +1,10 @@
 import pytest
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
-from backend.search.utils.query_builder_utils import get_valid_document_types
+from backend.search.utils.query_builder_utils import (
+    get_valid_document_types,
+    get_valid_domain,
+)
 
 
 class TestValidDocumentTypes:
@@ -26,3 +29,22 @@ class TestValidDocumentTypes:
     def test_empty_input_return_all_types(self):
         actual_types = get_valid_document_types("")
         assert VALID_DOCUMENT_TYPES == actual_types
+
+
+class TestValidDomains:
+    @pytest.mark.parametrize(
+        "input_domain, expected_domain",
+        [
+            ("english", "english"),
+            ("LANGUAGE", "language"),
+            ("both", "both"),
+            (" ", "both"),
+        ],
+    )
+    def test_valid_inputs(self, input_domain, expected_domain):
+        actual_domain = get_valid_domain(input_domain)
+        assert expected_domain == actual_domain
+
+    def test_invalid_input(self):
+        actual_domain = get_valid_domain("bananas")
+        assert actual_domain is None
