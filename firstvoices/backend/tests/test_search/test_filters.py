@@ -15,7 +15,7 @@ class TestSearchFilters:
 
     def test_valid_dialect(self):
         valid_site = SiteFactory.create()
-        search_query = get_search_query(site_id=valid_site.id)
+        search_query = get_search_query(site_id=str(valid_site.id))
         search_query = search_query.to_dict()
 
         expected_site_filter = (
