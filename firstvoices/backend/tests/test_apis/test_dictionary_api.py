@@ -59,7 +59,7 @@ class TestDictionaryEndpoint(
                 "id": str(site.id),
                 "title": site.title,
                 "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "language": site.language.title,
                 "visibility": "Public",
             },
@@ -190,7 +190,7 @@ class TestDictionaryEndpoint(
             {
                 "title": f"{category1.title}",
                 "id": str(category1.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/categories/{str(category1.id)}/",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/categories/{str(category1.id)}",
             },
         ]
 
@@ -234,7 +234,12 @@ class TestDictionaryEndpoint(
             {
                 "id": str(entry2.id),
                 "title": entry2.title,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry2.id)}/",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry2.id)}",
+                "translations": [],
+                "relatedImages": [],
+                "relatedAudio": [],
+                "relatedVideos": [],
+                "type": entry2.type,
             }
         ]
 

@@ -1,6 +1,7 @@
-from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+from backend.router import CustomRouter
+from backend.views.audio_views import AudioViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.custom_order_recalculate_views import (
@@ -9,26 +10,29 @@ from backend.views.custom_order_recalculate_views import (
 )
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
+from backend.views.image_views import ImageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
+from backend.views.video_views import VideoViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
-ROUTER = DefaultRouter(trailing_slash=True)
-ROUTER.register(r"user", UserViewSet, basename=r"user")
-ROUTER.register(r"search", BaseSearchViewSet, basename="search")
-ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
+
+ROUTER = CustomRouter()
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
+ROUTER.register(r"search", BaseSearchViewSet, basename="search")
 ROUTER.register(r"user", UserViewSet, basename=r"user")
+
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
+sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
@@ -36,9 +40,8 @@ sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentr
 sites_router.register(
     r"dictionary-cleanup/preview",
     CustomOrderRecalculatePreviewView,
-    basename="dictionary-cleanup/preview",
+    basename="dictionary-cleanup-preview",
 )
-sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(
     r"dictionary-cleanup",
     CustomOrderRecalculateView,
@@ -47,8 +50,11 @@ sites_router.register(
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
+sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
+sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
+sites_router.register(r"videos", VideoViewSet, basename="video")
 
 app_name = "api"
 

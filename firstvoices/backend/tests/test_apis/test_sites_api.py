@@ -8,9 +8,10 @@ from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
 from .base_api_test import BaseApiTest
+from .base_media_test import MediaTestMixin
 
 
-class TestSitesEndpoints(BaseApiTest):
+class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
     """
     End-to-end tests that the sites endpoints have the expected behaviour.
     """
@@ -45,6 +46,10 @@ class TestSitesEndpoints(BaseApiTest):
         )
         factories.SiteFactory(language=language1, visibility=Visibility.MEMBERS)
 
+        # sites with no language set
+        factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+        factories.SiteFactory(language=None, visibility=Visibility.MEMBERS)
+
         backend.tests.factories.access.LanguageFactory.create()
 
         response = self.client.get(self.get_list_endpoint())
@@ -52,13 +57,19 @@ class TestSitesEndpoints(BaseApiTest):
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert len(response_data) == 2
+        assert len(response_data) == 3
 
-        assert response_data[0]["language"] == "Language 0"
+        assert response_data[0]["language"] == language0.title
+        assert response_data[0]["languageCode"] == language0.language_code
         assert len(response_data[0]["sites"]) == 2
 
-        assert response_data[1]["language"] == "Language 1"
+        assert response_data[1]["language"] == language1.title
+        assert response_data[1]["languageCode"] == language1.language_code
         assert len(response_data[1]["sites"]) == 1
+
+        assert response_data[2]["language"] == "Other"
+        assert response_data[2]["languageCode"] == ""
+        assert len(response_data[2]["sites"]) == 2
 
         site_json = response_data[0]["sites"][0]
         assert site_json == {
@@ -68,7 +79,7 @@ class TestSitesEndpoints(BaseApiTest):
             "language": language0.title,
             "visibility": "Public",
             "logo": None,
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+            "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "features": [],
         }
 
@@ -100,7 +111,7 @@ class TestSitesEndpoints(BaseApiTest):
 
     @pytest.mark.parametrize("visibility", [Visibility.PUBLIC, Visibility.MEMBERS])
     @pytest.mark.django_db
-    def test_list_logo(self, visibility):
+    def test_list_logo_from_same_site(self, visibility):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
@@ -115,7 +126,7 @@ class TestSitesEndpoints(BaseApiTest):
         response_data = json.loads(response.content)
         assert len(response_data) == 1
         assert len(response_data[0]["sites"]) == 1
-        assert response_data[0]["sites"][0]["logo"] == self.get_expected_media_response(
+        assert response_data[0]["sites"][0]["logo"] == self.get_expected_image_data(
             image
         )
 
@@ -130,31 +141,36 @@ class TestSitesEndpoints(BaseApiTest):
         )
         menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(self.get_detail_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
+
+        site_url = f"http://testserver/api/1.0/sites/{site.slug}"
         assert response_data == {
             "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
             "visibility": "Members",
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/",
+            "url": site_url,
             "menu": menu.json,
             "features": [],
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
-            "data": f"http://testserver/api/1.0/sites/{site.slug}/data/",
-            "dictionary": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/",
-            "dictionaryCleanup": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/",
-            "dictionaryCleanupPreview": f"http://testserver/api/1.0/sites/{site.slug}/dictionary-cleanup/preview/",
-            "categories": f"http://testserver/api/1.0/sites/{site.slug}/categories/",
-            "characters": f"http://testserver/api/1.0/sites/{site.slug}/characters/",
-            "ignoredCharacters": f"http://testserver/api/1.0/sites/{site.slug}/ignored-characters/",
-            "people": f"http://testserver/api/1.0/sites/{site.slug}/people/",
-            "wordOfTheDay": f"http://testserver/api/1.0/sites/{site.slug}/word-of-the-day/",
+            "audio": f"{site_url}/audio",
+            "categories": f"{site_url}/categories",
+            "characters": f"{site_url}/characters",
+            "data": f"{site_url}/data",
+            "dictionary": f"{site_url}/dictionary",
+            "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
+            "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "ignoredCharacters": f"{site_url}/ignored-characters",
+            "images": f"{site_url}/images",
+            "people": f"{site_url}/people",
+            "videos": f"{site_url}/videos",
+            "wordOfTheDay": f"{site_url}/word-of-the-day",
         }
 
     @pytest.mark.django_db
@@ -194,15 +210,8 @@ class TestSitesEndpoints(BaseApiTest):
             }
         ]
 
-    def get_expected_media_response(self, media_instance):
-        return {
-            "id": str(media_instance.id),
-            "title": media_instance.title,
-            "content": f"http://testserver{media_instance.content.url}",
-        }
-
     @pytest.mark.django_db
-    def test_detail_logo(self):
+    def test_detail_logo_from_other_site(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
@@ -213,7 +222,7 @@ class TestSitesEndpoints(BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["logo"] == self.get_expected_media_response(image)
+        assert response_data["logo"] == self.get_expected_image_data(image)
 
     @pytest.mark.django_db
     def test_detail_banner_image(self):
@@ -229,7 +238,7 @@ class TestSitesEndpoints(BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["bannerImage"] == self.get_expected_media_response(image)
+        assert response_data["bannerImage"] == self.get_expected_image_data(image)
 
     @pytest.mark.django_db
     def test_detail_banner_video(self):
@@ -245,7 +254,7 @@ class TestSitesEndpoints(BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["bannerVideo"] == self.get_expected_media_response(video)
+        assert response_data["bannerVideo"] == self.get_expected_video_data(video)
 
     @pytest.mark.django_db
     def test_detail_team_access(self):

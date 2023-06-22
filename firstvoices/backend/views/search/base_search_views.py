@@ -18,6 +18,11 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import hydrate_objects
+from backend.search.utils.query_builder_utils import (
+    get_valid_document_types,
+    get_valid_domain,
+)
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -44,16 +49,88 @@ class SearchViewPagination(pagination.PageNumberPagination):
             403: OpenApiResponse(description="Todo: Not authorized"),
         },
         parameters=[
+            site_slug_parameter,
             OpenApiParameter(
                 name="q",
                 description="search term",
                 required=False,
+                default="",
                 type=str,
                 examples=[
                     OpenApiExample("ball", value="ball"),
                     OpenApiExample("quick brown fox", value="quick brown fox"),
                 ],
-            )
+            ),
+            OpenApiParameter(
+                name="types",
+                description="filter by document types",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Retrieves results from all types of documents.",
+                    ),
+                    OpenApiExample(
+                        "words, phrases",
+                        value="words, phrases",
+                        description="Searches for documents in both the Words and Phrases document types.",
+                    ),
+                    OpenApiExample(
+                        "words",
+                        value="words",
+                        description="Specifically looks for documents in the Words document type.",
+                    ),
+                    OpenApiExample(
+                        "words, invalid_type",
+                        value="words",
+                        description="Ignores invalid document types and returns results "
+                        "only for the valid types, such as words.",
+                    ),
+                    OpenApiExample(
+                        "invalid_type",
+                        value="None",
+                        description="If no valid document types are provided, "
+                        "the API returns an empty set of results.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="domain",
+                description="search domain",
+                required=False,
+                default="both",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Defaults to both.",
+                    ),
+                    OpenApiExample(
+                        "both",
+                        value="both",
+                        description="Searches in both the Language and English domains.",
+                    ),
+                    OpenApiExample(
+                        "english",
+                        value="english",
+                        description="Performs a search focused on translations.",
+                    ),
+                    OpenApiExample(
+                        "language",
+                        value="language",
+                        description="Performs a search focused on titles and language.",
+                    ),
+                    OpenApiExample(
+                        "invalid_domain",
+                        value="None",
+                        description="If invalid domain is passed, the API returns an empty set of results.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -68,15 +145,38 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
-        search_params = {"q": input_q, "site_slug": ""}
+        input_types_str = self.request.GET.get("types", "")
+        valid_types_list = get_valid_document_types(input_types_str)
+
+        input_domain_str = self.request.GET.get("domain", "")
+        valid_domain = get_valid_domain(input_domain_str)
+
+        search_params = {
+            "q": input_q,
+            "site_id": "",
+            "types": valid_types_list,
+            "domain": valid_domain,
+        }
+
         return search_params
 
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
 
+        # If no valid types are passed, return emtpy list as a response
+        if not search_params["types"]:
+            return Response(data=[])
+
+        # If invalid domain is passed, return emtpy list as a response
+        if not search_params["domain"]:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
-            q=search_params["q"], site_slug=search_params["site_slug"]
+            q=search_params["q"],
+            site_id=search_params["site_id"],
+            types=search_params["types"],
+            domain=search_params["domain"],
         )
 
         # Get search results

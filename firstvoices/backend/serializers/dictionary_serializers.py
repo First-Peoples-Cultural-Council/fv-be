@@ -1,5 +1,7 @@
 import logging
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import category, dictionary
@@ -49,9 +51,21 @@ class TranslationSerializer(serializers.ModelSerializer):
         fields = DictionaryContentMeta.fields + ("language", "part_of_speech")
 
 
-class DictionaryEntrySummarySerializer(SiteContentLinkedTitleSerializer):
+class DictionaryEntrySummarySerializer(
+    RelatedMediaSerializerMixin, SiteContentLinkedTitleSerializer
+):
+    translations = TranslationSerializer(source="translation_set", many=True)
+
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = dictionary.DictionaryEntry
+        fields = (
+            (
+                "translations",
+                "type",
+            )
+            + RelatedMediaSerializerMixin.Meta.fields
+            + SiteContentLinkedTitleSerializer.Meta.fields
+        )
 
 
 class DictionaryEntryDetailSerializer(
@@ -89,6 +103,7 @@ class DictionaryEntryDetailSerializer(
             )
             return []
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_chars(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         ignored_characters = self.get_model_from_context("ignored_characters")
@@ -112,6 +127,7 @@ class DictionaryEntryDetailSerializer(
             else:
                 return char_list
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_chars_base(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         ignored_characters = self.get_model_from_context("ignored_characters")
@@ -144,9 +160,11 @@ class DictionaryEntryDetailSerializer(
                 return base_chars
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_words(entry):
         return entry.title.split(" ")
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_split_words_base(self, entry):
         alphabet = self.get_model_from_context("alphabet")
         if alphabet == []:

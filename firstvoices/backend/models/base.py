@@ -98,6 +98,8 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
 # method to add last_modified and created fields if missing in the data, helpful for fixtures
 @receiver(pre_save, sender="backend.PartOfSpeech")
 @receiver(pre_save, sender="backend.appjson")
+@receiver(pre_save, sender="backend.languagefamily")
+@receiver(pre_save, sender="backend.language")
 def pre_save_for_fixtures(sender, instance, **kwargs):
     if kwargs["raw"]:
         if not instance.created:

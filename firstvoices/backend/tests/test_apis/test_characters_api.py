@@ -134,6 +134,11 @@ class TestCharactersEndpoints(
             {
                 "id": str(entry1.id),
                 "title": entry1.title,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry1.id)}/",
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry1.id)}",
+                "translations": [],
+                "relatedImages": [],
+                "relatedAudio": [],
+                "relatedVideos": [],
+                "type": entry1.type,
             }
         ]
