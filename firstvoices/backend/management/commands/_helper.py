@@ -94,8 +94,8 @@ def dictionary_entry_iterator():
         ) = get_translation_and_part_of_speech_text(entry)
         notes_text = get_notes_text(entry)
         index_entry = DictionaryEntryDocument(
-            document_id=entry.id,
-            site_slug=entry.site.slug,
+            document_id=str(entry.id),
+            site_id=str(entry.site.id),
             title=entry.title,
             type=entry.type,
             translation=translations_text,

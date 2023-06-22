@@ -197,7 +197,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         search_params = {
             "q": input_q,
-            "site_slug": "",
+            "site_id": "",
             "types": valid_types_list,
             "domain": valid_domain,
             "kids": kids_flag,
@@ -220,7 +220,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Get search query
         search_query = get_search_query(
             q=search_params["q"],
-            site_slug=search_params["site_slug"],
+            site_id=search_params["site_id"],
             types=search_params["types"],
             domain=search_params["domain"],
             kids=search_params["kids"],

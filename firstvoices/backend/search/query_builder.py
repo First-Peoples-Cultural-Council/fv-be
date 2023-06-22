@@ -19,7 +19,7 @@ def get_search_object(indices):
 
 def get_search_query(
     q=None,
-    site_slug=None,
+    site_id=None,
     types=VALID_DOCUMENT_TYPES,
     domain="both",
     kids=False,
@@ -39,8 +39,8 @@ def get_search_query(
             )
 
     # Add site filter if parameter provided in url
-    if site_slug:
-        search_query = search_query.query(get_site_filter_query(site_slug))
+    if site_id:
+        search_query = search_query.query(get_site_filter_query(site_id))
 
     types_query = get_types_query(types)
     if types_query:

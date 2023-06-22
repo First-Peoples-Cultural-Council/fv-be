@@ -149,8 +149,8 @@ def get_search_term_query(search_term, domain):
     )
 
 
-def get_site_filter_query(site_slug):
-    return Q("bool", filter=[Q("term", site_slug=site_slug)])
+def get_site_filter_query(site_id):
+    return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
 def get_kids_query(kids):
