@@ -14,6 +14,7 @@ from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
+from backend.views.song_views import SongViewSet
 from backend.views.user import UserViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
@@ -49,6 +50,7 @@ sites_router.register(
 )
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
+sites_router.register(r"songs", SongViewSet, basename="song")
 
 app_name = "api"
 

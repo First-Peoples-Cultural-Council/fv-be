@@ -31,6 +31,7 @@ class TranslatedText(BaseModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+        unique_together = []
 
     class TranslationLanguages(models.TextChoices):
         # Choices for Language
@@ -47,7 +48,7 @@ class TranslatedText(BaseModel):
 
 
 def dynamic_translated_field_mixin_factory(
-    name: str, blank=True, unique=False, nullable=True
+    model_name: str, name: str, blank=True, unique=False, nullable=True
 ):
     """
     A function that returns a mixin. Used here to generate a "translated" field having both a main text field and also
@@ -66,11 +67,13 @@ def dynamic_translated_field_mixin_factory(
         models.TextField(blank=blank, unique=unique, null=nullable),
     )
 
-    AbstractMixin.add_to_class(
-        name + "_translations",
-        models.ForeignKey(
-            "TranslatedText", related_name="+", on_delete=models.CASCADE, null=True
-        ),
+    TranslatedText.add_to_class(
+        model_name.lower() + "_" + name,
+        models.ForeignKey(model_name,
+                          on_delete=models.CASCADE,
+                          related_name=(name.lower() + "_translations"),
+                          null=True
+                          )
     )
 
     return AbstractMixin
