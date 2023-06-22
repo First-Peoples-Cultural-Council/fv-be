@@ -24,6 +24,7 @@ from backend.views.base_views import (
 )
 
 from . import doc_strings
+from .api_doc_variables import id_parameter, site_slug_parameter
 
 
 @extend_schema_view(
@@ -38,6 +39,7 @@ from . import doc_strings
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[
+            site_slug_parameter,
             OpenApiParameter(
                 name="contains",
                 description=_("Filter by type of dictionary entry associated with it"),
@@ -54,7 +56,7 @@ from . import doc_strings
                         ),
                     ),
                 ],
-            )
+            ),
         ],
     ),
     retrieve=extend_schema(
@@ -67,6 +69,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
     create=extend_schema(
         description=_("Add a category."),
@@ -78,6 +84,7 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[site_slug_parameter],
     ),
     update=extend_schema(
         description=_("Edit a category."),
@@ -90,6 +97,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
     destroy=extend_schema(
         description=_("Delete a category."),
@@ -101,6 +112,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
 )
 class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):

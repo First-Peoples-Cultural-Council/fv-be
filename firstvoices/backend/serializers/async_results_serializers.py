@@ -1,6 +1,8 @@
 from collections import OrderedDict
 
 from celery.result import AsyncResult
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models.async_results import CustomOrderRecalculationResult
@@ -12,11 +14,13 @@ class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
     latest_recalculation_result = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
     def get_current_task_status(obj):
         async_result = AsyncResult(obj.task_id)
         return async_result.status
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
     def get_latest_recalculation_result(obj):
         ordered_result = OrderedDict(
             {
@@ -62,6 +66,7 @@ class CustomOrderRecalculationPreviewResultSerializer(
         source="latest_recalculation_date"
     )
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_current_preview_task_status(self, obj):
         return self.get_current_task_status(obj)
 

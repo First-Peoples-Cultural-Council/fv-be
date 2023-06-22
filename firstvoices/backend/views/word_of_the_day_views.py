@@ -12,6 +12,7 @@ from backend.models.dictionary import (
 )
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     DictionarySerializerContextMixin,
     FVPermissionViewSetMixin,
@@ -27,6 +28,7 @@ from backend.views.base_views import (
             403: OpenApiResponse(description="Todo: Not authorized for this Site"),
             404: OpenApiResponse(description="Todo: Site not found"),
         },
+        parameters=[site_slug_parameter],
     ),
 )
 class WordOfTheDayView(

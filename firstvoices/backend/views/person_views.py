@@ -11,6 +11,7 @@ from backend.views.base_views import (
 )
 
 from . import doc_strings
+from .api_doc_variables import id_parameter, site_slug_parameter
 
 
 @extend_schema_view(
@@ -24,6 +25,7 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
         description=_("Details about a specific person."),
@@ -35,6 +37,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
     create=extend_schema(
         description=_("Add a person."),
@@ -46,6 +52,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
     update=extend_schema(
         description=_("Edit a person."),
@@ -58,6 +68,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
     destroy=extend_schema(
         description=_("Delete a person."),
@@ -69,6 +83,10 @@ from . import doc_strings
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
 )
 class PersonViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
