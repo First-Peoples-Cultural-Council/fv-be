@@ -5,6 +5,9 @@ from backend.models import Song, TranslatedText
 
 
 class TranslatedTextAdmin(BaseInlineAdmin):
+    """
+    Base class for inline translations (you'll get an FK error and a useless verbose_name if you use it directly)
+    """
     model = TranslatedText
     fields = ("text", "language")
     list_display = ("text", "language")
@@ -30,7 +33,7 @@ class InlineIntroductionTranslactions(TranslatedTextAdmin):
 
 @admin.register(Song)
 class SongAdmin(BaseSiteContentAdmin):
-    list_fields = ("title",) + BaseSiteContentAdmin.list_display
+    list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [InlineIntroductionTranslactions,
                InlineTitleTranslactions,
                InlineLyricsTranslations]

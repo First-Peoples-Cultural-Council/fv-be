@@ -9,7 +9,7 @@ from backend.serializers.site_serializers import LinkedSiteSerializer
 class TranslatedTextSerializer(ModelSerializer):
     class Meta:
         model = TranslatedText
-        fields = base_timestamp_fields + ('text', 'language')
+        fields = ('text', 'language')
 
 
 class SongDetailSerializer(
