@@ -197,9 +197,9 @@ def get_valid_domain(input_domain_str):
         return None
 
 
-def get_valid_boolean(input_str):
+def get_valid_boolean(input_val):
     # Python treats bool("False") as true, thus manual verification
-    if str(input_str).strip().lower() in ["true"]:
+    if str(input_val).strip().lower() in ["true"]:
         return True
     else:
         return False
