@@ -1,6 +1,3 @@
-from itertools import groupby
-from operator import itemgetter
-
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from drf_spectacular.utils import (
@@ -14,33 +11,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models.sites import SiteFeature
+from backend.models.sites import Language, SiteFeature
 from backend.serializers.site_serializers import (
+    LanguageSerializer,
     Site,
     SiteDetailSerializer,
     SiteSummarySerializer,
 )
-
-
-def group_sites_by_language(request, sites):
-    """
-    A helper function to group sites by language. Sites will be grouped under `Other` if they don't have a language.
-    """
-    # serialize each site (groupby can't handle Models)
-    site_jsons = [
-        SiteSummarySerializer(site, context={"request": request}).data for site in sites
-    ]
-
-    # group by language
-    rows = groupby(site_jsons, itemgetter("language"))
-    data = [
-        {
-            "language": language if language is not None else "Other",
-            "sites": list(items),
-        }
-        for language, items in rows
-    ]
-    return data
 
 
 @extend_schema_view(
@@ -49,15 +26,7 @@ def group_sites_by_language(request, sites):
         "Public and member sites are included, as well as any team sites the user has access to. If there "
         "are no accessible sites the list will be empty. Sites with no specified language will be grouped "
         "under 'Other'.",
-        responses={
-            200: inline_serializer(
-                name="SitesInlineLanguageSerializer",
-                fields={
-                    "language": serializers.CharField(),
-                    "sites": SiteSummarySerializer(many=True),
-                },
-            ),
-        },
+        responses={200: LanguageSerializer},
     ),
     retrieve=extend_schema(
         description="Basic information about a language site, for authorized users.",
@@ -89,23 +58,42 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         """
-        Override the list method to group sites by language.
+        Return a list of sites grouped by language.
         """
-        # custom queryset to avoid prefetching from unneeded tables (list view has less detail)
-        # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        sites = (
-            Site.objects.visible(request.user)
-            .select_related("language")
-            .order_by(Upper("language__title"), Upper("title"))
+        sites = Site.objects.visible(request.user).order_by(Upper("title"))
+        ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
+
+        # sorting note: titles are converted to uppercase and then sorted which will put custom characters at the end
+        languages = (
+            Language.objects.filter(id__in=ids_of_languages_with_sites)
+            .order_by(Upper("title"))
             .prefetch_related(
                 Prefetch(
-                    "sitefeature_set",
+                    "sites__sitefeature_set",
                     queryset=SiteFeature.objects.filter(is_enabled=True),
-                )
+                ),
             )
         )
 
-        data = group_sites_by_language(request, sites)
+        data = [
+            LanguageSerializer(language, context={"request": request}).data
+            for language in languages
+        ]
+
+        # add "other" sites
+        other_sites = sites.filter(language=None)
+
+        if other_sites:
+            other_site_json = {
+                "language": "Other",
+                "languageCode": "",
+                "sites": [
+                    SiteSummarySerializer(site, context={"request": request}).data
+                    for site in other_sites
+                ],
+            }
+
+            data.append(other_site_json)
 
         return Response(data)
 

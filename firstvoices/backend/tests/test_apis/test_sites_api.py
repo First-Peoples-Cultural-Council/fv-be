@@ -46,6 +46,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
         factories.SiteFactory(language=language1, visibility=Visibility.MEMBERS)
 
+        # sites with no language set
+        factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+        factories.SiteFactory(language=None, visibility=Visibility.MEMBERS)
+
         backend.tests.factories.access.LanguageFactory.create()
 
         response = self.client.get(self.get_list_endpoint())
@@ -53,13 +57,19 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert len(response_data) == 2
+        assert len(response_data) == 3
 
-        assert response_data[0]["language"] == "Language 0"
+        assert response_data[0]["language"] == language0.title
+        assert response_data[0]["languageCode"] == language0.language_code
         assert len(response_data[0]["sites"]) == 2
 
-        assert response_data[1]["language"] == "Language 1"
+        assert response_data[1]["language"] == language1.title
+        assert response_data[1]["languageCode"] == language1.language_code
         assert len(response_data[1]["sites"]) == 1
+
+        assert response_data[2]["language"] == "Other"
+        assert response_data[2]["languageCode"] == ""
+        assert len(response_data[2]["sites"]) == 2
 
         site_json = response_data[0]["sites"][0]
         assert site_json == {
