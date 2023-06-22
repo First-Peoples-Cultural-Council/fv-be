@@ -15,7 +15,6 @@ from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import SiteFeature
-from backend.permissions import utils
 from backend.serializers.site_serializers import (
     Site,
     SiteDetailSerializer,
@@ -94,8 +93,9 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         """
         # custom queryset to avoid prefetching from unneeded tables (list view has less detail)
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = (
-            Site.objects.select_related("language")
+        sites = (
+            Site.objects.visible(request.user)
+            .select_related("language")
             .order_by(Upper("language__title"), Upper("title"))
             .prefetch_related(
                 Prefetch(
@@ -104,9 +104,6 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
                 )
             )
         )
-
-        # apply permissions
-        sites = utils.filter_by_viewable(request.user, queryset)
 
         data = group_sites_by_language(request, sites)
 
@@ -143,12 +140,9 @@ class MySitesViewSet(
     def get_queryset(self):
         # get the site objects filtered by the membership set for the user
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = (
-            Site.objects.filter(membership_set__user=self.request.user)
+        return (
+            Site.objects.visible(self.request.user)
+            .filter(membership_set__user=self.request.user)
             .select_related("language")
             .order_by(Upper("title"))
         )
-
-        # filter the list down to the sites the user has view permissions on
-        queryset = utils.filter_by_viewable(self.request.user, queryset)
-        return queryset
