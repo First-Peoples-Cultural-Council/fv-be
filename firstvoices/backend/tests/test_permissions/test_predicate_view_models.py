@@ -83,15 +83,21 @@ class TestCanViewSiteModel:
 
 
 class TestCanViewMembershipModel:
-    @pytest.mark.parametrize(
-        "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
-    )
+    @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.django_db
     def test_user_can_view_own_membership(self, site_visibility):
         user = UserFactory.create()
         site = SiteFactory.create(visibility=site_visibility)
         membership = MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
         assert view_models.can_view_membership_model(user, membership)
+
+    @pytest.mark.django_db
+    def test_user_blocked_on_team_site_edge_case(self):
+        # test that a member role on a team site is blocked
+        user = UserFactory.create()
+        site = SiteFactory.create(visibility=Visibility.TEAM)
+        membership = MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
+        assert not view_models.can_view_membership_model(user, membership)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]

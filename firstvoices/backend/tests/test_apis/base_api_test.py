@@ -29,6 +29,56 @@ class BaseApiTest:
     def setup_method(self):
         self.client = APIClient()
 
+    def create_minimal_instance(self, visibility):
+        raise NotImplementedError()
+
+    def get_expected_response(self, instance):
+        raise NotImplementedError()
+
+
+class ListApiTestMixin:
+    """
+    Basic tests for non-site-content list APIs. Use with BaseApiTest.
+
+    Does NOT include permission-related tests.
+    """
+
+    def get_expected_list_response_item(self, instance):
+        return self.get_expected_response(instance)
+
+    @pytest.mark.django_db
+    def test_list_empty(self):
+        response = self.client.get(self.get_list_endpoint())
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
+
+    @pytest.mark.django_db
+    def test_list_minimal(self):
+        instance = self.create_minimal_instance(visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_list_endpoint())
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert response_data["results"][0] == self.get_expected_list_response_item(
+            instance
+        )
+
+
+class DetailApiTestMixin:
+    pass
+
+
+class ReadOnlyApiTests(ListApiTestMixin, DetailApiTestMixin, BaseApiTest):
+    pass
+
 
 class BaseSiteContentApiTest:
     """
@@ -72,7 +122,7 @@ class BaseSiteContentApiTest:
         raise NotImplementedError()
 
 
-class ListApiTestMixin:
+class SiteContentListApiTestMixin:
     """
     For use with BaseSiteContentApiTest
     """
@@ -156,7 +206,7 @@ class ListApiTestMixin:
         )
 
 
-class DetailApiTestMixin:
+class SiteContentDetailApiTestMixin:
     """
     For use with BaseSiteContentApiTest
     """
@@ -311,7 +361,7 @@ class WriteApiTestMixin:
         return site
 
 
-class CreateApiTestMixin:
+class SiteContentCreateApiTestMixin:
     """
     For use with BaseSiteContentApiTest
     """
@@ -365,7 +415,7 @@ class CreateApiTestMixin:
         assert response.status_code == 201
 
 
-class UpdateApiTestMixin:
+class SiteContentUpdateApiTestMixin:
     """
     For use with BaseSiteContentApiTest
     """
@@ -452,7 +502,7 @@ class UpdateApiTestMixin:
         self.assert_update_response(data, response_data)
 
 
-class DestroyApiTestMixin:
+class SiteContentDestroyApiTestMixin:
     """
     For use with BaseSiteContentApiTest
     """
@@ -504,16 +554,16 @@ class DestroyApiTestMixin:
 
 
 class BaseReadOnlyUncontrolledSiteContentApiTest(
-    ListApiTestMixin, DetailApiTestMixin, BaseSiteContentApiTest
+    SiteContentListApiTestMixin, SiteContentDetailApiTestMixin, BaseSiteContentApiTest
 ):
     pass
 
 
 class BaseUncontrolledSiteContentApiTest(
     WriteApiTestMixin,
-    CreateApiTestMixin,
-    UpdateApiTestMixin,
-    DestroyApiTestMixin,
+    SiteContentCreateApiTestMixin,
+    SiteContentUpdateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     pass
