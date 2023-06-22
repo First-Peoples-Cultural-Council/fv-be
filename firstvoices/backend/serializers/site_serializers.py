@@ -3,7 +3,7 @@ from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from backend.models.app import AppJson
-from backend.models.sites import Site
+from backend.models.sites import Language, Site
 from backend.serializers.base_serializers import base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
@@ -111,3 +111,17 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "videos",
             "word_of_the_day",
         )
+
+
+class LanguageSerializer(serializers.Serializer):
+    """
+    Serializes basic details about a language, including a list of language sites.
+    """
+
+    language = serializers.CharField(source="title")
+    language_code = serializers.CharField()
+    sites = SiteSummarySerializer(many=True)
+
+    class Meta:
+        model = Language
+        fields = ("language", "language_code", "sites")
