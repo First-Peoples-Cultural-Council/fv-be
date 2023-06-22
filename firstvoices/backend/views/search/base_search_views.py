@@ -120,6 +120,54 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="kids",
+                description="Return kids-friendly entries only if true.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return kids-friendly entries only.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No kids filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Apples",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="games",
+                description="Return entries which are not excluded from games.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return entries which are not excluded from games.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No games filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
