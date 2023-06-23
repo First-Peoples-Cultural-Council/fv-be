@@ -10,13 +10,9 @@ from elasticsearch.exceptions import ConnectionError
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.response import Response
 
-from backend import pagination
+from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import (
-    ES_MAX_RESULTS,
-    ES_PAGE_SIZE,
-    SearchIndexEntryTypes,
-)
+from backend.search.utils.constants import ES_PAGE_SIZE, SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
     get_valid_document_types,
@@ -24,11 +20,6 @@ from backend.search.utils.query_builder_utils import (
 )
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.exceptions import ElasticSearchConnectionError
-
-
-class SearchViewPagination(pagination.PageNumberPagination):
-    page_size = ES_PAGE_SIZE
-    max_page_size = ES_MAX_RESULTS
 
 
 @extend_schema_view(
@@ -137,7 +128,7 @@ class SearchViewPagination(pagination.PageNumberPagination):
 class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
-    pagination_class = SearchViewPagination
+    pagination_class = SearchPageNumberPagination
 
     def get_search_params(self):
         """
@@ -160,8 +151,28 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         return search_params
 
+    def get_pagination_params(self):
+        """
+        Function to return pagination params
+        """
+        default_page_size = ES_PAGE_SIZE
+
+        page = int(self.request.GET.get("page", 1))
+        page_size = int(self.request.GET.get("pageSize", default_page_size))
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        pagination_params = {
+            "page_size": page_size,
+            "page": page,
+            "start": start,
+            "end": end,
+        }
+        return pagination_params
+
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+        pagination_params = self.get_pagination_params()
 
         # If no valid types are passed, return emtpy list as a response
         if not search_params["types"]:
@@ -179,9 +190,14 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             domain=search_params["domain"],
         )
 
+        # Pagination
+        search_query = search_query.extra(
+            from_=pagination_params["start"], size=pagination_params["page_size"]
+        )
+
         # Get search results
         try:
-            response = search_query[0:ES_MAX_RESULTS].execute()
+            response = search_query.execute()
         except ConnectionError:
             raise ElasticSearchConnectionError()
 
@@ -190,8 +206,13 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
 
-        page = self.paginate_queryset(hydrated_objects)
+        page = self.paginator.apply_search_pagination(
+            request=request,
+            object_list=hydrated_objects,
+            count=response.hits.total.value,
+        )
+
         if page is not None:
-            return self.get_paginated_response(data=page)
+            return self.get_paginated_response(page)
 
         return Response(data=hydrated_objects)

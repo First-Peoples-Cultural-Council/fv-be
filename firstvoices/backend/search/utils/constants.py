@@ -18,7 +18,7 @@ ES_NOT_FOUND_ERROR = (
 # Page size
 ES_PAGE_SIZE = 25
 
-# Number of results to return
+# Maximum page size
 ES_MAX_RESULTS = 100
 
 
