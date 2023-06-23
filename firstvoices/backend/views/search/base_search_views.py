@@ -124,7 +124,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="kids",
-                description="Return kids-friendly entries only if true.",
+                description="Return only kids-friendly entries if true",
                 required=False,
                 default=False,
                 type=bool,
