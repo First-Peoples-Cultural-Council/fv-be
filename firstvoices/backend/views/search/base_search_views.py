@@ -14,6 +14,7 @@ from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
+    get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
 )
@@ -121,6 +122,54 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="kids",
+                description="Return only kids-friendly entries if true",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return kids-friendly entries only.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No kids filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Apples",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="games",
+                description="Return entries which are not excluded from games.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return entries which are not excluded from games.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No games filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -140,11 +189,19 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)
 
+        kids_flag = self.request.GET.get("kids", False)
+        kids_flag = get_valid_boolean(kids_flag)
+
+        games_flag = self.request.GET.get("games", False)
+        games_flag = get_valid_boolean(games_flag)
+
         search_params = {
             "q": input_q,
             "site_id": "",
             "types": valid_types_list,
             "domain": valid_domain,
+            "kids": kids_flag,
+            "games": games_flag,
         }
 
         return search_params
@@ -166,6 +223,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             site_id=search_params["site_id"],
             types=search_params["types"],
             domain=search_params["domain"],
+            kids=search_params["kids"],
+            games=search_params["games"],
         )
 
         # Get search results

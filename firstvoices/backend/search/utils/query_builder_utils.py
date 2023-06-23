@@ -153,6 +153,14 @@ def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
+def get_kids_query(kids):
+    return Q("bool", filter=[Q("term", exclude_from_kids=not kids)])
+
+
+def get_games_query(games):
+    return Q("bool", filter=[Q("term", exclude_from_games=not games)])
+
+
 # Search params validation
 def get_valid_document_types(input_types):
     allowed_values = VALID_DOCUMENT_TYPES
@@ -187,3 +195,11 @@ def get_valid_domain(input_domain_str):
         return string_lower
     else:  # if invalid string is passed
         return None
+
+
+def get_valid_boolean(input_val):
+    # Python treats bool("False") as true, thus manual verification
+    if str(input_val).strip().lower() in ["true"]:
+        return True
+    else:
+        return False
