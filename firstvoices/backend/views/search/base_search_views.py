@@ -142,9 +142,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         search_params = {
             "q": input_q,
-            "site_id": "",
             "types": valid_types_list,
             "domain": valid_domain,
+            "site_id": "",  # used in site-search
+            "starts_with_char": "",  # used in dictionary-search
         }
 
         return search_params
@@ -163,9 +164,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # Get search query
         search_query = get_search_query(
             q=search_params["q"],
-            site_id=search_params["site_id"],
             types=search_params["types"],
             domain=search_params["domain"],
+            site_id=search_params["site_id"],
+            starts_with_char=search_params["starts_with_char"],
         )
 
         # Get search results

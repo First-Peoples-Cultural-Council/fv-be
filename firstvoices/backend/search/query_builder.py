@@ -6,6 +6,7 @@ from backend.search.utils.query_builder_utils import (
     get_indices,
     get_search_term_query,
     get_site_filter_query,
+    get_starts_with_query,
     get_types_query,
 )
 
@@ -15,7 +16,9 @@ def get_search_object(indices):
     return s
 
 
-def get_search_query(q=None, site_id=None, types=VALID_DOCUMENT_TYPES, domain="both"):
+def get_search_query(
+    q=None, site_id=None, types=VALID_DOCUMENT_TYPES, domain="both", starts_with_char=""
+):
     # Building initial query
     indices = get_indices(types)
     search_object = get_search_object(indices)
@@ -36,5 +39,8 @@ def get_search_query(q=None, site_id=None, types=VALID_DOCUMENT_TYPES, domain="b
     types_query = get_types_query(types)
     if types_query:
         search_query = search_query.query(get_types_query(types))
+
+    if starts_with_char:
+        search_query = search_query.query(get_starts_with_query(starts_with_char))
 
     return search_query

@@ -14,6 +14,7 @@ from backend.views.image_views import ImageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
+from backend.views.search.dictionary_search_views import DictionarySearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
@@ -53,6 +54,9 @@ sites_router.register(
 sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
+sites_router.register(
+    r"dictionary-search", DictionarySearchViewSet, basename="dictionary-search"
+)
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 

@@ -153,10 +153,13 @@ def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
-# Search params validation
-def get_valid_document_types(input_types):
-    allowed_values = VALID_DOCUMENT_TYPES
+def get_starts_with_query(starts_with_char):
+    # todo: Confirm what field we need to check prefix in
+    return Q("bool", filter=[Q("prefix", title=starts_with_char)])
 
+
+# Search params validation
+def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
         return allowed_values
 
@@ -187,3 +190,10 @@ def get_valid_domain(input_domain_str):
         return string_lower
     else:  # if invalid string is passed
         return None
+
+
+def get_valid_starts_with_char(input_str):
+    # Starting alphabet can be a combination of characters as well
+    # taking only first word if multiple words are supplied
+    valid_str = str(input_str).strip().lower().split(" ")[0]
+    return valid_str
