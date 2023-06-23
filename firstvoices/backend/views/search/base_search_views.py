@@ -195,6 +195,9 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
 
+        # Sort by score, then by custom sort order
+        search_query = search_query.sort("_score", "custom_order")
+
         # Get search results
         try:
             response = search_query.execute()

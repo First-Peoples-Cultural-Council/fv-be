@@ -26,6 +26,7 @@ class DictionaryEntryDocument(Document):
     document_id = Text()
     site_id = Keyword()
     full_text_search_field = Text()
+    custom_order = Keyword()
 
     # Dictionary Related fields
     type = Keyword()
@@ -62,6 +63,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                custom_order=instance.custom_order,
             )
         else:
             # Create new entry if it doesn't exist
@@ -73,6 +75,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                custom_order=instance.custom_order,
             )
             index_entry.save()
     except ConnectionError:
