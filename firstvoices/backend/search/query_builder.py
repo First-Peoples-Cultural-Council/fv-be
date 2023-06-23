@@ -2,6 +2,7 @@ from elasticsearch_dsl import Search
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import (
+    get_category_query,
     get_cleaned_search_term,
     get_indices,
     get_search_term_query,
@@ -17,7 +18,12 @@ def get_search_object(indices):
 
 
 def get_search_query(
-    q=None, site_id=None, types=VALID_DOCUMENT_TYPES, domain="both", starts_with_char=""
+    q=None,
+    site_id=None,
+    types=VALID_DOCUMENT_TYPES,
+    domain="both",
+    starts_with_char="",
+    category_id="all",
 ):
     # Building initial query
     indices = get_indices(types)
@@ -42,5 +48,8 @@ def get_search_query(
 
     if starts_with_char:
         search_query = search_query.query(get_starts_with_query(starts_with_char))
+
+    if category_id and category_id != "all":
+        search_query = search_query.query(get_category_query(category_id))
 
     return search_query

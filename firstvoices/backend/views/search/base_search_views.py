@@ -146,6 +146,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "domain": valid_domain,
             "site_id": "",  # used in site-search
             "starts_with_char": "",  # used in dictionary-search
+            "category_id": "",  # used in dictionary-search
         }
 
         return search_params
@@ -161,6 +162,10 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if not search_params["domain"]:
             return Response(data=[])
 
+        # If invalid category id, return empty list as a response
+        if not search_params["category_id"]:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
             q=search_params["q"],
@@ -168,6 +173,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             domain=search_params["domain"],
             site_id=search_params["site_id"],
             starts_with_char=search_params["starts_with_char"],
+            category_id=search_params["category_id"],
         )
 
         # Get search results

@@ -14,6 +14,7 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
+    get_categories_ids,
     get_notes_text,
     get_object_from_index,
     get_translation_and_part_of_speech_text,
@@ -33,6 +34,7 @@ class DictionaryEntryDocument(Document):
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
     part_of_speech = Text(copy_to="full_text_search_field")
+    categories = Text()  # Keyword vs Text
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
@@ -51,6 +53,7 @@ def update_index(sender, instance, **kwargs):
             part_of_speech_text,
         ) = get_translation_and_part_of_speech_text(instance)
         notes_text = get_notes_text(instance)
+        categories = get_categories_ids(instance)
 
         if existing_entry:
             # Check if object is already indexed, then update
@@ -62,6 +65,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                categories=categories,
             )
         else:
             # Create new entry if it doesn't exist
@@ -73,6 +77,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                categories=categories,
             )
             index_entry.save()
     except ConnectionError:

@@ -1,5 +1,6 @@
 from enum import Enum
 
+from django.core.exceptions import ValidationError
 from elasticsearch_dsl import Q
 
 from backend.models.dictionary import TypeOfDictionaryEntry
@@ -158,6 +159,10 @@ def get_starts_with_query(starts_with_char):
     return Q("bool", filter=[Q("prefix", title=starts_with_char)])
 
 
+def get_category_query(category_id):
+    return Q("bool", filter=[Q("match_phrase", categories=str(category_id))])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
@@ -197,3 +202,20 @@ def get_valid_starts_with_char(input_str):
     # taking only first word if multiple words are supplied
     valid_str = str(input_str).strip().lower().split(" ")[0]
     return valid_str
+
+
+def get_valid_category_id(input_category, site):
+    # If input_category is empty, category filter should not be added
+    if input_category == "":
+        return "all"
+
+    site = site[0]
+    try:
+        # If category does not belong to the site specified, return empty result set
+        valid_category = site.category_set.filter(id=input_category)
+        if not len(valid_category):
+            return None
+    except ValidationError:
+        return None
+
+    return valid_category[0].id
