@@ -212,7 +212,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         page = self.paginator.apply_search_pagination(
             request=request,
             object_list=hydrated_objects,
-            count=response.hits.total.value,
+            count=response["hits"]["total"]["value"],
         )
 
         if page is not None:
