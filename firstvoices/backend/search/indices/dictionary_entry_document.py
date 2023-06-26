@@ -26,13 +26,12 @@ class DictionaryEntryDocument(Document):
     document_id = Text()
     site_id = Keyword()
     full_text_search_field = Text()
-
-    custom_order = Keyword()
     exclude_from_games = Boolean()
     exclude_from_kids = Boolean()
 
     # Dictionary Related fields
     type = Keyword()
+    custom_order = Keyword()
     title = Text(analyzer="standard", copy_to="full_text_search_field")
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
