@@ -155,28 +155,49 @@ class TestDomain:
         assert self.expected_match_full_text_search_string in str(search_query)
 
 
+@pytest.mark.django_db
 class TestCategory:
-    def test_null_category(self):
-        pass
-
-    def test_invalid_category(self):
-        pass
+    def setup(self):
+        self.site = factories.SiteFactory()
+        self.parent_category = factories.ParentCategoryFactory(site=self.site)
+        self.child_category = factories.ChildCategoryFactory(
+            parent=self.parent_category
+        )
 
     def test_default(self):  # default case
-        pass
+        # relates to: SearchQueryTest.java - CategoryIdTest.testDefault(),
+        # CategoryIdTest.test_category_blank_allowed()
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
 
-    def test_multiple(self):
-        # todo: Confirm if multiple category can be taken as input
+        assert "categories" not in str(search_query)
+
+    def test_invalid_category(self):
+        # Category is validated at view level before category_id is passed into get_search_query()
+        # function which is tested in test_query_builder_utils.py
         pass
 
     def test_category_without_children(self):
-        pass
+        # relates to: DictionaryObjectTest.java - testCategoryNoChildren()
+        search_query = get_search_query(category_id=self.child_category.id)
+        search_query = search_query.to_dict()
+
+        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
+        assert "categories" in filtered_terms
+
+        assert str(self.child_category.id) in filtered_terms["categories"]
+        assert str(self.parent_category.id) not in filtered_terms["categories"]
 
     def test_category_with_children(self):
-        pass
+        # relates to: DictionaryObjectTest.java - testCategoryWithChildren()
+        search_query = get_search_query(category_id=self.parent_category.id)
+        search_query = search_query.to_dict()
 
-    def test_category_blank_allowed(self):
-        pass
+        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
+        assert "categories" in filtered_terms
+
+        assert str(self.child_category.id) in filtered_terms["categories"]
+        assert str(self.parent_category.id) in filtered_terms["categories"]
 
 
 @pytest.mark.django_db
