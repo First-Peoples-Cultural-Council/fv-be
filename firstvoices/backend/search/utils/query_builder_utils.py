@@ -3,6 +3,7 @@ from enum import Enum
 from django.core.exceptions import ValidationError
 from elasticsearch_dsl import Q
 
+from backend.models.characters import Alphabet
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -154,9 +155,22 @@ def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
-def get_starts_with_query(starts_with_char):
-    # todo: Confirm what field we need to check prefix in
-    return Q("bool", filter=[Q("prefix", title=starts_with_char)])
+def get_starts_with_query(site_id, starts_with_char):
+    unknown_character_flag = "⚑"
+
+    # Check if a custom_order_character is present, if present, look up in the custom_order field
+    # if not, look in the title field
+    alphabet = Alphabet.objects.filter(site_id=site_id).first()
+    custom_order_character = alphabet.get_custom_order(starts_with_char)
+
+    if unknown_character_flag in custom_order_character:
+        # unknown custom_order character present, look in title field
+        starts_with_filter = Q("prefix", title=starts_with_char)
+    else:
+        # look in custom_order field
+        starts_with_filter = Q("prefix", custom_order=custom_order_character)
+
+    return Q("bool", filter=[starts_with_filter])
 
 
 def get_category_query(category_id):

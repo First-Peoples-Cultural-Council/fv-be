@@ -47,7 +47,9 @@ def get_search_query(
         search_query = search_query.query(get_types_query(types))
 
     if starts_with_char:
-        search_query = search_query.query(get_starts_with_query(starts_with_char))
+        search_query = search_query.query(
+            get_starts_with_query(site_id, starts_with_char)
+        )
 
     if category_id and category_id != "all":
         search_query = search_query.query(get_category_query(category_id))

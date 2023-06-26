@@ -1,6 +1,7 @@
 import pytest
 
 from backend.search.query_builder import get_search_query
+from backend.tests import factories
 
 
 class TestQueryParams:
@@ -152,3 +153,79 @@ class TestDomain:
         # Should also contain the full text search matches
         assert self.expected_multi_match_string in str(search_query)
         assert self.expected_match_full_text_search_string in str(search_query)
+
+
+class TestCategory:
+    def test_null_category(self):
+        pass
+
+    def test_invalid_category(self):
+        pass
+
+    def test_default(self):  # default case
+        pass
+
+    def test_multiple(self):
+        # todo: Confirm if multiple category can be taken as input
+        pass
+
+    def test_category_without_children(self):
+        pass
+
+    def test_category_with_children(self):
+        pass
+
+    def test_category_blank_allowed(self):
+        pass
+
+
+@pytest.mark.django_db
+class TestStartsWithChar:
+    def setup(self):
+        self.site = factories.SiteFactory()
+
+    def test_blank(self):
+        # relates to: SearchQueryTest.java - AlphabetCharacterTest.testBoth()
+        search_query = get_search_query(starts_with_char="")  # default
+        search_query = search_query.to_dict()
+
+        expected_starts_with_query_custom_order = "'prefix': {'custom_order': ''}"
+        expected_starts_with_query_title = "'prefix': {'title': ''}"
+
+        assert expected_starts_with_query_custom_order not in str(search_query)
+        assert expected_starts_with_query_title not in str(search_query)
+
+    def test_has_custom_order(self):
+        # relates to: SearchQueryTest.java - AlphabetCharacterTest.testHasCustomOrder()
+        base_char = "oo"
+        char_variant = "OO"
+
+        alphabet = factories.AlphabetFactory.create(site=self.site)
+        char = factories.CharacterFactory.create(site=self.site, title=base_char)
+        factories.CharacterVariantFactory.create(
+            site=self.site, title=char_variant, base_character=char
+        )
+        custom_order = alphabet.get_custom_order(char_variant)
+
+        search_query = get_search_query(
+            site_id=self.site.id, starts_with_char=char_variant
+        )  # default
+        search_query = search_query.to_dict()
+
+        expected_starts_with_query = (
+            "'prefix': {'custom_order': '" + custom_order + "'}"
+        )
+
+        assert expected_starts_with_query in str(search_query)
+
+    def test_has_no_custom_order(self):
+        # relates to: SearchQueryTest.java - AlphabetCharacterTest.testNoCustomOrder()
+        factories.AlphabetFactory.create(site=self.site)
+
+        search_query = get_search_query(
+            site_id=self.site.id, starts_with_char="red"
+        )  # default
+        search_query = search_query.to_dict()
+
+        expected_starts_with_query = "'prefix': {'title': 'red'}"
+        assert expected_starts_with_query in str(search_query)
