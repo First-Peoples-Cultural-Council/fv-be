@@ -105,6 +105,8 @@ def dictionary_entry_iterator():
             part_of_speech=part_of_speech_text,
             note=notes_text,
             categories=categories,
+            exclude_from_kids=entry.exclude_from_kids,
+            exclude_from_games=entry.exclude_from_games,
         )
         yield index_entry.to_dict(True)
 

@@ -191,6 +191,14 @@ def get_category_query(category_id):
     return Q("bool", filter=[Q("terms", categories=query_categories)])
 
 
+def get_kids_query(kids):
+    return Q("bool", filter=[Q("term", exclude_from_kids=not kids)])
+
+
+def get_games_query(games):
+    return Q("bool", filter=[Q("term", exclude_from_games=not games)])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
@@ -246,3 +254,11 @@ def get_valid_category_id(site, input_category):
         return None
 
     return valid_category[0].id
+
+
+def get_valid_boolean(input_val):
+    # Python treats bool("False") as true, thus manual verification
+    if str(input_val).strip().lower() in ["true"]:
+        return True
+    else:
+        return False
