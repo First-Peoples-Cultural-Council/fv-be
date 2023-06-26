@@ -34,7 +34,7 @@ class DictionaryEntryDocument(Document):
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
     part_of_speech = Text(copy_to="full_text_search_field")
-    categories = Text()  # Keyword vs Text
+    categories = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX

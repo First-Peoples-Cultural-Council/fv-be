@@ -3,6 +3,7 @@ from enum import Enum
 from django.core.exceptions import ValidationError
 from elasticsearch_dsl import Q
 
+from backend.models.category import Category
 from backend.models.characters import Alphabet
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
@@ -174,7 +175,20 @@ def get_starts_with_query(site_id, starts_with_char):
 
 
 def get_category_query(category_id):
-    return Q("bool", filter=[Q("match_phrase", categories=str(category_id))])
+    query_categories = []
+    # todo: fix category list on admin to show only categories related to current site
+
+    # category_id passed down here is validated in the view, assuming the following will always return a category
+    category = Category.objects.filter(id=category_id)[0]
+    query_categories.append(str(category.id))
+
+    # looking for child categories
+    child_categories = category.children.all()
+    if len(child_categories):
+        for child_category in child_categories:
+            query_categories.append(str(child_category.id))
+
+    return Q("bool", filter=[Q("terms", categories=query_categories)])
 
 
 # Search params validation
@@ -218,12 +232,11 @@ def get_valid_starts_with_char(input_str):
     return valid_str
 
 
-def get_valid_category_id(input_category, site):
+def get_valid_category_id(site, input_category):
     # If input_category is empty, category filter should not be added
     if input_category == "":
         return "all"
 
-    site = site[0]
     try:
         # If category does not belong to the site specified, return empty result set
         valid_category = site.category_set.filter(id=input_category)

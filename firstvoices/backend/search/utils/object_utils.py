@@ -113,4 +113,4 @@ def get_categories_ids(dictionary_entry_instance):
     categories_list = []
     for category in categories_set:
         categories_list.append(str(category.id))
-    return " ".join(categories_list)
+    return categories_list

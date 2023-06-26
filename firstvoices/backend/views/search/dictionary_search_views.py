@@ -18,7 +18,8 @@ class DictionarySearchViewSet(SiteSearchViewsSet):
 
         category_input_str = self.request.GET.get("category", "")
         category_id = get_valid_category_id(
-            category_input_str, self.get_validated_site()
+            self.get_validated_site()[0],
+            category_input_str,
         )
 
         if starts_with_char:
