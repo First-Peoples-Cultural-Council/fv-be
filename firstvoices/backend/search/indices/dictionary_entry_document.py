@@ -3,7 +3,7 @@ import logging
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Document, Keyword, Text
+from elasticsearch_dsl import Boolean, Document, Keyword, Text
 
 from backend.models.dictionary import DictionaryEntry, Note, Translation
 from backend.models.sites import Site
@@ -26,7 +26,10 @@ class DictionaryEntryDocument(Document):
     document_id = Text()
     site_id = Keyword()
     full_text_search_field = Text()
+
     custom_order = Keyword()
+    exclude_from_games = Boolean()
+    exclude_from_kids = Boolean()
 
     # Dictionary Related fields
     type = Keyword()
@@ -64,6 +67,8 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                exclude_from_games=instance.exclude_from_games,
+                exclude_from_kids=instance.exclude_from_kids,
             )
         else:
             # Create new entry if it doesn't exist
@@ -76,6 +81,8 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                exclude_from_games=instance.exclude_from_games,
+                exclude_from_kids=instance.exclude_from_kids,
             )
             index_entry.save()
     except ConnectionError:
