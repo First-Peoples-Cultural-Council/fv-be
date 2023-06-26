@@ -15,6 +15,12 @@ ES_NOT_FOUND_ERROR = (
     "operation: %s. %s id: %s"
 )
 
+# Page size
+ES_PAGE_SIZE = 25
+
+# Maximum page size
+ES_MAX_RESULTS = 100
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")

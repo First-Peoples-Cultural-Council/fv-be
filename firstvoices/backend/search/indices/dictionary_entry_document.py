@@ -31,6 +31,7 @@ class DictionaryEntryDocument(Document):
 
     # Dictionary Related fields
     type = Keyword()
+    custom_order = Keyword()
     title = Text(analyzer="standard", copy_to="full_text_search_field")
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
@@ -64,6 +65,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                custom_order=instance.custom_order,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )
@@ -77,6 +79,7 @@ def update_index(sender, instance, **kwargs):
                 translation=translations_text,
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
+                custom_order=instance.custom_order,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )
