@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import ES_PAGE_SIZE, SearchIndexEntryTypes
+from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
     get_valid_document_types,
@@ -155,7 +155,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         Function to return pagination params
         """
-        default_page_size = ES_PAGE_SIZE
+        default_page_size = self.paginator.get_page_size(self.request)
 
         page = int(self.request.GET.get("page", 1))
         page_size = int(self.request.GET.get("pageSize", default_page_size))

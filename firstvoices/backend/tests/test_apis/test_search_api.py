@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from elasticsearch_dsl import Search
@@ -8,6 +8,7 @@ from backend.models.constants import AppRole, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 
+from ...pagination import SearchPageNumberPagination
 from .base_api_test import BaseApiTest
 
 
@@ -16,6 +17,13 @@ class TestSearchAPI(BaseApiTest):
 
     API_LIST_VIEW = "api:search-list"
     API_DETAIL_VIEW = "api:search-detail"
+
+    @pytest.fixture
+    def mock_get_page_size(self, mocker):
+        mock_page_size = mocker.patch.object(
+            SearchPageNumberPagination, "get_page_size", new_callable=MagicMock
+        )
+        return mock_page_size
 
     @pytest.fixture
     def mock_search_query_execute(self, mocker):
@@ -27,11 +35,10 @@ class TestSearchAPI(BaseApiTest):
 
         return mock_execute
 
-    @patch("backend.search.utils.constants.ES_PAGE_SIZE", 1)
     @pytest.mark.django_db
-    def test_search_pagination(self, db, mock_search_query_execute):
+    def test_search_pagination(self, db, mock_search_query_execute, mock_get_page_size):
         """Test that the pagination works as expected."""
-        # FIXME: Patch works in class scope but not full suite??
+
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
         factories.CharacterFactory.create(site=site, title="a", sort_order=1)
@@ -41,6 +48,8 @@ class TestSearchAPI(BaseApiTest):
         entry1 = factories.DictionaryEntryFactory.create(site=site, title="aa")
         entry2 = factories.DictionaryEntryFactory.create(site=site, title="bb")
         entry3 = factories.DictionaryEntryFactory.create(site=site, title="cc")
+
+        mock_get_page_size.return_value = 1
 
         # Create a mock response
         mock_es_results = {
