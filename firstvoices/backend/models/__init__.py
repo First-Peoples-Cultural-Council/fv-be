@@ -19,7 +19,6 @@ from .dictionary import (  # noqa F401
     Translation,
 )
 from .media import Image  # noqa F401
-from .mixins import TranslatedText  # noqa F401
 from .part_of_speech import PartOfSpeech  # noqa F401
 from .sites import Membership, Site  # noqa F401
-from .song import Song  # noqa F401
+from .song import Lyric, Song  # noqa F401
