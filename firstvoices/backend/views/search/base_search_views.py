@@ -170,6 +170,50 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="category",
+                description="Return entries which are associated with the given category or its child categories.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add categories filter.",
+                    ),
+                    OpenApiExample(
+                        "valid UUID",
+                        value="valid UUID",
+                        description="Return entries which are associated with "
+                        "the given category or its child categories.",
+                    ),
+                    OpenApiExample(
+                        "invalid UUID",
+                        value="invalid UUID",
+                        description="Cannot validate given id, returns empty result set.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="startsWithChar",
+                description="Return entries that start with the specified character.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add startsWithChar filter.",
+                    ),
+                    OpenApiExample(
+                        "a",
+                        value="a",
+                        description="Return all entries starting with a.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
