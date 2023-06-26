@@ -176,7 +176,6 @@ def get_starts_with_query(site_id, starts_with_char):
 
 def get_category_query(category_id):
     query_categories = []
-    # todo: fix category list on admin to show only categories related to current site
 
     # category_id passed down here is validated in the view, assuming the following will always return a category
     category = Category.objects.filter(id=category_id)[0]
