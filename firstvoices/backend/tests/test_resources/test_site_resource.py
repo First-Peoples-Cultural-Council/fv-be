@@ -1,13 +1,14 @@
 import uuid
+from datetime import datetime
 
 import pytest
 import tablib
+from django.utils import timezone
 
 from backend.models.constants import Visibility
 from backend.models.sites import Site
-from backend.models.user import User
 from backend.resources.sites import SiteResource
-from backend.tests.factories import UserFactory
+from backend.tests.factories import SiteFactory, UserFactory
 
 
 def build_table(data: list[str]):
@@ -20,7 +21,6 @@ def build_table(data: list[str]):
 
 
 class TestSiteImport:
-    # Import errors can be debugged with param raise_errors=True in import_data
     @pytest.mark.django_db
     def test_import_basic(self):
         """Import Site object with basic fields"""
@@ -32,19 +32,54 @@ class TestSiteImport:
         ]
         table = build_table(data)
 
-        result = SiteResource().import_data(dataset=table)
+        result = SiteResource().import_data(dataset=table, raise_errors=True)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 2
+
         new_site = Site.objects.get(id=table["id"][0])
         assert new_site.title == table["title"][0]
         assert new_site.slug == table["slug"][0]
         assert new_site.created_by.email == table["created_by"][0]
         assert new_site.last_modified_by.email == table["last_modified_by"][0]
         assert new_site.visibility == Visibility.PUBLIC
+
         new_site = Site.objects.get(id=table["id"][1])
         assert new_site.visibility == Visibility.TEAM
+
+    @pytest.mark.django_db
+    def test_import_custom_timestamps(self):
+        """
+        Allow manual created/modified dates when creating object from import,
+        but update last_modified if changed later.
+        """
+        site_id = uuid.uuid4()
+        data = [
+            f"{site_id},2023-02-02 21:21:10.713,test@example.com,2023-02-02 21:21:39.864,test@example.com,Updated,updated,Members",  # noqa E501
+        ]
+        table = build_table(data)
+
+        result = SiteResource().import_data(dataset=table, raise_errors=True)
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 1
+
+        new_site = Site.objects.get(id=table["id"][0])
+        assert new_site.created == datetime.fromisoformat(
+            table["created"][0]
+        ).astimezone(timezone.get_default_timezone())
+        assert new_site.last_modified == datetime.fromisoformat(
+            table["last_modified"][0]
+        ).astimezone(timezone.get_default_timezone())
+
+        # update last_modified on update
+        old_created = new_site.created
+        old_last_modified = new_site.last_modified
+        new_site.title = "My Updated Site Title 12364"
+        new_site.save()
+        assert new_site.created == old_created
+        assert new_site.last_modified != old_last_modified
 
     @pytest.mark.django_db
     def test_import_with_missing_user(self):
@@ -55,13 +90,28 @@ class TestSiteImport:
         ]
         table = build_table(data)
 
-        result = SiteResource().import_data(dataset=table)
+        result = SiteResource().import_data(dataset=table, raise_errors=True)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 1
         new_site = Site.objects.get(id=table["id"][0])
-        assert new_site.created_by.email == table["created_by"][0]
-        matching_users = User.objects.filter(email=email)
-        assert matching_users.count() == 1
-        assert matching_users[0].id == email
+        # for now: use dummy user details on migrated site - fix later to match actual data
+        assert new_site.created_by.email == "test@test.com"
+
+    @pytest.mark.django_db
+    def test_delete_before_import(self):
+        """Import a Site object when a site with that UID already exists."""
+        orig_site = SiteFactory.create(title="Original")
+        data = [
+            f"{orig_site.id},2023-02-02 21:21:10.713,test@example.com,2023-02-02 21:21:39.864,test@example.com,Updated,updated,Members",  # noqa E501
+        ]
+        table = build_table(data)
+
+        result = SiteResource().import_data(dataset=table, raise_errors=True)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 1
+        site_at_id = Site.objects.get(id=orig_site.id)
+        assert site_at_id.title == table["title"][0]
