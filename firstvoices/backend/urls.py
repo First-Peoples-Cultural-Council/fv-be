@@ -14,6 +14,7 @@ from backend.views.image_views import ImageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
+from backend.views.search.dictionary_search_views import DictionarySearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.user import UserViewSet
@@ -36,6 +37,9 @@ sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+sites_router.register(
+    r"dictionary/search", DictionarySearchViewSet, basename="dictionary-search"
+)
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",

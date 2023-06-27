@@ -171,6 +171,50 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="category",
+                description="Return entries which are associated with the given category or its child categories.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add categories filter.",
+                    ),
+                    OpenApiExample(
+                        "valid UUID",
+                        value="valid UUID",
+                        description="Return entries which are associated with "
+                        "the given category or its child categories.",
+                    ),
+                    OpenApiExample(
+                        "invalid UUID",
+                        value="invalid UUID",
+                        description="Cannot validate given id, returns empty result set.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="startsWithChar",
+                description="Return entries that start with the specified character.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add startsWithChar filter.",
+                    ),
+                    OpenApiExample(
+                        "a",
+                        value="a",
+                        description="Return all entries starting with a.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -199,11 +243,13 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         search_params = {
             "q": input_q,
-            "site_id": "",
             "types": valid_types_list,
             "domain": valid_domain,
             "kids": kids_flag,
             "games": games_flag,
+            "site_id": "",  # used in site-search
+            "starts_with_char": "",  # used in dictionary-search
+            "category_id": "",  # used in dictionary-search
         }
 
         return search_params
@@ -237,14 +283,21 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if not search_params["domain"]:
             return Response(data=[])
 
+        # If invalid category id, return empty list as a response
+        # explicitly checking if its None since it can be empty in case of non dictionary-search
+        if search_params["category_id"] is None:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
             q=search_params["q"],
-            site_id=search_params["site_id"],
             types=search_params["types"],
             domain=search_params["domain"],
             kids=search_params["kids"],
             games=search_params["games"],
+            site_id=search_params["site_id"],
+            starts_with_char=search_params["starts_with_char"],
+            category_id=search_params["category_id"],
         )
 
         # Pagination

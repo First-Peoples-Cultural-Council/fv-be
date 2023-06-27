@@ -2,9 +2,11 @@ import pytest
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import (
+    get_valid_category_id,
     get_valid_document_types,
     get_valid_domain,
 )
+from backend.tests import factories
 
 
 class TestValidDocumentTypes:
@@ -48,3 +50,21 @@ class TestValidDomains:
     def test_invalid_input(self):
         actual_domain = get_valid_domain("bananas")
         assert actual_domain is None
+
+
+@pytest.mark.django_db
+class TestValidCategory:
+    def setup(self):
+        self.site = factories.SiteFactory()
+        self.category = factories.ParentCategoryFactory(site=self.site)
+
+    def test_valid_input(self):
+        expected_category_id = self.category.id
+        actual_category_id = get_valid_category_id(self.site, self.category.id)
+
+        assert expected_category_id == actual_category_id
+
+    def test_invalid_input(self):
+        actual_category_id = get_valid_category_id(self.site, "not_real_category")
+
+        assert actual_category_id is None

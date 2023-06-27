@@ -14,6 +14,7 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
+    get_categories_ids,
     get_notes_text,
     get_object_from_index,
     get_translation_and_part_of_speech_text,
@@ -36,6 +37,7 @@ class DictionaryEntryDocument(Document):
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
     part_of_speech = Text(copy_to="full_text_search_field")
+    categories = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
@@ -54,6 +56,7 @@ def update_index(sender, instance, **kwargs):
             part_of_speech_text,
         ) = get_translation_and_part_of_speech_text(instance)
         notes_text = get_notes_text(instance)
+        categories = get_categories_ids(instance)
 
         if existing_entry:
             # Check if object is already indexed, then update
@@ -66,6 +69,7 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )
@@ -80,6 +84,7 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )

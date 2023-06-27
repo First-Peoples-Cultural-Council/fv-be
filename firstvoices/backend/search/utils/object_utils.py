@@ -108,3 +108,10 @@ def get_notes_text(dictionary_entry_instance):
     for note in notes_set:
         notes_text.append(note.text)
     return " ".join(notes_text)
+
+
+def get_categories_ids(dictionary_entry_instance):
+    return [
+        str(id)
+        for id in dictionary_entry_instance.categories.values_list("id", flat=True)
+    ]
