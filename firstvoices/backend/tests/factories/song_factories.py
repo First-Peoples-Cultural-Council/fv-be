@@ -17,7 +17,7 @@ class SongFactory(RelatedMediaBaseFactory):
 
 
 class LyricsFactory(DjangoModelFactory):
-    site = factory.SubFactory(SongFactory)
+    song = factory.SubFactory(SongFactory)
 
     class Meta:
         model = Lyric
