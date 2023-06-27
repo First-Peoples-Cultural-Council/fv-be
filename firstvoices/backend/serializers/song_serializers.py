@@ -45,6 +45,8 @@ class SongDetailSerializer(
                 "notes",
                 "lyrics",
                 "acknowledgements",
+                "exclude_from_games",
+                "exclude_from_kids",
             )
         )
 

@@ -48,16 +48,16 @@ class Song(
     )
 
     title = models.CharField(blank=False, null=False)
-    title_translation = models.CharField(blank=True, null=True)
+    title_translation = models.CharField(blank=True, null=False)
 
-    introduction = models.CharField(blank=True, null=True)
-    introduction_translation = models.CharField(blank=True, null=True)
+    introduction = models.CharField(blank=True, null=False)
+    introduction_translation = models.CharField(blank=True, null=False)
 
     acknowledgements = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=False, default=list
+        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
     notes = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=False, default=list
+        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
 
     hide_overlay = models.BooleanField(null=False, default=False)
@@ -88,7 +88,9 @@ class Lyric(BaseModel):
 
     song = models.ForeignKey("Song", related_name="lyrics", on_delete=models.CASCADE)
 
-    ordering = models.SmallIntegerField(validators=[MinValueValidator(0)], null=False)
+    ordering = models.SmallIntegerField(
+        validators=[MinValueValidator(0)], null=False, default=0
+    )
 
     text = models.TextField(max_length=NOTE_MAX_LENGTH, blank=False)
     translation = models.TextField(max_length=NOTE_MAX_LENGTH, blank=True)
