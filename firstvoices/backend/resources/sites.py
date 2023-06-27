@@ -33,3 +33,8 @@ class SiteResource(BaseResource):
 
     class Meta:
         model = Site
+
+    def before_import(self, dataset, using_transactions, dry_run, **kwargs):
+        """Before importing sites that already exist, delete and import fresh."""
+        if not dry_run:
+            Site.objects.filter(id__in=dataset["id"]).delete()

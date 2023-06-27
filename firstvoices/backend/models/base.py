@@ -35,12 +35,10 @@ class BaseModel(PermissionFilterMixin, RulesModel):
     # The permission manager adds methods for accessing only the items that the user has permission to view
     objects = PermissionsManager()
 
-    # from uid (and seemingly not uid:uid)
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False, db_index=True
     )
 
-    # from dc:creator
     created_by = models.ForeignKey(
         get_user_model(),
         on_delete=models.SET_NULL,
@@ -49,10 +47,8 @@ class BaseModel(PermissionFilterMixin, RulesModel):
         related_name="created_%(app_label)s_%(class)s",
     )
 
-    # from dc:created
-    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    created = models.DateTimeField(default=timezone.now, db_index=True)
 
-    # from dc:modified
     last_modified_by = models.ForeignKey(
         get_user_model(),
         on_delete=models.SET_NULL,
@@ -61,8 +57,7 @@ class BaseModel(PermissionFilterMixin, RulesModel):
         related_name="modified_%(app_label)s_%(class)s",
     )
 
-    # from dc:lastContributor
-    last_modified = models.DateTimeField(auto_now=True, db_index=True)
+    last_modified = models.DateTimeField(default=timezone.now, db_index=True)
 
     logger = logging.getLogger(__name__)
 
