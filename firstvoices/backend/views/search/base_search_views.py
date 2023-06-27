@@ -10,10 +10,12 @@ from elasticsearch.exceptions import ConnectionError
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.response import Response
 
+from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
+    get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
 )
@@ -121,12 +123,61 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="kids",
+                description="Return only kids-friendly entries if true",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return kids-friendly entries only.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No kids filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Apples",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="games",
+                description="Return entries which are not excluded from games.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Return entries which are not excluded from games.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No games filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
 class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
+    pagination_class = SearchPageNumberPagination
 
     def get_search_params(self):
         """
@@ -140,17 +191,43 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)
 
+        kids_flag = self.request.GET.get("kids", False)
+        kids_flag = get_valid_boolean(kids_flag)
+
+        games_flag = self.request.GET.get("games", False)
+        games_flag = get_valid_boolean(games_flag)
+
         search_params = {
             "q": input_q,
             "site_id": "",
             "types": valid_types_list,
             "domain": valid_domain,
+            "kids": kids_flag,
+            "games": games_flag,
         }
 
         return search_params
 
+    def get_pagination_params(self):
+        """
+        Function to return pagination params
+        """
+        default_page_size = self.paginator.get_page_size(self.request)
+
+        page = int(self.request.GET.get("page", 1))
+        page_size = int(self.request.GET.get("pageSize", default_page_size))
+        start = (page - 1) * page_size
+
+        pagination_params = {
+            "page_size": page_size,
+            "page": page,
+            "start": start,
+        }
+        return pagination_params
+
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+        pagination_params = self.get_pagination_params()
 
         # If no valid types are passed, return emtpy list as a response
         if not search_params["types"]:
@@ -166,7 +243,17 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             site_id=search_params["site_id"],
             types=search_params["types"],
             domain=search_params["domain"],
+            kids=search_params["kids"],
+            games=search_params["games"],
         )
+
+        # Pagination
+        search_query = search_query.extra(
+            from_=pagination_params["start"], size=pagination_params["page_size"]
+        )
+
+        # Sort by score, then by custom sort order
+        search_query = search_query.sort("_score", "custom_order")
 
         # Get search results
         try:
@@ -178,5 +265,14 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
+
+        page = self.paginator.apply_search_pagination(
+            request=request,
+            object_list=hydrated_objects,
+            count=response["hits"]["total"]["value"],
+        )
+
+        if page is not None:
+            return self.get_paginated_response(page)
 
         return Response(data=hydrated_objects)
