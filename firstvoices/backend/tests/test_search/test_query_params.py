@@ -172,11 +172,6 @@ class TestCategory:
 
         assert "categories" not in str(search_query)
 
-    def test_invalid_category(self):
-        # Category is validated at view level before category_id is passed into get_search_query()
-        # function which is tested in test_query_builder_utils.py
-        pass
-
     def test_category_without_children(self):
         # relates to: DictionaryObjectTest.java - testCategoryNoChildren()
         search_query = get_search_query(category_id=self.child_category.id)

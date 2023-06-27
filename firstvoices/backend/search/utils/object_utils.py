@@ -111,8 +111,9 @@ def get_notes_text(dictionary_entry_instance):
 
 
 def get_categories_ids(dictionary_entry_instance):
-    categories_set = dictionary_entry_instance.categories.all()
-    categories_list = []
-    for category in categories_set:
-        categories_list.append(str(category.id))
-    return categories_list
+    return [
+        str(category.id)
+        for category in dictionary_entry_instance.categories.values_list(
+            "id", flat=True
+        )
+    ]
