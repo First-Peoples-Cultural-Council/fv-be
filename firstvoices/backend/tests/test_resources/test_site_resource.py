@@ -70,12 +70,8 @@ class TestSiteImport:
         assert not result.has_validation_errors()
         assert result.totals["new"] == 1
         new_site = Site.objects.get(id=table["id"][0])
-        # for now: use dummy user details on migrated site - fix later
+        # for now: use dummy user details on migrated site - fix later to match actual data
         assert new_site.created_by.email == "test@test.com"
-        # assert new_site.created_by.email == table["created_by"][0]
-        # matching_users = User.objects.filter(email=email)
-        # assert matching_users.count() == 1
-        # assert matching_users[0].id == email
 
     @pytest.mark.django_db
     def test_delete_before_import(self):
