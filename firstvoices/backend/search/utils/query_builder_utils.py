@@ -162,7 +162,8 @@ def get_starts_with_query(site_id, starts_with_char):
     # Check if a custom_order_character is present, if present, look up in the custom_order field
     # if not, look in the title field
     alphabet = Alphabet.objects.filter(site_id=site_id).first()
-    custom_order_character = alphabet.get_custom_order(starts_with_char)
+    cleaned_char = alphabet.clean_confusables(starts_with_char)
+    custom_order_character = alphabet.get_custom_order(cleaned_char)
 
     if unknown_character_flag in custom_order_character:
         # unknown custom_order character present, look in title field

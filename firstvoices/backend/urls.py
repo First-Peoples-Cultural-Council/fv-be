@@ -37,6 +37,9 @@ sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+sites_router.register(
+    r"dictionary/search", DictionarySearchViewSet, basename="dictionary-search"
+)
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
@@ -54,9 +57,6 @@ sites_router.register(
 sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
-sites_router.register(
-    r"dictionary-search", DictionarySearchViewSet, basename="dictionary-search"
-)
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 
