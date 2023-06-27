@@ -10,6 +10,7 @@ from elasticsearch.exceptions import ConnectionError
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.response import Response
 
+from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.object_utils import hydrate_objects
@@ -220,6 +221,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
 class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
+    pagination_class = SearchPageNumberPagination
 
     def get_search_params(self):
         """
@@ -252,8 +254,26 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         return search_params
 
+    def get_pagination_params(self):
+        """
+        Function to return pagination params
+        """
+        default_page_size = self.paginator.get_page_size(self.request)
+
+        page = int(self.request.GET.get("page", 1))
+        page_size = int(self.request.GET.get("pageSize", default_page_size))
+        start = (page - 1) * page_size
+
+        pagination_params = {
+            "page_size": page_size,
+            "page": page,
+            "start": start,
+        }
+        return pagination_params
+
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+        pagination_params = self.get_pagination_params()
 
         # If no valid types are passed, return emtpy list as a response
         if not search_params["types"]:
@@ -279,6 +299,14 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             category_id=search_params["category_id"],
         )
 
+        # Pagination
+        search_query = search_query.extra(
+            from_=pagination_params["start"], size=pagination_params["page_size"]
+        )
+
+        # Sort by score, then by custom sort order
+        search_query = search_query.sort("_score", "custom_order")
+
         # Get search results
         try:
             response = search_query.execute()
@@ -289,5 +317,14 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # Adding data to objects
         hydrated_objects = hydrate_objects(search_results, request)
+
+        page = self.paginator.apply_search_pagination(
+            request=request,
+            object_list=hydrated_objects,
+            count=response["hits"]["total"]["value"],
+        )
+
+        if page is not None:
+            return self.get_paginated_response(page)
 
         return Response(data=hydrated_objects)

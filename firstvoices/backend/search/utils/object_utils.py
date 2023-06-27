@@ -28,7 +28,9 @@ def get_object_from_index(index, document_id):
 
 def get_object_by_id(objects, object_id):
     # Function to find and return database object from list of objects
-    filtered_objects = [obj for obj in objects if str(obj.id) == object_id]
+    filtered_objects = [
+        obj for obj in objects if str(obj.id) == object_id or obj.id == object_id
+    ]
 
     if len(filtered_objects):
         return filtered_objects[0]

@@ -107,6 +107,7 @@ def dictionary_entry_iterator():
             categories=categories,
             exclude_from_kids=entry.exclude_from_kids,
             exclude_from_games=entry.exclude_from_games,
+            custom_order=entry.custom_order,
         )
         yield index_entry.to_dict(True)
 
