@@ -30,7 +30,7 @@ class UserForeignKeyWidget(ForeignKeyWidget):
     """Import/export widget to find/create users from their email.
 
     When Django cannot find a User with a matching email address,
-    it will create a new one if create=True, otherwise, will return anon user.
+    it will create a new one if create=True, otherwise, will return dummy user.
     """
 
     def __init__(self, create=False, *args, **kwargs):
@@ -52,6 +52,6 @@ class UserForeignKeyWidget(ForeignKeyWidget):
         else:
             # for now, return a dummy user
             dummy_user, _ = self.model.objects.get_or_create(
-                **{self.field: "test@test.com"}, defaults={"id": value}
+                **{self.field: "test@test.com"}, defaults={"id": "test@test.com"}
             )
             return dummy_user
