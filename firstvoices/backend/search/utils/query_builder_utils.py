@@ -241,18 +241,16 @@ def get_valid_starts_with_char(input_str):
 
 def get_valid_category_id(site, input_category):
     # If input_category is empty, category filter should not be added
-    if input_category == "":
-        return "all"
-
-    try:
-        # If category does not belong to the site specified, return empty result set
-        valid_category = site.category_set.filter(id=input_category)
-        if not len(valid_category):
+    if input_category:
+        try:
+            # If category does not belong to the site specified, return empty result set
+            valid_category = site.category_set.filter(id=input_category)
+            if len(valid_category):
+                return valid_category[0].id
+        except ValidationError:
             return None
-    except ValidationError:
-        return None
 
-    return valid_category[0].id
+    return None
 
 
 def get_valid_boolean(input_val):

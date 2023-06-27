@@ -25,7 +25,7 @@ def get_search_query(
     types=VALID_DOCUMENT_TYPES,
     domain="both",
     starts_with_char="",
-    category_id="all",
+    category_id="",
     kids=False,
     games=False,
 ):
@@ -55,7 +55,7 @@ def get_search_query(
             get_starts_with_query(site_id, starts_with_char)
         )
 
-    if category_id and category_id != "all":
+    if category_id:
         search_query = search_query.query(get_category_query(category_id))
 
     if kids:

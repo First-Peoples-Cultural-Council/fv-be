@@ -284,7 +284,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             return Response(data=[])
 
         # If invalid category id, return empty list as a response
-        if not search_params["category_id"]:
+        # explicitly checking if its None since it can be empty in case of non dictionary-search
+        if search_params["category_id"] is None:
             return Response(data=[])
 
         # Get search query
