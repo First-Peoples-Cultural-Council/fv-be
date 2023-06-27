@@ -1,6 +1,5 @@
+from django.contrib.auth import get_user_model
 from import_export.widgets import ForeignKeyWidget, Widget
-
-from backend.models.user import User
 
 
 class ChoicesWidget(Widget):
@@ -28,17 +27,31 @@ class ChoicesWidget(Widget):
 
 
 class UserForeignKeyWidget(ForeignKeyWidget):
-    """Import/export widget to find users by their email, and create in django if missing."""
+    """Import/export widget to find/create users from their email.
+
+    When Django cannot find a User with a matching email address,
+    it will create a new one if create=True, otherwise, will return anon user.
+    """
 
     def __init__(self, create=False, *args, **kwargs):
         self.create = create
-        super().__init__(model=User, field="email", *args, **kwargs)
+        super().__init__(model=get_user_model(), field="email", *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        if self.create:
+        """Converts email value from CSV to a User object."""
+
+        user_exists = self.model.objects.filter(email=value).count() == 1
+        if user_exists:
+            return super().clean(value, row, **kwargs)
+        elif self.create:
+            # steps missing here to actually migrate/match users
             user, _ = self.model.objects.get_or_create(
                 **{self.field: value}, defaults={"id": value}
             )
             return user
         else:
-            return super().clean(value, row, **kwargs)
+            # for now, return a dummy user
+            dummy_user, _ = self.model.objects.get_or_create(
+                **{self.field: "test@test.com"}, defaults={"id": value}
+            )
+            return dummy_user
