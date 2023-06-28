@@ -18,7 +18,7 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
 
     def create_minimal_instance(self, visibility):
         # a "my site" is a membership, so we also need a site and an authenticated user
-        site, user = factories.get_site_with_member(
+        _, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
         )
         self.client.force_authenticate(user=user)
