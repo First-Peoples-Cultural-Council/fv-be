@@ -38,6 +38,17 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
         }
 
     @pytest.mark.django_db
+    def test_detail_minimal(self):
+        instance = self.create_minimal_instance(visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_detail_endpoint(key=instance.site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data == self.get_expected_detail_response(instance)
+
+    @pytest.mark.django_db
     def test_no_membership(self):
         user = factories.UserFactory.create()
         factories.SiteFactory.create(visibility=Visibility.TEAM)

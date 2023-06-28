@@ -73,7 +73,30 @@ class ListApiTestMixin:
 
 
 class DetailApiTestMixin:
-    pass
+    """
+    Basic tests for non-site-content detail APIs. Use with BaseApiTest.
+
+    Does NOT include permission-related tests.
+    """
+
+    def get_expected_detail_response(self, instance):
+        return self.get_expected_response(instance)
+
+    @pytest.mark.django_db
+    def test_detail_404(self):
+        response = self.client.get(self.get_detail_endpoint("fake-key"))
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_detail_minimal(self):
+        instance = self.create_minimal_instance(visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_detail_endpoint(key=instance.id))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data == self.get_expected_detail_response(instance)
 
 
 class ReadOnlyApiTests(ListApiTestMixin, DetailApiTestMixin, BaseApiTest):
