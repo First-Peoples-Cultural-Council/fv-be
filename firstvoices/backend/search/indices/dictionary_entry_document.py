@@ -5,7 +5,12 @@ from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Boolean, Document, Keyword, Text
 
-from backend.models.dictionary import DictionaryEntry, Note, Translation
+from backend.models.dictionary import (
+    DictionaryEntry,
+    DictionaryEntryCategory,
+    Note,
+    Translation,
+)
 from backend.models.sites import Site
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -223,3 +228,34 @@ def delete_related_docs(sender, instance, **kwargs):
                     dictionary_entry.id,
                 )
             )
+
+
+@receiver(post_save, sender=DictionaryEntryCategory)
+@receiver(post_delete, sender=DictionaryEntryCategory)
+def update_categories(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    dictionary_entry = instance.dictionary_entry
+    categories = get_categories_ids(dictionary_entry)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
+        dictionary_entry_doc.update(categories=categories)
+    except ConnectionError:
+        logger.warning(
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "categories_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
+        )
