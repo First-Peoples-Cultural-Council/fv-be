@@ -1,23 +1,19 @@
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
-from drf_spectacular.utils import (
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-    inline_serializer,
-)
-from rest_framework import mixins, serializers, viewsets
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models.sites import Language, SiteFeature
+from backend.models.sites import Language, Membership, SiteFeature
+from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
     Site,
     SiteDetailSerializer,
     SiteSummarySerializer,
 )
+from backend.views.base_views import FVPermissionViewSetMixin
 
 
 @extend_schema_view(
@@ -100,37 +96,31 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of language sites a given user is a member of. If "
-        "there are no accessible sites or the user does not have "
-        "membership to any site then the list will be empty.",
+        description="A list of language sites that the current user is a member of. May be empty.",
         responses={
-            200: inline_serializer(
-                name="MySitesInlineLanguageSerializer",
-                fields={
-                    "language": serializers.CharField(),
-                    "sites": SiteSummarySerializer(many=True),
-                },
-            ),
+            200: MembershipSiteSummarySerializer,
         },
     ),
 )
-class MySitesViewSet(
-    AutoPermissionViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
     """
-    Summary information about language sites a given user has membership to.
+    Information about language sites the current user is a member of.
     """
 
     http_method_names = ["get"]
-    pagination_class = None
-    serializer_class = SiteSummarySerializer
+    lookup_field = "site__slug"
+    serializer_class = MembershipSiteSummarySerializer
 
     def get_queryset(self):
-        # get the site objects filtered by the membership set for the user
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         return (
-            Site.objects.visible(self.request.user)
-            .filter(membership_set__user=self.request.user)
-            .select_related("language")
-            .order_by(Upper("title"))
+            Membership.objects.filter(user=self.request.user)
+            .select_related("site", "site__language")
+            .prefetch_related(
+                Prefetch(
+                    "site__sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                ),
+            )
+            .order_by(Upper("site__title"))
         )

@@ -1,6 +1,6 @@
 from rules import Predicate
 
-from . import base
+from . import base, view
 
 #
 # model-specific view permission predicates
@@ -22,7 +22,7 @@ can_view_membership_model = Predicate(
     (
         base.is_at_least_staff_admin
         | base.has_language_admin_membership
-        | base.is_own_obj
+        | (base.is_own_obj & view.has_visible_site)
     ),
     name="can_view_membership_model",
 )
