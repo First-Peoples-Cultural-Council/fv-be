@@ -1,11 +1,13 @@
 import logging
 
+from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search
 
 from backend.models.dictionary import DictionaryEntry
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
+    ES_NOT_FOUND_ERROR,
     SearchIndexEntryTypes,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
@@ -19,11 +21,23 @@ def get_object_from_index(index, document_id):
         hits = response["hits"]["hits"]
 
         return hits[0] if hits else None
-    except ConnectionError:
+    except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id)
+            ES_CONNECTION_ERROR, SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id
         )
+        logger.warning(e)
+    except NotFoundError as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "query",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            document_id,
+        )
+        logger.warning(e)
+
+    return None
 
 
 def get_object_by_id(objects, object_id):

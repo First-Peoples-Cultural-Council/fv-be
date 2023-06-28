@@ -89,11 +89,21 @@ def update_index(sender, instance, **kwargs):
                 exclude_from_kids=instance.exclude_from_kids,
             )
             index_entry.save()
-    except ConnectionError:
+    except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
             ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
+        logger.warning(e)
+    except NotFoundError as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance.id,
+        )
+        logger.warning(e)
 
 
 # Delete entry from index
