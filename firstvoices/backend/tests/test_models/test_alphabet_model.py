@@ -106,10 +106,6 @@ class TestAlphabetModel:
         IgnoredCharacterFactory(site=alphabet.site, title="/")
         assert alphabet.clean_confusables("A/A") == "a/a"
 
-    @pytest.mark.skip(
-        "test bug: incorrect serialization when reading json from testdb and building transducer. "
-        "requires manual test."
-    )
     @pytest.mark.django_db
     def test_clean_confusables_regex_escape(self):
         """Default confusables transducer ignores regex rules"""

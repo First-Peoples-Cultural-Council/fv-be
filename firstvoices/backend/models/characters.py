@@ -272,10 +272,14 @@ class Alphabet(BaseSiteContentModel):
         if self.input_to_canonical_map:
             preprocess_settings = self.default_g2p_config["preprocess_config"]
 
+            # need to query for self to grab unescaped json: see FW-4365, FW-4559
+            readable_self = Alphabet.objects.only("input_to_canonical_map").get(
+                id=self.id
+            )
             return g2p.Transducer(
                 g2p.Mapping(
                     **preprocess_settings,
-                    mapping=self.input_to_canonical_map,
+                    mapping=readable_self.input_to_canonical_map,
                 )
             )
         else:
