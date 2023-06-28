@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from embed_video.admin import AdminVideoMixin
+
 from backend.admin import BaseSiteContentAdmin, HiddenBaseAdmin
 from backend.models.media import (
     Audio,
@@ -11,6 +12,7 @@ from backend.models.media import (
     ImageFile,
     Person,
     Video,
+    VideoFile,
 )
 
 
@@ -22,7 +24,8 @@ class FileAdmin(HiddenBaseAdmin):
 
 
 @admin.register(ImageFile)
-class ImageFileAdmin(HiddenBaseAdmin):
+@admin.register(VideoFile)
+class VisualMediaFileAdmin(HiddenBaseAdmin):
     list_display = ("content", "mimetype") + HiddenBaseAdmin.list_display
     search_fields = ("content",)
     readonly_fields = (
@@ -32,15 +35,15 @@ class ImageFileAdmin(HiddenBaseAdmin):
     ) + HiddenBaseAdmin.readonly_fields
 
 
-@admin.register(Video)
 @admin.register(Audio)
-class MediaAdmin(BaseSiteContentAdmin):
+class AudioAdmin(BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
 
 
 @admin.register(Image)
-class ImageAdmin(BaseSiteContentAdmin):
+@admin.register(Video)
+class VisualMediaAdmin(BaseSiteContentAdmin):
     readonly_fields = (
         "thumbnail",
         "small",

@@ -270,7 +270,8 @@ AWS_QUERYSTRING_EXPIRE = (
 )  # seconds until a query string expires; this is the default setting
 
 
-# Disallow exports unless you have write permission
+# Disallow import/export unless you have write permission
+IMPORT_EXPORT_IMPORT_PERMISSION_CODE = "change"
 IMPORT_EXPORT_EXPORT_PERMISSION_CODE = "change"
 
 # Image thumbnail generation settings

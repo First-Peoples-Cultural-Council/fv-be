@@ -2,9 +2,8 @@
 
 Backend for the FirstVoices application
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
+[![Run Pytest](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml/badge.svg?branch=main)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml)
 
 License: Apache Software License 2.0
 
@@ -14,15 +13,26 @@ License: Apache Software License 2.0
 
 1. Clone the repo: `git clone https://github.com/First-Peoples-Cultural-Council/fv-be.git`
 1. Install prereqs:
-   - [Python 3.10+](python.org)
+   - [Python 3.10+](https://www.python.org/)
      - (Recommended: [pyenv](https://github.com/pyenv/pyenv) to install and manage current Python versions)
    - [PostgreSQL](https://www.postgresql.org/)
      - Recommended Mac installation: Using Homebrew
        - `brew update`
+       - `brew install libmagic`
        - `brew install postgresql`
        - `brew services start postgresql` to start the service and autostart on system startup.
        - `brew services stop postgresql` to stop the service.
      - For other operating systems see [the official installation docs](https://www.postgresql.org/docs/current/installation.html).
+   - [FFmpeg](http://ffmpeg.org/)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install ffmpeg`
+     - For other operating systems see [the official downloads page](https://ffmpeg.org/download.html).
+   - [libmagic library for python-magic wrapper](https://github.com/ahupp/python-magic)
+     - Recommended Mac installation: Using Homebrew
+       - `brew update`
+       - `brew install libmagic`
+     - For other operating systems see [the installation page in the README](https://github.com/ahupp/python-magic#installation).
 1. (Recommended) Create and activate a virtual environment in the root of the project
    - (Recommended [venv](https://docs.python.org/3/library/venv.html) or [direnv](https://direnv.net/))
    - If using [venv](https://docs.python.org/3/library/venv.html)
@@ -268,6 +278,18 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
 - Create an `Alphabet` class with an appropriate input to canonical mapping that defines confusables.
   - For example: `[{"in": "á", "out": "a"}, {"in": "ᐱ", "out": "A"}, {"in": "Á", "out": "A"}, {"in": "c̣", "out": "c"}, {"in": "C̣", "out": "C"}, {"in": "ȼh", "out": "ch"}, {"in": "Ȼh", "out": "Ch"}]`
   - Check [g2p documentation](https://github.com/roedoejet/g2p) for more detailed mapping options.
+
+### Building Elasticsearch Index
+To build/rebuild elasticsearch indices:
+1. Make sure the elasticsearch server is running. The instructions can be found in this file
+on how to start the server locally if required.
+2. Run the following command from `firstvoices/` folder:
+`python3 manage.py rebuild_index`
+3. A success message should be displayed if the process gets completed.
+4. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
+Currently, the following indices are supported:
+   1. `dictionary_entries`
+
 
 ### Test coverage
 

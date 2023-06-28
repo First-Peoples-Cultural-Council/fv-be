@@ -9,9 +9,9 @@ class SiteSearchViewsSet(BaseSearchViewSet, SiteContentViewSetMixin):
         """
 
         site = self.get_validated_site()
-        site_slug = site[0].slug
+        site_id = site[0].id
 
         search_params = super().get_search_params()
-        search_params["site_slug"] = site_slug
+        search_params["site_id"] = str(site_id)
 
         return search_params

@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apk add build-base
 RUN apk add libffi-dev
 RUN apk add libmagic
+RUN apk add --no-cache ffmpeg
 RUN pip3 install gunicorn
 
 COPY requirements.txt /app
@@ -24,7 +25,6 @@ RUN ["python3", "manage.py", "collectstatic"]
 FROM $caddy_image AS static-runtime
 COPY --from=django-common /app/Caddyfile /etc/caddy
 COPY --from=static-collector /app/firstvoices/static /srv
-
 
 # or django-runtime for the api server. this is last so that it's the default if no target specified
 FROM django-common AS django-runtime

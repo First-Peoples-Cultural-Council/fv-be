@@ -1,9 +1,11 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
-from rest_framework.reverse import reverse
 
 from backend.models.app import AppJson
-from backend.models.sites import Site
+from backend.models.sites import Language, Site
 from backend.serializers.base_serializers import base_id_fields
+from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 
 
@@ -42,24 +44,48 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
 
 
+@extend_schema_serializer(
+    exclude_fields=(
+        "audio",
+        "categories",
+        "characters",
+        "data",
+        "dictionary",
+        "dictionary_cleanup",
+        "dictionary_cleanup_preview",
+        "ignored_characters",
+        "images",
+        "people",
+        "videos",
+        "word_of_the_day",
+    ),
+)
 class SiteDetailSerializer(SiteSummarySerializer):
     """
     Serializes basic details about a site object, including access-controlled related information.
     """
 
     menu = serializers.SerializerMethodField()
-    characters = serializers.SerializerMethodField()
-    ignored_characters = serializers.SerializerMethodField()
-    data = serializers.SerializerMethodField()
-    dictionary = serializers.SerializerMethodField()
-    dictionary_cleanup = serializers.SerializerMethodField()
-    dictionary_cleanup_preview = serializers.SerializerMethodField()
-    categories = serializers.SerializerMethodField()
-    people = serializers.SerializerMethodField()
-    word_of_the_day = serializers.SerializerMethodField()
     banner_image = ImageSerializer()
     banner_video = VideoSerializer()
 
+    # api links
+    audio = SiteViewLinkField(view_name="api:audio-list")
+    categories = SiteViewLinkField(view_name="api:category-list")
+    characters = SiteViewLinkField(view_name="api:character-list")
+    data = SiteViewLinkField(view_name="api:data-list")
+    dictionary = SiteViewLinkField(view_name="api:dictionaryentry-list")
+    dictionary_cleanup = SiteViewLinkField(view_name="api:dictionary-cleanup-list")
+    dictionary_cleanup_preview = SiteViewLinkField(
+        view_name="api:dictionary-cleanup-preview-list"
+    )
+    ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
+    images = SiteViewLinkField(view_name="api:image-list")
+    people = SiteViewLinkField(view_name="api:person-list")
+    videos = SiteViewLinkField(view_name="api:video-list")
+    word_of_the_day = SiteViewLinkField(view_name="api:word-of-the-day-list")
+
+    @extend_schema_field(OpenApiTypes.STR)
     def get_menu(self, site):
         return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
 
@@ -67,52 +93,35 @@ class SiteDetailSerializer(SiteSummarySerializer):
         default_menu = AppJson.objects.filter(key="default_site_menu")
         return default_menu[0].json if len(default_menu) > 0 else None
 
-    def get_characters(self, site):
-        return self.get_site_content_link(site, "api:character-list")
-
-    def get_ignored_characters(self, site):
-        return self.get_site_content_link(site, "api:ignoredcharacter-list")
-
-    def get_data(self, site):
-        return self.get_site_content_link(site, "api:data-list")
-
-    def get_dictionary(self, site):
-        return self.get_site_content_link(site, "api:dictionaryentry-list")
-
-    def get_dictionary_cleanup(self, site):
-        return self.get_site_content_link(site, "api:dictionary-cleanup-list")
-
-    def get_dictionary_cleanup_preview(self, site):
-        return self.get_site_content_link(site, "api:dictionary-cleanup-preview-list")
-
-    def get_categories(self, site):
-        return self.get_site_content_link(site, "api:category-list")
-
-    def get_people(self, site):
-        return self.get_site_content_link(site, "api:person-list")
-
-    def get_word_of_the_day(self, site):
-        return self.get_site_content_link(site, "api:word-of-the-day-list")
-
-    def get_site_content_link(self, site, view_name):
-        return reverse(
-            view_name,
-            args=[site.slug],
-            request=self.context["request"],
-        )
-
     class Meta(SiteSummarySerializer.Meta):
         fields = SiteSummarySerializer.Meta.fields + (
             "menu",
+            "banner_image",
+            "banner_video",
+            "audio",
+            "categories",
             "characters",
-            "ignored_characters",
             "data",
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
-            "categories",
+            "ignored_characters",
+            "images",
             "people",
+            "videos",
             "word_of_the_day",
-            "banner_image",
-            "banner_video",
         )
+
+
+class LanguageSerializer(serializers.Serializer):
+    """
+    Serializes basic details about a language, including a list of language sites.
+    """
+
+    language = serializers.CharField(source="title")
+    language_code = serializers.CharField()
+    sites = SiteSummarySerializer(many=True)
+
+    class Meta:
+        model = Language
+        fields = ("language", "language_code", "sites")

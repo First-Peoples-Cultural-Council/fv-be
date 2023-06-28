@@ -1,12 +1,15 @@
 import datetime
+import os.path
 import posixpath
 import sys
+import tempfile
 from io import BytesIO
 
+import ffmpeg
 import magic
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models
+from django.db import NotSupportedError, models
 from django.utils.translation import gettext as _
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
@@ -58,6 +61,12 @@ class FileBase(BaseSiteContentModel):
         return f"{self.content.name} ({self.site})"
 
     def save(self, **kwargs):
+        if not self._state.adding:
+            raise NotSupportedError(
+                "Editing existing files is not supported at this time. Please create a new file if you would like to "
+                "update a media file."
+            )
+
         """
         Sets mimetype based on the file contents
         """
@@ -119,6 +128,15 @@ class ImageFile(VisualFileBase):
         }
 
 
+def get_local_video_file(original):
+    input_extension = "." + original.name.split(".")[1]
+    temp_file = tempfile.NamedTemporaryFile(suffix=input_extension)
+    original.file.seek(0)
+    image_file = original.file.read()
+    temp_file.write(image_file)
+    return temp_file
+
+
 class VideoFile(VisualFileBase):
     class Meta:
         verbose_name = _("Video File")
@@ -129,6 +147,31 @@ class VideoFile(VisualFileBase):
             "change": predicates.can_edit_core_uncontrolled_data,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
+
+    def save(self, **kwargs):
+        try:
+            with get_local_video_file(self.content) as temp_file:
+                video_info = self.get_video_info(temp_file)
+
+            self.width = int(video_info["width"])
+            self.height = int(video_info["height"])
+
+        except ffmpeg.Error as e:
+            self.logger.error(
+                f"Failed to probe video file using ffmpeg [{self.content.name}]. \n"
+                f"Error: {e}\n"
+                f"{e.stderr.decode('utf8')}\n"
+            )
+
+        super().save(**kwargs)
+
+    def get_video_info(self, temp_file):
+        probe = ffmpeg.probe(temp_file.name)
+        video_stream = next(
+            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
+            None,
+        )
+        return video_stream
 
 
 class MediaBase(AudienceMixin, BaseSiteContentModel):
@@ -261,7 +304,7 @@ class AudioSpeaker(BaseSiteContentModel):
         return f"Audio Speaker {self.audio.title} - ({self.speaker.name})"
 
 
-def get_output_image_size(max_size, input_width, input_height):
+def get_output_dimensions(max_size, input_width, input_height):
     """
     Returns the output image size given a max size to scale the image to. The largest dimension of the input image is
     scaled down to the max size setting and the other dimension is scaled down, keeping the original aspect ratio.
@@ -287,50 +330,37 @@ def get_output_image_size(max_size, input_width, input_height):
     return input_width, input_height
 
 
-class Image(MediaBase):
-    # from fvpicture
-
+class ThumbnailMixin(models.Model):
     class Meta:
-        verbose_name = _("Image")
-        verbose_name_plural = _("Images")
-        rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
-        }
-
-    # acknowledgement from fvm:recorder, fvm:source
-
-    # from fvm:content
-    original = models.OneToOneField(
-        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
-    )
+        abstract = True
 
     thumbnail = models.OneToOneField(
         ImageFile,
-        related_name="image_thumbnail",
+        related_name="%(class)s_thumbnail",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
     )
     small = models.OneToOneField(
         ImageFile,
-        related_name="image_small",
+        related_name="%(class)s_small",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
     )
     medium = models.OneToOneField(
         ImageFile,
-        related_name="image_medium",
+        related_name="%(class)s_medium",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
     )
 
-    def __str__(self):
-        return f"{self.title} / {self.site} (Image)"
+    def generate_resized_images(self):
+        """
+        A function to generate a set of resized images when the model is saved.
+        """
+        raise NotImplementedError
 
     def _add_media(self):
         super()._add_media()
@@ -348,34 +378,6 @@ class Image(MediaBase):
         instance.thumbnail.delete()
         instance.small.delete()
         instance.medium.delete()
-
-    def generate_resized_images(self):
-        """
-        A function to generate a set of resized images when an Image model is saved
-        """
-        for size_name, max_size in settings.IMAGE_SIZES.items():
-            original = self.original.content
-            image_name = original.name.split(".")[0]
-            thumbnail_name = f"{image_name}_{size_name}.jpg"
-
-            with PILImage.open(original.file.open(mode="rb")) as img:
-                output_size = get_output_image_size(max_size, img.width, img.height)
-                output_img = self.create_thumbnail(img, output_size)
-
-            image_file_model = self.add_image_file(
-                thumbnail_name, output_img, output_size
-            )
-
-            setattr(self, size_name, image_file_model)
-
-    def create_thumbnail(self, img, output_size):
-        output_img = BytesIO()
-        img.thumbnail(output_size)
-        # Remove transparency values if they exist so that the image can be converted to JPEG.
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        img.save(output_img, format="JPEG", quality=90)
-        return output_img
 
     def add_image_file(self, file_name, output_img, output_size):
         content = InMemoryUploadedFile(
@@ -400,7 +402,59 @@ class Image(MediaBase):
         return model
 
 
-class Video(MediaBase):
+class Image(ThumbnailMixin, MediaBase):
+    # from fvpicture
+
+    class Meta:
+        verbose_name = _("Image")
+        verbose_name_plural = _("Images")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.can_add_core_uncontrolled_data,
+            "change": predicates.can_edit_core_uncontrolled_data,
+            "delete": predicates.can_delete_core_uncontrolled_data,
+        }
+
+    # acknowledgement from fvm:recorder, fvm:source
+
+    # from fvm:content
+    original = models.OneToOneField(
+        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
+    )
+
+    def __str__(self):
+        return f"{self.title} / {self.site} (Image)"
+
+    def generate_resized_images(self):
+        """
+        A function to generate a set of resized images when an Image model is saved
+        """
+        for size_name, max_size in settings.IMAGE_SIZES.items():
+            original = self.original.content
+            image_name = original.name.split(".")[0]
+            thumbnail_name = f"{image_name}_{size_name}.jpg"
+
+            with PILImage.open(original.file.open(mode="rb")) as img:
+                output_size = get_output_dimensions(max_size, img.width, img.height)
+                output_img = self.create_thumbnail(img, output_size)
+
+            image_file_model = self.add_image_file(
+                thumbnail_name, output_img, output_size
+            )
+
+            setattr(self, size_name, image_file_model)
+
+    def create_thumbnail(self, img, output_size):
+        output_img = BytesIO()
+        img.thumbnail(output_size)
+        # Remove transparency values if they exist so that the image can be converted to JPEG.
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        img.save(output_img, format="JPEG", quality=90)
+        return output_img
+
+
+class Video(ThumbnailMixin, MediaBase):
     # from fvvideo
 
     class Meta:
@@ -422,6 +476,69 @@ class Video(MediaBase):
 
     def __str__(self):
         return f"{self.title} / {self.site} (Video)"
+
+    def generate_resized_images(self):
+        """
+        A function to generate a set of resized images when a Video model is saved
+        """
+        width = self.original.width
+        height = self.original.height
+
+        # Iterate over each of the output image sizes.
+        for size_name, max_size in settings.IMAGE_SIZES.items():
+            output_dimensions = get_output_dimensions(max_size, width, height)
+            self.add_thumbnail(self.original.content, output_dimensions, size_name)
+
+    def add_thumbnail(self, original_file, output_dimensions, size_name):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            thumbnail_temp_path = self.get_thumbnail_temp_path(
+                original_file, size_name, temp_dir
+            )
+            self.write_thumbnail_file(
+                original_file, output_dimensions, thumbnail_temp_path
+            )
+
+            thumbnail_name = self.get_thumbnail_file_name(original_file, size_name)
+            self.set_thumbnail_attribute(
+                size_name, output_dimensions, thumbnail_temp_path, thumbnail_name
+            )
+
+    def get_thumbnail_file_name(self, original_file, size_name):
+        input_name = original_file.name.split(".")[0]
+        thumbnail_name = f"{input_name}_{size_name}.jpg"
+        return thumbnail_name
+
+    def get_thumbnail_temp_path(self, original_file, size_name, temp_dir):
+        file_name = os.path.basename(original_file.name).split(".")[0]
+        output_filename = f"{file_name}_{size_name}.jpg"
+        temp_output_image_path = f"{temp_dir}/{output_filename}"
+        return temp_output_image_path
+
+    def write_thumbnail_file(self, original_file, output_dimensions, output_path):
+        with get_local_video_file(original_file) as temp_file:
+            try:
+                (
+                    ffmpeg.input(temp_file.name)
+                    .filter("scale", output_dimensions[0], -1)
+                    .output(output_path, vframes=1)
+                    .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
+                )
+            except ffmpeg.Error as e:
+                self.logger.error(
+                    f"Failed to generate image for video file [{original_file.name}].\n"
+                    f"Error: {e}\n"
+                    f"{e.stderr.decode('utf8')}\n"
+                )
+
+    def set_thumbnail_attribute(
+        self, attribute_name, dimensions, thumbnail_file_path, thumbnail_name
+    ):
+        with open(thumbnail_file_path, "rb") as output_image:
+            image_file_model = self.add_image_file(
+                thumbnail_name, output_image, dimensions
+            )
+            setattr(self, attribute_name, image_file_model)
 
 
 class EmbeddedVideo(MediaBase):

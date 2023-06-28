@@ -81,6 +81,7 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="A")
         factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
         factories.DictionaryEntryFactory.create(site=site, title="abcd")
+        factories.DictionaryEntryFactory.create(site=site, title="ᐱbcd")
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
@@ -89,7 +90,7 @@ class TestAlphabetTasks:
 
         result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
-            "unknown_character_count": {"⚑d": 1},
+            "unknown_character_count": {"⚑d": 2},
             "updated_entries": [
                 {
                     "title": "abcd",
@@ -97,6 +98,13 @@ class TestAlphabetTasks:
                     "cleaned_title": "",
                     "new_custom_order": "#$%⚑d",
                     "previous_custom_order": "⚑a⚑b⚑c⚑d",
+                },
+                {
+                    "title": "ᐱbcd",
+                    "is_title_updated": True,
+                    "cleaned_title": "Abcd",
+                    "new_custom_order": "!$%⚑d",
+                    "previous_custom_order": "⚑ᐱ⚑b⚑c⚑d",
                 },
                 {
                     "title": "ᐱᐱᐱ",

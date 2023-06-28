@@ -28,7 +28,9 @@ def get_object_from_index(index, document_id):
 
 def get_object_by_id(objects, object_id):
     # Function to find and return database object from list of objects
-    filtered_objects = [obj for obj in objects if str(obj.id) == object_id]
+    filtered_objects = [
+        obj for obj in objects if str(obj.id) == object_id or obj.id == object_id
+    ]
 
     if len(filtered_objects):
         return filtered_objects[0]
@@ -48,7 +50,7 @@ def hydrate_objects(search_results, request):
 
     # Separating object IDs into lists based on their data types
     for obj in search_results:
-        if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
+        if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
             dictionary_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
@@ -60,7 +62,7 @@ def hydrate_objects(search_results, request):
 
     for obj in search_results:
         # Handling DictionaryEntry objects
-        if obj["_index"] == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
+        if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
             dictionary_entry = get_object_by_id(
                 dictionary_objects, obj["_source"]["document_id"]
             )
@@ -76,7 +78,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": obj["_source"]["site_slug"],
+                            "site_slug": dictionary_entry.site.slug,
                         },
                     ).data,
                 }
@@ -106,3 +108,10 @@ def get_notes_text(dictionary_entry_instance):
     for note in notes_set:
         notes_text.append(note.text)
     return " ".join(notes_text)
+
+
+def get_categories_ids(dictionary_entry_instance):
+    return [
+        str(id)
+        for id in dictionary_entry_instance.categories.values_list("id", flat=True)
+    ]

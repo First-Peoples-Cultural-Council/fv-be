@@ -1,6 +1,11 @@
+import logging
+import os
+
 import factory
+import ffmpeg
 import pytest
 from django.conf import settings
+from django.db import NotSupportedError
 from embed_video.backends import (
     UnknownBackendException,
     VimeoBackend,
@@ -11,6 +16,9 @@ from embed_video.fields import EmbedVideoField
 
 from backend.models.media import File, ImageFile, VideoFile
 from backend.tests import factories
+from backend.tests.factories.media_factories import get_video_content
+
+logger = logging.getLogger(__name__)
 
 
 class TestFileModels:
@@ -44,6 +52,8 @@ class TestFileModels:
         site = factories.SiteFactory.create()
         instance = factories.VideoFileFactory.create(site=site)
         assert instance.mimetype == "video/mp4"
+        assert instance.height == 46
+        assert instance.width == 80
 
     @pytest.mark.parametrize("media_factory", file_model_factories)
     @pytest.mark.django_db
@@ -82,26 +92,200 @@ class TestAudioModel:
 
 
 class TestVideoModel:
+    image_sizes = list(settings.IMAGE_SIZES.keys())
+
+    def check_image(self, video, site):
+        """
+        A helper function to get, check, and return the generated images for a Video model
+        """
+
+        generated_images = [
+            getattr(video, "thumbnail"),
+            getattr(video, "small"),
+            getattr(video, "medium"),
+        ]
+        for index, generated_image in enumerate(generated_images):
+            assert generated_image.content.file
+            assert f"{site.slug}/" in generated_image.content.path
+            assert f"_{self.image_sizes[index]}" in generated_image.content.path
+
+        return generated_images
+
+    def get_video_dimensions(self, video_size):
+        """
+        A helper function to read the video width and height from the file
+        """
+        path = (
+            os.path.dirname(os.path.realpath(__file__))
+            + f"/../factories/resources/video_example_{video_size}.mp4"
+        )
+        probe = ffmpeg.probe(path)
+        video_stream = next(
+            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
+            None,
+        )
+        width = int(video_stream["width"])
+        height = int(video_stream["height"])
+        return {"width": width, "height": height}
+
+    def create_site_and_video(self, video_size):
+        site = factories.SiteFactory.create()
+
+        video_file = factories.VideoFileFactory.create(
+            content=get_video_content(video_size)
+        )
+        video = factories.VideoFactory.create(site=site, original=video_file)
+        return site, video
+
     @pytest.mark.django_db
     def test_related_file_removed_on_delete(self):
         media_instance = factories.VideoFactory.create()
         related_id = media_instance.original.id
+        related_image_ids = [
+            media_instance.thumbnail.id,
+            media_instance.small.id,
+            media_instance.medium.id,
+        ]
         assert VideoFile.objects.filter(pk=related_id).count() == 1
+        for related_id in related_image_ids:
+            assert ImageFile.objects.filter(pk=related_id).count() == 1
 
         media_instance.delete()
 
         assert VideoFile.objects.filter(pk=related_id).count() == 0
+        for related_id in related_image_ids:
+            assert ImageFile.objects.filter(pk=related_id).count() == 0
 
     @pytest.mark.django_db
     def test_related_file_removed_on_update(self):
         media_instance = factories.VideoFactory.create()
         related_id = media_instance.original.id
+        related_image_ids = [
+            media_instance.thumbnail.id,
+            media_instance.small.id,
+            media_instance.medium.id,
+        ]
         assert VideoFile.objects.filter(pk=related_id).count() == 1
+        for related_id in related_image_ids:
+            assert ImageFile.objects.filter(pk=related_id).count() == 1
 
         media_instance.original = factories.VideoFileFactory.create()
         media_instance.save()
 
         assert VideoFile.objects.filter(pk=related_id).count() == 0
+        for related_id in related_image_ids:
+            assert ImageFile.objects.filter(pk=related_id).count() == 0
+
+    @pytest.mark.django_db
+    def test_update_video_file_not_supported(self):
+        media_instance = factories.VideoFactory.create()
+        try:
+            new_content = get_video_content("small")
+            media_instance.original.content = new_content
+            media_instance.original.save()
+            assert False
+        except NotSupportedError:
+            assert True
+
+    @pytest.mark.django_db
+    def test_resize_images_large_input_video(self):
+        site, video = self.create_site_and_video("large")
+
+        generated_images = self.check_image(video, site)
+
+        assert generated_images[2].width == settings.IMAGE_SIZES["medium"]
+        assert (
+            settings.IMAGE_SIZES["small"]
+            < generated_images[2].height
+            <= settings.IMAGE_SIZES["medium"]
+        )
+        assert (
+            settings.IMAGE_SIZES["thumbnail"]
+            < generated_images[1].width
+            <= settings.IMAGE_SIZES["small"]
+        )
+        assert (
+            settings.IMAGE_SIZES["thumbnail"]
+            < generated_images[1].height
+            <= settings.IMAGE_SIZES["small"]
+        )
+        assert generated_images[0].width <= settings.IMAGE_SIZES["thumbnail"]
+        assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
+
+    @pytest.mark.django_db
+    def test_resize_images_medium_input_video(self):
+        site, video = self.create_site_and_video("medium")
+        video_dimensions = self.get_video_dimensions("medium")
+
+        generated_images = self.check_image(video, site)
+
+        assert generated_images[2].width == video_dimensions["width"]
+        assert generated_images[2].height == video_dimensions["height"]
+        assert generated_images[1].width == settings.IMAGE_SIZES["small"]
+        assert (
+            settings.IMAGE_SIZES["thumbnail"]
+            < generated_images[1].height
+            <= settings.IMAGE_SIZES["small"]
+        )
+        assert generated_images[0].width <= settings.IMAGE_SIZES["thumbnail"]
+        assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
+
+    @pytest.mark.django_db
+    def test_resize_images_small_input_video(self):
+        site, video = self.create_site_and_video("small")
+        video_dimensions = self.get_video_dimensions("small")
+
+        generated_images = self.check_image(video, site)
+
+        assert generated_images[1].width == video_dimensions["width"]
+        assert generated_images[1].height == video_dimensions["height"]
+        assert generated_images[1].width == video_dimensions["width"]
+        assert generated_images[1].height == video_dimensions["height"]
+        assert generated_images[0].width == settings.IMAGE_SIZES["thumbnail"]
+        assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
+
+    @pytest.mark.django_db
+    def test_resize_images_thumbnail_input_video(self):
+        site, video = self.create_site_and_video("thumbnail")
+        video_dimensions = self.get_video_dimensions("thumbnail")
+
+        generated_images = self.check_image(video, site)
+
+        assert generated_images[2].width == video_dimensions["width"]
+        assert generated_images[2].height == video_dimensions["height"]
+        assert generated_images[1].width == video_dimensions["width"]
+        assert generated_images[1].height == video_dimensions["height"]
+        assert generated_images[0].width == video_dimensions["width"]
+        assert generated_images[0].height == video_dimensions["height"]
+
+    @pytest.mark.django_db
+    def test_resize_images_large_rotated_input_video(self):
+        site, video = self.create_site_and_video("large_rotated")
+
+        generated_images = self.check_image(video, site)
+
+        assert (
+            settings.IMAGE_SIZES["small"]
+            < generated_images[2].width
+            <= settings.IMAGE_SIZES["medium"]
+        )
+        assert (
+            settings.IMAGE_SIZES["medium"] - 2
+            < generated_images[2].height
+            < settings.IMAGE_SIZES["medium"] + 2
+        )
+        assert (
+            settings.IMAGE_SIZES["thumbnail"]
+            < generated_images[1].width
+            <= settings.IMAGE_SIZES["small"]
+        )
+        assert (
+            settings.IMAGE_SIZES["thumbnail"]
+            < generated_images[1].height
+            <= settings.IMAGE_SIZES["small"]
+        )
+        assert generated_images[0].width <= settings.IMAGE_SIZES["thumbnail"]
+        assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
 
 
 class TestImageModel:

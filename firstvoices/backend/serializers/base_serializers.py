@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
 from . import fields
 from .utils import get_site_from_context
@@ -20,6 +21,23 @@ class SiteContentUrlMixin:
         """
         field_class, field_kwargs = super().build_url_field(field_name, model_class)
         field_kwargs["view_name"] = "api:" + field_kwargs["view_name"]
+
+        return field_class, field_kwargs
+
+
+class ExternalSiteContentUrlMixin(SiteContentUrlMixin):
+    """
+    Mixin to configure url identity field for site content models from other sites.
+    """
+
+    serializer_url_field = NestedHyperlinkedIdentityField
+
+    def build_url_field(self, field_name, model_class):
+        """
+        Add our namespace to the view_name
+        """
+        field_class, field_kwargs = super().build_url_field(field_name, model_class)
+        field_kwargs["parent_lookup_kwargs"] = {"site_slug": "site__slug"}
 
         return field_class, field_kwargs
 
