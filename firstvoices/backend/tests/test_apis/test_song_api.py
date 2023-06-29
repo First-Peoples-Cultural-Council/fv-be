@@ -41,6 +41,11 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentA
             "url": f"http://testserver{self.get_detail_endpoint(key=song.id, site_slug=site.slug)}",
             "id": str(song.id),
             "title": song.title,
+            "coverImage": None,
+            "titleTranslation": song.title_translation,
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "hideOverlay": False
         }
 
     def get_expected_response(self, song, site):

@@ -15,7 +15,7 @@ from backend.serializers.site_serializers import LinkedSiteSerializer
 class LyricSerializer(ModelSerializer):
     class Meta:
         model = Lyric
-        fields = ("text", "translation")
+        fields = ("id", "text", "translation")
 
 
 class SongDetailSerializer(
@@ -35,7 +35,6 @@ class SongDetailSerializer(
                 "url",
                 "id",
                 "hide_overlay",
-                "title",
                 "site",
                 "cover_image",
                 "title",
@@ -52,5 +51,15 @@ class SongDetailSerializer(
 
 
 class SongListSerializer(SiteContentLinkedTitleSerializer):
+    cover_image = ImageSerializer()
+
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Song
+        fields = (SiteContentLinkedTitleSerializer.Meta.fields
+                  + (
+                      "title_translation",
+                      "cover_image",
+                      "hide_overlay",
+                      "exclude_from_games",
+                      "exclude_from_kids"
+                  ))
