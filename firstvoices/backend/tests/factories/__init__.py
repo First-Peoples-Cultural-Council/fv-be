@@ -4,6 +4,7 @@ from .async_results_factories import *  # noqa F401, F403  # isort:skip
 from .category_factories import *  # noqa F401, F403 # isort:skip
 from .site_info_factories import *  # noqa F401, F403 # isort:skip
 from .media_factories import *  # noqa F401, F403 # isort:skip
+from .widget_factories import *  # noqa F401, F403 # isort:skip
 
 from .character_factories import *  # noqa F401, F403 # isort:skip
 from .dictionary_entry import *  # noqa F401, F403 # isort:skip
