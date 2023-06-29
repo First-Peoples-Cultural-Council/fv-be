@@ -14,9 +14,7 @@ class TestSiteWidgetListModel:
         assert widget_one_order.order == 0
         assert widget_two_order.order == 1
 
-        try:
+        with pytest.raises(IntegrityError):
             widget_two_order.order = 0
             widget_two_order.save()
-            assert False
-        except IntegrityError:
-            assert True
+            pytest.fail("Expected IntegrityError due to non-unique order values.")
