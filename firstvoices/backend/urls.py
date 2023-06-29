@@ -17,6 +17,7 @@ from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.dictionary_search_views import DictionarySearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
+from backend.views.song_views import SongViewSet
 from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -58,6 +59,7 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
+sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 
 app_name = "api"
