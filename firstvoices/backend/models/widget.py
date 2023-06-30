@@ -88,11 +88,19 @@ class SiteWidgetList(BaseSiteContentModel):
         SiteWidget, related_name="sitewidget_set", through="SiteWidgetListOrder"
     )
 
+    def save(self, *args, **kwargs):
+        # If the site has changed then update the sites of the through model(s)
+        existing_instance = SiteWidgetList.objects.filter(id=self.id).first()
+        if existing_instance and self.site != existing_instance.site:
+            for order in self.sitewidgetlistorder_set.all():
+                order.save()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Widget list [{self.id}] for site [{self.site}]"
 
 
-class SiteWidgetListOrder(BaseModel):
+class SiteWidgetListOrder(BaseSiteContentModel):
     class Meta:
         verbose_name = _("site widget list order")
         verbose_name_plural = _("site widget list orders")
@@ -102,7 +110,7 @@ class SiteWidgetListOrder(BaseModel):
             ),
         ]
         rules_permissions = {
-            "view": rules.always_allow,
+            "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,  # permissions will change when we add a write API
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
@@ -117,9 +125,9 @@ class SiteWidgetListOrder(BaseModel):
 
     order = models.IntegerField()
 
-    @property
-    def site(self):
-        return self.site_widget_list.site
+    def save(self, *args, **kwargs):
+        self.site = self.site_widget_list.site
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Widget [{self.site_widget}] - order [{self.order}] pair"

@@ -43,6 +43,7 @@ class SiteWidgetListFactory(DjangoModelFactory):
 
 
 class SiteWidgetListOrderFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
     site_widget = factory.SubFactory(SiteWidgetFactory)
     site_widget_list = factory.SubFactory(SiteWidgetListFactory)
 
@@ -53,13 +54,12 @@ class SiteWidgetListOrderFactory(DjangoModelFactory):
 
 
 class SiteWidgetListWithTwoWidgetsFactory(SiteWidgetListFactory):
+    site = factory.SubFactory(SiteFactory)
     widget_one = factory.RelatedFactory(
-        SiteWidgetListOrderFactory,
-        factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list one",
+        SiteWidgetListOrderFactory, factory_related_name="site_widget_list", site=site
     )
     widget_two = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list two",
+        site=site,
     )
