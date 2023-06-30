@@ -11,6 +11,7 @@ from backend.search.utils.query_builder_utils import (
     get_site_filter_query,
     get_starts_with_query,
     get_types_query,
+    get_view_permissions_filter,
 )
 
 
@@ -20,6 +21,7 @@ def get_search_object(indices):
 
 
 def get_search_query(
+    user,
     q=None,
     site_id=None,
     types=VALID_DOCUMENT_TYPES,
@@ -33,6 +35,11 @@ def get_search_query(
     indices = get_indices(types)
     search_object = get_search_object(indices)
     search_query = search_object.query()
+
+    # View permissions
+    permissions_filter = get_view_permissions_filter(user)
+    if permissions_filter:
+        search_query = search_query.query(permissions_filter)
 
     # Adding search term and domain filter
     if q:

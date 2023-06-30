@@ -3,7 +3,7 @@ import logging
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Boolean, Document, Keyword, Text
+from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
 
 from backend.models.dictionary import (
     DictionaryEntry,
@@ -31,9 +31,11 @@ class DictionaryEntryDocument(Document):
     # generic fields, will be moved to a base search document once we have songs and stories
     document_id = Text()
     site_id = Keyword()
+    site_visibility = Integer()
     full_text_search_field = Text()
     exclude_from_games = Boolean()
     exclude_from_kids = Boolean()
+    visibility = Integer()
 
     # Dictionary Related fields
     type = Keyword()
@@ -68,6 +70,7 @@ def update_index(sender, instance, **kwargs):
             index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
             index_entry.update(
                 site_id=str(instance.site.id),
+                site_visibility=instance.site.visibility,
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
@@ -77,12 +80,14 @@ def update_index(sender, instance, **kwargs):
                 categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
+                visibility=instance.visibility,
             )
         else:
             # Create new entry if it doesn't exist
             index_entry = DictionaryEntryDocument(
                 document_id=str(instance.id),
                 site_id=str(instance.site.id),
+                site_visibility=instance.site.visibility,
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
@@ -92,6 +97,7 @@ def update_index(sender, instance, **kwargs):
                 categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
+                visibility=instance.visibility,
             )
             index_entry.save()
     except ConnectionError as e:

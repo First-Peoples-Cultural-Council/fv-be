@@ -229,6 +229,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         input_q = self.request.GET.get("q", "")
 
+        user = self.request.user
+
         input_types_str = self.request.GET.get("types", "")
         valid_types_list = get_valid_document_types(input_types_str)
 
@@ -243,6 +245,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         search_params = {
             "q": input_q,
+            "user": user,
             "types": valid_types_list,
             "domain": valid_domain,
             "kids": kids_flag,
@@ -290,6 +293,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # Get search query
         search_query = get_search_query(
+            user=search_params["user"],
             q=search_params["q"],
             types=search_params["types"],
             domain=search_params["domain"],

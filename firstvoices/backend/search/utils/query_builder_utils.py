@@ -3,9 +3,12 @@ from enum import Enum
 from django.core.exceptions import ValidationError
 from elasticsearch_dsl import Q
 
+from backend.models import Membership
 from backend.models.category import Category
 from backend.models.characters import Alphabet
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.permissions.utils import get_app_role
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
 )
@@ -154,6 +157,61 @@ def get_search_term_query(search_term, domain):
 
 def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
+
+
+def get_view_permissions_filter(user):
+    """
+    Re-creation of the is_visible_object filter from backend/permissions/filters/view.py
+    The logic is translated into an ES query
+    """
+
+    # base.is_at_least_staff_admin(user)
+    # if user has a staff app role or higher, they can see all objects
+    app_role = get_app_role(user)
+    if app_role >= AppRole.STAFF:
+        return None
+
+    # base.has_member_access_to_obj(user) + has_team_access_to_obj(user)
+    # create the base bool query
+    query = Q("bool")
+    filter_list = []
+
+    user_memberships = Membership.objects.filter(user=user)
+
+    for membership in user_memberships:
+        # create a filter for each membership
+        if membership.role == Role.LANGUAGE_ADMIN:
+            filter_list.append(
+                Q("term", site_id=membership.site.id)
+                & Q("range", visibility={"gte": Visibility.TEAM})
+            )
+        elif membership.role == Role.EDITOR:
+            filter_list.append(
+                Q("term", site_id=membership.site.id)
+                & Q("range", visibility={"gte": Visibility.TEAM})
+            )
+        elif membership.role == Role.ASSISTANT:
+            filter_list.append(
+                Q("term", site_id=membership.site.id)
+                & Q("range", visibility={"gte": Visibility.TEAM})
+            )
+        elif membership.role == Role.MEMBER:
+            filter_list.append(
+                Q("term", site_id=membership.site.id)
+                & Q("range", visibility={"gte": Visibility.MEMBERS})
+            )
+
+    # base.has_public_access_to_obj(user)
+    filter_list.append(
+        Q("term", site_visibility=Visibility.PUBLIC)
+        & Q("term", visibility=Visibility.PUBLIC)
+    )
+
+    # add all the filters to the query
+    for f in filter_list:
+        query.should.append(f)
+
+    return query
 
 
 def get_starts_with_query(site_id, starts_with_char):

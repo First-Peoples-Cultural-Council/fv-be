@@ -5,6 +5,8 @@ from . import base
 #
 
 
+# Note that this view filter is re-created in the following file to work with ElasticSearch:
+# firstvoices/apps/fv_search/permissions.py
 def is_visible_object(user):
     return (
         base.has_public_access_to_obj(user)
