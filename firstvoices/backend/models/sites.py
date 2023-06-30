@@ -13,6 +13,7 @@ from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
 from .media import Video
 from .utils import load_default_categories
+from .widget import SiteWidgetList
 
 
 class LanguageFamilyManager(PermissionsManager):
@@ -131,6 +132,14 @@ class Site(BaseModel):
 
     # from fvdialect:contact_email
     contact_email = models.EmailField(null=True, blank=True)
+
+    homepage = models.OneToOneField(
+        SiteWidgetList,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="homepage_site",
+    )
 
     # from fvdialect:logo
     logo = models.OneToOneField(
