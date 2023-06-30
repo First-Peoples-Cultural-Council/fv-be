@@ -28,13 +28,13 @@ class WidgetAdmin(BaseAdmin):
 
     list_display = (
         "title",
-        "type",
+        "widget_type",
         "format",
     ) + BaseAdmin.list_display
-    list_filter = ["type", "format"]
+    list_filter = ["widget_type", "format"]
     search_fields = (
         "title",
-        "type",
+        "widget_type",
         "format",
     ) + BaseAdmin.search_fields
     inlines = [WidgetSettingsInline]
@@ -47,7 +47,7 @@ class SiteWidgetAdmin(WidgetAdmin, BaseControlledSiteContentAdmin):
 
     list_display = (
         "title",
-        "type",
+        "widget_type",
         "format",
     ) + BaseControlledSiteContentAdmin.list_display
     list_filter = ["site"] + WidgetAdmin.list_filter
@@ -65,6 +65,7 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
         "site_widget",
         "order",
     ) + BaseInlineAdmin.fields
+    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields
 
 
 @admin.register(SiteWidgetList)
@@ -72,12 +73,15 @@ class SiteWidgetListAdmin(BaseSiteContentAdmin):
     list_display = ("__str__",) + BaseSiteContentAdmin.list_display
     list_filter = ["site"]
     search_fields = (
-        "title",
         "widgets__title",
         "site__title",
     ) + BaseSiteContentAdmin.search_fields
     inlines = [SiteWidgetListOrderInline]
 
 
+class HiddenSiteWidgetListOrder(HiddenBaseAdmin):
+    readonly_fields = ("site",) + HiddenBaseAdmin.readonly_fields
+
+
 admin.site.register(WidgetSettings, HiddenBaseAdmin)
-admin.site.register(SiteWidgetListOrder, HiddenBaseAdmin)
+admin.site.register(SiteWidgetListOrder, HiddenSiteWidgetListOrder)

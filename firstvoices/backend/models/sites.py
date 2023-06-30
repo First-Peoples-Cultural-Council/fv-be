@@ -138,7 +138,7 @@ class Site(BaseModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="site_homepage",
+        related_name="homepage_site",
     )
 
     # from fvdialect:logo

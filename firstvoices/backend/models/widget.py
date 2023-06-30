@@ -10,31 +10,10 @@ from backend.models.base import (
 from backend.permissions import predicates
 
 
-class WidgetTypes(models.IntegerChoices):
-    # enum intentionally has gaps to allow future changes to keep sequential order
-    WIDGET_ALPHABET = 0
-    WIDGET_APPS = 10
-    WIDGET_CONTACT = 20
-    WIDGET_GALLERY = 30
-    WIDGET_IFRAME = 40
-    WIDGET_KEYBOARDS = 50
-    WIDGET_LOGO = 60
-    WIDGET_LIST = 70
-    WIDGET_QUOTES = 80
-    WIDGET_STATS = 90
-    WIDGET_TEXT = 100
-    WIDGET_TEXTCONCISE = 110
-    WIDGET_TEXTFULL = 120
-    WIDGET_TEXTICONS = 130
-    WIDGET_TEXTMULTI = 140
-    WIDGET_WOTD = 150
-
-
 class WidgetFormats(models.IntegerChoices):
-    # enum intentionally has gaps to allow future changes to keep sequential order
     default = 0
-    left = 10
-    right = 20
+    left = 1
+    right = 2
 
 
 class Widget(BaseModel):
@@ -49,9 +28,7 @@ class Widget(BaseModel):
         }
 
     title = models.CharField(max_length=225)
-    type = models.IntegerField(
-        choices=WidgetTypes.choices, default=WidgetTypes.WIDGET_TEXT
-    )
+    widget_type = models.CharField(max_length=255, default="WIDGET_TEXT")
     format = models.IntegerField(
         choices=WidgetFormats.choices, default=WidgetFormats.default
     )
@@ -110,10 +87,9 @@ class SiteWidgetList(BaseSiteContentModel):
     widgets = models.ManyToManyField(
         SiteWidget, related_name="sitewidget_set", through="SiteWidgetListOrder"
     )
-    title = models.CharField(max_length=225)
 
     def __str__(self):
-        return f"{self.title} - [{self.site}]"
+        return f"Widget list [{self.id}] for site [{self.site}]"
 
 
 class SiteWidgetListOrder(BaseModel):

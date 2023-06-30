@@ -41,8 +41,6 @@ class SiteWidgetListFactory(DjangoModelFactory):
     class Meta:
         model = SiteWidgetList
 
-    title = factory.Sequence(lambda n: "SiteWidgetList-%03d" % n)
-
 
 class SiteWidgetListOrderFactory(DjangoModelFactory):
     site_widget = factory.SubFactory(SiteWidgetFactory)
