@@ -5,7 +5,12 @@ from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Boolean, Document, Keyword, Text
 
-from backend.models.dictionary import DictionaryEntry, Note, Translation
+from backend.models.dictionary import (
+    DictionaryEntry,
+    DictionaryEntryCategory,
+    Note,
+    Translation,
+)
 from backend.models.sites import Site
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -14,6 +19,7 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
+    get_categories_ids,
     get_notes_text,
     get_object_from_index,
     get_translation_and_part_of_speech_text,
@@ -36,6 +42,7 @@ class DictionaryEntryDocument(Document):
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
     part_of_speech = Text(copy_to="full_text_search_field")
+    categories = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
@@ -54,6 +61,7 @@ def update_index(sender, instance, **kwargs):
             part_of_speech_text,
         ) = get_translation_and_part_of_speech_text(instance)
         notes_text = get_notes_text(instance)
+        categories = get_categories_ids(instance)
 
         if existing_entry:
             # Check if object is already indexed, then update
@@ -66,6 +74,7 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )
@@ -80,15 +89,26 @@ def update_index(sender, instance, **kwargs):
                 part_of_speech=part_of_speech_text,
                 note=notes_text,
                 custom_order=instance.custom_order,
+                categories=categories,
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
             )
             index_entry.save()
-    except ConnectionError:
+    except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
             ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
+        logger.warning(e)
+    except NotFoundError as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance.id,
+        )
+        logger.warning(e)
 
 
 # Delete entry from index
@@ -208,3 +228,34 @@ def delete_related_docs(sender, instance, **kwargs):
                     dictionary_entry.id,
                 )
             )
+
+
+@receiver(post_save, sender=DictionaryEntryCategory)
+@receiver(post_delete, sender=DictionaryEntryCategory)
+def update_categories(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    dictionary_entry = instance.dictionary_entry
+    categories = get_categories_ids(dictionary_entry)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
+        dictionary_entry_doc.update(categories=categories)
+    except ConnectionError:
+        logger.warning(
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "categories_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
+        )

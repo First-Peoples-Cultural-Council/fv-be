@@ -8,8 +8,6 @@ from scripts.utils.aws_download_utils import (
 )
 
 from backend.models.app import AppImportStatus
-from backend.models.category import Category
-from backend.models.sites import Site
 from backend.resources.sites import SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
@@ -48,12 +46,6 @@ import_resources = [
 ]
 
 
-# Drop existing data
-logger.info("Deleting existing site data...")
-Category.objects.filter(parent__isnull=False).delete()  # see FW-4460
-Site.objects.all().delete()  # we can expand the scope of deletion as needed
-
-
 # Match export files with the correct model resource and import them
 unmatched_files = os.listdir(current_export_dir)
 
@@ -76,10 +68,15 @@ for key, resource in import_resources:
             table = tablib.import_set(f, format="csv")
 
         # raise errors to halt the import if an issue occurs
-        result = resource.import_data(dataset=table, dry_run=False, raise_errors=True)
-        logger.info(
-            " ".join([f"{type}: {total}" for type, total in result.totals.items()])
-        )
+        try:
+            result = resource.import_data(dataset=table, raise_errors=True)
+            logger.info(
+                " ".join([f"{type}: {total}" for type, total in result.totals.items()])
+            )
+        except Exception as e:
+            status.no_warnings = False
+            status.save()
+            raise e
 
 
 for file in unmatched_files:

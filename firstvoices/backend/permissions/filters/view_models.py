@@ -1,4 +1,4 @@
-from . import base
+from . import base, view
 
 #
 # model-specific view permission filters
@@ -20,5 +20,5 @@ def can_view_membership_model(user):
     return (
         base.is_at_least_staff_admin(user)
         | base.has_at_least_language_admin_membership(user)
-        | base.is_own_obj(user)
+        | (base.is_own_obj(user) & view.has_visible_site(user))
     )

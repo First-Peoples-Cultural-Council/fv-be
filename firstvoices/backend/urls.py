@@ -14,8 +14,10 @@ from backend.views.image_views import ImageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
+from backend.views.search.dictionary_search_views import DictionarySearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
+from backend.views.song_views import SongViewSet
 from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -36,6 +38,9 @@ sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+sites_router.register(
+    r"dictionary/search", DictionarySearchViewSet, basename="dictionary-search"
+)
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
@@ -54,6 +59,7 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
+sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 
 app_name = "api"

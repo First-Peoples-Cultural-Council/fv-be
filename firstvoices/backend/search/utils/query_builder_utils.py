@@ -1,7 +1,10 @@
 from enum import Enum
 
+from django.core.exceptions import ValidationError
 from elasticsearch_dsl import Q
 
+from backend.models.category import Category
+from backend.models.characters import Alphabet
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.indices.dictionary_entry_document import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -153,6 +156,41 @@ def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
+def get_starts_with_query(site_id, starts_with_char):
+    unknown_character_flag = "⚑"
+
+    # Check if a custom_order_character is present, if present, look up in the custom_order field
+    # if not, look in the title field
+    alphabet = Alphabet.objects.filter(site_id=site_id).first()
+    cleaned_char = alphabet.clean_confusables(starts_with_char)
+    custom_order_character = alphabet.get_custom_order(cleaned_char)
+
+    if unknown_character_flag in custom_order_character:
+        # unknown custom_order character present, look in title field
+        starts_with_filter = Q("prefix", title=starts_with_char)
+    else:
+        # look in custom_order field
+        starts_with_filter = Q("prefix", custom_order=custom_order_character)
+
+    return Q("bool", filter=[starts_with_filter])
+
+
+def get_category_query(category_id):
+    query_categories = []
+
+    # category_id passed down here is validated in the view, assuming the following will always return a category
+    category = Category.objects.filter(id=category_id)[0]
+    query_categories.append(str(category.id))
+
+    # looking for child categories
+    child_categories = category.children.all()
+    if len(child_categories):
+        for child_category in child_categories:
+            query_categories.append(str(child_category.id))
+
+    return Q("bool", filter=[Q("terms", categories=query_categories)])
+
+
 def get_kids_query(kids):
     return Q("bool", filter=[Q("term", exclude_from_kids=not kids)])
 
@@ -162,9 +200,7 @@ def get_games_query(games):
 
 
 # Search params validation
-def get_valid_document_types(input_types):
-    allowed_values = VALID_DOCUMENT_TYPES
-
+def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
         return allowed_values
 
@@ -195,6 +231,27 @@ def get_valid_domain(input_domain_str):
         return string_lower
     else:  # if invalid string is passed
         return None
+
+
+def get_valid_starts_with_char(input_str):
+    # Starting alphabet can be a combination of characters as well
+    # taking only first word if multiple words are supplied
+    valid_str = str(input_str).strip().lower().split(" ")[0]
+    return valid_str
+
+
+def get_valid_category_id(site, input_category):
+    # If input_category is empty, category filter should not be added
+    if input_category:
+        try:
+            # If category does not belong to the site specified, return empty result set
+            valid_category = site.category_set.filter(id=input_category)
+            if len(valid_category):
+                return valid_category[0].id
+        except ValidationError:
+            return None
+
+    return None
 
 
 def get_valid_boolean(input_val):

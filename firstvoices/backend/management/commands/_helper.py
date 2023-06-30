@@ -10,6 +10,7 @@ from backend.search.indices.dictionary_entry_document import (
     DictionaryEntryDocument,
 )
 from backend.search.utils.object_utils import (
+    get_categories_ids,
     get_notes_text,
     get_translation_and_part_of_speech_text,
 )
@@ -93,6 +94,8 @@ def dictionary_entry_iterator():
             part_of_speech_text,
         ) = get_translation_and_part_of_speech_text(entry)
         notes_text = get_notes_text(entry)
+        categories = get_categories_ids(entry)
+
         index_entry = DictionaryEntryDocument(
             document_id=str(entry.id),
             site_id=str(entry.site.id),
@@ -101,6 +104,7 @@ def dictionary_entry_iterator():
             translation=translations_text,
             part_of_speech=part_of_speech_text,
             note=notes_text,
+            categories=categories,
             exclude_from_kids=entry.exclude_from_kids,
             exclude_from_games=entry.exclude_from_games,
             custom_order=entry.custom_order,

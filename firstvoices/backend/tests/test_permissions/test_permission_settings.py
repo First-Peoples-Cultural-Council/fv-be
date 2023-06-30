@@ -3,7 +3,7 @@ import pytest
 from django.apps import apps
 from factory.django import DjangoModelFactory
 
-from backend.models import User
+from backend.models import Lyric, User
 from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentModel
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
@@ -26,7 +26,11 @@ def get_permitted_ids(user, queryset):
 class TestPermissionManager:
     # test all models
     # ... but skip User until fw-4165
-    models = [m for m in apps.get_app_config("backend").get_models() if m != User]
+    models = [
+        m
+        for m in apps.get_app_config("backend").get_models()
+        if (m != User and m != Lyric)
+    ]
 
     @pytest.mark.parametrize(
         "model_cls",
