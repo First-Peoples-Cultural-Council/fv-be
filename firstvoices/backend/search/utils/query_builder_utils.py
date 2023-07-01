@@ -180,17 +180,11 @@ def get_view_permissions_filter(user):
 
     for membership in user_memberships:
         # create a filter for each membership
-        if membership.role == Role.LANGUAGE_ADMIN:
-            filter_list.append(
-                Q("term", site_id=membership.site.id)
-                & Q("range", visibility={"gte": Visibility.TEAM})
-            )
-        elif membership.role == Role.EDITOR:
-            filter_list.append(
-                Q("term", site_id=membership.site.id)
-                & Q("range", visibility={"gte": Visibility.TEAM})
-            )
-        elif membership.role == Role.ASSISTANT:
+        if (
+            membership.role == Role.LANGUAGE_ADMIN
+            or membership.role == Role.EDITOR
+            or membership.role == Role.ASSISTANT
+        ):
             filter_list.append(
                 Q("term", site_id=membership.site.id)
                 & Q("range", visibility={"gte": Visibility.TEAM})
