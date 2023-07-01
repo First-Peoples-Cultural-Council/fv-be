@@ -1,7 +1,8 @@
 import pytest
 
+import backend.tests.factories as factories
+from backend.models.constants import AppRole, Role
 from backend.search.query_builder import get_search_query
-from backend.tests.factories.access import SiteFactory
 
 
 @pytest.mark.django_db
@@ -14,7 +15,7 @@ class TestSearchFilters:
         assert expected_site_filter not in str(search_query)
 
     def test_valid_dialect(self):
-        valid_site = SiteFactory.create()
+        valid_site = factories.SiteFactory.create()
         search_query = get_search_query(site_id=str(valid_site.id))
         search_query = search_query.to_dict()
 
@@ -98,3 +99,66 @@ class TestGames:
         search_query = search_query.to_dict()
 
         assert self.expected_games_filter not in search_query
+
+
+class TestPermissionsFilters:
+    public_permissions_filter = (
+        "'must': [{'term': {'site_visibility': Visibility.PUBLIC}}, {'term': {'visibility': "
+        "Visibility.PUBLIC}}]"
+    )
+
+    @pytest.mark.django_db
+    def test_no_permissions(self):
+        user = factories.get_non_member_user()
+        search_query = get_search_query(user=user)
+        search_query = search_query.to_dict()
+
+        assert self.public_permissions_filter in str(search_query)
+
+    @pytest.mark.django_db
+    def test_member_permissions(self):
+        user = factories.get_non_member_user()
+        site = factories.SiteFactory.create()
+        factories.MembershipFactory.create(user=user, site=site, role=Role.MEMBER)
+
+        member_permissions_filter = (
+            "'must': [{'term': {'site_id': UUID('"
+            + str(site.id)
+            + "')}}, {'range': {'visibility': {'gte': Visibility.MEMBERS}}}]"
+        )
+
+        search_query = get_search_query(user=user)
+        search_query = search_query.to_dict()
+
+        assert self.public_permissions_filter in str(search_query)
+        assert member_permissions_filter in str(search_query)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.LANGUAGE_ADMIN, Role.EDITOR, Role.ASSISTANT])
+    def test_team_permissions(self, role):
+        user = factories.get_non_member_user()
+        site = factories.SiteFactory.create()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+
+        assistant_permissions_filter = (
+            "'must': [{'term': {'site_id': UUID('"
+            + str(site.id)
+            + "')}}, {'range': {'visibility': {'gte': Visibility.TEAM}}}]"
+        )
+
+        search_query = get_search_query(user=user)
+        search_query = search_query.to_dict()
+
+        assert self.public_permissions_filter in str(search_query)
+        assert assistant_permissions_filter in str(search_query)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [AppRole.SUPERADMIN, AppRole.STAFF])
+    def test_staff_permissions(self, role):
+        user = factories.get_app_admin(role=role)
+        factories.SiteFactory.create()
+
+        search_query = get_search_query(user=user)
+        search_query = search_query.to_dict()
+
+        assert self.public_permissions_filter not in str(search_query)

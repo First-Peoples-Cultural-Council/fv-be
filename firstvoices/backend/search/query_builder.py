@@ -21,7 +21,7 @@ def get_search_object(indices):
 
 
 def get_search_query(
-    user,
+    user=None,
     q=None,
     site_id=None,
     types=VALID_DOCUMENT_TYPES,
@@ -37,9 +37,10 @@ def get_search_query(
     search_query = search_object.query()
 
     # View permissions
-    permissions_filter = get_view_permissions_filter(user)
-    if permissions_filter:
-        search_query = search_query.query(permissions_filter)
+    if user:
+        permissions_filter = get_view_permissions_filter(user)
+        if permissions_filter:
+            search_query = search_query.query(permissions_filter)
 
     # Adding search term and domain filter
     if q:
