@@ -141,6 +141,16 @@ case $yn in
       exit $retval
     fi
 
+    # Rebuild Elasticsearch index
+    printf '\n'
+    printf 'Rebuilding Elasticsearch index.\n'
+    python $SCRIPT_DIR/manage.py rebuild_index
+    retval=$?
+    if [ $retval -ne 0 ]; then
+      printf "Elasticsearch index rebuild failed: exit code $retval\n"
+      exit $retval
+    fi
+
     printf '\n'
     printf 'Local reset completed successfully.\n'
     ;;
