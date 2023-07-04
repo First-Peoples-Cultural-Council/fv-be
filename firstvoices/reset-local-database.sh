@@ -141,14 +141,23 @@ case $yn in
       exit $retval
     fi
 
-    # Rebuild Elasticsearch index
-    printf '\n'
-    printf 'Rebuilding Elasticsearch index.\n'
-    python $SCRIPT_DIR/manage.py rebuild_index
-    retval=$?
-    if [ $retval -ne 0 ]; then
-      printf "Elasticsearch index rebuild failed: exit code $retval\n"
-      exit $retval
+    # Check if Elasticsearch is running
+    ELASTICSEARCH_HOST="localhost"
+    ELASTICSEARCH_PORT="9200"
+    response=$(curl -s -o /dev/null -w "%{http_code}" http://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}/_cluster/health)
+    if [ "$response" -eq 200 ]; then
+      # Rebuild Elasticsearch index
+      printf '\n'
+      printf 'Rebuilding Elasticsearch index.\n'
+      python $SCRIPT_DIR/manage.py rebuild_index
+      retval=$?
+      if [ $retval -ne 0 ]; then
+        printf "Elasticsearch index rebuild failed: exit code $retval\n"
+        exit $retval
+      fi
+    else
+      printf '\n'
+      printf 'Elasticsearch is not running. Skipping index rebuild.\n'
     fi
 
     printf '\n'
