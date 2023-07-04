@@ -20,6 +20,7 @@ class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
     )
     language = serializers.StringRelatedField()
     visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    slug = serializers.CharField(read_only=True)
 
     class Meta:
         model = Site

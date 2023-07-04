@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -16,6 +17,7 @@ from backend.serializers.site_serializers import (
     SiteSummarySerializer,
 )
 from backend.utils.media_utils import verify_media_source
+from backend.views import doc_strings
 from backend.views.base_views import FVPermissionViewSetMixin
 
 
@@ -35,6 +37,18 @@ from backend.views.base_views import FVPermissionViewSetMixin
             404: OpenApiResponse(description="Todo: Not Found"),
         },
     ),
+    update=extend_schema(
+        description=_("Edit a site."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=SiteDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+    ),
 )
 class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     """
@@ -44,8 +58,6 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get", "put"]
     lookup_field = "slug"
     pagination_class = None
-
-    serializer_class = SiteDetailSerializer
 
     def get_queryset(self):
         # not used for list action

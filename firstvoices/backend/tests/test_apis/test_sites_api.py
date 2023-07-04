@@ -300,7 +300,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
         req_body = {
             "title": "site renamed",
-            "slug": "site_renamed",
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
@@ -311,7 +310,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_data = json.loads(response.content)
 
         assert response.status_code == 200
-        assert response_data["slug"] == "site_renamed"
+        assert response_data["title"] == "site renamed"
 
     @pytest.mark.django_db
     def test_update_media(self):
@@ -325,7 +324,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
         req_body = {
             "title": site.title,
-            "slug": site.slug,
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
@@ -353,7 +351,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
         req_body = {
             "title": site1.title,
-            "slug": site1.slug,
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
