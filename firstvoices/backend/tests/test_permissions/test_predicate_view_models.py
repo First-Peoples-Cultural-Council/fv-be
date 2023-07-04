@@ -89,7 +89,7 @@ class TestCanViewMembershipModel:
         user = UserFactory.create()
         site = SiteFactory.create(visibility=site_visibility)
         membership = MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
-        assert view_models.can_view_membership_model(user, membership)
+        assert view_models.can_view_user_info(user, membership)
 
     @pytest.mark.django_db
     def test_user_blocked_on_team_site_edge_case(self):
@@ -97,7 +97,7 @@ class TestCanViewMembershipModel:
         user = UserFactory.create()
         site = SiteFactory.create(visibility=Visibility.TEAM)
         membership = MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
-        assert not view_models.can_view_membership_model(user, membership)
+        assert not view_models.can_view_user_info(user, membership)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
@@ -109,7 +109,7 @@ class TestCanViewMembershipModel:
         user2 = UserFactory.create()
         site = SiteFactory.create(visibility=site_visibility)
         membership = MembershipFactory.create(site=site, user=user2, role=role)
-        assert not view_models.can_view_membership_model(user, membership)
+        assert not view_models.can_view_user_info(user, membership)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
@@ -121,7 +121,7 @@ class TestCanViewMembershipModel:
         site = SiteFactory.create(visibility=site_visibility)
         MembershipFactory.create(site=site, user=user, role=Role.LANGUAGE_ADMIN)
         membership2 = MembershipFactory.create(site=site, user=user2, role=Role.MEMBER)
-        assert view_models.can_view_membership_model(user, membership2)
+        assert view_models.can_view_user_info(user, membership2)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
@@ -136,7 +136,7 @@ class TestCanViewMembershipModel:
         site2 = SiteFactory.create(visibility=site_visibility)
         MembershipFactory.create(site=site, user=user, role=Role.LANGUAGE_ADMIN)
         membership2 = MembershipFactory.create(site=site2, user=user2, role=Role.MEMBER)
-        assert not view_models.can_view_membership_model(user, membership2)
+        assert not view_models.can_view_user_info(user, membership2)
 
     @pytest.mark.parametrize("role", [AppRole.STAFF, AppRole.SUPERADMIN])
     @pytest.mark.parametrize(
@@ -150,4 +150,4 @@ class TestCanViewMembershipModel:
 
         admin_user = get_app_admin(role)
 
-        assert view_models.can_view_membership_model(admin_user, membership)
+        assert view_models.can_view_user_info(admin_user, membership)
