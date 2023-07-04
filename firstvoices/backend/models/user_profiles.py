@@ -42,3 +42,6 @@ class UserProfile(BaseModel):
     referer = models.CharField(max_length=300, blank=True)
 
     # created / last_modified fields have no past equivalent and will be set on import
+
+    def __str__(self):
+        return f"Profile for {self.user}"

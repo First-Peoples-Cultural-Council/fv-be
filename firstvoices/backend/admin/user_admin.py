@@ -18,7 +18,7 @@ class UserProfileAdmin(HiddenBaseAdmin):
 class UserProfileInline(BaseInlineAdmin):
     model = UserProfile
     fk_name = "user"
-    fields = ("character", "dictionary_entry")
+    fields = ("user", "traditional_name", "preferences") + BaseInlineAdmin.fields
     fk_name = "user"
 
 
