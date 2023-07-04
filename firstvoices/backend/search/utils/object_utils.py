@@ -23,10 +23,10 @@ def get_object_from_index(index, document_id):
         return hits[0] if hits else None
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.warning(
+        logger.error(
             ES_CONNECTION_ERROR, SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id
         )
-        logger.warning(e)
+        logger.error(e)
     except NotFoundError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
