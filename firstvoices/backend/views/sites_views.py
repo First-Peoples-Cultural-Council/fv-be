@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
@@ -11,8 +12,10 @@ from backend.serializers.site_serializers import (
     LanguageSerializer,
     Site,
     SiteDetailSerializer,
+    SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )
+from backend.utils.media_utils import verify_media_source
 from backend.views.base_views import FVPermissionViewSetMixin
 
 
@@ -38,7 +41,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     Summary information about language sites.
     """
 
-    http_method_names = ["get"]
+    http_method_names = ["get", "put"]
     lookup_field = "slug"
     pagination_class = None
 
@@ -92,6 +95,35 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
             data.append(other_site_json)
 
         return Response(data)
+
+    def update(self, request, *args, **kwargs):
+        request_data = request.data
+        site_slug = kwargs["slug"]
+        logo_id = request_data["logo"]
+        banner_image_id = request_data["banner_image"]
+        banner_video_id = request_data["banner_video"]
+
+        # Verifying if the media belongs to the site
+        if logo_id and not verify_media_source(site_slug, "image", logo_id):
+            raise ValidationError("Logo supplied is not from the specified site.")
+
+        if banner_image_id and not verify_media_source(
+            site_slug, "image", banner_image_id
+        ):
+            raise ValidationError("Image supplied is not from the specified site.")
+
+        if banner_video_id and not verify_media_source(
+            site_slug, "video", banner_video_id
+        ):
+            raise ValidationError("Video supplied is not from the specified site.")
+
+        return super().update(request, args, kwargs)
+
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return SiteDetailSerializer
+        else:
+            return SiteDetailWriteSerializer
 
 
 @extend_schema_view(

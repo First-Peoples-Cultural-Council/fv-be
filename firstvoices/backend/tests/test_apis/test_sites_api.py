@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.core.exceptions import ValidationError
 
 import backend.tests.factories.access
 from backend.models import AppJson
@@ -287,3 +288,79 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.get(f"{self.get_detail_endpoint('fake-site')}")
 
         assert response.status_code == 404
+
+    # Test update not allowed
+
+    @pytest.mark.django_db
+    def test_update_title(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": "site renamed",
+            "slug": "site_renamed",
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["slug"] == "site_renamed"
+
+    @pytest.mark.django_db
+    def test_update_media(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site.title,
+            "slug": site.slug,
+            "logo": str(image.id),
+            "bannerImage": None,
+            "bannerVideo": None,
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["logo"]["id"] == str(image.id)
+
+    @pytest.mark.django_db
+    def test_invalid_media_source(self):
+        # Internally the function used to verify source of all 3 media items supplied is the same,
+        # testing out only for the logo
+        site1 = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        site2 = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site2)
+        factories.MembershipFactory.create(
+            user=user, site=site1, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site1.title,
+            "slug": site1.slug,
+            "logo": str(image.id),
+            "bannerImage": None,
+            "bannerVideo": None,
+        }
+        with pytest.raises(ValidationError):
+            self.client.put(
+                f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
+            )
