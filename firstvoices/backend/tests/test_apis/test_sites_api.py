@@ -289,8 +289,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response.status_code == 404
 
-    # Test update not allowed
-
     @pytest.mark.django_db
     def test_update_title(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)

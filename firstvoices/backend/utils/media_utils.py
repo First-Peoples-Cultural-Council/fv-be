@@ -12,16 +12,12 @@ def verify_media_source(site_slug, media_type, media_id):
 
     if len(media) == 0:
         raise ObjectDoesNotExist
-    else:
-        media = media[0]
 
     site = Site.objects.filter(slug=site_slug)
     if len(site) == 0:
         raise ObjectDoesNotExist
-    else:
-        site = site[0]
 
-    if media.site_id == site.id:
+    if media[0].site_id == site[0].id:
         return True
 
     return False
