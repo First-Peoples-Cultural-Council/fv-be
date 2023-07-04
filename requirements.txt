@@ -62,7 +62,7 @@ numpy==1.25.0
 openpyxl==3.1.2
 packaging==23.1
 panphon==0.20.0
-Pillow==9.5.0
+Pillow==10.0.0
 pluggy==1.2.0
 prompt-toolkit==3.0.38
 psycopg2-binary==2.9.6
