@@ -12,6 +12,7 @@ class User(AbstractUser):
         * username/id is set up for the JWT "sub" (subject) field
         * email is a required, unique field, so it can be treated like a username
         * password is not required
+        * name fields are not stored, so we can depend on jwt id tokens instead
 
     """
 
@@ -32,8 +33,18 @@ class User(AbstractUser):
 
     password = models.CharField(null=True, blank=False, max_length=128)
 
-    # last_name from userinfo:lastName
-    # first_name from userinfo:firstName
+    @property
+    def is_superuser(self):
+        # not used by our permission system
+        return False
+
+    @property
+    def first_name(self):
+        return ""
+
+    @property
+    def last_name(self):
+        return ""
 
     @property
     def username(self):

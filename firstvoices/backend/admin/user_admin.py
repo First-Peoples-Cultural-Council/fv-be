@@ -1,25 +1,8 @@
 from django.contrib import admin
 
-from backend.models import User, UserProfile
+from backend.models import User
 
 from . import MembershipInline
-from .base_admin import BaseInlineAdmin, HiddenBaseAdmin
-
-
-@admin.register(UserProfile)
-class UserProfileAdmin(HiddenBaseAdmin):
-    list_display = ("user",) + HiddenBaseAdmin.list_display
-    search_fields = (
-        "user",
-        "traditional_name",
-    )
-
-
-class UserProfileInline(BaseInlineAdmin):
-    model = UserProfile
-    fk_name = "user"
-    fields = ("user", "traditional_name", "preferences") + BaseInlineAdmin.fields
-    fk_name = "user"
 
 
 class UserMembershipInline(MembershipInline):
@@ -29,8 +12,8 @@ class UserMembershipInline(MembershipInline):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ("email", "is_staff")
-    fields = ("id", "email", "first_name", "last_name", "date_joined", "last_login")
-    search_fields = ("email", "first_name", "last_name", "id")
+    fields = ("id", "email", "is_staff", "date_joined", "last_login")
+    search_fields = ("email", "id")
 
     # setting first_name and last_name to readonly because they are deprecated
     readonly_fields = (
@@ -42,4 +25,4 @@ class UserAdmin(admin.ModelAdmin):
         "last_login",
     )
 
-    inlines = [UserProfileInline, UserMembershipInline]
+    inlines = [UserMembershipInline]
