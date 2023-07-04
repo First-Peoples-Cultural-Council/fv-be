@@ -101,11 +101,24 @@ class TestGames:
         assert self.expected_games_filter not in search_query
 
 
-class TestPermissionsFilters:
+class TestSearchPermissions:
     public_permissions_filter = (
         "'must': [{'term': {'site_visibility': Visibility.PUBLIC}}, {'term': {'visibility': "
         "Visibility.PUBLIC}}]"
     )
+    member_permissions_snippet = (
+        "{'range': {'visibility': {'gte': Visibility.MEMBERS}}}]"
+    )
+    team_permissions_snippet = "{'range': {'visibility': {'gte': Visibility.TEAM}}}]"
+
+    @pytest.mark.django_db
+    def test_no_user(self):
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
+        assert self.public_permissions_filter in str(search_query)
+        assert self.member_permissions_snippet not in str(search_query)
+        assert self.team_permissions_snippet not in str(search_query)
 
     @pytest.mark.django_db
     def test_no_permissions(self):
@@ -114,6 +127,8 @@ class TestPermissionsFilters:
         search_query = search_query.to_dict()
 
         assert self.public_permissions_filter in str(search_query)
+        assert self.member_permissions_snippet not in str(search_query)
+        assert self.team_permissions_snippet not in str(search_query)
 
     @pytest.mark.django_db
     def test_member_permissions(self):

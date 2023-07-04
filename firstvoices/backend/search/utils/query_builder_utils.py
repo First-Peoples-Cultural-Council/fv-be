@@ -162,7 +162,10 @@ def get_site_filter_query(site_id):
 def get_view_permissions_filter(user):
     """
     Re-creation of the is_visible_object filter from backend/permissions/filters/view.py
-    The logic is translated into an ES query
+    The logic is translated into an ES query.
+
+    NOTE: If the filter logic or predicates in backend/permissions/filters/view.py change, this function MUST also
+    be updated to reflect those changes.
     """
 
     # base.is_at_least_staff_admin(user)

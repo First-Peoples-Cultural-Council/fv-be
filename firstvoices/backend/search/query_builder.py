@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from elasticsearch_dsl import Search
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
@@ -37,10 +38,12 @@ def get_search_query(
     search_query = search_object.query()
 
     # View permissions
-    if user:
-        permissions_filter = get_view_permissions_filter(user)
-        if permissions_filter:
-            search_query = search_query.query(permissions_filter)
+    if user is None:
+        user = AnonymousUser()
+
+    permissions_filter = get_view_permissions_filter(user)
+    if permissions_filter:
+        search_query = search_query.query(permissions_filter)
 
     # Adding search term and domain filter
     if q:
