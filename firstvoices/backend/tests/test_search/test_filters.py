@@ -26,12 +26,13 @@ class TestSearchFilters:
         assert expected_site_filter in str(search_query)
 
 
+@pytest.mark.django_db
 class TestTypesFilter:
     expected_phrases_filter = (
-        "{'must_not': [{'match': {'type': TypeOfDictionaryEntry.PHRASE}}]}"
+        "'must_not': [{'match': {'type': TypeOfDictionaryEntry.PHRASE}}]}"
     )
     expected_word_filter = (
-        "{'must_not': [{'match': {'type': TypeOfDictionaryEntry.WORD}}]}"
+        "'must_not': [{'match': {'type': TypeOfDictionaryEntry.WORD}}]}"
     )
 
     def test_words(self):
@@ -57,6 +58,7 @@ class TestTypesFilter:
         assert self.expected_word_filter not in str(search_query)
 
 
+@pytest.mark.django_db
 class TestKids:
     expected_kids_filter = "{'term': {'exclude_from_kids': False}}"
 
@@ -79,6 +81,7 @@ class TestKids:
         assert self.expected_kids_filter not in search_query
 
 
+@pytest.mark.django_db
 class TestGames:
     expected_games_filter = "{'term': {'exclude_from_games': False}}"
 

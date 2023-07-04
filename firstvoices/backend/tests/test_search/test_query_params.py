@@ -4,6 +4,7 @@ from backend.search.query_builder import get_search_query
 from backend.tests import factories
 
 
+@pytest.mark.django_db
 class TestQueryParams:
     @pytest.mark.parametrize("q", ["", "  "])
     def test_empty_or_spaces_only_search_term(self, q):
@@ -87,6 +88,7 @@ class TestQueryParams:
         assert expected_match_full_text_search_string in str(search_query)
 
 
+@pytest.mark.django_db
 class TestDomain:
     expected_fuzzy_match_string = (
         "'fuzzy': {'title': {'value': 'test_query', 'fuzziness': '2', 'boost': 1.2}}"
