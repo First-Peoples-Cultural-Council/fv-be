@@ -99,6 +99,7 @@ def dictionary_entry_iterator():
         index_entry = DictionaryEntryDocument(
             document_id=str(entry.id),
             site_id=str(entry.site.id),
+            site_visibility=entry.site.visibility,
             title=entry.title,
             type=entry.type,
             translation=translations_text,
@@ -108,6 +109,7 @@ def dictionary_entry_iterator():
             exclude_from_kids=entry.exclude_from_kids,
             exclude_from_games=entry.exclude_from_games,
             custom_order=entry.custom_order,
+            visibility=entry.visibility,
         )
         yield index_entry.to_dict(True)
 

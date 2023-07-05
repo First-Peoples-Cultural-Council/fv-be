@@ -87,6 +87,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     images = SiteViewLinkField(view_name="api:image-list")
     people = SiteViewLinkField(view_name="api:person-list")
     videos = SiteViewLinkField(view_name="api:video-list")
+    widgets = SiteViewLinkField(view_name="api:sitewidget-list")
     word_of_the_day = SiteViewLinkField(view_name="api:word-of-the-day-list")
 
     @extend_schema_field(OpenApiTypes.STR)
@@ -114,6 +115,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "images",
             "people",
             "videos",
+            "widgets",
             "word_of_the_day",
         )
 

@@ -15,17 +15,15 @@ class DictionarySearchViewSet(SiteSearchViewsSet):
 
         starts_with_input_str = self.request.GET.get("startsWithChar", "")
         starts_with_char = get_valid_starts_with_char(starts_with_input_str)
-
-        category_input_str = self.request.GET.get("category", "")
-        category_id = get_valid_category_id(
-            self.get_validated_site()[0],
-            category_input_str,
-        )
-
         if starts_with_char:
             search_params["starts_with_char"] = starts_with_char
 
-        if category_id:
+        category_input_str = self.request.GET.get("category", "")
+        if category_input_str:
+            category_id = get_valid_category_id(
+                self.get_validated_site()[0],
+                category_input_str,
+            )
             search_params["category_id"] = category_id
 
         # limit types to only words and phrases
