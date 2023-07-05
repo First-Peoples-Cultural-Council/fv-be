@@ -23,8 +23,8 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         description="A widget from the specified site.",
         responses={
             200: SiteWidgetDetailSerializer,
-            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
             site_slug_parameter,

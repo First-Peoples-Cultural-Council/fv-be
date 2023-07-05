@@ -13,13 +13,13 @@ class WidgetSettingsSerializer(serializers.ModelSerializer):
 
 class WidgetDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name="api:widget-detail")
-    widget_type = serializers.CharField()
+    type = serializers.CharField(source="widget_type")
     format = serializers.CharField(source="get_format_display")
     settings = WidgetSettingsSerializer(source="widgetsettings_set", many=True)
 
     class Meta:
         model = Widget
-        fields = ("url", "id", "title", "widget_type", "format", "settings")
+        fields = ("url", "id", "title", "type", "format", "settings")
 
 
 class SiteWidgetDetailSerializer(
@@ -32,7 +32,7 @@ class SiteWidgetDetailSerializer(
         model = SiteWidget
         fields = SiteContentLinkedTitleSerializer.Meta.fields + (
             "visibility",
-            "widget_type",
+            "type",
             "format",
             "settings",
         )
