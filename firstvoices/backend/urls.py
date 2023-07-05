@@ -20,6 +20,7 @@ from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
 from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
+from backend.views.widget_views import SiteWidgetViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
 
 # app-level APIs
@@ -61,6 +62,7 @@ sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
+sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
 
 app_name = "api"
 
