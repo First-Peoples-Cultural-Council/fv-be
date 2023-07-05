@@ -282,7 +282,7 @@ def update_document_visibility(sender, instance, **kwargs):
                 raise NotFoundError
 
             dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-            dictionary_entry_doc.update(visibility=instance.visibility)
+            dictionary_entry_doc.update(site_visibility=instance.visibility)
         except ConnectionError:
             logger.warning(
                 ES_CONNECTION_ERROR
