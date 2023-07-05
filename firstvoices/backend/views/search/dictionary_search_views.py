@@ -15,6 +15,8 @@ class DictionarySearchViewSet(SiteSearchViewsSet):
 
         starts_with_input_str = self.request.GET.get("startsWithChar", "")
         starts_with_char = get_valid_starts_with_char(starts_with_input_str)
+        if starts_with_char:
+            search_params["starts_with_char"] = starts_with_char
 
         category_input_str = self.request.GET.get("category", "")
         if category_input_str:
@@ -23,9 +25,6 @@ class DictionarySearchViewSet(SiteSearchViewsSet):
                 category_input_str,
             )
             search_params["category_id"] = category_id
-
-        if starts_with_char:
-            search_params["starts_with_char"] = starts_with_char
 
         # limit types to only words and phrases
         input_types_str = self.request.GET.get("types", "")
