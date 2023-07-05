@@ -107,8 +107,8 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Searches in both the Language and English domains.",
                     ),
                     OpenApiExample(
-                        "english",
-                        value="english",
+                        "translation",
+                        value="translation",
                         description="Performs a search focused on translations.",
                     ),
                     OpenApiExample(

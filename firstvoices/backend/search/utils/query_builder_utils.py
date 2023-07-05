@@ -23,7 +23,7 @@ EXACT_MATCH_BOOST = 1.5
 class SearchDomains(Enum):
     BOTH = "both"
     LANGUAGE = "language"
-    ENGLISH = "english"
+    TRANSLATION = "translation"
 
 
 def get_indices(types):
@@ -140,7 +140,7 @@ def get_search_term_query(search_term, domain):
             text_search_field_match_query,
         ],
         "language": [fuzzy_match_title_query, exact_match_title_query],
-        "english": [
+        "translation": [
             fuzzy_match_translation_query,
             exact_match_translation_query,
         ],
@@ -281,7 +281,7 @@ def get_valid_domain(input_domain_str):
     if (
         string_lower == SearchDomains.BOTH.value
         or string_lower == SearchDomains.LANGUAGE.value
-        or string_lower == SearchDomains.ENGLISH.value
+        or string_lower == SearchDomains.TRANSLATION.value
     ):
         return string_lower
     else:  # if invalid string is passed
