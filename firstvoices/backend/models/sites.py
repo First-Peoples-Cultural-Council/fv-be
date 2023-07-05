@@ -189,16 +189,18 @@ class Site(BaseModel):
 
 
 class Membership(BaseSiteContentModel):
-    """Represents a user's membership to a language site"""
+    """
+    Represents a user's membership to a language site
+    """
 
-    # site from group memberships
+    # site from group name (userinfo:groups)
 
-    # from user
+    # matched based on userinfo:email
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="memberships"
     )
 
-    # from group memberships
+    # from group name (userinfo:groups)
     role = models.IntegerField(choices=Role.choices, default=Role.MEMBER)
 
     class Meta:
@@ -206,7 +208,7 @@ class Membership(BaseSiteContentModel):
         verbose_name_plural = _("memberships")
         unique_together = ("site", "user")
         rules_permissions = {
-            "view": predicates.can_view_membership_model,
+            "view": predicates.can_view_user_info,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
