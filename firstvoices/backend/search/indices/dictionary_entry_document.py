@@ -1,6 +1,7 @@
 import logging
 
-from django.db.models.signals import post_delete, post_save
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
@@ -268,32 +269,44 @@ def update_categories(sender, instance, **kwargs):
 
 
 # If a site's visibility is changed, update all docs from index related to site
-@receiver(post_save, sender=Site)
+@receiver(pre_save, sender=Site)
 def update_document_visibility(sender, instance, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entries_set = instance.dictionaryentry_set.all()
+    if instance.id is None:
+        # New site, don't do anything
+        return
 
-    for dictionary_entry in dictionary_entries_set:
-        try:
-            existing_entry = get_object_from_index(
-                ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
-            )
-            if not existing_entry:
-                raise NotFoundError
+    try:
+        original_site = Site.objects.get(id=instance.id)
+    except ObjectDoesNotExist:
+        return
 
-            dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-            dictionary_entry_doc.update(site_visibility=instance.visibility)
-        except ConnectionError:
-            logger.warning(
-                ES_CONNECTION_ERROR
-                % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
-            )
-        except NotFoundError:
-            logger.warning(
-                ES_NOT_FOUND_ERROR
-                % (
-                    "sites_visibility_update_signal",
-                    SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                    dictionary_entry.id,
+    if original_site.visibility != instance.visibility:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        dictionary_entries_set = instance.dictionaryentry_set.all()
+
+        for dictionary_entry in dictionary_entries_set:
+            try:
+                existing_entry = get_object_from_index(
+                    ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
                 )
-            )
+                if not existing_entry:
+                    raise NotFoundError
+
+                dictionary_entry_doc = DictionaryEntryDocument.get(
+                    id=existing_entry["_id"]
+                )
+                dictionary_entry_doc.update(site_visibility=instance.visibility)
+            except ConnectionError:
+                logger.warning(
+                    ES_CONNECTION_ERROR
+                    % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+                )
+            except NotFoundError:
+                logger.warning(
+                    ES_NOT_FOUND_ERROR
+                    % (
+                        "sites_visibility_update_signal",
+                        SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                        dictionary_entry.id,
+                    )
+                )
