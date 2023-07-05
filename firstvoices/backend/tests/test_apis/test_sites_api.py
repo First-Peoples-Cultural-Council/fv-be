@@ -170,7 +170,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "images": f"{site_url}/images",
             "people": f"{site_url}/people",
             "videos": f"{site_url}/videos",
-            "widgets": f"{site_url}/site-widgets",
+            "widgets": f"{site_url}/widgets",
             "wordOfTheDay": f"{site_url}/word-of-the-day",
         }
 

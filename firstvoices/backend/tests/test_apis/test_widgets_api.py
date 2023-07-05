@@ -22,7 +22,7 @@ class TestSiteWidgetEndpoint(BaseReadOnlyControlledSiteContentApiTest):
             "title": widget.title,
             "url": f"http://testserver{self.get_detail_endpoint(key=widget.id, site_slug=site.slug)}",
             "visibility": "Public",
-            "widgetType": widget.widget_type,
+            "type": widget.widget_type,
             "format": "Default",
             "settings": [],
         }
