@@ -37,5 +37,12 @@ class SiteAdmin(BaseAdmin):
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)
 
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name == "visibility":
+            kwargs[
+                "help_text"
+            ] = "Only update a site's visibility on its own and not with other changes."
+        return super().formfield_for_choice_field(db_field, request, **kwargs)
+
 
 admin.site.unregister(Group)
