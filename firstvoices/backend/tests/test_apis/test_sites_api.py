@@ -161,6 +161,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
+            "homepage": None,
             "audio": f"{site_url}/audio",
             "categories": f"{site_url}/categories",
             "characters": f"{site_url}/characters",
@@ -259,6 +260,122 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["bannerVideo"] == self.get_expected_video_data(video)
+
+    @pytest.mark.django_db
+    def test_detail_homepage(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.SiteWidgetListOrderFactory.reset_sequence()
+        widget_list = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
+
+        widget_one = widget_list.widgets.all()[0]
+        widget_two = widget_list.widgets.all()[1]
+        widget_one.site = site
+        widget_one.save()
+        widget_two.site = site
+        widget_two.save()
+
+        widget_one_settings_one = factories.WidgetSettingsFactory.create(
+            widget=widget_one
+        )
+        widget_one_settings_two = factories.WidgetSettingsFactory.create(
+            widget=widget_one
+        )
+        widget_two_settings_one = factories.WidgetSettingsFactory.create(
+            widget=widget_two
+        )
+
+        site.homepage = widget_list
+        site.save()
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert response_data["homepage"]["id"] == str(widget_list.id)
+        assert len(response_data["homepage"]["widgets"]) == 2
+
+        response_widget_one = response_data["homepage"]["widgets"][0]
+        response_widget_two = response_data["homepage"]["widgets"][1]
+
+        assert response_widget_one == {
+            "id": str(widget_one.id),
+            "order": 0,
+            "title": widget_one.title,
+            "widgetType": widget_one.widget_type,
+            "format": "Default",
+            "visibility": "Public",
+            "settings": [
+                {
+                    "key": widget_one_settings_one.key,
+                    "value": widget_one_settings_one.value,
+                },
+                {
+                    "key": widget_one_settings_two.key,
+                    "value": widget_one_settings_two.value,
+                },
+            ],
+        }
+        assert response_widget_two == {
+            "id": str(widget_two.id),
+            "order": 1,
+            "title": widget_two.title,
+            "widgetType": widget_two.widget_type,
+            "format": "Default",
+            "visibility": "Public",
+            "settings": [
+                {
+                    "key": widget_two_settings_one.key,
+                    "value": widget_two_settings_one.value,
+                }
+            ],
+        }
+
+    @pytest.mark.parametrize(
+        "user_role, expected_visible_widgets",
+        [
+            (None, 1),
+            (Role.MEMBER, 2),
+            (Role.ASSISTANT, 3),
+            (Role.EDITOR, 3),
+            (Role.LANGUAGE_ADMIN, 3),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_detail_homepage_public_permissions(
+        self, user_role, expected_visible_widgets
+    ):
+        user = factories.UserFactory.create(id=1)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        if user_role is not None:
+            factories.MembershipFactory.create(user=user, site=site, role=user_role)
+
+        widget_list = factories.SiteWidgetListWithEachWidgetVisibilityFactory.create(
+            site=site
+        )
+        widget_public = widget_list.widgets.all()[0]
+        widget_members = widget_list.widgets.all()[1]
+        widget_team = widget_list.widgets.all()[2]
+        widget_public.site = site
+        widget_public.save()
+        widget_members.site = site
+        widget_members.save()
+        widget_team.site = site
+        widget_team.save()
+
+        site.homepage = widget_list
+        site.save()
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert response_data["homepage"]["id"] == str(widget_list.id)
+        assert len(response_data["homepage"]["widgets"]) == expected_visible_widgets
 
     @pytest.mark.django_db
     def test_detail_team_access(self):

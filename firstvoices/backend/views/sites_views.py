@@ -7,6 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import Language, Membership, SiteFeature
+from backend.models.widget import SiteWidget
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
@@ -60,10 +61,19 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
 
     def get_queryset(self):
         # not used for list action
-        return Site.objects.select_related("menu", "language").prefetch_related(
-            Prefetch(
-                "sitefeature_set", queryset=SiteFeature.objects.filter(is_enabled=True)
+        return (
+            Site.objects.select_related("menu", "language", "homepage")
+            .prefetch_related(
+                Prefetch(
+                    "sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                ),
+                Prefetch(
+                    "homepage__widgets",
+                    queryset=SiteWidget.objects.visible(self.request.user),
+                ),
             )
+            .prefetch_related("homepage__widgets__widgetsettings_set")
         )
 
     def list(self, request, *args, **kwargs):

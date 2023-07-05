@@ -9,6 +9,7 @@ from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.validators import SameSite
+from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
 
 class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
@@ -74,6 +75,8 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     banner_image = ImageSerializer()
     banner_video = VideoSerializer()
 
+    homepage = SiteWidgetListSerializer()
+
     # api links
     audio = SiteViewLinkField(view_name="api:audio-list")
     categories = SiteViewLinkField(view_name="api:category-list")
@@ -106,6 +109,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "menu",
             "banner_image",
             "banner_video",
+            "homepage",
             "audio",
             "categories",
             "characters",

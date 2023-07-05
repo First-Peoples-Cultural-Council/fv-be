@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from backend.models.widget import SiteWidget, Widget, WidgetSettings
+from backend.models.widget import SiteWidget, SiteWidgetList, Widget, WidgetSettings
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
@@ -36,3 +36,30 @@ class SiteWidgetDetailSerializer(
             "format",
             "settings",
         )
+
+
+class SiteWidgetListOrderDetailSerializer(SiteWidgetDetailSerializer):
+    order = serializers.SerializerMethodField()
+
+    class Meta(SiteWidgetDetailSerializer.Meta):
+        model = SiteWidget
+        fields = (
+            "id",
+            "order",
+            "title",
+            "widget_type",
+            "format",
+            "visibility",
+            "settings",
+        )
+
+    def get_order(self, widget):
+        return widget.sitewidgetlistorder_set.all().first().order
+
+
+class SiteWidgetListSerializer(serializers.ModelSerializer):
+    widgets = SiteWidgetListOrderDetailSerializer(many=True)
+
+    class Meta:
+        model = SiteWidgetList
+        fields = ("id", "widgets")

@@ -7,6 +7,7 @@ from backend.tests import factories
 class TestSiteWidgetListModel:
     @pytest.mark.django_db
     def test_unique_order(self):
+        factories.SiteWidgetListOrderFactory.reset_sequence()
         site_widget_list = factories.SiteWidgetListWithTwoWidgetsFactory.create()
 
         widget_one_order = site_widget_list.sitewidgetlistorder_set.all()[0]
