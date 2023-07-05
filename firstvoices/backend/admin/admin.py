@@ -39,9 +39,11 @@ class SiteAdmin(BaseAdmin):
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == "visibility":
-            kwargs[
-                "help_text"
-            ] = "Only update a site's visibility on its own and not with other changes."
+            kwargs["help_text"] = (
+                "Due to potential impoper elasticsearch indexing if the save action fails, please only update a "
+                "site's visibility on its own and not with other changes. Note that changing a site's visibility "
+                "is a potentially very expensive operation. "
+            )
         return super().formfield_for_choice_field(db_field, request, **kwargs)
 
 
