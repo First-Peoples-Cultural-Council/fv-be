@@ -310,7 +310,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         )
 
         # Sort by score, then by custom sort order
-        search_query = search_query.sort("_score", "custom_order")
+        search_query = search_query.sort("_score", "custom_order", "title")
 
         # Get search results
         try:
