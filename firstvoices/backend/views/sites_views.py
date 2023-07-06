@@ -31,8 +31,8 @@ from backend.views.base_views import FVPermissionViewSetMixin
         description="Basic information about a language site, for authorized users.",
         responses={
             200: SiteDetailSerializer,
-            403: OpenApiResponse(description="Todo: Error Not Authorized"),
-            404: OpenApiResponse(description="Todo: Not Found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
     update=extend_schema(
