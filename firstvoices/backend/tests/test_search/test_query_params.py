@@ -115,7 +115,7 @@ class TestDomain:
 
     def test_english(self):
         # relates to: SearchQueryTest.java - testEnglish()
-        search_query = get_search_query(q="test_query", domain="english")
+        search_query = get_search_query(q="test_query", domain="translation")
         search_query = search_query.to_dict()
 
         # should contain translation matching

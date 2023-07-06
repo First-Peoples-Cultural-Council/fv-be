@@ -107,8 +107,8 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Searches in both the Language and English domains.",
                     ),
                     OpenApiExample(
-                        "english",
-                        value="english",
+                        "translation",
+                        value="translation",
                         description="Performs a search focused on translations.",
                     ),
                     OpenApiExample(
@@ -310,7 +310,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         )
 
         # Sort by score, then by custom sort order
-        search_query = search_query.sort("_score", "custom_order")
+        search_query = search_query.sort("_score", "custom_order", "title")
 
         # Get search results
         try:
