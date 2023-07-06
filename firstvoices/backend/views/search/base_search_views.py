@@ -251,8 +251,8 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "kids": kids_flag,
             "games": games_flag,
             "site_id": "",  # used in site-search
-            "starts_with_char": "",  # used in dictionary-search
-            "category_id": "",  # used in dictionary-search
+            "starts_with_char": "",  # used in site-search
+            "category_id": "",  # used in site-search
         }
 
         return search_params
@@ -287,7 +287,7 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             return Response(data=[])
 
         # If invalid category id, return empty list as a response
-        # explicitly checking if its None since it can be empty in case of non dictionary-search
+        # explicitly checking if its None since it can be empty in case of non site wide search
         if search_params["category_id"] is None:
             return Response(data=[])
 
