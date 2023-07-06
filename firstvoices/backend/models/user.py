@@ -6,7 +6,14 @@ from backend.managers.user import UserManager
 
 class User(AbstractUser):
     """
-    User Model
+    User Model.
+
+    A Django user model customized for token authentication:
+        * username/id is set up for the JWT "sub" (subject) field
+        * email is a required, unique field, so it can be treated like a username
+        * password is not required
+        * name fields are not stored, so we can depend on jwt id tokens instead
+
     """
 
     USERNAME_FIELD = "id"
@@ -21,36 +28,27 @@ class User(AbstractUser):
         max_length=64, blank=False, unique=True, primary_key=True, null=False
     )
 
-    email = models.EmailField(unique=True, null=False, default="test@test.com")
+    # from userinfo:email
+    email = models.EmailField(unique=True, null=False)
 
     password = models.CharField(null=True, blank=False, max_length=128)
 
-    is_staff = models.BooleanField(null=False, default=False)
-    is_superuser = models.BooleanField(null=False, default=False)
+    @property
+    def is_superuser(self):
+        # not used by our permission system
+        return False
 
     @property
     def first_name(self):
-        return None
+        return ""
 
     @property
     def last_name(self):
-        return None
-
-    @property
-    def is_active(self):
-        return True
-
-    @property
-    def is_anonymous(self):
-        return False
+        return ""
 
     @property
     def username(self):
         return self.id
-
-    @property
-    def is_authenticated(self):
-        return True
 
     def __str__(self):
         return str(self.email)
