@@ -14,6 +14,9 @@ class User(AbstractUser):
         * password is not required
         * name fields are not stored, so we can depend on jwt id tokens instead
 
+    Notes:
+        * is_staff and is_superuser are included, only because they are used by the admin site
+
     """
 
     USERNAME_FIELD = "id"
@@ -32,11 +35,6 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, null=False)
 
     password = models.CharField(null=True, blank=False, max_length=128)
-
-    @property
-    def is_superuser(self):
-        # not used by our permission system
-        return False
 
     @property
     def first_name(self):
