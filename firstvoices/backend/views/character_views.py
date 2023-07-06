@@ -7,8 +7,10 @@ from backend.models.characters import Character, IgnoredCharacter
 from backend.models.media import Audio, Image, Video
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
+    CharacterDetailWriteSerializer,
     IgnoredCharacterSerializer,
 )
+from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -18,8 +20,8 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         description="A list of all characters available on the specified site",
         responses={
             200: CharacterDetailSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[site_slug_parameter],
     ),
@@ -27,13 +29,25 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         description="Details about a specific character in the specified site",
         responses={
             200: CharacterDetailSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
             site_slug_parameter,
             id_parameter,
         ],
+    ),
+    update=extend_schema(
+        description="Edit a character in the specified site",
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=CharacterDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
     ),
 )
 class CharactersViewSet(
@@ -43,7 +57,7 @@ class CharactersViewSet(
     Character information.
     """
 
-    http_method_names = ["get"]
+    http_method_names = ["get", "put"]
     serializer_class = CharacterDetailSerializer
 
     def get_queryset(self):
@@ -74,6 +88,12 @@ class CharactersViewSet(
             )
         else:
             return Character.objects.none()
+
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return CharacterDetailSerializer
+        else:
+            return CharacterDetailWriteSerializer
 
 
 @extend_schema_view(
