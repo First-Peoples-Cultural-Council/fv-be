@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from django.core.exceptions import ValidationError
 
 import backend.tests.factories.access
 from backend.models import AppJson
@@ -131,15 +130,17 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             image
         )
 
+    @pytest.mark.parametrize(
+        "visibility, expected_visibility",
+        [(Visibility.PUBLIC, "Public"), (Visibility.MEMBERS, "Members")],
+    )
     @pytest.mark.django_db
-    def test_detail(self):
+    def test_detail(self, visibility, expected_visibility):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         language = backend.tests.factories.access.LanguageFactory.create()
-        site = factories.SiteFactory.create(
-            language=language, visibility=Visibility.MEMBERS
-        )
+        site = factories.SiteFactory.create(language=language, visibility=visibility)
         menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
 
         response = self.client.get(self.get_detail_endpoint(site.slug))
@@ -153,7 +154,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
-            "visibility": "Members",
+            "visibility": expected_visibility,
             "url": site_url,
             "menu": menu.json,
             "features": [],
@@ -356,7 +357,11 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "bannerImage": None,
             "bannerVideo": None,
         }
-        with pytest.raises(ValidationError):
-            self.client.put(
-                f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
-            )
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+
+        assert response_data["logo"] == ["Must be in the same site."]

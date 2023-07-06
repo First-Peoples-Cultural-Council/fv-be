@@ -8,6 +8,7 @@ from backend.models.sites import Language, Site
 from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.validators import SameSite
 
 
 class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
@@ -122,13 +123,25 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
 class SiteDetailWriteSerializer(SiteDetailSerializer):
     logo = serializers.SlugRelatedField(
-        write_only=True, queryset=Image.objects.all(), slug_field="id", allow_null=True
+        write_only=True,
+        queryset=Image.objects.all(),
+        slug_field="id",
+        allow_null=True,
+        validators=[SameSite(queryset=Image.objects.all())],
     )
     banner_image = serializers.SlugRelatedField(
-        write_only=True, queryset=Image.objects.all(), slug_field="id", allow_null=True
+        write_only=True,
+        queryset=Image.objects.all(),
+        slug_field="id",
+        allow_null=True,
+        validators=[SameSite(queryset=Image.objects.all())],
     )
     banner_video = serializers.SlugRelatedField(
-        write_only=True, queryset=Video.objects.all(), slug_field="id", allow_null=True
+        write_only=True,
+        queryset=Video.objects.all(),
+        slug_field="id",
+        allow_null=True,
+        validators=[SameSite(queryset=Video.objects.all())],
     )
 
     def to_representation(self, instance):
