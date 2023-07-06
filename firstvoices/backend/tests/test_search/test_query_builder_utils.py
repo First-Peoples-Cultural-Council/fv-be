@@ -37,7 +37,7 @@ class TestValidDomains:
     @pytest.mark.parametrize(
         "input_domain, expected_domain",
         [
-            ("english", "english"),
+            ("TRANSLATION", "translation"),
             ("LANGUAGE", "language"),
             ("both", "both"),
             (" ", "both"),
