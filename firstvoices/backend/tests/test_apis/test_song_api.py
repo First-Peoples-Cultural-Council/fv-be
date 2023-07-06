@@ -36,7 +36,7 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentA
             related_videos=related_videos,
         )
 
-    def get_expected_list_response_item(self, song, site):
+    def get_expected_list_response_item_summary(self, song, site):
         return {
             "url": f"http://testserver{self.get_detail_endpoint(key=song.id, site_slug=site.slug)}",
             "id": str(song.id),
@@ -45,8 +45,11 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentA
             "titleTranslation": song.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "hideOverlay": False
+            "hideOverlay": False,
         }
+
+    def get_expected_list_response_item(self, song, site):
+        return self.get_expected_response(song, site)
 
     def get_expected_response(self, song, site):
         return {
