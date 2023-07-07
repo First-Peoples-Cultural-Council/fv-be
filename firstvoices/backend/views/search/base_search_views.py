@@ -263,15 +263,11 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         """
         default_page_size = self.paginator.get_page_size(self.request)
 
-        valid_page_number = self.paginator.override_invalid_number(
-            self.request.GET.get("page", 1)
-        )
-        page = valid_page_number
+        page = self.paginator.override_invalid_number(self.request.GET.get("page", 1))
 
-        valid_page_size = self.paginator.override_invalid_number(
+        page_size = self.paginator.override_invalid_number(
             self.request.GET.get("pageSize", default_page_size), default_page_size
         )
-        page_size = valid_page_size
 
         start = (page - 1) * page_size
 
