@@ -3,10 +3,12 @@ from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from backend.models.app import AppJson
+from backend.models.media import Image, Video
 from backend.models.sites import Language, Site
-from backend.serializers.base_serializers import base_id_fields
+from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.validators import SameSite
 
 
 class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
@@ -18,7 +20,8 @@ class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
-    visibility = serializers.CharField(source="get_visibility_display")
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    slug = serializers.CharField(read_only=True)
 
     class Meta:
         model = Site
@@ -38,7 +41,9 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     """
 
     logo = ImageSerializer()
-    features = FeatureFlagSerializer(source="sitefeature_set", many=True)
+    features = FeatureFlagSerializer(
+        read_only=True, source="sitefeature_set", many=True
+    )
 
     class Meta(LinkedSiteSerializer.Meta):
         fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
@@ -60,7 +65,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "word_of_the_day",
     ),
 )
-class SiteDetailSerializer(SiteSummarySerializer):
+class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     """
     Serializes basic details about a site object, including access-controlled related information.
     """
@@ -90,7 +95,8 @@ class SiteDetailSerializer(SiteSummarySerializer):
     def get_menu(self, site):
         return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
 
-    def get_default_menu(self):
+    @staticmethod
+    def get_default_menu():
         default_menu = AppJson.objects.filter(key="default_site_menu")
         return default_menu[0].json if len(default_menu) > 0 else None
 
@@ -113,6 +119,31 @@ class SiteDetailSerializer(SiteSummarySerializer):
             "widgets",
             "word_of_the_day",
         )
+
+
+class SiteDetailWriteSerializer(SiteDetailSerializer):
+    logo = serializers.PrimaryKeyRelatedField(
+        queryset=Image.objects.all(),
+        allow_null=True,
+        validators=[SameSite(queryset=Image.objects.all())],
+    )
+    banner_image = serializers.PrimaryKeyRelatedField(
+        queryset=Image.objects.all(),
+        allow_null=True,
+        validators=[SameSite(queryset=Image.objects.all())],
+    )
+    banner_video = serializers.PrimaryKeyRelatedField(
+        queryset=Video.objects.all(),
+        allow_null=True,
+        validators=[SameSite(queryset=Video.objects.all())],
+    )
+
+    class Meta(SiteSummarySerializer.Meta):
+        read_only_fields = ("title",)
+
+    def to_representation(self, instance):
+        data = SiteDetailSerializer(instance=instance, context=self.context).data
+        return data
 
 
 class LanguageSerializer(serializers.Serializer):

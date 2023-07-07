@@ -1,5 +1,6 @@
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -11,8 +12,10 @@ from backend.serializers.site_serializers import (
     LanguageSerializer,
     Site,
     SiteDetailSerializer,
+    SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )
+from backend.views import doc_strings
 from backend.views.base_views import FVPermissionViewSetMixin
 
 
@@ -28,8 +31,20 @@ from backend.views.base_views import FVPermissionViewSetMixin
         description="Basic information about a language site, for authorized users.",
         responses={
             200: SiteDetailSerializer,
-            403: OpenApiResponse(description="Todo: Error Not Authorized"),
-            404: OpenApiResponse(description="Todo: Not Found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+    ),
+    update=extend_schema(
+        description=_("Edit a site."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=SiteDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
 )
@@ -38,11 +53,10 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     Summary information about language sites.
     """
 
-    http_method_names = ["get"]
+    http_method_names = ["get", "put"]
     lookup_field = "slug"
     pagination_class = None
-
-    serializer_class = SiteDetailSerializer
+    serializer_class = SiteDetailWriteSerializer
 
     def get_queryset(self):
         # not used for list action
@@ -92,6 +106,12 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
             data.append(other_site_json)
 
         return Response(data)
+
+    def get_serializer_context(self):
+        # Add site to serializer context for field level validation purposes
+        context = super().get_serializer_context()
+        context["site"] = self.get_object()
+        return context
 
 
 @extend_schema_view(
