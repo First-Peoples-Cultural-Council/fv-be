@@ -85,7 +85,7 @@ class SiteWidgetList(BaseSiteContentModel):
         }
 
     widgets = models.ManyToManyField(
-        SiteWidget, related_name="sitewidget_set", through="SiteWidgetListOrder"
+        SiteWidget, related_name="sitewidgetlist_set", through="SiteWidgetListOrder"
     )
 
     def __str__(self):

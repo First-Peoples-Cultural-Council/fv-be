@@ -121,6 +121,12 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         # Add site to serializer context for field level validation purposes
         context = super().get_serializer_context()
         context["site"] = self.get_object()
+
+        # Add the homepage SiteWidgetList to the extra context provided to the serializer class.
+        context["homepage"] = (
+            Site.objects.filter(slug=self.kwargs["slug"]).first().homepage
+        )
+
         return context
 
 

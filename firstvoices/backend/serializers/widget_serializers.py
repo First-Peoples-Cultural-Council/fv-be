@@ -54,12 +54,28 @@ class SiteWidgetListOrderDetailSerializer(SiteWidgetDetailSerializer):
         )
 
     def get_order(self, widget):
-        return widget.sitewidgetlistorder_set.all().first().order
+        if "homepage" in self.context:
+            return (
+                widget.sitewidgetlistorder_set.filter(
+                    site_widget_list=self.context["homepage"]
+                )
+                .first()
+                .order
+            )
+        return None
 
 
 class SiteWidgetListSerializer(serializers.ModelSerializer):
-    widgets = SiteWidgetListOrderDetailSerializer(many=True)
-
     class Meta:
         model = SiteWidgetList
-        fields = ("id", "widgets")
+
+    def to_representation(self, instance):
+        widgets = instance.widgets.all()
+        unordered_widgets = SiteWidgetListOrderDetailSerializer(
+            widgets, many=True, context=self.context
+        ).data
+        ordered_widgets = sorted(unordered_widgets, key=lambda x: x["order"])
+        ordered_widgets = list(
+            filter(lambda x: x.pop("order", None) or True, ordered_widgets)
+        )
+        return ordered_widgets

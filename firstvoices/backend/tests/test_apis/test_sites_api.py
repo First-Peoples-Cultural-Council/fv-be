@@ -294,15 +294,13 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        assert response_data["homepage"]["id"] == str(widget_list.id)
-        assert len(response_data["homepage"]["widgets"]) == 2
+        assert len(response_data["homepage"]) == 2
 
-        response_widget_one = response_data["homepage"]["widgets"][0]
-        response_widget_two = response_data["homepage"]["widgets"][1]
+        response_widget_one = response_data["homepage"][0]
+        response_widget_two = response_data["homepage"][1]
 
         assert response_widget_one == {
             "id": str(widget_one.id),
-            "order": 0,
             "title": widget_one.title,
             "widgetType": widget_one.widget_type,
             "format": "Default",
@@ -320,7 +318,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         }
         assert response_widget_two == {
             "id": str(widget_two.id),
-            "order": 1,
             "title": widget_two.title,
             "widgetType": widget_two.widget_type,
             "format": "Default",
@@ -344,9 +341,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         ],
     )
     @pytest.mark.django_db
-    def test_detail_homepage_public_permissions(
-        self, user_role, expected_visible_widgets
-    ):
+    def test_detail_homepage_permissions(self, user_role, expected_visible_widgets):
         user = factories.UserFactory.create(id=1)
         self.client.force_authenticate(user=user)
 
@@ -374,8 +369,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        assert response_data["homepage"]["id"] == str(widget_list.id)
-        assert len(response_data["homepage"]["widgets"]) == expected_visible_widgets
+        assert len(response_data["homepage"]) == expected_visible_widgets
 
     @pytest.mark.django_db
     def test_detail_team_access(self):
