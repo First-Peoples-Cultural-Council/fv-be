@@ -144,6 +144,9 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         validators=[SameSite(queryset=Video.objects.all())],
     )
 
+    class Meta(SiteSummarySerializer.Meta):
+        read_only_fields = ("title",)
+
     def to_representation(self, instance):
         data = SiteDetailSerializer(instance=instance, context=self.context).data
         return data

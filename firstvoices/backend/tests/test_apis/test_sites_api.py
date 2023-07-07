@@ -292,29 +292,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 404
 
     @pytest.mark.django_db
-    def test_update_title(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
-        )
-
-        self.client.force_authenticate(user=user)
-        req_body = {
-            "title": "site renamed",
-            "logo": None,
-            "bannerImage": None,
-            "bannerVideo": None,
-        }
-        response = self.client.put(
-            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert response_data["title"] == "site renamed"
-
-    @pytest.mark.django_db
     def test_update_media(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
         user = factories.get_non_member_user()
