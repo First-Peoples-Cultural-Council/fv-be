@@ -56,6 +56,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get", "put"]
     lookup_field = "slug"
     pagination_class = None
+    serializer_class = SiteDetailWriteSerializer
 
     def get_queryset(self):
         # not used for list action
@@ -111,12 +112,6 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         context = super().get_serializer_context()
         context["site"] = self.get_object()
         return context
-
-    def get_serializer_class(self):
-        if self.action in ["list", "retrieve"]:
-            return SiteDetailSerializer
-        else:
-            return SiteDetailWriteSerializer
 
 
 @extend_schema_view(
