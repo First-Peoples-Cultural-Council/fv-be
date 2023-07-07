@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from backend.models import media
 
+from ..models.media import Audio, Image, Video
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
     ExternalSiteContentUrlMixin,
@@ -80,7 +81,7 @@ class MediaWithThumbnailsSerializer(MediaSerializer):
 
 
 class ImageSerializer(MediaWithThumbnailsSerializer):
-    """Serializer for Audio objects. Supports image objects shared between different sites."""
+    """Serializer for Image objects. Supports image objects shared between different sites."""
 
     original = MediaImageFileSerializer()
 
@@ -89,7 +90,7 @@ class ImageSerializer(MediaWithThumbnailsSerializer):
 
 
 class VideoSerializer(MediaWithThumbnailsSerializer):
-    """Serializer for Audio objects. Supports video objects shared between different sites."""
+    """Serializer for Video objects. Supports video objects shared between different sites."""
 
     original = MediaVideoFileSerializer()
 
@@ -97,12 +98,36 @@ class VideoSerializer(MediaWithThumbnailsSerializer):
         model = media.Video
 
 
+class WriteableRelatedAudioSerializer(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        return AudioSerializer(context=self.context).to_representation(value)
+
+
+class WriteableRelatedVideoSerializer(serializers.PrimaryKeyRelatedField):
+    def to_representation(self, value):
+        return VideoSerializer(context=self.context).to_representation(value)
+
+
+class WriteableRelatedImageSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return ImageSerializer(context=self.context).to_representation(value)
+
+
 class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     """Mixin that provides standard related media fields"""
 
-    related_audio = AudioSerializer(many=True)
-    related_images = ImageSerializer(many=True)
-    related_videos = VideoSerializer(many=True)
+    related_audio = WriteableRelatedAudioSerializer(
+        many=True, queryset=Audio.objects.all()
+    )
+    related_images = WriteableRelatedImageSerializer(
+        many=True, queryset=Image.objects.all()
+    )
+    related_videos = WriteableRelatedVideoSerializer(
+        many=True, queryset=Video.objects.all()
+    )
 
     class Meta:
         fields = ("related_audio", "related_images", "related_videos")
