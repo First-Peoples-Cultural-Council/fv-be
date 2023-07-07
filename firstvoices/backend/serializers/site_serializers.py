@@ -122,24 +122,18 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
 
 class SiteDetailWriteSerializer(SiteDetailSerializer):
-    logo = serializers.SlugRelatedField(
-        write_only=True,
+    logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
-        slug_field="id",
         allow_null=True,
         validators=[SameSite(queryset=Image.objects.all())],
     )
-    banner_image = serializers.SlugRelatedField(
-        write_only=True,
+    banner_image = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
-        slug_field="id",
         allow_null=True,
         validators=[SameSite(queryset=Image.objects.all())],
     )
-    banner_video = serializers.SlugRelatedField(
-        write_only=True,
+    banner_video = serializers.PrimaryKeyRelatedField(
         queryset=Video.objects.all(),
-        slug_field="id",
         allow_null=True,
         validators=[SameSite(queryset=Video.objects.all())],
     )
