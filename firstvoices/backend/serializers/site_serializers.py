@@ -122,6 +122,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
 
 class SiteDetailWriteSerializer(SiteDetailSerializer):
+    title = serializers.CharField(read_only=True)
     logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
@@ -137,9 +138,6 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         allow_null=True,
         validators=[SameSite(queryset=Video.objects.all())],
     )
-
-    class Meta(SiteSummarySerializer.Meta):
-        read_only_fields = ("title",)
 
     def to_representation(self, instance):
         data = SiteDetailSerializer(instance=instance, context=self.context).data
