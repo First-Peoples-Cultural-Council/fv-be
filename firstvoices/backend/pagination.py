@@ -98,3 +98,20 @@ class SearchPageNumberPagination(PageNumberPagination):
 
         self.request = request
         return list(self.page)
+
+    @staticmethod
+    def override_invalid_number(number, override_value=1):
+        """
+        A modified version the Django Paginator validate_number method to set invalid page numbers to 1.
+        This allows the pagination parameters to be used and the invalid page number to be caught by the
+        paginator.
+        """
+        try:
+            if isinstance(number, float) and not number.is_integer():
+                return override_value
+            number = int(number)
+        except (TypeError, ValueError):
+            return override_value
+        if number < 1:
+            return override_value
+        return number
