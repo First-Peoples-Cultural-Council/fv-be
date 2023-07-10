@@ -97,7 +97,7 @@ class Site(BaseModel):
         rules_permissions = {
             "view": predicates.can_view_site_model,
             "add": predicates.is_superadmin,
-            "change": predicates.is_superadmin,
+            "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,
         }
 
