@@ -33,20 +33,26 @@ class DictionaryEntryDocument(Document):
     document_id = Text()
     site_id = Keyword()
     site_visibility = Integer()
-    full_text_search_field = Text()
+    visibility = Integer()
     exclude_from_games = Boolean()
     exclude_from_kids = Boolean()
-    visibility = Integer()
+
+    # Added fields for search
+    full_text_search_field = Text()
 
     # Dictionary Related fields
-    type = Keyword()
-    custom_order = Keyword()
+
+    # search
     title = Text(
         analyzer="standard", copy_to="full_text_search_field", fields={"raw": Keyword()}
     )
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
-    part_of_speech = Text(copy_to="full_text_search_field")
+    acknowledgments = Text(copy_to="full_text_search_field")
+
+    # filter and/or sort
+    type = Keyword()
+    custom_order = Keyword()
     categories = Keyword()
 
     class Index:
