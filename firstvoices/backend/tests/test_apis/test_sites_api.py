@@ -130,15 +130,17 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             image
         )
 
+    @pytest.mark.parametrize(
+        "visibility, expected_visibility",
+        [(Visibility.PUBLIC, "Public"), (Visibility.MEMBERS, "Members")],
+    )
     @pytest.mark.django_db
-    def test_detail(self):
+    def test_detail(self, visibility, expected_visibility):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         language = backend.tests.factories.access.LanguageFactory.create()
-        site = factories.SiteFactory.create(
-            language=language, visibility=Visibility.MEMBERS
-        )
+        site = factories.SiteFactory.create(language=language, visibility=visibility)
         menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
 
         response = self.client.get(self.get_detail_endpoint(site.slug))
@@ -152,7 +154,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
-            "visibility": "Members",
+            "visibility": expected_visibility,
             "url": site_url,
             "menu": menu.json,
             "features": [],
@@ -289,3 +291,55 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.get(f"{self.get_detail_endpoint('fake-site')}")
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_media(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site.title,
+            "logo": str(image.id),
+            "bannerImage": None,
+            "bannerVideo": None,
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["logo"]["id"] == str(image.id)
+
+    @pytest.mark.django_db
+    def test_invalid_media_source(self):
+        # Internally the function used to verify source of all 3 media items supplied is the same,
+        # testing out only for the logo
+        site1 = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        site2 = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site2)
+        factories.MembershipFactory.create(
+            user=user, site=site1, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site1.title,
+            "logo": str(image.id),
+            "bannerImage": None,
+            "bannerVideo": None,
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+
+        assert response_data["logo"] == ["Must be in the same site."]

@@ -151,3 +151,37 @@ class TestSearchAPI(BaseApiTest):
         assert response_data["nextUrl"] is None
         assert response_data["previous"] == 2
         assert response_data["previousUrl"] == "http://testserver/api/1.0/search?page=2"
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("page_number", [0, -1, 1.5, "octopus"])
+    def test_invalid_page_numbers(self, page_number, db, mock_search_query_execute):
+        """Test that invalid page numbers return an invalid page."""
+        mock_es_results = {
+            "hits": {"hits": [], "total": {"value": 0, "relation": "eq"}},
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint() + f"?page={page_number}")
+        response_data = json.loads(response.content)
+
+        assert response_data == {"detail": "Invalid page."}
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("page_size", [0, -1, 1.5, "octopus"])
+    def test_invalid_page_sizes(self, page_size, db, mock_search_query_execute):
+        """Test that invalid page sizes return an expected page with the default page size."""
+        mock_es_results = {
+            "hits": {"hits": [], "total": {"value": 0, "relation": "eq"}},
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint() + f"?pageSize={page_size}")
+        response_data = json.loads(response.content)
+
+        assert response_data["pageSize"] == 25
