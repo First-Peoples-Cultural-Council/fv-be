@@ -57,15 +57,11 @@ class SiteWidgetListWithTwoWidgetsFactory(SiteWidgetListFactory):
     widget_one = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list one",
-        site_widget_list__order=0,
         site_widget__visibility=Visibility.PUBLIC,
     )
     widget_two = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list two",
-        site_widget_list__order=1,
         site_widget__visibility=Visibility.PUBLIC,
     )
 
@@ -74,21 +70,36 @@ class SiteWidgetListWithEachWidgetVisibilityFactory(SiteWidgetListFactory):
     widget_public = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list one",
-        site_widget_list__order=0,
         site_widget__visibility=Visibility.PUBLIC,
     )
     widget_members = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list two",
-        site_widget_list__order=1,
         site_widget__visibility=Visibility.MEMBERS,
     )
     widget_team = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
-        site_widget_list__title="site_widget_list three",
-        site_widget_list__order=2,
         site_widget__visibility=Visibility.TEAM,
+    )
+
+
+class SiteWidgetListWithThreeWidgetsFactory(SiteWidgetListFactory):
+    widget_one = factory.RelatedFactory(
+        SiteWidgetListOrderFactory,
+        factory_related_name="site_widget_list",
+        order=2,
+        site_widget__visibility=Visibility.PUBLIC,
+    )
+    widget_two = factory.RelatedFactory(
+        SiteWidgetListOrderFactory,
+        factory_related_name="site_widget_list",
+        order=0,
+        site_widget__visibility=Visibility.PUBLIC,
+    )
+    widget_three = factory.RelatedFactory(
+        SiteWidgetListOrderFactory,
+        factory_related_name="site_widget_list",
+        order=1,
+        site_widget__visibility=Visibility.PUBLIC,
     )

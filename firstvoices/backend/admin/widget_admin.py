@@ -80,7 +80,17 @@ class SiteWidgetListAdmin(BaseSiteContentAdmin):
 
 
 class HiddenSiteWidgetListOrder(HiddenBaseAdmin):
-    readonly_fields = ("site",) + HiddenBaseAdmin.readonly_fields
+    readonly_fields = (
+        "site",
+        "visibility",
+    ) + HiddenBaseAdmin.readonly_fields
+    list_display = (
+        "site_widget",
+        "site_widget_list",
+        "order",
+        "site",
+        "visibility",
+    ) + HiddenBaseAdmin.list_display
 
 
 admin.site.register(WidgetSettings, HiddenBaseAdmin)

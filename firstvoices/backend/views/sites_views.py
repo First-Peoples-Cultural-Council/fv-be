@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import Language, Membership, SiteFeature
-from backend.models.widget import SiteWidget
+from backend.models.widget import SiteWidgetListOrder
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
@@ -60,20 +60,30 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     serializer_class = SiteDetailWriteSerializer
 
     def get_queryset(self):
-        # not used for list action
-        return (
-            Site.objects.select_related("menu", "language", "homepage")
-            .prefetch_related(
-                Prefetch(
-                    "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
-                ),
-                Prefetch(
-                    "homepage__widgets",
-                    queryset=SiteWidget.objects.visible(self.request.user),
-                ),
+        if self.action == "retrieve":
+            return self.get_detail_queryset()
+
+        return Site.objects.select_related("menu", "language").prefetch_related(
+            Prefetch(
+                "sitefeature_set", queryset=SiteFeature.objects.filter(is_enabled=True)
             )
-            .prefetch_related("homepage__widgets__widgetsettings_set")
+        )
+
+    def get_detail_queryset(self):
+        # not used for list action
+        return Site.objects.select_related(
+            "menu", "language", "homepage"
+        ).prefetch_related(
+            Prefetch(
+                "sitefeature_set",
+                queryset=SiteFeature.objects.filter(is_enabled=True),
+            ),
+            Prefetch(
+                "homepage__sitewidgetlistorder_set",
+                queryset=SiteWidgetListOrder.objects.visible(self.request.user)
+                .filter(site__slug=self.kwargs["slug"])
+                .order_by("order"),
+            ),
         )
 
     def list(self, request, *args, **kwargs):
@@ -126,7 +136,8 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
         context["homepage"] = (
             Site.objects.filter(slug=self.kwargs["slug"]).first().homepage
         )
-
+        context["site_slug"] = self.kwargs["slug"]
+        
         return context
 
 
