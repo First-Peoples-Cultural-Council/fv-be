@@ -62,7 +62,6 @@ class SongSerializer(
         read_only_fields = (
             base_id_fields,
             base_timestamp_fields,
-            "cover_image",
             "site",
         )
         fields = (

@@ -99,11 +99,17 @@ class VideoSerializer(MediaWithThumbnailsSerializer):
 
 
 class WriteableRelatedAudioSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
     def to_representation(self, value):
         return AudioSerializer(context=self.context).to_representation(value)
 
 
 class WriteableRelatedVideoSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
     def to_representation(self, value):
         return VideoSerializer(context=self.context).to_representation(value)
 
