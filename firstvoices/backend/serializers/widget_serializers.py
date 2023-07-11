@@ -50,10 +50,8 @@ class SiteWidgetListSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         widgets = []
-        for widget in instance.sitewidgetlistorder_set.all():
+        for widget in instance.widgets.all():
             widgets.append(
-                SiteWidgetDetailSerializer(
-                    widget.site_widget, context=self.context
-                ).data
+                SiteWidgetDetailSerializer(widget, context=self.context).data
             )
         return widgets

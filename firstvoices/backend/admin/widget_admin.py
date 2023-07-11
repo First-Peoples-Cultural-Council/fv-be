@@ -65,7 +65,7 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
         "site_widget",
         "order",
     ) + BaseInlineAdmin.fields
-    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields
+    readonly_fields = BaseInlineAdmin.readonly_fields
 
 
 @admin.register(SiteWidgetList)
@@ -80,16 +80,11 @@ class SiteWidgetListAdmin(BaseSiteContentAdmin):
 
 
 class HiddenSiteWidgetListOrder(HiddenBaseAdmin):
-    readonly_fields = (
-        "site",
-        "visibility",
-    ) + HiddenBaseAdmin.readonly_fields
+    readonly_fields = HiddenBaseAdmin.readonly_fields
     list_display = (
         "site_widget",
         "site_widget_list",
         "order",
-        "site",
-        "visibility",
     ) + HiddenBaseAdmin.list_display
 
 

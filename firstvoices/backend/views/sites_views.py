@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import Language, Membership, SiteFeature
-from backend.models.widget import SiteWidgetListOrder
+from backend.models.widget import SiteWidget
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
@@ -79,10 +79,14 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
                 queryset=SiteFeature.objects.filter(is_enabled=True),
             ),
             Prefetch(
-                "homepage__sitewidgetlistorder_set",
-                queryset=SiteWidgetListOrder.objects.visible(self.request.user)
-                .filter(site__slug=self.kwargs["slug"])
-                .order_by("order"),
+                "homepage__widgets",
+                queryset=SiteWidget.objects.visible(self.request.user)
+                .order_by("sitewidgetlistorder_set__order")
+                .filter(
+                    sitewidgetlistorder_set__site_widget_list__homepage_site=Site.objects.filter(
+                        slug=self.kwargs["slug"]
+                    ).first()
+                ),
             ),
         )
 

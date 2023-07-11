@@ -7,7 +7,6 @@ from backend.models.base import (
     BaseModel,
     BaseSiteContentModel,
 )
-from backend.models.constants import Visibility
 from backend.permissions import predicates
 
 
@@ -73,16 +72,6 @@ class SiteWidget(Widget, BaseControlledSiteContentModel):
     def __str__(self):
         return self.title
 
-    def save(self, **kwargs):
-        if (
-            not self._state.adding
-            and self.visibility != SiteWidget.objects.get(pk=self.pk).visibility
-        ):
-            for order in self.sitewidgetlistorder_set.all():
-                order.visibility = self.visibility
-                order.save()
-        super().save(**kwargs)
-
 
 class SiteWidgetList(BaseSiteContentModel):
     class Meta:
@@ -102,22 +91,13 @@ class SiteWidgetList(BaseSiteContentModel):
     def __str__(self):
         return f"Widget list [{self.id}] for site [{self.site}]"
 
-    def save(self, **kwargs):
-        if (
-            not self._state.adding
-            and self.site != SiteWidgetList.objects.get(pk=self.pk).site
-        ):
-            for order in self.sitewidgetlistorder_set.all():
-                order.save()
-        super().save(**kwargs)
-
 
 class SiteWidgetListOrder(BaseModel):
     class Meta:
         verbose_name = _("site widget list order")
         verbose_name_plural = _("site widget list orders")
         rules_permissions = {
-            "view": predicates.is_visible_object,
+            "view": rules.always_allow,
             "add": predicates.is_superadmin,  # permissions will change when we add a write API
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
@@ -131,23 +111,6 @@ class SiteWidgetListOrder(BaseModel):
     )
 
     order = models.IntegerField()
-
-    visibility = models.IntegerField(
-        choices=Visibility.choices, null=True, blank=True, editable=False
-    )
-    site = models.ForeignKey(
-        to="backend.Site",
-        on_delete=models.CASCADE,
-        related_name="%(class)s_set",
-        null=True,
-        blank=True,
-        editable=False,
-    )
-
-    def save(self, **kwargs):
-        self.visibility = self.site_widget.visibility
-        self.site = self.site_widget_list.site
-        super().save(**kwargs)
 
     def __str__(self):
         return f"Widget [{self.site_widget}] - order [{self.order}] pair"
