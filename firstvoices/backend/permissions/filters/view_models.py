@@ -4,6 +4,8 @@ from . import base, view
 # model-specific view permission filters
 #
 
+# todo: make work for anon users after the changes (check other filters as well)
+
 
 # Site model is visible to all unless it has Team-only visibility
 def can_view_site_model(user):

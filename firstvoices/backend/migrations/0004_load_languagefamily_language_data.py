@@ -52,7 +52,7 @@ def populate_dates(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0036_alter_languagefamily_managers"),
+        ("backend", "0003_load_initial_data_fixtures"),
     ]
 
     operations = [
@@ -81,24 +81,4 @@ class Migration(migrations.Migration):
         # then you can unapply the migration.
         migrations.RunPython(load_fixture),
         migrations.RunPython(populate_dates),
-        migrations.AlterField(
-            model_name="languagefamily",
-            name="created",
-            field=models.DateTimeField(auto_now_add=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="languagefamily",
-            name="last_modified",
-            field=models.DateTimeField(auto_now=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="language",
-            name="created",
-            field=models.DateTimeField(auto_now_add=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="language",
-            name="last_modified",
-            field=models.DateTimeField(auto_now=True, db_index=True),
-        ),
     ]

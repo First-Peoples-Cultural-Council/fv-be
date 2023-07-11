@@ -1,7 +1,6 @@
 [{
 	"model": "backend.appjson",
 	"fields": {
-		"is_trashed": false,
 		"key": "default_site_menu",
 		"json": {
 			"kids": {

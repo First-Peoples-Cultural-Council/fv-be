@@ -65,7 +65,7 @@ def populate_dates(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0010_rename_uuid_dictionaryentrylink_id_and_more"),
+        ("backend", "0002_initial"),
     ]
 
     operations = [
@@ -97,24 +97,4 @@ class Migration(migrations.Migration):
         ),
         migrations.RunPython(load_default_fixtures),
         migrations.RunPython(populate_dates),
-        migrations.AlterField(
-            model_name="appjson",
-            name="created",
-            field=models.DateTimeField(auto_now_add=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="appjson",
-            name="last_modified",
-            field=models.DateTimeField(auto_now=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="partofspeech",
-            name="created",
-            field=models.DateTimeField(auto_now_add=True, db_index=True),
-        ),
-        migrations.AlterField(
-            model_name="partofspeech",
-            name="last_modified",
-            field=models.DateTimeField(auto_now=True, db_index=True),
-        ),
     ]
