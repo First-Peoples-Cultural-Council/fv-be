@@ -8,14 +8,14 @@ from drf_spectacular.utils import (
 )
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models import Song
+from backend.serializers.song_serializers import SongListSerializer, SongSerializer
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     http_methods_except_patch,
 )
 
-from ..models import Song
-from ..serializers.song_serializers import SongListSerializer, SongSerializer
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
 

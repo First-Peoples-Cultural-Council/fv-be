@@ -43,8 +43,8 @@ class Song(
             "delete": predicates.is_superadmin,
         }
 
-    cover_image = models.OneToOneField(
-        to="Image", on_delete=models.RESTRICT, related_name="+", null=True
+    cover_image = models.ForeignKey(
+        to="Image", on_delete=models.SET_NULL, related_name="song_cover_of", null=True
     )
 
     title = models.CharField(blank=False, null=False)
