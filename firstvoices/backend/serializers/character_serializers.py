@@ -49,10 +49,9 @@ class CharacterDetailSerializer(
 
 class CharacterDetailWriteSerializer(CharacterDetailSerializer):
     variants = PrimaryKeyRelatedField(
-        write_only=True,
         queryset=CharacterVariant.objects.all(),
-        allow_null=True,
         many=True,
+        allow_null=True,
         validators=[
             UniqueForSite(queryset=CharacterVariant.objects.all()),
             SameSite(queryset=CharacterVariant.objects.all()),
@@ -60,10 +59,9 @@ class CharacterDetailWriteSerializer(CharacterDetailSerializer):
     )
 
     related_entries = PrimaryKeyRelatedField(
-        write_only=True,
         queryset=DictionaryEntry.objects.all(),
-        allow_null=True,
         many=True,
+        allow_null=True,
         validators=[SameSite(queryset=DictionaryEntry.objects.all())],
     )
 

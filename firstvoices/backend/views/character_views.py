@@ -58,7 +58,7 @@ class CharactersViewSet(
     """
 
     http_method_names = ["get", "put"]
-    serializer_class = CharacterDetailSerializer
+    serializer_class = CharacterDetailWriteSerializer
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -88,12 +88,6 @@ class CharactersViewSet(
             )
         else:
             return Character.objects.none()
-
-    def get_serializer_class(self):
-        if self.action in ["list", "retrieve"]:
-            return CharacterDetailSerializer
-        else:
-            return CharacterDetailWriteSerializer
 
 
 @extend_schema_view(
