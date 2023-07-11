@@ -4,8 +4,37 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
 
-from backend import jwt_auth
 from backend.tests import factories
+
+from . import authentication
+
+
+class TestUserModel:
+    def test_migrated_user(self):
+        """
+        Users added during migration from the old server will have an email but no sub
+
+        I don't want no subs
+        """
+        pass
+
+    def test_token_user(self):
+        """
+        Users added during token authentication will have both an email and a sub.
+        """
+        pass
+
+    def test_claiming_user(self):
+        """
+        Verify that a migrated user can have a sub added later
+        """
+        pass
+
+    def test_unique_sub(self):
+        """
+        Verify that multiple users can have blank subs, but non-blank subs must be unique.
+        """
+        pass
 
 
 def mock_userinfo_response(user_email):
@@ -32,7 +61,7 @@ class TestGetOrCreateUserForToken:
         existing_user = factories.UserFactory.create(id=user_id)
 
         token = {"sub": user_id}
-        found_user = jwt_auth.get_or_create_user_for_token(token, None)
+        found_user = authentication.get_or_create_user_for_token(token, None)
 
         assert found_user == existing_user
 
@@ -48,7 +77,7 @@ class TestGetOrCreateUserForToken:
             return_value=mock_userinfo_response("surprising_new_email@email.email"),
         ):
             token = {"sub": user_id}
-            found_user = jwt_auth.get_or_create_user_for_token(token, None)
+            found_user = authentication.get_or_create_user_for_token(token, None)
 
             assert found_user.id == user_id
             new_user = get_user_model().objects.filter(id=user_id)
@@ -64,7 +93,7 @@ class TestGetOrCreateUserForToken:
 
         with patch("requests.get", return_value=mock_userinfo_response(user_email)):
             token = {"sub": user_id}
-            found_user = jwt_auth.get_or_create_user_for_token(token, None)
+            found_user = authentication.get_or_create_user_for_token(token, None)
 
             assert found_user.id == user_id
             claimed_user = get_user_model().objects.filter(email=user_email, id=user_id)
@@ -81,7 +110,7 @@ class TestGetOrCreateUserForToken:
             token = {"sub": "new-id-xyz"}
 
             with pytest.raises(AuthenticationFailed):
-                jwt_auth.get_or_create_user_for_token(token, None)
+                authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
     def test_userinfo_not_found(self):
@@ -89,7 +118,7 @@ class TestGetOrCreateUserForToken:
             token = {"sub": "new-id-xyz"}
 
             with pytest.raises(AuthenticationFailed):
-                jwt_auth.get_or_create_user_for_token(token, None)
+                authentication.get_or_create_user_for_token(token, None)
 
 
 # no auth header

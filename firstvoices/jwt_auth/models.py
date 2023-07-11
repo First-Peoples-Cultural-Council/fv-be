@@ -9,9 +9,9 @@ class User(AbstractUser):
     User Model.
 
     A Django user model customized for token authentication:
-        * username/id is an immutable db key
-        * sub is a non-required field that holds the unique JWT "sub" (subject) field for token authentication
+        * id is an immutable db key
         * email is a required, unique field, so it can be treated like a username
+        * sub is a non-required field that holds the unique JWT "sub" (subject) field for token authentication
         * password is not required
         * name fields are not stored, so we can depend on jwt id tokens instead
 
@@ -20,8 +20,8 @@ class User(AbstractUser):
 
     """
 
-    USERNAME_FIELD = "id"
-    REQUIRED_FIELDS = ["email"]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
 
     objects = UserManager()
 
