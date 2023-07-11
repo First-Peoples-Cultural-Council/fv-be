@@ -27,11 +27,7 @@ class TestSearchAPI(BaseApiTest):
 
     @pytest.fixture
     def mock_search_query_execute(self, mocker):
-        mock_search = Search
-
-        mock_execute = mocker.patch.object(
-            mock_search, "execute", new_callable=MagicMock
-        )
+        mock_execute = mocker.patch.object(Search, "execute", new_callable=MagicMock)
 
         return mock_execute
 
