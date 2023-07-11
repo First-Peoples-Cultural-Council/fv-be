@@ -129,6 +129,10 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
 class SiteDetailWriteSerializer(SiteDetailSerializer):
     title = serializers.CharField(read_only=True)
+
+    # Will be added in FW-4561
+    homepage = None
+
     logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
