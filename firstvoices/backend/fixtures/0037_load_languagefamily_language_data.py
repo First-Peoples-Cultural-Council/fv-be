@@ -7,11 +7,11 @@ the created/last_modified dates to the current time.
 The schema are reverted to normal (no null dates) in the next migration.
 """
 
-from django.db import migrations, models
-from django.core.serializers import base, python
 from django.core.management import call_command
-from django.utils import timezone
+from django.core.serializers import base, python
+from django.db import migrations, models
 from django.db.models import Q
+from django.utils import timezone
 
 
 def load_fixture(apps, schema_editor):
@@ -81,4 +81,24 @@ class Migration(migrations.Migration):
         # then you can unapply the migration.
         migrations.RunPython(load_fixture),
         migrations.RunPython(populate_dates),
+        migrations.AlterField(
+            model_name="languagefamily",
+            name="created",
+            field=models.DateTimeField(auto_now_add=True, db_index=True),
+        ),
+        migrations.AlterField(
+            model_name="languagefamily",
+            name="last_modified",
+            field=models.DateTimeField(auto_now=True, db_index=True),
+        ),
+        migrations.AlterField(
+            model_name="language",
+            name="created",
+            field=models.DateTimeField(auto_now_add=True, db_index=True),
+        ),
+        migrations.AlterField(
+            model_name="language",
+            name="last_modified",
+            field=models.DateTimeField(auto_now=True, db_index=True),
+        ),
     ]
