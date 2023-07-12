@@ -50,6 +50,9 @@ def mock_failed_userinfo_response():
     return response
 
 
+request = "requests.get"
+
+
 class TestGetOrCreateUserForToken:
     """
     Tests for jwt_auth.get_or_create_user_for_token
@@ -73,7 +76,7 @@ class TestGetOrCreateUserForToken:
         assert existing_user.count() == 0
 
         with patch(
-            "requests.get",
+            request,
             return_value=mock_userinfo_response("surprising_new_email@email.email"),
         ):
             token = {"sub": user_id}
@@ -91,7 +94,7 @@ class TestGetOrCreateUserForToken:
         # unclaimed user has email as the id
         factories.UserFactory.create(id=user_email, email=user_email)
 
-        with patch("requests.get", return_value=mock_userinfo_response(user_email)):
+        with patch(request, return_value=mock_userinfo_response(user_email)):
             token = {"sub": user_id}
             found_user = authentication.get_or_create_user_for_token(token, None)
 
@@ -106,7 +109,7 @@ class TestGetOrCreateUserForToken:
         # existing user with the same email, but a different id
         factories.UserFactory.create(id="existing_id-abc123", email=user_email)
 
-        with patch("requests.get", return_value=mock_userinfo_response(user_email)):
+        with patch(request, return_value=mock_userinfo_response(user_email)):
             token = {"sub": "new-id-xyz"}
 
             with pytest.raises(AuthenticationFailed):
@@ -114,16 +117,18 @@ class TestGetOrCreateUserForToken:
 
     @pytest.mark.django_db
     def test_userinfo_not_found(self):
-        with patch("requests.get", return_value=mock_failed_userinfo_response()):
+        with patch(request, return_value=mock_failed_userinfo_response()):
             token = {"sub": "new-id-xyz"}
 
             with pytest.raises(AuthenticationFailed):
                 authentication.get_or_create_user_for_token(token, None)
 
 
-# no auth header
-# no bearer scheme
-# no bearer token
-# expired token
-# invalid token
-# other problems?
+class TestAuthenticate:
+    pass
+    # no auth header
+    # no bearer scheme
+    # no bearer token
+    # expired token
+    # invalid token
+    # other problems?
