@@ -1,13 +1,12 @@
 from rest_framework import serializers
-from rest_framework.relations import PrimaryKeyRelatedField
 
 from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
-from backend.models.dictionary import DictionaryEntry
 from backend.serializers.base_serializers import UpdateSerializerMixin
-from backend.serializers.dictionary_serializers import DictionaryEntrySummarySerializer
+from backend.serializers.dictionary_serializers import (
+    RelatedDictionaryEntrySerializerMixin,
+)
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
-from backend.serializers.validators import SameSite
 
 
 class IgnoredCharacterSerializer(serializers.ModelSerializer):
@@ -25,37 +24,29 @@ class CharacterVariantSerializer(serializers.ModelSerializer):
 
 
 class CharacterDetailSerializer(
-    RelatedMediaSerializerMixin, UpdateSerializerMixin, serializers.ModelSerializer
+    RelatedDictionaryEntrySerializerMixin,
+    RelatedMediaSerializerMixin,
+    UpdateSerializerMixin,
+    serializers.ModelSerializer,
 ):
     url = SiteHyperlinkedIdentityField(read_only=True, view_name="api:character-detail")
     title = serializers.CharField(read_only=True)
+    sort_order = serializers.IntegerField(read_only=True)
+    approximate_form = serializers.CharField(read_only=True)
     variants = CharacterVariantSerializer(read_only=True, many=True)
-    related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True, read_only=True
-    )
 
     class Meta:
         model = Character
-        fields = RelatedMediaSerializerMixin.Meta.fields + (
-            "url",
-            "id",
-            "title",
-            "sort_order",
-            "approximate_form",
-            "note",
-            "variants",
-            "related_entries",
+        fields = (
+            RelatedMediaSerializerMixin.Meta.fields
+            + (
+                "url",
+                "id",
+                "title",
+                "sort_order",
+                "approximate_form",
+                "note",
+                "variants",
+            )
+            + RelatedDictionaryEntrySerializerMixin.Meta.fields
         )
-
-
-class CharacterDetailWriteSerializer(CharacterDetailSerializer):
-    related_dictionary_entries = PrimaryKeyRelatedField(
-        queryset=DictionaryEntry.objects.all(),
-        many=True,
-        required=False,
-        write_only=True,
-        validators=[SameSite(queryset=DictionaryEntry.objects.all())],
-    )
-
-    class Meta(CharacterDetailSerializer.Meta):
-        fields = CharacterDetailSerializer.Meta.fields + ("related_dictionary_entries",)

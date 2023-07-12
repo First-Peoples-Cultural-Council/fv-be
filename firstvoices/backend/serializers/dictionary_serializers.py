@@ -4,7 +4,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models import category, dictionary
+from backend.models import DictionaryEntry, category, dictionary
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     base_timestamp_fields,
@@ -12,6 +12,7 @@ from backend.serializers.base_serializers import (
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.site_serializers import LinkedSiteSerializer
+from backend.serializers.validators import SameSite
 
 
 class DictionaryContentMeta:
@@ -206,3 +207,27 @@ class DictionaryEntryDetailSerializer(
                 "split_words_base",
             )
         )
+
+
+class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return DictionaryEntrySummarySerializer(context=self.context).to_representation(
+            value
+        )
+
+
+class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMetaclass):
+    related_dictionary_entries = WritableRelatedDictionaryEntrySerializer(
+        required=False,
+        many=True,
+        queryset=dictionary.DictionaryEntry.objects.all(),
+        validators=[
+            SameSite(queryset=DictionaryEntry.objects.all()),
+        ],
+    )
+
+    class Meta:
+        fields = ("related_dictionary_entries",)

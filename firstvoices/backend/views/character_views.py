@@ -7,7 +7,6 @@ from backend.models.characters import Character, IgnoredCharacter
 from backend.models.media import Audio, Image, Video
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
-    CharacterDetailWriteSerializer,
     IgnoredCharacterSerializer,
 )
 from backend.views import doc_strings
@@ -58,7 +57,7 @@ class CharactersViewSet(
     """
 
     http_method_names = ["get", "put"]
-    serializer_class = CharacterDetailWriteSerializer
+    serializer_class = CharacterDetailSerializer
 
     def get_queryset(self):
         site = self.get_validated_site()
