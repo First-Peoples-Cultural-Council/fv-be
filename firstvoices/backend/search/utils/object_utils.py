@@ -84,9 +84,8 @@ def hydrate_objects(search_results, request):
             # Serializing and adding the object to complete_objects
             complete_objects.append(
                 {
-                    "_id": obj["_id"],
                     "score": obj["_score"],
-                    "type": SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                    "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                     "entry": DictionaryEntryDetailSerializer(
                         dictionary_entry,
                         context={

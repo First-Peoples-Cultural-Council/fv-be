@@ -171,6 +171,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
             "people": f"{site_url}/people",
+            "songs": f"{site_url}/songs",
             "videos": f"{site_url}/videos",
             "widgets": f"{site_url}/widgets",
             "wordOfTheDay": f"{site_url}/word-of-the-day",

@@ -36,7 +36,7 @@ def get_indices(types):
     indices = set()
 
     for doc_type in types:
-        if doc_type == "words" or doc_type == "phrases":
+        if doc_type == "word" or doc_type == "phrase":
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
 
     return list(indices)
