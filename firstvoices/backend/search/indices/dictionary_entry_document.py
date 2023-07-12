@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
+from elasticsearch_dsl import Keyword, Text
 
 from backend.models.dictionary import (
     Acknowledgement,
@@ -14,6 +14,7 @@ from backend.models.dictionary import (
     Translation,
 )
 from backend.models.sites import Site
+from backend.search.indices.base_document import BaseDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
@@ -30,31 +31,14 @@ from backend.search.utils.object_utils import (
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class DictionaryEntryDocument(Document):
-    # generic fields, will be moved to a base search document once we have songs and stories
-    document_id = Text()
-    site_id = Keyword()
-    site_visibility = Integer()
-    visibility = Integer()
-    exclude_from_games = Boolean()
-    exclude_from_kids = Boolean()
-
-    # todo: add fields to base doc
-
-    # combined text search fields
-    full_text_search_field = Text()
-
-    # Dictionary Related fields
-
+class DictionaryEntryDocument(BaseDocument):
     # text search fields
-    title = Text(
-        analyzer="standard", copy_to="full_text_search_field", fields={"raw": Keyword()}
-    )
-    translation = Text(analyzer="standard", copy_to="full_text_search_field")
-    note = Text(copy_to="full_text_search_field")
-    acknowledgement = Text(copy_to="full_text_search_field")
+    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
+    translation = Text(copy_to="primary_translation_search_fields")
+    note = Text(copy_to="other_translation_search_fields")
+    acknowledgement = Text(copy_to="other_translation_search_fields")
 
-    # filter and/or sort
+    # filter and sorting
     type = Keyword()
     custom_order = Keyword()
     categories = Keyword()

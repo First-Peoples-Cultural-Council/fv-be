@@ -101,34 +101,22 @@ def hydrate_objects(search_results, request):
 
 
 def get_translation_text(dictionary_entry_instance):
-    # todo: check if flat=True from django can simplify this function
-    translation_set = dictionary_entry_instance.translation_set.all()
-    translations = []
-    for t in translation_set:
-        translations.append(t.text)
-
-    translations_text = " ".join(translations)
-
-    return translations_text
+    translations = list(
+        dictionary_entry_instance.translation_set.values_list("text", flat=True)
+    )
+    return " ".join(translations)
 
 
 def get_acknowledgements_text(dictionary_entry_instance):
-    # todo: check here as well
-    acknowledgements_set = dictionary_entry_instance.acknowledgement_set.all()
-    acknowledgements = []
-    for a in acknowledgements_set:
-        acknowledgements.append(a.text)
-
+    acknowledgements = list(
+        dictionary_entry_instance.acknowledgement_set.values_list("text", flat=True)
+    )
     return " ".join(acknowledgements)
 
 
 def get_notes_text(dictionary_entry_instance):
-    # todo: check here as well
-    notes_set = dictionary_entry_instance.note_set.all()
-    notes_text = []
-    for note in notes_set:
-        notes_text.append(note.text)
-    return " ".join(notes_text)
+    notes = list(dictionary_entry_instance.note_set.values_list("text", flat=True))
+    return " ".join(notes)
 
 
 def get_categories_ids(dictionary_entry_instance):

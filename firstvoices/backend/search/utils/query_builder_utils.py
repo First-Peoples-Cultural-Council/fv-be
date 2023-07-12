@@ -15,9 +15,12 @@ from backend.search.indices.dictionary_entry_document import (
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 BASE_BOOST = 1.0  # default value of boost
-FULL_TEXT_SEARCH_BOOST = 1.1
-FUZZY_MATCH_BOOST = 1.2
-EXACT_MATCH_BOOST = 1.5
+EXACT_MATCH_PRIMARY_BOOST = 5
+EXACT_MATCH_SECONDARY_BOOST = 4
+FUZZY_MATCH_PRIMARY_BOOST = 3
+FUZZY_MATCH_SECONDARY_BOOST = 2
+EXACT_MATCH_OTHER_BOOST = 1.5
+FUZZY_MATCH_OTHER_BOOST = BASE_BOOST
 
 
 class SearchDomains(Enum):
@@ -65,65 +68,141 @@ def get_types_query(types):
 
 def get_search_term_query(search_term, domain):
     # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
-    fuzzy_match_title_query = Q(
-        {
-            "fuzzy": {
-                "title": {
-                    "value": search_term,
-                    "fuzziness": "2",  # Documentation recommends "AUTO" for this param
-                    "boost": FUZZY_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    exact_match_title_query = Q(
+
+    # Primary fields
+    exact_match_primary_language_query = Q(
         {
             "match_phrase": {
-                "title": {
+                "primary_language_search_fields": {
                     "query": search_term,
                     "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": EXACT_MATCH_BOOST,
+                    "boost": EXACT_MATCH_PRIMARY_BOOST,
                 }
             }
         }
     )
-    fuzzy_match_translation_query = Q(
-        {
-            "fuzzy": {
-                "translation": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    exact_match_translation_query = Q(
+    exact_match_primary_translation_query = Q(
         {
             "match_phrase": {
-                "translation": {
+                "primary_translation_search_fields": {
                     "query": search_term,
                     "slop": 3,
-                    "boost": EXACT_MATCH_BOOST,
+                    "boost": EXACT_MATCH_PRIMARY_BOOST,
                 }
             }
         }
     )
-    multi_match_query = Q(
+    fuzzy_match_primary_language_query = Q(
         {
-            "multi_match": {
-                "query": search_term,
-                "fields": ["title", "full_text_search_field"],
-                "type": "phrase",
-                "operator": "OR",
-                "boost": FULL_TEXT_SEARCH_BOOST,
+            "fuzzy": {
+                "primary_language_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",  # Documentation recommends "AUTO" for this param
+                    "boost": FUZZY_MATCH_PRIMARY_BOOST,
+                }
             }
         }
     )
-    text_search_field_match_query = Q(
+    fuzzy_match_primary_translation_query = Q(
+        {
+            "fuzzy": {
+                "primary_translation_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_PRIMARY_BOOST,
+                }
+            }
+        }
+    )
+
+    # Secondary fields
+    exact_match_secondary_language_query = Q(
         {
             "match_phrase": {
-                "full_text_search_field": {"query": search_term, "boost": BASE_BOOST}
+                "secondary_language_search_fields": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_SECONDARY_BOOST,
+                }
+            }
+        }
+    )
+    exact_match_secondary_translation_query = Q(
+        {
+            "match_phrase": {
+                "secondary_translation_search_fields": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_SECONDARY_BOOST,
+                }
+            }
+        }
+    )
+    fuzzy_match_secondary_language_query = Q(
+        {
+            "fuzzy": {
+                "secondary_language_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_SECONDARY_BOOST,
+                }
+            }
+        }
+    )
+    fuzzy_match_secondary_translation_query = Q(
+        {
+            "fuzzy": {
+                "secondary_translation_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_SECONDARY_BOOST,
+                }
+            }
+        }
+    )
+
+    # Other fields
+    exact_match_other_language_query = Q(
+        {
+            "match_phrase": {
+                "other_language_search_fields": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_OTHER_BOOST,
+                }
+            }
+        }
+    )
+    exact_match_other_translation_query = Q(
+        {
+            "match_phrase": {
+                "other_translation_search_fields": {
+                    "query": search_term,
+                    "slop": 3,
+                    "boost": EXACT_MATCH_OTHER_BOOST,
+                }
+            }
+        }
+    )
+    fuzzy_match_other_language_query = Q(
+        {
+            "fuzzy": {
+                "other_language_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_OTHER_BOOST,
+                }
+            }
+        }
+    )
+    fuzzy_match_other_translation_query = Q(
+        {
+            "fuzzy": {
+                "other_translation_search_fields": {
+                    "value": search_term,
+                    "fuzziness": "2",
+                    "boost": FUZZY_MATCH_OTHER_BOOST,
+                }
             }
         }
     )
@@ -131,20 +210,26 @@ def get_search_term_query(search_term, domain):
     subqueries = []
 
     subquery_domains = {
-        "both": [
-            fuzzy_match_title_query,
-            exact_match_title_query,
-            fuzzy_match_translation_query,
-            exact_match_translation_query,
-            multi_match_query,
-            text_search_field_match_query,
+        "language": [
+            exact_match_primary_language_query,
+            fuzzy_match_primary_language_query,
+            exact_match_secondary_language_query,
+            fuzzy_match_secondary_language_query,
+            exact_match_other_language_query,
+            fuzzy_match_other_language_query,
         ],
-        "language": [fuzzy_match_title_query, exact_match_title_query],
         "translation": [
-            fuzzy_match_translation_query,
-            exact_match_translation_query,
+            exact_match_primary_translation_query,
+            fuzzy_match_primary_translation_query,
+            exact_match_secondary_translation_query,
+            fuzzy_match_secondary_translation_query,
+            exact_match_other_translation_query,
+            fuzzy_match_other_translation_query,
         ],
     }
+    subquery_domains["both"] = (
+        subquery_domains["language"] + subquery_domains["translation"]
+    )
 
     subqueries += subquery_domains.get(domain, [])
 
