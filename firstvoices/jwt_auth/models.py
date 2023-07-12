@@ -52,7 +52,7 @@ class User(AbstractUser):
 
     @property
     def natural_key(self):
-        return (self.id,)
+        return (self.email,)
 
     class Meta:
         db_table = "user"

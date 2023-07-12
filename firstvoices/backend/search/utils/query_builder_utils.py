@@ -86,7 +86,11 @@ def get_view_permissions_filter(user):
     query = Q("bool")
     filter_list = []
 
-    user_memberships = Membership.objects.filter(user=user)
+    user_memberships = (
+        Membership.objects.filter(user=user)
+        if user.is_authenticated
+        else Membership.objects.none()
+    )
 
     for membership in user_memberships:
         # create a filter for each membership
