@@ -6,8 +6,11 @@ from backend.models.dictionary import DictionaryEntry
 from backend.serializers.base_serializers import UpdateSerializerMixin
 from backend.serializers.dictionary_serializers import DictionaryEntrySummarySerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.media_serializers import RelatedMediaSerializerMixin
-from backend.serializers.validators import SameSite, UniqueForSite
+from backend.serializers.media_serializers import (
+    RelatedMediaSerializerMixin,
+    RelatedMediaUpdateSerializerMixin,
+)
+from backend.serializers.validators import SameSite
 
 
 class IgnoredCharacterSerializer(serializers.ModelSerializer):
@@ -28,9 +31,10 @@ class CharacterDetailSerializer(
     RelatedMediaSerializerMixin, UpdateSerializerMixin, serializers.ModelSerializer
 ):
     url = SiteHyperlinkedIdentityField(read_only=True, view_name="api:character-detail")
-    variants = CharacterVariantSerializer(many=True)
+    title = serializers.CharField(read_only=True)
+    variants = CharacterVariantSerializer(read_only=True, many=True)
     related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True
+        source="related_dictionary_entries", many=True, read_only=True
     )
 
     class Meta:
@@ -47,24 +51,15 @@ class CharacterDetailSerializer(
         )
 
 
-class CharacterDetailWriteSerializer(CharacterDetailSerializer):
-    variants = PrimaryKeyRelatedField(
-        queryset=CharacterVariant.objects.all(),
-        many=True,
-        allow_null=True,
-        validators=[
-            UniqueForSite(queryset=CharacterVariant.objects.all()),
-            SameSite(queryset=CharacterVariant.objects.all()),
-        ],
-    )
-
-    related_entries = PrimaryKeyRelatedField(
+class CharacterDetailWriteSerializer(
+    RelatedMediaUpdateSerializerMixin, CharacterDetailSerializer
+):
+    related_dictionary_entries = PrimaryKeyRelatedField(
         queryset=DictionaryEntry.objects.all(),
         many=True,
-        allow_null=True,
         validators=[SameSite(queryset=DictionaryEntry.objects.all())],
     )
 
-    def to_representation(self, instance):
-        data = CharacterDetailSerializer(instance=instance, context=self.context).data
-        return data
+    class Meta(CharacterDetailSerializer.Meta):
+        fields = CharacterDetailSerializer.Meta.fields + ("related_dictionary_entries",)
+        write_only_fields = ("related_dictionary_entries",)
