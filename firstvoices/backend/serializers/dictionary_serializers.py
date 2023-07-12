@@ -225,5 +225,15 @@ class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMeta
         queryset=dictionary.DictionaryEntry.objects.all(),
     )
 
+    def validate(self, attrs):
+        related_dictionary_entries = attrs.get("related_dictionary_entries")
+        if related_dictionary_entries:
+            for entry in related_dictionary_entries:
+                if entry.site != self.context["site"]:
+                    raise serializers.ValidationError(
+                        "Related dictionary entry must be in the same site."
+                    )
+        return super().validate(attrs)
+
     class Meta:
         fields = ("related_dictionary_entries",)

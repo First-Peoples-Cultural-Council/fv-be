@@ -35,16 +35,6 @@ class CharacterDetailSerializer(
     approximate_form = serializers.CharField(read_only=True)
     variants = CharacterVariantSerializer(read_only=True, many=True)
 
-    def validate(self, attrs):
-        related_dictionary_entries = attrs.get("related_dictionary_entries")
-        if related_dictionary_entries:
-            for entry in related_dictionary_entries:
-                if entry.site != self.context["site"]:
-                    raise serializers.ValidationError(
-                        "Related dictionary entry must be in the same site as the character."
-                    )
-        return super().validate(attrs)
-
     class Meta:
         model = Character
         fields = (
