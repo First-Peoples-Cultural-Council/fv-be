@@ -13,14 +13,14 @@ class TestValidDocumentTypes:
     @pytest.mark.parametrize(
         "input_types, expected_types",
         [
-            ("WORDS", ["words"]),
-            ("PHRASES", ["phrases"]),
-            ("PHRASES, WORDS", ["phrases", "words"]),
-            ("WORDS, PHRASES", ["words", "phrases"]),
-            ("WordS, PhrASes", ["words", "phrases"]),
+            ("WORD", ["word"]),
+            ("PHRASE", ["phrase"]),
+            ("PHRASE, WORD", ["phrase", "word"]),
+            ("WORD, PHRASE", ["word", "phrase"]),
+            ("Word, PhrASe", ["word", "phrase"]),
             ("xyz_type", None),
-            ("memory, WORDS", ["words"]),
-            ("storage, PHRASES, WORDS", ["phrases", "words"]),
+            ("memory, WORD", ["word"]),
+            ("storage, PHRASE, WORD", ["phrase", "word"]),
         ],
     )
     def test_mixed_input_doc_types(self, input_types, expected_types):
