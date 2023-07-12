@@ -249,10 +249,7 @@ class TestCharactersEndpoints(
         )
 
     @pytest.mark.django_db
-    @pytest.mark.skip(
-        reason="Currently the validation is not functional for related entries."
-    )
-    def test_update_character_fields_validation(self):
+    def test_update_character_same_site_validation(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         site2 = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         character = factories.CharacterFactory.create(site=site)
