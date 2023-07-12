@@ -281,8 +281,8 @@ class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
         verbose_name = _("character - dictionary entry relation")
         verbose_name_plural = _("character - dictionary entry relations")
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,
+            "view": rules.always_allow,  # see fw-4368
+            "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.is_superadmin,
         }
