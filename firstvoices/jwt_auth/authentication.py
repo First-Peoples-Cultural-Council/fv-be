@@ -5,6 +5,7 @@ import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.db import IntegrityError
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.plumbing import build_bearer_security_scheme_object
 from rest_framework import authentication, exceptions
@@ -53,26 +54,31 @@ def get_user_token(bearer_token, signing_key):
 
 def get_or_create_user_for_token(user_token, auth):
     user_model = get_user_model()
-    user_id = user_token["sub"]
+    sub = user_token["sub"]
 
     try:
-        # find existing user by id
-        return user_model.objects.get(id=user_id)
+        # try to find existing account for this sub
+        return user_model.objects.get(sub=sub)
 
     except user_model.DoesNotExist:
+        # try to find existing account for this email, with a blank sub (migrated or added manually)
         email = retrieve_email_for_token(auth)
 
         try:
-            # check for an unclaimed user account migrated from old server using email address as id
-            user = user_model.objects.get(id=email, email=email)
-            user.id = user_id  # can't change the pk-- probably need to change the user model to have yet another ID
+            user = user_model.objects.get(sub=None, email=email)
+            user.sub = sub
             user.save()
             return user
 
         except user_model.DoesNotExist:
-            # try to add new user -- this will fail if the email is already in use
-            user = user_model.objects.create(id=user_id, email=email)
-            return user
+            # try to add new user
+            try:
+                return user_model.objects.create(sub=sub, email=email)
+
+            except IntegrityError:
+                raise exceptions.AuthenticationFailed(
+                    "Can't add user account because that email is already in use."
+                )
 
 
 def retrieve_email_for_token(auth):

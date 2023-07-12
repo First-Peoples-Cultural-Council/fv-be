@@ -20,7 +20,6 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = get_user_model()
 
-    sub = factory.Sequence(lambda n: "user id %03d" % n)
     email = factory.Sequence(lambda n: "user%03d@email.com" % n)
 
 
