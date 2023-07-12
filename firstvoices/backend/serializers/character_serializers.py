@@ -6,10 +6,7 @@ from backend.models.dictionary import DictionaryEntry
 from backend.serializers.base_serializers import UpdateSerializerMixin
 from backend.serializers.dictionary_serializers import DictionaryEntrySummarySerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.media_serializers import (
-    RelatedMediaSerializerMixin,
-    RelatedMediaUpdateSerializerMixin,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.validators import SameSite
 
 
@@ -51,15 +48,14 @@ class CharacterDetailSerializer(
         )
 
 
-class CharacterDetailWriteSerializer(
-    RelatedMediaUpdateSerializerMixin, CharacterDetailSerializer
-):
+class CharacterDetailWriteSerializer(CharacterDetailSerializer):
     related_dictionary_entries = PrimaryKeyRelatedField(
         queryset=DictionaryEntry.objects.all(),
         many=True,
+        required=False,
+        write_only=True,
         validators=[SameSite(queryset=DictionaryEntry.objects.all())],
     )
 
     class Meta(CharacterDetailSerializer.Meta):
         fields = CharacterDetailSerializer.Meta.fields + ("related_dictionary_entries",)
-        write_only_fields = ("related_dictionary_entries",)

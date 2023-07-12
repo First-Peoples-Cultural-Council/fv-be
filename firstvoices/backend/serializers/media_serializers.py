@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.relations import PrimaryKeyRelatedField
 
 from backend.models import media
 
@@ -11,7 +10,6 @@ from .base_serializers import (
     UpdateSerializerMixin,
     base_id_fields,
 )
-from .validators import SameSite
 
 
 class PersonSerializer(
@@ -139,21 +137,3 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
 
     class Meta:
         fields = ("related_audio", "related_images", "related_videos")
-
-
-class RelatedMediaUpdateSerializerMixin(RelatedMediaSerializerMixin):
-    related_images = PrimaryKeyRelatedField(
-        queryset=media.Image.objects.all(),
-        many=True,
-        validators=[SameSite(queryset=media.Image.objects.all())],
-    )
-    related_videos = PrimaryKeyRelatedField(
-        queryset=media.Video.objects.all(),
-        many=True,
-        validators=[SameSite(queryset=media.Video.objects.all())],
-    )
-    related_audio = PrimaryKeyRelatedField(
-        queryset=media.Audio.objects.all(),
-        many=True,
-        validators=[SameSite(queryset=media.Audio.objects.all())],
-    )
