@@ -43,7 +43,7 @@ class CharacterDetailSerializer(
                     raise serializers.ValidationError(
                         "Related dictionary entry must be in the same site as the character."
                     )
-        super().validate(attrs)
+        return super().validate(attrs)
 
     class Meta:
         model = Character

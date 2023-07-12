@@ -221,7 +221,7 @@ class TestCharactersEndpoints(
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
 
         req_body = {
-            "note": "test note",
+            "note": self.CHARACTER_NOTE,
             "related_dictionary_entries": [str(dictionary_entry.id)],
         }
 
@@ -256,7 +256,7 @@ class TestCharactersEndpoints(
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site2)
 
         req_body = {
-            "note": "test note",
+            "note": self.CHARACTER_NOTE,
             "related_dictionary_entries": [str(dictionary_entry.id)],
         }
 
@@ -278,7 +278,7 @@ class TestCharactersEndpoints(
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
 
         req_body = {
-            "note": "test note",
+            "note": self.CHARACTER_NOTE,
             "related_dictionary_entries": [str(dictionary_entry.id)],
             "related_audio": ["123"],
             "related_images": ["123"],
@@ -302,7 +302,7 @@ class TestCharactersEndpoints(
         character = factories.CharacterFactory.create(site=site)
 
         req_body = {
-            "note": "test note",
+            "note": self.CHARACTER_NOTE,
             "related_dictionary_entries": ["123"],
         }
 
