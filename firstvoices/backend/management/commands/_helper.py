@@ -10,9 +10,10 @@ from backend.search.indices.dictionary_entry_document import (
     DictionaryEntryDocument,
 )
 from backend.search.utils.object_utils import (
+    get_acknowledgements_text,
     get_categories_ids,
     get_notes_text,
-    get_translation_and_part_of_speech_text,
+    get_translation_text,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -89,11 +90,9 @@ def get_current_index(es_connection, index_name):
 def dictionary_entry_iterator():
     queryset = DictionaryEntry.objects.all()
     for entry in queryset:
-        (
-            translations_text,
-            part_of_speech_text,
-        ) = get_translation_and_part_of_speech_text(entry)
+        translations_text = get_translation_text(entry)
         notes_text = get_notes_text(entry)
+        acknowledgements_text = get_acknowledgements_text(entry)
         categories = get_categories_ids(entry)
 
         index_entry = DictionaryEntryDocument(
@@ -103,7 +102,7 @@ def dictionary_entry_iterator():
             title=entry.title,
             type=entry.type,
             translation=translations_text,
-            part_of_speech=part_of_speech_text,
+            acknowledgement=acknowledgements_text,
             note=notes_text,
             categories=categories,
             exclude_from_kids=entry.exclude_from_kids,

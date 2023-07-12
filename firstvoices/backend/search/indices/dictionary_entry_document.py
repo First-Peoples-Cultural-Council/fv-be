@@ -7,6 +7,7 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
 
 from backend.models.dictionary import (
+    Acknowledgement,
     DictionaryEntry,
     DictionaryEntryCategory,
     Note,
@@ -20,10 +21,11 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
+    get_acknowledgements_text,
     get_categories_ids,
     get_notes_text,
     get_object_from_index,
-    get_translation_and_part_of_speech_text,
+    get_translation_text,
 )
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -37,18 +39,20 @@ class DictionaryEntryDocument(Document):
     exclude_from_games = Boolean()
     exclude_from_kids = Boolean()
 
-    # Added fields for search
+    # todo: add fields to base doc
+
+    # combined text search fields
     full_text_search_field = Text()
 
     # Dictionary Related fields
 
-    # search
+    # text search fields
     title = Text(
         analyzer="standard", copy_to="full_text_search_field", fields={"raw": Keyword()}
     )
     translation = Text(analyzer="standard", copy_to="full_text_search_field")
     note = Text(copy_to="full_text_search_field")
-    acknowledgments = Text(copy_to="full_text_search_field")
+    acknowledgement = Text(copy_to="full_text_search_field")
 
     # filter and/or sort
     type = Keyword()
@@ -67,12 +71,10 @@ def update_index(sender, instance, **kwargs):
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id
         )
-        (
-            translations_text,
-            part_of_speech_text,
-        ) = get_translation_and_part_of_speech_text(instance)
+        translations_text = get_translation_text(instance)
         notes_text = get_notes_text(instance)
         categories = get_categories_ids(instance)
+        acknowledgements_text = get_acknowledgements_text(instance)
 
         if existing_entry:
             # Check if object is already indexed, then update
@@ -83,8 +85,8 @@ def update_index(sender, instance, **kwargs):
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
-                part_of_speech=part_of_speech_text,
                 note=notes_text,
+                acknowledgement=acknowledgements_text,
                 custom_order=instance.custom_order,
                 categories=categories,
                 exclude_from_games=instance.exclude_from_games,
@@ -100,8 +102,8 @@ def update_index(sender, instance, **kwargs):
                 title=instance.title,
                 type=instance.type,
                 translation=translations_text,
-                part_of_speech=part_of_speech_text,
                 note=notes_text,
+                acknowledgement=acknowledgements_text,
                 custom_order=instance.custom_order,
                 categories=categories,
                 exclude_from_games=instance.exclude_from_games,
@@ -150,9 +152,7 @@ def update_translation(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
 
-    translations_text, part_of_speech_text = get_translation_and_part_of_speech_text(
-        dictionary_entry
-    )
+    translations_text = get_translation_text(dictionary_entry)
 
     try:
         existing_entry = get_object_from_index(
@@ -162,10 +162,7 @@ def update_translation(sender, instance, **kwargs):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(
-            translation=translations_text,
-            part_of_speech=part_of_speech_text,
-        )
+        dictionary_entry_doc.update(translation=translations_text)
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
@@ -207,6 +204,38 @@ def update_notes(sender, instance, **kwargs):
             ES_NOT_FOUND_ERROR
             % (
                 "notes_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
+        )
+
+
+# Acknowledgement update
+@receiver(post_delete, sender=Acknowledgement)
+@receiver(post_save, sender=Acknowledgement)
+def update_acknowledgement(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    dictionary_entry = instance.dictionary_entry
+    acknowledgements_text = get_acknowledgements_text(dictionary_entry)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
+        dictionary_entry_doc.update(acknowledgement=acknowledgements_text)
+    except ConnectionError:
+        logger.error(
+            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "acknowledgements_update_signal",
                 SearchIndexEntryTypes.DICTIONARY_ENTRY,
                 dictionary_entry.id,
             )
