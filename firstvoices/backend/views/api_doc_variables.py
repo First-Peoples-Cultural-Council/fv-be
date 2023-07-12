@@ -2,8 +2,17 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
 
 site_slug_parameter = OpenApiParameter(
-    name="site_slug", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+    name="site_slug",
+    type=OpenApiTypes.STR,
+    location=OpenApiParameter.PATH,
+    description="site-slug",
 )
 id_parameter = OpenApiParameter(
     name="id", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+)
+site_page_slug_parameter = OpenApiParameter(
+    name="slug",
+    type=OpenApiTypes.STR,
+    location=OpenApiParameter.PATH,
+    description="page-slug",
 )
