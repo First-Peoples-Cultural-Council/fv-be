@@ -1,6 +1,10 @@
 import json
+import os
+import sys
 
 import pytest
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
@@ -15,8 +19,30 @@ from backend.tests.factories import (
 
 class MediaTestMixin:
     """
-    Utilities for asserting media responses.
+    Utilities for testing media APIs
     """
+
+    content_type = "multipart/form-data; boundary=TestBoundaryString"
+    boundary_string = "TestBoundaryString"
+
+    def format_upload_data(self, data):
+        """Encode multipart form data instead of json"""
+        return encode_multipart(self.boundary_string, data)
+
+    def get_sample_file(self, filename, mimetype):
+        path = (
+            os.path.dirname(os.path.realpath(__file__))
+            + f"/../factories/resources/{filename}"
+        )
+        image_file = open(path, "rb")
+        return InMemoryUploadedFile(
+            image_file,
+            "FileField",
+            filename,
+            mimetype,
+            sys.getsizeof(image_file),
+            None,
+        )
 
     def get_basic_media_data(self, instance, view_name):
         url = reverse(

@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from backend.models import media
 
-from ..models.media import Audio, Image, Video
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
     ExternalSiteContentUrlMixin,
@@ -10,6 +9,7 @@ from .base_serializers import (
     UpdateSerializerMixin,
     base_id_fields,
 )
+from .utils import get_site_from_context
 
 
 class PersonSerializer(
@@ -48,6 +48,11 @@ class MediaImageFileSerializer(MediaVideoFileSerializer):
         model = media.ImageFile
 
 
+class ImageUploadSerializer(serializers.ImageField):
+    def to_representation(self, value):
+        return MediaImageFileSerializer(context=self.context).to_representation(value)
+
+
 class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
     class Meta:
         fields = base_id_fields + (
@@ -72,18 +77,41 @@ class AudioSerializer(MediaSerializer):
 
 
 class MediaWithThumbnailsSerializer(MediaSerializer):
-    thumbnail = MediaImageFileSerializer()
-    small = MediaImageFileSerializer()
-    medium = MediaImageFileSerializer()
+    thumbnail = MediaImageFileSerializer(read_only=True)
+    small = MediaImageFileSerializer(read_only=True)
+    medium = MediaImageFileSerializer(read_only=True)
 
     class Meta(MediaSerializer.Meta):
         fields = MediaSerializer.Meta.fields + ("thumbnail", "small", "medium")
 
 
-class ImageSerializer(MediaWithThumbnailsSerializer):
+class ImageSerializer(
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
+    MediaWithThumbnailsSerializer,
+):
     """Serializer for Image objects. Supports image objects shared between different sites."""
 
-    original = MediaImageFileSerializer()
+    original = ImageUploadSerializer()
+
+    def create(self, validated_data):
+        file_data = validated_data.pop("original")
+        user = self.context["request"].user
+        site = get_site_from_context(self)
+        file = media.ImageFile(
+            content=file_data,
+            site=site,
+            created_by=user,
+            last_modified_by=user,
+        )
+        file.save()
+
+        validated_data["original"] = file
+        created = super().create(validated_data)
+        return created
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
     class Meta(MediaWithThumbnailsSerializer.Meta):
         model = media.Image
@@ -126,13 +154,13 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     """Mixin that provides standard related media fields"""
 
     related_audio = WriteableRelatedAudioSerializer(
-        required=False, many=True, queryset=Audio.objects.all()
+        required=False, many=True, queryset=media.Audio.objects.all()
     )
     related_images = WriteableRelatedImageSerializer(
-        required=False, many=True, queryset=Image.objects.all()
+        required=False, many=True, queryset=media.Image.objects.all()
     )
     related_videos = WriteableRelatedVideoSerializer(
-        required=False, many=True, queryset=Video.objects.all()
+        required=False, many=True, queryset=media.Video.objects.all()
     )
 
     class Meta:

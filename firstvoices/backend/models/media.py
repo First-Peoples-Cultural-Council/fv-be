@@ -396,8 +396,6 @@ class ThumbnailMixin(models.Model):
             site=self.site,
             created_by=self.created_by,
             last_modified_by=self.last_modified_by,
-            height=output_size[1],
-            width=output_size[0],
         )
         model.save()
 
