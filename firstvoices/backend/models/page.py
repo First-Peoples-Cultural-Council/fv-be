@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
-from backend.models import Image
+from backend.models import Image, constants, validators
 from backend.models.base import BaseControlledSiteContentModel
 from backend.models.media import Video
 from backend.models.widget import SiteWidgetList
@@ -23,26 +23,22 @@ class SitePage(BaseControlledSiteContentModel):
         constraints = [
             # Constraint to ensure a SitePage has either a banner image or video or none but not both.
             models.CheckConstraint(
-                name="SitePage_banner_image_or_video_only_one",
-                check=(
-                    Q(
-                        Q(banner_image=None, banner_video=None)
-                        | Q(Q(banner_image=None) & ~Q(banner_video=None))
-                        | Q(~Q(banner_image=None) & Q(banner_video=None))
-                    )
-                ),
+                check=(Q(banner_image__isnull=True) | Q(banner_video__isnull=True)),
+                name="sitepage_only_one_banner",
             )
         ]
+        # Ensures a page slug is unique across a single site
+        unique_together = ["site", "slug"]
 
-    title = models.CharField(max_length=225)
+    title = models.CharField(max_length=constants.DEFAULT_TITLE_LENGTH)
     slug = models.SlugField(
         max_length=200,
         blank=False,
-        validators=[validate_slug],
+        validators=[validate_slug, validators.reserved_site_page_slug_validator],
         db_index=True,
-        unique=True,
+        unique=False,
     )
-    subtitle = models.TextField(blank=True)
+    subtitle = models.CharField(blank=True, max_length=constants.DEFAULT_TITLE_LENGTH)
     widgets = models.ForeignKey(
         SiteWidgetList, on_delete=models.CASCADE, related_name="sitepage_set"
     )
