@@ -56,6 +56,7 @@ class FileBase(BaseSiteContentModel):
 
     content = models.FileField(upload_to=media_directory_path)
     mimetype = models.CharField(blank=True, null=True)
+    size = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.content.name} ({self.site})"
@@ -72,6 +73,7 @@ class FileBase(BaseSiteContentModel):
         """
         with self.content.file.open(mode="rb") as fb:
             self.mimetype = magic.from_buffer(fb.read(2048), mime=True)
+            self.size = self.content.size
             super().save(**kwargs)
 
     def delete(self, using=None, keep_parents=False):
