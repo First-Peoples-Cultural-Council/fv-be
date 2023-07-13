@@ -38,15 +38,14 @@ class MediaTestMixin:
         return {
             "path": f"http://testserver{file.content.url}",
             "mimetype": file.mimetype,
+            "size": file.size,
         }
 
     def get_visual_file_data(self, file):
-        return {
-            "path": f"http://testserver{file.content.url}",
-            "mimetype": file.mimetype,
-            "height": file.height,
-            "width": file.width,
-        }
+        file_data = self.get_file_data(file)
+        file_data["height"] = file.height
+        file_data["width"] = file.width
+        return file_data
 
     def get_media_thumbnail_data(self, instance):
         return {
