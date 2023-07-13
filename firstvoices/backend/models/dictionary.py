@@ -86,18 +86,8 @@ class Translation(BaseDictionaryContentModel):
             "delete": predicates.is_superadmin,
         }
 
-    class TranslationLanguages(models.TextChoices):
-        # Choices for Language
-        ENGLISH = "EN", _("English")
-        FRENCH = "FR", _("French")
-
     # Fields
     text = models.CharField(max_length=TITLE_MAX_LENGTH)
-    language = models.CharField(
-        max_length=2,
-        choices=TranslationLanguages.choices,
-        default=TranslationLanguages.ENGLISH,
-    )
     # from fv-word:part_of_speech
     part_of_speech = models.ForeignKey(
         PartOfSpeech,
@@ -108,8 +98,7 @@ class Translation(BaseDictionaryContentModel):
     )
 
     def __str__(self):
-        return _("Translation in %(language)s: %(translation)s.") % {
-            "language": self.language,
+        return _("Translation in English: %(translation)s.") % {
             "translation": self.text,
         }
 

@@ -48,7 +48,7 @@ class TranslationSerializer(serializers.ModelSerializer):
 
     class Meta(DictionaryContentMeta):
         model = dictionary.Translation
-        fields = DictionaryContentMeta.fields + ("language", "part_of_speech")
+        fields = DictionaryContentMeta.fields + ("part_of_speech",)
 
 
 class DictionaryEntrySummarySerializer(
