@@ -126,13 +126,13 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     """Mixin that provides standard related media fields"""
 
     related_audio = WriteableRelatedAudioSerializer(
-        many=True, queryset=Audio.objects.all()
+        required=False, many=True, queryset=Audio.objects.all()
     )
     related_images = WriteableRelatedImageSerializer(
-        many=True, queryset=Image.objects.all()
+        required=False, many=True, queryset=Image.objects.all()
     )
     related_videos = WriteableRelatedVideoSerializer(
-        many=True, queryset=Video.objects.all()
+        required=False, many=True, queryset=Video.objects.all()
     )
 
     class Meta:

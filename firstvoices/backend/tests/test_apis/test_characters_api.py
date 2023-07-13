@@ -2,9 +2,10 @@ import json
 
 import pytest
 
-from backend.models.constants import Visibility
+from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
+from ...models import Character
 from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
@@ -49,7 +50,7 @@ class TestCharactersEndpoints(
             "approximateForm": instance.approximate_form,
             "note": instance.note,
             "variants": [],
-            "relatedEntries": [],
+            "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
@@ -129,8 +130,8 @@ class TestCharactersEndpoints(
 
         response_data = json.loads(response.content)
         assert response_data["id"] == str(character.id)
-        assert len(response_data["relatedEntries"]) == 1
-        assert response_data["relatedEntries"] == [
+        assert len(response_data["relatedDictionaryEntries"]) == 1
+        assert response_data["relatedDictionaryEntries"] == [
             {
                 "id": str(entry1.id),
                 "title": entry1.title,
@@ -142,3 +143,227 @@ class TestCharactersEndpoints(
                 "type": entry1.type,
             }
         ]
+
+    # /------------------------------------------------------------------\
+    # |  The following tests can be converted into a generic set of tests in the RelatedMediaTestMixin          |
+    # |  once the write endpoints are implemented for all models that have related media.                       |
+
+    @pytest.mark.django_db
+    def test_update_related_audio(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        speaker = factories.PersonFactory.create(site=site)
+        audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(speaker=speaker, audio=audio, site=site)
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_audio=(audio,),
+        )
+
+        new_audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(
+            speaker=speaker, audio=new_audio, site=site
+        )
+
+        req_body = {"related_audio": [str(new_audio.id)]}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert len(response_data["relatedAudio"]) == 1
+        assert response_data["relatedAudio"][0] == self.get_expected_audio_data(
+            new_audio, speaker
+        )
+        assert (
+            Character.objects.get(id=instance.id).related_audio.all().first().id
+            == new_audio.id
+        )
+
+    @pytest.mark.django_db
+    def test_update_related_images(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        image = factories.ImageFactory.create(site=site)
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_images=(image,),
+        )
+
+        new_image = factories.ImageFactory.create(site=site)
+
+        req_body = {"related_images": [str(new_image.id)]}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert len(response_data["relatedImages"]) == 1
+        assert response_data["relatedImages"][0] == self.get_expected_image_data(
+            new_image
+        )
+        assert (
+            Character.objects.get(id=instance.id).related_images.all().first().id
+            == new_image.id
+        )
+
+    @pytest.mark.django_db
+    def test_update_related_videos(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        video = factories.VideoFactory.create(site=site)
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_videos=(video,),
+        )
+
+        new_video = factories.VideoFactory.create(site=site)
+
+        req_body = {"related_videos": [str(new_video.id)]}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert len(response_data["relatedVideos"]) == 1
+        assert response_data["relatedVideos"][0] == self.get_expected_video_data(
+            new_video
+        )
+        assert (
+            Character.objects.get(id=instance.id).related_videos.all().first().id
+            == new_video.id
+        )
+
+    # \------------------------------------------------------------------/
+
+    @pytest.mark.django_db
+    def test_update_character_fields(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        character = factories.CharacterFactory.create(site=site)
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+
+        req_body = {
+            "note": self.CHARACTER_NOTE,
+            "related_dictionary_entries": [str(dictionary_entry.id)],
+        }
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=character.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert response_data["note"] == req_body["note"]
+        assert len(response_data["relatedDictionaryEntries"]) == 1
+        assert response_data["relatedDictionaryEntries"][0]["id"] == str(
+            dictionary_entry.id
+        )
+
+        assert Character.objects.get(id=character.id).note == req_body["note"]
+        assert (
+            Character.objects.get(id=character.id).related_dictionary_entries.first().id
+            == dictionary_entry.id
+        )
+
+    @pytest.mark.django_db
+    def test_update_character_same_site_validation(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        site2 = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        character = factories.CharacterFactory.create(site=site)
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site2)
+
+        req_body = {
+            "note": self.CHARACTER_NOTE,
+            "related_dictionary_entries": [str(dictionary_entry.id)],
+        }
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=character.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_update_character_invalid_media(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        character = factories.CharacterFactory.create(site=site)
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+
+        req_body = {
+            "note": self.CHARACTER_NOTE,
+            "related_dictionary_entries": [str(dictionary_entry.id)],
+            "related_audio": ["123"],
+            "related_images": ["123"],
+            "related_videos": ["123"],
+        }
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=character.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_update_character_invalid_related_entries(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+        character = factories.CharacterFactory.create(site=site)
+
+        req_body = {
+            "note": self.CHARACTER_NOTE,
+            "related_dictionary_entries": ["123"],
+        }
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=character.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+
+        assert response.status_code == 400

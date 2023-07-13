@@ -282,8 +282,8 @@ class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
         verbose_name_plural = _("character - dictionary entry relations")
         rules_permissions = {
             "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,
         }
 

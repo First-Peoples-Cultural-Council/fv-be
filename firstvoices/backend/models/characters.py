@@ -37,7 +37,7 @@ class Character(RelatedMediaMixin, BaseSiteContentModel):
         rules_permissions = {
             "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
-            "change": predicates.is_superadmin,
+            "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,
         }
 
