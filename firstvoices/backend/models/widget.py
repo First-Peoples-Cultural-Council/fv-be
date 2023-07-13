@@ -85,7 +85,7 @@ class SiteWidgetList(BaseSiteContentModel):
         }
 
     widgets = models.ManyToManyField(
-        SiteWidget, related_name="sitewidget_set", through="SiteWidgetListOrder"
+        SiteWidget, related_name="sitewidgetlist_set", through="SiteWidgetListOrder"
     )
 
     def __str__(self):
@@ -96,11 +96,6 @@ class SiteWidgetListOrder(BaseModel):
     class Meta:
         verbose_name = _("site widget list order")
         verbose_name_plural = _("site widget list orders")
-        constraints = [
-            models.UniqueConstraint(
-                fields=["order", "site_widget_list"], name="unique_widget_order"
-            ),
-        ]
         rules_permissions = {
             "view": rules.always_allow,
             "add": predicates.is_superadmin,  # permissions will change when we add a write API
@@ -116,10 +111,6 @@ class SiteWidgetListOrder(BaseModel):
     )
 
     order = models.IntegerField()
-
-    @property
-    def site(self):
-        return self.site_widget_list.site
 
     def __str__(self):
         return f"Widget [{self.site_widget}] - order [{self.order}] pair"
