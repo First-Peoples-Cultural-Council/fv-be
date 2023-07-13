@@ -32,7 +32,7 @@ class MediaFileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = media.File
-        fields = ("path", "mimetype")
+        fields = ("path", "mimetype", "size")
 
 
 class MediaVideoFileSerializer(MediaFileSerializer):
