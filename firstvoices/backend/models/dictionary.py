@@ -98,7 +98,7 @@ class Translation(BaseDictionaryContentModel):
     )
 
     def __str__(self):
-        return _("Translation in English: %(translation)s.") % {
+        return _("Translation: %(translation)s.") % {
             "translation": self.text,
         }
 
