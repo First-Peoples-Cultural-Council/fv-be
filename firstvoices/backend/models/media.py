@@ -16,7 +16,7 @@ from PIL import Image as PILImage
 
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseSiteContentModel
+from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 
 
 class Person(BaseSiteContentModel):
@@ -284,7 +284,7 @@ class Audio(MediaBase):
         return f"{self.title} / {self.site} (Audio)"
 
 
-class AudioSpeaker(BaseSiteContentModel):
+class AudioSpeaker(BaseModel):
     class Meta:
         verbose_name = _("Audio Speaker")
         verbose_name_plural = _("Audio Speakers")

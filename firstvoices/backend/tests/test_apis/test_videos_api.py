@@ -10,6 +10,8 @@ class TestVideosEndpoint(BaseMediaApiTest):
 
     API_LIST_VIEW = "api:video-list"
     API_DETAIL_VIEW = "api:video-detail"
+    sample_filename = "video_example_small.mp4"
+    sample_filetype = "video/mp4"
 
     def create_minimal_instance(self, site, visibility):
         return factories.VideoFactory.create(site=site)

@@ -27,12 +27,25 @@ class PersonSerializer(
         )
 
 
+class WriteableRelatedPersonSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return PersonSerializer(context=self.context).to_representation(value)
+
+
 class MediaFileSerializer(serializers.ModelSerializer):
     path = serializers.FileField(source="content")
 
     class Meta:
         model = media.File
         fields = ("path", "mimetype", "size")
+
+
+class MediaFileUploadSerializer(serializers.FileField):
+    def to_representation(self, value):
+        return MediaFileSerializer(context=self.context).to_representation(value)
 
 
 class MediaVideoFileSerializer(MediaFileSerializer):
@@ -70,15 +83,33 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
         )
 
 
-class AudioSerializer(MediaSerializer):
+class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
     """Serializer for Audio objects. Supports audio objects shared between different sites."""
 
-    speakers = PersonSerializer(many=True)
-    original = MediaFileSerializer()
+    speakers = WriteableRelatedPersonSerializer(
+        many=True, queryset=media.Person.objects.all()
+    )
+    original = MediaFileUploadSerializer()
 
     class Meta(MediaSerializer.Meta):
         model = media.Audio
         fields = MediaSerializer.Meta.fields + ("speakers",)
+
+    def create(self, validated_data):
+        file_data = validated_data.pop("original")
+        user = self.context["request"].user
+        site = get_site_from_context(self)
+        file = media.File(
+            content=file_data,
+            site=site,
+            created_by=user,
+            last_modified_by=user,
+        )
+        file.save()
+
+        validated_data["original"] = file
+        created = super().create(validated_data)
+        return created
 
 
 class MediaWithThumbnailsSerializer(MediaSerializer):

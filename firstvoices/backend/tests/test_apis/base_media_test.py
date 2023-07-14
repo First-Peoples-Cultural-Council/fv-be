@@ -152,7 +152,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
         speaker = PersonFactory.create(site=site)
         audio = AudioFactory.create(site=site)
-        AudioSpeakerFactory.create(speaker=speaker, audio=audio, site=site)
+        AudioSpeakerFactory.create(speaker=speaker, audio=audio)
 
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_audio=(audio,)
@@ -213,6 +213,9 @@ class BaseMediaApiTest(
     Note: does not test update/PUT requests.
     """
 
+    sample_filename = "sample-image.jpg"
+    sample_filetype = "image/jpeg"
+
     def get_valid_data(self, site=None):
         """Returns a valid data object suitable for create/update requests"""
         return {
@@ -222,7 +225,9 @@ class BaseMediaApiTest(
             "isShared": True,
             "excludeFromGames": True,
             "excludeFromKids": True,
-            "original": self.get_sample_file("sample-image.jpg", "image/jpeg"),
+            "original": self.get_sample_file(
+                self.sample_filename, self.sample_filetype
+            ),
         }
 
     def add_related_objects(self, instance):
@@ -230,6 +235,7 @@ class BaseMediaApiTest(
         pass
 
     def assert_related_objects_deleted(self, instance):
+        """Default test is for visual media with thumbnails"""
         self.assert_instance_deleted(instance.original)
         self.assert_instance_deleted(instance.medium)
         self.assert_instance_deleted(instance.small)

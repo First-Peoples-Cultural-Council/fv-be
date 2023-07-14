@@ -395,7 +395,7 @@ class SiteContentCreateApiTestMixin:
     """
 
     @pytest.mark.django_db
-    def test_update_invalid_400(self):
+    def test_create_invalid_400(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         response = self.client.post(
