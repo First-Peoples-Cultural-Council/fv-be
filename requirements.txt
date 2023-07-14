@@ -73,7 +73,7 @@ pytest==7.4.0
 pytest-celery==0.0.0
 pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.11.1 #https://github.com/pytest-dev/pytest-mock
-python-crontab==2.7.1
+python-crontab==3.0.0
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 python-engineio==3.14.2
