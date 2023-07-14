@@ -1,10 +1,9 @@
 from backend.tests import factories
 
-from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
-from .base_media_test import MediaTestMixin
+from .base_media_test import BaseMediaApiTest
 
 
-class TestVideosEndpoint(MediaTestMixin, BaseReadOnlyUncontrolledSiteContentApiTest):
+class TestVideosEndpoint(BaseMediaApiTest):
     """
     End-to-end tests that the videos endpoints have the expected behaviour.
     """

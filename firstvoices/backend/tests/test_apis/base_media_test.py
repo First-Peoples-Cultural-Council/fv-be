@@ -15,6 +15,12 @@ from backend.tests.factories import (
     PersonFactory,
     VideoFactory,
 )
+from backend.tests.test_apis.base_api_test import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    WriteApiTestMixin,
+)
 
 
 class FormDataMixin:
@@ -192,3 +198,39 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedVideos"]) == 1
         assert response_data["relatedVideos"][0] == self.get_expected_video_data(video)
+
+
+class BaseMediaApiTest(
+    MediaTestMixin,
+    FormDataMixin,
+    WriteApiTestMixin,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+):
+    """
+    Tests for the list, detail, create, and delete APIs for media endpoints.
+    Note: does not test update/PUT requests.
+    """
+
+    def get_valid_data(self, site=None):
+        """Returns a valid data object suitable for create/update requests"""
+        return {
+            "title": "A title for the media",
+            "description": "Description of the media",
+            "acknowledgement": "An acknowledgement of the media",
+            "isShared": True,
+            "excludeFromGames": True,
+            "excludeFromKids": True,
+            "original": self.get_sample_file("sample-image.jpg", "image/jpeg"),
+        }
+
+    def add_related_objects(self, instance):
+        # related files are added as part of minimal instance; nothing extra to add here
+        pass
+
+    def assert_related_objects_deleted(self, instance):
+        self.assert_instance_deleted(instance.original)
+        self.assert_instance_deleted(instance.medium)
+        self.assert_instance_deleted(instance.small)
+        self.assert_instance_deleted(instance.thumbnail)
