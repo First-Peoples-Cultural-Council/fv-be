@@ -3,13 +3,15 @@ import logging
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models.dictionary import DictionaryEntry
+from backend.models import DictionaryEntry, Song
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_SONG_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
+from backend.serializers.song_serializers import SongSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -58,17 +60,23 @@ def hydrate_objects(search_results, request):
     """
     complete_objects = []
     dictionary_search_results_ids = []
+    song_search_results_ids = []
 
     # Separating object IDs into lists based on their data types
     for obj in search_results:
         if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
             dictionary_search_results_ids.append(obj["_source"]["document_id"])
+        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
+            song_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
     dictionary_objects = list(
         DictionaryEntry.objects.filter(
             id__in=dictionary_search_results_ids
         ).prefetch_related("translation_set")
+    )
+    song_objects = list(
+        Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
     )
 
     for obj in search_results:
@@ -89,6 +97,24 @@ def hydrate_objects(search_results, request):
                             "request": request,
                             "view": "search",
                             "site_slug": dictionary_entry.site.slug,
+                        },
+                    ).data,
+                }
+            )
+        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
+            song = get_object_by_id(song_objects, obj["_source"]["document_id"])
+
+            # Serializing and adding the object to complete_objects
+            complete_objects.append(
+                {
+                    "score": obj["_score"],
+                    "type": "song",
+                    "entry": SongSerializer(
+                        song,
+                        context={
+                            "request": request,
+                            "view": "search",
+                            "site_slug": song.site.slug,
                         },
                     ).data,
                 }

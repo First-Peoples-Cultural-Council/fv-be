@@ -37,7 +37,6 @@ def update_song_index(sender, instance, **kwargs):
     # add song to es index
     try:
         existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, instance.id)
-        # todo: verify each field is updated
         lyrics_text, lyrics_translation_text = get_lyrics(instance)
 
         if existing_entry:
@@ -91,6 +90,20 @@ def update_song_index(sender, instance, **kwargs):
         logger.warning(e)
 
 
+# Delete entry from index
+@receiver(post_delete, sender=Song)
+def delete_from_index(sender, instance, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, instance.id)
+        index_entry = SongDocument.get(id=existing_entry["_id"])
+        index_entry.delete()
+    except ConnectionError:
+        logger.error(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, instance.id))
+
+
+# Lyrics update
 @receiver(post_delete, sender=Lyric)
 @receiver(post_save, sender=Lyric)
 def update_lyrics(sender, instance, **kwargs):
