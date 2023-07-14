@@ -4,8 +4,16 @@ from django.core.exceptions import ValidationError
 
 # A list of strings that are not allowed in SitePage slugs
 RESERVED_SITE_PAGE_SLUG_LIST = [
-    "site",
+    "apps",
+    "categories",
     "dictionary",
+    "games",
+    "keyboards",
+    "kids",
+    "phrases",
+    "songs",
+    "stories",
+    "words",
 ]
 
 
