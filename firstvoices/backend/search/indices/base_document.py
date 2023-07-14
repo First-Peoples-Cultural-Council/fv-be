@@ -11,6 +11,7 @@ class BaseDocument(Document):
     exclude_from_kids = Boolean()
 
     # combined text search fields
+    # for boost values for following fields refer search/utils/search_term_query.py
     primary_language_search_fields = Text()
     primary_translation_search_fields = Text()
     secondary_language_search_fields = Text()

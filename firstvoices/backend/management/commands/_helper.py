@@ -5,8 +5,7 @@ from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
 from backend.models import DictionaryEntry, Song
-from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
-from backend.search.indices.song_document import SongDocument
+from backend.search.indices import DictionaryEntryDocument, SongDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -45,7 +44,7 @@ def rebuild_index(index_name, index_document):
     try:
         if index_name == ELASTICSEARCH_SONG_INDEX:
             bulk(es, song_iterator())
-        if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
+        elif index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
     except errors.BulkIndexError as e:
         # Alias configuration error
@@ -144,7 +143,7 @@ def add_write_alias(index, index_name):
 
     if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
         index.aliases(dictionary_entries=alias_config)
-    if index_name == ELASTICSEARCH_SONG_INDEX:
+    elif index_name == ELASTICSEARCH_SONG_INDEX:
         index.aliases(songs=alias_config)
     return index
 

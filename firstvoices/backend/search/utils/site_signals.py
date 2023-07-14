@@ -6,8 +6,7 @@ from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 
 from backend.models.sites import Site
-from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
-from backend.search.indices.song_document import SongDocument
+from backend.search.indices import DictionaryEntryDocument, SongDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,

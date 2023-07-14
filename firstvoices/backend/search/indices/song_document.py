@@ -110,7 +110,7 @@ def update_lyrics(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     song = instance.song
 
-    lyrics_text, lyrics_translation_text = get_lyrics(instance)
+    lyrics_text, lyrics_translation_text = get_lyrics(song)
 
     try:
         existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, song.id)
