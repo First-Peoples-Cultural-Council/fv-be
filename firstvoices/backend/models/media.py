@@ -7,6 +7,7 @@ from io import BytesIO
 
 import ffmpeg
 import magic
+import rules
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import NotSupportedError, models
@@ -289,10 +290,10 @@ class AudioSpeaker(BaseModel):
         verbose_name = _("Audio Speaker")
         verbose_name_plural = _("Audio Speakers")
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "view": rules.always_allow,  # will be removed with fw-4368
+            "add": rules.always_allow,
+            "change": rules.always_allow,
+            "delete": rules.always_allow,
         }
 
     audio = models.ForeignKey(
