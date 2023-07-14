@@ -535,6 +535,9 @@ class SiteContentDestroyApiTestMixin:
     For use with BaseSiteContentApiTest
     """
 
+    def add_related_objects(self, instance):
+        raise NotImplementedError
+
     def assert_related_objects_deleted(self, instance):
         raise NotImplementedError
 
@@ -546,6 +549,7 @@ class SiteContentDestroyApiTestMixin:
     def test_destroy_success_204(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        self.add_related_objects(instance)
 
         response = self.client.delete(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug)

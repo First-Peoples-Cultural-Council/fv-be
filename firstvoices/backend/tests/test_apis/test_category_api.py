@@ -66,6 +66,14 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert actual_response["description"] == expected_data["description"]
         assert actual_response["parent"]["id"] == expected_data["parent_id"]
 
+    def add_related_objects(self, instance):
+        # no related objects to add
+        pass
+
+    def assert_related_objects_deleted(self, instance):
+        # no related objects to delete
+        pass
+
     def get_categories_with_word_phrase(self):
         word_entry = DictionaryEntryFactory(site=self.site)
         category_word = ParentCategoryFactory(site=self.site)

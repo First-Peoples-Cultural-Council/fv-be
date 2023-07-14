@@ -17,17 +17,19 @@ from backend.tests.factories import (
 )
 
 
-class MediaTestMixin:
-    """
-    Utilities for testing media APIs
-    """
-
+class FormDataMixin:
     content_type = "multipart/form-data; boundary=TestBoundaryString"
     boundary_string = "TestBoundaryString"
 
     def format_upload_data(self, data):
         """Encode multipart form data instead of json"""
         return encode_multipart(self.boundary_string, data)
+
+
+class MediaTestMixin:
+    """
+    Utilities for testing media APIs
+    """
 
     def get_sample_file(self, filename, mimetype):
         path = (

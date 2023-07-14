@@ -6,11 +6,12 @@ from .base_api_test import (
     SiteContentDestroyApiTestMixin,
     WriteApiTestMixin,
 )
-from .base_media_test import MediaTestMixin
+from .base_media_test import FormDataMixin, MediaTestMixin
 
 
 class TestImagesEndpoint(
     MediaTestMixin,
+    FormDataMixin,
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     SiteContentDestroyApiTestMixin,
@@ -40,6 +41,10 @@ class TestImagesEndpoint(
 
     def get_expected_response(self, instance, site):
         return self.get_expected_image_data(instance)
+
+    def add_related_objects(self, instance):
+        # related files are added as part of minimal instance; nothing extra to add here
+        pass
 
     def assert_related_objects_deleted(self, instance):
         self.assert_instance_deleted(instance.original)
