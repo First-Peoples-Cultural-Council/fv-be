@@ -121,3 +121,12 @@ def get_categories_ids(dictionary_entry_instance):
         str(id)
         for id in dictionary_entry_instance.categories.values_list("id", flat=True)
     ]
+
+
+def get_lyrics(song_instance):
+    lyrics = list(song_instance.lyrics.values_list("text", flat=True))
+    lyrics_translation = list(
+        song_instance.lyrics.values_list("translation", flat=True)
+    )
+
+    return lyrics, lyrics_translation

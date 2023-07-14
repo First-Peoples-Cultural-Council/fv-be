@@ -14,6 +14,7 @@ from backend.search.utils.constants import (
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
     get_categories_ids,
+    get_lyrics,
     get_notes_text,
     get_translation_text,
 )
@@ -118,10 +119,9 @@ def dictionary_entry_iterator():
 def song_iterator():
     queryset = Song.objects.all()
     for instance in queryset:
-        # todo: verify each field is updated
-        lyrics_text = ""
-        lyrics_translation_text = ""
+        lyrics_text, lyrics_translation_text = get_lyrics(instance)
         song_doc = SongDocument(
+            document_id=str(instance.id),
             site_id=str(instance.site.id),
             site_visibility=instance.site.visibility,
             exclude_from_games=instance.exclude_from_games,

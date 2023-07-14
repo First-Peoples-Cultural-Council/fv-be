@@ -13,7 +13,7 @@ from backend.search.utils.constants import (
     ES_NOT_FOUND_ERROR,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.object_utils import get_object_from_index
+from backend.search.utils.object_utils import get_lyrics, get_object_from_index
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -38,8 +38,7 @@ def update_song_index(sender, instance, **kwargs):
     try:
         existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, instance.id)
         # todo: verify each field is updated
-        lyrics_text = ""
-        lyrics_translation_text = ""
+        lyrics_text, lyrics_translation_text = get_lyrics(instance)
 
         if existing_entry:
             # Check if object is already indexed, then update
@@ -61,6 +60,7 @@ def update_song_index(sender, instance, **kwargs):
             )
         else:
             index_entry = SongDocument(
+                document_id=str(instance.id),
                 site_id=str(instance.site.id),
                 site_visibility=instance.site.visibility,
                 exclude_from_games=instance.exclude_from_games,
@@ -97,8 +97,7 @@ def update_lyrics(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     song = instance.song
 
-    lyrics_text = ""
-    lyrics_translation_text = ""
+    lyrics_text, lyrics_translation_text = get_lyrics(instance)
 
     try:
         existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, song.id)
