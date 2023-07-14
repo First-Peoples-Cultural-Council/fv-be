@@ -314,7 +314,9 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         )
 
         # Sort by score, then by custom sort order
-        search_query = search_query.sort("_score", "custom_order", "title.raw")
+        search_query = search_query.sort(
+            "_score", {"custom_order": {"unmapped_type": "string"}}, "title.raw"
+        )
 
         # Get search results
         try:

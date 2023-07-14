@@ -9,10 +9,11 @@ from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.permissions.utils import get_app_role
-from backend.search.indices.dictionary_entry_document import (
+from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_SONG_INDEX,
+    VALID_DOCUMENT_TYPES,
 )
-from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 
 
 class SearchDomains(Enum):
@@ -33,6 +34,8 @@ def get_indices(types):
     for doc_type in types:
         if doc_type == "word" or doc_type == "phrase":
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+        elif doc_type == "song":
+            indices.add(ELASTICSEARCH_SONG_INDEX)
 
     return list(indices)
 

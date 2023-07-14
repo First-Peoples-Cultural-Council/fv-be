@@ -8,7 +8,6 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
-    SearchIndexEntryTypes,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
@@ -23,16 +22,14 @@ def get_object_from_index(index, document_id):
         return hits[0] if hits else None
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(
-            ES_CONNECTION_ERROR, SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id
-        )
+        logger.error(ES_CONNECTION_ERROR, index, document_id)
         logger.error(e)
     except NotFoundError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
             ES_NOT_FOUND_ERROR,
             "query",
-            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            index,
             document_id,
         )
         logger.warning(e)

@@ -1,10 +1,11 @@
 from django.db.models import TextChoices
 from django.utils.translation import gettext as _
 
-VALID_DOCUMENT_TYPES = ["word", "phrase"]
+VALID_DOCUMENT_TYPES = ["word", "phrase", "song"]
 
 # Index names
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"
+ELASTICSEARCH_SONG_INDEX = "songs"
 
 # Error messages
 ES_CONNECTION_ERROR = (
@@ -24,4 +25,5 @@ ES_MAX_RESULTS = 100
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")
+    SONG = "song", _("song")
     # Songs and stories to be added later

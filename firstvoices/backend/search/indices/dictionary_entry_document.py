@@ -49,7 +49,7 @@ class DictionaryEntryDocument(BaseDocument):
 
 # Signal to update the entry in index
 @receiver(post_save, sender=DictionaryEntry)
-def update_index(sender, instance, **kwargs):
+def update_dictionary_entry_index(sender, instance, **kwargs):
     # Add document to es index
     try:
         existing_entry = get_object_from_index(

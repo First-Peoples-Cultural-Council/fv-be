@@ -8,12 +8,12 @@ from backend.search.utils.query_builder_utils import (
     get_games_query,
     get_indices,
     get_kids_query,
-    get_search_term_query,
     get_site_filter_query,
     get_starts_with_query,
     get_types_query,
     get_view_permissions_filter,
 )
+from backend.search.utils.search_term_query import get_search_term_query
 
 
 def get_search_object(indices):
