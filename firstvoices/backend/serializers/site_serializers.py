@@ -5,6 +5,7 @@ from rest_framework import serializers
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
 from backend.models.sites import Language, Site
+from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
@@ -132,9 +133,12 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 class SiteDetailWriteSerializer(SiteDetailSerializer):
     title = serializers.CharField(read_only=True)
 
-    # Will be added in FW-4561
-    homepage = None
-
+    homepage = serializers.PrimaryKeyRelatedField(
+        queryset=SiteWidget.objects.all(),
+        allow_null=True,
+        many=True,
+        validators=[SameSite(queryset=SiteWidget.objects.all())],
+    )
     logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
@@ -154,6 +158,15 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
     def to_representation(self, instance):
         data = SiteDetailSerializer(instance=instance, context=self.context).data
         return data
+
+    def update(self, instance, validated_data):
+        homepage = instance.homepage
+        if not homepage:
+            homepage = SiteWidgetList.objects.create(site=instance)
+        homepage = SiteWidgetListSerializer.update(self, homepage, validated_data)
+        validated_data["homepage"] = homepage
+        instance.homepage = homepage
+        return super().update(instance, validated_data)
 
 
 class LanguageSerializer(serializers.Serializer):

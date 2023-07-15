@@ -1,8 +1,18 @@
 from rest_framework import serializers
 
-from backend.models.widget import SiteWidget, SiteWidgetList, Widget, WidgetSettings
-from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
+from backend.models.widget import (
+    SiteWidget,
+    SiteWidgetList,
+    SiteWidgetListOrder,
+    Widget,
+    WidgetSettings,
+)
+from backend.serializers.base_serializers import (
+    SiteContentLinkedTitleSerializer,
+    UpdateSerializerMixin,
+)
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.validators import SameSite
 
 
 class WidgetSettingsSerializer(serializers.ModelSerializer):
@@ -38,8 +48,10 @@ class SiteWidgetDetailSerializer(
         )
 
 
-class SiteWidgetListSerializer(serializers.ModelSerializer):
-    widgets = SiteWidgetDetailSerializer(many=True)
+class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixin):
+    widgets = SiteWidgetDetailSerializer(
+        many=True, validators=[SameSite(queryset=SiteWidget.objects.all())]
+    )
 
     class Meta:
         model = SiteWidgetList
@@ -55,3 +67,24 @@ class SiteWidgetListSerializer(serializers.ModelSerializer):
                 SiteWidgetDetailSerializer(widget, context=self.context).data
             )
         return widgets
+
+    def update(self, instance, validated_data):
+        new_site_widget_list = instance
+
+        # Remove existing widgets from the list.
+        for item in SiteWidgetListOrder.objects.filter(
+            site_widget__in=new_site_widget_list.widgets.all()
+        ):
+            item.delete()
+
+        # Create a new SiteWidgetListOrder object for each widget in the validated data and add it to the list.
+        for index, widget in enumerate(validated_data["homepage"]):
+            SiteWidgetListOrder.objects.create(
+                site_widget=widget,
+                site_widget_list=new_site_widget_list,
+                order=index,
+                last_modified_by=self.context["request"].user,
+                created_by=self.context["request"].user,
+            )
+
+        return SiteWidgetList.objects.get(id=instance.id)
