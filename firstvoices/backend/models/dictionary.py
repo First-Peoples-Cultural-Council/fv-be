@@ -86,18 +86,8 @@ class Translation(BaseDictionaryContentModel):
             "delete": predicates.is_superadmin,
         }
 
-    class TranslationLanguages(models.TextChoices):
-        # Choices for Language
-        ENGLISH = "EN", _("English")
-        FRENCH = "FR", _("French")
-
     # Fields
     text = models.CharField(max_length=TITLE_MAX_LENGTH)
-    language = models.CharField(
-        max_length=2,
-        choices=TranslationLanguages.choices,
-        default=TranslationLanguages.ENGLISH,
-    )
     # from fv-word:part_of_speech
     part_of_speech = models.ForeignKey(
         PartOfSpeech,
@@ -108,8 +98,7 @@ class Translation(BaseDictionaryContentModel):
     )
 
     def __str__(self):
-        return _("Translation in %(language)s: %(translation)s.") % {
-            "language": self.language,
+        return _("Translation: %(translation)s.") % {
             "translation": self.text,
         }
 
@@ -282,8 +271,8 @@ class DictionaryEntryRelatedCharacter(BaseDictionaryContentModel):
         verbose_name_plural = _("character - dictionary entry relations")
         rules_permissions = {
             "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,
         }
 

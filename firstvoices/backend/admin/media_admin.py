@@ -20,19 +20,16 @@ from backend.models.media import (
 class FileAdmin(HiddenBaseAdmin):
     list_display = ("content", "mimetype") + HiddenBaseAdmin.list_display
     search_fields = ("content",)
-    readonly_fields = ("mimetype",) + HiddenBaseAdmin.readonly_fields
+    readonly_fields = ("mimetype", "size") + HiddenBaseAdmin.readonly_fields
 
 
 @admin.register(ImageFile)
 @admin.register(VideoFile)
-class VisualMediaFileAdmin(HiddenBaseAdmin):
-    list_display = ("content", "mimetype") + HiddenBaseAdmin.list_display
-    search_fields = ("content",)
+class VisualMediaFileAdmin(FileAdmin):
     readonly_fields = (
-        "mimetype",
         "height",
         "width",
-    ) + HiddenBaseAdmin.readonly_fields
+    ) + FileAdmin.readonly_fields
 
 
 @admin.register(Audio)

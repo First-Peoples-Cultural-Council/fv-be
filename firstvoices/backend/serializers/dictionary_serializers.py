@@ -48,7 +48,7 @@ class TranslationSerializer(serializers.ModelSerializer):
 
     class Meta(DictionaryContentMeta):
         model = dictionary.Translation
-        fields = DictionaryContentMeta.fields + ("language", "part_of_speech")
+        fields = DictionaryContentMeta.fields + ("part_of_speech",)
 
 
 class DictionaryEntrySummarySerializer(
@@ -206,3 +206,34 @@ class DictionaryEntryDetailSerializer(
                 "split_words_base",
             )
         )
+
+
+class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return DictionaryEntrySummarySerializer(context=self.context).to_representation(
+            value
+        )
+
+
+class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMetaclass):
+    related_dictionary_entries = WritableRelatedDictionaryEntrySerializer(
+        required=False,
+        many=True,
+        queryset=dictionary.DictionaryEntry.objects.all(),
+    )
+
+    def validate(self, attrs):
+        related_dictionary_entries = attrs.get("related_dictionary_entries")
+        if related_dictionary_entries:
+            for entry in related_dictionary_entries:
+                if entry.site != self.context["site"]:
+                    raise serializers.ValidationError(
+                        "Related dictionary entry must be in the same site."
+                    )
+        return super().validate(attrs)
+
+    class Meta:
+        fields = ("related_dictionary_entries",)

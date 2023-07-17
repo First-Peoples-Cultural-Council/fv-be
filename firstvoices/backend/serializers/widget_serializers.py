@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from backend.models.widget import SiteWidget, Widget, WidgetSettings
+from backend.models.widget import SiteWidget, SiteWidgetList, Widget, WidgetSettings
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
@@ -36,3 +36,22 @@ class SiteWidgetDetailSerializer(
             "format",
             "settings",
         )
+
+
+class SiteWidgetListSerializer(serializers.ModelSerializer):
+    widgets = SiteWidgetDetailSerializer(many=True)
+
+    class Meta:
+        model = SiteWidgetList
+        fields = (
+            "id",
+            "widgets",
+        )
+
+    def to_representation(self, instance):
+        widgets = []
+        for widget in instance.widgets.all():
+            widgets.append(
+                SiteWidgetDetailSerializer(widget, context=self.context).data
+            )
+        return widgets

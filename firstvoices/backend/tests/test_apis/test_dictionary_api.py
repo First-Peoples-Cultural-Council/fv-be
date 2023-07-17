@@ -157,7 +157,6 @@ class TestDictionaryEndpoint(
             {
                 "id": str(model.id),
                 "text": f"{text}",
-                "language": "EN",
                 "partOfSpeech": None,
             }
         ]
