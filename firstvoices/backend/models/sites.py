@@ -104,7 +104,7 @@ class Site(BaseModel):
         constraints = [
             models.CheckConstraint(
                 check=(Q(banner_image__isnull=True) | Q(banner_video__isnull=True)),
-                name="only_one_banner",
+                name="site_only_one_banner",
             )
         ]
 
