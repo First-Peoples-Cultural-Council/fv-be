@@ -55,7 +55,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="types",
-                description="filter by document types",
+                description="filter by document types. possible options are word, phrase, song",
                 required=False,
                 default="",
                 type=str,
@@ -66,9 +66,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Retrieves results from all types of documents.",
                     ),
                     OpenApiExample(
-                        "word, phrase",
-                        value="word, phrase",
-                        description="Searches for documents in both the Words and Phrases document types.",
+                        "word, phrase, song",
+                        value="word, phrase, song",
+                        description="Searches for documents in words, phrases and songs.",
                     ),
                     OpenApiExample(
                         "word",
