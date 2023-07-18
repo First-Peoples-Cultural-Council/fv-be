@@ -46,7 +46,7 @@ class DictionaryViewSet(
     Dictionary entry information.
     """
 
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "post", "put"]
     serializer_class = DictionaryEntryDetailSerializer
 
     def get_queryset(self):

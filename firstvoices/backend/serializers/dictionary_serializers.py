@@ -89,18 +89,23 @@ class DictionaryEntryDetailSerializer(
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:dictionaryentry-detail"
     )
+    custom_order = serializers.CharField(read_only=True)
     visibility = serializers.CharField(source="get_visibility_display", read_only=True)
     visibility_value = serializers.ChoiceField(
         choices=Visibility.choices, default=Visibility.TEAM, write_only=True
     )
-    translations = TranslationSerializer(source="translation_set", many=True)
-    pronunciations = PronunciationSerializer(source="pronunciation_set", many=True)
-    notes = NoteSerializer(source="note_set", many=True)
+    translations = TranslationSerializer(
+        required=False, source="translation_set", many=True
+    )
+    pronunciations = PronunciationSerializer(
+        required=False, source="pronunciation_set", many=True
+    )
+    notes = NoteSerializer(required=False, source="note_set", many=True)
     acknowledgements = AcknowledgementSerializer(
-        source="acknowledgement_set", many=True
+        required=False, source="acknowledgement_set", many=True
     )
     alternate_spellings = AlternateSpellingSerializer(
-        source="alternatespelling_set", many=True
+        required=False, source="alternatespelling_set", many=True
     )
     categories = WritableCategorySerializer(
         required=False, many=True, queryset=category.Category.objects.all()
@@ -118,9 +123,6 @@ class DictionaryEntryDetailSerializer(
     logger = logging.getLogger(__name__)
 
     def create(self, validated_data):
-        # list of category IDs
-        # categories = validated_data.pop("categories", [])
-
         acknowledgements = validated_data.pop("acknowledgement_set", [])
         alternate_spellings = validated_data.pop("alternatespelling_set", [])
         notes = validated_data.pop("note_set", [])
@@ -155,7 +157,46 @@ class DictionaryEntryDetailSerializer(
         return created
 
     def update(self, instance, validated_data):
-        pass
+        dictionary.Acknowledgement.objects.filter(dictionary_entry=instance).delete()
+        dictionary.AlternateSpelling.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Note.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
+
+        try:
+            acknowledgements = validated_data.pop("acknowledgement_set", [])
+            alternate_spellings = validated_data.pop("alternatespelling_set", [])
+            notes = validated_data.pop("note_set", [])
+            pronunciations = validated_data.pop("pronunciation_set", [])
+            translations = validated_data.pop("translation_set", [])
+
+            for acknowledgement in acknowledgements:
+                dictionary.Acknowledgement.objects.create(
+                    dictionary_entry=instance, **acknowledgement
+                )
+
+            for alternate_spelling in alternate_spellings:
+                dictionary.AlternateSpelling.objects.create(
+                    dictionary_entry=instance, **alternate_spelling
+                )
+
+            for note in notes:
+                dictionary.Note.objects.create(dictionary_entry=instance, **note)
+
+            for pronunciation in pronunciations:
+                dictionary.Pronunciation.objects.create(
+                    dictionary_entry=instance, **pronunciation
+                )
+
+            for translation in translations:
+                dictionary.Translation.objects.create(
+                    dictionary_entry=instance, **translation
+                )
+
+        except KeyError:
+            pass
+
+        return super().update(instance, validated_data)
 
     def delete(self, instance):
         pass
