@@ -95,7 +95,7 @@ class TestDictionaryEntryModel:
         # The following get should not work since the input_title is converted to expected_title
         # when going through the normalization process
         with pytest.raises(ObjectDoesNotExist):
-            fetched_entry = DictionaryEntry.objects.get(title=input_title)
+            _ = DictionaryEntry.objects.get(title=input_title)
 
         # Thus, we test again with the expected_title
         fetched_entry = DictionaryEntry.objects.get(title=expected_title)
