@@ -89,36 +89,47 @@ class DictionaryEntryDetailSerializer(
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:dictionaryentry-detail"
     )
+    type = serializers.ChoiceField(
+        allow_null=False,
+        choices=dictionary.TypeOfDictionaryEntry.choices,
+        default=dictionary.TypeOfDictionaryEntry.WORD,
+    )
     custom_order = serializers.CharField(read_only=True)
-    visibility = serializers.CharField(source="get_visibility_display", read_only=True)
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
     visibility_value = serializers.ChoiceField(
         choices=Visibility.choices, default=Visibility.TEAM, write_only=True
     )
-    translations = TranslationSerializer(
-        required=False, source="translation_set", many=True
+    categories = WritableCategorySerializer(
+        queryset=category.Category.objects.all(),
+        many=True,
+        required=False,
     )
-    pronunciations = PronunciationSerializer(
-        required=False, source="pronunciation_set", many=True
-    )
-    notes = NoteSerializer(required=False, source="note_set", many=True)
     acknowledgements = AcknowledgementSerializer(
-        required=False, source="acknowledgement_set", many=True
+        many=True,
+        required=False,
+        source="acknowledgement_set",
     )
     alternate_spellings = AlternateSpellingSerializer(
-        required=False, source="alternatespelling_set", many=True
+        many=True, required=False, source="alternatespelling_set"
     )
-    categories = WritableCategorySerializer(
-        required=False, many=True, queryset=category.Category.objects.all()
+    notes = NoteSerializer(many=True, required=False, source="note_set")
+    translations = TranslationSerializer(
+        many=True, required=False, source="translation_set"
+    )
+    pronunciations = PronunciationSerializer(
+        many=True, required=False, source="pronunciation_set"
     )
 
-    site = LinkedSiteSerializer(required=False, read_only=True)
+    site = LinkedSiteSerializer(read_only=True, required=False)
     related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True, required=False
+        many=True,
+        required=False,
+        source="related_dictionary_entries",
     )
-    split_chars = serializers.SerializerMethodField()
-    split_chars_base = serializers.SerializerMethodField()
-    split_words = serializers.SerializerMethodField()
-    split_words_base = serializers.SerializerMethodField()
+    split_chars = serializers.SerializerMethodField(read_only=True)
+    split_chars_base = serializers.SerializerMethodField(read_only=True)
+    split_words = serializers.SerializerMethodField(read_only=True)
+    split_words_base = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
 
@@ -128,6 +139,9 @@ class DictionaryEntryDetailSerializer(
         notes = validated_data.pop("note_set", [])
         pronunciations = validated_data.pop("pronunciation_set", [])
         translations = validated_data.pop("translation_set", [])
+
+        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
+        validated_data["visibility"] = visibility_value
 
         created = super().create(validated_data)
 
@@ -162,6 +176,9 @@ class DictionaryEntryDetailSerializer(
         dictionary.Note.objects.filter(dictionary_entry=instance).delete()
         dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
         dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
+
+        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
+        validated_data["visibility"] = visibility_value
 
         try:
             acknowledgements = validated_data.pop("acknowledgement_set", [])
