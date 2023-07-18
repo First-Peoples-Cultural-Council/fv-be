@@ -1,27 +1,10 @@
-from import_export import fields, resources
+from import_export import fields
+from import_export.widgets import ForeignKeyWidget
 
 from backend.models.constants import Visibility
-from backend.models.sites import Site
-from backend.resources.utils.import_export_widgets import (
-    ChoicesWidget,
-    UserForeignKeyWidget,
-)
-
-
-class BaseResource(resources.ModelResource):
-    created_by = fields.Field(
-        column_name="created_by",
-        attribute="created_by",
-        widget=UserForeignKeyWidget(create=False),
-    )
-    last_modified_by = fields.Field(
-        column_name="last_modified_by",
-        attribute="last_modified_by",
-        widget=UserForeignKeyWidget(create=False),
-    )
-
-    class Meta:
-        abstract = True
+from backend.models.sites import Language, Site
+from backend.resources.base import BaseResource
+from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
 class SiteResource(BaseResource):
@@ -31,9 +14,17 @@ class SiteResource(BaseResource):
         attribute="visibility",
     )
 
+    language = fields.Field(
+        column_name="language",
+        attribute="language",
+        widget=ForeignKeyWidget(Language, "title"),
+    )
+
     class Meta:
         model = Site
 
+
+class SiteMigrationResource(SiteResource):
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
         """Before importing sites that already exist, delete and import fresh."""
         if not dry_run:
