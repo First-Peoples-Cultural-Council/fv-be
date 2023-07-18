@@ -8,6 +8,7 @@ from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
 from ...models.widget import SiteWidgetListOrder
+from ..utils import setup_widget_list, update_widget_list_order
 from .base_api_test import BaseApiTest
 from .base_media_test import MediaTestMixin
 
@@ -386,76 +387,14 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.SiteWidgetListOrderFactory.reset_sequence()
-        widget_list_one = factories.SiteWidgetListWithThreeWidgetsFactory.create(
-            site=site
-        )
-
-        widget_list_two = factories.SiteWidgetListWithThreeWidgetsFactory.create(
-            site=site
-        )
-
-        # Get the widgets from each of the factories.
-        widget_one = widget_list_one.widgets.all()[0]
-        widget_two = widget_list_one.widgets.all()[1]
-        widget_three = widget_list_one.widgets.all()[2]
-        widget_four = widget_list_two.widgets.all()[0]
-        widget_five = widget_list_two.widgets.all()[1]
-        widget_six = widget_list_two.widgets.all()[2]
-
-        # Set the widgets to all belong to the same site.
-        self.update_widget_sites(
-            site,
-            [
-                widget_one,
-                widget_two,
-                widget_three,
-                widget_four,
-                widget_five,
-                widget_six,
-            ],
-        )
+        site, widget_list_one, widget_list_two, widgets = setup_widget_list()
 
         # Set the site homepage widget list
         site.homepage = widget_list_two
         site.save()
 
-        # Get the order of the widgets.
-        widget_one_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_one
-        ).first()
-        widget_two_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_two
-        ).first()
-        widget_three_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_three
-        ).first()
-        widget_four_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_four
-        ).first()
-        widget_five_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_five
-        ).first()
-        widget_six_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_six
-        ).first()
-
-        # Update one of the existing widgets order (to free up order 0 in the list)
-        widget_five_list_two_order.order = 3
-        widget_five_list_two_order.save()
-
-        assert widget_one_list_one_order.order == 2
-        assert widget_two_list_one_order.order == 0
-        assert widget_three_list_one_order.order == 1
-        assert widget_four_list_two_order.order == 2
-        assert widget_five_list_two_order.order == 3
-        assert widget_six_list_two_order.order == 1
-
-        # Add a widget from widget_list_one to widget_list_two with a different order
-        SiteWidgetListOrder.objects.create(
-            site_widget=widget_one, site_widget_list=widget_list_two, order=0
-        )
+        # Check the widget list orders and add a widget from widget_list_one to widget_list_two with a different order
+        update_widget_list_order(widgets, widget_list_two)
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
         assert response.status_code == 200
@@ -464,10 +403,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert len(response_data["homepage"]) == 4
 
         # Check that the homepage uses the order in widget_list_two for widget_one
-        assert response_data["homepage"][0]["id"] == str(widget_one.id)
-        assert response_data["homepage"][1]["id"] == str(widget_six.id)
-        assert response_data["homepage"][2]["id"] == str(widget_four.id)
-        assert response_data["homepage"][3]["id"] == str(widget_five.id)
+        assert response_data["homepage"][0]["id"] == str(widgets[0].id)
+        assert response_data["homepage"][1]["id"] == str(widgets[5].id)
+        assert response_data["homepage"][2]["id"] == str(widgets[3].id)
+        assert response_data["homepage"][3]["id"] == str(widgets[4].id)
 
         # Update the homepage to widget_list_one
         site.homepage = widget_list_one
@@ -480,9 +419,9 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert len(response_data["homepage"]) == 3
 
         # Check that the homepage uses the order in widget_list_one for widget_one
-        assert response_data["homepage"][0]["id"] == str(widget_two.id)
-        assert response_data["homepage"][1]["id"] == str(widget_three.id)
-        assert response_data["homepage"][2]["id"] == str(widget_one.id)
+        assert response_data["homepage"][0]["id"] == str(widgets[1].id)
+        assert response_data["homepage"][1]["id"] == str(widgets[2].id)
+        assert response_data["homepage"][2]["id"] == str(widgets[0].id)
 
     @pytest.mark.parametrize(
         "user_role, expected_visible_widgets",
