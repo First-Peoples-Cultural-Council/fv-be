@@ -80,7 +80,7 @@ python-engineio==3.14.2
 python-magic==0.4.27
 python-socketio==4.6.1
 pytz==2023.3
-PyYAML==6.0
+PyYAML==6.0.1
 redis==4.6.0
 regex==2023.6.3
 requests==2.31.0
