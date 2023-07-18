@@ -5,8 +5,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import category, dictionary
+from backend.models.constants import Visibility
 from backend.serializers.base_serializers import (
+    CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
+    UpdateSerializerMixin,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
@@ -16,6 +19,7 @@ from backend.serializers.site_serializers import LinkedSiteSerializer
 
 class DictionaryContentMeta:
     fields = ("id", "text")
+    read_only_fields = ("id",)
 
 
 class AcknowledgementSerializer(serializers.ModelSerializer):
@@ -31,6 +35,14 @@ class AlternateSpellingSerializer(serializers.ModelSerializer):
 class CategorySerializer(SiteContentLinkedTitleSerializer):
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = category.Category
+
+
+class WritableCategorySerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return CategorySerializer(context=self.context).to_representation(value)
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -69,10 +81,18 @@ class DictionaryEntrySummarySerializer(
 
 
 class DictionaryEntryDetailSerializer(
-    RelatedMediaSerializerMixin, serializers.HyperlinkedModelSerializer
+    CreateSiteContentSerializerMixin,
+    RelatedMediaSerializerMixin,
+    serializers.HyperlinkedModelSerializer,
+    UpdateSerializerMixin,
 ):
-    url = SiteHyperlinkedIdentityField(view_name="api:dictionaryentry-detail")
-    visibility = serializers.CharField(source="get_visibility_display")
+    url = SiteHyperlinkedIdentityField(
+        read_only=True, view_name="api:dictionaryentry-detail"
+    )
+    visibility = serializers.CharField(source="get_visibility_display", read_only=True)
+    visibility_value = serializers.ChoiceField(
+        choices=Visibility.choices, default=Visibility.TEAM, write_only=True
+    )
     translations = TranslationSerializer(source="translation_set", many=True)
     pronunciations = PronunciationSerializer(source="pronunciation_set", many=True)
     notes = NoteSerializer(source="note_set", many=True)
@@ -82,10 +102,13 @@ class DictionaryEntryDetailSerializer(
     alternate_spellings = AlternateSpellingSerializer(
         source="alternatespelling_set", many=True
     )
-    categories = CategorySerializer(many=True)
-    site = LinkedSiteSerializer()
+    categories = WritableCategorySerializer(
+        required=False, many=True, queryset=category.Category.objects.all()
+    )
+
+    site = LinkedSiteSerializer(required=False, read_only=True)
     related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True
+        source="related_dictionary_entries", many=True, required=False
     )
     split_chars = serializers.SerializerMethodField()
     split_chars_base = serializers.SerializerMethodField()
@@ -93,6 +116,49 @@ class DictionaryEntryDetailSerializer(
     split_words_base = serializers.SerializerMethodField()
 
     logger = logging.getLogger(__name__)
+
+    def create(self, validated_data):
+        # list of category IDs
+        # categories = validated_data.pop("categories", [])
+
+        acknowledgements = validated_data.pop("acknowledgement_set", [])
+        alternate_spellings = validated_data.pop("alternatespelling_set", [])
+        notes = validated_data.pop("note_set", [])
+        pronunciations = validated_data.pop("pronunciation_set", [])
+        translations = validated_data.pop("translation_set", [])
+
+        created = super().create(validated_data)
+
+        for acknowledgement in acknowledgements:
+            dictionary.Acknowledgement.objects.create(
+                dictionary_entry=created, **acknowledgement
+            )
+
+        for alternate_spelling in alternate_spellings:
+            dictionary.AlternateSpelling.objects.create(
+                dictionary_entry=created, **alternate_spelling
+            )
+
+        for note in notes:
+            dictionary.Note.objects.create(dictionary_entry=created, **note)
+
+        for pronunciation in pronunciations:
+            dictionary.Pronunciation.objects.create(
+                dictionary_entry=created, **pronunciation
+            )
+
+        for translation in translations:
+            dictionary.Translation.objects.create(
+                dictionary_entry=created, **translation
+            )
+
+        return created
+
+    def update(self, instance, validated_data):
+        pass
+
+    def delete(self, instance):
+        pass
 
     def get_model_from_context(self, model_name):
         if self.context is not None and model_name in self.context:
@@ -190,6 +256,7 @@ class DictionaryEntryDetailSerializer(
                 "type",
                 "custom_order",
                 "visibility",
+                "visibility_value",
                 "categories",
                 "exclude_from_games",
                 "exclude_from_kids",
