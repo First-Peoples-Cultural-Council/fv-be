@@ -17,6 +17,7 @@ from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
+from backend.views.story_views import StoryViewSet
 from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
@@ -57,6 +58,7 @@ sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"songs", SongViewSet, basename="song")
+sites_router.register(r"stories", StoryViewSet, basename="story")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
 
