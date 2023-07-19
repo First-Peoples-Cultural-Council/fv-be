@@ -4,7 +4,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models import category, dictionary
+from backend.models import category, dictionary, part_of_speech
 from backend.models.constants import Visibility
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
@@ -14,6 +14,9 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.parts_of_speech_serializers import (
+    WritablePartsOfSpeechSerializer,
+)
 from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
@@ -56,7 +59,9 @@ class PronunciationSerializer(serializers.ModelSerializer):
 
 
 class TranslationSerializer(serializers.ModelSerializer):
-    part_of_speech = serializers.StringRelatedField()
+    part_of_speech = WritablePartsOfSpeechSerializer(
+        queryset=part_of_speech.PartOfSpeech.objects.all(), required=False
+    )
 
     class Meta(DictionaryContentMeta):
         model = dictionary.Translation
