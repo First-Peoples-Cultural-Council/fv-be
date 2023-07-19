@@ -220,9 +220,6 @@ class DictionaryEntryDetailSerializer(
 
         return super().update(instance, validated_data)
 
-    def delete(self, instance):
-        pass
-
     def get_model_from_context(self, model_name):
         if self.context is not None and model_name in self.context:
             return self.context[model_name]
