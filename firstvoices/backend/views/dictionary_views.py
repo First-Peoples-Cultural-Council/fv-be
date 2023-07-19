@@ -12,28 +12,71 @@ from backend.views.base_views import (
     SiteContentViewSetMixin,
 )
 
+from . import doc_strings
+
 
 @extend_schema_view(
     list=extend_schema(
         description="A list of available dictionary entries for the specified site.",
         responses={
-            200: DictionaryEntryDetailSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            200: OpenApiResponse(
+                description=doc_strings.success_200_list,
+                response=DictionaryEntryDetailSerializer,
+            ),
+            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
         description="A dictionary entry from the specified site.",
         responses={
-            200: DictionaryEntryDetailSerializer,
-            403: OpenApiResponse(description="Todo: Error Not Authorized"),
-            404: OpenApiResponse(description="Todo: Not Found"),
+            200: OpenApiResponse(
+                description=doc_strings.success_200_detail,
+                response=DictionaryEntryDetailSerializer,
+            ),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
             site_slug_parameter,
             id_parameter,
         ],
+    ),
+    create=extend_schema(
+        description="Create a new dictionary entry for the specified site.",
+        responses={
+            201: OpenApiResponse(
+                description=doc_strings.success_201,
+                response=DictionaryEntryDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[site_slug_parameter],
+    ),
+    update=extend_schema(
+        description="Update a dictionary entry on the specified site.",
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_detail,
+                response=DictionaryEntryDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[site_slug_parameter, id_parameter],
+    ),
+    destroy=extend_schema(
+        description="Delete a dictionary entry from the specified site.",
+        responses={
+            204: OpenApiResponse(description=doc_strings.success_204_deleted),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[site_slug_parameter, id_parameter],
     ),
 )
 class DictionaryViewSet(

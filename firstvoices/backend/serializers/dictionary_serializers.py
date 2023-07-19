@@ -60,7 +60,8 @@ class PronunciationSerializer(serializers.ModelSerializer):
 
 class TranslationSerializer(serializers.ModelSerializer):
     part_of_speech = WritablePartsOfSpeechSerializer(
-        queryset=part_of_speech.PartOfSpeech.objects.all(), required=False
+        queryset=part_of_speech.PartOfSpeech.objects.all(),
+        required=False,
     )
 
     class Meta(DictionaryContentMeta):
@@ -137,6 +138,17 @@ class DictionaryEntryDetailSerializer(
     split_words_base = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
+
+    def validate(self, attrs):
+        # Categories must be in the same site as the dictionary entry
+        categories = attrs.get("categories")
+        if categories:
+            for c in categories:
+                if c.site != self.context["site"]:
+                    raise serializers.ValidationError(
+                        "Related dictionary entry must be in the same site."
+                    )
+        return super().validate(attrs)
 
     def create(self, validated_data):
         acknowledgements = validated_data.pop("acknowledgement_set", [])
