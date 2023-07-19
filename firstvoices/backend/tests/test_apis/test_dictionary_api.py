@@ -28,6 +28,9 @@ class TestDictionaryEndpoint(
     API_LIST_VIEW = "api:dictionaryentry-list"
     API_DETAIL_VIEW = "api:dictionaryentry-detail"
 
+    NOTE_TEXT = "This is a note."
+    TRANSLATION_TEXT = "This is a translation."
+
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
 
@@ -631,7 +634,7 @@ class TestDictionaryEndpoint(
             "exclude_from_kids": False,
             "acknowledgements": [{"text": "Thank"}, {"text": "You"}],
             "alternate_spellings": [{"text": "Hello"}, {"text": "World"}],
-            "notes": [{"text": "Note 1"}, {"text": "Note 2"}],
+            "notes": [{"text": self.NOTE_TEXT}, {"text": "Note 2"}],
             "translations": [
                 {"text": "Hallo", "part_of_speech": str(part_of_speech.id)}
             ],
@@ -656,7 +659,7 @@ class TestDictionaryEndpoint(
         assert response_data["acknowledgements"][1]["text"] == "You"
         assert response_data["alternateSpellings"][0]["text"] == "Hello"
         assert response_data["alternateSpellings"][1]["text"] == "World"
-        assert response_data["notes"][0]["text"] == "Note 1"
+        assert response_data["notes"][0]["text"] == self.NOTE_TEXT
         assert response_data["notes"][1]["text"] == "Note 2"
         assert response_data["translations"][0]["text"] == "Hallo"
         assert response_data["translations"][0]["partOfSpeech"]["id"] == str(
@@ -721,9 +724,12 @@ class TestDictionaryEndpoint(
             "exclude_from_kids": True,
             "acknowledgements": [{"text": "Thanks"}],
             "alternate_spellings": [{"text": "Gooodbye"}],
-            "notes": [{"text": "Note 1"}],
+            "notes": [{"text": self.NOTE_TEXT}],
             "translations": [
-                {"text": "Auf Wiedersehen", "part_of_speech": str(part_of_speech.id)}
+                {
+                    "text": self.TRANSLATION_TEXT,
+                    "part_of_speech": str(part_of_speech.id),
+                }
             ],
             "pronunciations": [{"text": "Good-bye"}],
         }
@@ -746,8 +752,8 @@ class TestDictionaryEndpoint(
         assert response_data["excludeFromKids"] is True
         assert response_data["acknowledgements"][0]["text"] == "Thanks"
         assert response_data["alternateSpellings"][0]["text"] == "Gooodbye"
-        assert response_data["notes"][0]["text"] == "Note 1"
-        assert response_data["translations"][0]["text"] == "Auf Wiedersehen"
+        assert response_data["notes"][0]["text"] == self.NOTE_TEXT
+        assert response_data["translations"][0]["text"] == self.TRANSLATION_TEXT
         assert response_data["translations"][0]["partOfSpeech"]["id"] == str(
             part_of_speech.id
         )
@@ -774,11 +780,11 @@ class TestDictionaryEndpoint(
 
         notes = Note.objects.filter(dictionary_entry=entry_in_db)
         assert notes.count() == 1
-        assert notes.first().text == "Note 1"
+        assert notes.first().text == self.NOTE_TEXT
 
         translations = Translation.objects.filter(dictionary_entry=entry_in_db)
         assert translations.count() == 1
-        assert translations.first().text == "Auf Wiedersehen"
+        assert translations.first().text == self.TRANSLATION_TEXT
         assert translations.first().part_of_speech.id == part_of_speech.id
 
         pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
