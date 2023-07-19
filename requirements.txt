@@ -46,7 +46,7 @@ Flask-SocketIO==4.3.2
 flask-talisman==1.0.0
 g2p==1.1.20230511 # https://github.com/roedoejet/g2p
 greenlet==2.0.2
-gunicorn==21.1.0
+gunicorn==21.2.0
 humanfriendly==10.0
 idna==3.4
 inflection==0.5.1
