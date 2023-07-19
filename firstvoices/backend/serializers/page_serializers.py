@@ -23,12 +23,7 @@ class SitePageSerializer(SiteContentLinkedTitleSerializer):
         )
 
 
-class SitePageDetailSerializer(SiteContentLinkedTitleSerializer):
-    url = SiteHyperlinkedIdentityField(
-        view_name="api:sitepage-detail", lookup_field="slug"
-    )
-    slug = serializers.CharField(read_only=True)
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+class SitePageDetailSerializer(SitePageSerializer):
     widgets = SiteWidgetListSerializer()
     banner_image = ImageSerializer()
     banner_video = VideoSerializer()
