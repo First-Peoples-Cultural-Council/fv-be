@@ -9,6 +9,7 @@ from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
@@ -137,7 +138,6 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         queryset=SiteWidget.objects.all(),
         allow_null=True,
         many=True,
-        validators=[SameSite(queryset=SiteWidget.objects.all())],
     )
     logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
@@ -154,6 +154,15 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         allow_null=True,
         validators=[SameSite(queryset=Video.objects.all())],
     )
+
+    def validate_homepage(self, homepage):
+        site = get_site_from_context(self)
+        for site_widget in homepage:
+            if site_widget.site != site:
+                raise serializers.ValidationError(
+                    f"SiteWidget with ID ({site_widget.id}) does not belong to the site."
+                )
+        return homepage
 
     def to_representation(self, instance):
         data = SiteDetailSerializer(instance=instance, context=self.context).data

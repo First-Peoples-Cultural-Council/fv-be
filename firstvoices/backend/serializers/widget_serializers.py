@@ -12,7 +12,7 @@ from backend.serializers.base_serializers import (
     UpdateSerializerMixin,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.validators import SameSite
+from backend.serializers.utils import get_site_from_context
 
 
 class WidgetSettingsSerializer(serializers.ModelSerializer):
@@ -49,9 +49,7 @@ class SiteWidgetDetailSerializer(
 
 
 class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixin):
-    widgets = SiteWidgetDetailSerializer(
-        many=True, validators=[SameSite(queryset=SiteWidget.objects.all())]
-    )
+    widgets = SiteWidgetDetailSerializer(many=True)
 
     class Meta:
         model = SiteWidgetList
@@ -79,6 +77,11 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
 
         # Create a new SiteWidgetListOrder object for each widget in the validated data and add it to the list.
         for index, widget in enumerate(validated_data["homepage"]):
+            # Check that each SiteWidget belongs to the same site as the homepage
+            if widget.site != get_site_from_context(self):
+                raise serializers.ValidationError(
+                    f"SiteWidget with ID ({widget.id}) does not belong to the site."
+                )
             SiteWidgetListOrder.objects.create(
                 site_widget=widget,
                 site_widget_list=new_site_widget_list,
