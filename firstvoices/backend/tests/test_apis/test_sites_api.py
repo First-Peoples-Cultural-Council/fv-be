@@ -3,12 +3,12 @@ import json
 import pytest
 
 import backend.tests.factories.access
-from backend.models import AppJson
+from backend.models import AppJson, Site
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from ...models.widget import SiteWidgetListOrder
-from ..utils import setup_widget_list, update_widget_list_order
+from ...models.widget import SiteWidget, SiteWidgetListOrder
+from ..utils import setup_widget_list, update_widget_list_order, update_widget_sites
 from .base_api_test import BaseApiTest
 from .base_media_test import MediaTestMixin
 
@@ -264,11 +264,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_data = json.loads(response.content)
         assert response_data["bannerVideo"] == self.get_expected_video_data(video)
 
-    def update_widget_sites(self, site, widgets):
-        for widget in widgets:
-            widget.site = site
-            widget.save()
-
     @pytest.mark.django_db
     def test_detail_homepage(self):
         user = factories.get_non_member_user()
@@ -280,7 +275,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         widget_one = widget_list.widgets.all()[0]
         widget_two = widget_list.widgets.all()[1]
-        self.update_widget_sites(site, [widget_one, widget_two])
+        update_widget_sites(site, [widget_one, widget_two])
 
         widget_one_settings_one = factories.WidgetSettingsFactory.create(
             widget=widget_one
@@ -350,7 +345,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_one = widget_list.widgets.all()[0]
         widget_two = widget_list.widgets.all()[1]
         widget_three = widget_list.widgets.all()[2]
-        self.update_widget_sites(site, [widget_one, widget_two, widget_three])
+        update_widget_sites(site, [widget_one, widget_two, widget_three])
 
         site.homepage = widget_list
         site.save()
@@ -448,7 +443,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_public = widget_list.widgets.all()[0]
         widget_members = widget_list.widgets.all()[1]
         widget_team = widget_list.widgets.all()[2]
-        self.update_widget_sites(site, [widget_public, widget_members, widget_team])
+        update_widget_sites(site, [widget_public, widget_members, widget_team])
 
         site.homepage = widget_list
         site.save()
@@ -506,6 +501,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
+            "homepage": [],
         }
         response = self.client.put(
             f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
@@ -533,6 +529,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
+            "homepage": [],
         }
         response = self.client.put(
             f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
@@ -542,3 +539,149 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_data = json.loads(response.content)
 
         assert response_data["logo"] == ["Must be in the same site."]
+
+    @pytest.mark.django_db
+    def test_update_homepage_no_existing(self):
+        site = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        widget_one = factories.SiteWidgetFactory.create(site=site)
+        widget_one_settings = factories.WidgetSettingsFactory.create(widget=widget_one)
+        widget_two = factories.SiteWidgetFactory.create(site=site)
+
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        assert site.homepage is None
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_two.id), str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+        response_data = json.loads(response.content)
+
+        expected_widget_one_settings = [
+            {"key": widget_one_settings.key, "value": widget_one_settings.value}
+        ]
+
+        assert response.status_code == 200
+        assert response_data["homepage"][0]["id"] == str(widget_two.id)
+        assert response_data["homepage"][1]["id"] == str(widget_one.id)
+        assert response_data["homepage"][1]["settings"] == expected_widget_one_settings
+
+    @pytest.mark.django_db
+    def test_update_homepage_with_existing(self):
+        site = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        existing_list = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
+        existing_widget_one = existing_list.widgets.all()[0]
+        existing_widget_two = existing_list.widgets.all()[1]
+        existing_widget_one_order_id = SiteWidgetListOrder.objects.get(
+            site_widget=existing_widget_one
+        ).id
+        existing_widget_two_order_id = SiteWidgetListOrder.objects.get(
+            site_widget=existing_widget_two
+        ).id
+        update_widget_sites(
+            site,
+            [
+                existing_widget_one,
+                existing_widget_two,
+            ],
+        )
+
+        # Set a homepage for the site with some existing widgets.
+        site.homepage = existing_list
+        site.save()
+
+        # Create a new widget and check that it is not in the site homepage list.
+        widget_one = factories.SiteWidgetFactory.create(site=site)
+        assert widget_one not in site.homepage.widgets.all()
+
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        # Using the update API set the homepage to contain only the new widget.
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # Check that the site homepage contains the new widget
+        assert response_data["homepage"][0]["id"] == str(widget_one.id)
+        assert len(response_data["homepage"]) == 1
+        updated_site = Site.objects.get(id=site.id)
+        assert widget_one in updated_site.homepage.widgets.all()
+
+        # Check that the homepage list is the same list (only widgets changed)
+        assert updated_site.homepage.id == existing_list.id
+
+        # Check that the existing widgets are not part of the new homepage
+        current_widget_order_id_list = [
+            order.id
+            for order in SiteWidgetListOrder.objects.filter(
+                site_widget__in=updated_site.homepage.widgets.all()
+            )
+        ]
+        assert existing_widget_one_order_id not in current_widget_order_id_list
+        assert existing_widget_two_order_id not in current_widget_order_id_list
+
+        # Check that the old widget orders have been deleted
+        assert (
+            SiteWidgetListOrder.objects.filter(id=existing_widget_one_order_id).exists()
+            is False
+        )
+        assert (
+            SiteWidgetListOrder.objects.filter(id=existing_widget_two_order_id).exists()
+            is False
+        )
+
+        # Check that the old widgets still exist
+        assert SiteWidget.objects.filter(id=existing_widget_one.id).exists() is True
+        assert SiteWidget.objects.filter(id=existing_widget_two.id).exists() is True
+
+    @pytest.mark.django_db
+    def test_detail_homepage_validation(self):
+        site_one = factories.SiteFactory.create()
+        site_two = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        widget_one = factories.SiteWidgetFactory.create(site=site_one)
+        widget_two = factories.SiteWidgetFactory.create(site=site_two)
+
+        factories.MembershipFactory.create(
+            user=user, site=site_one, role=Role.LANGUAGE_ADMIN
+        )
+
+        assert site_one.homepage is None
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_two.id), str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site_one.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 400
