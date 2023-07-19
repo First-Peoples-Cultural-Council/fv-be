@@ -8,7 +8,11 @@ from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyControlledSiteContentApiTest,
 )
-from backend.tests.utils import setup_widget_list, update_widget_list_order
+from backend.tests.utils import (
+    setup_widget_list,
+    update_widget_list_order,
+    update_widget_sites,
+)
 
 
 class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
@@ -70,11 +74,6 @@ class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
 
         assert len(response_data["results"]) == expected_visible_pages
 
-    def update_widget_sites(self, site, widgets):
-        for widget in widgets:
-            widget.site = site
-            widget.save()
-
     @pytest.mark.django_db
     def test_detail_widget_order(self):
         user = factories.get_non_member_user()
@@ -88,7 +87,7 @@ class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
         widget_one = widget_list.widgets.all()[0]
         widget_two = widget_list.widgets.all()[1]
         widget_three = widget_list.widgets.all()[2]
-        self.update_widget_sites(site, [widget_one, widget_two, widget_three])
+        update_widget_sites(site, [widget_one, widget_two, widget_three])
 
         site_page = factories.SitePageFactory.create(
             site=site, visibility=Visibility.PUBLIC, widgets=widget_list
