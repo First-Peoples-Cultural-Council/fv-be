@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from backend.permissions import predicates
+from backend.utils.character_utils import clean_input
 
 from .base import AudienceMixin, BaseControlledSiteContentModel, BaseModel
 from .media import RelatedMediaMixin
@@ -20,7 +21,7 @@ class Song(
     Representing a song associated with a site, including unique title, lyrics, introduction, and media links
 
     Notes for data migration:
-    acknowledgements from fv:source and fvbook:author (which should be dereferenced)
+    acknowledgements from fv:source and fvbook:author (which should be de-referenced)
     notes from fv:cultural_note
 
     introduction from fvbook:introduction
@@ -62,6 +63,19 @@ class Song(
 
     hide_overlay = models.BooleanField(null=False, default=False)
 
+    def save(self, *args, **kwargs):
+        # normalizing text input
+        self.title = clean_input(self.title)
+        self.title_translation = clean_input(self.title_translation)
+        self.introduction = clean_input(self.introduction)
+        self.introduction_translation = clean_input(self.introduction_translation)
+        self.acknowledgements = list(
+            map(lambda x: clean_input(x), self.acknowledgements)
+        )
+        self.notes = list(map(lambda x: clean_input(x), self.notes))
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
@@ -94,3 +108,10 @@ class Lyric(BaseModel):
 
     text = models.TextField(max_length=NOTE_MAX_LENGTH, blank=False)
     translation = models.TextField(max_length=NOTE_MAX_LENGTH, blank=True)
+
+    def save(self, *args, **kwargs):
+        # normalizing text input
+        self.text = clean_input(self.text)
+        self.translation = clean_input(self.translation)
+
+        super().save(*args, **kwargs)
