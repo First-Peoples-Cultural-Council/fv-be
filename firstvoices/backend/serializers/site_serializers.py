@@ -89,6 +89,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     )
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
+    pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
     videos = SiteViewLinkField(view_name="api:video-list")
@@ -119,6 +120,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary_cleanup_preview",
             "ignored_characters",
             "images",
+            "pages",
             "people",
             "songs",
             "videos",

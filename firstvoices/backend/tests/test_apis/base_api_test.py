@@ -5,6 +5,7 @@ from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
+from backend.models import SitePage
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 
@@ -252,7 +253,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug="invalid")
+            self.get_detail_endpoint(key=instance.slug, site_slug="invalid")
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug="invalid")
         )
 
         assert response.status_code == 404
@@ -264,7 +267,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 403
@@ -282,7 +287,9 @@ class SiteContentDetailApiTestMixin:
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -297,7 +304,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -308,7 +317,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 200
@@ -357,7 +368,9 @@ class ControlledDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 403

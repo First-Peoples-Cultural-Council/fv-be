@@ -13,4 +13,4 @@ class SitePageFactory(DjangoModelFactory):
         model = SitePage
 
     title = factory.Sequence(lambda n: "SitePage-%03d" % n)
-    slug = factory.Sequence(lambda n: "site-%03d" % n)
+    slug = factory.Sequence(lambda n: "site-page-%03d" % n)
