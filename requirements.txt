@@ -67,7 +67,7 @@ pluggy==1.2.0
 prompt-toolkit==3.0.39
 psycopg2-binary==2.9.6
 pycparser==2.21
-PyJWT==2.7.0
+PyJWT==2.8.0
 pyrsistent==0.19.3
 pytest==7.4.0
 pytest-celery==0.0.0
