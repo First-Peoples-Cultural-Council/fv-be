@@ -50,33 +50,48 @@ class TestQueryParams:
         assert expected_multi_match_string in str(search_query)
         assert expected_match_full_text_search_string in str(search_query)
 
-    def test_valid_with_special_chars_query(self):
+    @pytest.mark.parametrize(
+        "input_str, expected_str",
+        [
+            (
+                "A Valid Query **With $@&*456Ŧ specials!",
+                "A Valid Query **With $@&*456Ŧ specials!",
+            ),
+            ("ááááá", "ááááá"),  # nfc normalization
+        ],
+    )
+    def test_valid_with_special_chars_query(self, input_str, expected_str):
         # relates to: SearchQueryTest.java - testValidQuery()
-        search_query = get_search_query(q="A Valid Query **With $@&*456Ŧ specials!")
+        search_query = get_search_query(q=input_str)
         search_query = search_query.to_dict()
 
         expected_fuzzy_match_string = (
-            "'fuzzy': {'title': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'title': {'value': '" + expected_str + "', "
             "'fuzziness': '2', 'boost': 1.2}}"
         )
         expected_exact_match_string = (
-            "'match_phrase': {'title': {'query': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.5}}"
+            "'match_phrase': {'title': {'query': '"
+            + expected_str
+            + "', 'slop': 3, 'boost': 1.5}}"
         )
         expected_fuzzy_match_translation_string = (
-            "'fuzzy': {'translation': {'value': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'fuzziness': '2', 'boost': 1.2}}"
+            "'fuzzy': {'translation': {'value': '"
+            + expected_str
+            + "', 'fuzziness': '2', 'boost': 1.2}}"
         )
         expected_exact_match_translation_string = (
-            "'match_phrase': {'translation': {'query': "
-            "'A Valid Query **With $@&*456Ŧ specials!', 'slop': 3, 'boost': 1.5}}"
+            "'match_phrase': {'translation': {'query': '"
+            + expected_str
+            + "', 'slop': 3, 'boost': 1.5}}"
         )
         expected_multi_match_string = (
-            "'multi_match': {'query': 'A Valid Query **With $@&*456Ŧ specials!', 'fields': ['title', "
+            "'multi_match': {'query': '" + expected_str + "', 'fields': ['title', "
             "'full_text_search_field'], 'type': 'phrase', 'operator': 'OR', 'boost': 1.1}"
         )
         expected_match_full_text_search_string = (
-            "'match_phrase': {'full_text_search_field': {'query': 'A Valid Query **With $@&*456Ŧ specials!', 'boost': "
+            "'match_phrase': {'full_text_search_field': {'query': '"
+            + expected_str
+            + "', 'boost': "
             "1.0}}"
         )
 

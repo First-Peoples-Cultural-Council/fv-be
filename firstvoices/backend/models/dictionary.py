@@ -53,6 +53,10 @@ class Note(BaseDictionaryContentModel):
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
     text = models.TextField()
 
+    def save(self, *args, **kwargs):
+        self.text = clean_input(self.text)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.text
 
@@ -70,6 +74,10 @@ class Acknowledgement(BaseDictionaryContentModel):
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
     text = models.TextField()
+
+    def save(self, *args, **kwargs):
+        self.text = clean_input(self.text)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.text
@@ -96,6 +104,10 @@ class Translation(BaseDictionaryContentModel):
         null=True,
         related_name="translations",
     )
+
+    def save(self, *args, **kwargs):
+        self.text = clean_input(self.text)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return _("Translation: %(translation)s.") % {
