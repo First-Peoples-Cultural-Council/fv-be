@@ -94,6 +94,7 @@ class SiteWidgetList(BaseSiteContentModel):
 
 class SiteWidgetListOrder(BaseModel):
     class Meta:
+        unique_together = ("site_widget", "site_widget_list")
         verbose_name = _("site widget list order")
         verbose_name_plural = _("site widget list orders")
         rules_permissions = {
