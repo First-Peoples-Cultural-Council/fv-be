@@ -347,6 +347,27 @@ class DictionaryEntryDetailSerializer(
         )
 
 
+class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializer):
+    categories = CategorySerializer(many=True)
+
+    class Meta:
+        model = dictionary.DictionaryEntry
+        # Add related entries and media when FW-4604/4605 are complete
+        fields = (
+            "title",
+            "type",
+            "visibility_value",
+            "categories",
+            "exclude_from_games",
+            "exclude_from_kids",
+            "acknowledgements",
+            "alternate_spellings",
+            "notes",
+            "translations",
+            "pronunciations",
+        )
+
+
 class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
     def use_pk_only_optimization(self):
         return False
