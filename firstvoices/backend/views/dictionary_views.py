@@ -1,10 +1,23 @@
 from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import viewsets
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+)
+from rest_framework import serializers, viewsets
 
-from backend.models.dictionary import DictionaryEntry
+from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.media import Audio, Image, Video
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
+from backend.serializers.dictionary_serializers import (
+    AcknowledgementSerializer,
+    AlternateSpellingSerializer,
+    CategorySerializer,
+    DictionaryEntryDetailSerializer,
+    NoteSerializer,
+    PronunciationSerializer,
+    TranslationSerializer,
+)
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import (
     DictionarySerializerContextMixin,
@@ -12,6 +25,7 @@ from backend.views.base_views import (
     SiteContentViewSetMixin,
 )
 
+from ..models.constants import Visibility
 from . import doc_strings
 
 
@@ -48,7 +62,49 @@ from . import doc_strings
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201,
-                response=DictionaryEntryDetailSerializer,
+                response=inline_serializer(
+                    name="DictionaryEntryWriteResponse",
+                    fields={
+                        "title": serializers.CharField(),
+                        "type": serializers.ChoiceField(
+                            choices=TypeOfDictionaryEntry.choices,
+                            default=TypeOfDictionaryEntry.WORD,
+                        ),
+                        "visibility_value": serializers.ChoiceField(
+                            choices=Visibility.choices,
+                            default=Visibility.TEAM,
+                            write_only=True,
+                        ),
+                        "categories": CategorySerializer(many=True),
+                        "exclude_from_games": serializers.BooleanField(),
+                        "exclude_from_kids": serializers.BooleanField(),
+                        "acknowledgements": AcknowledgementSerializer(
+                            many=True,
+                            required=False,
+                            source="acknowledgement_set",
+                        ),
+                        "alternate_spellings": AlternateSpellingSerializer(
+                            many=True,
+                            required=False,
+                            source="alternate_spelling_set",
+                        ),
+                        "notes": NoteSerializer(
+                            many=True,
+                            required=False,
+                            source="note_set",
+                        ),
+                        "translations": TranslationSerializer(
+                            many=True,
+                            required=False,
+                            source="translation_set",
+                        ),
+                        "pronunciations": PronunciationSerializer(
+                            many=True,
+                            required=False,
+                            source="pronunciation_set",
+                        ),
+                    },
+                ),
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -61,7 +117,49 @@ from . import doc_strings
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_detail,
-                response=DictionaryEntryDetailSerializer,
+                response=inline_serializer(
+                    name="DictionaryEntryWriteResponse",
+                    fields={
+                        "title": serializers.CharField(),
+                        "type": serializers.ChoiceField(
+                            choices=TypeOfDictionaryEntry.choices,
+                            default=TypeOfDictionaryEntry.WORD,
+                        ),
+                        "visibility_value": serializers.ChoiceField(
+                            choices=Visibility.choices,
+                            default=Visibility.TEAM,
+                            write_only=True,
+                        ),
+                        "categories": CategorySerializer(many=True),
+                        "exclude_from_games": serializers.BooleanField(),
+                        "exclude_from_kids": serializers.BooleanField(),
+                        "acknowledgements": AcknowledgementSerializer(
+                            many=True,
+                            required=False,
+                            source="acknowledgement_set",
+                        ),
+                        "alternate_spellings": AlternateSpellingSerializer(
+                            many=True,
+                            required=False,
+                            source="alternate_spelling_set",
+                        ),
+                        "notes": NoteSerializer(
+                            many=True,
+                            required=False,
+                            source="note_set",
+                        ),
+                        "translations": TranslationSerializer(
+                            many=True,
+                            required=False,
+                            source="translation_set",
+                        ),
+                        "pronunciations": PronunciationSerializer(
+                            many=True,
+                            required=False,
+                            source="pronunciation_set",
+                        ),
+                    },
+                ),
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
