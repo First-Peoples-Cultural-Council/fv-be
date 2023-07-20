@@ -194,8 +194,8 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         "invalid_flags, expected_count",
         [
             ("invalid_value", 0),
-            ("WORD|invalid_Value", 1),
-            ("PHRASE|WORD|invalid_Value", 2),
+            ("word|invalid_Value", 1),
+            ("phrase|word|invalid_Value", 2),
         ],
     )
     @pytest.mark.django_db

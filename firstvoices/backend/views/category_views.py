@@ -137,7 +137,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
 
         # Check if type flags are present
         contains_flags = [
-            flag.upper()
+            flag.lower()
             for flag in self.request.GET.get("contains", "").split("|")
             if len(flag)
         ]

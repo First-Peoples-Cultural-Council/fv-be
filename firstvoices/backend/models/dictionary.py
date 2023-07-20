@@ -141,8 +141,8 @@ class Pronunciation(BaseDictionaryContentModel):
 
 class TypeOfDictionaryEntry(models.TextChoices):
     # Choices for Type
-    WORD = "WORD", _("Word")
-    PHRASE = "PHRASE", _("Phrase")
+    WORD = "word", _("Word")
+    PHRASE = "phrase", _("Phrase")
 
 
 class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteContentModel):

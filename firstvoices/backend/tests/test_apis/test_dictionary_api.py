@@ -55,7 +55,7 @@ class TestDictionaryEndpoint(
             "url": f"http://testserver{self.get_detail_endpoint(key=entry.id, site_slug=site.slug)}",
             "id": str(entry.id),
             "title": entry.title,
-            "type": "WORD",
+            "type": "word",
             "customOrder": entry.custom_order,
             "visibility": "Public",
             "categories": [],
