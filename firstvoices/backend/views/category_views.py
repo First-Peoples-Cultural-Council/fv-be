@@ -43,6 +43,7 @@ from .api_doc_variables import id_parameter, site_slug_parameter
             OpenApiParameter(
                 name="contains",
                 description=_("Filter by type of dictionary entry associated with it"),
+                deprecated=True,  # Contains flag will be removed eventually
                 required=False,
                 type=str,
                 examples=[
