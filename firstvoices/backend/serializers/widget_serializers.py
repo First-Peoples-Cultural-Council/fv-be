@@ -5,11 +5,11 @@ from backend.models.widget import (
     SiteWidgetList,
     SiteWidgetListOrder,
     Widget,
-    WidgetSettings,
+    WidgetSettings, WidgetFormats,
 )
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin,
+    UpdateSerializerMixin, CreateSiteContentSerializerMixin,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.utils import get_site_from_context
@@ -22,21 +22,31 @@ class WidgetSettingsSerializer(serializers.ModelSerializer):
 
 
 class WidgetDetailSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name="api:widget-detail")
-    type = serializers.CharField(source="widget_type")
-    format = serializers.CharField(source="get_format_display")
-    settings = WidgetSettingsSerializer(source="widgetsettings_set", many=True)
+    url = serializers.HyperlinkedIdentityField(
+        view_name="api:widget-detail", read_only=True
+    )
+    type = serializers.CharField(source="widget_type", required=True)
+    format = serializers.CharField(source="get_format_display", required=True)
+    settings = WidgetSettingsSerializer(
+        source="widgetsettings_set", many=True, required=False
+    )
 
     class Meta:
         model = Widget
         fields = ("url", "id", "title", "type", "format", "settings")
+        read_only_fields = ("id",)
 
 
 class SiteWidgetDetailSerializer(
-    SiteContentLinkedTitleSerializer, WidgetDetailSerializer
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
+    SiteContentLinkedTitleSerializer,
+    WidgetDetailSerializer,
 ):
-    url = SiteHyperlinkedIdentityField(view_name="api:sitewidget-detail")
-    visibility = serializers.CharField(source="get_visibility_display")
+    url = SiteHyperlinkedIdentityField(
+        view_name="api:sitewidget-detail", read_only=True
+    )
+    visibility = serializers.CharField(source="get_visibility_display", read_only=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = SiteWidget
@@ -46,6 +56,38 @@ class SiteWidgetDetailSerializer(
             "format",
             "settings",
         )
+
+    def create(self, validated_data):
+        settings = validated_data.pop("widgetsettings_set")
+        validated_data["format"] = WidgetFormats[
+            str.upper(validated_data.pop("get_format_display"))
+        ]
+        # Set the SiteWidget visibility to match the site visibility
+        validated_data["visibility"] = get_site_from_context(self).visibility
+        created = super().create(validated_data)
+
+        for settings_instance in settings:
+            WidgetSettings.objects.create(
+                widget=created,
+                key=settings_instance["key"],
+                value=settings_instance["value"],
+            )
+        return created
+
+    def update(self, instance, validated_data):
+        WidgetSettings.objects.filter(widget__id=instance.id).delete()
+        settings = validated_data.pop("widgetsettings_set")
+        validated_data["format"] = WidgetFormats[
+            str.upper(validated_data.pop("get_format_display"))
+        ]
+        # Set the SiteWidget visibility to match the site visibility
+        validated_data["visibility"] = get_site_from_context(self).visibility
+        for setting in settings:
+            WidgetSettings.objects.create(
+                widget=instance, key=setting["key"], value=setting["value"]
+            )
+
+        return super().update(instance, validated_data)
 
 
 class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixin):

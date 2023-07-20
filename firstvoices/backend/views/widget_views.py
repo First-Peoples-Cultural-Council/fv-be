@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -6,7 +7,11 @@ from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    http_methods_except_patch,
+)
 
 
 @extend_schema_view(
@@ -31,11 +36,54 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             id_parameter,
         ],
     ),
+    create=extend_schema(
+        description=_("Add a site widget."),
+        responses={
+            201: OpenApiResponse(
+                description=doc_strings.success_201, response=SiteWidgetDetailSerializer
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[site_slug_parameter],
+    ),
+    update=extend_schema(
+        description=_("Edit a site widget."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=SiteWidgetDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    destroy=extend_schema(
+        description=_("Delete a site widget."),
+        responses={
+            204: OpenApiResponse(
+                description=doc_strings.success_204_deleted,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
 )
 class SiteWidgetViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
+    SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
 ):
-    http_method_names = ["get"]
+    http_method_names = http_methods_except_patch
     serializer_class = SiteWidgetDetailSerializer
 
     def get_queryset(self):
