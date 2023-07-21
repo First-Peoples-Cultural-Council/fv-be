@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import Visibility
+from backend.models.constants import AppRole, Visibility
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseControlledSiteContentApiTest
@@ -107,3 +107,159 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
                 "value": settings_two.value,
             },
         ]
+
+    @pytest.mark.django_db
+    def test_detail_widget_create(self):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "title": "Title",
+            "type": "WIDGET_TEXT",
+            "format": "Default",
+            "settings": [
+                {"key": "key: 000", "value": "value: 000"},
+            ],
+        }
+
+        assert len(SiteWidget.objects.all()) == 0
+        assert len(WidgetSettings.objects.all()) == 0
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 1
+
+        widget = SiteWidget.objects.all().first()
+        settings = WidgetSettings.objects.all().first()
+
+        assert widget.title == data["title"]
+        assert widget.widget_type == data["type"]
+        assert widget.get_format_display() == data["format"]
+        assert settings.key == data["settings"][0]["key"]
+        assert settings.value == data["settings"][0]["value"]
+
+    @pytest.mark.django_db
+    def test_detail_widget_create_no_settings(self):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "title": "Title",
+            "type": "WIDGET_TEXT",
+            "format": "Default",
+            "settings": [],
+        }
+
+        assert len(SiteWidget.objects.all()) == 0
+        assert len(WidgetSettings.objects.all()) == 0
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 0
+
+        widget = SiteWidget.objects.all().first()
+
+        assert widget.title == data["title"]
+        assert widget.widget_type == data["type"]
+        assert widget.get_format_display() == data["format"]
+
+    @pytest.mark.django_db
+    def test_detail_widget_settings_update(self):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        widget = SiteWidget.objects.create(site=site)
+
+        data = {
+            "title": "Title Updated",
+            "type": "WIDGET_TEXT",
+            "format": "Default",
+            "settings": [
+                {"key": "key: 000", "value": "value: 000"},
+            ],
+        }
+
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 0
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=widget.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 1
+
+        widget = SiteWidget.objects.all().first()
+        settings = WidgetSettings.objects.all().first()
+
+        assert widget.title == data["title"]
+        assert widget.widget_type == data["type"]
+        assert widget.get_format_display() == data["format"]
+        assert settings.key == data["settings"][0]["key"]
+        assert settings.value == data["settings"][0]["value"]
+
+        data_no_settings = {
+            "title": "Title Updated Two",
+            "type": "WIDGET_TEXT",
+            "format": "Default",
+            "settings": [],
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=widget.id, site_slug=site.slug),
+            format="json",
+            data=data_no_settings,
+        )
+        assert response.status_code == 200
+
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 0
+
+        widget = SiteWidget.objects.all().first()
+
+        assert widget.title == data_no_settings["title"]
+        assert widget.widget_type == data_no_settings["type"]
+        assert widget.get_format_display() == data_no_settings["format"]
+
+    @pytest.mark.django_db
+    def test_detail_widget_delete(self):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        widget = factories.SiteWidgetFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        settings_one = factories.WidgetSettingsFactory.create(widget=widget)
+
+        assert SiteWidget.objects.filter(id=widget.id).exists()
+        assert WidgetSettings.objects.filter(id=settings_one.id).exists()
+        assert len(SiteWidget.objects.all()) == 1
+        assert len(WidgetSettings.objects.all()) == 1
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=widget.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 204
+        assert not SiteWidget.objects.filter(id=widget.id).exists()
+        assert not WidgetSettings.objects.filter(id=settings_one.id).exists()
+        assert len(SiteWidget.objects.all()) == 0
+        assert len(WidgetSettings.objects.all()) == 0
