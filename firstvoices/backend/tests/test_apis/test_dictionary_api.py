@@ -80,7 +80,7 @@ class TestDictionaryEndpoint(
             "splitWordsBase": entry.title.split(" "),
             "created": entry.created.astimezone().isoformat(),
             "lastModified": entry.last_modified.astimezone().isoformat(),
-            "relatedEntries": [],
+            "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
@@ -235,12 +235,12 @@ class TestDictionaryEndpoint(
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert (
-            len(response_data["relatedEntries"]) >= 1
+            len(response_data["relatedDictionaryEntries"]) >= 1
         ), "Did not include related entry"
         assert (
-            not len(response_data["relatedEntries"]) > 1
+            not len(response_data["relatedDictionaryEntries"]) > 1
         ), "Did not block private related entry"
-        assert response_data["relatedEntries"] == [
+        assert response_data["relatedDictionaryEntries"] == [
             {
                 "id": str(entry2.id),
                 "title": entry2.title,
@@ -624,6 +624,7 @@ class TestDictionaryEndpoint(
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
         part_of_speech = factories.PartOfSpeechFactory.create()
+        related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         data = {
             "title": "Hello",
@@ -639,6 +640,7 @@ class TestDictionaryEndpoint(
                 {"text": "Hallo", "part_of_speech": str(part_of_speech.id)}
             ],
             "pronunciations": [{"text": "Huh-lo"}],
+            "related_dictionary_entries": [str(related_entry.id)],
         }
 
         response = self.client.post(
@@ -666,6 +668,9 @@ class TestDictionaryEndpoint(
             part_of_speech.id
         )
         assert response_data["pronunciations"][0]["text"] == "Huh-lo"
+        assert response_data["relatedDictionaryEntries"][0]["id"] == str(
+            related_entry.id
+        )
 
         # Test DB changes
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
@@ -696,6 +701,30 @@ class TestDictionaryEndpoint(
         assert pronunciations.count() == 1
         assert pronunciations.first().text == "Huh-lo"
 
+        assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_create_invalid_related_entries(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory()
+
+        data = {
+            "title": "Hello",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility_value": Visibility.PUBLIC,
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "related_dictionary_entries": [1234],
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+
     @pytest.mark.django_db
     def test_dictionary_entry_update(self):
         user = factories.get_app_admin(AppRole.SUPERADMIN)
@@ -705,6 +734,7 @@ class TestDictionaryEndpoint(
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
         part_of_speech = factories.PartOfSpeechFactory.create()
+        related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         entry = factories.DictionaryEntryFactory.create(
             site=site,
@@ -732,6 +762,7 @@ class TestDictionaryEndpoint(
                 }
             ],
             "pronunciations": [{"text": "Good-bye"}],
+            "related_dictionary_entries": [str(related_entry.id)],
         }
 
         response = self.client.put(
@@ -758,6 +789,9 @@ class TestDictionaryEndpoint(
             part_of_speech.id
         )
         assert response_data["pronunciations"][0]["text"] == "Good-bye"
+        assert response_data["relatedDictionaryEntries"][0]["id"] == str(
+            related_entry.id
+        )
 
         # Test DB changes
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
@@ -790,6 +824,33 @@ class TestDictionaryEndpoint(
         pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
         assert pronunciations.count() == 1
         assert pronunciations.first().text == "Good-bye"
+
+        assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_update_invalid_related_entries(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory()
+        entry = factories.DictionaryEntryFactory.create(site=site)
+
+        data = {
+            "title": "Goodbye",
+            "type": TypeOfDictionaryEntry.PHRASE,
+            "visibility_value": Visibility.TEAM,
+            "exclude_from_games": True,
+            "exclude_from_kids": True,
+            "related_dictionary_entries": ["1234"],
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 400
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_no_content(self):
