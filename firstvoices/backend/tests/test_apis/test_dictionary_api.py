@@ -944,3 +944,22 @@ class TestDictionaryEndpoint(
         assert Note.objects.filter(dictionary_entry=entry).exists() is False
         assert Translation.objects.filter(dictionary_entry=entry).exists() is False
         assert Pronunciation.objects.filter(dictionary_entry=entry).exists() is False
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_delete_does_not_delete_related_entry(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory()
+        entry = factories.DictionaryEntryFactory.create(site=site)
+        related_entry = factories.DictionaryEntryFactory.create(site=site)
+
+        entry.related_dictionary_entries.add(related_entry)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 204
+        assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
+        assert DictionaryEntry.objects.filter(id=related_entry.id).exists() is True
