@@ -1,0 +1,116 @@
+import uuid
+
+import pytest
+import tablib
+
+from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
+from backend.resources.characters import (
+    CharacterResource,
+    CharacterVariantResource,
+    IgnoredCharacterResource,
+)
+from backend.tests.factories import CharacterFactory, SiteFactory
+
+
+class TestCharacterImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,site,title,sort_order,approximate_form",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import Character object with basic fields"""
+        site = SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,{site.id},ᐁ,1,e",  # noqa E501
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Character.objects.filter(site=site.id).count() == len(data)
+
+        new_char = Character.objects.get(id=table["id"][0])
+        assert table["title"][0] == new_char.title
+        assert table["site"][0] == str(new_char.site.id)
+        assert table["sort_order"][0] == str(new_char.sort_order)
+        assert table["approximate_form"][0] == new_char.approximate_form
+
+        new_char = Character.objects.get(id=table["id"][1])
+        assert table["approximate_form"][1] == new_char.approximate_form
+
+
+class TestCharacterVariantImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,site,title,base_character_title,base_character",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import Character object with basic fields"""
+        site = SiteFactory.create()
+        char_a = CharacterFactory.create(site=site, title="a")
+        char_b = CharacterFactory.create(site=site, title="b")
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,{site.id},A,a,{char_a.id}",  # noqa E501
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},B,b,{char_b.id}",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterVariantResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert CharacterVariant.objects.filter(site=site.id).count() == len(data)
+
+        new_variant = CharacterVariant.objects.get(id=table["id"][0])
+        assert table["title"][0] == new_variant.title
+        assert table["site"][0] == str(new_variant.site.id)
+        assert table["base_character"][0] == str(new_variant.base_character.id)
+
+
+class TestIgnoredCharacterImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,site,title",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import Character object with basic fields"""
+        site = SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,{site.id},-",  # noqa E501
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},.",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = IgnoredCharacterResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert IgnoredCharacter.objects.filter(site=site.id).count() == len(data)
+
+        new_char = IgnoredCharacter.objects.get(id=table["id"][0])
+        assert table["title"][0] == new_char.title
+        assert table["site"][0] == str(new_char.site.id)

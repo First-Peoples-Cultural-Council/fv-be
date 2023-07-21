@@ -8,6 +8,11 @@ from scripts.utils.aws_download_utils import (
 )
 
 from backend.models.app import AppImportStatus
+from backend.resources.characters import (
+    CharacterResource,
+    CharacterVariantResource,
+    IgnoredCharacterResource,
+)
 from backend.resources.sites import SiteMigrationResource  # , SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
@@ -19,6 +24,12 @@ Halts the process when encountering any data/validation error.
 
 Run with:
     python manage.py shell < scripts/import_csv_data.py
+
+To add a new import:
+    - Create or re-use a "Resource" mapping to the desired django model
+    - Ensure all complex model properties (e.g. foreign keys) are correctly
+        mapped to Python objects using a django-import-export "Widget"
+    - https://django-import-export.readthedocs.io/en/latest/getting_started.html
 """
 
 logger = logging.getLogger(__name__)
@@ -42,8 +53,11 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 # List model resources in the correct order to import them
 import_resources = [
     ("sites", SiteMigrationResource()),
-    # more to be added
     # ("site_media", SiteResource()) # waiting on media import
+    ("base-characters", CharacterResource()),
+    ("variant-characters", CharacterVariantResource()),
+    ("ignored-characters", IgnoredCharacterResource()),
+    # more to be added
 ]
 
 
