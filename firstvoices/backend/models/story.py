@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from backend.permissions import predicates
+
 from .base import AudienceMixin, BaseControlledSiteContentModel, BaseModel
 from .media import RelatedMediaMixin
 
@@ -70,7 +71,7 @@ class Page(BaseModel, RelatedMediaMixin):
 
     ordering enforces ordering via simple ascending sort
 
-    text from fvbook:lyrics_translation
+    translation from fvbook:lyrics_translation
     text from fvbook:lyrics
     """
 
