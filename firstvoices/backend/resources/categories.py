@@ -20,4 +20,6 @@ class CategoryResource(BaseResource):
 class CategoryMigrationResource(CategoryResource):
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
         if not dry_run:
-            Category.objects.filter(site__id__in=dataset["site"]).delete()
+            # If there are categories to be imported, only then remove previous categories
+            if len(dataset):
+                Category.objects.filter(site__id__in=dataset["site"]).delete()
