@@ -94,6 +94,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
+    stories = SiteViewLinkField(view_name="api:story-list")
     videos = SiteViewLinkField(view_name="api:video-list")
     widgets = SiteViewLinkField(view_name="api:sitewidget-list")
     word_of_the_day = SiteViewLinkField(view_name="api:word-of-the-day-list")
@@ -125,6 +126,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "pages",
             "people",
             "songs",
+            "stories",
             "videos",
             "widgets",
             "word_of_the_day",

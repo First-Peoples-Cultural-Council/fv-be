@@ -8,3 +8,4 @@ from .sites_admin import *  # noqa F401, F403
 from .songs_admin import *  # noqa F401, F403
 from .user_admin import *  # noqa F401, F403
 from .widget_admin import *  # noqa F401, F403
+from .story_admin import *  # noqa F401, F403

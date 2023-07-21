@@ -129,8 +129,9 @@ def delete_from_index(sender, instance, **kwargs):
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id
         )
-        index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        index_entry.delete()
+        if existing_entry:
+            index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
+            index_entry.delete()
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)

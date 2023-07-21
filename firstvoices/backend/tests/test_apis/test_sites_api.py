@@ -176,6 +176,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
             "songs": f"{site_url}/songs",
+            "stories": f"{site_url}/stories",
             "videos": f"{site_url}/videos",
             "widgets": f"{site_url}/widgets",
             "wordOfTheDay": f"{site_url}/word-of-the-day",
