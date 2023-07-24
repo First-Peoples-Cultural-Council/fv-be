@@ -194,7 +194,6 @@ class BaseMediaApiTest(
     FormDataMixin,
     base_api_test.WriteApiTestMixin,
     base_api_test.SiteContentCreateApiTestMixin,
-    # base_api_test.SiteContentUpdateApiTestMixin,
     base_api_test.SiteContentDestroyApiTestMixin,
     base_api_test.BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
@@ -229,3 +228,17 @@ class BaseMediaApiTest(
         self.assert_instance_deleted(instance.medium)
         self.assert_instance_deleted(instance.small)
         self.assert_instance_deleted(instance.thumbnail)
+
+    @pytest.mark.django_db
+    def test_create_400_invalid_filetype(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+        data["original"] = (self.get_sample_file("file.txt", self.sample_filetype),)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400

@@ -11,6 +11,7 @@ from .base_serializers import (
     base_id_fields,
 )
 from .utils import get_site_from_context
+from .validators import SupportedFileType
 
 
 class PersonSerializer(
@@ -90,7 +91,9 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
     speakers = WriteableRelatedPersonSerializer(
         many=True, queryset=media.Person.objects.all()
     )
-    original = MediaFileUploadSerializer()
+    original = MediaFileUploadSerializer(
+        validators=[SupportedFileType(mimetypes=["audio/wav", "audio/mpeg"])],
+    )
 
     class Meta(MediaSerializer.Meta):
         model = media.Audio
@@ -128,7 +131,13 @@ class ImageSerializer(
 ):
     """Serializer for Image objects. Supports image objects shared between different sites."""
 
-    original = ImageUploadSerializer()
+    original = ImageUploadSerializer(
+        validators=[
+            SupportedFileType(
+                mimetypes=["image/jpeg", "image/gif", "image/png", "image/tiff"]
+            )
+        ],
+    )
 
     def create(self, validated_data):
         file_data = validated_data.pop("original")
@@ -153,7 +162,9 @@ class ImageSerializer(
 class VideoSerializer(CreateSiteContentSerializerMixin, MediaWithThumbnailsSerializer):
     """Serializer for Video objects. Supports video objects shared between different sites."""
 
-    original = VideoUploadSerializer()
+    original = VideoUploadSerializer(
+        validators=[SupportedFileType(mimetypes=["video/mp4", "video/quicktime"])],
+    )
 
     class Meta(MediaWithThumbnailsSerializer.Meta):
         model = media.Video
