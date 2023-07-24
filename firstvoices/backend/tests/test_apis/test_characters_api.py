@@ -155,7 +155,7 @@ class TestCharactersEndpoints(
         )
         speaker = factories.PersonFactory.create(site=site)
         audio = factories.AudioFactory.create(site=site)
-        factories.AudioSpeakerFactory.create(speaker=speaker, audio=audio, site=site)
+        factories.AudioSpeakerFactory.create(speaker=speaker, audio=audio)
 
         instance = self.create_instance_with_media(
             site=site,
@@ -164,9 +164,7 @@ class TestCharactersEndpoints(
         )
 
         new_audio = factories.AudioFactory.create(site=site)
-        factories.AudioSpeakerFactory.create(
-            speaker=speaker, audio=new_audio, site=site
-        )
+        factories.AudioSpeakerFactory.create(speaker=speaker, audio=new_audio)
 
         req_body = {"related_audio": [str(new_audio.id)]}
 

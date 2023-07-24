@@ -24,3 +24,4 @@ class LyricsFactory(DjangoModelFactory):
 
     text = factory.Sequence(lambda n: "Song lyric text %03d" % n)
     translation = factory.Sequence(lambda n: "Song lyric translation %03d" % n)
+    ordering = factory.Sequence(lambda n: n)

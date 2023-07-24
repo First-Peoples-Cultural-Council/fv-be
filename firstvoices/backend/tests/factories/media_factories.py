@@ -115,7 +115,6 @@ class AudioSpeakerFactory(DjangoModelFactory):
     class Meta:
         model = AudioSpeaker
 
-    site = factory.SubFactory(SiteFactory)
     audio = factory.SubFactory(AudioFactory)
     speaker = factory.SubFactory(PersonFactory)
 

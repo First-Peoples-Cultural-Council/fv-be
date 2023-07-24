@@ -36,3 +36,11 @@ class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["name"] == expected_data["name"]
         assert actual_response["bio"] == expected_data["bio"]
+
+    def add_related_objects(self, instance):
+        # no related objects to add
+        pass
+
+    def assert_related_objects_deleted(self, instance):
+        # no related objects to delete
+        pass
