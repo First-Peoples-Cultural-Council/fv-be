@@ -21,6 +21,8 @@ class TestCharactersEndpoints(
     API_DETAIL_VIEW = "api:character-detail"
     CHARACTER_NOTE = "Test note"
 
+    model = Character
+
     def create_minimal_instance(self, site, visibility):
         return factories.CharacterFactory.create(
             site=site, note="a note", approximate_form="approx"
