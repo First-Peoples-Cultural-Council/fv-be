@@ -8,19 +8,8 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
-from backend.tests.factories import (
-    AudioFactory,
-    AudioSpeakerFactory,
-    ImageFactory,
-    PersonFactory,
-    VideoFactory,
-)
-from backend.tests.test_apis.base_api_test import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentCreateApiTestMixin,
-    SiteContentDestroyApiTestMixin,
-    WriteApiTestMixin,
-)
+from backend.tests import factories
+from backend.tests.test_apis import base_api_test
 
 
 class FormDataMixin:
@@ -150,9 +139,9 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_audio_with_speaker(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        speaker = PersonFactory.create(site=site)
-        audio = AudioFactory.create(site=site)
-        AudioSpeakerFactory.create(speaker=speaker, audio=audio)
+        speaker = factories.PersonFactory.create(site=site)
+        audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(speaker=speaker, audio=audio)
 
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_audio=(audio,)
@@ -172,7 +161,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_images(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        image = ImageFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_images=(image,)
         )
@@ -187,7 +176,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_videos(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        video = VideoFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_videos=(video,)
         )
@@ -203,14 +192,14 @@ class RelatedMediaTestMixin(MediaTestMixin):
 class BaseMediaApiTest(
     MediaTestMixin,
     FormDataMixin,
-    WriteApiTestMixin,
-    SiteContentCreateApiTestMixin,
-    SiteContentDestroyApiTestMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    base_api_test.WriteApiTestMixin,
+    base_api_test.SiteContentCreateApiTestMixin,
+    # base_api_test.SiteContentUpdateApiTestMixin,
+    base_api_test.SiteContentDestroyApiTestMixin,
+    base_api_test.BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     """
     Tests for the list, detail, create, and delete APIs for media endpoints.
-    Note: does not test update/PUT requests.
     """
 
     sample_filename = "sample-image.jpg"
