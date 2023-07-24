@@ -155,10 +155,10 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
 
     def add_related_objects(self, instance):
         factories.PagesFactory.create(story=instance)
+        factories.PagesFactory.create(story=instance)
 
     def assert_related_objects_deleted(self, instance):
-        for page in instance.pages.all():
-            self.assert_instance_deleted(page)
+        assert instance.pages.count() == 0
 
     def create_instance_with_media(
         self,
