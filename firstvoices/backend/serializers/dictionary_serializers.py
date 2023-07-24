@@ -392,4 +392,8 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "notes",
             "translations",
             "pronunciations",
+            "related_dictionary_entries",
+            "related_audio",
+            "related_images",
+            "related_videos",
         )

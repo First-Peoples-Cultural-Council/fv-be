@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from backend.models import media
 
@@ -202,13 +203,22 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     """Mixin that provides standard related media fields"""
 
     related_audio = WriteableRelatedAudioSerializer(
-        required=False, many=True, queryset=media.Audio.objects.all()
+        required=False,
+        many=True,
+        queryset=media.Audio.objects.all(),
+        validators=[UniqueValidator(queryset=media.Audio.objects.all())],
     )
     related_images = WriteableRelatedImageSerializer(
-        required=False, many=True, queryset=media.Image.objects.all()
+        required=False,
+        many=True,
+        queryset=media.Image.objects.all(),
+        validators=[UniqueValidator(queryset=media.Image.objects.all())],
     )
     related_videos = WriteableRelatedVideoSerializer(
-        required=False, many=True, queryset=media.Video.objects.all()
+        required=False,
+        many=True,
+        queryset=media.Video.objects.all(),
+        validators=[UniqueValidator(queryset=media.Video.objects.all())],
     )
 
     class Meta:
