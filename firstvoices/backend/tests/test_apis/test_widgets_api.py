@@ -24,14 +24,24 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
 
         return {
             "title": "Title",
+            "visibility": "Public",
             "type": "WIDGET_TEXT",
             "format": "Default",
             "settings": list(map(lambda x: {"key": x.key, "value": x.value}, settings)),
         }
 
+    def add_related_objects(self, instance):
+        factories.WidgetSettingsFactory.create(widget=instance)
+        factories.WidgetSettingsFactory.create(widget=instance)
+
+    def assert_related_objects_deleted(self, instance):
+        for setting in instance.widgetsettings_set.all():
+            self.assert_instance_deleted(setting)
+
     def assert_updated_instance(self, expected_data, actual_instance: SiteWidget):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.widget_type == expected_data["type"]
+        assert actual_instance.get_visibility_display() == expected_data["visibility"]
         assert actual_instance.get_format_display() == expected_data["format"]
 
         actual_settings = WidgetSettings.objects.filter(widget__id=actual_instance.id)
@@ -116,6 +126,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
 
         data = {
             "title": "Title",
+            "visibility": "Public",
             "type": "WIDGET_TEXT",
             "format": "Default",
             "settings": [
@@ -139,6 +150,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
         settings = WidgetSettings.objects.all().first()
 
         assert widget.title == data["title"]
+        assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
         assert settings.key == data["settings"][0]["key"]
@@ -152,6 +164,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
 
         data = {
             "title": "Title",
+            "visibility": "Public",
             "type": "WIDGET_TEXT",
             "format": "Default",
             "settings": [],
@@ -172,6 +185,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
         widget = SiteWidget.objects.all().first()
 
         assert widget.title == data["title"]
+        assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
 
@@ -185,6 +199,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
 
         data = {
             "title": "Title Updated",
+            "visibility": "Public",
             "type": "WIDGET_TEXT",
             "format": "Default",
             "settings": [
@@ -210,6 +225,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
         settings = WidgetSettings.objects.all().first()
 
         assert widget.title == data["title"]
+        assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
         assert settings.key == data["settings"][0]["key"]
@@ -217,6 +233,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
 
         data_no_settings = {
             "title": "Title Updated Two",
+            "visibility": "Public",
             "type": "WIDGET_TEXT",
             "format": "Default",
             "settings": [],
@@ -235,6 +252,7 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
         widget = SiteWidget.objects.all().first()
 
         assert widget.title == data_no_settings["title"]
+        assert widget.get_visibility_display() == data_no_settings["visibility"]
         assert widget.widget_type == data_no_settings["type"]
         assert widget.get_format_display() == data_no_settings["format"]
 
