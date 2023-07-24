@@ -1,15 +1,18 @@
 from rest_framework import serializers
 
+from backend.models.constants import Visibility
 from backend.models.widget import (
     SiteWidget,
     SiteWidgetList,
     SiteWidgetListOrder,
     Widget,
-    WidgetSettings, WidgetFormats,
+    WidgetFormats,
+    WidgetSettings,
 )
 from backend.serializers.base_serializers import (
+    CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin, CreateSiteContentSerializerMixin,
+    UpdateSerializerMixin,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.utils import get_site_from_context
@@ -46,7 +49,7 @@ class SiteWidgetDetailSerializer(
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitewidget-detail", read_only=True
     )
-    visibility = serializers.CharField(source="get_visibility_display", read_only=True)
+    visibility = serializers.CharField(source="get_visibility_display")
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = SiteWidget
@@ -62,8 +65,9 @@ class SiteWidgetDetailSerializer(
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
         ]
-        # Set the SiteWidget visibility to match the site visibility
-        validated_data["visibility"] = get_site_from_context(self).visibility
+        validated_data["visibility"] = Visibility[
+            str.upper(validated_data.pop("get_visibility_display"))
+        ]
         created = super().create(validated_data)
 
         for settings_instance in settings:
@@ -80,8 +84,9 @@ class SiteWidgetDetailSerializer(
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
         ]
-        # Set the SiteWidget visibility to match the site visibility
-        validated_data["visibility"] = get_site_from_context(self).visibility
+        validated_data["visibility"] = Visibility[
+            str.upper(validated_data.pop("get_visibility_display"))
+        ]
         for setting in settings:
             WidgetSettings.objects.create(
                 widget=instance, key=setting["key"], value=setting["value"]
