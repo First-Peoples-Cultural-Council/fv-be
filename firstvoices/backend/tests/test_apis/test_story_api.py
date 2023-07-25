@@ -4,9 +4,10 @@ import pytest
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
+
+from ...models import Page, Story
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
-from ...models import Page, Story
 
 
 class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
@@ -26,7 +27,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         cover_image = factories.ImageFactory.create(site=site)
 
         generated_media = {}
-        for purpose in ('story', 'page1', 'page2'):
+        for purpose in ("story", "page1", "page2"):
             images = []
             videos = []
             audio = []
@@ -40,13 +41,19 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
                 generated_media[purpose] = {
                     "related_images": images,
                     "related_videos": videos,
-                    "related_audio": audio
+                    "related_audio": audio,
                 }
 
         return {
-            "relatedAudio": list(map(lambda x: str(x.id), generated_media['story']['related_audio'])),
-            "relatedImages": list(map(lambda x: str(x.id), generated_media['story']['related_images'])),
-            "relatedVideos": list(map(lambda x: str(x.id), generated_media['story']['related_videos'])),
+            "relatedAudio": list(
+                map(lambda x: str(x.id), generated_media["story"]["related_audio"])
+            ),
+            "relatedImages": list(
+                map(lambda x: str(x.id), generated_media["story"]["related_images"])
+            ),
+            "relatedVideos": list(
+                map(lambda x: str(x.id), generated_media["story"]["related_videos"])
+            ),
             "coverImage": str(cover_image.id),
             "title": "Title",
             "titleTranslation": "A translation of the title",
@@ -57,16 +64,46 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
                 {
                     "text": "First text page",
                     "translation": "Translated 1st",
-                    "relatedAudio": list(map(lambda x: str(x.id), generated_media['page1']['related_audio'])),
-                    "relatedImages": list(map(lambda x: str(x.id), generated_media['page1']['related_images'])),
-                    "relatedVideos": list(map(lambda x: str(x.id), generated_media['page1']['related_videos'])),
+                    "relatedAudio": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page1"]["related_audio"],
+                        )
+                    ),
+                    "relatedImages": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page1"]["related_images"],
+                        )
+                    ),
+                    "relatedVideos": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page1"]["related_videos"],
+                        )
+                    ),
                 },
                 {
                     "text": "Second text page",
                     "translation": "Translated 2nd",
-                    "relatedAudio": list(map(lambda x: str(x.id), generated_media['page2']['related_audio'])),
-                    "relatedImages": list(map(lambda x: str(x.id), generated_media['page2']['related_images'])),
-                    "relatedVideos": list(map(lambda x: str(x.id), generated_media['page2']['related_videos'])),
+                    "relatedAudio": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page2"]["related_audio"],
+                        )
+                    ),
+                    "relatedImages": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page2"]["related_images"],
+                        )
+                    ),
+                    "relatedVideos": list(
+                        map(
+                            lambda x: str(x.id),
+                            generated_media["page2"]["related_videos"],
+                        )
+                    ),
                 },
             ],
             "acknowledgements": ["Test Authour", "Another Acknowledgement"],
@@ -101,10 +138,8 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
-        assert (
-            actual_response["pages"][0]["text"] == expected_data["pages"][0]["text"]
-        )
-        assert (len(actual_response["pages"][0]["relatedAudio"]) == 3)
+        assert actual_response["pages"][0]["text"] == expected_data["pages"][0]["text"]
+        assert len(actual_response["pages"][0]["relatedAudio"]) == 3
         assert (
             actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
         )
@@ -117,6 +152,13 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             == expected_data["relatedImages"][0]
         )
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
+
+    def add_related_objects(self, instance):
+        factories.PagesFactory.create(story=instance)
+
+    def assert_related_objects_deleted(self, instance):
+        for page in instance.pages.all():
+            self.assert_instance_deleted(page)
 
     def create_instance_with_media(
         self,
@@ -142,7 +184,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "coverImage": None,
             "titleTranslation": story.title_translation,
             "excludeFromGames": False,
-            "excludeFromKids": False
+            "excludeFromKids": False,
         }
 
     def get_expected_response(self, story, site):

@@ -4,10 +4,10 @@ asgiref==3.7.2
 async-timeout==4.0.2
 attrs==23.1.0
 billiard==3.6.4.0
-boto3==1.28.7
+boto3==1.28.9
 botocore>=1.29.139
 celery==5.2.7
-certifi==2023.5.7
+certifi==2023.7.22
 cffi==1.15.1
 charset-normalizer==3.2.0
 click==8.0.4
@@ -29,7 +29,7 @@ djangorestframework==3.14.0
 djangorestframework-camel-case==1.4.2
 dnspython==2.4.0
 drf-nested-routers==0.93.4  # https://github.com/alanjds/drf-nested-routers/
-drf-spectacular==0.26.3
+drf-spectacular==0.26.4
 editdistance==0.6.2
 elastic-transport==8.4.0
 elasticsearch==7.17.9
