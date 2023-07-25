@@ -54,10 +54,10 @@ def get_types_query(types):
     # Adding type filters
     # If only one of the "words" or "phrases" is present, we need to filter out the other one
     # no action required if both are present
-    if "words" in types and "phrases" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
-    elif "phrases" in types and "words" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    if "word" in types and "phrase" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE.value))
+    elif "phrase" in types and "word" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD.value))
     else:
         return None
 
