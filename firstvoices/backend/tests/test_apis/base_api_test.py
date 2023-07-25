@@ -491,7 +491,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
             data=self.format_upload_data(self.get_invalid_data()),
             content_type=self.content_type,
         )
@@ -504,7 +506,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
             data=self.format_upload_data(self.get_valid_data(site)),
             content_type=self.content_type,
         )
@@ -517,7 +521,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug="missing-site"),
+            self.get_detail_endpoint(key=instance.slug, site_slug="missing-site")
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug="missing-site"),
             data=self.format_upload_data(self.get_valid_data(site)),
             content_type=self.content_type,
         )
@@ -543,7 +549,9 @@ class SiteContentUpdateApiTestMixin:
         data = self.get_valid_data(site)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -578,7 +586,9 @@ class SiteContentDestroyApiTestMixin:
         self.add_related_objects(instance)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 204
@@ -592,7 +602,9 @@ class SiteContentDestroyApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
         )
 
         assert response.status_code == 403
@@ -614,7 +626,9 @@ class SiteContentDestroyApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug="missing-site")
+            self.get_detail_endpoint(key=instance.slug, site_slug="missing-site")
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug="missing-site")
         )
 
         assert response.status_code == 404
