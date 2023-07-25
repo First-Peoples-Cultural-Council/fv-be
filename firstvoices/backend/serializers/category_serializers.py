@@ -45,8 +45,8 @@ class CategoryDetailSerializer(
         required=False,
         allow_null=True,
         validators=[
-            SameSite(queryset=Category.objects.all()),
-            HasNoParent(queryset=Category.objects.all()),
+            SameSite(),
+            HasNoParent(),
         ],
         source="parent",
         queryset=Category.objects.all(),

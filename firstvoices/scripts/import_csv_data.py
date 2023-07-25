@@ -8,7 +8,7 @@ from scripts.utils.aws_download_utils import (
 )
 
 from backend.models.app import AppImportStatus
-from backend.resources.sites import SiteResource
+from backend.resources.sites import SiteMigrationResource  # , SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
 
@@ -41,8 +41,9 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 
 # List model resources in the correct order to import them
 import_resources = [
-    ("sites", SiteResource()),
+    ("sites", SiteMigrationResource()),
     # more to be added
+    # ("site_media", SiteResource()) # waiting on media import
 ]
 
 

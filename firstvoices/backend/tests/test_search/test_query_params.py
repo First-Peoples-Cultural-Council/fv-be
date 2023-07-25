@@ -88,61 +88,92 @@ class TestQueryParams:
         assert expected_exact_match_other_translation_string in str(search_query)
         assert expected_fuzzy_match_other_translation_string in str(search_query)
 
-    def test_valid_with_special_chars_query(self):
+    @pytest.mark.parametrize(
+        "input_str, expected_str",
+        [
+            (
+                "A Valid Query **With $@&*456Ŧ specials!",
+                "A Valid Query **With $@&*456Ŧ specials!",
+            ),
+            ("ááááá", "ááááá"),  # nfc normalization
+        ],
+    )
+    def test_valid_with_special_chars_query(self, input_str, expected_str):
         # relates to: SearchQueryTest.java - testValidQuery()
-        search_query = get_search_query(q="A Valid Query **With $@&*456Ŧ specials!")
+        search_query = get_search_query(q=input_str)
         search_query = search_query.to_dict()
 
         expected_exact_match_primary_language_string = (
-            "'match_phrase': {'primary_language_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'match_phrase': {'primary_language_search_fields': {'query': '"
+            + expected_str
+            + "', "
             "'slop': 3, 'boost': 5}}"
         )
         expected_fuzzy_match_primary_language_string = (
-            "'fuzzy': {'primary_language_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'primary_language_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 3}}"
         )
         expected_exact_match_primary_translation_string = (
-            "'match_phrase': {'primary_translation_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ "
-            "specials!', 'slop': 3, 'boost': 5}}"
+            "'match_phrase': {'primary_translation_search_fields': {'query': '"
+            + expected_str
+            + "', 'slop': 3, 'boost': 5}}"
         )
         expected_fuzzy_match_primary_translation_string = (
-            "'fuzzy': {'primary_translation_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'primary_translation_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 3}}"
         )
 
         # Secondary fields
         expected_exact_match_secondary_language_string = (
-            "'match_phrase': {'secondary_language_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ "
-            "specials!', 'slop': 3, 'boost': 4}}"
+            "'match_phrase': {'secondary_language_search_fields': {'query': '"
+            + expected_str
+            + "', 'slop': 3, 'boost': 4}}"
         )
         expected_fuzzy_match_secondary_language_string = (
-            "'fuzzy': {'secondary_language_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'secondary_language_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 2}}"
         )
         expected_exact_match_secondary_translation_string = (
-            "'match_phrase': {'secondary_translation_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ "
-            "specials!', 'slop': 3, 'boost': 4}}"
+            "'match_phrase': {'secondary_translation_search_fields': {'query': '"
+            + expected_str
+            + "', 'slop': 3, 'boost': 4}}"
         )
         expected_fuzzy_match_secondary_translation_string = (
-            "'fuzzy': {'secondary_translation_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'secondary_translation_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 2}}"
         )
 
         # Other fields
         expected_exact_match_other_language_string = (
-            "'match_phrase': {'other_language_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'match_phrase': {'other_language_search_fields': {'query': '"
+            + expected_str
+            + "', "
             "'slop': 3, 'boost': 1.5}}"
         )
         expected_fuzzy_match_other_language_string = (
-            "'fuzzy': {'other_language_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'other_language_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 1.0}}"
         )
         expected_exact_match_other_translation_string = (
-            "'match_phrase': {'other_translation_search_fields': {'query': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'match_phrase': {'other_translation_search_fields': {'query': '"
+            + expected_str
+            + "', "
             "'slop': 3, 'boost': 1.5}}"
         )
         expected_fuzzy_match_other_translation_string = (
-            "'fuzzy': {'other_translation_search_fields': {'value': 'A Valid Query **With $@&*456Ŧ specials!', "
+            "'fuzzy': {'other_translation_search_fields': {'value': '"
+            + expected_str
+            + "', "
             "'fuzziness': '2', 'boost': 1.0}}"
         )
 
@@ -312,7 +343,7 @@ class TestDomain:
 
 @pytest.mark.django_db
 class TestCategory:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
         self.parent_category = factories.ParentCategoryFactory(site=self.site)
         self.child_category = factories.ChildCategoryFactory(
@@ -352,7 +383,7 @@ class TestCategory:
 
 @pytest.mark.django_db
 class TestStartsWithChar:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
 
     def test_blank(self):

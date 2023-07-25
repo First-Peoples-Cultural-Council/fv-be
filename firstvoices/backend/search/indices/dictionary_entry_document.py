@@ -51,7 +51,7 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
     # Add document to es index
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
         )
         translations_text = get_translation_text(instance)
         notes_text = get_notes_text(instance)
@@ -96,7 +96,8 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -117,13 +118,15 @@ def delete_from_index(sender, instance, **kwargs):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
         )
-        index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        index_entry.delete()
+        if existing_entry:
+            index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
+            index_entry.delete()
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
 
 
@@ -138,7 +141,9 @@ def update_translation(sender, instance, **kwargs):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -147,7 +152,8 @@ def update_translation(sender, instance, **kwargs):
         dictionary_entry_doc.update(translation=translations_text)
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("translation", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(
@@ -170,7 +176,9 @@ def update_notes(sender, instance, **kwargs):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -179,7 +187,8 @@ def update_notes(sender, instance, **kwargs):
         dictionary_entry_doc.update(note=notes_text)
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("notes", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(
@@ -202,7 +211,9 @@ def update_acknowledgement(sender, instance, **kwargs):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -211,7 +222,8 @@ def update_acknowledgement(sender, instance, **kwargs):
         dictionary_entry_doc.update(acknowledgement=acknowledgements_text)
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("acknowledgements", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(
@@ -234,7 +246,9 @@ def update_categories(sender, instance, **kwargs):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -243,7 +257,8 @@ def update_categories(sender, instance, **kwargs):
         dictionary_entry_doc.update(categories=categories)
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % (SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            ES_CONNECTION_ERROR
+            % ("categories", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
     except NotFoundError:
         logger.warning(

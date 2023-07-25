@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import DataError
 
 from backend.models.characters import Alphabet
@@ -81,6 +82,24 @@ class TestDictionaryEntryModel:
         fetched_entry = DictionaryEntry.objects.get(title=entry_title)
         assert fetched_entry.title == entry_title
         assert len(fetched_entry.custom_order) == 2 * title_length
+
+    @pytest.mark.django_db
+    def test_nfc_normalization(self):
+        expected_title = "ááááá"
+
+        site = SiteFactory.create()
+        input_title = "ááááá"
+        entry = DictionaryEntry(title=input_title, type="WORD", site=site)
+        entry.save()
+
+        # The following get should not work since the input_title is converted to expected_title
+        # when going through the normalization process
+        with pytest.raises(ObjectDoesNotExist):
+            _ = DictionaryEntry.objects.get(title=input_title)
+
+        # Thus, we test again with the expected_title
+        fetched_entry = DictionaryEntry.objects.get(title=expected_title)
+        assert fetched_entry.title == expected_title
 
 
 class TestDictionarySortProcessing:

@@ -5,9 +5,11 @@ from rest_framework import serializers
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
 from backend.models.sites import Language, Site
+from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
@@ -89,8 +91,10 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     )
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
+    pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
+    stories = SiteViewLinkField(view_name="api:story-list")
     videos = SiteViewLinkField(view_name="api:video-list")
     widgets = SiteViewLinkField(view_name="api:sitewidget-list")
     word_of_the_day = SiteViewLinkField(view_name="api:word-of-the-day-list")
@@ -119,8 +123,10 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary_cleanup_preview",
             "ignored_characters",
             "images",
+            "pages",
             "people",
             "songs",
+            "stories",
             "videos",
             "widgets",
             "word_of_the_day",
@@ -130,28 +136,48 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 class SiteDetailWriteSerializer(SiteDetailSerializer):
     title = serializers.CharField(read_only=True)
 
-    # Will be added in FW-4561
-    homepage = None
-
+    homepage = serializers.PrimaryKeyRelatedField(
+        queryset=SiteWidget.objects.all(),
+        allow_null=True,
+        many=True,
+    )
     logo = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
-        validators=[SameSite(queryset=Image.objects.all())],
+        validators=[SameSite()],
     )
     banner_image = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
-        validators=[SameSite(queryset=Image.objects.all())],
+        validators=[SameSite()],
     )
     banner_video = serializers.PrimaryKeyRelatedField(
         queryset=Video.objects.all(),
         allow_null=True,
-        validators=[SameSite(queryset=Video.objects.all())],
+        validators=[SameSite()],
     )
+
+    def validate_homepage(self, homepage):
+        site = get_site_from_context(self)
+        for site_widget in homepage:
+            if site_widget.site != site:
+                raise serializers.ValidationError(
+                    f"SiteWidget with ID ({site_widget.id}) does not belong to the site."
+                )
+        return homepage
 
     def to_representation(self, instance):
         data = SiteDetailSerializer(instance=instance, context=self.context).data
         return data
+
+    def update(self, instance, validated_data):
+        homepage = instance.homepage
+        if not homepage:
+            homepage = SiteWidgetList.objects.create(site=instance)
+        homepage = SiteWidgetListSerializer.update(self, homepage, validated_data)
+        validated_data["homepage"] = homepage
+        instance.homepage = homepage
+        return super().update(instance, validated_data)
 
 
 class LanguageSerializer(serializers.Serializer):

@@ -8,7 +8,7 @@ from backend.tests import factories
 
 class SameSiteSerializer(serializers.ModelSerializer):
     parent = serializers.PrimaryKeyRelatedField(
-        validators=[validators.SameSite(queryset=Category.objects.all())],
+        validators=[validators.SameSite()],
         queryset=Category.objects.all(),
     )
 
@@ -90,7 +90,7 @@ class TestUniqueForSiteValidator:
 
 class HasNoParentSerializer(serializers.ModelSerializer):
     parent = serializers.PrimaryKeyRelatedField(
-        validators=[validators.HasNoParent(queryset=Category.objects.all())],
+        validators=[validators.HasNoParent()],
         queryset=Category.objects.all(),
     )
 

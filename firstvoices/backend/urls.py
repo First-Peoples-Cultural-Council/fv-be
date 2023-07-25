@@ -11,12 +11,14 @@ from backend.views.custom_order_recalculate_views import (
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.image_views import ImageViewSet
+from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
+from backend.views.story_views import StoryViewSet
 from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
@@ -56,7 +58,9 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
+sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
+sites_router.register(r"stories", StoryViewSet, basename="story")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
 

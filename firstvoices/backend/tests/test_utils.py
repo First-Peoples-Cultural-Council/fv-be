@@ -1,6 +1,6 @@
 from itertools import product
 
-from backend.utils.character_utils import ArbSorter, CustomSorter
+from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
 class TestCharacterUtils:
@@ -91,3 +91,8 @@ class TestCharacterUtils:
         assert sorter.word_as_chars("x-y") == ["x-", "y"]
         assert sorter.word_as_chars("cch..") == ["c", "ch.", "."]
         assert sorter.word_as_chars("c-h") == ["c", "-", "h"]
+
+    def test_nfc_normalization(self):
+        expected_str = "ááááá"
+        input_str = "ááááá"
+        assert nfc(input_str) == expected_str

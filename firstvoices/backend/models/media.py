@@ -7,6 +7,7 @@ from io import BytesIO
 
 import ffmpeg
 import magic
+import rules
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import NotSupportedError, models
@@ -16,7 +17,7 @@ from PIL import Image as PILImage
 
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseSiteContentModel
+from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 
 
 class Person(BaseSiteContentModel):
@@ -69,7 +70,7 @@ class FileBase(BaseSiteContentModel):
             )
 
         """
-        Sets mimetype based on the file contents
+        Sets mimetype and size based on the file contents
         """
         with self.content.file.open(mode="rb") as fb:
             self.mimetype = magic.from_buffer(fb.read(2048), mime=True)
@@ -284,15 +285,15 @@ class Audio(MediaBase):
         return f"{self.title} / {self.site} (Audio)"
 
 
-class AudioSpeaker(BaseSiteContentModel):
+class AudioSpeaker(BaseModel):
     class Meta:
         verbose_name = _("Audio Speaker")
         verbose_name_plural = _("Audio Speakers")
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "view": rules.always_allow,  # will be removed with fw-4368
+            "add": rules.always_allow,
+            "change": rules.always_allow,
+            "delete": rules.always_allow,
         }
 
     audio = models.ForeignKey(
@@ -396,8 +397,6 @@ class ThumbnailMixin(models.Model):
             site=self.site,
             created_by=self.created_by,
             last_modified_by=self.last_modified_by,
-            height=output_size[1],
-            width=output_size[0],
         )
         model.save()
 

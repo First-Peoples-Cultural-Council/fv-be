@@ -14,6 +14,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_SONG_INDEX,
     VALID_DOCUMENT_TYPES,
 )
+from backend.utils.character_utils import clean_input
 
 
 class SearchDomains(Enum):
@@ -42,10 +43,10 @@ def get_indices(types):
 
 def get_cleaned_search_term(q):
     """
-    clean incoming string.
+    clean and nfc-normalize incoming string.
     case-sensitivity handled by analyzer in the search document.
     """
-    return q.strip()
+    return clean_input(q)
 
 
 # sub-queries utils

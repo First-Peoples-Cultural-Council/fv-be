@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from embed_video.admin import AdminVideoMixin
 
-from backend.admin import BaseSiteContentAdmin, HiddenBaseAdmin
+from backend.admin import BaseAdmin, BaseSiteContentAdmin, HiddenBaseAdmin
 from backend.models.media import (
     Audio,
     AudioSpeaker,
@@ -71,9 +71,9 @@ class EmbeddedVideoAdmin(BaseSiteContentAdmin, AdminVideoMixin):
 
 
 @admin.register(AudioSpeaker)
-class AudioSpeakerAdmin(BaseSiteContentAdmin):
-    fields = ("site", "audio", "speaker")
-    list_display = ("audio", "speaker") + BaseSiteContentAdmin.list_display
+class AudioSpeakerAdmin(BaseAdmin):
+    fields = ("audio", "speaker")
+    list_display = ("audio", "speaker") + BaseAdmin.list_display
 
 
 @admin.register(Person)

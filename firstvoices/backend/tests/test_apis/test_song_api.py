@@ -108,6 +108,14 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
         )
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
 
+    def add_related_objects(self, instance):
+        factories.LyricsFactory.create(song=instance)
+        factories.LyricsFactory.create(song=instance)
+
+    def assert_related_objects_deleted(self, instance):
+        for lyric in instance.lyrics.all():
+            self.assert_instance_deleted(lyric)
+
     def create_instance_with_media(
         self,
         site,

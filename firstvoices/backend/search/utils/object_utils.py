@@ -15,7 +15,7 @@ from backend.serializers.song_serializers import SongSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-def get_object_from_index(index, document_id):
+def get_object_from_index(index, document_type, document_id):
     try:
         s = Search(index=index)
         response = s.query("match", document_id=document_id).execute()
@@ -24,7 +24,7 @@ def get_object_from_index(index, document_id):
         return hits[0] if hits else None
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(ES_CONNECTION_ERROR, index, document_id)
+        logger.error(ES_CONNECTION_ERROR, document_type, index, document_id)
         logger.error(e)
     except NotFoundError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)

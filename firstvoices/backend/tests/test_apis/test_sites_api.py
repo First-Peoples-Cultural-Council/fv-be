@@ -3,11 +3,12 @@ import json
 import pytest
 
 import backend.tests.factories.access
-from backend.models import AppJson
+from backend.models import AppJson, Site
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from ...models.widget import SiteWidgetListOrder
+from ...models.widget import SiteWidget, SiteWidgetListOrder
+from ..utils import setup_widget_list, update_widget_list_order, update_widget_sites
 from .base_api_test import BaseApiTest
 from .base_media_test import MediaTestMixin
 
@@ -172,8 +173,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
+            "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
             "songs": f"{site_url}/songs",
+            "stories": f"{site_url}/stories",
             "videos": f"{site_url}/videos",
             "widgets": f"{site_url}/widgets",
             "wordOfTheDay": f"{site_url}/word-of-the-day",
@@ -262,11 +265,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_data = json.loads(response.content)
         assert response_data["bannerVideo"] == self.get_expected_video_data(video)
 
-    def update_widget_sites(self, site, widgets):
-        for widget in widgets:
-            widget.site = site
-            widget.save()
-
     @pytest.mark.django_db
     def test_detail_homepage(self):
         user = factories.get_non_member_user()
@@ -278,7 +276,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         widget_one = widget_list.widgets.all()[0]
         widget_two = widget_list.widgets.all()[1]
-        self.update_widget_sites(site, [widget_one, widget_two])
+        update_widget_sites(site, [widget_one, widget_two])
 
         widget_one_settings_one = factories.WidgetSettingsFactory.create(
             widget=widget_one
@@ -348,7 +346,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_one = widget_list.widgets.all()[0]
         widget_two = widget_list.widgets.all()[1]
         widget_three = widget_list.widgets.all()[2]
-        self.update_widget_sites(site, [widget_one, widget_two, widget_three])
+        update_widget_sites(site, [widget_one, widget_two, widget_three])
 
         site.homepage = widget_list
         site.save()
@@ -385,76 +383,14 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.SiteWidgetListOrderFactory.reset_sequence()
-        widget_list_one = factories.SiteWidgetListWithThreeWidgetsFactory.create(
-            site=site
-        )
-
-        widget_list_two = factories.SiteWidgetListWithThreeWidgetsFactory.create(
-            site=site
-        )
-
-        # Get the widgets from each of the factories.
-        widget_one = widget_list_one.widgets.all()[0]
-        widget_two = widget_list_one.widgets.all()[1]
-        widget_three = widget_list_one.widgets.all()[2]
-        widget_four = widget_list_two.widgets.all()[0]
-        widget_five = widget_list_two.widgets.all()[1]
-        widget_six = widget_list_two.widgets.all()[2]
-
-        # Set the widgets to all belong to the same site.
-        self.update_widget_sites(
-            site,
-            [
-                widget_one,
-                widget_two,
-                widget_three,
-                widget_four,
-                widget_five,
-                widget_six,
-            ],
-        )
+        site, widget_list_one, widget_list_two, widgets = setup_widget_list()
 
         # Set the site homepage widget list
         site.homepage = widget_list_two
         site.save()
 
-        # Get the order of the widgets.
-        widget_one_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_one
-        ).first()
-        widget_two_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_two
-        ).first()
-        widget_three_list_one_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_three
-        ).first()
-        widget_four_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_four
-        ).first()
-        widget_five_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_five
-        ).first()
-        widget_six_list_two_order = SiteWidgetListOrder.objects.filter(
-            site_widget=widget_six
-        ).first()
-
-        # Update one of the existing widgets order (to free up order 0 in the list)
-        widget_five_list_two_order.order = 3
-        widget_five_list_two_order.save()
-
-        assert widget_one_list_one_order.order == 2
-        assert widget_two_list_one_order.order == 0
-        assert widget_three_list_one_order.order == 1
-        assert widget_four_list_two_order.order == 2
-        assert widget_five_list_two_order.order == 3
-        assert widget_six_list_two_order.order == 1
-
-        # Add a widget from widget_list_one to widget_list_two with a different order
-        SiteWidgetListOrder.objects.create(
-            site_widget=widget_one, site_widget_list=widget_list_two, order=0
-        )
+        # Check the widget list orders and add a widget from widget_list_one to widget_list_two with a different order
+        update_widget_list_order(widgets, widget_list_two)
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
         assert response.status_code == 200
@@ -463,10 +399,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert len(response_data["homepage"]) == 4
 
         # Check that the homepage uses the order in widget_list_two for widget_one
-        assert response_data["homepage"][0]["id"] == str(widget_one.id)
-        assert response_data["homepage"][1]["id"] == str(widget_six.id)
-        assert response_data["homepage"][2]["id"] == str(widget_four.id)
-        assert response_data["homepage"][3]["id"] == str(widget_five.id)
+        assert response_data["homepage"][0]["id"] == str(widgets[0].id)
+        assert response_data["homepage"][1]["id"] == str(widgets[5].id)
+        assert response_data["homepage"][2]["id"] == str(widgets[3].id)
+        assert response_data["homepage"][3]["id"] == str(widgets[4].id)
 
         # Update the homepage to widget_list_one
         site.homepage = widget_list_one
@@ -479,9 +415,9 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert len(response_data["homepage"]) == 3
 
         # Check that the homepage uses the order in widget_list_one for widget_one
-        assert response_data["homepage"][0]["id"] == str(widget_two.id)
-        assert response_data["homepage"][1]["id"] == str(widget_three.id)
-        assert response_data["homepage"][2]["id"] == str(widget_one.id)
+        assert response_data["homepage"][0]["id"] == str(widgets[1].id)
+        assert response_data["homepage"][1]["id"] == str(widgets[2].id)
+        assert response_data["homepage"][2]["id"] == str(widgets[0].id)
 
     @pytest.mark.parametrize(
         "user_role, expected_visible_widgets",
@@ -508,7 +444,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_public = widget_list.widgets.all()[0]
         widget_members = widget_list.widgets.all()[1]
         widget_team = widget_list.widgets.all()[2]
-        self.update_widget_sites(site, [widget_public, widget_members, widget_team])
+        update_widget_sites(site, [widget_public, widget_members, widget_team])
 
         site.homepage = widget_list
         site.save()
@@ -566,6 +502,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
+            "homepage": [],
         }
         response = self.client.put(
             f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
@@ -593,6 +530,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": str(image.id),
             "bannerImage": None,
             "bannerVideo": None,
+            "homepage": [],
         }
         response = self.client.put(
             f"{self.get_detail_endpoint(site1.slug)}", format="json", data=req_body
@@ -602,3 +540,149 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_data = json.loads(response.content)
 
         assert response_data["logo"] == ["Must be in the same site."]
+
+    @pytest.mark.django_db
+    def test_update_homepage_no_existing(self):
+        site = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        widget_one = factories.SiteWidgetFactory.create(site=site)
+        widget_one_settings = factories.WidgetSettingsFactory.create(widget=widget_one)
+        widget_two = factories.SiteWidgetFactory.create(site=site)
+
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        assert site.homepage is None
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_two.id), str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+        response_data = json.loads(response.content)
+
+        expected_widget_one_settings = [
+            {"key": widget_one_settings.key, "value": widget_one_settings.value}
+        ]
+
+        assert response.status_code == 200
+        assert response_data["homepage"][0]["id"] == str(widget_two.id)
+        assert response_data["homepage"][1]["id"] == str(widget_one.id)
+        assert response_data["homepage"][1]["settings"] == expected_widget_one_settings
+
+    @pytest.mark.django_db
+    def test_update_homepage_with_existing(self):
+        site = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        existing_list = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
+        existing_widget_one = existing_list.widgets.all()[0]
+        existing_widget_two = existing_list.widgets.all()[1]
+        existing_widget_one_order_id = SiteWidgetListOrder.objects.get(
+            site_widget=existing_widget_one
+        ).id
+        existing_widget_two_order_id = SiteWidgetListOrder.objects.get(
+            site_widget=existing_widget_two
+        ).id
+        update_widget_sites(
+            site,
+            [
+                existing_widget_one,
+                existing_widget_two,
+            ],
+        )
+
+        # Set a homepage for the site with some existing widgets.
+        site.homepage = existing_list
+        site.save()
+
+        # Create a new widget and check that it is not in the site homepage list.
+        widget_one = factories.SiteWidgetFactory.create(site=site)
+        assert widget_one not in site.homepage.widgets.all()
+
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        # Using the update API set the homepage to contain only the new widget.
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # Check that the site homepage contains the new widget
+        assert response_data["homepage"][0]["id"] == str(widget_one.id)
+        assert len(response_data["homepage"]) == 1
+        updated_site = Site.objects.get(id=site.id)
+        assert widget_one in updated_site.homepage.widgets.all()
+
+        # Check that the homepage list is the same list (only widgets changed)
+        assert updated_site.homepage.id == existing_list.id
+
+        # Check that the existing widgets are not part of the new homepage
+        current_widget_order_id_list = [
+            order.id
+            for order in SiteWidgetListOrder.objects.filter(
+                site_widget__in=updated_site.homepage.widgets.all()
+            )
+        ]
+        assert existing_widget_one_order_id not in current_widget_order_id_list
+        assert existing_widget_two_order_id not in current_widget_order_id_list
+
+        # Check that the old widget orders have been deleted
+        assert (
+            SiteWidgetListOrder.objects.filter(id=existing_widget_one_order_id).exists()
+            is False
+        )
+        assert (
+            SiteWidgetListOrder.objects.filter(id=existing_widget_two_order_id).exists()
+            is False
+        )
+
+        # Check that the old widgets still exist
+        assert SiteWidget.objects.filter(id=existing_widget_one.id).exists() is True
+        assert SiteWidget.objects.filter(id=existing_widget_two.id).exists() is True
+
+    @pytest.mark.django_db
+    def test_detail_homepage_validation(self):
+        site_one = factories.SiteFactory.create()
+        site_two = factories.SiteFactory.create()
+        user = factories.get_non_member_user()
+
+        widget_one = factories.SiteWidgetFactory.create(site=site_one)
+        widget_two = factories.SiteWidgetFactory.create(site=site_two)
+
+        factories.MembershipFactory.create(
+            user=user, site=site_one, role=Role.LANGUAGE_ADMIN
+        )
+
+        assert site_one.homepage is None
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [str(widget_two.id), str(widget_one.id)],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site_one.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 400

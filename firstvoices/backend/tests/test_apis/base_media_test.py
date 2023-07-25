@@ -1,22 +1,45 @@
 import json
+import os
+import sys
 
 import pytest
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
-from backend.tests.factories import (
-    AudioFactory,
-    AudioSpeakerFactory,
-    ImageFactory,
-    PersonFactory,
-    VideoFactory,
-)
+from backend.tests import factories
+from backend.tests.test_apis import base_api_test
+
+
+class FormDataMixin:
+    content_type = "multipart/form-data; boundary=TestBoundaryString"
+    boundary_string = "TestBoundaryString"
+
+    def format_upload_data(self, data):
+        """Encode multipart form data instead of json"""
+        return encode_multipart(self.boundary_string, data)
 
 
 class MediaTestMixin:
     """
-    Utilities for asserting media responses.
+    Utilities for testing media APIs
     """
+
+    def get_sample_file(self, filename, mimetype):
+        path = (
+            os.path.dirname(os.path.realpath(__file__))
+            + f"/../factories/resources/{filename}"
+        )
+        image_file = open(path, "rb")
+        return InMemoryUploadedFile(
+            image_file,
+            "FileField",
+            filename,
+            mimetype,
+            sys.getsizeof(image_file),
+            None,
+        )
 
     def get_basic_media_data(self, instance, view_name):
         url = reverse(
@@ -116,9 +139,9 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_audio_with_speaker(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        speaker = PersonFactory.create(site=site)
-        audio = AudioFactory.create(site=site)
-        AudioSpeakerFactory.create(speaker=speaker, audio=audio, site=site)
+        speaker = factories.PersonFactory.create(site=site)
+        audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(speaker=speaker, audio=audio)
 
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_audio=(audio,)
@@ -138,7 +161,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_images(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        image = ImageFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_images=(image,)
         )
@@ -153,7 +176,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
     @pytest.mark.django_db
     def test_detail_related_videos(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
-        video = VideoFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
         instance = self.create_instance_with_media(
             site=site, visibility=Visibility.PUBLIC, related_videos=(video,)
         )
@@ -164,3 +187,58 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedVideos"]) == 1
         assert response_data["relatedVideos"][0] == self.get_expected_video_data(video)
+
+
+class BaseMediaApiTest(
+    MediaTestMixin,
+    FormDataMixin,
+    base_api_test.WriteApiTestMixin,
+    base_api_test.SiteContentCreateApiTestMixin,
+    base_api_test.SiteContentDestroyApiTestMixin,
+    base_api_test.BaseReadOnlyUncontrolledSiteContentApiTest,
+):
+    """
+    Tests for the list, detail, create, and delete APIs for media endpoints.
+    """
+
+    sample_filename = "sample-image.jpg"
+    sample_filetype = "image/jpeg"
+
+    def get_valid_data(self, site=None):
+        """Returns a valid data object suitable for create/update requests"""
+        return {
+            "title": "A title for the media",
+            "description": "Description of the media",
+            "acknowledgement": "An acknowledgement of the media",
+            "isShared": True,
+            "excludeFromGames": True,
+            "excludeFromKids": True,
+            "original": self.get_sample_file(
+                self.sample_filename, self.sample_filetype
+            ),
+        }
+
+    def add_related_objects(self, instance):
+        # related files are added as part of minimal instance; nothing extra to add here
+        pass
+
+    def assert_related_objects_deleted(self, instance):
+        """Default test is for visual media with thumbnails"""
+        self.assert_instance_deleted(instance.original)
+        self.assert_instance_deleted(instance.medium)
+        self.assert_instance_deleted(instance.small)
+        self.assert_instance_deleted(instance.thumbnail)
+
+    @pytest.mark.django_db
+    def test_create_400_invalid_filetype(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+        data["original"] = (self.get_sample_file("file.txt", self.sample_filetype),)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400

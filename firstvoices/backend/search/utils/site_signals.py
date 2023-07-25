@@ -64,7 +64,9 @@ def update_dictionary_entry_visibility(dictionary_entry, updated_visibility):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -74,7 +76,11 @@ def update_dictionary_entry_visibility(dictionary_entry, updated_visibility):
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR
-            % (SearchIndexEntryTypes.DICTIONARY_ENTRY, dictionary_entry.id)
+            % (
+                "dictionary_entry",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
         )
     except NotFoundError:
         logger.warning(
@@ -91,14 +97,18 @@ def update_song_visibility(song, updated_visibility):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
-        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, song.id)
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_SONG_INDEX, "song", song.id
+        )
         if not existing_entry:
             raise NotFoundError
 
         song_doc = SongDocument.get(id=existing_entry["_id"])
         song_doc.update(site_visibility=updated_visibility)
     except ConnectionError:
-        logger.warning(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, song.id))
+        logger.warning(
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, song.id)
+        )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR
@@ -115,7 +125,9 @@ def remove_dictionary_entry_from_index(dictionary_entry):
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, dictionary_entry.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+            "dictionary_entry",
+            dictionary_entry.id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -125,7 +137,11 @@ def remove_dictionary_entry_from_index(dictionary_entry):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % (SearchIndexEntryTypes.DICTIONARY_ENTRY, dictionary_entry.id)
+            % (
+                "dictionary_entry",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
         )
     except NotFoundError:
         logger.warning(
@@ -142,14 +158,19 @@ def remove_song_from_index(song):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
-        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, song.id)
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_SONG_INDEX, "song", song.id
+        )
         if not existing_entry:
             raise NotFoundError
 
         song_doc = SongDocument.get(id=existing_entry["_id"])
         song_doc.delete()
     except ConnectionError:
-        logger.error(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, song.id))
+        logger.error(
+            ES_CONNECTION_ERROR
+            % ("dictionary_entry", SearchIndexEntryTypes.SONG, song.id)
+        )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR

@@ -36,7 +36,9 @@ class SongDocument(BaseDocument):
 def update_song_index(sender, instance, **kwargs):
     # add song to es index
     try:
-        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, instance.id)
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_SONG_INDEX, "song", instance.id
+        )
         lyrics_text, lyrics_translation_text = get_lyrics(instance)
 
         if existing_entry:
@@ -77,7 +79,9 @@ def update_song_index(sender, instance, **kwargs):
             index_entry.save()
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, instance.id))
+        logger.error(
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
+        )
         logger.error(e)
     except NotFoundError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -96,11 +100,16 @@ def delete_from_index(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
-        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, instance.id)
-        index_entry = SongDocument.get(id=existing_entry["_id"])
-        index_entry.delete()
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_SONG_INDEX, "song", instance.id
+        )
+        if existing_entry:
+            index_entry = SongDocument.get(id=existing_entry["_id"])
+            index_entry.delete()
     except ConnectionError:
-        logger.error(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, instance.id))
+        logger.error(
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
+        )
 
 
 # Lyrics update
@@ -113,7 +122,9 @@ def update_lyrics(sender, instance, **kwargs):
     lyrics_text, lyrics_translation_text = get_lyrics(song)
 
     try:
-        existing_entry = get_object_from_index(ELASTICSEARCH_SONG_INDEX, song.id)
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_SONG_INDEX, "song", song.id
+        )
         if not existing_entry:
             raise NotFoundError
 
@@ -122,7 +133,9 @@ def update_lyrics(sender, instance, **kwargs):
             lyrics_text=lyrics_text, lyrics_translation=lyrics_translation_text
         )
     except ConnectionError:
-        logger.error(ES_CONNECTION_ERROR % (SearchIndexEntryTypes.SONG, instance.id))
+        logger.error(
+            ES_CONNECTION_ERROR % ("lyrics", SearchIndexEntryTypes.SONG, instance.id)
+        )
     except NotFoundError:
         logger.warning(
             ES_NOT_FOUND_ERROR

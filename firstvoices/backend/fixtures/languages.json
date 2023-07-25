@@ -30,7 +30,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Dane-Ẕaa",
-      "alternate_names": "Dane-zaa Ẕáágéʔ, Beaver, Dunne-za, ᑕᓀ ᖚ",
+      "alternate_names": "Dane-ẕaa Ẕáágéʔ, Beaver, Dunne-ẕa, ᑕᓀ ᖚ",
       "language_family": ["Na-Dene"],
       "language_code": "bea"
     }
@@ -38,7 +38,7 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Danezāgé’",
+      "title": "Danezāgéʼ",
       "alternate_names": "Kaska, Kaska Dena",
       "language_family": ["Na-Dene"],
       "language_code": "kkz"
@@ -47,8 +47,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Dene K’e",
-      "alternate_names": "Slavey, Slave, Dene K’eh, Dene, Dené, Dené Tha’, Dené Dháh, Dene Zhatıé, Acha'otinne",
+      "title": "Dene Kʼe",
+      "alternate_names": "Slavey, Slave, Dene Kʼeh, Dene, Dené, Dené Thaʼ, Dené Dháh, Dene Zhatıé, Achaʼotinne",
       "language_family": ["Na-Dene"],
       "language_code": "den"
     }
@@ -57,7 +57,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Lingít",
-      "alternate_names": "Tlingit",
+      "alternate_names": "Łingít, Tlingit",
       "language_family": ["Na-Dene"],
       "language_code": "tli"
     }
@@ -65,8 +65,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Nedut’en / Witsuwit’en",
-      "alternate_names": "Nedut’en, Nadot’en, Witsuwit’en, Babine, Nat’oot’en, Wet'suwet'en",
+      "title": "Nedutʼen / Witsuwitʼen",
+      "alternate_names": "Nedutʼen, Nadotʼen, Witsuwitʼen, Babine, Natʼootʼen, Wetʼsuwetʼen, Babine-Witsuwitʼen, Bulkley Valley Language, Lakes District Language",
       "language_family": ["Na-Dene"],
       "language_code": "bcr"
     }
@@ -75,7 +75,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Southern Tutchone",
-      "alternate_names": "",
+      "alternate_names": "Tutchone",
       "language_family": ["Na-Dene"],
       "language_code": "tce"
     }
@@ -84,7 +84,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Tāłtān",
-      "alternate_names": "Tahltan, Didene k’eh, Nahanni",
+      "alternate_names": "Tahltan, Didene kʼeh, Nahanni",
       "language_family": ["Na-Dene"],
       "language_code": "tht"
     }
@@ -92,8 +92,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Tse’khene",
-      "alternate_names": "Sekani, Tsek’ene, Tsek’ehne, Sékanais",
+      "title": "Tseʼkhene",
+      "alternate_names": "Sekani, Tsekʼene, Tsekʼehne, Sékanais",
       "language_family": ["Na-Dene"],
       "language_code": "sek"
     }
@@ -101,8 +101,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Tsilhqot’in",
-      "alternate_names": "Chilcotin, Tsilhqut’in, Tzilkotin",
+      "title": "Tsilhqotʼin",
+      "alternate_names": "Chilcotin, Tsilhqutʼin, Tzilkotin",
       "language_family": ["Na-Dene"],
       "language_code": "clc"
     }
@@ -128,8 +128,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Hul’q’umi’num’ / Halq’eméylem / hən̓q̓əmin̓əm",
-      "alternate_names": "Hul’q’umi’num’, Halq’eméylem, hən̓q̓əmin̓əm, Halkomelem, Island Hul’q’umi’num’, Upriver Halq’eméylem, Downriver hən̓q̓əmin̓əm",
+      "title": "Hulʼqʼumiʼnumʼ / Halqʼeméylem / hən̓q̓əmin̓əm̓",
+      "alternate_names": "Hulʼqʼumiʼnumʼ, Halqʼeméylem, hən̓q̓əmin̓əm̓, Halkomelem, Island Hulʼqʼumiʼnumʼ, Upriver Halqʼeméylem, Downriver hən̓q̓əmin̓əm̓",
       "language_family": ["Salishan"],
       "language_code": "hur"
     }
@@ -138,7 +138,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Nłeʔkepmxcín",
-      "alternate_names": "Nlaka’pamux, Nlha7kápmx, Thompson Salish",
+      "alternate_names": "Nlakaʼpamux, Nlha7kápmx, Thompson Salish",
       "language_family": ["Salishan"],
       "language_code": "thp"
     }
@@ -156,7 +156,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Nuxalk",
-      "alternate_names": "Bella Coola",
+      "alternate_names": "Bella Coola, Nass",
       "language_family": ["Salishan"],
       "language_code": "blc"
     }
@@ -173,8 +173,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "SENĆOŦEN / Malchosen / Lekwungen / Semiahmoo / T’Sou-ke",
-      "alternate_names": "SENĆOŦEN, Malchosen, Lekwungen, Semiahmoo, T’Sou-ke, Straits Salish, Northern Straits Salish, Saanich, Tah-tu-lo, Sooke, Songhees",
+      "title": "SENĆOŦEN / Malchosen / Lekwungen / Semiahmoo / TʼSou-ke",
+      "alternate_names": "SENĆOŦEN, Malchosen, Lekwungen, Semiahmoo, TʼSou-ke, Straits Salish, Northern Straits Salish, Saanich, Tah-tu-lo, Sooke, Songhees",
       "language_family": ["Salishan"],
       "language_code": "str"
     }
@@ -201,7 +201,7 @@
     "model": "backend.language",
     "fields": {
       "title": "St̓át̓imcets",
-      "alternate_names": "Sƛ̓aƛ̓imxǝc, Ucwalmícwts, Lillooet, St̓át̓imc, Statimc, Stl’atl’imx, Stl’atl’imc, Sƛ’aƛ’imxǝc, Stlatliumh, Slatlemuk",
+      "alternate_names": "Sƛ̓aƛ̓imxǝc, Ucwalmícwts, Lillooet, St̓át̓imc, Statimc, Stlʼatlʼimx, Stlʼatlʼimc, Sƛʼaƛʼimxǝc, Stlatliumh, Slatlemuk",
       "language_family": ["Salishan"],
       "language_code": "lil"
     }
@@ -218,8 +218,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Nisg̱a’a",
-      "alternate_names": "Niska, Nass, Nisga’a, Nishga, Niska’, Nisk’a’",
+      "title": "Nisg̱aʼa",
+      "alternate_names": "Niska, Nass, Nisgaʼa, Nishga, Niskaʼ, Niskʼaʼ",
       "language_family": ["Tsimshianic"],
       "language_code": "ncg"
     }
@@ -236,7 +236,7 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "Sm'algyax",
+      "title": "Sm'algya̱x",
       "alternate_names": "Tsimshian, Coast Tsimshian",
       "language_family": ["Tsimshianic"],
       "language_code": "tsi"
@@ -264,7 +264,7 @@
     "model": "backend.language",
     "fields": {
       "title": "Kwak̕wala",
-      "alternate_names": "Kwakiutl, Kwakwaka’wakw",
+      "alternate_names": "Kwakiutl, Kwakwakaʼwakw",
       "language_family": ["Wakashan"],
       "language_code": "kwk"
     }
@@ -273,7 +273,7 @@
     "model": "backend.language",
     "fields": {
       "title": "nuučaan̓uɫ",
-      "alternate_names": "Nuu-chah-nulth, Nootka",
+      "alternate_names": "Nuu-chah-nulth, Nootka, Nootkans, Tahkaht",
       "language_family": ["Wakashan"],
       "language_code": "nuk"
     }
@@ -281,8 +281,8 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "’Wuik̓ala",
-      "alternate_names": "Oowekyala, Wuikyala, ’Uik̓ala, Oowekyala, Oweek’ala, Owekeeno",
+      "title": "ʼWuik̓ala",
+      "alternate_names": "Oowekyala, Wuikyala, ʼUik̓ala, Oowekyala, Oweekʼala, Owekeeno, Owekeno",
       "language_family": ["Wakashan"],
       "language_code": "hei-wui"
     }
@@ -290,7 +290,7 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "X̄enaksialak̓ala / X̄a’islak̓ala",
+      "title": "X̄enaksialak̓ala / X̄aʼislak̓ala",
       "alternate_names": "Haisla, Kitimat, Kitlope, Northern Kwakiutl",
       "language_family": ["Wakashan"],
       "language_code": "has"
@@ -299,7 +299,7 @@
   {
     "model": "backend.language",
     "fields": {
-      "title": "X̱aad Kil / X̱aaydaa Kil",
+      "title": "X̱aad Kil / X̱aayda Kil",
       "alternate_names": "Haida",
       "language_family": ["Haida"],
       "language_code": "hai"

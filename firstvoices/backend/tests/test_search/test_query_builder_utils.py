@@ -55,7 +55,7 @@ class TestValidDomains:
 
 @pytest.mark.django_db
 class TestValidCategory:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
         self.category = factories.ParentCategoryFactory(site=self.site)
 

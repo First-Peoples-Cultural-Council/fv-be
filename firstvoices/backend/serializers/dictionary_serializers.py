@@ -4,18 +4,25 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models import category, dictionary
+from backend.models import category, dictionary, part_of_speech
+from backend.models.constants import Visibility
 from backend.serializers.base_serializers import (
+    CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
+    UpdateSerializerMixin,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.parts_of_speech_serializers import (
+    WritablePartsOfSpeechSerializer,
+)
 from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
 class DictionaryContentMeta:
     fields = ("id", "text")
+    read_only_fields = ("id",)
 
 
 class AcknowledgementSerializer(serializers.ModelSerializer):
@@ -33,6 +40,14 @@ class CategorySerializer(SiteContentLinkedTitleSerializer):
         model = category.Category
 
 
+class WritableCategorySerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return CategorySerializer(context=self.context).to_representation(value)
+
+
 class NoteSerializer(serializers.ModelSerializer):
     class Meta(DictionaryContentMeta):
         model = dictionary.Note
@@ -44,11 +59,45 @@ class PronunciationSerializer(serializers.ModelSerializer):
 
 
 class TranslationSerializer(serializers.ModelSerializer):
-    part_of_speech = serializers.StringRelatedField()
+    part_of_speech = WritablePartsOfSpeechSerializer(
+        queryset=part_of_speech.PartOfSpeech.objects.all(),
+        required=False,
+    )
 
     class Meta(DictionaryContentMeta):
         model = dictionary.Translation
         fields = DictionaryContentMeta.fields + ("part_of_speech",)
+
+
+class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return DictionaryEntrySummarySerializer(context=self.context).to_representation(
+            value
+        )
+
+
+class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMetaclass):
+    related_dictionary_entries = WritableRelatedDictionaryEntrySerializer(
+        required=False,
+        many=True,
+        queryset=dictionary.DictionaryEntry.objects.all(),
+    )
+
+    def validate(self, attrs):
+        related_dictionary_entries = attrs.get("related_dictionary_entries")
+        if related_dictionary_entries:
+            for entry in related_dictionary_entries:
+                if entry.site != self.context["site"]:
+                    raise serializers.ValidationError(
+                        "Related dictionary entry must be in the same site."
+                    )
+        return super().validate(attrs)
+
+    class Meta:
+        fields = ("related_dictionary_entries",)
 
 
 class DictionaryEntrySummarySerializer(
@@ -69,30 +118,146 @@ class DictionaryEntrySummarySerializer(
 
 
 class DictionaryEntryDetailSerializer(
-    RelatedMediaSerializerMixin, serializers.HyperlinkedModelSerializer
+    CreateSiteContentSerializerMixin,
+    RelatedDictionaryEntrySerializerMixin,
+    RelatedMediaSerializerMixin,
+    serializers.HyperlinkedModelSerializer,
+    UpdateSerializerMixin,
 ):
-    url = SiteHyperlinkedIdentityField(view_name="api:dictionaryentry-detail")
-    visibility = serializers.CharField(source="get_visibility_display")
-    translations = TranslationSerializer(source="translation_set", many=True)
-    pronunciations = PronunciationSerializer(source="pronunciation_set", many=True)
-    notes = NoteSerializer(source="note_set", many=True)
+    url = SiteHyperlinkedIdentityField(
+        read_only=True, view_name="api:dictionaryentry-detail"
+    )
+    type = serializers.ChoiceField(
+        allow_null=False,
+        choices=dictionary.TypeOfDictionaryEntry.choices,
+        default=dictionary.TypeOfDictionaryEntry.WORD,
+    )
+    custom_order = serializers.CharField(read_only=True)
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    visibility_value = serializers.ChoiceField(
+        choices=Visibility.choices, default=Visibility.TEAM, write_only=True
+    )
+    categories = WritableCategorySerializer(
+        queryset=category.Category.objects.all(),
+        many=True,
+        required=False,
+    )
     acknowledgements = AcknowledgementSerializer(
-        source="acknowledgement_set", many=True
+        many=True,
+        required=False,
+        source="acknowledgement_set",
     )
     alternate_spellings = AlternateSpellingSerializer(
-        source="alternatespelling_set", many=True
+        many=True, required=False, source="alternatespelling_set"
     )
-    categories = CategorySerializer(many=True)
-    site = LinkedSiteSerializer()
-    related_entries = DictionaryEntrySummarySerializer(
-        source="related_dictionary_entries", many=True
+    notes = NoteSerializer(many=True, required=False, source="note_set")
+    translations = TranslationSerializer(
+        many=True, required=False, source="translation_set"
     )
-    split_chars = serializers.SerializerMethodField()
-    split_chars_base = serializers.SerializerMethodField()
-    split_words = serializers.SerializerMethodField()
-    split_words_base = serializers.SerializerMethodField()
+    pronunciations = PronunciationSerializer(
+        many=True, required=False, source="pronunciation_set"
+    )
+
+    site = LinkedSiteSerializer(read_only=True, required=False)
+    split_chars = serializers.SerializerMethodField(read_only=True)
+    split_chars_base = serializers.SerializerMethodField(read_only=True)
+    split_words = serializers.SerializerMethodField(read_only=True)
+    split_words_base = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
+
+    def validate(self, attrs):
+        # Categories must be in the same site as the dictionary entry
+        categories = attrs.get("categories")
+        if categories:
+            for c in categories:
+                if c.site != self.context["site"]:
+                    raise serializers.ValidationError(
+                        "Related dictionary entry must be in the same site."
+                    )
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        acknowledgements = validated_data.pop("acknowledgement_set", [])
+        alternate_spellings = validated_data.pop("alternatespelling_set", [])
+        notes = validated_data.pop("note_set", [])
+        pronunciations = validated_data.pop("pronunciation_set", [])
+        translations = validated_data.pop("translation_set", [])
+
+        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
+        validated_data["visibility"] = visibility_value
+
+        created = super().create(validated_data)
+
+        for acknowledgement in acknowledgements:
+            dictionary.Acknowledgement.objects.create(
+                dictionary_entry=created, **acknowledgement
+            )
+
+        for alternate_spelling in alternate_spellings:
+            dictionary.AlternateSpelling.objects.create(
+                dictionary_entry=created, **alternate_spelling
+            )
+
+        for note in notes:
+            dictionary.Note.objects.create(dictionary_entry=created, **note)
+
+        for pronunciation in pronunciations:
+            dictionary.Pronunciation.objects.create(
+                dictionary_entry=created, **pronunciation
+            )
+
+        for translation in translations:
+            dictionary.Translation.objects.create(
+                dictionary_entry=created, **translation
+            )
+
+        return created
+
+    def update(self, instance, validated_data):
+        dictionary.Acknowledgement.objects.filter(dictionary_entry=instance).delete()
+        dictionary.AlternateSpelling.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Note.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
+        dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
+
+        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
+        validated_data["visibility"] = visibility_value
+
+        try:
+            acknowledgements = validated_data.pop("acknowledgement_set", [])
+            alternate_spellings = validated_data.pop("alternatespelling_set", [])
+            notes = validated_data.pop("note_set", [])
+            pronunciations = validated_data.pop("pronunciation_set", [])
+            translations = validated_data.pop("translation_set", [])
+
+            for acknowledgement in acknowledgements:
+                dictionary.Acknowledgement.objects.create(
+                    dictionary_entry=instance, **acknowledgement
+                )
+
+            for alternate_spelling in alternate_spellings:
+                dictionary.AlternateSpelling.objects.create(
+                    dictionary_entry=instance, **alternate_spelling
+                )
+
+            for note in notes:
+                dictionary.Note.objects.create(dictionary_entry=instance, **note)
+
+            for pronunciation in pronunciations:
+                dictionary.Pronunciation.objects.create(
+                    dictionary_entry=instance, **pronunciation
+                )
+
+            for translation in translations:
+                dictionary.Translation.objects.create(
+                    dictionary_entry=instance, **translation
+                )
+
+        except KeyError:
+            pass
+
+        return super().update(instance, validated_data)
 
     def get_model_from_context(self, model_name):
         if self.context is not None and model_name in self.context:
@@ -190,10 +355,10 @@ class DictionaryEntryDetailSerializer(
                 "type",
                 "custom_order",
                 "visibility",
+                "visibility_value",
                 "categories",
                 "exclude_from_games",
                 "exclude_from_kids",
-                "related_entries",
                 "acknowledgements",
                 "alternate_spellings",
                 "notes",
@@ -205,35 +370,30 @@ class DictionaryEntryDetailSerializer(
                 "split_words",
                 "split_words_base",
             )
+            + RelatedDictionaryEntrySerializerMixin.Meta.fields
         )
 
 
-class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
-    def use_pk_only_optimization(self):
-        return False
-
-    def to_representation(self, value):
-        return DictionaryEntrySummarySerializer(context=self.context).to_representation(
-            value
-        )
-
-
-class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMetaclass):
-    related_dictionary_entries = WritableRelatedDictionaryEntrySerializer(
-        required=False,
-        many=True,
-        queryset=dictionary.DictionaryEntry.objects.all(),
-    )
-
-    def validate(self, attrs):
-        related_dictionary_entries = attrs.get("related_dictionary_entries")
-        if related_dictionary_entries:
-            for entry in related_dictionary_entries:
-                if entry.site != self.context["site"]:
-                    raise serializers.ValidationError(
-                        "Related dictionary entry must be in the same site."
-                    )
-        return super().validate(attrs)
+class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializer):
+    categories = CategorySerializer(many=True)
 
     class Meta:
-        fields = ("related_dictionary_entries",)
+        model = dictionary.DictionaryEntry
+        # Add related entries and media when FW-4604/4605 are complete
+        fields = (
+            "title",
+            "type",
+            "visibility_value",
+            "categories",
+            "exclude_from_games",
+            "exclude_from_kids",
+            "acknowledgements",
+            "alternate_spellings",
+            "notes",
+            "translations",
+            "pronunciations",
+            "related_dictionary_entries",
+            "related_audio",
+            "related_images",
+            "related_videos",
+        )
