@@ -4,7 +4,7 @@ from django.db import models
 
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseControlledSiteContentModel, BaseModel
+from .base import AudienceMixin, BaseControlledSiteContentModel, BaseSiteContentModel
 from .media import RelatedMediaMixin
 
 TITLE_MAX_LENGTH = 500
@@ -64,7 +64,7 @@ class Story(
         return self.title
 
 
-class StoryPage(BaseModel, RelatedMediaMixin):
+class StoryPage(BaseSiteContentModel, RelatedMediaMixin):
     """
     Representing the pages within a story
 

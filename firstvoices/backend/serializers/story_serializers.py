@@ -17,7 +17,7 @@ from backend.serializers.media_serializers import (
 from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
-class PageSerializer(ModelSerializer, RelatedMediaSerializerMixin):
+class StoryPageSerializer(RelatedMediaSerializerMixin, ModelSerializer):
     class Meta:
         model = StoryPage
         fields = RelatedMediaSerializerMixin.Meta.fields + (
@@ -38,48 +38,7 @@ class StorySerializer(
         allow_null=True, queryset=Image.objects.all()
     )
     site = LinkedSiteSerializer(required=False, read_only=True)
-    pages = PageSerializer(many=True)
-
-    def create(self, validated_data):
-        pages = validated_data.pop("pages")
-
-        created = super().create(validated_data)
-
-        for index, page_data in enumerate(pages):
-            related_audio = page_data.pop("related_audio")
-            related_videos = page_data.pop("related_videos")
-            related_images = page_data.pop("related_images")
-
-            created_page = StoryPage.objects.create(
-                story=created, ordering=index, **page_data
-            )
-
-            created_page.related_audio.set(related_audio)
-            created_page.related_videos.set(related_videos)
-            created_page.related_images.set(related_images)
-
-        return created
-
-    def update(self, instance, validated_data):
-        StoryPage.objects.filter(story__id=instance.id).delete()
-        try:
-            pages = validated_data.pop("pages")
-            for index, page_data in enumerate(pages):
-                related_audio = page_data.pop("related_audio")
-                related_videos = page_data.pop("related_videos")
-                related_images = page_data.pop("related_images")
-
-                created_page = StoryPage.objects.create(
-                    story=instance, ordering=index, **page_data
-                )
-
-                created_page.related_audio.set(related_audio)
-                created_page.related_videos.set(related_videos)
-                created_page.related_images.set(related_images)
-        except KeyError:
-            pass
-
-        return super().update(instance, validated_data)
+    pages = StoryPageSerializer(many=True, read_only=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story

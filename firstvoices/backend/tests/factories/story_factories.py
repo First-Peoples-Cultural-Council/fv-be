@@ -17,6 +17,7 @@ class StoryFactory(RelatedMediaBaseFactory):
 
 
 class PagesFactory(DjangoModelFactory):
+    site = factory.SubFactory(SiteFactory)
     story = factory.SubFactory(StoryFactory)
 
     class Meta:

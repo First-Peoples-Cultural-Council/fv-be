@@ -3,9 +3,9 @@ import json
 import pytest
 
 from backend.models.constants import Role, Visibility
+from backend.models.story import Story
 from backend.tests import factories
 
-from ...models import Story, StoryPage
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
@@ -26,87 +26,26 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
     def get_valid_data(self, site=None):
         cover_image = factories.ImageFactory.create(site=site)
 
-        generated_media = {}
-        for purpose in ("story", "page1", "page2"):
-            images = []
-            videos = []
-            audio = []
-            for _unused in range(3):
-                generated_media[purpose] = {}
+        images = []
+        videos = []
+        audio = []
 
-                images.append(factories.ImageFactory.create(site=site))
-                videos.append(factories.VideoFactory.create(site=site))
-                audio.append(factories.AudioFactory.create(site=site))
-
-                generated_media[purpose] = {
-                    "related_images": images,
-                    "related_videos": videos,
-                    "related_audio": audio,
-                }
+        for _ in range(3):
+            images.append(factories.ImageFactory.create(site=site))
+            videos.append(factories.VideoFactory.create(site=site))
+            audio.append(factories.AudioFactory.create(site=site))
 
         return {
-            "relatedAudio": list(
-                map(lambda x: str(x.id), generated_media["story"]["related_audio"])
-            ),
-            "relatedImages": list(
-                map(lambda x: str(x.id), generated_media["story"]["related_images"])
-            ),
-            "relatedVideos": list(
-                map(lambda x: str(x.id), generated_media["story"]["related_videos"])
-            ),
+            "relatedAudio": [str(x.id) for x in audio],
+            "relatedImages": [str(x.id) for x in images],
+            "relatedVideos": [str(x.id) for x in videos],
             "coverImage": str(cover_image.id),
             "title": "Title",
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
             "notes": ["Test Note One", "Test Note Two", "Test Note Three"],
-            "pages": [
-                {
-                    "text": "First text page",
-                    "translation": "Translated 1st",
-                    "relatedAudio": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page1"]["related_audio"],
-                        )
-                    ),
-                    "relatedImages": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page1"]["related_images"],
-                        )
-                    ),
-                    "relatedVideos": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page1"]["related_videos"],
-                        )
-                    ),
-                },
-                {
-                    "text": "Second text page",
-                    "translation": "Translated 2nd",
-                    "relatedAudio": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page2"]["related_audio"],
-                        )
-                    ),
-                    "relatedImages": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page2"]["related_images"],
-                        )
-                    ),
-                    "relatedVideos": list(
-                        map(
-                            lambda x: str(x.id),
-                            generated_media["page2"]["related_videos"],
-                        )
-                    ),
-                },
-            ],
-            "acknowledgements": ["Test Authour", "Another Acknowledgement"],
+            "acknowledgements": ["Test Author", "Another Acknowledgement"],
             "excludeFromGames": True,
             "excludeFromKids": False,
         }
@@ -127,19 +66,8 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         )
         assert str(actual_instance.cover_image.id) == expected_data["coverImage"]
 
-        actual_pages = StoryPage.objects.filter(story__id=actual_instance.id)
-
-        assert len(actual_pages) == len(expected_data["pages"])
-
-        for index, page in enumerate(expected_data["pages"]):
-            assert page["text"] == actual_pages[index].text
-            assert page["translation"] == actual_pages[index].translation
-            assert len(page["relatedVideos"]) == 3
-
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
-        assert actual_response["pages"][0]["text"] == expected_data["pages"][0]["text"]
-        assert len(actual_response["pages"][0]["relatedAudio"]) == 3
         assert (
             actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
         )
@@ -152,6 +80,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             == expected_data["relatedImages"][0]
         )
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
+        assert actual_response["pages"] == []  # unchanged
 
     def assert_created_instance(self, pk, data):
         instance = Story.objects.get(pk=pk)
@@ -163,6 +92,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
     def add_related_objects(self, instance):
         factories.PagesFactory.create(story=instance)
         factories.PagesFactory.create(story=instance)
+        pass
 
     def assert_related_objects_deleted(self, instance):
         assert instance.pages.count() == 0
