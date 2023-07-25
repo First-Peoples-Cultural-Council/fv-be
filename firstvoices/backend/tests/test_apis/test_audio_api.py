@@ -40,8 +40,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
         assert response_data == self.get_expected_audio_data(instance, speaker)
 
     def assert_related_objects_deleted(self, instance):
-        """No related objects to delete"""
-        pass
+        self.assert_instance_deleted(instance.original)
 
     @pytest.mark.django_db
     def test_create_with_speakers(self):

@@ -70,7 +70,7 @@ class FileBase(BaseSiteContentModel):
             )
 
         """
-        Sets mimetype based on the file contents
+        Sets mimetype and size based on the file contents
         """
         with self.content.file.open(mode="rb") as fb:
             self.mimetype = magic.from_buffer(fb.read(2048), mime=True)

@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from backend.models import Story, Page
+from backend.models import Page, Story
 from backend.tests.factories import RelatedMediaBaseFactory
 from backend.tests.factories.access import SiteFactory
 
@@ -24,3 +24,4 @@ class PagesFactory(DjangoModelFactory):
 
     text = factory.Sequence(lambda n: "Story text %03d" % n)
     translation = factory.Sequence(lambda n: "Story text translation %03d" % n)
+    ordering = factory.Sequence(lambda n: n)

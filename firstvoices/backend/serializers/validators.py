@@ -1,3 +1,4 @@
+import magic
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator, qs_filter
@@ -13,8 +14,7 @@ class SameSite:
     message = _("Must be in the same site.")
     requires_context = True
 
-    def __init__(self, queryset, message=None):
-        self.queryset = queryset
+    def __init__(self, message=None):
         self.message = message or self.message
 
     def __call__(self, value, serializer):
@@ -30,8 +30,7 @@ class HasNoParent:
 
     message = _("Must not have a parent.")
 
-    def __init__(self, queryset, message=None):
-        self.queryset = queryset
+    def __init__(self, message=None):
         self.message = message or self.message
 
     def __call__(self, value):
@@ -54,3 +53,24 @@ class UniqueForSite(UniqueValidator):
     def __call__(self, value, serializer_field):
         self.site = get_site_from_context(serializer_field)
         super().__call__(value, serializer_field)
+
+
+class SupportedFileType:
+    """
+    Validates that the value is a supported file type.
+    """
+
+    message = _("File must be of supported type.")
+    mimetypes = None
+
+    def __init__(self, mimetypes=None, message=None):
+        self.mimetypes = mimetypes
+        self.message = message or self.message
+
+    def __call__(self, value):
+        # note: value is an open InMemoryUploadedFile; don't close it
+        mimetype = magic.from_buffer(value.read(2048), mime=True)
+
+        if mimetype not in self.mimetypes:
+            message = f"{self.message} - Supported types: {self.mimetypes}"
+            raise serializers.ValidationError(message)

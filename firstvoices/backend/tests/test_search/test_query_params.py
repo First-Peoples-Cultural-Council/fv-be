@@ -174,7 +174,7 @@ class TestDomain:
 
 @pytest.mark.django_db
 class TestCategory:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
         self.parent_category = factories.ParentCategoryFactory(site=self.site)
         self.child_category = factories.ChildCategoryFactory(
@@ -214,7 +214,7 @@ class TestCategory:
 
 @pytest.mark.django_db
 class TestStartsWithChar:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
 
     def test_blank(self):
