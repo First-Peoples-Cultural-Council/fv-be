@@ -35,7 +35,6 @@ class Story(
     """
 
     class Meta:
-        unique_together = ("site", "title")
         verbose_name_plural = "stories"
         rules_permissions = {
             "view": predicates.is_visible_object,
@@ -65,7 +64,7 @@ class Story(
         return self.title
 
 
-class Page(BaseModel, RelatedMediaMixin):
+class StoryPage(BaseModel, RelatedMediaMixin):
     """
     Representing the pages within a story
 
@@ -78,6 +77,8 @@ class Page(BaseModel, RelatedMediaMixin):
     class Meta:
         unique_together = ("story", "ordering")
         ordering = ("ordering",)
+        verbose_name = "story page"
+        verbose_name_plural = "story pages"
         rules_permissions = {
             "view": predicates.is_visible_object,
             "add": predicates.is_superadmin,

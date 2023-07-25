@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from backend.models import Page, Story
+from backend.models import Story, StoryPage
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
@@ -19,8 +19,12 @@ from backend.serializers.site_serializers import LinkedSiteSerializer
 
 class PageSerializer(ModelSerializer, RelatedMediaSerializerMixin):
     class Meta:
-        model = Page
-        fields = RelatedMediaSerializerMixin.Meta.fields + ("id", "text", "translation",)
+        model = StoryPage
+        fields = RelatedMediaSerializerMixin.Meta.fields + (
+            "id",
+            "text",
+            "translation",
+        )
         read_only_fields = ("id",)
 
 
@@ -46,7 +50,9 @@ class StorySerializer(
             related_videos = page_data.pop("related_videos")
             related_images = page_data.pop("related_images")
 
-            created_page = Page.objects.create(story=created, ordering=index, **page_data)
+            created_page = StoryPage.objects.create(
+                story=created, ordering=index, **page_data
+            )
 
             created_page.related_audio.set(related_audio)
             created_page.related_videos.set(related_videos)
@@ -55,7 +61,7 @@ class StorySerializer(
         return created
 
     def update(self, instance, validated_data):
-        Page.objects.filter(story__id=instance.id).delete()
+        StoryPage.objects.filter(story__id=instance.id).delete()
         try:
             pages = validated_data.pop("pages")
             for index, page_data in enumerate(pages):
@@ -63,7 +69,9 @@ class StorySerializer(
                 related_videos = page_data.pop("related_videos")
                 related_images = page_data.pop("related_images")
 
-                created_page = Page.objects.create(story=instance, ordering=index, **page_data)
+                created_page = StoryPage.objects.create(
+                    story=instance, ordering=index, **page_data
+                )
 
                 created_page.related_audio.set(related_audio)
                 created_page.related_videos.set(related_videos)

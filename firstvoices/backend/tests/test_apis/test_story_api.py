@@ -5,7 +5,7 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from ...models import Page, Story
+from ...models import Story, StoryPage
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
@@ -127,7 +127,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         )
         assert str(actual_instance.cover_image.id) == expected_data["coverImage"]
 
-        actual_pages = Page.objects.filter(story__id=actual_instance.id)
+        actual_pages = StoryPage.objects.filter(story__id=actual_instance.id)
 
         assert len(actual_pages) == len(expected_data["pages"])
 

@@ -1,12 +1,19 @@
 from django.contrib import admin
 
 from backend.admin import BaseInlineAdmin, BaseSiteContentAdmin
-from backend.models import Page, Story
+from backend.models import Story, StoryPage
 
 
 class PageAdmin(BaseInlineAdmin):
-    model = Page
-    fields = ("text", "translation", "ordering", "related_audio", "related_images", "related_videos")
+    model = StoryPage
+    fields = (
+        "text",
+        "translation",
+        "ordering",
+        "related_audio",
+        "related_images",
+        "related_videos",
+    )
     list_display = ("ordering", "text")
     can_delete = True
     classes = []
@@ -14,7 +21,6 @@ class PageAdmin(BaseInlineAdmin):
 
 @admin.register(Story)
 class StoryAdmin(BaseSiteContentAdmin):
-
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [PageAdmin]
 

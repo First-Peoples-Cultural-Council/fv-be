@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from backend.models import Page, Story
+from backend.models import Story, StoryPage
 from backend.tests.factories import RelatedMediaBaseFactory
 from backend.tests.factories.access import SiteFactory
 
@@ -20,7 +20,7 @@ class PagesFactory(DjangoModelFactory):
     story = factory.SubFactory(StoryFactory)
 
     class Meta:
-        model = Page
+        model = StoryPage
 
     text = factory.Sequence(lambda n: "Story text %03d" % n)
     translation = factory.Sequence(lambda n: "Story text translation %03d" % n)
