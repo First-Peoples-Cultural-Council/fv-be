@@ -446,14 +446,27 @@ class SiteContentCreateApiTestMixin:
     @pytest.mark.django_db
     def test_create_success_201(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        data = self.get_valid_data(site)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
-            data=self.format_upload_data(self.get_valid_data(site)),
+            data=self.format_upload_data(data),
             content_type=self.content_type,
         )
 
         assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        self.assert_created_instance(pk, data)
+        self.assert_created_response(data, response_data)
+
+    def assert_created_instance(self, pk, data):
+        raise NotImplementedError()
+
+    def assert_created_response(self, expected_data, actual_response):
+        raise NotImplementedError()
 
 
 class SiteContentUpdateApiTestMixin:

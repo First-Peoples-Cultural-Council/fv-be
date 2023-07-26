@@ -55,6 +55,13 @@ class TestSiteWidgetEndpoint(BaseControlledSiteContentApiTest):
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
 
+    def assert_created_instance(self, pk, data):
+        instance = self.model.objects.get(pk=pk)
+        return self.get_expected_response(instance, instance.site)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
+
     def get_expected_list_response_item(self, widget, site):
         return self.get_expected_response(widget, site)
 

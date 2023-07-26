@@ -153,6 +153,13 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         )
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
 
+    def assert_created_instance(self, pk, data):
+        instance = Story.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
+
     def add_related_objects(self, instance):
         factories.PagesFactory.create(story=instance)
         factories.PagesFactory.create(story=instance)
