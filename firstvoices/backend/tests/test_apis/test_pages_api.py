@@ -102,6 +102,14 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
             "bannerVideo": None,
         }
 
+    def assert_created_instance(self, pk, data):
+        instance = SitePage.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        assert actual_response["slug"] == expected_data["slug"]
+        return self.assert_update_response(expected_data, actual_response)
+
     @pytest.mark.parametrize(
         "user_role, expected_visible_pages",
         [
