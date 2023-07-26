@@ -74,13 +74,22 @@ class VideoUploadSerializer(serializers.FileField):
 
 
 class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
+    # Camel-case these explicitly so they work as inputs as well
+    excludeFromKids = serializers.BooleanField(
+        source="exclude_from_kids", default=False
+    )
+    excludeFromGames = serializers.BooleanField(
+        source="exclude_from_games", default=False
+    )
+    isShared = serializers.BooleanField(source="is_shared", default=False)
+
     class Meta:
         fields = base_id_fields + (
             "description",
             "acknowledgement",
-            "exclude_from_games",
-            "exclude_from_kids",
-            "is_shared",
+            "excludeFromKids",
+            "excludeFromGames",
+            "isShared",
             "original",
         )
 

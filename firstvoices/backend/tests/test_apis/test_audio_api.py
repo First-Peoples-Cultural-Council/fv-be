@@ -3,6 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import Visibility
+from backend.models.media import Audio
 from backend.tests import factories
 
 from .base_media_test import BaseMediaApiTest
@@ -17,6 +18,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     API_DETAIL_VIEW = "api:audio-detail"
     sample_filename = "sample-audio.mp3"
     sample_filetype = "audio/mpeg"
+    model = Audio
 
     def create_minimal_instance(self, site, visibility):
         return factories.AudioFactory.create(site=site)
@@ -41,6 +43,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
 
     def assert_related_objects_deleted(self, instance):
         self.assert_instance_deleted(instance.original)
+
+    def assert_created_response(self, expected_data, actual_response):
+        instance = Audio.objects.get(pk=actual_response["id"])
+        assert actual_response == self.get_expected_audio_data(instance, None)
 
     @pytest.mark.django_db
     def test_create_with_speakers(self):

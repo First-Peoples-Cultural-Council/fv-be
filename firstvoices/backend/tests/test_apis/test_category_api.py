@@ -66,6 +66,13 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert actual_response["description"] == expected_data["description"]
         assert actual_response["parent"]["id"] == expected_data["parent_id"]
 
+    def assert_created_instance(self, pk, data):
+        instance = Category.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
+
     def add_related_objects(self, instance):
         # no related objects to add
         pass

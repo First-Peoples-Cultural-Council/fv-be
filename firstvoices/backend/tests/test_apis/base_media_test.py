@@ -203,6 +203,7 @@ class BaseMediaApiTest(
 
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpeg"
+    model = None
 
     def get_valid_data(self, site=None):
         """Returns a valid data object suitable for create/update requests"""
@@ -217,6 +218,16 @@ class BaseMediaApiTest(
                 self.sample_filename, self.sample_filetype
             ),
         }
+
+    def assert_created_instance(self, pk, data):
+        instance = self.model.objects.get(pk=pk)
+        assert instance.title == data["title"]
+        assert instance.description == data["description"]
+        assert data["original"].name in instance.original.content.name
+        assert instance.acknowledgement == data["acknowledgement"]
+        assert instance.is_shared == data["isShared"]
+        assert instance.exclude_from_games == data["excludeFromGames"]
+        assert instance.exclude_from_kids == data["excludeFromKids"]
 
     def add_related_objects(self, instance):
         # related files are added as part of minimal instance; nothing extra to add here
