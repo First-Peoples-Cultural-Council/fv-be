@@ -14,7 +14,6 @@ from backend.models import SitePage
 from backend.models.widget import SiteWidget
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.page_serializers import (
-    SitePageDetailSerializer,
     SitePageDetailWriteSerializer,
     SitePageSerializer,
 )
@@ -52,7 +51,7 @@ from backend.views.base_views import (
                     "url": serializers.URLField(),
                     "visibility": serializers.CharField(),
                     "subtitle": serializers.CharField(),
-                    "slug": serializers.SlugField(),
+                    "slug": serializers.CharField(),
                     "widgets": SiteWidgetDetailSerializer(many=True),
                     "banner_image": ImageSerializer(),
                     "banner_video": VideoSerializer(),
@@ -71,7 +70,21 @@ from backend.views.base_views import (
         request=SitePageDetailWriteSerializer,
         responses={
             201: OpenApiResponse(
-                description=doc_strings.success_201, response=SitePageDetailSerializer
+                description=doc_strings.success_201,
+                response=inline_serializer(
+                    name="InlinePageDetailSerializer",
+                    fields={
+                        "id": serializers.UUIDField(),
+                        "title": serializers.CharField(),
+                        "url": serializers.URLField(),
+                        "visibility": serializers.CharField(),
+                        "subtitle": serializers.CharField(),
+                        "slug": serializers.CharField(),
+                        "widgets": SiteWidgetDetailSerializer(many=True),
+                        "banner_image": ImageSerializer(),
+                        "banner_video": VideoSerializer(),
+                    },
+                ),
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -85,7 +98,20 @@ from backend.views.base_views import (
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
-                response=SitePageDetailSerializer,
+                response=inline_serializer(
+                    name="InlinePageDetailSerializer",
+                    fields={
+                        "id": serializers.UUIDField(),
+                        "title": serializers.CharField(),
+                        "url": serializers.URLField(),
+                        "visibility": serializers.CharField(),
+                        "subtitle": serializers.CharField(),
+                        "slug": serializers.CharField(),
+                        "widgets": SiteWidgetDetailSerializer(many=True),
+                        "banner_image": ImageSerializer(),
+                        "banner_video": VideoSerializer(),
+                    },
+                ),
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
