@@ -12,6 +12,7 @@ from backend.permissions.utils import get_app_role
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
+    ELASTICSEARCH_STORY_INDEX,
     VALID_DOCUMENT_TYPES,
 )
 from backend.utils.character_utils import clean_input
@@ -37,6 +38,8 @@ def get_indices(types):
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
         elif doc_type == "song":
             indices.add(ELASTICSEARCH_SONG_INDEX)
+        elif doc_type == "story":
+            indices.add(ELASTICSEARCH_STORY_INDEX)
 
     return list(indices)
 
