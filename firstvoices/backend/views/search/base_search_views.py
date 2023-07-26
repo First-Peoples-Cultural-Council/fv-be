@@ -64,9 +64,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Retrieves results from all types of documents.",
                     ),
                     OpenApiExample(
-                        "word, phrase, song",
-                        value="word, phrase, song",
-                        description="Searches for documents in words, phrases and songs.",
+                        "word, phrase, song, story",
+                        value="word, phrase, song, story",
+                        description="Searches for documents in words, phrases, songs and stories.",
                     ),
                     OpenApiExample(
                         "word",

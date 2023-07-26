@@ -22,6 +22,7 @@ class TestValidDocumentTypes:
             ("memory, WORD", ["word"]),
             ("storage, PHRASE, WORD", ["phrase", "word"]),
             ("SoNg", ["song"]),
+            ("STorY", ["story"]),
         ],
     )
     def test_mixed_input_doc_types(self, input_types, expected_types):
