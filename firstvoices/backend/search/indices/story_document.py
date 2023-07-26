@@ -28,8 +28,7 @@ class StoryDocument(BaseDocument):
     acknowledgement = Text(copy_to="other_translation_search_fields")
     note = Text(copy_to="other_translation_search_fields")
 
-    # Author
-    # Todo: update search fields image with the updated boost values
+    # Author to be added
 
     class Index:
         name = ELASTICSEARCH_STORY_INDEX
