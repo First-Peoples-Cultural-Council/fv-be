@@ -28,28 +28,24 @@ class TestSearchFilters:
 
 @pytest.mark.django_db
 class TestTypesFilter:
-    expected_phrases_filter = (
-        "'must_not': [{'match': {'type': TypeOfDictionaryEntry.PHRASE}}]}"
-    )
-    expected_word_filter = (
-        "'must_not': [{'match': {'type': TypeOfDictionaryEntry.WORD}}]}"
-    )
+    expected_phrases_filter = "'must_not': [{'match': {'type': 'phrase'}}]}"
+    expected_word_filter = "'must_not': [{'match': {'type': 'word'}}]}"
 
     def test_words(self):
-        search_query = get_search_query(types=["words"])
+        search_query = get_search_query(types=["word"])
         search_query = search_query.to_dict()
 
         assert self.expected_phrases_filter in str(search_query)
         assert self.expected_word_filter not in str(search_query)
 
     def test_phrases(self):
-        search_query = get_search_query(types=["phrases"])
+        search_query = get_search_query(types=["phrase"])
         search_query = search_query.to_dict()
 
         assert self.expected_phrases_filter not in str(search_query)
         assert self.expected_word_filter in str(search_query)
 
-    @pytest.mark.parametrize("types", [["phrases", "words"], ["words", "phrases"]])
+    @pytest.mark.parametrize("types", [["phrase", "word"], ["word", "phrase"]])
     def test_words_and_phrases(self, types):
         search_query = get_search_query(types=types)
         search_query = search_query.to_dict()
