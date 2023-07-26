@@ -59,12 +59,12 @@ class SitePageDetailWriteSerializer(
     banner_image = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
-        validators=[SameSite(queryset=Image.objects.all())],
+        validators=[SameSite()],
     )
     banner_video = serializers.PrimaryKeyRelatedField(
         queryset=Video.objects.all(),
         allow_null=True,
-        validators=[SameSite(queryset=Video.objects.all())],
+        validators=[SameSite()],
     )
 
     def validate_widgets(self, widgets):
