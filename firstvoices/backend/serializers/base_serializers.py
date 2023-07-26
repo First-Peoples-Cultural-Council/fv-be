@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
+from ..models.constants import Visibility
 from . import fields
 from .utils import get_site_from_context
 
@@ -83,4 +84,17 @@ class CreateSiteContentSerializerMixin(CreateSerializerMixin):
 
     def create(self, validated_data):
         validated_data["site"] = get_site_from_context(self)
+        return super().create(validated_data)
+
+
+class CreateSiteContentVisibilitySerializerMixin(CreateSiteContentSerializerMixin):
+    """
+    A mixin for ModelSerializers that sets the required fields for subclasses of BaseSiteContentModel as well as the
+    visibility field
+    """
+
+    def create(self, validated_data):
+        validated_data["visibility"] = Visibility[
+            str.upper(validated_data.pop("get_visibility_display"))
+        ]
         return super().create(validated_data)

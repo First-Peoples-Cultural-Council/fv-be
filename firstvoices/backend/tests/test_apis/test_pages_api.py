@@ -20,6 +20,9 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
 
     model = SitePage
 
+    def get_lookup_key(self, instance):
+        return instance.slug
+
     def create_minimal_instance(self, site, visibility):
         return factories.SitePageFactory.create(site=site, visibility=visibility)
 
@@ -47,8 +50,9 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         pass
 
     def assert_related_objects_deleted(self, instance):
-        # no related objects to delete
-        pass
+        for order_item in instance.widgets.sitewidgetlistorder_set.all():
+            self.assert_instance_deleted(order_item)
+        self.assert_instance_deleted(instance.widgets)
 
     def assert_updated_instance(self, expected_data, actual_instance: SitePage):
         assert actual_instance.title == expected_data["title"]
@@ -257,35 +261,6 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         assert response.status_code == 400
 
     @pytest.mark.django_db
-    def test_detail_widget_validation_no_widgets(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-
-        factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
-        )
-
-        page = factories.SitePageFactory.create(site=site)
-
-        self.client.force_authenticate(user=user)
-        req_body = {
-            "title": "Title",
-            "visibility": "Public",
-            "subtitle": "Subtitle",
-            "slug": "page-slug",
-            "widgets": [],
-            "banner_image": None,
-            "banner_video": None,
-        }
-        response = self.client.put(
-            f"{self.get_detail_endpoint(key=page.slug, site_slug=site.slug)}",
-            format="json",
-            data=req_body,
-        )
-
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
     def test_detail_page_create(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
@@ -294,6 +269,7 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         widget_one = factories.SiteWidgetFactory.create(site=site)
         widget_two = factories.SiteWidgetFactory.create(site=site)
 
+        assert len(SiteWidget.objects.all()) == 2
         assert len(SiteWidgetList.objects.all()) == 0
         assert len(SiteWidgetListOrder.objects.all()) == 0
         assert len(SitePage.objects.all()) == 0
@@ -315,6 +291,7 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         assert response.status_code == 201
 
         # Check that the correct number of model instances have been created.
+        assert len(SiteWidget.objects.all()) == 2
         assert len(SiteWidgetList.objects.all()) == 1
         assert len(SiteWidgetListOrder.objects.all()) == 2
         assert len(SitePage.objects.all()) == 1
@@ -336,6 +313,46 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         )
         assert widget_one_order.order == 1
         assert widget_two_order.order == 0
+
+    @pytest.mark.django_db
+    def test_detail_widget_create_no_widgets(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidgetList.objects.all()) == 0
+        assert len(SiteWidgetListOrder.objects.all()) == 0
+        assert len(SitePage.objects.all()) == 0
+
+        data = {
+            "title": "Title",
+            "visibility": "Public",
+            "subtitle": "Subtitle",
+            "slug": "test-page-one",
+            "widgets": [],
+            "banner_image": None,
+            "banner_video": None,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+
+        # Check that the correct number of model instances have been created.
+        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidgetList.objects.all()) == 1
+        assert len(SiteWidgetListOrder.objects.all()) == 0
+        assert len(SitePage.objects.all()) == 1
+
+        page = SitePage.objects.first()
+
+        assert page.title == data["title"]
+        assert page.get_visibility_display() == data["visibility"]
+        assert page.subtitle == data["subtitle"]
+        assert page.slug == data["slug"]
 
     @pytest.mark.django_db
     def test_detail_page_update(self):
