@@ -43,6 +43,7 @@ from .api_doc_variables import id_parameter, site_slug_parameter
             OpenApiParameter(
                 name="contains",
                 description=_("Filter by type of dictionary entry associated with it"),
+                deprecated=True,  # Contains flag will be removed eventually
                 required=False,
                 type=str,
                 examples=[
@@ -137,7 +138,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
 
         # Check if type flags are present
         contains_flags = [
-            flag.upper()
+            flag.lower()
             for flag in self.request.GET.get("contains", "").split("|")
             if len(flag)
         ]

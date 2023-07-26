@@ -19,7 +19,6 @@ from backend.search.utils.query_builder_utils import (
     get_valid_document_types,
     get_valid_domain,
 )
-from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -41,7 +40,6 @@ from backend.views.exceptions import ElasticSearchConnectionError
             403: OpenApiResponse(description="Todo: Not authorized"),
         },
         parameters=[
-            site_slug_parameter,
             OpenApiParameter(
                 name="q",
                 description="search term",
@@ -55,7 +53,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="types",
-                description="filter by document types",
+                description="filter by document types. possible options are word, phrase, song",
                 required=False,
                 default="",
                 type=str,
@@ -66,9 +64,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Retrieves results from all types of documents.",
                     ),
                     OpenApiExample(
-                        "word, phrase",
-                        value="word, phrase",
-                        description="Searches for documents in both the Words and Phrases document types.",
+                        "word, phrase, song",
+                        value="word, phrase, song",
+                        description="Searches for documents in words, phrases and songs.",
                     ),
                     OpenApiExample(
                         "word",
@@ -314,7 +312,9 @@ class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         )
 
         # Sort by score, then by custom sort order
-        search_query = search_query.sort("_score", "custom_order", "title.raw")
+        search_query = search_query.sort(
+            "_score", {"custom_order": {"unmapped_type": "keyword"}}, "title.raw"
+        )
 
         # Get search results
         try:

@@ -11,9 +11,9 @@ from backend.permissions import predicates
 
 
 class WidgetFormats(models.IntegerChoices):
-    default = 0
-    left = 1
-    right = 2
+    DEFAULT = 0, _("Default")
+    LEFT = 1, _("Left")
+    RIGHT = 2, _("Right")
 
 
 class Widget(BaseModel):
@@ -30,7 +30,7 @@ class Widget(BaseModel):
     title = models.CharField(max_length=225)
     widget_type = models.CharField(max_length=255, default="WIDGET_TEXT")
     format = models.IntegerField(
-        choices=WidgetFormats.choices, default=WidgetFormats.default
+        choices=WidgetFormats.choices, default=WidgetFormats.DEFAULT
     )
 
     def __str__(self):
@@ -64,9 +64,9 @@ class SiteWidget(Widget, BaseControlledSiteContentModel):
         verbose_name_plural = _("site widgets")
         rules_permissions = {
             "view": predicates.is_visible_object,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
         }
 
     def __str__(self):
@@ -94,6 +94,7 @@ class SiteWidgetList(BaseSiteContentModel):
 
 class SiteWidgetListOrder(BaseModel):
     class Meta:
+        unique_together = ("site_widget", "site_widget_list")
         verbose_name = _("site widget list order")
         verbose_name_plural = _("site widget list orders")
         rules_permissions = {

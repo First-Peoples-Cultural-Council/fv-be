@@ -21,6 +21,7 @@ class TestValidDocumentTypes:
             ("xyz_type", None),
             ("memory, WORD", ["word"]),
             ("storage, PHRASE, WORD", ["phrase", "word"]),
+            ("SoNg", ["song"]),
         ],
     )
     def test_mixed_input_doc_types(self, input_types, expected_types):
@@ -54,7 +55,7 @@ class TestValidDomains:
 
 @pytest.mark.django_db
 class TestValidCategory:
-    def setup(self):
+    def setup_method(self):
         self.site = factories.SiteFactory()
         self.category = factories.ParentCategoryFactory(site=self.site)
 

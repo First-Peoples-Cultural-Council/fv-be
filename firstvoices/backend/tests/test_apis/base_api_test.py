@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -379,7 +380,7 @@ class ControlledDetailApiTestMixin:
 class WriteApiTestMixin:
     """Common functions for Create and Update tests"""
 
-    content_type_json = "application/json"
+    content_type = "application/json"
 
     def get_invalid_data(self):
         """Returns an invalid data object suitable for failing create/update requests"""
@@ -388,6 +389,10 @@ class WriteApiTestMixin:
     def get_valid_data(self, site=None):
         """Returns a valid data object suitable for create/update requests"""
         raise NotImplementedError
+
+    def format_upload_data(self, data):
+        """Subclasses can override this to support something other than json"""
+        return json.dumps(data)
 
     def create_site_with_app_admin(self, site_visibility, role=AppRole.SUPERADMIN):
         user = factories.get_app_admin(role)
@@ -403,13 +408,13 @@ class SiteContentCreateApiTestMixin:
     """
 
     @pytest.mark.django_db
-    def test_update_invalid_400(self):
+    def test_create_invalid_400(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_invalid_data()),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_invalid_data()),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 400
@@ -420,8 +425,8 @@ class SiteContentCreateApiTestMixin:
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 403
@@ -432,8 +437,8 @@ class SiteContentCreateApiTestMixin:
 
         response = self.client.post(
             self.get_list_endpoint(site_slug="missing-site"),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 404
@@ -444,8 +449,8 @@ class SiteContentCreateApiTestMixin:
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 201
@@ -474,8 +479,8 @@ class SiteContentUpdateApiTestMixin:
 
         response = self.client.put(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
-            data=json.dumps(self.get_invalid_data()),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_invalid_data()),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 400
@@ -487,8 +492,8 @@ class SiteContentUpdateApiTestMixin:
 
         response = self.client.put(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 403
@@ -500,8 +505,8 @@ class SiteContentUpdateApiTestMixin:
 
         response = self.client.put(
             self.get_detail_endpoint(key=instance.id, site_slug="missing-site"),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 404
@@ -512,8 +517,8 @@ class SiteContentUpdateApiTestMixin:
 
         response = self.client.put(
             self.get_detail_endpoint(key="missing-instance", site_slug=site.slug),
-            data=json.dumps(self.get_valid_data(site)),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 404
@@ -526,8 +531,8 @@ class SiteContentUpdateApiTestMixin:
 
         response = self.client.put(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
-            data=json.dumps(data),
-            content_type=self.content_type_json,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
         )
 
         assert response.status_code == 200
@@ -543,10 +548,21 @@ class SiteContentDestroyApiTestMixin:
     For use with BaseSiteContentApiTest
     """
 
+    def add_related_objects(self, instance):
+        raise NotImplementedError
+
+    def assert_related_objects_deleted(self, instance):
+        raise NotImplementedError
+
+    def assert_instance_deleted(self, instance):
+        with pytest.raises(ObjectDoesNotExist):
+            type(instance).objects.get(id=instance.id)
+
     @pytest.mark.django_db
     def test_destroy_success_204(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        self.add_related_objects(instance)
 
         response = self.client.delete(
             self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
@@ -554,6 +570,8 @@ class SiteContentDestroyApiTestMixin:
 
         assert response.status_code == 204
         assert response.content == b""  # 0 bytes
+        self.assert_instance_deleted(instance)
+        self.assert_related_objects_deleted(instance)
 
     @pytest.mark.django_db
     def test_destroy_denied_403(self):

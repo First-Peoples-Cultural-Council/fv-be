@@ -8,6 +8,7 @@ from scripts.utils.aws_download_utils import (
 )
 
 from backend.models.app import AppImportStatus
+from backend.resources.categories import CategoryMigrationResource
 from backend.resources.characters import (
     CharacterResource,
     CharacterVariantResource,
@@ -53,6 +54,7 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 # List model resources in the correct order to import them
 import_resources = [
     ("sites", SiteMigrationResource()),
+    ("categories", CategoryMigrationResource()),
     # ("site_media", SiteResource()) # waiting on media import
     ("base-characters", CharacterResource()),
     ("variant-characters", CharacterVariantResource()),
