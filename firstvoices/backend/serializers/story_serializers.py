@@ -57,6 +57,7 @@ class StorySerializer(
                 "id",
                 "site",
                 "cover_image",
+                "author",
                 "title",
                 "title_translation",
                 "introduction",
@@ -64,6 +65,7 @@ class StorySerializer(
                 "notes",
                 "pages",
                 "acknowledgements",
+                "hide_overlay",
             )
         )
 
@@ -76,8 +78,5 @@ class StoryListSerializer(SiteContentLinkedTitleSerializer):
         fields = (
             SiteContentLinkedTitleSerializer.Meta.fields
             + audience_fields
-            + (
-                "title_translation",
-                "cover_image",
-            )
+            + ("title_translation", "cover_image", "hide_overlay")
         )

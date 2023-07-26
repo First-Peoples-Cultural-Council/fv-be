@@ -43,6 +43,8 @@ class Story(
             "delete": predicates.is_superadmin,
         }
 
+    author = models.CharField(max_length=100, blank=True)
+
     cover_image = models.ForeignKey(
         to="Image", on_delete=models.SET_NULL, related_name="story_cover_of", null=True
     )
@@ -56,9 +58,12 @@ class Story(
     acknowledgements = ArrayField(
         models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
+
     notes = ArrayField(
         models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
+
+    hide_overlay = models.BooleanField(null=False, default=False)
 
     def __str__(self):
         return self.title
