@@ -6,6 +6,7 @@ from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    audience_fields,
     base_id_fields,
     base_timestamp_fields,
 )
@@ -50,6 +51,7 @@ class StorySerializer(
         fields = (
             base_timestamp_fields
             + RelatedMediaSerializerMixin.Meta.fields
+            + audience_fields
             + (
                 "url",
                 "id",
@@ -62,8 +64,6 @@ class StorySerializer(
                 "notes",
                 "pages",
                 "acknowledgements",
-                "exclude_from_games",
-                "exclude_from_kids",
             )
         )
 
@@ -73,9 +73,11 @@ class StoryListSerializer(SiteContentLinkedTitleSerializer):
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
-            "title_translation",
-            "cover_image",
-            "exclude_from_games",
-            "exclude_from_kids",
+        fields = (
+            SiteContentLinkedTitleSerializer.Meta.fields
+            + audience_fields
+            + (
+                "title_translation",
+                "cover_image",
+            )
         )

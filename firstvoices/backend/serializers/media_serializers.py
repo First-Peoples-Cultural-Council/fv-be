@@ -74,7 +74,7 @@ class VideoUploadSerializer(serializers.FileField):
 
 
 class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
-    # Camel-case these explicitly so they work as inputs as well
+    # fw-4650 should find a better way to camel-case these
     excludeFromKids = serializers.BooleanField(
         source="exclude_from_kids", default=False
     )

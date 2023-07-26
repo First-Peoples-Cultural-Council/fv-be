@@ -10,6 +10,7 @@ from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    audience_fields,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
@@ -357,8 +358,6 @@ class DictionaryEntryDetailSerializer(
                 "visibility",
                 "visibility_value",
                 "categories",
-                "exclude_from_games",
-                "exclude_from_kids",
                 "acknowledgements",
                 "alternate_spellings",
                 "notes",
@@ -370,6 +369,7 @@ class DictionaryEntryDetailSerializer(
                 "split_words",
                 "split_words_base",
             )
+            + audience_fields
             + RelatedDictionaryEntrySerializerMixin.Meta.fields
         )
 
@@ -379,14 +379,11 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
 
     class Meta:
         model = dictionary.DictionaryEntry
-        # Add related entries and media when FW-4604/4605 are complete
         fields = (
             "title",
             "type",
             "visibility_value",
             "categories",
-            "exclude_from_games",
-            "exclude_from_kids",
             "acknowledgements",
             "alternate_spellings",
             "notes",
@@ -396,4 +393,4 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "related_audio",
             "related_images",
             "related_videos",
-        )
+        ) + audience_fields
