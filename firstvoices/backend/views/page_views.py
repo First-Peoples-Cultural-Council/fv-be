@@ -1,25 +1,19 @@
 from django.db.models import Prefetch
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import (
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-    inline_serializer,
-)
-from rest_framework import serializers, status
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import SitePage
 from backend.models.widget import SiteWidget
-from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.page_serializers import (
     SitePageDetailWriteSerializer,
     SitePageSerializer,
 )
-from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import (
+    inline_page_doc_detail_serializer,
     site_page_slug_parameter,
     site_slug_parameter,
 )
@@ -43,20 +37,7 @@ from backend.views.base_views import (
     retrieve=extend_schema(
         description=_("A page from the specified site."),
         responses={
-            200: inline_serializer(
-                name="InlinePageDetailSerializer",
-                fields={
-                    "id": serializers.UUIDField(),
-                    "title": serializers.CharField(),
-                    "url": serializers.URLField(),
-                    "visibility": serializers.CharField(),
-                    "subtitle": serializers.CharField(),
-                    "slug": serializers.CharField(),
-                    "widgets": SiteWidgetDetailSerializer(many=True),
-                    "banner_image": ImageSerializer(),
-                    "banner_video": VideoSerializer(),
-                },
-            ),
+            200: inline_page_doc_detail_serializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
@@ -71,20 +52,7 @@ from backend.views.base_views import (
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201,
-                response=inline_serializer(
-                    name="InlinePageDetailSerializer",
-                    fields={
-                        "id": serializers.UUIDField(),
-                        "title": serializers.CharField(),
-                        "url": serializers.URLField(),
-                        "visibility": serializers.CharField(),
-                        "subtitle": serializers.CharField(),
-                        "slug": serializers.CharField(),
-                        "widgets": SiteWidgetDetailSerializer(many=True),
-                        "banner_image": ImageSerializer(),
-                        "banner_video": VideoSerializer(),
-                    },
-                ),
+                response=inline_page_doc_detail_serializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -98,20 +66,7 @@ from backend.views.base_views import (
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
-                response=inline_serializer(
-                    name="InlinePageDetailSerializer",
-                    fields={
-                        "id": serializers.UUIDField(),
-                        "title": serializers.CharField(),
-                        "url": serializers.URLField(),
-                        "visibility": serializers.CharField(),
-                        "subtitle": serializers.CharField(),
-                        "slug": serializers.CharField(),
-                        "widgets": SiteWidgetDetailSerializer(many=True),
-                        "banner_image": ImageSerializer(),
-                        "banner_video": VideoSerializer(),
-                    },
-                ),
+                response=inline_page_doc_detail_serializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),

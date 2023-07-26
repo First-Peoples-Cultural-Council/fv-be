@@ -87,7 +87,7 @@ class CreateSiteContentSerializerMixin(CreateSerializerMixin):
         return super().create(validated_data)
 
 
-class CreateSiteContentVisibilitySerializerMixin(CreateSiteContentSerializerMixin):
+class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixin):
     """
     A mixin for ModelSerializers that sets the required fields for subclasses of BaseSiteContentModel as well as the
     visibility field

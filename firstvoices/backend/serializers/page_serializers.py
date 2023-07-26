@@ -5,7 +5,7 @@ from backend.models.constants import Visibility
 from backend.models.media import Video
 from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import (
-    CreateSiteContentVisibilitySerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
 )
@@ -19,7 +19,7 @@ class SitePageSerializer(SiteContentLinkedTitleSerializer):
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitepage-detail", lookup_field="slug", read_only=True
     )
-    slug = serializers.CharField()
+    slug = serializers.CharField(required=False)
     visibility = serializers.CharField(source="get_visibility_display")
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
@@ -50,7 +50,7 @@ class SitePageDetailSerializer(SitePageSerializer):
 
 class SitePageDetailWriteSerializer(
     UpdateSerializerMixin,
-    CreateSiteContentVisibilitySerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     SitePageDetailSerializer,
 ):
     widgets = serializers.PrimaryKeyRelatedField(
@@ -75,6 +75,10 @@ class SitePageDetailWriteSerializer(
         return data
 
     def create(self, validated_data):
+        if "slug" not in validated_data:
+            raise serializers.ValidationError(
+                "A slug must be provided when creating a page."
+            )
         validated_data["widgets"] = SiteWidgetListSerializer.create(
             self, validated_data
         )
@@ -86,6 +90,7 @@ class SitePageDetailWriteSerializer(
         if not widgets:
             widgets = SiteWidgetList.objects.create(site=instance)
         widgets = SiteWidgetListSerializer.update(self, widgets, validated_data)
+        validated_data.pop("slug", None)  # Prevent the slug field from being updated.
         validated_data["widgets"] = widgets
         validated_data["visibility"] = Visibility[
             str.upper(validated_data.pop("get_visibility_display"))

@@ -39,7 +39,7 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
             "title": "Title",
             "visibility": "Public",
             "subtitle": "Subtitle",
-            "slug": "page-slug",
+            "slug": "test-page-slug",
             "widgets": widget_ids,
             "banner_image": str(banner_image.id),
             "banner_video": None,
@@ -58,7 +58,6 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.get_visibility_display() == expected_data["visibility"]
         assert actual_instance.subtitle == expected_data["subtitle"]
-        assert actual_instance.slug == expected_data["slug"]
 
         actual_widgets = SiteWidget.objects.filter(
             sitewidgetlist_set__id=actual_instance.widgets_id
@@ -74,7 +73,6 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         assert actual_response["title"] == expected_data["title"]
         assert actual_response["visibility"] == expected_data["visibility"]
         assert actual_response["subtitle"] == expected_data["subtitle"]
-        assert actual_response["slug"] == expected_data["slug"]
         assert actual_response["widgets"][0]["id"] == expected_data["widgets"][0]
         assert actual_response["widgets"][1]["id"] == expected_data["widgets"][1]
         assert actual_response["widgets"][2]["id"] == expected_data["widgets"][2]
@@ -377,7 +375,6 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
             "title": "Test Title Updated",
             "visibility": "Team",
             "subtitle": "Test Subtitle Updated",
-            "slug": "test-page-one-updated",
             "widgets": [str(new_widget_two.id), str(new_widget_one.id)],
             "banner_image": None,
             "banner_video": None,
@@ -407,7 +404,6 @@ class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
         assert updated_page.title == data["title"]
         assert updated_page.get_visibility_display() == data["visibility"]
         assert updated_page.subtitle == data["subtitle"]
-        assert updated_page.slug == data["slug"]
         assert len(updated_page.widgets.widgets.all()) == 2
 
         # Check that the order value was created according to the order the widgets were passed to the API.
