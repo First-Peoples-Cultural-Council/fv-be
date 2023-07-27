@@ -8,8 +8,8 @@ from backend.models.constants import AppRole
 
 # This script creates a super admin membership model and is called in the reset-local-database.sh script.
 
-id = os.getenv("DJANGO_SUPERUSER_EMAIL")
-user = get_user_model().objects.filter(id=id).first()
+email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+user = get_user_model().objects.filter(email=email).first()
 
 try:
     membership = AppMembership(user=user, role=AppRole.SUPERADMIN)

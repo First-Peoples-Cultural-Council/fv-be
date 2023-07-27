@@ -5,22 +5,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Using the input arguments, set the environment variables for a super-admin account username, password, and optional email.
 # Arguments are as follows:
-# -u <username> or --username <username>
 # -p <password> or --password <password>
 # -e <email> or --email <email>
 while test $# -gt 0; do
   case "$1" in
-    -u|--username)
-      shift
-      if [[ $1 != -* ]] && [[ -n $1 ]] && test $# -gt 0; then
-        printf 'Found username argument.\n'
-        export DJANGO_SUPERUSER_USERNAME=$1
-        shift
-      else
-        printf 'No username specified after [-u|--username] flag.\n'
-        exit 1
-      fi
-      ;;
     -p|--password)
       shift
       if [[ $1 != -* ]] && [[ -n $1 ]] && test $# -gt 0; then
@@ -48,12 +36,6 @@ while test $# -gt 0; do
       ;;
   esac
 done
-
-# If the username environment variable has not been set using the arguments then check for an environment variable.
-if [[ -z "${DJANGO_SUPERUSER_USERNAME}" ]]; then
-  printf 'Please set your DJANGO_SUPERUSER_USERNAME environment variable or supply one with the [-u <username>] argument and rerun this script.\n'
-  exit 1
-fi
 
 # If the password environment variable has not been set using the arguments then check for an environment variable.
 if [[ -z "${DJANGO_SUPERUSER_PASSWORD}" ]]; then
@@ -111,10 +93,10 @@ case $yn in
       exit $retval
     fi
 
-    # Create a superuser using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
+    # Create a superuser using the DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
     printf '\n\n'
     printf 'Creating a superuser account using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.\n'
-    python $SCRIPT_DIR/manage.py createsuperuser --noinput --id $DJANGO_SUPERUSER_USERNAME
+    python $SCRIPT_DIR/manage.py createsuperuser --noinput
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Superuser creation failed: exit code $retval\n"
