@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from backend.models.constants import Visibility
 from backend.models.widget import (
     SiteWidget,
     SiteWidgetList,
@@ -13,6 +12,7 @@ from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    WritableVisibilityField,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.utils import get_site_from_context
@@ -49,7 +49,7 @@ class SiteWidgetDetailSerializer(
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitewidget-detail", read_only=True
     )
-    visibility = serializers.CharField(source="get_visibility_display")
+    visibility = WritableVisibilityField(required=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = SiteWidget
@@ -64,9 +64,6 @@ class SiteWidgetDetailSerializer(
         settings = validated_data.pop("widgetsettings_set")
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
-        ]
-        validated_data["visibility"] = Visibility[
-            str.upper(validated_data.pop("get_visibility_display"))
         ]
         created = super().create(validated_data)
 
@@ -83,9 +80,6 @@ class SiteWidgetDetailSerializer(
         settings = validated_data.pop("widgetsettings_set")
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
-        ]
-        validated_data["visibility"] = Visibility[
-            str.upper(validated_data.pop("get_visibility_display"))
         ]
         for setting in settings:
             WidgetSettings.objects.create(

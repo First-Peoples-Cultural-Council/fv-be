@@ -5,11 +5,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import category, dictionary, part_of_speech
-from backend.models.constants import Visibility
 from backend.serializers.base_serializers import (
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    WritableVisibilityField,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
@@ -118,7 +118,7 @@ class DictionaryEntrySummarySerializer(
 
 
 class DictionaryEntryDetailSerializer(
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     RelatedDictionaryEntrySerializerMixin,
     RelatedMediaSerializerMixin,
     serializers.HyperlinkedModelSerializer,
@@ -133,10 +133,7 @@ class DictionaryEntryDetailSerializer(
         default=dictionary.TypeOfDictionaryEntry.WORD,
     )
     custom_order = serializers.CharField(read_only=True)
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
-    visibility_value = serializers.ChoiceField(
-        choices=Visibility.choices, default=Visibility.TEAM, write_only=True
-    )
+    visibility = WritableVisibilityField(required=True)
     categories = WritableCategorySerializer(
         queryset=category.Category.objects.all(),
         many=True,
@@ -184,9 +181,6 @@ class DictionaryEntryDetailSerializer(
         pronunciations = validated_data.pop("pronunciation_set", [])
         translations = validated_data.pop("translation_set", [])
 
-        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
-        validated_data["visibility"] = visibility_value
-
         created = super().create(validated_data)
 
         for acknowledgement in acknowledgements:
@@ -220,9 +214,6 @@ class DictionaryEntryDetailSerializer(
         dictionary.Note.objects.filter(dictionary_entry=instance).delete()
         dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
         dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
-
-        visibility_value = validated_data.pop("visibility_value", Visibility.TEAM)
-        validated_data["visibility"] = visibility_value
 
         try:
             acknowledgements = validated_data.pop("acknowledgement_set", [])
@@ -332,7 +323,7 @@ class DictionaryEntryDetailSerializer(
     @extend_schema_field(OpenApiTypes.STR)
     def get_split_words_base(self, entry):
         alphabet = self.get_model_from_context("alphabet")
-        if alphabet == []:
+        if not alphabet:
             return entry.title
         # convert title to base characters
         base_title = alphabet.get_base_form(
@@ -355,7 +346,6 @@ class DictionaryEntryDetailSerializer(
                 "type",
                 "custom_order",
                 "visibility",
-                "visibility_value",
                 "categories",
                 "exclude_from_games",
                 "exclude_from_kids",
@@ -383,7 +373,7 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
         fields = (
             "title",
             "type",
-            "visibility_value",
+            "visibility",
             "categories",
             "exclude_from_games",
             "exclude_from_kids",

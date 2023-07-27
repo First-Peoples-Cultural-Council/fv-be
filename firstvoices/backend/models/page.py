@@ -16,9 +16,9 @@ class SitePage(BaseControlledSiteContentModel):
         verbose_name_plural = _("site pages")
         rules_permissions = {
             "view": predicates.is_visible_object,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_controlled_data,
+            "change": predicates.can_edit_controlled_data,
+            "delete": predicates.can_delete_controlled_data,
         }
         constraints = [
             # Constraint to ensure a SitePage has either a banner image or video or none but not both.

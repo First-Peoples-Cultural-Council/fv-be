@@ -62,3 +62,24 @@ can_edit_core_uncontrolled_data = predicate(
 can_delete_core_uncontrolled_data = predicate(
     is_at_least_editor_or_super, name="can_edit_core_uncontrolled_data"
 )
+# This predicate is an alias, and must be combined with the CreateControlledSiteContentSerializerMixin in
+# backend/serializers/base_serializers.py
+can_add_controlled_data = predicate(
+    can_add_core_uncontrolled_data,
+    name="can_add_controlled_data",
+)
+
+can_edit_controlled_data = predicate(
+    base.has_at_least_editor_membership
+    | base.is_superadmin
+    | (
+        base.has_at_least_assistant_membership
+        & base.is_team_obj
+        & base.is_saved_team_obj
+    ),
+    name="can_edit_controlled_data",
+)
+
+can_delete_controlled_data = predicate(
+    is_at_least_editor_or_super, name="can_delete_controlled_data"
+)

@@ -83,9 +83,9 @@ from . import doc_strings
     ),
 )
 class DictionaryViewSet(
-    FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     DictionarySerializerContextMixin,
+    FVPermissionViewSetMixin,
     viewsets.ModelViewSet,
 ):
     """

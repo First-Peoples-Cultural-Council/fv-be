@@ -64,9 +64,9 @@ class SiteWidget(Widget, BaseControlledSiteContentModel):
         verbose_name_plural = _("site widgets")
         rules_permissions = {
             "view": predicates.is_visible_object,
-            "add": predicates.is_language_admin_or_super,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "add": predicates.can_add_controlled_data,
+            "change": predicates.can_edit_controlled_data,
+            "delete": predicates.can_delete_controlled_data,
         }
 
     def __str__(self):
