@@ -48,6 +48,8 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "acknowledgements": ["Test Author", "Another Acknowledgement"],
             "excludeFromGames": True,
             "excludeFromKids": False,
+            "author": "Dr. Author",
+            "hideOverlay": True,
         }
 
     def assert_updated_instance(self, expected_data, actual_instance: Story):
@@ -90,8 +92,8 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         return self.assert_update_response(expected_data, actual_response)
 
     def add_related_objects(self, instance):
-        factories.PagesFactory.create(story=instance)
-        factories.PagesFactory.create(story=instance)
+        factories.StoryPageFactory.create(story=instance)
+        factories.StoryPageFactory.create(story=instance)
         pass
 
     def assert_related_objects_deleted(self, instance):
@@ -122,6 +124,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "titleTranslation": story.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
+            "hideOverlay": story.hide_overlay,
         }
 
     def get_expected_response(self, story, site):
@@ -149,8 +152,10 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "notes": [],
             "pages": [],
             "acknowledgements": [],
-            "excludeFromGames": False,
-            "excludeFromKids": False,
+            "excludeFromGames": story.exclude_from_games,
+            "excludeFromKids": story.exclude_from_kids,
+            "author": story.author,
+            "hideOverlay": story.hide_overlay,
         }
 
     @pytest.mark.django_db
@@ -164,8 +169,8 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
 
         story = factories.StoryFactory.create(visibility=Visibility.TEAM, site=site)
 
-        page1 = factories.PagesFactory.create(story=story, ordering=10)
-        page2 = factories.PagesFactory.create(story=story, ordering=20)
+        page1 = factories.StoryPageFactory.create(story=story, ordering=10)
+        page2 = factories.StoryPageFactory.create(story=story, ordering=20)
 
         response = self.client.get(
             self.get_detail_endpoint(key=story.id, site_slug=site.slug)

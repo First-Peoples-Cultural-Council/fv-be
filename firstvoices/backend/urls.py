@@ -59,14 +59,17 @@ sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
-sites_router.register(r"stories", StoryViewSet, basename="story")
-sites_router.register(r"story-pages", StoryPageViewSet, basename="storypage")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
+
+# stories and pages
+sites_router.register(r"stories", StoryViewSet, basename="story")
+stories_router = NestedSimpleRouter(sites_router, r"stories", lookup="story")
+stories_router.register(r"pages", StoryPageViewSet, basename="storypage")
 
 app_name = "api"
 
 urlpatterns = []
 
 urlpatterns += ROUTER.urls
-urlpatterns += sites_router.urls
+urlpatterns += sites_router.urls + stories_router.urls

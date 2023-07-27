@@ -1,5 +1,4 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models import Story, StoryPage
 from backend.tests.factories import RelatedMediaBaseFactory
@@ -14,9 +13,10 @@ class StoryFactory(RelatedMediaBaseFactory):
 
     title = factory.Sequence(lambda n: "Story title %03d" % n)
     title_translation = factory.Sequence(lambda n: "Story title translation %03d" % n)
+    author = factory.Sequence(lambda n: "Author for story %03d" % n)
 
 
-class PagesFactory(DjangoModelFactory):
+class StoryPageFactory(RelatedMediaBaseFactory):
     site = factory.SubFactory(SiteFactory)
     story = factory.SubFactory(StoryFactory)
 

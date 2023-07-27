@@ -1,10 +1,13 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
+from rest_framework_nested.relations import NestedHyperlinkedIdentityField
+from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
 from backend.models import Story, StoryPage
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
+    SiteContentUrlMixin,
     UpdateSerializerMixin,
     audience_fields,
     base_id_fields,
@@ -16,17 +19,55 @@ from backend.serializers.media_serializers import (
     WriteableRelatedImageSerializer,
 )
 from backend.serializers.site_serializers import LinkedSiteSerializer
+from backend.serializers.utils import get_story_from_context
 
 
-class StoryPageSerializer(RelatedMediaSerializerMixin, ModelSerializer):
+class LinkedStorySerializer(SiteContentLinkedTitleSerializer):
+    class Meta(SiteContentLinkedTitleSerializer.Meta):
+        model = Story
+
+
+class StoryPageSummarySerializer(
+    RelatedMediaSerializerMixin, SiteContentUrlMixin, NestedHyperlinkedModelSerializer
+):
+    serializer_url_field = NestedHyperlinkedIdentityField
+
+    parent_lookup_kwargs = {
+        "site_slug": "site__slug",
+        "story_pk": "story__pk",
+    }
+
+    id = serializers.UUIDField(read_only=True)
+
     class Meta:
         model = StoryPage
         fields = RelatedMediaSerializerMixin.Meta.fields + (
             "id",
+            "url",
             "text",
             "translation",
+            "notes",
+            "ordering",
         )
-        read_only_fields = ("id",)
+
+
+class StoryPageDetailSerializer(
+    CreateSiteContentSerializerMixin, StoryPageSummarySerializer
+):
+    story = LinkedStorySerializer(read_only=True)
+
+    class Meta(StoryPageSummarySerializer.Meta):
+        fields = StoryPageSummarySerializer.Meta.fields + ("story",)
+
+    def create(self, validated_data):
+        return super().create(self.add_story_id(validated_data))
+
+    def update(self, instance, validated_data):
+        return super().update(instance, self.add_story_id(validated_data))
+
+    def add_story_id(self, validated_data):
+        validated_data["story"] = get_story_from_context(self)
+        return validated_data
 
 
 class StorySerializer(
@@ -39,7 +80,7 @@ class StorySerializer(
         allow_null=True, queryset=Image.objects.all()
     )
     site = LinkedSiteSerializer(required=False, read_only=True)
-    pages = StoryPageSerializer(many=True, read_only=True)
+    pages = StoryPageSummarySerializer(many=True, read_only=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story
