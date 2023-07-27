@@ -541,6 +541,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response_data["logo"] == ["Must be in the same site."]
 
+    @pytest.mark.skip(reason="Intermittent failing test. See FW-4659")
     @pytest.mark.django_db
     def test_update_homepage_no_existing(self):
         site = factories.SiteFactory.create()

@@ -57,11 +57,13 @@ class SiteWidgetListWithTwoWidgetsFactory(SiteWidgetListFactory):
     widget_one = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
+        order=0,
         site_widget__visibility=Visibility.PUBLIC,
     )
     widget_two = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
+        order=1,
         site_widget__visibility=Visibility.PUBLIC,
     )
 
