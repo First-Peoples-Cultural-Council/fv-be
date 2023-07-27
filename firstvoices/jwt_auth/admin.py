@@ -1,12 +1,6 @@
 from django.contrib import admin
 
-from backend.models import User
-
-from . import MembershipInline
-
-
-class UserMembershipInline(MembershipInline):
-    fk_name = "user"
+from .models import User
 
 
 @admin.register(User)
@@ -24,5 +18,3 @@ class UserAdmin(admin.ModelAdmin):
         "date_joined",
         "last_login",
     )
-
-    inlines = [UserMembershipInline]

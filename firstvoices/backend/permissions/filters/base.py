@@ -37,6 +37,9 @@ def is_own_obj(user):
     """
     Will only work for models that have a "user" field, mainly Memberships.
     """
+    if user.is_anonymous:
+        return always_false(user)
+
     return Q(user=user)
 
 
@@ -79,6 +82,9 @@ def has_team_site():
 # role-based filters
 #
 def get_site_role_at_least_filter(user, role):
+    if user.is_anonymous:
+        return always_false(user)
+
     return Q(site__membership_set__user=user) & Q(site__membership_set__role__gte=role)
 
 
@@ -145,4 +151,7 @@ def has_team_access_to_site(user):
 
 def has_team_access_to_site_obj(user):
     """Special case for getting the membership directly from a site model object"""
+    if user.is_anonymous:
+        return always_false(user)
+
     return Q(membership_set__user=user) & Q(membership_set__role__gte=Role.ASSISTANT)

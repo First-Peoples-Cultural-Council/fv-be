@@ -19,7 +19,6 @@ from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
 from backend.views.story_views import StoryViewSet
-from backend.views.user import UserViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -30,7 +29,6 @@ ROUTER = CustomRouter()
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"search", BaseSearchViewSet, basename="search")
-ROUTER.register(r"user", UserViewSet, basename=r"user")
 
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 

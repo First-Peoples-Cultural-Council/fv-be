@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from backend.managers.user import UserManager
+from .managers import UserManager
 
 
 class User(AbstractUser):
@@ -9,8 +9,9 @@ class User(AbstractUser):
     User Model.
 
     A Django user model customized for token authentication:
-        * username/id is set up for the JWT "sub" (subject) field
+        * id is an immutable db key
         * email is a required, unique field, so it can be treated like a username
+        * sub is a non-required field that holds the unique JWT "sub" (subject) field for token authentication
         * password is not required
         * name fields are not stored, so we can depend on jwt id tokens instead
 
@@ -19,17 +20,15 @@ class User(AbstractUser):
 
     """
 
-    USERNAME_FIELD = "id"
-    REQUIRED_FIELDS = ["email"]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
 
     objects = UserManager()
 
-    """
-    Maps to JWT 'sub' field -- this is the primary key
-    """
-    id = models.CharField(
-        max_length=64, blank=False, unique=True, primary_key=True, null=False
-    )
+    id = models.BigAutoField(primary_key=True)
+
+    # set in authentication.JwtAuthentication.authenticate
+    sub = models.CharField(max_length=64, blank=True, unique=True, null=True)
 
     # from userinfo:email
     email = models.EmailField(unique=True, null=False)
@@ -53,7 +52,7 @@ class User(AbstractUser):
 
     @property
     def natural_key(self):
-        return (self.id,)
+        return (self.email,)
 
     class Meta:
         db_table = "user"

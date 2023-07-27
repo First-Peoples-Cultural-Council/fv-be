@@ -7,11 +7,11 @@ the created/last_modified dates to the current time.
 The schema are reverted to normal (no null dates) in the next migration.
 """
 
-from django.db import migrations, models
-from django.core.serializers import base, python
 from django.core.management import call_command
-from django.utils import timezone
+from django.core.serializers import base, python
+from django.db import migrations, models
 from django.db.models import Q
+from django.utils import timezone
 
 
 def load_fixture(apps, schema_editor):
@@ -52,7 +52,7 @@ def populate_dates(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("backend", "0036_alter_languagefamily_managers"),
+        ("backend", "0003_load_initial_data_fixtures"),
     ]
 
     operations = [
