@@ -114,7 +114,7 @@ case $yn in
     # Create a superuser using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
     printf '\n\n'
     printf 'Creating a superuser account using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.\n'
-    python $SCRIPT_DIR/manage.py createsuperuser --noinput --id $DJANGO_SUPERUSER_USERNAME
+    python $SCRIPT_DIR/manage.py createsuperuser --noinput
     retval=$?
     if [ $retval -ne 0 ]; then
       printf "Superuser creation failed: exit code $retval\n"
