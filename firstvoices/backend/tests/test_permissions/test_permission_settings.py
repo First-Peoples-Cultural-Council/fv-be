@@ -1,10 +1,9 @@
 import factory
 import pytest
 from django.apps import apps
-from django.contrib.auth import get_user_model
 from factory.django import DjangoModelFactory
 
-from backend.models import Lyric, Page, User
+from backend.models import Lyric, Page
 from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentModel
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
@@ -26,13 +25,12 @@ def get_permitted_ids(user, queryset):
 
 class TestPermissionManager:
     # test all models
-    # ... but skip User until fw-4165
+    # ... but skip a few
 
     models = [
         m
         for m in apps.get_app_config("backend").get_models()
-        if (m not in (User, Lyric, Page))
-
+        if (m not in (Lyric, Page))
     ]
 
     @pytest.mark.parametrize(
