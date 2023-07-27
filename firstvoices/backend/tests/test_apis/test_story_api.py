@@ -55,6 +55,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
                 map(lambda x: str(x.id), generated_media["story"]["related_videos"])
             ),
             "coverImage": str(cover_image.id),
+            "visibility": "Public",
             "title": "Title",
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
@@ -180,6 +181,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         return {
             "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
             "id": str(story.id),
+            "visibility": "Public",
             "title": story.title,
             "coverImage": None,
             "titleTranslation": story.title_translation,
@@ -196,6 +198,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "relatedVideos": [],
             "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
             "id": str(story.id),
+            "visibility": "Public",
             "title": story.title,
             "site": {
                 "id": str(site.id),

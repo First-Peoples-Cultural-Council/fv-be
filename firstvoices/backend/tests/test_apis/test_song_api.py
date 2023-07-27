@@ -42,6 +42,7 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
             "hideOverlay": False,
             "coverImage": str(cover_image.id),
             "title": "Title",
+            "visibility": "Public",
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
@@ -137,6 +138,7 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
             "url": f"http://testserver{self.get_detail_endpoint(key=song.id, site_slug=site.slug)}",
             "id": str(song.id),
             "title": song.title,
+            "visibility": "Public",
             "coverImage": None,
             "titleTranslation": song.title_translation,
             "excludeFromGames": False,
@@ -158,6 +160,7 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
             "id": str(song.id),
             "hideOverlay": False,
             "title": song.title,
+            "visibility": "Public",
             "site": {
                 "id": str(site.id),
                 "title": site.title,
