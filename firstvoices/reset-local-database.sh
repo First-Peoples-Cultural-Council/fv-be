@@ -93,7 +93,7 @@ case $yn in
       exit $retval
     fi
 
-    # Create a superuser using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
+    # Create a superuser using the DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.
     printf '\n\n'
     printf 'Creating a superuser account using the DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL environment variables.\n'
     python $SCRIPT_DIR/manage.py createsuperuser --noinput
