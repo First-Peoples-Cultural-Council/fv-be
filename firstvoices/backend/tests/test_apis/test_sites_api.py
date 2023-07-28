@@ -4,7 +4,7 @@ import pytest
 
 import backend.tests.factories.access
 from backend.models import AppJson, Site
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 
 from ...models.widget import SiteWidget, SiteWidgetListOrder
@@ -20,6 +20,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
     API_LIST_VIEW = "api:site-list"
     API_DETAIL_VIEW = "api:site-detail"
+
+    model = Site
 
     @pytest.mark.django_db
     def test_list_empty(self):
@@ -541,7 +543,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response_data["logo"] == ["Must be in the same site."]
 
-    @pytest.mark.skip(reason="Intermittent failing test. See FW-4659")
     @pytest.mark.django_db
     def test_update_homepage_no_existing(self):
         site = factories.SiteFactory.create()
@@ -687,3 +688,120 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
 
         assert response.status_code == 400
+
+    def create_original_instance_for_patch(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC, title="Title")
+        homepage = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
+        logo = factories.ImageFactory.create(site=site)
+        banner_image = factories.ImageFactory.create(site=site)
+
+        site.logo = logo
+        site.homepage = homepage
+        site.banner_image = banner_image
+        site.save()
+        return site
+
+    def get_updated_patch_instance(self, original_instance):
+        return self.model.objects.filter(pk=original_instance.pk).first()
+
+    def get_valid_patch_data(self, site=None):
+        if site:
+            banner_video = factories.VideoFactory.create(site=site)
+        return {
+            "banner_image": None,
+            "banner_video": f"{str(banner_video.id)}" if site else None,
+        }
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: Site
+    ):
+        assert updated_instance.title == original_instance.title
+        assert updated_instance.logo == original_instance.logo
+        assert updated_instance.homepage == original_instance.homepage
+        assert updated_instance.visibility == original_instance.visibility
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.slug == original_instance.slug
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: Site):
+        assert updated_instance.banner_image is None
+        assert str(updated_instance.banner_video.id) == data["banner_video"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["title"] == original_instance.title
+        assert (
+            actual_response["visibility"] == original_instance.get_visibility_display()
+        )
+        assert actual_response["logo"]["id"] == str(original_instance.logo.id)
+        assert actual_response["homepage"][0]["id"] == str(
+            original_instance.homepage.sitewidgetlistorder_set.first().site_widget_id
+        )
+        assert actual_response["bannerImage"] == data["banner_image"]
+        assert actual_response["bannerVideo"]["id"] == data["banner_video"]
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["slug"] == original_instance.slug
+
+    @pytest.mark.django_db
+    def test_detail_patch_invalid_400(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        instance = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(instance.slug)}",
+            data=json.dumps(None),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_detail_patch_403(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        instance = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(instance.slug)}",
+            data=json.dumps(self.get_valid_patch_data(instance)),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_patch_site_missing_404(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key="missing-instance"),
+            data=json.dumps(self.get_valid_patch_data()),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_patch_success_200(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        instance = self.create_original_instance_for_patch()
+        data = self.get_valid_patch_data(instance)
+
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(instance.slug)}",
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_patch_instance_original_fields(
+            instance, self.get_updated_patch_instance(instance)
+        )
+        self.assert_patch_instance_updated_fields(
+            data, self.get_updated_patch_instance(instance)
+        )
+        self.assert_update_patch_response(instance, data, response_data)

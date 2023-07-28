@@ -17,11 +17,7 @@ from backend.views.api_doc_variables import (
     site_page_slug_parameter,
     site_slug_parameter,
 )
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    SiteContentViewSetMixin,
-    http_methods_except_patch,
-)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
 @extend_schema_view(
@@ -77,6 +73,23 @@ from backend.views.base_views import (
             site_page_slug_parameter,
         ],
     ),
+    partial_update=extend_schema(
+        description=_("Edit a page. Any omitted fields will be unchanged."),
+        request=SitePageDetailWriteSerializer,
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=inline_page_doc_detail_serializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            site_page_slug_parameter,
+        ],
+    ),
     destroy=extend_schema(
         description=_("Delete a page."),
         responses={
@@ -94,12 +107,11 @@ from backend.views.base_views import (
     ),
 )
 class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    http_method_names = http_methods_except_patch
     lookup_field = "slug"
     serializer_class = SitePageDetailWriteSerializer
 
     def get_queryset(self):
-        if self.action == "retrieve":
+        if self.action in ["retrieve", "update", "partial_update"]:
             return self.get_detail_queryset()
 
         site = self.get_validated_site()
@@ -117,9 +129,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             .prefetch_related(
                 Prefetch(
                     "widgets__widgets",
-                    queryset=SiteWidget.objects.visible(self.request.user).order_by(
-                        "sitewidgetlistorder_set__order"
-                    ),
+                    queryset=SiteWidget.objects.visible(self.request.user),
                 ),
             )
         )
