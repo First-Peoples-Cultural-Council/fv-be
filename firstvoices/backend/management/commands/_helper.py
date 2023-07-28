@@ -4,17 +4,19 @@ from elasticsearch.helpers import bulk, errors
 from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
-from backend.models import DictionaryEntry, Song
-from backend.search.indices import DictionaryEntryDocument, SongDocument
+from backend.models import DictionaryEntry, Song, Story
+from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
+    ELASTICSEARCH_STORY_INDEX,
 )
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
     get_categories_ids,
     get_lyrics,
     get_notes_text,
+    get_page_info,
     get_translation_text,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
@@ -44,6 +46,8 @@ def rebuild_index(index_name, index_document):
     try:
         if index_name == ELASTICSEARCH_SONG_INDEX:
             bulk(es, song_iterator())
+        elif index_name == ELASTICSEARCH_STORY_INDEX:
+            bulk(es, story_iterator())
         elif index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
     except errors.BulkIndexError as e:
@@ -138,6 +142,29 @@ def song_iterator():
         yield song_doc.to_dict(True)
 
 
+def story_iterator():
+    queryset = Story.objects.all()
+    for instance in queryset:
+        page_text, page_translation = get_page_info(instance)
+        story_doc = StoryDocument(
+            document_id=str(instance.id),
+            site_id=str(instance.site.id),
+            site_visibility=instance.site.visibility,
+            exclude_from_games=instance.exclude_from_games,
+            exclude_from_kids=instance.exclude_from_kids,
+            visibility=instance.visibility,
+            title=instance.title,
+            title_translation=instance.title_translation,
+            note=instance.notes,
+            acknowledgement=instance.acknowledgements,
+            introduction=instance.introduction,
+            introduction_translation=instance.introduction_translation,
+            page_text=page_text,
+            page_translation=page_translation,
+        )
+        yield story_doc.to_dict(True)
+
+
 def add_write_alias(index, index_name):
     alias_config = {"is_write_index": True}
 
@@ -145,6 +172,8 @@ def add_write_alias(index, index_name):
         index.aliases(dictionary_entries=alias_config)
     elif index_name == ELASTICSEARCH_SONG_INDEX:
         index.aliases(songs=alias_config)
+    elif index_name == ELASTICSEARCH_STORY_INDEX:
+        index.aliases(stories=alias_config)
     return index
 
 

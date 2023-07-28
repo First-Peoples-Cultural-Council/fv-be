@@ -1,5 +1,9 @@
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, inline_serializer
+from rest_framework import serializers
+
+from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 
 site_slug_parameter = OpenApiParameter(
     name="site_slug",
@@ -15,4 +19,19 @@ site_page_slug_parameter = OpenApiParameter(
     type=OpenApiTypes.STR,
     location=OpenApiParameter.PATH,
     description="page-slug",
+)
+
+inline_page_doc_detail_serializer = inline_serializer(
+    name="InlinePageDetailSerializer",
+    fields={
+        "id": serializers.UUIDField(),
+        "title": serializers.CharField(),
+        "url": serializers.URLField(),
+        "visibility": serializers.CharField(),
+        "subtitle": serializers.CharField(),
+        "slug": serializers.CharField(),
+        "widgets": SiteWidgetDetailSerializer(many=True),
+        "banner_image": ImageSerializer(),
+        "banner_video": VideoSerializer(),
+    },
 )

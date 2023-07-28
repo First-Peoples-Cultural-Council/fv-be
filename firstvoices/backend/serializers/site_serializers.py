@@ -174,6 +174,7 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         homepage = instance.homepage
         if not homepage:
             homepage = SiteWidgetList.objects.create(site=instance)
+        validated_data["widgets"] = validated_data.pop("homepage")
         homepage = SiteWidgetListSerializer.update(self, homepage, validated_data)
         validated_data["homepage"] = homepage
         instance.homepage = homepage
