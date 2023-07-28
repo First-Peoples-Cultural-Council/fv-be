@@ -320,9 +320,11 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseUncontrolledSiteContentAp
         )
 
     def add_related_objects(self, instance):
+        # nothing to add
         pass
 
     def assert_related_objects_deleted(self, instance):
+        # nothing to delete
         pass
 
     def get_expected_response(self, instance, site):
