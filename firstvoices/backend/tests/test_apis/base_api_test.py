@@ -358,44 +358,6 @@ class ControlledListApiTestMixin:
             instance, site
         )
 
-    @pytest.mark.django_db
-    def test_create_assistant_permissions_valid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
-        )
-
-        self.client.force_authenticate(user=user)
-
-        data = self.get_valid_data(site)
-        data["visibility"] = "team"
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 201
-
-    @pytest.mark.django_db
-    def test_create_assistant_permissions_invalid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
-        )
-
-        self.client.force_authenticate(user=user)
-
-        data = self.get_valid_data(site)
-        data["visibility"] = "public"
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 400
-
 
 class ControlledDetailApiTestMixin:
     """
@@ -416,52 +378,6 @@ class ControlledDetailApiTestMixin:
         )
 
         assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_update_assistant_permissions_valid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
-        )
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
-
-        self.client.force_authenticate(user=user)
-
-        data = self.get_valid_data(site)
-        data["visibility"] = "team"
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.django_db
-    def test_update_assistant_permissions_invalid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
-        )
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
-
-        self.client.force_authenticate(user=user)
-
-        data = self.get_valid_data(site)
-        data["visibility"] = "public"
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 400
 
 
 class WriteApiTestMixin:
@@ -555,6 +471,50 @@ class SiteContentCreateApiTestMixin:
 
     def assert_created_response(self, expected_data, actual_response):
         raise NotImplementedError()
+
+
+class ControlledSiteContentCreateApiTestMixin:
+    """
+    For use with ControlledBaseSiteContentApiTest
+    """
+
+    @pytest.mark.django_db
+    def test_create_assistant_permissions_valid(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
+        )
+
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data(site)
+        data["visibility"] = "team"
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_create_assistant_permissions_invalid(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
+        )
+
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data(site)
+        data["visibility"] = "public"
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
 
 
 class SiteContentUpdateApiTestMixin:
@@ -651,6 +611,58 @@ class SiteContentUpdateApiTestMixin:
 
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
+
+
+class ControlledSiteContentUpdateApiTestMixin:
+    """
+    For use with ControlledBaseSiteContentApiTest
+    """
+
+    @pytest.mark.django_db
+    def test_update_assistant_permissions_valid(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
+        )
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data(site)
+        data["visibility"] = "team"
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_update_assistant_permissions_invalid(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
+        )
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data(site)
+        data["visibility"] = "public"
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
+            if instance.__class__ == SitePage
+            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
 
 
 class SiteContentDestroyApiTestMixin:
@@ -751,6 +763,8 @@ class BaseReadOnlyControlledSiteContentApiTest(
 class BaseControlledSiteContentApiTest(
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
+    ControlledSiteContentCreateApiTestMixin,
+    ControlledSiteContentUpdateApiTestMixin,
     BaseUncontrolledSiteContentApiTest,
 ):
     pass

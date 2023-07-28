@@ -72,17 +72,9 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
 
-        response_related_audio_ids = []
-        for i in actual_response["relatedAudio"]:
-            response_related_audio_ids.append(i["id"])
-
-        response_related_image_ids = []
-        for i in actual_response["relatedImages"]:
-            response_related_image_ids.append(i["id"])
-
-        response_related_video_ids = []
-        for i in actual_response["relatedVideos"]:
-            response_related_video_ids.append(i["id"])
+        response_related_audio_ids = [i["id"] for i in actual_response["relatedAudio"]]
+        response_related_image_ids = [i["id"] for i in actual_response["relatedImages"]]
+        response_related_video_ids = [i["id"] for i in actual_response["relatedVideos"]]
 
         assert sorted(response_related_audio_ids) == sorted(
             expected_data["relatedAudio"]
