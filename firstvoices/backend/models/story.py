@@ -4,7 +4,7 @@ from django.db import models
 
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseControlledSiteContentModel, BaseModel
+from .base import AudienceMixin, BaseControlledSiteContentModel, BaseSiteContentModel
 from .media import RelatedMediaMixin
 
 TITLE_MAX_LENGTH = 500
@@ -20,7 +20,7 @@ class Story(
     Representing a story associated with a site, including unique title, pages, introduction, and media links
 
     Notes for data migration:
-    acknowledgements from fv:source and fvbook:author (which should be dereferenced)
+    acknowledgements from fvbook:acknowledgement
     notes from fv:cultural_note
 
     introduction from fvbook:introduction
@@ -35,7 +35,6 @@ class Story(
     """
 
     class Meta:
-        unique_together = ("site", "title")
         verbose_name_plural = "stories"
         rules_permissions = {
             "view": predicates.is_visible_object,
@@ -43,6 +42,9 @@ class Story(
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+
+    # from fvbook:author
+    author = models.CharField(max_length=100, blank=True)
 
     cover_image = models.ForeignKey(
         to="Image", on_delete=models.SET_NULL, related_name="story_cover_of", null=True
@@ -57,29 +59,35 @@ class Story(
     acknowledgements = ArrayField(
         models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
+
     notes = ArrayField(
         models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
+
+    # from settings:settings json value
+    hide_overlay = models.BooleanField(null=False, default=False)
 
     def __str__(self):
         return self.title
 
 
-class Page(BaseModel, RelatedMediaMixin):
+class StoryPage(RelatedMediaMixin, BaseSiteContentModel):
     """
     Representing the pages within a story
 
     ordering enforces ordering via simple ascending sort
 
-    translation from fvbook:lyrics_translation
-    text from fvbook:lyrics
+    translation from fvbookentry:dominant_language_text and fv:literal_translation
+    text from dc:title
     """
 
     class Meta:
         unique_together = ("story", "ordering")
         ordering = ("ordering",)
+        verbose_name = "story page"
+        verbose_name_plural = "story pages"
         rules_permissions = {
-            "view": predicates.is_visible_object,
+            "view": predicates.has_visible_site,
             "add": predicates.is_superadmin,
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
@@ -93,3 +101,8 @@ class Page(BaseModel, RelatedMediaMixin):
 
     text = models.TextField(max_length=NOTE_MAX_LENGTH, blank=False)
     translation = models.TextField(max_length=NOTE_MAX_LENGTH, blank=True)
+
+    # from fv:cultural_note
+    notes = ArrayField(
+        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+    )

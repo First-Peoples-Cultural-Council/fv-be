@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Keyword, Text
 
-from backend.models.story import Page, Story
+from backend.models.story import Story, StoryPage
 from backend.search.indices.base_document import BaseDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
@@ -114,8 +114,8 @@ def delete_from_index(sender, instance, **kwargs):
 
 
 # Page update
-@receiver(post_delete, sender=Page)
-@receiver(post_save, sender=Page)
+@receiver(post_delete, sender=StoryPage)
+@receiver(post_save, sender=StoryPage)
 def update_pages(sender, instance, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     story = instance.story
