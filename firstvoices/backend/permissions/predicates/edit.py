@@ -65,7 +65,7 @@ can_delete_core_uncontrolled_data = predicate(
 # This predicate is an alias, and must be combined with the CreateControlledSiteContentSerializerMixin in
 # backend/serializers/base_serializers.py
 can_add_controlled_data = predicate(
-    can_add_core_uncontrolled_data,
+    is_at_least_assistant_or_super,
     name="can_add_controlled_data",
 )
 

@@ -6,7 +6,7 @@ from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
-from backend.models import Category, SitePage
+from backend.models import SitePage
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 
@@ -361,7 +361,7 @@ class ControlledListApiTestMixin:
     @pytest.mark.django_db
     def test_create_assistant_permissions_valid(self):
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
         )
 
         self.client.force_authenticate(user=user)
@@ -380,7 +380,7 @@ class ControlledListApiTestMixin:
     @pytest.mark.django_db
     def test_create_assistant_permissions_invalid(self):
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
         )
 
         self.client.force_authenticate(user=user)
@@ -420,7 +420,7 @@ class ControlledDetailApiTestMixin:
     @pytest.mark.django_db
     def test_update_assistant_permissions_valid(self):
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
         )
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
@@ -443,7 +443,7 @@ class ControlledDetailApiTestMixin:
     @pytest.mark.django_db
     def test_update_assistant_permissions_invalid(self):
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
+            site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
         )
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
@@ -532,13 +532,8 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_success_201(self):
-        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=user_role
-        )
-
-        self.client.force_authenticate(user=user)
         data = self.get_valid_data(site)
 
         response = self.client.post(
@@ -637,13 +632,8 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_success_200(self):
-        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=user_role
-        )
-
-        self.client.force_authenticate(user=user)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
@@ -680,13 +670,8 @@ class SiteContentDestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_success_204(self):
-        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=user_role
-        )
-
-        self.client.force_authenticate(user=user)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         self.add_related_objects(instance)
 

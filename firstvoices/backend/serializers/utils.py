@@ -25,3 +25,16 @@ def get_site_from_context(serializer):
             "The required 'site' or 'site_slug' parameters were not found in the serializer context"
         )
         raise APIException
+
+
+def get_story_from_context(serializer):
+    logger = logging.getLogger(__name__)
+
+    if "story" in serializer.context:
+        return serializer.context["story"]
+    else:
+        logger.error(
+            "get_story_from_context - Failed to retrieve story id from the context. "
+            "The required 'story' property was not found in the serializer context"
+        )
+        raise APIException

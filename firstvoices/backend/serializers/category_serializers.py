@@ -34,6 +34,11 @@ class ParentCategoryListSerializer(ChildCategoryListSerializer):
         fields = ChildCategoryListSerializer.Meta.fields + ("children",)
 
 
+class ParentCategoryFlatListSerializer(ChildCategoryListSerializer):
+    class Meta(ChildCategoryListSerializer.Meta):
+        fields = ChildCategoryListSerializer.Meta.fields + ("parent",)
+
+
 class CategoryDetailSerializer(
     UpdateSerializerMixin,
     CreateSiteContentSerializerMixin,

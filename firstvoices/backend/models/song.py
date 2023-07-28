@@ -36,7 +36,6 @@ class Song(
     """
 
     class Meta:
-        unique_together = ("site", "title")
         rules_permissions = {
             "view": predicates.is_visible_object,
             "add": predicates.can_add_controlled_data,

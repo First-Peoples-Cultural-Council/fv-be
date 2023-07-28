@@ -8,6 +8,7 @@ from .utils import get_site_from_context
 
 base_timestamp_fields = ("created", "last_modified")
 base_id_fields = ("id", "title", "url")
+audience_fields = ("exclude_from_games", "exclude_from_kids")
 
 
 class SiteContentUrlMixin:

@@ -3,15 +3,17 @@ import logging
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import DictionaryEntry, Song
+from backend.models import DictionaryEntry, Song, Story
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
+    ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.serializers.song_serializers import SongSerializer
+from backend.serializers.story_serializers import StorySerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -61,6 +63,7 @@ def hydrate_objects(search_results, request):
     complete_objects = []
     dictionary_search_results_ids = []
     song_search_results_ids = []
+    story_search_results_ids = []
 
     # Separating object IDs into lists based on their data types
     for obj in search_results:
@@ -68,6 +71,8 @@ def hydrate_objects(search_results, request):
             dictionary_search_results_ids.append(obj["_source"]["document_id"])
         elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
             song_search_results_ids.append(obj["_source"]["document_id"])
+        elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
+            story_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
     dictionary_objects = list(
@@ -77,6 +82,9 @@ def hydrate_objects(search_results, request):
     )
     song_objects = list(
         Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
+    )
+    story_objects = list(
+        Story.objects.filter(id__in=story_search_results_ids).prefetch_related("pages")
     )
 
     for obj in search_results:
@@ -119,6 +127,24 @@ def hydrate_objects(search_results, request):
                     ).data,
                 }
             )
+        elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
+            story = get_object_by_id(story_objects, obj["_source"]["document_id"])
+
+            # Serializing and adding the object to complete_objects
+            complete_objects.append(
+                {
+                    "score": obj["_score"],
+                    "type": "story",
+                    "entry": StorySerializer(
+                        story,
+                        context={
+                            "request": request,
+                            "view": "search",
+                            "site_slug": story.site.slug,
+                        },
+                    ).data,
+                }
+            )
 
     return complete_objects
 
@@ -156,3 +182,10 @@ def get_lyrics(song_instance):
     )
 
     return lyrics, lyrics_translation
+
+
+def get_page_info(story_instance):
+    page_text = list(story_instance.pages.values_list("text", flat=True))
+    page_translation = list(story_instance.pages.values_list("translation", flat=True))
+
+    return page_text, page_translation

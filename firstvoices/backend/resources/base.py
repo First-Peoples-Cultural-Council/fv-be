@@ -1,5 +1,6 @@
-from import_export import fields, resources
+from import_export import fields, resources, widgets
 
+from backend.models.sites import Site
 from backend.resources.utils.import_export_widgets import UserForeignKeyWidget
 
 
@@ -13,6 +14,17 @@ class BaseResource(resources.ModelResource):
         column_name="last_modified_by",
         attribute="last_modified_by",
         widget=UserForeignKeyWidget(create=False),
+    )
+
+    class Meta:
+        abstract = True
+
+
+class SiteContentResource(BaseResource):
+    site = fields.Field(
+        column_name="site",
+        attribute="site",
+        widget=(widgets.ForeignKeyWidget(Site, "id")),
     )
 
     class Meta:

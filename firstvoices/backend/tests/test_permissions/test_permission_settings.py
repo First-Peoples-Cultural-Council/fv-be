@@ -3,7 +3,8 @@ import pytest
 from django.apps import apps
 from factory.django import DjangoModelFactory
 
-from backend.models import Lyric, Page
+
+from backend.models import Lyric, StoryPage
 from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentModel
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
@@ -30,7 +31,8 @@ class TestPermissionManager:
     models = [
         m
         for m in apps.get_app_config("backend").get_models()
-        if (m not in (Lyric, Page))
+
+        if (m not in (Lyric, StoryPage))
     ]
 
     @pytest.mark.parametrize(

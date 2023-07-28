@@ -19,6 +19,7 @@ from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
 from backend.views.story_views import StoryViewSet
+from backend.views.storypage_views import StoryPageViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -58,13 +59,17 @@ sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
-sites_router.register(r"stories", StoryViewSet, basename="story")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
+
+# stories and pages
+sites_router.register(r"stories", StoryViewSet, basename="story")
+stories_router = NestedSimpleRouter(sites_router, r"stories", lookup="story")
+stories_router.register(r"pages", StoryPageViewSet, basename="storypage")
 
 app_name = "api"
 
 urlpatterns = []
 
 urlpatterns += ROUTER.urls
-urlpatterns += sites_router.urls
+urlpatterns += sites_router.urls + stories_router.urls

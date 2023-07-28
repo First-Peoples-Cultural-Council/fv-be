@@ -17,6 +17,7 @@ from backend.tests.factories import (
     get_non_member_user,
 )
 from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.utils import find_object_by_id
 
 
 class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
@@ -400,3 +401,49 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response_parent_entry["id"] == str(parent_category.id)
         assert response_child_category_count == 2
         assert set(expected_ids) == set(response_ids)
+
+    @pytest.mark.django_db
+    def test_flat_list(self):
+        parent_category_1 = ParentCategoryFactory.create(site=self.site)
+        child_category_1 = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_1
+        )
+        parent_category_2 = ParentCategoryFactory.create(site=self.site)
+        child_category_2 = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_2
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"nested": False},
+            )
+        )
+
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+
+        # verify that it is a flat list
+        random_first_obj = response_data["results"][0]
+        assert "children" not in random_first_obj.keys()
+        assert "parent" in random_first_obj.keys()
+
+        # verify that both pairs parent and child categories are present in response
+        actual_parent_category_1_object = find_object_by_id(
+            response_data["results"], parent_category_1.id
+        )
+        actual_child_category_1_object = find_object_by_id(
+            response_data["results"], child_category_1.id
+        )
+        actual_parent_category_2_object = find_object_by_id(
+            response_data["results"], parent_category_2.id
+        )
+        actual_child_category_2_object = find_object_by_id(
+            response_data["results"], child_category_2.id
+        )
+
+        assert actual_parent_category_1_object is not None
+        assert actual_child_category_1_object is not None
+        assert actual_parent_category_2_object is not None
+        assert actual_child_category_2_object is not None

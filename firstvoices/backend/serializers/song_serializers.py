@@ -8,6 +8,7 @@ from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
     WritableVisibilityField,
+    audience_fields,
     base_id_fields,
     base_timestamp_fields,
 )
@@ -84,9 +85,8 @@ class SongSerializer(
                 "notes",
                 "lyrics",
                 "acknowledgements",
-                "exclude_from_games",
-                "exclude_from_kids",
             )
+            + audience_fields
         )
 
 
@@ -96,11 +96,13 @@ class SongListSerializer(SiteContentLinkedTitleSerializer):
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Song
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
-            "title_translation",
-            "visibility",
-            "cover_image",
-            "hide_overlay",
-            "exclude_from_games",
-            "exclude_from_kids",
+        fields = (
+            SiteContentLinkedTitleSerializer.Meta.fields
+            + audience_fields
+            + (
+                "visibility",
+                "title_translation",
+                "cover_image",
+                "hide_overlay",
+            )
         )
