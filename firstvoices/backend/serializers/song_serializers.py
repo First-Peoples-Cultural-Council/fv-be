@@ -27,9 +27,9 @@ class LyricSerializer(ModelSerializer):
 
 
 class SongSerializer(
-    UpdateSerializerMixin,
     CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
+    UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(

@@ -31,9 +31,9 @@ class PageSerializer(ModelSerializer, RelatedMediaSerializerMixin):
 
 
 class StorySerializer(
-    UpdateSerializerMixin,
     CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
+    UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(

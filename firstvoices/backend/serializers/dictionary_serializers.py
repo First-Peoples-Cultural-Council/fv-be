@@ -121,8 +121,8 @@ class DictionaryEntryDetailSerializer(
     CreateControlledSiteContentSerializerMixin,
     RelatedDictionaryEntrySerializerMixin,
     RelatedMediaSerializerMixin,
-    serializers.HyperlinkedModelSerializer,
     UpdateSerializerMixin,
+    serializers.HyperlinkedModelSerializer,
 ):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:dictionaryentry-detail"

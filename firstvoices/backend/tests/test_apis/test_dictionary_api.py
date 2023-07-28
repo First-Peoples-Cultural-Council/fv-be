@@ -14,13 +14,11 @@ from backend.models.dictionary import (
 )
 from backend.tests import factories
 
-from .base_api_test import BaseReadOnlyControlledSiteContentApiTest
+from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
 
-class TestDictionaryEndpoint(
-    RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentApiTest
-):
+class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -35,6 +33,109 @@ class TestDictionaryEndpoint(
 
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+
+    def get_valid_data(self, site=None):
+        related_images = []
+        related_videos = []
+        related_audio = []
+
+        for _unused in range(3):
+            related_images.append(factories.ImageFactory.create(site=site))
+            related_videos.append(factories.VideoFactory.create(site=site))
+            related_audio.append(factories.AudioFactory.create(site=site))
+
+        return {
+            "title": "Word",
+            "type": "word",
+            "visibility": "Public",
+            "customOrder": "⚑W⚑o⚑r⚑d",
+            "categories": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "acknowledgements": [],
+            "alternateSpellings": [],
+            "notes": [],
+            "translations": [],
+            "pronunciations": [],
+            "site": str(site.id),
+            "splitChars": [],
+            "splitCharsBase": [],
+            "splitWords": ["Word"],
+            "splitWordsBase": ["Word"],
+            "relatedDictionaryEntries": [],
+            "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
+            "relatedImages": list(map(lambda x: str(x.id), related_images)),
+            "relatedVideos": list(map(lambda x: str(x.id), related_videos)),
+        }
+
+    def add_related_objects(self, instance):
+        factories.AcknowledgementFactory.create(dictionary_entry=instance)
+        factories.AlternateSpellingFactory.create(dictionary_entry=instance)
+        factories.NoteFactory.create(dictionary_entry=instance)
+        factories.TranslationFactory.create(dictionary_entry=instance)
+        factories.PronunciationFactory.create(dictionary_entry=instance)
+
+    def assert_related_objects_deleted(self, instance):
+        for model in (
+            Acknowledgement,
+            AlternateSpelling,
+            Note,
+            Translation,
+            Pronunciation,
+        ):
+            assert model.objects.filter(dictionary_entry=instance).count() == 0
+
+    def assert_updated_instance(self, expected_data, actual_instance: DictionaryEntry):
+        assert actual_instance.title == expected_data["title"]
+        assert actual_instance.type == expected_data["type"]
+        assert actual_instance.categories == expected_data["categories"]
+        assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
+        assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
+
+        acknowledgements = Acknowledgement.objects.filter(
+            dictionary_entry=actual_instance
+        )
+        assert len(acknowledgements) == len(expected_data["acknowledgements"])
+
+        alternate_spellings = AlternateSpelling.objects.filter(
+            dictionary_entry=actual_instance
+        )
+        assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
+
+        notes = Note.objects.filter(dictionary_entry=actual_instance)
+        assert len(notes) == len(expected_data["notes"])
+
+        translations = Translation.objects.filter(dictionary_entry=actual_instance)
+        assert len(translations) == len(expected_data["translations"])
+
+        pronunciations = Pronunciation.objects.filter(dictionary_entry=actual_instance)
+        assert len(pronunciations) == len(expected_data["pronunciations"])
+
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["type"] == expected_data["type"]
+        assert actual_response["visibility"] == expected_data["visibility"]
+        assert actual_response["categories"] == expected_data["categories"]
+        assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
+        assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
+
+        acknowledgements = actual_response["acknowledgements"]
+        assert len(acknowledgements) == len(expected_data["acknowledgements"])
+
+        alternate_spellings = actual_response["alternateSpellings"]
+        assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
+
+        notes = actual_response["notes"]
+        assert len(notes) == len(expected_data["notes"])
+
+        translations = actual_response["translations"]
+        assert len(translations) == len(expected_data["translations"])
+
+        pronunciations = actual_response["pronunciations"]
+        assert len(pronunciations) == len(expected_data["pronunciations"])
+
+    def get_expected_list_response_item(self, entry, site):
+        return self.get_expected_response(entry, site)
 
     def create_instance_with_media(
         self,
@@ -785,52 +886,6 @@ class TestDictionaryEndpoint(
             "related_audio": [1234],
             "related_images": [1234],
             "related_videos": [1234],
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create_assistant_permissions_valid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
-        )
-        self.client.force_authenticate(user=user)
-
-        factories.AlphabetFactory.create(site=site)
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "team",
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-
-        assert response.status_code == 201
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create_assistant_permissions_invalid(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.ASSISTANT
-        )
-        self.client.force_authenticate(user=user)
-
-        factories.AlphabetFactory.create(site=site)
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "public",
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
         }
 
         response = self.client.post(

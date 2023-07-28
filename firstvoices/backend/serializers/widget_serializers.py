@@ -41,8 +41,8 @@ class WidgetDetailSerializer(serializers.ModelSerializer):
 
 
 class SiteWidgetDetailSerializer(
-    UpdateSerializerMixin,
     CreateSiteContentSerializerMixin,
+    UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
     WidgetDetailSerializer,
 ):
