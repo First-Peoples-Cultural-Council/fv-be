@@ -86,3 +86,7 @@ def update_widget_list_order(widgets, widget_list_two):
     SiteWidgetListOrder.objects.create(
         site_widget=widgets[0], site_widget_list=widget_list_two, order=0
     )
+
+
+def find_object_by_id(results_list, category_id):
+    return next((obj for obj in results_list if obj["id"] == str(category_id)), None)

@@ -13,8 +13,10 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models.category import Category
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.search.utils.query_builder_utils import get_valid_boolean
 from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
+    ParentCategoryFlatListSerializer,
     ParentCategoryListSerializer,
 )
 from backend.views.base_views import (
@@ -56,6 +58,20 @@ from .api_doc_variables import id_parameter, site_slug_parameter
                             "Contains any of the specified types. Order is not relevant."
                         ),
                     ),
+                ],
+            ),
+            OpenApiParameter(
+                name="nested",
+                description=_(
+                    "Returns a nested list of categories with their children if enabled"
+                ),
+                # If this parameter is true, ParentCategoryFlatListSerializer is used for the response
+                default=True,
+                required=False,
+                type=bool,
+                examples=[
+                    OpenApiExample("True", value="True"),
+                    OpenApiExample("False", value="False"),
                 ],
             ),
         ],
@@ -143,6 +159,10 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             if len(flag)
         ]
 
+        # Check for the nested flag
+        nested_flag_input = self.request.GET.get("nested", True)
+        nested_flag = get_valid_boolean(nested_flag_input)
+
         if len(contains_flags) > 0:
             for flag in contains_flags:
                 # Check if flag is in valid_inputs and then add
@@ -161,19 +181,35 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
         ]
         flat_child_ids_list = list(itertools.chain(*child_categories))
 
-        return filtered_categories.filter(
-            ~Q(
-                id__in=flat_child_ids_list
-            )  # Remove duplicate child entries being shown at top level
-        ).prefetch_related(
-            Prefetch(
-                "children",
-                queryset=Category.objects.filter(id__in=filtered_categories),
-            )  # Filter child categories
-        )
+        if nested_flag:
+            return filtered_categories.filter(
+                ~Q(
+                    id__in=flat_child_ids_list
+                )  # Remove duplicate child entries being shown at top level
+            ).prefetch_related(
+                Prefetch(
+                    "children",
+                    queryset=Category.objects.filter(id__in=filtered_categories),
+                )  # Filter child categories
+            )
+        else:
+            return filtered_categories.filter().prefetch_related(
+                Prefetch(
+                    "children",
+                    queryset=Category.objects.filter(id__in=filtered_categories),
+                )  # Filter child categories
+            )
 
     def get_serializer_class(self):
-        if self.action == "list":
-            return ParentCategoryListSerializer
+        # Check for the nested flag
+        nested_flag_input = self.request.GET.get("nested", True)
+        nested_flag = get_valid_boolean(nested_flag_input)
+
+        if self.action == "list" and nested_flag:
+            serializer = ParentCategoryListSerializer
+        elif self.action == "list" and not nested_flag:
+            serializer = ParentCategoryFlatListSerializer
         else:
-            return CategoryDetailSerializer
+            serializer = CategoryDetailSerializer
+
+        return serializer
