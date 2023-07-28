@@ -46,12 +46,12 @@ class UserForeignKeyWidget(ForeignKeyWidget):
         elif self.create:
             # steps missing here to actually migrate/match users
             user, _ = self.model.objects.get_or_create(
-                **{self.field: value}, defaults={"id": value}
+                **{self.field: value}, defaults={"email": value}
             )
             return user
         else:
             # for now, return a dummy user
             dummy_user, _ = self.model.objects.get_or_create(
-                **{self.field: "test@test.com"}, defaults={"id": "test@test.com"}
+                **{self.field: "test@test.com"}, defaults={"email": "test@test.com"}
             )
             return dummy_user

@@ -9,16 +9,12 @@ from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.permissions.utils import get_app_role
-from backend.search.indices.dictionary_entry_document import (
+from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_SONG_INDEX,
+    VALID_DOCUMENT_TYPES,
 )
-from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 from backend.utils.character_utils import clean_input
-
-BASE_BOOST = 1.0  # default value of boost
-FULL_TEXT_SEARCH_BOOST = 1.1
-FUZZY_MATCH_BOOST = 1.2
-EXACT_MATCH_BOOST = 1.5
 
 
 class SearchDomains(Enum):
@@ -39,6 +35,8 @@ def get_indices(types):
     for doc_type in types:
         if doc_type == "word" or doc_type == "phrase":
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+        elif doc_type == "song":
+            indices.add(ELASTICSEARCH_SONG_INDEX)
 
     return list(indices)
 
@@ -56,104 +54,12 @@ def get_types_query(types):
     # Adding type filters
     # If only one of the "words" or "phrases" is present, we need to filter out the other one
     # no action required if both are present
-    if "words" in types and "phrases" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE))
-    elif "phrases" in types and "words" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD))
+    if "word" in types and "phrase" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE.value))
+    elif "phrase" in types and "word" not in types:
+        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD.value))
     else:
         return None
-
-
-def get_search_term_query(search_term, domain):
-    # Exact matching has a higher boost value, then fuzzy matching for both title and translation fields
-    fuzzy_match_title_query = Q(
-        {
-            "fuzzy": {
-                "title": {
-                    "value": search_term,
-                    "fuzziness": "2",  # Documentation recommends "AUTO" for this param
-                    "boost": FUZZY_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    exact_match_title_query = Q(
-        {
-            "match_phrase": {
-                "title": {
-                    "query": search_term,
-                    "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": EXACT_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    fuzzy_match_translation_query = Q(
-        {
-            "fuzzy": {
-                "translation": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    exact_match_translation_query = Q(
-        {
-            "match_phrase": {
-                "translation": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_BOOST,
-                }
-            }
-        }
-    )
-    multi_match_query = Q(
-        {
-            "multi_match": {
-                "query": search_term,
-                "fields": ["title", "full_text_search_field"],
-                "type": "phrase",
-                "operator": "OR",
-                "boost": FULL_TEXT_SEARCH_BOOST,
-            }
-        }
-    )
-    text_search_field_match_query = Q(
-        {
-            "match_phrase": {
-                "full_text_search_field": {"query": search_term, "boost": BASE_BOOST}
-            }
-        }
-    )
-
-    subqueries = []
-
-    subquery_domains = {
-        "both": [
-            fuzzy_match_title_query,
-            exact_match_title_query,
-            fuzzy_match_translation_query,
-            exact_match_translation_query,
-            multi_match_query,
-            text_search_field_match_query,
-        ],
-        "language": [fuzzy_match_title_query, exact_match_title_query],
-        "translation": [
-            fuzzy_match_translation_query,
-            exact_match_translation_query,
-        ],
-    }
-
-    subqueries += subquery_domains.get(domain, [])
-
-    return Q(
-        "bool",
-        should=subqueries,
-        minimum_should_match=1,
-    )
 
 
 def get_site_filter_query(site_id):
@@ -180,7 +86,11 @@ def get_view_permissions_filter(user):
     query = Q("bool")
     filter_list = []
 
-    user_memberships = Membership.objects.filter(user=user)
+    user_memberships = (
+        Membership.objects.filter(user=user)
+        if user.is_authenticated
+        else Membership.objects.none()
+    )
 
     for membership in user_memberships:
         # create a filter for each membership

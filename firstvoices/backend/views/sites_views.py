@@ -156,6 +156,9 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
     serializer_class = MembershipSiteSummarySerializer
 
     def get_queryset(self):
+        if self.request.user.is_anonymous:
+            return Membership.objects.none()
+
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         return (
             Membership.objects.filter(user=self.request.user)

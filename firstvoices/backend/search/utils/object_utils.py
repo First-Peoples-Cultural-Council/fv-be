@@ -3,18 +3,19 @@ import logging
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models.dictionary import DictionaryEntry
+from backend.models import DictionaryEntry, Song
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_SONG_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
-    SearchIndexEntryTypes,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
+from backend.serializers.song_serializers import SongSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-def get_object_from_index(index, document_id):
+def get_object_from_index(index, document_type, document_id):
     try:
         s = Search(index=index)
         response = s.query("match", document_id=document_id).execute()
@@ -23,16 +24,14 @@ def get_object_from_index(index, document_id):
         return hits[0] if hits else None
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(
-            ES_CONNECTION_ERROR, SearchIndexEntryTypes.DICTIONARY_ENTRY, document_id
-        )
+        logger.error(ES_CONNECTION_ERROR, document_type, index, document_id)
         logger.error(e)
     except NotFoundError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.warning(
             ES_NOT_FOUND_ERROR,
             "query",
-            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            index,
             document_id,
         )
         logger.warning(e)
@@ -61,17 +60,23 @@ def hydrate_objects(search_results, request):
     """
     complete_objects = []
     dictionary_search_results_ids = []
+    song_search_results_ids = []
 
     # Separating object IDs into lists based on their data types
     for obj in search_results:
         if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
             dictionary_search_results_ids.append(obj["_source"]["document_id"])
+        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
+            song_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
     dictionary_objects = list(
         DictionaryEntry.objects.filter(
             id__in=dictionary_search_results_ids
         ).prefetch_related("translation_set")
+    )
+    song_objects = list(
+        Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
     )
 
     for obj in search_results:
@@ -96,31 +101,45 @@ def hydrate_objects(search_results, request):
                     ).data,
                 }
             )
+        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
+            song = get_object_by_id(song_objects, obj["_source"]["document_id"])
+
+            # Serializing and adding the object to complete_objects
+            complete_objects.append(
+                {
+                    "score": obj["_score"],
+                    "type": "song",
+                    "entry": SongSerializer(
+                        song,
+                        context={
+                            "request": request,
+                            "view": "search",
+                            "site_slug": song.site.slug,
+                        },
+                    ).data,
+                }
+            )
 
     return complete_objects
 
 
-def get_translation_and_part_of_speech_text(dictionary_entry_instance):
-    translation_set = dictionary_entry_instance.translation_set.all()
-    translations = []
-    part_of_speech_titles = []
-    for t in translation_set:
-        translations.append(t.text)
-        if t.part_of_speech:
-            part_of_speech_titles.append(t.part_of_speech.title)
+def get_translation_text(dictionary_entry_instance):
+    translations = list(
+        dictionary_entry_instance.translation_set.values_list("text", flat=True)
+    )
+    return " ".join(translations)
 
-    translations_text = " ".join(translations)
-    part_of_speech_text = " ".join(part_of_speech_titles)
 
-    return translations_text, part_of_speech_text
+def get_acknowledgements_text(dictionary_entry_instance):
+    acknowledgements = list(
+        dictionary_entry_instance.acknowledgement_set.values_list("text", flat=True)
+    )
+    return " ".join(acknowledgements)
 
 
 def get_notes_text(dictionary_entry_instance):
-    notes_set = dictionary_entry_instance.note_set.all()
-    notes_text = []
-    for note in notes_set:
-        notes_text.append(note.text)
-    return " ".join(notes_text)
+    notes = list(dictionary_entry_instance.note_set.values_list("text", flat=True))
+    return " ".join(notes)
 
 
 def get_categories_ids(dictionary_entry_instance):
@@ -128,3 +147,12 @@ def get_categories_ids(dictionary_entry_instance):
         str(id)
         for id in dictionary_entry_instance.categories.values_list("id", flat=True)
     ]
+
+
+def get_lyrics(song_instance):
+    lyrics = list(song_instance.lyrics.values_list("text", flat=True))
+    lyrics_translation = list(
+        song_instance.lyrics.values_list("translation", flat=True)
+    )
+
+    return lyrics, lyrics_translation

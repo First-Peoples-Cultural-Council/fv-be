@@ -123,7 +123,9 @@ class FVPermissionViewSetMixin:
 
     def list(self, request, *args, **kwargs):
         # permissions
-        queryset = utils.filter_by_viewable(request.user, self.get_queryset())
+        queryset = utils.filter_by_viewable(
+            request.user, self.get_queryset()
+        ).distinct()
 
         # pagination
         page = self.paginate_queryset(queryset)

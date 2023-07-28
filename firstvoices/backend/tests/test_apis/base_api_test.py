@@ -6,7 +6,7 @@ from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
-from backend.models import SitePage
+from backend.models import Category, SitePage
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 
@@ -146,6 +146,9 @@ class BaseSiteContentApiTest:
     def get_expected_response(self, instance, site):
         raise NotImplementedError()
 
+    def get_lookup_key(self, instance):
+        return instance.id
+
 
 class SiteContentListApiTestMixin:
     """
@@ -254,9 +257,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug="invalid")
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug="invalid")
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug="invalid"
+            )
         )
 
         assert response.status_code == 404
@@ -268,9 +271,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 403
@@ -288,9 +291,9 @@ class SiteContentDetailApiTestMixin:
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 200
@@ -305,9 +308,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 200
@@ -318,9 +321,9 @@ class SiteContentDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 200
@@ -407,9 +410,9 @@ class ControlledDetailApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
         response = self.client.get(
-            self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
-            if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 403
@@ -529,19 +532,34 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_success_201(self):
+        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.EDITOR
+            site_visibility=Visibility.PUBLIC, user_role=user_role
         )
 
         self.client.force_authenticate(user=user)
+        data = self.get_valid_data(site)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
-            data=self.format_upload_data(self.get_valid_data(site)),
+            data=self.format_upload_data(data),
             content_type=self.content_type,
         )
 
         assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        self.assert_created_instance(pk, data)
+        self.assert_created_response(data, response_data)
+
+    def assert_created_instance(self, pk, data):
+        raise NotImplementedError()
+
+    def assert_created_response(self, expected_data, actual_response):
+        raise NotImplementedError()
 
 
 class SiteContentUpdateApiTestMixin:
@@ -566,7 +584,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
             data=self.format_upload_data(self.get_invalid_data()),
             content_type=self.content_type,
         )
@@ -579,7 +599,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
             data=self.format_upload_data(self.get_valid_data(site)),
             content_type=self.content_type,
         )
@@ -592,7 +614,9 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug="missing-site"),
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug="missing-site"
+            ),
             data=self.format_upload_data(self.get_valid_data(site)),
             content_type=self.content_type,
         )
@@ -613,8 +637,10 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_success_200(self):
+        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.EDITOR
+            site_visibility=Visibility.PUBLIC, user_role=user_role
         )
 
         self.client.force_authenticate(user=user)
@@ -622,7 +648,9 @@ class SiteContentUpdateApiTestMixin:
         data = self.get_valid_data(site)
 
         response = self.client.put(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -652,8 +680,10 @@ class SiteContentDestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_success_204(self):
+        user_role = Role.EDITOR if self.model is not Category else Role.LANGUAGE_ADMIN
+
         site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.EDITOR
+            site_visibility=Visibility.PUBLIC, user_role=user_role
         )
 
         self.client.force_authenticate(user=user)
@@ -661,7 +691,9 @@ class SiteContentDestroyApiTestMixin:
         self.add_related_objects(instance)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 204
@@ -675,7 +707,9 @@ class SiteContentDestroyApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 403
@@ -697,7 +731,9 @@ class SiteContentDestroyApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.delete(
-            self.get_detail_endpoint(key=instance.id, site_slug="missing-site")
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug="missing-site"
+            )
         )
 
         assert response.status_code == 404

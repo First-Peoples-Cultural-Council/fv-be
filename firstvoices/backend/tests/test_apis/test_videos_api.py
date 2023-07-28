@@ -1,3 +1,4 @@
+from backend.models.media import Video
 from backend.tests import factories
 
 from .base_media_test import BaseMediaApiTest
@@ -12,9 +13,14 @@ class TestVideosEndpoint(BaseMediaApiTest):
     API_DETAIL_VIEW = "api:video-detail"
     sample_filename = "video_example_small.mp4"
     sample_filetype = "video/mp4"
+    model = Video
 
     def create_minimal_instance(self, site, visibility):
         return factories.VideoFactory.create(site=site)
 
     def get_expected_response(self, instance, site):
         return self.get_expected_video_data(instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        instance = Video.objects.get(pk=actual_response["id"])
+        assert actual_response == self.get_expected_video_data(instance)

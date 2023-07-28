@@ -9,7 +9,7 @@ from backend.models.widget import (
     WidgetSettings,
 )
 from backend.serializers.base_serializers import (
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
     WritableVisibilityField,
@@ -41,7 +41,7 @@ class WidgetDetailSerializer(serializers.ModelSerializer):
 
 
 class SiteWidgetDetailSerializer(
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
     WidgetDetailSerializer,
@@ -107,7 +107,43 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
             )
         return widgets
 
+    @staticmethod
+    def create_site_widget_list_order_instances(
+        site_widgets, site_widget_list, user, site
+    ):
+        # Create a new SiteWidgetListOrder object for each widget in the validated data and add it to the list.
+        for index, widget in enumerate(site_widgets):
+            # Check that each SiteWidget belongs to the same site as the homepage
+            if widget.site != site:
+                raise serializers.ValidationError(
+                    f"SiteWidget with ID ({widget.id}) does not belong to the site."
+                )
+            SiteWidgetListOrder.objects.create(
+                site_widget=widget,
+                site_widget_list=site_widget_list,
+                order=index,
+                last_modified_by=user,
+                created_by=user,
+            )
+
+    def create(self, validated_data):
+        site = get_site_from_context(self)
+        new_site_widget_list = SiteWidgetList.objects.create(site=site)
+
+        # Create new SiteWidgetListOrder objects for each widget in the validated data.
+        SiteWidgetListSerializer.create_site_widget_list_order_instances(
+            validated_data["widgets"],
+            new_site_widget_list,
+            self.context["request"].user,
+            site,
+        )
+
+        validated_data["widgets"] = new_site_widget_list
+
+        return new_site_widget_list
+
     def update(self, instance, validated_data):
+        site = get_site_from_context(self)
         new_site_widget_list = instance
 
         # Remove existing widgets from the list.
@@ -116,19 +152,12 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
         ):
             item.delete()
 
-        # Create a new SiteWidgetListOrder object for each widget in the validated data and add it to the list.
-        for index, widget in enumerate(validated_data["homepage"]):
-            # Check that each SiteWidget belongs to the same site as the homepage
-            if widget.site != get_site_from_context(self):
-                raise serializers.ValidationError(
-                    f"SiteWidget with ID ({widget.id}) does not belong to the site."
-                )
-            SiteWidgetListOrder.objects.create(
-                site_widget=widget,
-                site_widget_list=new_site_widget_list,
-                order=index,
-                last_modified_by=self.context["request"].user,
-                created_by=self.context["request"].user,
-            )
+        # Create new SiteWidgetListOrder objects for each widget in the validated data.
+        SiteWidgetListSerializer.create_site_widget_list_order_instances(
+            validated_data["widgets"],
+            new_site_widget_list,
+            self.context["request"].user,
+            site,
+        )
 
         return SiteWidgetList.objects.get(id=instance.id)

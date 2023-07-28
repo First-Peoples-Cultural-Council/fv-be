@@ -1,9 +1,11 @@
 from django.core.management.base import BaseCommand
 
 from backend.management.commands._helper import get_valid_index_name, rebuild_index
-from backend.search.indices.dictionary_entry_document import (
+from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
+from backend.search.indices.song_document import SongDocument
+from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
-    DictionaryEntryDocument,
+    ELASTICSEARCH_SONG_INDEX,
 )
 
 
@@ -14,7 +16,11 @@ class Command(BaseCommand):
             "index_name": ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "document": DictionaryEntryDocument,
         },
-        # Songs and stories to be added later
+        "songs": {
+            "index_name": ELASTICSEARCH_SONG_INDEX,
+            "document": SongDocument,
+        }
+        # stories to be added later
     }
 
     def add_arguments(self, parser):

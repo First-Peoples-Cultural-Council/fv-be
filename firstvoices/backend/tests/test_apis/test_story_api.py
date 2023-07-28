@@ -141,18 +141,37 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         assert actual_response["title"] == expected_data["title"]
         assert actual_response["pages"][0]["text"] == expected_data["pages"][0]["text"]
         assert len(actual_response["pages"][0]["relatedAudio"]) == 3
-        assert (
-            actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
+
+        response_related_audio_ids = []
+        for i in actual_response["relatedAudio"]:
+            response_related_audio_ids.append(i["id"])
+
+        response_related_image_ids = []
+        for i in actual_response["relatedImages"]:
+            response_related_image_ids.append(i["id"])
+
+        response_related_video_ids = []
+        for i in actual_response["relatedVideos"]:
+            response_related_video_ids.append(i["id"])
+
+        assert sorted(response_related_audio_ids) == sorted(
+            expected_data["relatedAudio"]
         )
-        assert (
-            actual_response["relatedVideos"][0]["id"]
-            == expected_data["relatedVideos"][0]
+        assert sorted(response_related_image_ids) == sorted(
+            expected_data["relatedImages"]
         )
-        assert (
-            actual_response["relatedImages"][0]["id"]
-            == expected_data["relatedImages"][0]
+        assert sorted(response_related_video_ids) == sorted(
+            expected_data["relatedVideos"]
         )
+
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
+
+    def assert_created_instance(self, pk, data):
+        instance = Story.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
 
     def add_related_objects(self, instance):
         factories.PagesFactory.create(story=instance)

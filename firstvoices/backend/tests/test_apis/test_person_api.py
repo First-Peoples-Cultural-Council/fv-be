@@ -37,6 +37,13 @@ class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
         assert actual_response["name"] == expected_data["name"]
         assert actual_response["bio"] == expected_data["bio"]
 
+    def assert_created_instance(self, pk, data):
+        instance = Person.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
+
     def add_related_objects(self, instance):
         # no related objects to add
         pass

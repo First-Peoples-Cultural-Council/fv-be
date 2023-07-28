@@ -1,11 +1,15 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
 from backend.search.utils.query_builder_utils import (
     get_valid_category_id,
     get_valid_starts_with_char,
 )
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 from backend.views.search.base_search_views import BaseSearchViewSet
 
 
+@extend_schema_view(list=extend_schema(parameters=[site_slug_parameter]))
 class SiteSearchViewsSet(BaseSearchViewSet, SiteContentViewSetMixin):
     def get_search_params(self):
         """

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "rules.apps.AutodiscoverRulesConfig",
+    "jwt_auth",
     "backend",
     "healthcheck",
     "embed_video",
@@ -86,7 +87,7 @@ REST_FRAMEWORK = {
         # the first 2 are for admin app compatibility
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
-        "backend.jwt_auth.UserAuthentication",
+        "jwt_auth.authentication.JwtAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
@@ -174,15 +175,16 @@ CACHES = {
 
 DATABASES = {"default": database.config()}
 
-AUTH_USER_MODEL = "backend.User"
+AUTH_USER_MODEL = "jwt_auth.User"
 
 JWT = jwt.config()
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://localhost:3000",
-    os.getenv("ALLOWED_ORIGIN"),
-]
+] + os.getenv(
+    "ALLOWED_ORIGIN"
+).split(",")
 
 LANGUAGE_CODE = "en-ca"
 

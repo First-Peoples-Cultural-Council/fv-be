@@ -26,19 +26,14 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
     def get_valid_data(self, site=None):
         cover_image = factories.ImageFactory.create(site=site)
 
-        related_images = []
-        related_videos = []
-        related_audio = []
-
-        for _unused in range(3):
-            related_images.append(factories.ImageFactory.create(site=site))
-            related_videos.append(factories.VideoFactory.create(site=site))
-            related_audio.append(factories.AudioFactory.create(site=site))
+        related_image = factories.ImageFactory.create(site=site)
+        related_video = factories.VideoFactory.create(site=site)
+        related_audio = factories.AudioFactory.create(site=site)
 
         return {
-            "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
-            "relatedImages": list(map(lambda x: str(x.id), related_images)),
-            "relatedVideos": list(map(lambda x: str(x.id), related_videos)),
+            "relatedAudio": [str(related_audio.id)],
+            "relatedImages": [str(related_image.id)],
+            "relatedVideos": [str(related_video.id)],
             "hideOverlay": False,
             "coverImage": str(cover_image.id),
             "title": "Title",
@@ -108,6 +103,13 @@ class TestSongEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
             == expected_data["relatedImages"][0]
         )
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
+
+    def assert_created_instance(self, pk, data):
+        instance = Song.objects.get(pk=pk)
+        return self.assert_updated_instance(data, instance)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
 
     def add_related_objects(self, instance):
         factories.LyricsFactory.create(song=instance)

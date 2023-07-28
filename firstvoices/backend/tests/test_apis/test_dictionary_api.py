@@ -88,7 +88,7 @@ class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApi
     def assert_updated_instance(self, expected_data, actual_instance: DictionaryEntry):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.type == expected_data["type"]
-        assert actual_instance.categories == expected_data["categories"]
+        assert list(actual_instance.categories.all()) == expected_data["categories"]
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
@@ -133,6 +133,13 @@ class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApi
 
         pronunciations = actual_response["pronunciations"]
         assert len(pronunciations) == len(expected_data["pronunciations"])
+
+    def assert_created_instance(self, pk, data):
+        instance = self.model.objects.get(pk=pk)
+        return self.get_expected_response(instance, instance.site)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
 
     def get_expected_list_response_item(self, entry, site):
         return self.get_expected_response(entry, site)
