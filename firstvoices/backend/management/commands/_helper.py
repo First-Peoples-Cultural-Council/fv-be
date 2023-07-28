@@ -159,6 +159,7 @@ def story_iterator():
             acknowledgement=instance.acknowledgements,
             introduction=instance.introduction,
             introduction_translation=instance.introduction_translation,
+            author=instance.author,
             page_text=page_text,
             page_translation=page_translation,
         )
