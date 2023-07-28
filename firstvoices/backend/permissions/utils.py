@@ -34,4 +34,4 @@ def filter_by_viewable(user, queryset):
     Returns a new queryset containing items from queryset that the user has permission to view
     """
     view_permission_filter = queryset.model.objects.visible_as_filter(user)
-    return queryset.filter(view_permission_filter)
+    return queryset.filter(view_permission_filter).distinct()
