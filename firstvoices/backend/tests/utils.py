@@ -88,5 +88,5 @@ def update_widget_list_order(widgets, widget_list_two):
     )
 
 
-def find_object_by_id(results_list, category_id):
-    return next((obj for obj in results_list if obj["id"] == str(category_id)), None)
+def find_object_by_id(results_list, obj_id):
+    return next((obj for obj in results_list if obj["id"] == str(obj_id)), None)
