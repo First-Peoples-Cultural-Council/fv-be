@@ -23,6 +23,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
     model = Site
 
+    content_type = "application/json"
+
     @pytest.mark.django_db
     def test_list_empty(self):
         user = factories.get_non_member_user()
@@ -749,7 +751,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.patch(
             f"{self.get_detail_endpoint(instance.slug)}",
             data=json.dumps(None),
-            content_type="application/json",
+            content_type=self.content_type,
         )
 
         assert response.status_code == 400
@@ -763,7 +765,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.patch(
             f"{self.get_detail_endpoint(instance.slug)}",
             data=json.dumps(self.get_valid_patch_data(instance)),
-            content_type="application/json",
+            content_type=self.content_type,
         )
 
         assert response.status_code == 403
@@ -776,7 +778,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.patch(
             self.get_detail_endpoint(key="missing-instance"),
             data=json.dumps(self.get_valid_patch_data()),
-            content_type="application/json",
+            content_type=self.content_type,
         )
 
         assert response.status_code == 404
@@ -791,7 +793,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.patch(
             f"{self.get_detail_endpoint(instance.slug)}",
             data=json.dumps(data),
-            content_type="application/json",
+            content_type=self.content_type,
         )
 
         assert response.status_code == 200
