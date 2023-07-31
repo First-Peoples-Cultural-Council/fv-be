@@ -872,19 +872,19 @@ class BaseReadOnlyControlledSiteContentApiTest(
     pass
 
 
-class BaseControlledSiteContentApiTest(
+class BaseControlledLanguageAdminOnlySiteContentAPITest(
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
-    ControlledSiteContentCreateApiTestMixin,
-    ControlledSiteContentUpdateApiTestMixin,
     BaseUncontrolledSiteContentApiTest,
 ):
     pass
 
 
-class BaseControlledLanguageAdminOnlySiteContentAPITest(
+class BaseControlledSiteContentApiTest(
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
+    ControlledSiteContentCreateApiTestMixin,
+    ControlledSiteContentUpdateApiTestMixin,
     BaseUncontrolledSiteContentApiTest,
 ):
     pass
