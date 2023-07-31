@@ -4,7 +4,7 @@ from django.db import models
 
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseControlledSiteContentModel, BaseSiteContentModel
+from .base import AudienceMixin, BaseControlledSiteContentModel
 from .media import RelatedMediaMixin
 
 TITLE_MAX_LENGTH = 500
@@ -71,7 +71,7 @@ class Story(
         return self.title
 
 
-class StoryPage(RelatedMediaMixin, BaseSiteContentModel):
+class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
     """
     Representing the pages within a story
 
@@ -87,10 +87,10 @@ class StoryPage(RelatedMediaMixin, BaseSiteContentModel):
         verbose_name = "story page"
         verbose_name_plural = "story pages"
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "view": predicates.is_visible_object,
+            "add": predicates.can_add_controlled_data,
+            "change": predicates.can_edit_controlled_data,
+            "delete": predicates.can_delete_controlled_data,
         }
 
     story = models.ForeignKey("Story", related_name="pages", on_delete=models.CASCADE)
@@ -106,3 +106,10 @@ class StoryPage(RelatedMediaMixin, BaseSiteContentModel):
     notes = ArrayField(
         models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
     )
+
+    def save(self, *args, **kwargs):
+        # always match the site
+        # these are saved in the db rather than set as properties to make permissions on queries simpler
+        self.visibility = self.story.visibility
+        self.site = self.story.site
+        super().save(*args, **kwargs)
