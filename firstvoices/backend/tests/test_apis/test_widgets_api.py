@@ -116,16 +116,13 @@ class TestSiteWidgetEndpoint(BaseReadOnlyControlledSiteContentApiTest):
         response_data = json.loads(response.content)
         assert response_data["id"] == str(widget.id)
 
-        assert response_data["settings"] == [
-            {
-                "key": settings_one.key,
-                "value": settings_one.value,
-            },
-            {
-                "key": settings_two.key,
-                "value": settings_two.value,
-            },
-        ]
+        assert sorted(response_data["settings"], key=lambda x: x["key"]) == sorted(
+            [
+                {"key": settings_one.key, "value": settings_one.value},
+                {"key": settings_two.key, "value": settings_two.value},
+            ],
+            key=lambda x: x["key"],
+        )
 
     @pytest.mark.django_db
     def test_detail_widget_create(self):
