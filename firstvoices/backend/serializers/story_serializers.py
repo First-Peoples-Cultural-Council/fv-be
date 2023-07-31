@@ -5,10 +5,12 @@ from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 from backend.models import Story, StoryPage
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
+    CreateControlledSiteContentSerializerMixin,
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     UpdateSerializerMixin,
+    WritableVisibilityField,
     audience_fields,
     base_id_fields,
     base_timestamp_fields,
@@ -71,9 +73,9 @@ class StoryPageDetailSerializer(
 
 
 class StorySerializer(
-    UpdateSerializerMixin,
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
+    UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(
@@ -81,6 +83,7 @@ class StorySerializer(
     )
     site = LinkedSiteSerializer(required=False, read_only=True)
     pages = StoryPageSummarySerializer(many=True, read_only=True)
+    visibility = WritableVisibilityField(required=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story
@@ -99,6 +102,7 @@ class StorySerializer(
                 "site",
                 "cover_image",
                 "author",
+                "visibility",
                 "title",
                 "title_translation",
                 "introduction",
@@ -113,11 +117,12 @@ class StorySerializer(
 
 class StoryListSerializer(SiteContentLinkedTitleSerializer):
     cover_image = ImageSerializer()
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story
         fields = (
             SiteContentLinkedTitleSerializer.Meta.fields
             + audience_fields
-            + ("title_translation", "cover_image", "hide_overlay")
+            + ("visibility", "title_translation", "cover_image", "hide_overlay")
         )

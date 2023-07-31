@@ -40,6 +40,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "relatedImages": [str(x.id) for x in images],
             "relatedVideos": [str(x.id) for x in videos],
             "coverImage": str(cover_image.id),
+            "visibility": "Public",
             "title": "Title",
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
@@ -70,17 +71,22 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
-        assert (
-            actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
+
+        response_related_audio_ids = [i["id"] for i in actual_response["relatedAudio"]]
+        response_related_image_ids = [i["id"] for i in actual_response["relatedImages"]]
+        response_related_video_ids = [i["id"] for i in actual_response["relatedVideos"]]
+
+        assert sorted(response_related_audio_ids) == sorted(
+            expected_data["relatedAudio"]
         )
-        assert (
-            actual_response["relatedVideos"][0]["id"]
-            == expected_data["relatedVideos"][0]
+
+        assert sorted(response_related_image_ids) == sorted(
+            expected_data["relatedImages"]
         )
-        assert (
-            actual_response["relatedImages"][0]["id"]
-            == expected_data["relatedImages"][0]
+        assert sorted(response_related_video_ids) == sorted(
+            expected_data["relatedVideos"]
         )
+
         assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
         assert actual_response["pages"] == []  # unchanged
 
@@ -118,6 +124,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
         return {
             "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
             "id": str(story.id),
+            "visibility": "Public",
             "title": story.title,
             "coverImage": None,
             "titleTranslation": story.title_translation,
@@ -135,6 +142,7 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "relatedVideos": [],
             "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
             "id": str(story.id),
+            "visibility": "Public",
             "title": story.title,
             "site": {
                 "id": str(site.id),

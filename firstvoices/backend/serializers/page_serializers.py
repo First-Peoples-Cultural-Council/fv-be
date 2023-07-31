@@ -8,6 +8,7 @@ from backend.serializers.base_serializers import (
     CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    WritableVisibilityField,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
@@ -15,12 +16,15 @@ from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
 
-class SitePageSerializer(SiteContentLinkedTitleSerializer):
+class SitePageSerializer(
+    SiteContentLinkedTitleSerializer,
+):
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitepage-detail", lookup_field="slug", read_only=True
     )
+
     slug = serializers.CharField(required=False)
-    visibility = serializers.CharField(source="get_visibility_display")
+    visibility = WritableVisibilityField(required=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = SitePage
@@ -49,8 +53,8 @@ class SitePageDetailSerializer(SitePageSerializer):
 
 
 class SitePageDetailWriteSerializer(
-    UpdateSerializerMixin,
     CreateControlledSiteContentSerializerMixin,
+    UpdateSerializerMixin,
     SitePageDetailSerializer,
 ):
     widgets = serializers.PrimaryKeyRelatedField(

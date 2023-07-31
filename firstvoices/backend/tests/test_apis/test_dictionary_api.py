@@ -14,13 +14,11 @@ from backend.models.dictionary import (
 )
 from backend.tests import factories
 
-from .base_api_test import BaseReadOnlyControlledSiteContentApiTest
+from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
 
-class TestDictionaryEndpoint(
-    RelatedMediaTestMixin, BaseReadOnlyControlledSiteContentApiTest
-):
+class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -35,6 +33,116 @@ class TestDictionaryEndpoint(
 
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+
+    def get_valid_data(self, site=None):
+        related_images = []
+        related_videos = []
+        related_audio = []
+
+        for _unused in range(3):
+            related_images.append(factories.ImageFactory.create(site=site))
+            related_videos.append(factories.VideoFactory.create(site=site))
+            related_audio.append(factories.AudioFactory.create(site=site))
+
+        return {
+            "title": "Word",
+            "type": "word",
+            "visibility": "Public",
+            "customOrder": "⚑W⚑o⚑r⚑d",
+            "categories": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "acknowledgements": [],
+            "alternateSpellings": [],
+            "notes": [],
+            "translations": [],
+            "pronunciations": [],
+            "site": str(site.id),
+            "splitChars": [],
+            "splitCharsBase": [],
+            "splitWords": ["Word"],
+            "splitWordsBase": ["Word"],
+            "relatedDictionaryEntries": [],
+            "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
+            "relatedImages": list(map(lambda x: str(x.id), related_images)),
+            "relatedVideos": list(map(lambda x: str(x.id), related_videos)),
+        }
+
+    def add_related_objects(self, instance):
+        factories.AcknowledgementFactory.create(dictionary_entry=instance)
+        factories.AlternateSpellingFactory.create(dictionary_entry=instance)
+        factories.NoteFactory.create(dictionary_entry=instance)
+        factories.TranslationFactory.create(dictionary_entry=instance)
+        factories.PronunciationFactory.create(dictionary_entry=instance)
+
+    def assert_related_objects_deleted(self, instance):
+        for model in (
+            Acknowledgement,
+            AlternateSpelling,
+            Note,
+            Translation,
+            Pronunciation,
+        ):
+            assert model.objects.filter(dictionary_entry=instance).count() == 0
+
+    def assert_updated_instance(self, expected_data, actual_instance: DictionaryEntry):
+        assert actual_instance.title == expected_data["title"]
+        assert actual_instance.type == expected_data["type"]
+        assert list(actual_instance.categories.all()) == expected_data["categories"]
+        assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
+        assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
+
+        acknowledgements = Acknowledgement.objects.filter(
+            dictionary_entry=actual_instance
+        )
+        assert len(acknowledgements) == len(expected_data["acknowledgements"])
+
+        alternate_spellings = AlternateSpelling.objects.filter(
+            dictionary_entry=actual_instance
+        )
+        assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
+
+        notes = Note.objects.filter(dictionary_entry=actual_instance)
+        assert len(notes) == len(expected_data["notes"])
+
+        translations = Translation.objects.filter(dictionary_entry=actual_instance)
+        assert len(translations) == len(expected_data["translations"])
+
+        pronunciations = Pronunciation.objects.filter(dictionary_entry=actual_instance)
+        assert len(pronunciations) == len(expected_data["pronunciations"])
+
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["type"] == expected_data["type"]
+        assert actual_response["visibility"] == expected_data["visibility"]
+        assert actual_response["categories"] == expected_data["categories"]
+        assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
+        assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
+
+        acknowledgements = actual_response["acknowledgements"]
+        assert len(acknowledgements) == len(expected_data["acknowledgements"])
+
+        alternate_spellings = actual_response["alternateSpellings"]
+        assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
+
+        notes = actual_response["notes"]
+        assert len(notes) == len(expected_data["notes"])
+
+        translations = actual_response["translations"]
+        assert len(translations) == len(expected_data["translations"])
+
+        pronunciations = actual_response["pronunciations"]
+        assert len(pronunciations) == len(expected_data["pronunciations"])
+
+    def assert_created_instance(self, pk, data):
+        instance = self.model.objects.get(pk=pk)
+        return self.get_expected_response(instance, instance.site)
+
+    def assert_created_response(self, expected_data, actual_response):
+        return self.assert_update_response(expected_data, actual_response)
+
+    def get_expected_list_response_item(self, entry, site):
+        return self.get_expected_response(entry, site)
 
     def create_instance_with_media(
         self,
@@ -619,10 +727,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_create(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
         part_of_speech = factories.PartOfSpeechFactory.create()
@@ -631,7 +740,7 @@ class TestDictionaryEndpoint(
         data = {
             "title": "Hello",
             "type": TypeOfDictionaryEntry.WORD,
-            "visibility_value": Visibility.PUBLIC,
+            "visibility": "team",
             "categories": [str(category.id)],
             "exclude_from_games": False,
             "exclude_from_kids": False,
@@ -655,7 +764,7 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["title"] == "Hello"
         assert response_data["type"] == TypeOfDictionaryEntry.WORD
-        assert response_data["visibility"] == "Public"
+        assert response_data["visibility"] == "Team"
         assert response_data["categories"][0]["id"] == str(category.id)
         assert response_data["excludeFromGames"] is False
         assert response_data["excludeFromKids"] is False
@@ -678,7 +787,7 @@ class TestDictionaryEndpoint(
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
         assert entry_in_db.title == "Hello"
         assert entry_in_db.type == TypeOfDictionaryEntry.WORD
-        assert entry_in_db.visibility == Visibility.PUBLIC
+        assert entry_in_db.visibility == Visibility.TEAM
         assert entry_in_db.categories.first().id == category.id
         assert entry_in_db.exclude_from_games is False
         assert entry_in_db.exclude_from_kids is False
@@ -707,15 +816,15 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_create_invalid_related_entries(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
 
         data = {
             "title": "Hello",
             "type": TypeOfDictionaryEntry.WORD,
-            "visibility_value": Visibility.PUBLIC,
+            "visibility": "public",
             "exclude_from_games": False,
             "exclude_from_kids": False,
             "related_dictionary_entries": [1234],
@@ -729,10 +838,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_create_related_media(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         factories.AlphabetFactory.create(site=site)
         audio = factories.AudioFactory.create(site=site)
         image = factories.ImageFactory.create(site=site)
@@ -741,7 +851,7 @@ class TestDictionaryEndpoint(
         data = {
             "title": "Hello",
             "type": TypeOfDictionaryEntry.WORD,
-            "visibility_value": Visibility.PUBLIC,
+            "visibility": "public",
             "exclude_from_games": False,
             "exclude_from_kids": False,
             "related_audio": [str(audio.id)],
@@ -769,15 +879,15 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_create_invalid_related_media(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
 
         data = {
             "title": "Hello",
             "type": TypeOfDictionaryEntry.WORD,
-            "visibility_value": Visibility.PUBLIC,
+            "visibility": "public",
             "exclude_from_games": False,
             "exclude_from_kids": False,
             "related_audio": [1234],
@@ -793,10 +903,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_update(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
         part_of_speech = factories.PartOfSpeechFactory.create()
@@ -814,7 +925,7 @@ class TestDictionaryEndpoint(
         data = {
             "title": "Goodbye",
             "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility_value": Visibility.TEAM,
+            "visibility": "team",
             "categories": [str(category.id)],
             "exclude_from_games": True,
             "exclude_from_kids": True,
@@ -895,16 +1006,17 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_invalid_related_entries(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         entry = factories.DictionaryEntryFactory.create(site=site)
 
         data = {
             "title": "Goodbye",
             "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility_value": Visibility.TEAM,
+            "visibility": "team",
             "exclude_from_games": True,
             "exclude_from_kids": True,
             "related_dictionary_entries": ["1234"],
@@ -920,10 +1032,10 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_no_content(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
 
         entry = factories.DictionaryEntryFactory.create(
             site=site,
@@ -946,10 +1058,10 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_related_media(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
 
         entry = factories.DictionaryEntryFactory.create(site=site)
         audio = factories.AudioFactory.create(site=site)
@@ -959,7 +1071,7 @@ class TestDictionaryEndpoint(
         data = {
             "title": "Goodbye",
             "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility_value": Visibility.TEAM,
+            "visibility": "team",
             "exclude_from_games": True,
             "exclude_from_kids": True,
             "related_audio": [str(audio.id)],
@@ -987,17 +1099,17 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_invalid_related_media(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
 
         entry = factories.DictionaryEntryFactory.create(site=site)
 
         data = {
             "title": "Goodbye",
             "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility_value": Visibility.TEAM,
+            "visibility": "team",
             "exclude_from_games": True,
             "exclude_from_kids": True,
             "related_audio": ["1234"],
@@ -1015,10 +1127,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         site2 = factories.SiteFactory()
         category = factories.CategoryFactory.create(site=site2)
         entry = factories.DictionaryEntryFactory.create(site=site)
@@ -1026,7 +1139,7 @@ class TestDictionaryEndpoint(
         data = {
             "title": "Hello",
             "type": TypeOfDictionaryEntry.WORD,
-            "visibility_value": Visibility.PUBLIC,
+            "visibility": "public",
             "categories": [str(category.id)],
         }
 
@@ -1040,10 +1153,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_delete(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         entry = factories.DictionaryEntryFactory.create(site=site)
 
         response = self.client.delete(
@@ -1055,10 +1169,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_delete_related_objects(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         entry = factories.DictionaryEntryFactory.create(site=site)
         factories.AcknowledgementFactory.create(dictionary_entry=entry)
         factories.AlternateSpellingFactory.create(dictionary_entry=entry)
@@ -1082,10 +1197,11 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_dictionary_entry_delete_does_not_delete_related_entry(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory()
         entry = factories.DictionaryEntryFactory.create(site=site)
         related_entry = factories.DictionaryEntryFactory.create(site=site)
 

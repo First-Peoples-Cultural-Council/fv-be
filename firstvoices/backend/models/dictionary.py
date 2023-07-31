@@ -218,9 +218,9 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         ordering = ["title"]
         rules_permissions = {
             "view": predicates.is_visible_object,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_controlled_data,
+            "change": predicates.can_edit_controlled_data,
+            "delete": predicates.can_delete_controlled_data,
         }
 
     def __str__(self):

@@ -38,9 +38,9 @@ class Story(
         verbose_name_plural = "stories"
         rules_permissions = {
             "view": predicates.is_visible_object,
-            "add": predicates.is_superadmin,
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
+            "add": predicates.can_add_controlled_data,
+            "change": predicates.can_edit_controlled_data,
+            "delete": predicates.can_delete_controlled_data,
         }
 
     # from fvbook:author

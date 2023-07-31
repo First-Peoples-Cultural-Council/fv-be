@@ -1,11 +1,13 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from backend.models import Lyric, Song
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    WritableVisibilityField,
     audience_fields,
     base_id_fields,
     base_timestamp_fields,
@@ -26,9 +28,9 @@ class LyricSerializer(ModelSerializer):
 
 
 class SongSerializer(
-    UpdateSerializerMixin,
-    CreateSiteContentSerializerMixin,
+    CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
+    UpdateSerializerMixin,
     SiteContentLinkedTitleSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(
@@ -36,6 +38,7 @@ class SongSerializer(
     )
     site = LinkedSiteSerializer(required=False, read_only=True)
     lyrics = LyricSerializer(many=True)
+    visibility = WritableVisibilityField(required=True)
 
     def create(self, validated_data):
         lyrics = validated_data.pop("lyrics")
@@ -74,6 +77,7 @@ class SongSerializer(
                 "hide_overlay",
                 "site",
                 "cover_image",
+                "visibility",
                 "title",
                 "title_translation",
                 "introduction",
@@ -88,6 +92,7 @@ class SongSerializer(
 
 class SongListSerializer(SiteContentLinkedTitleSerializer):
     cover_image = ImageSerializer()
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Song
@@ -95,6 +100,7 @@ class SongListSerializer(SiteContentLinkedTitleSerializer):
             SiteContentLinkedTitleSerializer.Meta.fields
             + audience_fields
             + (
+                "visibility",
                 "title_translation",
                 "cover_image",
                 "hide_overlay",

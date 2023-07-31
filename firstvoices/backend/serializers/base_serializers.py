@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
-from ..models.constants import Visibility
+from ..models import Membership
+from ..models.constants import Role, Visibility
 from . import fields
 from .utils import get_site_from_context
 
@@ -90,12 +91,37 @@ class CreateSiteContentSerializerMixin(CreateSerializerMixin):
 
 class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixin):
     """
-    A mixin for ModelSerializers that sets the required fields for subclasses of BaseSiteContentModel as well as the
-    visibility field
+    A mixin for ModelSerializers that sets the required fields for subclasses of BaseControlledModel
     """
 
-    def create(self, validated_data):
-        validated_data["visibility"] = Visibility[
-            str.upper(validated_data.pop("get_visibility_display"))
-        ]
-        return super().create(validated_data)
+    def validate(self, attrs):
+        site = get_site_from_context(self)
+        user = self.context["request"].user
+        memberships = Membership.objects.filter(user=user)
+
+        visibility = attrs.get("visibility")
+
+        site_membership = memberships.filter(site=site).first()
+        if site_membership:
+            if site_membership.role == Role.ASSISTANT and visibility > Visibility.TEAM:
+                raise serializers.ValidationError(
+                    "Assistants cannot change the visibility of controlled content."
+                )
+
+        return super().validate(attrs)
+
+
+class WritableVisibilityField(serializers.CharField):
+    def to_internal_value(self, data):
+        visibility_map = {choice[1].lower(): choice[0] for choice in Visibility.choices}
+        try:
+            return visibility_map[data.lower()]
+        except KeyError:
+            raise serializers.ValidationError("Invalid visibility option.")
+
+    def to_representation(self, value):
+        visibility_map = {choice[0]: choice[1] for choice in Visibility.choices}
+        try:
+            return visibility_map[value]
+        except KeyError:
+            raise serializers.ValidationError("Invalid visibility value.")
