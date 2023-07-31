@@ -12,11 +12,11 @@ from backend.serializers.membership_serializers import MembershipSiteSummarySeri
 from backend.serializers.site_serializers import (
     LanguageSerializer,
     Site,
-    SiteDetailSerializer,
     SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )
 from backend.views import doc_strings
+from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
 
@@ -31,7 +31,7 @@ from backend.views.base_views import FVPermissionViewSetMixin
     retrieve=extend_schema(
         description="Basic information about a language site, for authorized users.",
         responses={
-            200: SiteDetailSerializer,
+            200: inline_site_doc_detail_serializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
@@ -41,7 +41,19 @@ from backend.views.base_views import FVPermissionViewSetMixin
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
-                response=SiteDetailSerializer,
+                response=inline_site_doc_detail_serializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+    ),
+    partial_update=extend_schema(
+        description=_("Edit a site. Any omitted fields will be unchanged."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=inline_site_doc_detail_serializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -54,13 +66,13 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     Summary information about language sites.
     """
 
-    http_method_names = ["get", "put"]
+    http_method_names = ["get", "put", "patch"]
     lookup_field = "slug"
     pagination_class = None
     serializer_class = SiteDetailWriteSerializer
 
     def get_queryset(self):
-        if self.action == "retrieve":
+        if self.action in ["retrieve", "update", "partial_update"]:
             return self.get_detail_queryset()
 
         return Site.objects.select_related("menu", "language").prefetch_related(
@@ -80,9 +92,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
             ),
             Prefetch(
                 "homepage__widgets",
-                queryset=SiteWidget.objects.visible(self.request.user)
-                .order_by("sitewidgetlistorder_set__order")
-                .filter(
+                queryset=SiteWidget.objects.visible(self.request.user).filter(
                     sitewidgetlistorder_set__site_widget_list__homepage_site=Site.objects.filter(
                         slug=self.kwargs["slug"]
                     ).first()

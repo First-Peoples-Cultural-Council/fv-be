@@ -27,6 +27,7 @@ class StoryDocument(BaseDocument):
     page_translation = Text(copy_to="secondary_translation_search_fields")
     acknowledgement = Text(copy_to="other_translation_search_fields")
     note = Text(copy_to="other_translation_search_fields")
+    author = Text(copy_to="other_translation_search_fields")
 
     # Author to be added
 
@@ -57,6 +58,7 @@ def update_story_index(sender, instance, **kwargs):
                 acknowledgement=instance.acknowledgements,
                 introduction=instance.introduction,
                 introduction_translation=instance.introduction_translation,
+                author=instance.author,
                 page_text=page_text,
                 page_translation=page_translation,
             )
@@ -74,6 +76,7 @@ def update_story_index(sender, instance, **kwargs):
                 acknowledgement=instance.acknowledgements,
                 introduction=instance.introduction,
                 introduction_translation=instance.introduction_translation,
+                author=instance.author,
                 page_text=page_text,
                 page_translation=page_translation,
             )

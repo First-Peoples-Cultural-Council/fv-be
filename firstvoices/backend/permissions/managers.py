@@ -18,11 +18,12 @@ class PermissionsManager(models.Manager):
         Returns a queryset containing only objects that the given user has permission to view. This
         does not filter related objects.
         """
-        return self.get_queryset().filter(self.visible_as_filter(user))
+        return self.get_queryset().filter(self.visible_as_filter(user)).distinct()
 
     def visible_as_filter(self, user=AnonymousUser()):
         """
-        Returns a Q object representing the visible permissions. This does not filter related objects.
+        Returns a Q object representing the visible permissions. This does not filter related objects. Note that this
+        can result in duplicate results and should be used with a distinct() clause.
         """
         if hasattr(self.model, "view_permission_filter"):
             return self.model.view_permission_filter(user)

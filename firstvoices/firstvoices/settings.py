@@ -183,7 +183,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://localhost:3000",
 ] + os.getenv(
-    "ALLOWED_ORIGIN"
+    "ALLOWED_ORIGIN", ""
 ).split(",")
 
 LANGUAGE_CODE = "en-ca"

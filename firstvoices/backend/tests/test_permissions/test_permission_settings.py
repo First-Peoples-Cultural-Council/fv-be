@@ -10,6 +10,11 @@ from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
 from backend.tests import factories
 
+"""
+This class generates tests for all models (with a few exclusions), to verify that the different forms of view
+permissions all have the same effect. (Direct use of predicates, permission rules on the models, and query filters.)
+"""
+
 
 class BaseModelFactory(DjangoModelFactory):
     created_by = factory.SubFactory(factories.UserFactory)
@@ -21,7 +26,15 @@ class SiteContentFactory(BaseModelFactory):
 
 
 def get_permitted_ids(user, queryset):
-    return {obj.id for obj in queryset if user.has_perm(obj.get_perm("view"), obj)}
+    return [obj.id for obj in queryset if user.has_perm(obj.get_perm("view"), obj)]
+
+
+def assert_unordered_lists_have_same_items(list1, list2):
+    assert len(list1) == len(list2)
+
+    list1_sorted = sorted(list1)
+    list2_sorted = sorted(list2)
+    assert list1_sorted == list2_sorted
 
 
 class TestPermissionManager:
@@ -77,18 +90,29 @@ class TestPermissionManager:
 
         self.generate_test_data(model_cls, model_factory, user, user_role)
 
+        # get list via has_perm()
         visible_by_permission_rules = get_permitted_ids(user, model_cls.objects.all())
-        visible_by_permission_manager = {
+
+        # get list via Model.objects.visible()
+        visible_by_permission_manager = [
             obj.id for obj in model_cls.objects.visible(user)
-        }
-        assert visible_by_permission_manager == visible_by_permission_rules
-        visible_by_permission_filter = {
+        ]
+
+        assert_unordered_lists_have_same_items(
+            visible_by_permission_manager, visible_by_permission_rules
+        )
+
+        # get list via Model.objects.visible_as_filter()
+        visible_by_permission_filter = [
             obj.id
             for obj in model_cls.objects.filter(
                 model_cls.objects.visible_as_filter(user)
-            )
-        }
-        assert visible_by_permission_filter == visible_by_permission_rules
+            ).distinct()
+        ]
+
+        assert_unordered_lists_have_same_items(
+            visible_by_permission_manager, visible_by_permission_filter
+        )
 
     def generate_test_data(self, model_cls, model_factory, user, user_role):
         """

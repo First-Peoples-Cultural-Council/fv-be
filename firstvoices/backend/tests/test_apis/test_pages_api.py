@@ -8,6 +8,7 @@ from backend.models.widget import SiteWidget, SiteWidgetList, SiteWidgetListOrde
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyControlledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
 )
 from backend.tests.utils import (
     setup_widget_list,
@@ -16,7 +17,9 @@ from backend.tests.utils import (
 )
 
 
-class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
+class TestSitePageEndpoint(
+    SiteContentPatchApiTestMixin, BaseReadOnlyControlledSiteContentApiTest
+):
     API_LIST_VIEW = "api:sitepage-list"
     API_DETAIL_VIEW = "api:sitepage-detail"
 
@@ -111,6 +114,46 @@ class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
     def assert_created_response(self, expected_data, actual_response):
         assert actual_response["slug"] == expected_data["slug"]
         return self.assert_update_response(expected_data, actual_response)
+
+    def create_original_instance_for_patch(self, site):
+        widgets = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
+        banner_image = factories.ImageFactory.create(site=site)
+        return factories.SitePageFactory.create(
+            site=site,
+            title="Title",
+            visibility=Visibility.PUBLIC,
+            subtitle="Subtitle",
+            widgets=widgets,
+            banner_image=banner_image,
+            banner_video=None,
+        )
+
+    def get_valid_patch_data(self, site=None):
+        return {"visibility": "Members"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: SitePage
+    ):
+        assert updated_instance.title == original_instance.title
+        assert updated_instance.subtitle == original_instance.subtitle
+        assert updated_instance.widgets == original_instance.widgets
+        assert updated_instance.banner_image == original_instance.banner_image
+        assert updated_instance.banner_video == original_instance.banner_video
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.slug == original_instance.slug
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: SitePage):
+        assert updated_instance.get_visibility_display() == data["visibility"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["title"] == original_instance.title
+        assert actual_response["visibility"] == data["visibility"]
+        assert actual_response["subtitle"] == original_instance.subtitle
+        assert actual_response["widgets"][0]["id"] == str(
+            original_instance.widgets.sitewidgetlistorder_set.first().site_widget_id
+        )
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["slug"] == original_instance.slug
 
     @pytest.mark.parametrize(
         "user_role, expected_visible_pages",
