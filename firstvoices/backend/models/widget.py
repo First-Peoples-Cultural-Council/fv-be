@@ -103,6 +103,7 @@ class SiteWidgetListOrder(BaseModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+        ordering = ("order",)
 
     site_widget = models.ForeignKey(
         SiteWidget, on_delete=models.CASCADE, related_name="sitewidgetlistorder_set"

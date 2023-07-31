@@ -86,14 +86,19 @@ class SitePageDetailWriteSerializer(
         return created
 
     def update(self, instance, validated_data):
-        widgets = instance.widgets
-        if not widgets:
-            widgets = SiteWidgetList.objects.create(site=instance)
-        widgets = SiteWidgetListSerializer.update(self, widgets, validated_data)
+        if "widgets" in validated_data:
+            widgets = instance.widgets
+            if not widgets:
+                widgets = SiteWidgetList.objects.create(site=instance)
+            widgets = SiteWidgetListSerializer.update(self, widgets, validated_data)
+            validated_data["widgets"] = widgets
+            instance.widgets = widgets
+
         validated_data.pop("slug", None)  # Prevent the slug field from being updated.
-        validated_data["widgets"] = widgets
-        validated_data["visibility"] = Visibility[
-            str.upper(validated_data.pop("get_visibility_display"))
-        ]
-        instance.widgets = widgets
+
+        if "get_visibility_display" in validated_data:
+            validated_data["visibility"] = Visibility[
+                str.upper(validated_data.pop("get_visibility_display"))
+            ]
+
         return super().update(instance, validated_data)

@@ -636,6 +636,118 @@ class SiteContentDestroyApiTestMixin:
         assert response.status_code == 404
 
 
+class SiteContentPatchApiTestMixin:
+    """
+    For use with BaseSiteContentApiTest
+    """
+
+    model = None
+
+    def get_invalid_patch_data(self):
+        """Returns an invalid data object suitable for failing patch requests"""
+        return None
+
+    def create_original_instance_for_patch(self, site):
+        raise NotImplementedError()
+
+    def get_updated_patch_instance(self, original_instance):
+        return self.model.objects.filter(pk=original_instance.pk).first()
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance
+    ):
+        raise NotImplementedError()
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance):
+        raise NotImplementedError()
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        raise NotImplementedError()
+
+    @pytest.mark.django_db
+    def test_patch_invalid_400(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(self.get_invalid_patch_data()),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_patch_403(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(self.get_valid_patch_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_patch_site_missing_404(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug="missing-site"
+            ),
+            data=self.format_upload_data(self.get_valid_patch_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_patch_instance_missing_404(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key="missing-instance", site_slug=site.slug),
+            data=self.format_upload_data(self.get_valid_patch_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_patch_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_original_instance_for_patch(site=site)
+        data = self.get_valid_patch_data(site)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_patch_instance_original_fields(
+            instance, self.get_updated_patch_instance(instance)
+        )
+        self.assert_patch_instance_updated_fields(
+            data, self.get_updated_patch_instance(instance)
+        )
+        self.assert_update_patch_response(instance, data, response_data)
+
+
 class BaseReadOnlyUncontrolledSiteContentApiTest(
     SiteContentListApiTestMixin, SiteContentDetailApiTestMixin, BaseSiteContentApiTest
 ):

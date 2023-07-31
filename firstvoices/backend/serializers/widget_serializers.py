@@ -107,7 +107,7 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
 
     def to_representation(self, instance):
         widgets = []
-        for widget in instance.widgets.all():
+        for widget in instance.widgets.all().order_by("sitewidgetlistorder_set__order"):
             widgets.append(
                 SiteWidgetDetailSerializer(widget, context=self.context).data
             )
