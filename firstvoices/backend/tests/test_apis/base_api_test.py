@@ -880,3 +880,11 @@ class BaseControlledSiteContentApiTest(
     BaseUncontrolledSiteContentApiTest,
 ):
     pass
+
+
+class BaseControlledLanguageAdminOnlySiteContentAPITest(
+    ControlledListApiTestMixin,
+    ControlledDetailApiTestMixin,
+    BaseUncontrolledSiteContentApiTest,
+):
+    pass

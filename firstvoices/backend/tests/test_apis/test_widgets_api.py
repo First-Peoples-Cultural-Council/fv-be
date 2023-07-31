@@ -6,11 +6,11 @@ from backend.models.constants import AppRole, Visibility
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
-    BaseReadOnlyControlledSiteContentApiTest,
+    BaseControlledLanguageAdminOnlySiteContentAPITest,
 )
 
 
-class TestSiteWidgetEndpoint(BaseReadOnlyControlledSiteContentApiTest):
+class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     API_LIST_VIEW = "api:sitewidget-list"
     API_DETAIL_VIEW = "api:sitewidget-detail"
 
