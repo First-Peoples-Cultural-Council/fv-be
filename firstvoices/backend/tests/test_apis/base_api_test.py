@@ -634,7 +634,9 @@ class ControlledSiteContentUpdateApiTestMixin:
         response = self.client.put(
             self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
             if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            else self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -657,7 +659,9 @@ class ControlledSiteContentUpdateApiTestMixin:
         response = self.client.put(
             self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)
             if instance.__class__ == SitePage
-            else self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            else self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
