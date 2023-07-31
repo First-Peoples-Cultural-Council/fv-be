@@ -1,28 +1,23 @@
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import (
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Story
+from backend.serializers.story_serializers import StoryListSerializer, StorySerializer
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
     http_methods_except_patch,
 )
+
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
-from ..serializers.story_serializers import StorySerializer, StoryListSerializer
 
 
 @extend_schema_view(
     list=extend_schema(
         description=_("A list of stories associated with the specified site."),
-        parameters=[
-            site_slug_parameter
-        ],
+        parameters=[site_slug_parameter],
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
