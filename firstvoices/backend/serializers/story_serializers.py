@@ -6,7 +6,6 @@ from backend.models import Story, StoryPage
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
     CreateControlledSiteContentSerializerMixin,
-    CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     UpdateSerializerMixin,
@@ -54,7 +53,7 @@ class StoryPageSummarySerializer(
 
 
 class StoryPageDetailSerializer(
-    CreateSiteContentSerializerMixin, StoryPageSummarySerializer
+    CreateControlledSiteContentSerializerMixin, StoryPageSummarySerializer
 ):
     story = LinkedStorySerializer(read_only=True)
 
