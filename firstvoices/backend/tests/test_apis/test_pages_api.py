@@ -18,7 +18,7 @@ from backend.tests.utils import (
 
 
 class TestSitePageEndpoint(
-    BaseControlledSiteContentApiTest, SiteContentPatchApiTestMixin
+    SiteContentPatchApiTestMixin, BaseControlledSiteContentApiTest
 ):
     API_LIST_VIEW = "api:sitepage-list"
     API_DETAIL_VIEW = "api:sitepage-detail"
