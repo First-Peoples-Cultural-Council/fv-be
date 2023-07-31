@@ -6,7 +6,9 @@ from backend.models import SitePage
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, SiteWidgetList, SiteWidgetListOrder
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseControlledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import (
+    BaseReadOnlyControlledSiteContentApiTest,
+)
 from backend.tests.utils import (
     setup_widget_list,
     update_widget_list_order,
@@ -14,7 +16,7 @@ from backend.tests.utils import (
 )
 
 
-class TestSitePageEndpoint(BaseControlledSiteContentApiTest):
+class TestSitePageEndpoint(BaseReadOnlyControlledSiteContentApiTest):
     API_LIST_VIEW = "api:sitepage-list"
     API_DETAIL_VIEW = "api:sitepage-detail"
 
