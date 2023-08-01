@@ -210,44 +210,47 @@ class DictionaryEntryDetailSerializer(
         return created
 
     def update(self, instance, validated_data):
-        dictionary.Acknowledgement.objects.filter(dictionary_entry=instance).delete()
-        dictionary.AlternateSpelling.objects.filter(dictionary_entry=instance).delete()
-        dictionary.Note.objects.filter(dictionary_entry=instance).delete()
-        dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
-        dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
-
-        try:
+        if "acknowledgement_set" in validated_data:
+            dictionary.Acknowledgement.objects.filter(
+                dictionary_entry=instance
+            ).delete()
             acknowledgements = validated_data.pop("acknowledgement_set", [])
-            alternate_spellings = validated_data.pop("alternatespelling_set", [])
-            notes = validated_data.pop("note_set", [])
-            pronunciations = validated_data.pop("pronunciation_set", [])
-            translations = validated_data.pop("translation_set", [])
-
             for acknowledgement in acknowledgements:
                 dictionary.Acknowledgement.objects.create(
                     dictionary_entry=instance, **acknowledgement
                 )
 
+        if "alternatespelling_set" in validated_data:
+            dictionary.AlternateSpelling.objects.filter(
+                dictionary_entry=instance
+            ).delete()
+            alternate_spellings = validated_data.pop("alternatespelling_set", [])
             for alternate_spelling in alternate_spellings:
                 dictionary.AlternateSpelling.objects.create(
                     dictionary_entry=instance, **alternate_spelling
                 )
 
+        if "note_set" in validated_data:
+            dictionary.Note.objects.filter(dictionary_entry=instance).delete()
+            notes = validated_data.pop("note_set", [])
             for note in notes:
                 dictionary.Note.objects.create(dictionary_entry=instance, **note)
 
+        if "pronunciation_set" in validated_data:
+            dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
+            pronunciations = validated_data.pop("pronunciation_set", [])
             for pronunciation in pronunciations:
                 dictionary.Pronunciation.objects.create(
                     dictionary_entry=instance, **pronunciation
                 )
 
+        if "translation_set" in validated_data:
+            dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
+            translations = validated_data.pop("translation_set", [])
             for translation in translations:
                 dictionary.Translation.objects.create(
                     dictionary_entry=instance, **translation
                 )
-
-        except KeyError:
-            pass
 
         return super().update(instance, validated_data)
 

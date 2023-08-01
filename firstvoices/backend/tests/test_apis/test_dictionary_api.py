@@ -14,11 +14,18 @@ from backend.models.dictionary import (
 )
 from backend.tests import factories
 
-from .base_api_test import BaseControlledSiteContentApiTest
+from .base_api_test import (
+    BaseControlledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
+)
 from .base_media_test import RelatedMediaTestMixin
 
 
-class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
+class TestDictionaryEndpoint(
+    RelatedMediaTestMixin,
+    SiteContentPatchApiTestMixin,
+    BaseControlledSiteContentApiTest,
+):
     """
     End-to-end tests that the dictionary endpoints have the expected behaviour.
     """
@@ -195,6 +202,93 @@ class TestDictionaryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApi
             "relatedImages": [],
             "relatedVideos": [],
         }
+
+    def create_original_instance_for_patch(self, site):
+        audio = factories.AudioFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        category = factories.CategoryFactory.create(site=site)
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            title="Title",
+            type=TypeOfDictionaryEntry.WORD,
+            batch_id="Batch ID",
+            exclude_from_wotd=True,
+            related_audio=(audio,),
+            related_images=(image,),
+            related_videos=(video,),
+        )
+        entry_two = factories.DictionaryEntryFactory.create(site=site)
+        factories.DictionaryEntryLinkFactory.create(
+            from_dictionary_entry=dictionary_entry, to_dictionary_entry=entry_two
+        )
+        factories.DictionaryEntryCategoryFactory.create(
+            category=category, dictionary_entry=dictionary_entry
+        )
+        character = factories.CharacterFactory.create(site=site)
+        factories.DictionaryEntryRelatedCharacterFactory.create(
+            character=character, dictionary_entry=dictionary_entry
+        )
+
+        return dictionary_entry
+
+    def get_valid_patch_data(self, site=None):
+        return {"title": "Title Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: DictionaryEntry
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.type == original_instance.type
+        assert updated_instance.batch_id == original_instance.batch_id
+        assert updated_instance.exclude_from_wotd == original_instance.exclude_from_wotd
+        assert (
+            updated_instance.categories.first().id
+            == original_instance.categories.first().id
+        )
+        assert (
+            updated_instance.related_dictionary_entries.first().id
+            == original_instance.related_dictionary_entries.first().id
+        )
+        assert (
+            updated_instance.related_characters.first().id
+            == original_instance.related_characters.first().id
+        )
+        assert (
+            updated_instance.exclude_from_games == original_instance.exclude_from_games
+        )
+        assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
+        assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_images == original_instance.related_images
+        assert updated_instance.related_videos == original_instance.related_videos
+
+    def assert_patch_instance_updated_fields(
+        self, data, updated_instance: DictionaryEntry
+    ):
+        assert updated_instance.title == data["title"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["title"] == data["title"]
+        assert actual_response["type"] == original_instance.type
+        assert (
+            actual_response["visibility"] == original_instance.get_visibility_display()
+        )
+        assert actual_response["categories"][0]["id"] == str(
+            original_instance.categories.first().id
+        )
+        assert actual_response["relatedDictionaryEntries"][0]["id"] == str(
+            original_instance.related_dictionary_entries.first().id
+        )
+        assert actual_response["relatedAudio"][0]["id"] == str(
+            original_instance.related_audio.first().id
+        )
+        assert actual_response["relatedImages"][0]["id"] == str(
+            original_instance.related_images.first().id
+        )
+        assert actual_response["relatedVideos"][0]["id"] == str(
+            original_instance.related_videos.first().id
+        )
 
     @pytest.mark.django_db
     def test_list_permissions(self):

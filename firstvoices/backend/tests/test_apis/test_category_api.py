@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from backend.models.category import Category
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.tests import factories
 from backend.tests.factories import (
     CategoryFactory,
     ChildCategoryFactory,
@@ -16,11 +17,16 @@ from backend.tests.factories import (
     get_app_admin,
     get_non_member_user,
 )
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
+)
 from backend.tests.utils import find_object_by_id
 
 
-class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestCategoryEndpoints(
+    SiteContentPatchApiTestMixin, BaseUncontrolledSiteContentApiTest
+):
     """
     End-to-end tests that the category endpoints have the expected behaviour.
     """
@@ -94,6 +100,32 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         category_phrase.dictionary_entries.add(phrase_entry)
 
         return word_entry, phrase_entry, category_word, category_phrase
+
+    def create_original_instance_for_patch(self, site):
+        parent = factories.CategoryFactory.create(site=site, title="Title - Parent")
+        return factories.CategoryFactory.create(
+            site=site, title="Title", description="Description", parent=parent
+        )
+
+    def get_valid_patch_data(self, site=None):
+        return {"title": "Title Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: Category
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.description == original_instance.description
+        assert updated_instance.parent == original_instance.parent
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: Category):
+        assert updated_instance.title == data["title"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["title"] == data["title"]
+        assert actual_response["description"] == original_instance.description
+        assert actual_response["parent"]["id"] == str(original_instance.parent.id)
+        assert actual_response["parent"]["title"] == original_instance.parent.title
 
     @pytest.mark.django_db
     def test_list_empty(self):

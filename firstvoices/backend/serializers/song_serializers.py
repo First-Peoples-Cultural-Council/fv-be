@@ -51,13 +51,11 @@ class SongSerializer(
         return created
 
     def update(self, instance, validated_data):
-        Lyric.objects.filter(song__id=instance.id).delete()
-        try:
+        if "lyrics" in validated_data:
+            Lyric.objects.filter(song__id=instance.id).delete()
             lyrics = validated_data.pop("lyrics")
             for index, lyric_data in enumerate(lyrics):
                 Lyric.objects.create(song=instance, ordering=index, **lyric_data)
-        except KeyError:
-            pass
 
         return super().update(instance, validated_data)
 

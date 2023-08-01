@@ -7,11 +7,18 @@ from backend.models.constants import Role, Visibility
 from backend.models.story import StoryPage
 from backend.tests import factories
 
-from .base_api_test import BaseUncontrolledSiteContentApiTest
+from .base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
+)
 from .base_media_test import RelatedMediaTestMixin
 
 
-class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseUncontrolledSiteContentApiTest):
+class TestStoryPageEndpoint(
+    RelatedMediaTestMixin,
+    SiteContentPatchApiTestMixin,
+    BaseUncontrolledSiteContentApiTest,
+):
     """
     End-to-end tests that the story page endpoints have the expected behaviour.
     Most of the tests have been overridden here because of the extra-nested url structure.
@@ -76,6 +83,57 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseUncontrolledSiteContentAp
             "notes": ["Test Note One", "Test Note Two", "Test Note Three"],
             "ordering": 99,
         }
+
+    def create_original_instance_for_patch(self, site):
+        audio = factories.AudioFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        story = factories.StoryFactory.create(site=site)
+        return factories.StoryPageFactory.create(
+            site=site,
+            story=story,
+            ordering=1,
+            text="Text",
+            translation="Translation",
+            notes=["Note"],
+            related_audio=(audio,),
+            related_images=(image,),
+            related_videos=(video,),
+        )
+
+    def get_valid_patch_data(self, site=None):
+        return {"text": "Text Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: StoryPage
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.translation == original_instance.translation
+        assert updated_instance.ordering == original_instance.ordering
+        assert updated_instance.notes == original_instance.notes
+        assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_images == original_instance.related_images
+        assert updated_instance.related_videos == original_instance.related_videos
+        assert updated_instance.story == original_instance.story
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: StoryPage):
+        assert updated_instance.text == data["text"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["relatedAudio"][0]["id"] == str(
+            original_instance.related_audio.first().id
+        )
+        assert actual_response["relatedImages"][0]["id"] == str(
+            original_instance.related_images.first().id
+        )
+        assert actual_response["relatedVideos"][0]["id"] == str(
+            original_instance.related_videos.first().id
+        )
+        assert actual_response["text"] == data["text"]
+        assert actual_response["translation"] == original_instance.translation
+        assert actual_response["notes"][0] == original_instance.notes[0]
+        assert actual_response["ordering"] == original_instance.ordering
+        assert actual_response["story"]["id"] == str(original_instance.story.id)
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):

@@ -16,7 +16,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of all characters available on the specified site",
+        description="A list of all characters available on the specified site.",
         responses={
             200: CharacterDetailSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -25,7 +25,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
-        description="Details about a specific character in the specified site",
+        description="Details about a specific character in the specified site.",
         responses={
             200: CharacterDetailSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -37,7 +37,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         ],
     ),
     update=extend_schema(
-        description="Edit a character in the specified site",
+        description="Edit a character in the specified site.",
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
@@ -47,6 +47,26 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    partial_update=extend_schema(
+        description="Edit a character in the specified site. Any omitted fields will be unchanged.",
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=CharacterDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
     ),
 )
 class CharactersViewSet(
@@ -56,7 +76,7 @@ class CharactersViewSet(
     Character information.
     """
 
-    http_method_names = ["get", "put"]
+    http_method_names = ["get", "put", "patch"]
     serializer_class = CharacterDetailSerializer
 
     def get_queryset(self):

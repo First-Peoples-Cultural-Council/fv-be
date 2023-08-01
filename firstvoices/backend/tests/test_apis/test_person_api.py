@@ -1,9 +1,15 @@
 from backend.models.media import Person
+from backend.tests import factories
 from backend.tests.factories import PersonFactory
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
+)
 
 
-class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestPeopleEndpoints(
+    SiteContentPatchApiTestMixin, BaseUncontrolledSiteContentApiTest
+):
     """
     End-to-end tests that the /people endpoints have the expected behaviour.
     """
@@ -51,3 +57,24 @@ class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_related_objects_deleted(self, instance):
         # no related objects to delete
         pass
+
+    def create_original_instance_for_patch(self, site):
+        return factories.PersonFactory.create(site=site, name="Name", bio="Bio")
+
+    def get_valid_patch_data(self, site=None):
+        return {"name": "Name Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: Person
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.bio == original_instance.bio
+        assert updated_instance.site == original_instance.site
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: Person):
+        assert updated_instance.name == data["name"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["name"] == data["name"]
+        assert actual_response["bio"] == original_instance.bio

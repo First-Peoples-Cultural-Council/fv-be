@@ -8,16 +8,6 @@ from backend import permissions
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
 
-http_methods_except_patch = [
-    "get",
-    "post",
-    "put",
-    "delete",
-    "head",
-    "options",
-    "trace",
-]
-
 
 class FVPermissionViewSetMixin:
     """

@@ -76,15 +76,19 @@ class SiteWidgetDetailSerializer(
         return created
 
     def update(self, instance, validated_data):
-        WidgetSettings.objects.filter(widget__id=instance.id).delete()
-        settings = validated_data.pop("widgetsettings_set")
-        validated_data["format"] = WidgetFormats[
-            str.upper(validated_data.pop("get_format_display"))
-        ]
-        for setting in settings:
-            WidgetSettings.objects.create(
-                widget=instance, key=setting["key"], value=setting["value"]
-            )
+        if "widgetsettings_set" in validated_data:
+            WidgetSettings.objects.filter(widget__id=instance.id).delete()
+            settings = validated_data.pop("widgetsettings_set")
+
+            for setting in settings:
+                WidgetSettings.objects.create(
+                    widget=instance, key=setting["key"], value=setting["value"]
+                )
+
+        if "get_format_display" in validated_data:
+            validated_data["format"] = WidgetFormats[
+                str.upper(validated_data.pop("get_format_display"))
+            ]
 
         return super().update(instance, validated_data)
 

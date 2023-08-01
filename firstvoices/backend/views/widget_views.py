@@ -7,11 +7,7 @@ from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    SiteContentViewSetMixin,
-    http_methods_except_patch,
-)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
 @extend_schema_view(
@@ -64,6 +60,22 @@ from backend.views.base_views import (
             id_parameter,
         ],
     ),
+    partial_update=extend_schema(
+        description=_("Edit a site widget. Any omitted fields will be unchanged."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=SiteWidgetDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
     destroy=extend_schema(
         description=_("Delete a site widget."),
         responses={
@@ -83,7 +95,6 @@ from backend.views.base_views import (
 class SiteWidgetViewSet(
     SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
 ):
-    http_method_names = http_methods_except_patch
     serializer_class = SiteWidgetDetailSerializer
 
     def get_queryset(self):

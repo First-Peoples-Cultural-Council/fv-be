@@ -6,11 +6,18 @@ from backend.models.constants import Role, Visibility
 from backend.models.story import Story
 from backend.tests import factories
 
-from .base_api_test import BaseControlledSiteContentApiTest
+from .base_api_test import (
+    BaseControlledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
+)
 from .base_media_test import RelatedMediaTestMixin
 
 
-class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
+class TestStoryEndpoint(
+    RelatedMediaTestMixin,
+    SiteContentPatchApiTestMixin,
+    BaseControlledSiteContentApiTest,
+):
     """
     End-to-end tests that the story endpoints have the expected behaviour.
     """
@@ -164,6 +171,100 @@ class TestStoryEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest)
             "author": story.author,
             "hideOverlay": story.hide_overlay,
         }
+
+    def create_original_instance_for_patch(self, site):
+        audio = factories.AudioFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        cover_image = factories.ImageFactory.create(site=site)
+        story = factories.StoryFactory.create(
+            site=site,
+            author="Author",
+            title="Title",
+            title_translation="Title Translation",
+            introduction="Introduction",
+            introduction_translation="Introduction Translation",
+            acknowledgements=["Acknowledgement"],
+            notes=["Note"],
+            hide_overlay=True,
+            cover_image=cover_image,
+            exclude_from_games=True,
+            exclude_from_kids=True,
+            related_audio=(audio,),
+            related_images=(image,),
+            related_videos=(video,),
+        )
+        factories.StoryPageFactory.create(site=site, story=story)
+        return story
+
+    def get_valid_patch_data(self, site=None):
+        return {"title": "Title Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: Story
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.title_translation == original_instance.title_translation
+        assert updated_instance.introduction == original_instance.introduction
+        assert (
+            updated_instance.introduction_translation
+            == original_instance.introduction_translation
+        )
+        assert updated_instance.acknowledgements == original_instance.acknowledgements
+        assert updated_instance.notes == original_instance.notes
+        assert updated_instance.hide_overlay == original_instance.hide_overlay
+        assert updated_instance.cover_image == original_instance.cover_image
+        assert (
+            updated_instance.exclude_from_games == original_instance.exclude_from_games
+        )
+        assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
+        assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_images == original_instance.related_images
+        assert updated_instance.related_videos == original_instance.related_videos
+        assert updated_instance.pages.first() == original_instance.pages.first()
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: Story):
+        assert updated_instance.title == data["title"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["title"] == data["title"]
+        assert actual_response["relatedAudio"][0]["id"] == str(
+            original_instance.related_audio.first().id
+        )
+        assert actual_response["relatedImages"][0]["id"] == str(
+            original_instance.related_images.first().id
+        )
+        assert actual_response["relatedVideos"][0]["id"] == str(
+            original_instance.related_videos.first().id
+        )
+        assert actual_response["hideOverlay"] == original_instance.hide_overlay
+        assert actual_response["coverImage"]["id"] == str(
+            original_instance.cover_image.id
+        )
+        assert (
+            actual_response["visibility"] == original_instance.get_visibility_display()
+        )
+        assert (
+            actual_response["titleTranslation"] == original_instance.title_translation
+        )
+        assert actual_response["introduction"] == original_instance.introduction
+        assert (
+            actual_response["introductionTranslation"]
+            == original_instance.introduction_translation
+        )
+        assert actual_response["notes"][0] == original_instance.notes[0]
+        assert (
+            actual_response["pages"][0]["text"] == original_instance.pages.first().text
+        )
+        assert (
+            actual_response["acknowledgements"][0]
+            == original_instance.acknowledgements[0]
+        )
+        assert (
+            actual_response["excludeFromGames"] == original_instance.exclude_from_games
+        )
+        assert actual_response["excludeFromKids"] == original_instance.exclude_from_kids
 
     @pytest.mark.django_db
     def test_pages_order(self):
