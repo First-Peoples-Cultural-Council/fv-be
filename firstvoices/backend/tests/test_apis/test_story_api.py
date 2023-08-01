@@ -218,9 +218,9 @@ class TestStoryEndpoint(
             updated_instance.exclude_from_games == original_instance.exclude_from_games
         )
         assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
-        assert updated_instance.related_audio == original_instance.related_audio
-        assert updated_instance.related_images == original_instance.related_images
-        assert updated_instance.related_videos == original_instance.related_videos
+        self.assert_patch_instance_original_fields_related_media(
+            original_instance, updated_instance
+        )
         assert updated_instance.pages.first() == original_instance.pages.first()
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Story):
@@ -229,14 +229,8 @@ class TestStoryEndpoint(
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["id"] == str(original_instance.id)
         assert actual_response["title"] == data["title"]
-        assert actual_response["relatedAudio"][0]["id"] == str(
-            original_instance.related_audio.first().id
-        )
-        assert actual_response["relatedImages"][0]["id"] == str(
-            original_instance.related_images.first().id
-        )
-        assert actual_response["relatedVideos"][0]["id"] == str(
-            original_instance.related_videos.first().id
+        self.assert_update_patch_response_related_media(
+            original_instance, actual_response
         )
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
         assert actual_response["coverImage"]["id"] == str(

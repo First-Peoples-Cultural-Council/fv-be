@@ -111,23 +111,17 @@ class TestStoryPageEndpoint(
         assert updated_instance.translation == original_instance.translation
         assert updated_instance.ordering == original_instance.ordering
         assert updated_instance.notes == original_instance.notes
-        assert updated_instance.related_audio == original_instance.related_audio
-        assert updated_instance.related_images == original_instance.related_images
-        assert updated_instance.related_videos == original_instance.related_videos
+        self.assert_patch_instance_original_fields_related_media(
+            original_instance, updated_instance
+        )
         assert updated_instance.story == original_instance.story
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: StoryPage):
         assert updated_instance.text == data["text"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
-        assert actual_response["relatedAudio"][0]["id"] == str(
-            original_instance.related_audio.first().id
-        )
-        assert actual_response["relatedImages"][0]["id"] == str(
-            original_instance.related_images.first().id
-        )
-        assert actual_response["relatedVideos"][0]["id"] == str(
-            original_instance.related_videos.first().id
+        self.assert_update_patch_response_related_media(
+            original_instance, actual_response
         )
         assert actual_response["text"] == data["text"]
         assert actual_response["translation"] == original_instance.translation

@@ -219,55 +219,53 @@ class TestSongEndpoint(
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance: Song
     ):
+        self.assert_patch_instance_original_fields_related_media(
+            original_instance, updated_instance
+        )
         assert updated_instance.id == original_instance.id
+        assert (
+            updated_instance.exclude_from_games == original_instance.exclude_from_games
+        )
+        assert updated_instance.acknowledgements == original_instance.acknowledgements
+        assert updated_instance.hide_overlay == original_instance.hide_overlay
+        assert updated_instance.cover_image == original_instance.cover_image
         assert updated_instance.title_translation == original_instance.title_translation
+        assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
+        assert updated_instance.notes == original_instance.notes
         assert updated_instance.introduction == original_instance.introduction
         assert (
             updated_instance.introduction_translation
             == original_instance.introduction_translation
         )
-        assert updated_instance.acknowledgements == original_instance.acknowledgements
-        assert updated_instance.notes == original_instance.notes
-        assert updated_instance.hide_overlay == original_instance.hide_overlay
-        assert updated_instance.cover_image == original_instance.cover_image
-        assert (
-            updated_instance.exclude_from_games == original_instance.exclude_from_games
-        )
-        assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
-        assert updated_instance.related_audio == original_instance.related_audio
-        assert updated_instance.related_images == original_instance.related_images
-        assert updated_instance.related_videos == original_instance.related_videos
         assert updated_instance.lyrics.first() == original_instance.lyrics.first()
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Song):
         assert updated_instance.title == data["title"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
-        assert actual_response["id"] == str(original_instance.id)
         assert actual_response["title"] == data["title"]
-        assert actual_response["relatedAudio"][0]["id"] == str(
-            original_instance.related_audio.first().id
+        assert (
+            actual_response["titleTranslation"] == original_instance.title_translation
         )
-        assert actual_response["relatedImages"][0]["id"] == str(
-            original_instance.related_images.first().id
+        assert (
+            actual_response["excludeFromGames"] == original_instance.exclude_from_games
         )
-        assert actual_response["relatedVideos"][0]["id"] == str(
-            original_instance.related_videos.first().id
+        assert actual_response["excludeFromKids"] == original_instance.exclude_from_kids
+        self.assert_update_patch_response_related_media(
+            original_instance, actual_response
         )
+        assert actual_response["introduction"] == original_instance.introduction
+        assert (
+            actual_response["introductionTranslation"]
+            == original_instance.introduction_translation
+        )
+        assert actual_response["id"] == str(original_instance.id)
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
         assert actual_response["coverImage"]["id"] == str(
             original_instance.cover_image.id
         )
         assert (
             actual_response["visibility"] == original_instance.get_visibility_display()
-        )
-        assert (
-            actual_response["titleTranslation"] == original_instance.title_translation
-        )
-        assert actual_response["introduction"] == original_instance.introduction
-        assert (
-            actual_response["introductionTranslation"]
-            == original_instance.introduction_translation
         )
         assert actual_response["notes"][0] == original_instance.notes[0]
         assert (
@@ -278,10 +276,6 @@ class TestSongEndpoint(
             actual_response["acknowledgements"][0]
             == original_instance.acknowledgements[0]
         )
-        assert (
-            actual_response["excludeFromGames"] == original_instance.exclude_from_games
-        )
-        assert actual_response["excludeFromKids"] == original_instance.exclude_from_kids
 
     @pytest.mark.django_db
     def test_lyrics_order(self):

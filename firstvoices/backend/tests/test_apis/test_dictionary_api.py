@@ -258,9 +258,9 @@ class TestDictionaryEndpoint(
             updated_instance.exclude_from_games == original_instance.exclude_from_games
         )
         assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
-        assert updated_instance.related_audio == original_instance.related_audio
-        assert updated_instance.related_images == original_instance.related_images
-        assert updated_instance.related_videos == original_instance.related_videos
+        self.assert_patch_instance_original_fields_related_media(
+            original_instance, updated_instance
+        )
 
     def assert_patch_instance_updated_fields(
         self, data, updated_instance: DictionaryEntry
@@ -280,14 +280,8 @@ class TestDictionaryEndpoint(
         assert actual_response["relatedDictionaryEntries"][0]["id"] == str(
             original_instance.related_dictionary_entries.first().id
         )
-        assert actual_response["relatedAudio"][0]["id"] == str(
-            original_instance.related_audio.first().id
-        )
-        assert actual_response["relatedImages"][0]["id"] == str(
-            original_instance.related_images.first().id
-        )
-        assert actual_response["relatedVideos"][0]["id"] == str(
-            original_instance.related_videos.first().id
+        self.assert_update_patch_response_related_media(
+            original_instance, actual_response
         )
 
     @pytest.mark.django_db

@@ -94,22 +94,16 @@ class TestCharactersEndpoints(
         assert updated_instance.title == original_instance.title
         assert updated_instance.sort_order == original_instance.sort_order
         assert updated_instance.approximate_form == original_instance.approximate_form
-        assert updated_instance.related_audio == original_instance.related_audio
-        assert updated_instance.related_images == original_instance.related_images
-        assert updated_instance.related_videos == original_instance.related_videos
+        self.assert_patch_instance_original_fields_related_media(
+            original_instance, updated_instance
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Character):
         assert updated_instance.note == data["note"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
-        assert actual_response["relatedAudio"][0]["id"] == str(
-            original_instance.related_audio.first().id
-        )
-        assert actual_response["relatedImages"][0]["id"] == str(
-            original_instance.related_images.first().id
-        )
-        assert actual_response["relatedVideos"][0]["id"] == str(
-            original_instance.related_videos.first().id
+        self.assert_update_patch_response_related_media(
+            original_instance, actual_response
         )
         assert actual_response["id"] == str(original_instance.id)
         assert actual_response["title"] == original_instance.title
