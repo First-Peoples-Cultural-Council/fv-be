@@ -3,7 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import AppRole, Visibility
-from backend.models.widget import SiteWidget, WidgetSettings
+from backend.models.widget import SiteWidget, WidgetFormats, WidgetSettings
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseControlledLanguageAdminOnlySiteContentAPITest,
@@ -77,6 +77,49 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "format": "Default",
             "settings": [],
         }
+
+    def create_original_instance_for_patch(self, site):
+        widget = factories.SiteWidgetFactory.create(
+            site=site, title="Title", widget_type="Type", format=WidgetFormats.LEFT
+        )
+        factories.WidgetSettingsFactory.create(widget=widget)
+
+        return widget
+
+    def get_valid_patch_data(self, site=None):
+        return {"title": "Title Updated"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: SiteWidget
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.site == original_instance.site
+        assert updated_instance.visibility == original_instance.visibility
+        assert updated_instance.widget_type == original_instance.widget_type
+        assert updated_instance.format == original_instance.format
+        assert (
+            updated_instance.widgetsettings_set.first()
+            == original_instance.widgetsettings_set.first()
+        )
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: SiteWidget):
+        assert updated_instance.title == data["title"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["title"] == data["title"]
+        assert (
+            actual_response["visibility"] == original_instance.get_visibility_display()
+        )
+        assert actual_response["type"] == original_instance.widget_type
+        assert actual_response["format"] == original_instance.get_format_display()
+        assert (
+            actual_response["settings"][0]["key"]
+            == original_instance.widgetsettings_set.first().key
+        )
+        assert (
+            actual_response["settings"][0]["value"]
+            == original_instance.widgetsettings_set.first().value
+        )
 
     @pytest.mark.django_db
     def test_widget_permissions(self):

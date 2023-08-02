@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
@@ -104,8 +105,8 @@ class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixi
         site_membership = memberships.filter(site=site).first()
         if site_membership:
             if site_membership.role == Role.ASSISTANT and visibility > Visibility.TEAM:
-                raise serializers.ValidationError(
-                    "Assistants cannot change the visibility of controlled content."
+                raise PermissionDenied(
+                    "Assistants cannot create or edit published content."
                 )
 
         return super().validate(attrs)

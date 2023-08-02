@@ -136,6 +136,26 @@ class RelatedMediaTestMixin(MediaTestMixin):
     ):
         raise NotImplementedError
 
+    def assert_patch_instance_original_fields_related_media(
+        self, original_instance, updated_instance
+    ):
+        assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_images == original_instance.related_images
+        assert updated_instance.related_videos == original_instance.related_videos
+
+    def assert_update_patch_response_related_media(
+        self, original_instance, actual_response
+    ):
+        assert actual_response["relatedAudio"][0]["id"] == str(
+            original_instance.related_audio.first().id
+        )
+        assert actual_response["relatedImages"][0]["id"] == str(
+            original_instance.related_images.first().id
+        )
+        assert actual_response["relatedVideos"][0]["id"] == str(
+            original_instance.related_videos.first().id
+        )
+
     @pytest.mark.django_db
     def test_detail_related_audio_with_speaker(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)

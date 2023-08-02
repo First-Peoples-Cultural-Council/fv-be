@@ -6,11 +6,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Story, StoryPage
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    SiteContentViewSetMixin,
-    http_methods_except_patch,
-)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 from ..serializers.story_serializers import StoryPageDetailSerializer
 from . import doc_strings
@@ -73,6 +69,22 @@ from .api_doc_variables import id_parameter, site_slug_parameter
             id_parameter,
         ],
     ),
+    partial_update=extend_schema(
+        description=_("Edit a story page. Any omitted fields will be unchanged."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=StoryPageDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
     destroy=extend_schema(
         description=_("Delete a story page."),
         responses={
@@ -90,8 +102,6 @@ from .api_doc_variables import id_parameter, site_slug_parameter
     ),
 )
 class StoryPageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    http_method_names = http_methods_except_patch
-
     def get_detail_queryset(self):
         site = self.get_validated_site().first()
         story = self.get_validated_story(site)

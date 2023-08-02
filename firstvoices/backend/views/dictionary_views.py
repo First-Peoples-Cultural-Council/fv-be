@@ -72,6 +72,19 @@ from . import doc_strings
         },
         parameters=[site_slug_parameter, id_parameter],
     ),
+    partial_update=extend_schema(
+        description="Update a dictionary entry on the specified site. Any omitted fields will be unchanged.",
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_detail,
+                response=DictionaryEntryDetailWriteResponseSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[site_slug_parameter, id_parameter],
+    ),
     destroy=extend_schema(
         description="Delete a dictionary entry from the specified site.",
         responses={
@@ -92,7 +105,6 @@ class DictionaryViewSet(
     Dictionary entry information.
     """
 
-    http_method_names = ["get", "post", "put", "delete"]
     serializer_class = DictionaryEntryDetailSerializer
 
     def get_queryset(self):

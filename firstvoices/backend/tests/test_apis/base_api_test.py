@@ -513,7 +513,7 @@ class ControlledSiteContentCreateApiTestMixin:
             content_type=self.content_type,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 403
 
 
 class SiteContentUpdateApiTestMixin:
@@ -661,7 +661,7 @@ class ControlledSiteContentUpdateApiTestMixin:
             content_type=self.content_type,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 403
 
 
 class SiteContentDestroyApiTestMixin:
@@ -737,7 +737,7 @@ class SiteContentDestroyApiTestMixin:
 
 class SiteContentPatchApiTestMixin:
     """
-    For use with BaseSiteContentApiTest
+    For use with BaseSiteContentApiTest and WriteApiTestMixin
     """
 
     model = None
@@ -857,6 +857,7 @@ class BaseUncontrolledSiteContentApiTest(
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     SiteContentUpdateApiTestMixin,
+    SiteContentPatchApiTestMixin,
     SiteContentDestroyApiTestMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
