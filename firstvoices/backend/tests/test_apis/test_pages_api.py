@@ -8,7 +8,6 @@ from backend.models.widget import SiteWidget, SiteWidgetList, SiteWidgetListOrde
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseControlledLanguageAdminOnlySiteContentAPITest,
-    SiteContentPatchApiTestMixin,
 )
 from backend.tests.utils import (
     setup_widget_list,
@@ -17,9 +16,7 @@ from backend.tests.utils import (
 )
 
 
-class TestSitePageEndpoint(
-    SiteContentPatchApiTestMixin, BaseControlledLanguageAdminOnlySiteContentAPITest
-):
+class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     API_LIST_VIEW = "api:sitepage-list"
     API_DETAIL_VIEW = "api:sitepage-detail"
 

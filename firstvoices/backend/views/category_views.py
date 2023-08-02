@@ -19,11 +19,7 @@ from backend.serializers.category_serializers import (
     ParentCategoryFlatListSerializer,
     ParentCategoryListSerializer,
 )
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    SiteContentViewSetMixin,
-    http_methods_except_patch,
-)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
@@ -119,6 +115,22 @@ from .api_doc_variables import id_parameter, site_slug_parameter
             id_parameter,
         ],
     ),
+    partial_update=extend_schema(
+        description=_("Edit a category. Any omitted fields will be unchanged."),
+        responses={
+            200: OpenApiResponse(
+                description=doc_strings.success_200_edit,
+                response=CategoryDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
     destroy=extend_schema(
         description=_("Delete a category."),
         responses={
@@ -136,7 +148,6 @@ from .api_doc_variables import id_parameter, site_slug_parameter
     ),
 )
 class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    http_method_names = http_methods_except_patch
     valid_inputs = TypeOfDictionaryEntry.values
 
     def get_detail_queryset(self):
