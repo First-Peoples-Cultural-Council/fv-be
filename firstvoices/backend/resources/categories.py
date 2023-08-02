@@ -1,8 +1,8 @@
 from backend.models.category import Category
-from backend.resources.base import BaseResource
+from backend.resources.base import SiteContentResource
 
 
-class CategoryResource(BaseResource):
+class CategoryResource(SiteContentResource):
     class Meta:
         model = Category
 

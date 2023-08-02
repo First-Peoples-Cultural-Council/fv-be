@@ -14,6 +14,7 @@ from backend.resources.characters import (
     CharacterVariantResource,
     IgnoredCharacterResource,
 )
+from backend.resources.media import PersonResource
 from backend.resources.sites import SiteMigrationResource  # , SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
@@ -55,6 +56,7 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 import_resources = [
     ("sites", SiteMigrationResource()),
     ("categories", CategoryMigrationResource()),
+    ("contributors", PersonResource()),
     # ("site_media", SiteResource()) # waiting on media import
     ("base-characters", CharacterResource()),
     ("variant-characters", CharacterVariantResource()),
