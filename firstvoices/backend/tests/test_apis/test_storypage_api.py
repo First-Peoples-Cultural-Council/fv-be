@@ -7,16 +7,12 @@ from backend.models.constants import Role, Visibility
 from backend.models.story import StoryPage
 from backend.tests import factories
 
-from .base_api_test import (
-    BaseUncontrolledSiteContentApiTest,
-    SiteContentPatchApiTestMixin,
-)
+from .base_api_test import BaseUncontrolledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
 
 class TestStoryPageEndpoint(
     RelatedMediaTestMixin,
-    SiteContentPatchApiTestMixin,
     BaseUncontrolledSiteContentApiTest,
 ):
     """

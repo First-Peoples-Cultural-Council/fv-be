@@ -17,16 +17,11 @@ from backend.tests.factories import (
     get_app_admin,
     get_non_member_user,
 )
-from backend.tests.test_apis.base_api_test import (
-    BaseUncontrolledSiteContentApiTest,
-    SiteContentPatchApiTestMixin,
-)
+from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
 from backend.tests.utils import find_object_by_id
 
 
-class TestCategoryEndpoints(
-    SiteContentPatchApiTestMixin, BaseUncontrolledSiteContentApiTest
-):
+class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     """
     End-to-end tests that the category endpoints have the expected behaviour.
     """

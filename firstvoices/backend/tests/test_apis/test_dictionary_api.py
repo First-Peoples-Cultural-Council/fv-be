@@ -14,16 +14,12 @@ from backend.models.dictionary import (
 )
 from backend.tests import factories
 
-from .base_api_test import (
-    BaseControlledSiteContentApiTest,
-    SiteContentPatchApiTestMixin,
-)
+from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
 
 class TestDictionaryEndpoint(
     RelatedMediaTestMixin,
-    SiteContentPatchApiTestMixin,
     BaseControlledSiteContentApiTest,
 ):
     """

@@ -735,9 +735,9 @@ class SiteContentDestroyApiTestMixin:
         assert response.status_code == 404
 
 
-class SiteContentPatchApiTestMixin(WriteApiTestMixin):
+class SiteContentPatchApiTestMixin:
     """
-    For use with BaseSiteContentApiTest
+    For use with BaseSiteContentApiTest and WriteApiTestMixin
     """
 
     model = None
@@ -857,6 +857,7 @@ class BaseUncontrolledSiteContentApiTest(
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     SiteContentUpdateApiTestMixin,
+    SiteContentPatchApiTestMixin,
     SiteContentDestroyApiTestMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):

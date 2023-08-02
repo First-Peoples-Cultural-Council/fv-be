@@ -1,15 +1,10 @@
 from backend.models.media import Person
 from backend.tests import factories
 from backend.tests.factories import PersonFactory
-from backend.tests.test_apis.base_api_test import (
-    BaseUncontrolledSiteContentApiTest,
-    SiteContentPatchApiTestMixin,
-)
+from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
 
 
-class TestPeopleEndpoints(
-    SiteContentPatchApiTestMixin, BaseUncontrolledSiteContentApiTest
-):
+class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
     """
     End-to-end tests that the /people endpoints have the expected behaviour.
     """

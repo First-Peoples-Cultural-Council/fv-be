@@ -9,12 +9,14 @@ from ...models import Character
 from .base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentPatchApiTestMixin,
+    WriteApiTestMixin,
 )
 from .base_media_test import RelatedMediaTestMixin
 
 
 class TestCharactersEndpoints(
     RelatedMediaTestMixin,
+    WriteApiTestMixin,
     SiteContentPatchApiTestMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
