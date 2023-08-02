@@ -60,6 +60,12 @@ class StoryPageDetailSerializer(
     class Meta(StoryPageSummarySerializer.Meta):
         fields = StoryPageSummarySerializer.Meta.fields + ("story",)
 
+    def validate(self, attrs):
+        """use the visibility from the parent story for all permission checks"""
+        story = get_story_from_context(self)
+        attrs["visibility"] = story.visibility
+        return super().validate(attrs)
+
     def create(self, validated_data):
         return super().create(self.add_story_id(validated_data))
 
