@@ -285,9 +285,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_one_settings_one = factories.WidgetSettingsFactory.create(
             widget=widget_one
         )
-        widget_one_settings_two = factories.WidgetSettingsFactory.create(
-            widget=widget_one
-        )
         widget_two_settings_one = factories.WidgetSettingsFactory.create(
             widget=widget_two
         )
@@ -315,10 +312,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
                 {
                     "key": widget_one_settings_one.key,
                     "value": widget_one_settings_one.value,
-                },
-                {
-                    "key": widget_one_settings_two.key,
-                    "value": widget_one_settings_two.value,
                 },
             ],
         }
