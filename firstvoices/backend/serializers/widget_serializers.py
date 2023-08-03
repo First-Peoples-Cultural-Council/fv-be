@@ -9,10 +9,9 @@ from backend.models.widget import (
     WidgetSettings,
 )
 from backend.serializers.base_serializers import (
-    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
-    WritableVisibilityField,
+    WritableControlledSiteContentSerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.utils import get_site_from_context
@@ -41,20 +40,16 @@ class WidgetDetailSerializer(serializers.ModelSerializer):
 
 
 class SiteWidgetDetailSerializer(
-    CreateControlledSiteContentSerializerMixin,
-    UpdateSerializerMixin,
-    SiteContentLinkedTitleSerializer,
+    WritableControlledSiteContentSerializer,
     WidgetDetailSerializer,
 ):
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitewidget-detail", read_only=True
     )
-    visibility = WritableVisibilityField(required=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = SiteWidget
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
-            "visibility",
+        fields = WritableControlledSiteContentSerializer.Meta.fields + (
             "type",
             "format",
             "settings",

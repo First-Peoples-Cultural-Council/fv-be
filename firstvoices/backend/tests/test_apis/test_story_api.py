@@ -123,49 +123,63 @@ class TestStoryEndpoint(
             related_videos=related_videos,
         )
 
-    def get_expected_list_response_item(self, story, site):
+    def get_expected_list_response_item(self, instance, site):
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
-            "id": str(story.id),
-            "visibility": "Public",
-            "title": story.title,
-            "coverImage": None,
-            "titleTranslation": story.title_translation,
-            "excludeFromGames": False,
-            "excludeFromKids": False,
-            "hideOverlay": story.hide_overlay,
-        }
-
-    def get_expected_response(self, story, site):
-        return {
-            "created": story.created.astimezone().isoformat(),
-            "lastModified": story.last_modified.astimezone().isoformat(),
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
-            "id": str(story.id),
-            "visibility": "Public",
-            "title": story.title,
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
+            "id": str(instance.id),
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "title": instance.title,
             "site": {
                 "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "visibility": instance.site.get_visibility_display(),
                 "language": site.language.title,
-                "visibility": "Public",
             },
+            "visibility": instance.get_visibility_display(),
             "coverImage": None,
-            "titleTranslation": story.title_translation,
-            "introduction": story.introduction,
-            "introductionTranslation": story.introduction_translation,
+            "titleTranslation": instance.title_translation,
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "hideOverlay": instance.hide_overlay,
+        }
+
+    def get_expected_response(self, instance, site):
+        return {
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
+            "id": str(instance.id),
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "title": instance.title,
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": instance.site.get_visibility_display(),
+                "language": site.language.title,
+            },
+            "visibility": instance.get_visibility_display(),
+            "coverImage": None,
+            "titleTranslation": instance.title_translation,
+            "introduction": instance.introduction,
+            "introductionTranslation": instance.introduction_translation,
             "notes": [],
             "pages": [],
             "acknowledgements": [],
-            "excludeFromGames": story.exclude_from_games,
-            "excludeFromKids": story.exclude_from_kids,
-            "author": story.author,
-            "hideOverlay": story.hide_overlay,
+            "excludeFromGames": instance.exclude_from_games,
+            "excludeFromKids": instance.exclude_from_kids,
+            "author": instance.author,
+            "hideOverlay": instance.hide_overlay,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
         }
 
     def create_original_instance_for_patch(self, site):

@@ -154,35 +154,37 @@ class TestSongEndpoint(
     def get_expected_list_response_item(self, song, site):
         return self.get_expected_response(song, site)
 
-    def get_expected_response(self, song, site):
+    def get_expected_response(self, instance, site):
         return {
-            "created": song.created.astimezone().isoformat(),
-            "lastModified": song.last_modified.astimezone().isoformat(),
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "url": f"http://testserver{self.get_detail_endpoint(key=song.id, site_slug=site.slug)}",
-            "id": str(song.id),
-            "hideOverlay": False,
-            "title": song.title,
-            "visibility": "Public",
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
+            "id": str(instance.id),
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "title": instance.title,
             "site": {
                 "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "visibility": instance.site.get_visibility_display(),
                 "language": site.language.title,
-                "visibility": "Public",
             },
+            "visibility": instance.get_visibility_display(),
+            "hideOverlay": False,
             "coverImage": None,
-            "titleTranslation": song.title_translation,
-            "introduction": song.introduction,
-            "introductionTranslation": song.introduction_translation,
+            "titleTranslation": instance.title_translation,
+            "introduction": instance.introduction,
+            "introductionTranslation": instance.introduction_translation,
             "notes": [],
             "lyrics": [],
             "acknowledgements": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
         }
 
     def create_original_instance_for_patch(self, site):

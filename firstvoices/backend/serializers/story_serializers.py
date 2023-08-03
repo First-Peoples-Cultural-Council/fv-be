@@ -5,10 +5,11 @@ from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 from backend.models import Story, StoryPage
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
+    BaseControlledSiteContentSerializer,
     CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
-    UpdateSerializerMixin,
+    WritableControlledSiteContentSerializer,
     WritableVisibilityField,
     audience_fields,
     base_id_fields,
@@ -55,10 +56,22 @@ class StoryPageSummarySerializer(
 class StoryPageDetailSerializer(
     CreateControlledSiteContentSerializerMixin, StoryPageSummarySerializer
 ):
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
     story = LinkedStorySerializer(read_only=True)
+    site = LinkedSiteSerializer(read_only=True)
 
     class Meta(StoryPageSummarySerializer.Meta):
-        fields = StoryPageSummarySerializer.Meta.fields + ("story",)
+        fields = (
+            base_timestamp_fields
+            + StoryPageSummarySerializer.Meta.fields
+            + (
+                "story",
+                "site",
+            )
+        )
 
     def validate(self, attrs):
         """use the visibility from the parent story for all permission checks"""
@@ -78,10 +91,8 @@ class StoryPageDetailSerializer(
 
 
 class StorySerializer(
-    CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
-    UpdateSerializerMixin,
-    SiteContentLinkedTitleSerializer,
+    WritableControlledSiteContentSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(
         allow_null=True, queryset=Image.objects.all()
@@ -98,17 +109,10 @@ class StorySerializer(
             "site",
         )
         fields = (
-            base_timestamp_fields
-            + RelatedMediaSerializerMixin.Meta.fields
-            + audience_fields
+            WritableControlledSiteContentSerializer.Meta.fields
             + (
-                "url",
-                "id",
-                "site",
                 "cover_image",
                 "author",
-                "visibility",
-                "title",
                 "title_translation",
                 "introduction",
                 "introduction_translation",
@@ -117,17 +121,18 @@ class StorySerializer(
                 "acknowledgements",
                 "hide_overlay",
             )
+            + audience_fields
+            + RelatedMediaSerializerMixin.Meta.fields
         )
 
 
-class StoryListSerializer(SiteContentLinkedTitleSerializer):
+class StoryListSerializer(BaseControlledSiteContentSerializer):
     cover_image = ImageSerializer()
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
 
-    class Meta(SiteContentLinkedTitleSerializer.Meta):
+    class Meta:
         model = Story
         fields = (
-            SiteContentLinkedTitleSerializer.Meta.fields
+            BaseControlledSiteContentSerializer.Meta.fields
+            + ("title_translation", "cover_image", "hide_overlay")
             + audience_fields
-            + ("visibility", "title_translation", "cover_image", "hide_overlay")
         )

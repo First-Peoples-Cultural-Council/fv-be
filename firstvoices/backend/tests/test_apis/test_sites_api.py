@@ -305,10 +305,22 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response_widget_two = response_data["homepage"][1]
 
         assert response_widget_one == {
+            "created": widget_one.created.astimezone().isoformat(),
+            "createdBy": widget_one.created_by.email,
+            "lastModified": widget_one.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": widget_one.last_modified_by.email,
             "id": str(widget_one.id),
-            "title": widget_one.title,
             "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_one.id)}",
-            "visibility": "Public",
+            "title": widget_one.title,
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": widget_one.site.get_visibility_display(),
+                "language": site.language.title,
+            },
+            "visibility": widget_one.get_visibility_display(),
             "type": widget_one.widget_type,
             "format": "Default",
             "settings": [
@@ -323,10 +335,22 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             ],
         }
         assert response_widget_two == {
+            "created": widget_two.created.astimezone().isoformat(),
+            "createdBy": widget_two.created_by.email,
+            "lastModified": widget_two.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": widget_two.last_modified_by.email,
             "id": str(widget_two.id),
-            "title": widget_two.title,
             "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_two.id)}",
-            "visibility": "Public",
+            "title": widget_two.title,
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": widget_two.site.get_visibility_display(),
+                "language": site.language.title,
+            },
+            "visibility": widget_two.get_visibility_display(),
             "type": widget_two.widget_type,
             "format": "Default",
             "settings": [
