@@ -88,7 +88,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "lastModified": instance.last_modified.astimezone().isoformat(),
             "lastModifiedBy": instance.last_modified_by.email,
             "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}",
             "title": instance.title,
             "site": {
                 "id": str(site.id),
@@ -110,7 +110,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "lastModified": instance.last_modified.astimezone().isoformat(),
             "lastModifiedBy": instance.last_modified_by.email,
             "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "url": f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}",
             "title": instance.title,
             "site": {
                 "id": str(site.id),
