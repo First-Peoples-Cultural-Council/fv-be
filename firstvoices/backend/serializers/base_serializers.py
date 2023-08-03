@@ -2,13 +2,14 @@ from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
-from ..models import Membership
+from ..models import Membership, Site
 from ..models.constants import Role, Visibility
 from . import fields
+from .fields import WritableVisibilityField
 from .utils import get_site_from_context
 
-base_timestamp_fields = ("created", "last_modified")
-base_id_fields = ("id", "title", "url")
+base_timestamp_fields = ("created", "created_by", "last_modified", "last_modified_by")
+base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
 
 
@@ -112,17 +113,74 @@ class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixi
         return super().validate(attrs)
 
 
-class WritableVisibilityField(serializers.CharField):
-    def to_internal_value(self, data):
-        visibility_map = {choice[1].lower(): choice[0] for choice in Visibility.choices}
-        try:
-            return visibility_map[data.lower()]
-        except KeyError:
-            raise serializers.ValidationError("Invalid visibility option.")
+class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    Minimal info about a site, suitable for serializing a site as a related field.
+    """
 
-    def to_representation(self, value):
-        visibility_map = {choice[0]: choice[1] for choice in Visibility.choices}
-        try:
-            return visibility_map[value]
-        except KeyError:
-            raise serializers.ValidationError("Invalid visibility value.")
+    url = serializers.HyperlinkedIdentityField(
+        view_name="api:site-detail", lookup_field="slug"
+    )
+    language = serializers.StringRelatedField()
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    slug = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Site
+        fields = base_id_fields + ("slug", "visibility", "language")
+
+
+class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
+    """
+    Base serializer for site content models.
+    """
+
+    id = serializers.UUIDField(read_only=True)
+    site = LinkedSiteSerializer(read_only=True)
+
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        fields = base_timestamp_fields + base_id_fields + ("site",)
+
+
+class WritableSiteContentSerializer(
+    CreateSiteContentSerializerMixin,
+    UpdateSerializerMixin,
+    BaseSiteContentSerializer,
+):
+    """
+    Writable serializer for site content models.
+    """
+
+    class Meta(BaseSiteContentSerializer.Meta):
+        fields = BaseSiteContentSerializer.Meta.fields
+
+
+class BaseControlledSiteContentSerializer(BaseSiteContentSerializer):
+    """
+    Base serializer for controlled site content models.
+    """
+
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+
+    class Meta:
+        fields = BaseSiteContentSerializer.Meta.fields + ("visibility",)
+
+
+class WritableControlledSiteContentSerializer(
+    CreateControlledSiteContentSerializerMixin,
+    UpdateSerializerMixin,
+    BaseControlledSiteContentSerializer,
+):
+    """
+    Writable serializer for controlled site content models.
+    """
+
+    visibility = WritableVisibilityField(required=True)
+
+    class Meta(BaseControlledSiteContentSerializer.Meta):
+        fields = BaseControlledSiteContentSerializer.Meta.fields

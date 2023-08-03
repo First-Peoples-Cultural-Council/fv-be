@@ -41,9 +41,21 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def get_expected_detail_response(self, instance, site):
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
             "id": str(instance.id),
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
             "title": instance.title,
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": instance.site.get_visibility_display(),
+                "language": site.language.title,
+            },
             "description": instance.description,
             "children": [],
             "parent": None,

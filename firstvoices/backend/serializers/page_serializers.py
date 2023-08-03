@@ -5,10 +5,8 @@ from backend.models.constants import Visibility
 from backend.models.media import Video
 from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import (
-    CreateControlledSiteContentSerializerMixin,
-    SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin,
-    WritableVisibilityField,
+    BaseControlledSiteContentSerializer,
+    WritableControlledSiteContentSerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
@@ -17,19 +15,17 @@ from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
 
 class SitePageSerializer(
-    SiteContentLinkedTitleSerializer,
+    BaseControlledSiteContentSerializer,
 ):
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitepage-detail", lookup_field="slug", read_only=True
     )
 
     slug = serializers.CharField(required=False)
-    visibility = WritableVisibilityField(required=True)
 
-    class Meta(SiteContentLinkedTitleSerializer.Meta):
+    class Meta:
         model = SitePage
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
-            "visibility",
+        fields = BaseControlledSiteContentSerializer.Meta.fields + (
             "subtitle",
             "slug",
         )
@@ -40,23 +36,17 @@ class SitePageDetailSerializer(SitePageSerializer):
     banner_image = ImageSerializer()
     banner_video = VideoSerializer()
 
-    class Meta(SiteContentLinkedTitleSerializer.Meta):
+    class Meta:
         model = SitePage
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
-            "visibility",
-            "subtitle",
-            "slug",
+        fields = SitePageSerializer.Meta.fields + (
             "widgets",
             "banner_image",
             "banner_video",
         )
 
 
-class SitePageDetailWriteSerializer(
-    CreateControlledSiteContentSerializerMixin,
-    UpdateSerializerMixin,
-    SitePageDetailSerializer,
-):
+class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
+    slug = serializers.CharField(required=False)
     widgets = serializers.PrimaryKeyRelatedField(
         queryset=SiteWidget.objects.all(),
         allow_null=True,
@@ -106,3 +96,13 @@ class SitePageDetailWriteSerializer(
             ]
 
         return super().update(instance, validated_data)
+
+    class Meta:
+        model = SitePage
+        fields = WritableControlledSiteContentSerializer.Meta.fields + (
+            "subtitle",
+            "slug",
+            "widgets",
+            "banner_image",
+            "banner_video",
+        )

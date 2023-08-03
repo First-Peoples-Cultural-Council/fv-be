@@ -6,12 +6,11 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models.sites import Language, Membership, SiteFeature
+from backend.models.sites import Language, Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
-    Site,
     SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )

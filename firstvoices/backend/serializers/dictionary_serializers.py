@@ -6,19 +6,14 @@ from rest_framework import serializers
 
 from backend.models import category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
-    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin,
-    WritableVisibilityField,
+    WritableControlledSiteContentSerializer,
     audience_fields,
-    base_timestamp_fields,
 )
-from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.parts_of_speech_serializers import (
     WritablePartsOfSpeechSerializer,
 )
-from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
 class DictionaryContentMeta:
@@ -119,22 +114,16 @@ class DictionaryEntrySummarySerializer(
 
 
 class DictionaryEntryDetailSerializer(
-    CreateControlledSiteContentSerializerMixin,
     RelatedDictionaryEntrySerializerMixin,
     RelatedMediaSerializerMixin,
-    UpdateSerializerMixin,
-    serializers.HyperlinkedModelSerializer,
+    WritableControlledSiteContentSerializer,
 ):
-    url = SiteHyperlinkedIdentityField(
-        read_only=True, view_name="api:dictionaryentry-detail"
-    )
     type = serializers.ChoiceField(
         allow_null=False,
         choices=dictionary.TypeOfDictionaryEntry.choices,
         default=dictionary.TypeOfDictionaryEntry.WORD,
     )
     custom_order = serializers.CharField(read_only=True)
-    visibility = WritableVisibilityField(required=True)
     categories = WritableCategorySerializer(
         queryset=category.Category.objects.all(),
         many=True,
@@ -155,8 +144,6 @@ class DictionaryEntryDetailSerializer(
     pronunciations = PronunciationSerializer(
         many=True, required=False, source="pronunciation_set"
     )
-
-    site = LinkedSiteSerializer(read_only=True, required=False)
     split_chars = serializers.SerializerMethodField(read_only=True)
     split_chars_base = serializers.SerializerMethodField(read_only=True)
     split_words = serializers.SerializerMethodField(read_only=True)
@@ -341,28 +328,23 @@ class DictionaryEntryDetailSerializer(
     class Meta:
         model = dictionary.DictionaryEntry
         fields = (
-            base_timestamp_fields
-            + RelatedMediaSerializerMixin.Meta.fields
+            WritableControlledSiteContentSerializer.Meta.fields
+            + audience_fields
             + (
-                "url",
-                "id",
-                "title",
                 "type",
                 "custom_order",
-                "visibility",
                 "categories",
                 "acknowledgements",
                 "alternate_spellings",
                 "notes",
                 "translations",
                 "pronunciations",
-                "site",
                 "split_chars",
                 "split_chars_base",
                 "split_words",
                 "split_words_base",
             )
-            + audience_fields
+            + RelatedMediaSerializerMixin.Meta.fields
             + RelatedDictionaryEntrySerializerMixin.Meta.fields
         )
 
