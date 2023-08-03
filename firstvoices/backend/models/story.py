@@ -30,8 +30,6 @@ class Story(
     title_translation from fvbook:title_literal_translation
 
     settings from a value in settings:settings
-
-    cover_image should be a duplicate of the first entry in fv:related_pictures for migration, can vary after that
     """
 
     class Meta:
@@ -45,10 +43,6 @@ class Story(
 
     # from fvbook:author
     author = models.CharField(max_length=100, blank=True)
-
-    cover_image = models.ForeignKey(
-        to="Image", on_delete=models.SET_NULL, related_name="story_cover_of", null=True
-    )
 
     title = models.CharField(blank=False, null=False)
     title_translation = models.CharField(blank=True, null=False)

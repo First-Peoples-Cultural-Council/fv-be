@@ -24,8 +24,3 @@ class StoryPageAdmin(BaseInlineAdmin):
 class StoryAdmin(BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [StoryPageAdmin]
-
-    def get_form(self, request, obj=None, change=False, **kwargs):
-        form = super().get_form(request, obj, change, **kwargs)
-        form.base_fields["cover_image"].required = False
-        return form

@@ -3,7 +3,6 @@ from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
 from backend.models import Story, StoryPage
-from backend.models.media import Image
 from backend.serializers.base_serializers import (
     BaseControlledSiteContentSerializer,
     CreateControlledSiteContentSerializerMixin,
@@ -15,11 +14,7 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import (
-    ImageSerializer,
-    RelatedMediaSerializerMixin,
-    WriteableRelatedImageSerializer,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
 
@@ -94,9 +89,6 @@ class StorySerializer(
     RelatedMediaSerializerMixin,
     WritableControlledSiteContentSerializer,
 ):
-    cover_image = WriteableRelatedImageSerializer(
-        allow_null=True, queryset=Image.objects.all()
-    )
     site = LinkedSiteSerializer(required=False, read_only=True)
     pages = StoryPageSummarySerializer(many=True, read_only=True)
     visibility = WritableVisibilityField(required=True)
@@ -111,7 +103,9 @@ class StorySerializer(
         fields = (
             WritableControlledSiteContentSerializer.Meta.fields
             + (
-                "cover_image",
+                "url",
+                "id",
+                "site",
                 "author",
                 "title_translation",
                 "introduction",
@@ -127,12 +121,12 @@ class StorySerializer(
 
 
 class StoryListSerializer(BaseControlledSiteContentSerializer):
-    cover_image = ImageSerializer()
+    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
 
     class Meta:
         model = Story
         fields = (
             BaseControlledSiteContentSerializer.Meta.fields
-            + ("title_translation", "cover_image", "hide_overlay")
             + audience_fields
+            + ("visibility", "title_translation", "hide_overlay")
         )

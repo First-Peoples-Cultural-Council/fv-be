@@ -2,7 +2,6 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from backend.models import Lyric, Song
-from backend.models.media import Image
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
@@ -11,11 +10,7 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import (
-    ImageSerializer,
-    RelatedMediaSerializerMixin,
-    WriteableRelatedImageSerializer,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
@@ -30,9 +25,6 @@ class SongSerializer(
     RelatedMediaSerializerMixin,
     WritableControlledSiteContentSerializer,
 ):
-    cover_image = WriteableRelatedImageSerializer(
-        allow_null=True, queryset=Image.objects.all()
-    )
     site = LinkedSiteSerializer(required=False, read_only=True)
     lyrics = LyricSerializer(many=True)
     visibility = WritableVisibilityField(required=True)
@@ -67,7 +59,9 @@ class SongSerializer(
             WritableControlledSiteContentSerializer.Meta.fields
             + (
                 "hide_overlay",
-                "cover_image",
+                "site",
+                "visibility",
+                "title",
                 "title_translation",
                 "introduction",
                 "introduction_translation",
@@ -81,7 +75,6 @@ class SongSerializer(
 
 
 class SongListSerializer(SiteContentLinkedTitleSerializer):
-    cover_image = ImageSerializer()
     visibility = serializers.CharField(read_only=True, source="get_visibility_display")
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
@@ -92,7 +85,6 @@ class SongListSerializer(SiteContentLinkedTitleSerializer):
             + (
                 "visibility",
                 "title_translation",
-                "cover_image",
                 "hide_overlay",
             )
         )
