@@ -51,22 +51,9 @@ class TestCharactersEndpoints(
         )
 
     def get_expected_response(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
         return {
-            "created": instance.created.astimezone().isoformat(),
-            "createdBy": instance.created_by.email,
-            "lastModified": instance.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": instance.last_modified_by.email,
-            "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
-            "title": instance.title,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": instance.site.get_visibility_display(),
-                "language": site.language.title,
-            },
+            **standard_fields,
             "sortOrder": instance.sort_order,
             "approximateForm": instance.approximate_form,
             "note": instance.note,

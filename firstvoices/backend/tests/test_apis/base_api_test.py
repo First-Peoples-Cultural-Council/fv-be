@@ -241,6 +241,25 @@ class SiteContentDetailApiTestMixin:
     def get_expected_detail_response(self, instance, site):
         return self.get_expected_response(instance, site)
 
+    def get_expected_standard_fields(self, instance, site):
+        return {
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
+            "id": str(instance.id),
+            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
+            "title": instance.title,
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": instance.site.get_visibility_display(),
+                "language": site.language.title,
+            },
+        }
+
     @pytest.mark.django_db
     def test_detail_404_unknown_key(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
@@ -363,6 +382,13 @@ class ControlledDetailApiTestMixin:
     For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
     for testing APIs related to BaseControlledSiteContentModel.
     """
+
+    def get_expected_controlled_standard_fields(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        return {
+            **standard_fields,
+            "visibility": instance.get_visibility_display(),
+        }
 
     @pytest.mark.django_db
     def test_detail_403_entry_not_visible(self):
@@ -881,10 +907,8 @@ class BaseControlledLanguageAdminOnlySiteContentAPITest(
 
 
 class BaseControlledSiteContentApiTest(
-    ControlledListApiTestMixin,
-    ControlledDetailApiTestMixin,
     ControlledSiteContentCreateApiTestMixin,
     ControlledSiteContentUpdateApiTestMixin,
-    BaseUncontrolledSiteContentApiTest,
+    BaseControlledLanguageAdminOnlySiteContentAPITest,
 ):
     pass
