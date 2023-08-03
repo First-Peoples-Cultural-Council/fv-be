@@ -21,8 +21,6 @@ from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 
 
 class Person(BaseSiteContentModel):
-    # from FVContributor
-
     class Meta:
         verbose_name = _("Person")
         verbose_name_plural = _("People")
@@ -33,11 +31,9 @@ class Person(BaseSiteContentModel):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-    # from dc:title
     name = models.CharField(max_length=200)
 
-    # from FVContributor dc:description
-    bio = models.CharField(max_length=500, blank=True, null=True)
+    bio = models.CharField(max_length=500, blank=True, null=False)
 
     def __str__(self):
         return f"{self.name} ({self.site})"
