@@ -59,9 +59,6 @@ class SongSerializer(
             WritableControlledSiteContentSerializer.Meta.fields
             + (
                 "hide_overlay",
-                "site",
-                "visibility",
-                "title",
                 "title_translation",
                 "introduction",
                 "introduction_translation",

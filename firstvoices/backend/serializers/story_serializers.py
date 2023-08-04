@@ -103,9 +103,6 @@ class StorySerializer(
         fields = (
             WritableControlledSiteContentSerializer.Meta.fields
             + (
-                "url",
-                "id",
-                "site",
                 "author",
                 "title_translation",
                 "introduction",
@@ -121,12 +118,10 @@ class StorySerializer(
 
 
 class StoryListSerializer(BaseControlledSiteContentSerializer):
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
-
     class Meta:
         model = Story
         fields = (
             BaseControlledSiteContentSerializer.Meta.fields
+            + ("title_translation", "hide_overlay")
             + audience_fields
-            + ("visibility", "title_translation", "hide_overlay")
         )
