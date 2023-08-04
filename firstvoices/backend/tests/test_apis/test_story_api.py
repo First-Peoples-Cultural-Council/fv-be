@@ -27,8 +27,6 @@ class TestStoryEndpoint(
         return factories.StoryFactory.create(site=site, visibility=visibility)
 
     def get_valid_data(self, site=None):
-        cover_image = factories.ImageFactory.create(site=site)
-
         images = []
         videos = []
         audio = []
@@ -42,7 +40,6 @@ class TestStoryEndpoint(
             "relatedAudio": [str(x.id) for x in audio],
             "relatedImages": [str(x.id) for x in images],
             "relatedVideos": [str(x.id) for x in videos],
-            "coverImage": str(cover_image.id),
             "visibility": "Public",
             "title": "Title",
             "titleTranslation": "A translation of the title",
@@ -70,7 +67,6 @@ class TestStoryEndpoint(
         assert (
             actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]
         )
-        assert str(actual_instance.cover_image.id) == expected_data["coverImage"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
@@ -82,7 +78,6 @@ class TestStoryEndpoint(
         assert sorted(response_related_audio_ids) == sorted(
             expected_data["relatedAudio"]
         )
-
         assert sorted(response_related_image_ids) == sorted(
             expected_data["relatedImages"]
         )
@@ -90,7 +85,6 @@ class TestStoryEndpoint(
             expected_data["relatedVideos"]
         )
 
-        assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
         assert actual_response["pages"] == []  # unchanged
 
     def assert_created_instance(self, pk, data):
@@ -129,7 +123,6 @@ class TestStoryEndpoint(
         )
         return {
             **controlled_standard_fields,
-            "coverImage": None,
             "titleTranslation": instance.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
@@ -142,7 +135,6 @@ class TestStoryEndpoint(
         )
         return {
             **controlled_standard_fields,
-            "coverImage": None,
             "titleTranslation": instance.title_translation,
             "introduction": instance.introduction,
             "introductionTranslation": instance.introduction_translation,
@@ -162,7 +154,6 @@ class TestStoryEndpoint(
         audio = factories.AudioFactory.create(site=site)
         image = factories.ImageFactory.create(site=site)
         video = factories.VideoFactory.create(site=site)
-        cover_image = factories.ImageFactory.create(site=site)
         story = factories.StoryFactory.create(
             site=site,
             author="Author",
@@ -173,7 +164,6 @@ class TestStoryEndpoint(
             acknowledgements=["Acknowledgement"],
             notes=["Note"],
             hide_overlay=True,
-            cover_image=cover_image,
             exclude_from_games=True,
             exclude_from_kids=True,
             related_audio=(audio,),
@@ -199,7 +189,6 @@ class TestStoryEndpoint(
         assert updated_instance.acknowledgements == original_instance.acknowledgements
         assert updated_instance.notes == original_instance.notes
         assert updated_instance.hide_overlay == original_instance.hide_overlay
-        assert updated_instance.cover_image == original_instance.cover_image
         assert (
             updated_instance.exclude_from_games == original_instance.exclude_from_games
         )
@@ -219,9 +208,6 @@ class TestStoryEndpoint(
             original_instance, actual_response
         )
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
-        assert actual_response["coverImage"]["id"] == str(
-            original_instance.cover_image.id
-        )
         assert (
             actual_response["visibility"] == original_instance.get_visibility_display()
         )

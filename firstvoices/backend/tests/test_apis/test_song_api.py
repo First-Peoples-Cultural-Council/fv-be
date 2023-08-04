@@ -27,8 +27,6 @@ class TestSongEndpoint(
         return factories.SongFactory.create(site=site, visibility=visibility)
 
     def get_valid_data(self, site=None):
-        cover_image = factories.ImageFactory.create(site=site)
-
         related_image = factories.ImageFactory.create(site=site)
         related_video = factories.VideoFactory.create(site=site)
         related_audio = factories.AudioFactory.create(site=site)
@@ -38,7 +36,6 @@ class TestSongEndpoint(
             "relatedImages": [str(related_image.id)],
             "relatedVideos": [str(related_video.id)],
             "hideOverlay": False,
-            "coverImage": str(cover_image.id),
             "title": "Title",
             "visibility": "Public",
             "titleTranslation": "A translation of the title",
@@ -79,7 +76,6 @@ class TestSongEndpoint(
         assert (
             actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]
         )
-        assert str(actual_instance.cover_image.id) == expected_data["coverImage"]
 
         actual_lyrics = Lyric.objects.filter(song__id=actual_instance.id)
 
@@ -105,7 +101,6 @@ class TestSongEndpoint(
             actual_response["relatedImages"][0]["id"]
             == expected_data["relatedImages"][0]
         )
-        assert actual_response["coverImage"]["id"] == expected_data["coverImage"]
 
     def assert_created_instance(self, pk, data):
         instance = Song.objects.get(pk=pk)
@@ -144,7 +139,6 @@ class TestSongEndpoint(
             "id": str(song.id),
             "title": song.title,
             "visibility": "Public",
-            "coverImage": None,
             "titleTranslation": song.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
@@ -161,7 +155,6 @@ class TestSongEndpoint(
         return {
             **controlled_standard_fields,
             "hideOverlay": False,
-            "coverImage": None,
             "titleTranslation": instance.title_translation,
             "introduction": instance.introduction,
             "introductionTranslation": instance.introduction_translation,
@@ -179,7 +172,6 @@ class TestSongEndpoint(
         audio = factories.AudioFactory.create(site=site)
         image = factories.ImageFactory.create(site=site)
         video = factories.VideoFactory.create(site=site)
-        cover_image = factories.ImageFactory.create(site=site)
         song = factories.SongFactory.create(
             site=site,
             title="Title",
@@ -189,7 +181,6 @@ class TestSongEndpoint(
             acknowledgements=["Acknowledgement"],
             notes=["Note"],
             hide_overlay=True,
-            cover_image=cover_image,
             exclude_from_games=True,
             exclude_from_kids=True,
             related_audio=(audio,),
@@ -214,7 +205,6 @@ class TestSongEndpoint(
         )
         assert updated_instance.acknowledgements == original_instance.acknowledgements
         assert updated_instance.hide_overlay == original_instance.hide_overlay
-        assert updated_instance.cover_image == original_instance.cover_image
         assert updated_instance.title_translation == original_instance.title_translation
         assert updated_instance.exclude_from_kids == original_instance.exclude_from_kids
         assert updated_instance.notes == original_instance.notes
@@ -247,9 +237,6 @@ class TestSongEndpoint(
         )
         assert actual_response["id"] == str(original_instance.id)
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
-        assert actual_response["coverImage"]["id"] == str(
-            original_instance.cover_image.id
-        )
         assert (
             actual_response["visibility"] == original_instance.get_visibility_display()
         )
