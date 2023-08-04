@@ -2,10 +2,12 @@ import factory
 
 from backend.models import Story, StoryPage
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.access import SiteFactory
+from backend.tests.factories.access import SiteFactory, UserFactory
 
 
 class StoryFactory(RelatedMediaBaseFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
@@ -17,6 +19,8 @@ class StoryFactory(RelatedMediaBaseFactory):
 
 
 class StoryPageFactory(RelatedMediaBaseFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
     story = factory.SubFactory(StoryFactory)
 

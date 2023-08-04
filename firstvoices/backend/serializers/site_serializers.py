@@ -4,31 +4,17 @@ from rest_framework import serializers
 
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
-from backend.models.sites import Language, Site
+from backend.models.sites import Language
 from backend.models.widget import SiteWidget, SiteWidgetList
-from backend.serializers.base_serializers import UpdateSerializerMixin, base_id_fields
+from backend.serializers.base_serializers import (
+    LinkedSiteSerializer,
+    UpdateSerializerMixin,
+)
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
-
-
-class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
-    """
-    Minimal info about a site, suitable for serializing a site as a related field.
-    """
-
-    url = serializers.HyperlinkedIdentityField(
-        view_name="api:site-detail", lookup_field="slug"
-    )
-    language = serializers.StringRelatedField()
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
-    slug = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = Site
-        fields = base_id_fields + ("slug", "visibility", "language")
 
 
 class FeatureFlagSerializer(serializers.Serializer):

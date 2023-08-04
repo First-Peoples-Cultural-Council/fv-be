@@ -3,10 +3,12 @@ from factory.django import DjangoModelFactory
 
 from backend.models import Lyric, Song
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.access import SiteFactory
+from backend.tests.factories.access import SiteFactory, UserFactory
 
 
 class SongFactory(RelatedMediaBaseFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:

@@ -81,24 +81,30 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert actual_response["bannerImage"]["id"] == expected_data["banner_image"]
         assert actual_response["bannerVideo"] == expected_data["banner_video"]
 
-    def get_expected_response(self, page, site):
+    def get_expected_response(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
+        controlled_standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
         return {
-            "id": str(page.id),
-            "title": page.title,
-            "url": f"http://testserver{self.get_detail_endpoint(key=page.slug, site_slug=site.slug)}",
-            "visibility": "Public",
+            **controlled_standard_fields,
             "subtitle": "",
-            "slug": page.slug,
+            "slug": instance.slug,
         }
 
-    def get_expected_detail_response(self, page, site):
+    def get_expected_detail_response(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
+        controlled_standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
         return {
-            "id": str(page.id),
-            "title": page.title,
-            "url": f"http://testserver{self.get_detail_endpoint(key=page.slug, site_slug=site.slug)}",
-            "visibility": "Public",
+            **controlled_standard_fields,
             "subtitle": "",
-            "slug": page.slug,
+            "slug": instance.slug,
             "widgets": [],
             "bannerImage": None,
             "bannerVideo": None,

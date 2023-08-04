@@ -3,10 +3,12 @@ from factory.django import DjangoModelFactory
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.access import SiteFactory
+from backend.tests.factories.access import SiteFactory, UserFactory
 
 
 class CharacterFactory(RelatedMediaBaseFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
@@ -17,6 +19,8 @@ class CharacterFactory(RelatedMediaBaseFactory):
 
 
 class CharacterVariantFactory(DjangoModelFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
@@ -27,6 +31,8 @@ class CharacterVariantFactory(DjangoModelFactory):
 
 
 class IgnoredCharacterFactory(DjangoModelFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
@@ -36,6 +42,8 @@ class IgnoredCharacterFactory(DjangoModelFactory):
 
 
 class AlphabetFactory(DjangoModelFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:

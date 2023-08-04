@@ -67,13 +67,13 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     def get_expected_list_response_item(self, widget, site):
         return self.get_expected_response(widget, site)
 
-    def get_expected_response(self, widget, site):
+    def get_expected_response(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
         return {
-            "id": str(widget.id),
-            "title": widget.title,
-            "url": f"http://testserver{self.get_detail_endpoint(key=widget.id, site_slug=site.slug)}",
-            "visibility": "Public",
-            "type": widget.widget_type,
+            **controlled_standard_fields,
+            "type": instance.widget_type,
             "format": "Default",
             "settings": [],
         }

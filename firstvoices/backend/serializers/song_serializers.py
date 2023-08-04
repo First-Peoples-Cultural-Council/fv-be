@@ -4,9 +4,8 @@ from rest_framework.serializers import ModelSerializer
 from backend.models import Lyric, Song
 from backend.models.media import Image
 from backend.serializers.base_serializers import (
-    CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin,
+    WritableControlledSiteContentSerializer,
     WritableVisibilityField,
     audience_fields,
     base_id_fields,
@@ -28,10 +27,8 @@ class LyricSerializer(ModelSerializer):
 
 
 class SongSerializer(
-    CreateControlledSiteContentSerializerMixin,
     RelatedMediaSerializerMixin,
-    UpdateSerializerMixin,
-    SiteContentLinkedTitleSerializer,
+    WritableControlledSiteContentSerializer,
 ):
     cover_image = WriteableRelatedImageSerializer(
         allow_null=True, queryset=Image.objects.all()
@@ -67,16 +64,10 @@ class SongSerializer(
             "site",
         )
         fields = (
-            base_timestamp_fields
-            + RelatedMediaSerializerMixin.Meta.fields
+            WritableControlledSiteContentSerializer.Meta.fields
             + (
-                "url",
-                "id",
                 "hide_overlay",
-                "site",
                 "cover_image",
-                "visibility",
-                "title",
                 "title_translation",
                 "introduction",
                 "introduction_translation",
@@ -85,6 +76,7 @@ class SongSerializer(
                 "acknowledgements",
             )
             + audience_fields
+            + RelatedMediaSerializerMixin.Meta.fields
         )
 
 

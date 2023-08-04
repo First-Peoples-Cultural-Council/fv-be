@@ -15,8 +15,7 @@ class TestIgnoredCharactersEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest)
         return factories.IgnoredCharacterFactory.create(site=site)
 
     def get_expected_response(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
-            "id": str(instance.id),
-            "title": instance.title,
+            **standard_fields,
         }

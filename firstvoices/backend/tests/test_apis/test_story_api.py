@@ -123,49 +123,39 @@ class TestStoryEndpoint(
             related_videos=related_videos,
         )
 
-    def get_expected_list_response_item(self, story, site):
+    def get_expected_list_response_item(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
-            "id": str(story.id),
-            "visibility": "Public",
-            "title": story.title,
+            **controlled_standard_fields,
             "coverImage": None,
-            "titleTranslation": story.title_translation,
+            "titleTranslation": instance.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "hideOverlay": story.hide_overlay,
+            "hideOverlay": instance.hide_overlay,
         }
 
-    def get_expected_response(self, story, site):
+    def get_expected_response(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
         return {
-            "created": story.created.astimezone().isoformat(),
-            "lastModified": story.last_modified.astimezone().isoformat(),
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}",
-            "id": str(story.id),
-            "visibility": "Public",
-            "title": story.title,
-            "site": {
-                "id": str(site.id),
-                "title": site.title,
-                "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "language": site.language.title,
-                "visibility": "Public",
-            },
+            **controlled_standard_fields,
             "coverImage": None,
-            "titleTranslation": story.title_translation,
-            "introduction": story.introduction,
-            "introductionTranslation": story.introduction_translation,
+            "titleTranslation": instance.title_translation,
+            "introduction": instance.introduction,
+            "introductionTranslation": instance.introduction_translation,
             "notes": [],
             "pages": [],
             "acknowledgements": [],
-            "excludeFromGames": story.exclude_from_games,
-            "excludeFromKids": story.exclude_from_kids,
-            "author": story.author,
-            "hideOverlay": story.hide_overlay,
+            "excludeFromGames": instance.exclude_from_games,
+            "excludeFromKids": instance.exclude_from_kids,
+            "author": instance.author,
+            "hideOverlay": instance.hide_overlay,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
         }
 
     def create_original_instance_for_patch(self, site):

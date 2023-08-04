@@ -30,7 +30,7 @@ class TestCharactersEndpoints(
 
     model = Character
 
-    def create_minimal_instance(self, site, visibility):
+    def create_minimal_instance(self, site, visibility=None):
         return factories.CharacterFactory.create(
             site=site, note="a note", approximate_form="approx"
         )
@@ -51,10 +51,9 @@ class TestCharactersEndpoints(
         )
 
     def get_expected_response(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
-            "id": str(instance.id),
-            "title": instance.title,
+            **standard_fields,
             "sortOrder": instance.sort_order,
             "approximateForm": instance.approximate_form,
             "note": instance.note,

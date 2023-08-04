@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
+from backend.models.constants import Visibility
 from backend.serializers.utils import get_site_from_context
 
 
@@ -71,3 +72,19 @@ class SiteViewLinkField(serializers.Field):
             args=[site.slug],
             request=self.context["request"],
         )
+
+
+class WritableVisibilityField(serializers.CharField):
+    def to_internal_value(self, data):
+        visibility_map = {choice[1].lower(): choice[0] for choice in Visibility.choices}
+        try:
+            return visibility_map[data.lower()]
+        except KeyError:
+            raise serializers.ValidationError("Invalid visibility option.")
+
+    def to_representation(self, value):
+        visibility_map = {choice[0]: choice[1] for choice in Visibility.choices}
+        try:
+            return visibility_map[value]
+        except KeyError:
+            raise serializers.ValidationError("Invalid visibility value.")

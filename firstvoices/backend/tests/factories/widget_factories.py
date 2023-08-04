@@ -9,7 +9,7 @@ from backend.models.widget import (
     Widget,
     WidgetSettings,
 )
-from backend.tests.factories import SiteFactory
+from backend.tests.factories import SiteFactory, UserFactory
 
 
 class WidgetFactory(DjangoModelFactory):
@@ -30,6 +30,8 @@ class WidgetSettingsFactory(DjangoModelFactory):
 
 
 class SiteWidgetFactory(WidgetFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:
@@ -37,6 +39,8 @@ class SiteWidgetFactory(WidgetFactory):
 
 
 class SiteWidgetListFactory(DjangoModelFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:

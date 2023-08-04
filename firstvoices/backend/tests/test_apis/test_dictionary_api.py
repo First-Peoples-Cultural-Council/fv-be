@@ -163,14 +163,14 @@ class TestDictionaryEndpoint(
             related_videos=related_videos,
         )
 
-    def get_expected_response(self, entry, site):
+    def get_expected_response(self, instance, site):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
         return {
-            "url": f"http://testserver{self.get_detail_endpoint(key=entry.id, site_slug=site.slug)}",
-            "id": str(entry.id),
-            "title": entry.title,
+            **controlled_standard_fields,
             "type": "word",
-            "customOrder": entry.custom_order,
-            "visibility": "Public",
+            "customOrder": instance.custom_order,
             "categories": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
@@ -179,20 +179,10 @@ class TestDictionaryEndpoint(
             "notes": [],
             "translations": [],
             "pronunciations": [],
-            "site": {
-                "id": str(site.id),
-                "title": site.title,
-                "slug": site.slug,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "language": site.language.title,
-                "visibility": "Public",
-            },
             "splitChars": [],
             "splitCharsBase": [],
-            "splitWords": entry.title.split(" "),
-            "splitWordsBase": entry.title.split(" "),
-            "created": entry.created.astimezone().isoformat(),
-            "lastModified": entry.last_modified.astimezone().isoformat(),
+            "splitWords": instance.title.split(" "),
+            "splitWordsBase": instance.title.split(" "),
             "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
