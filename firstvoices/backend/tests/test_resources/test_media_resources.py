@@ -3,9 +3,14 @@ import uuid
 import pytest
 import tablib
 
-from backend.models.media import Person
-from backend.resources.media import PersonResource
-from backend.tests.factories import SiteFactory
+from backend.models.media import Audio, AudioSpeaker, Person
+from backend.resources.media import (
+    AudioResource,
+    AudioSpeakerMigrationResource,
+    AudioSpeakerResource,
+    PersonResource,
+)
+from backend.tests.factories import AudioFactory, PersonFactory, SiteFactory
 
 
 class TestPersonImport:
@@ -38,3 +43,100 @@ class TestPersonImport:
         assert table["name"][0] == new_person.name
         assert table["site"][0] == str(new_person.site.id)
         assert table["bio"][0] == new_person.bio
+
+
+class TestAudioImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids",  # noqa E501
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import Audio model with basic fields"""
+        site = SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,Sound of a dog barking,Recorded by: My Mom,True,False,,somefile.mp3,{site.id},False",  # noqa E501
+            f"{uuid.uuid4()},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,Great sound from my cat Fluffy,,False,False,,my_cool_meow_file.mp3.mp3,{site.id},True",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = AudioResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Audio.objects.filter(site=site.id).count() == len(data)
+
+        new_audio = Audio.objects.get(id=table["id"][0])
+        assert table["title"][0] == new_audio.title
+        assert table["site"][0] == str(new_audio.site.id)
+        assert table["description"][0] == new_audio.description
+        assert table["acknowledgement"][0] == new_audio.acknowledgement
+        assert table["is_shared"][0] == str(new_audio.is_shared)
+        assert table["exclude_from_kids"][0] == str(new_audio.exclude_from_kids)
+
+
+class TestAudioSpeakerImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            "id,created,created_by,last_modified,last_modified_by,speaker,site,audio",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_relation(self):
+        """Import working Audio-Person link in AudioSpeaker table"""
+        site = SiteFactory.create()
+        audio = AudioFactory.create(site=site)
+        speaker = PersonFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,{speaker.id},{site.id},{audio.id}",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = AudioSpeakerResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+
+        assert AudioSpeaker.objects.filter(audio=audio.id).count() == 1
+        assert AudioSpeaker.objects.filter(speaker=speaker.id).count() == 1
+
+        speaker_link = AudioSpeaker.objects.get(id=table["id"][0])
+        assert speaker_link.audio == audio
+        assert speaker_link.speaker == speaker
+
+    @pytest.mark.django_db
+    def test_delete_non_speaker_persons(self):
+        """After migrating AudioSpeakers, delete unused Persons on the site"""
+        site = SiteFactory.create()
+        audio = AudioFactory.create(site=site)
+        speaker = PersonFactory.create(site=site)
+        PersonFactory.create(site=site)  # unused person
+
+        unrelated_site = SiteFactory.create()
+        PersonFactory.create(site=unrelated_site)  # person on other site
+
+        data = [
+            f"{uuid.uuid4()},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,{speaker.id},{site.id},{audio.id}",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = AudioSpeakerMigrationResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+
+        # 2 speakers created on this site, only the one in use remains
+        assert Person.objects.filter(site=site).count() == 1
+        assert Person.objects.filter(id=speaker.id).count() == 1
+        # other site is unaffected
+        assert Person.objects.filter(site=unrelated_site).count() == 1

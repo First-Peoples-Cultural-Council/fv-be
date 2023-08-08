@@ -14,7 +14,11 @@ from backend.resources.characters import (
     CharacterVariantResource,
     IgnoredCharacterResource,
 )
-from backend.resources.media import PersonResource
+from backend.resources.media import (
+    AudioResource,
+    AudioSpeakerMigrationResource,
+    PersonResource,
+)
 from backend.resources.sites import SiteMigrationResource  # , SiteResource
 
 """Script to import CSV files of site content into the fv-be database.
@@ -57,6 +61,8 @@ import_resources = [
     ("sites", SiteMigrationResource()),
     ("categories", CategoryMigrationResource()),
     ("contributors", PersonResource()),
+    ("audio-data", AudioResource()),
+    ("audio-speakers", AudioSpeakerMigrationResource()),
     # ("site_media", SiteResource()) # waiting on media import
     ("base-characters", CharacterResource()),
     ("variant-characters", CharacterVariantResource()),
