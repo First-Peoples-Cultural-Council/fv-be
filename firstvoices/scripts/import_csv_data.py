@@ -55,8 +55,8 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 
 # List model resources in the correct order to import them
 import_resources = [
-    ("sites", SiteMigrationResource()),
     ("users", UserResource()),
+    ("sites", SiteMigrationResource()),
     ("categories", CategoryMigrationResource()),
     ("contributors", PersonResource()),
     # ("site_media", SiteResource()) # waiting on media import
