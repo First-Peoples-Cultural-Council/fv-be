@@ -30,7 +30,6 @@ class User(AbstractUser):
     # set in authentication.JwtAuthentication.authenticate
     sub = models.CharField(max_length=64, blank=True, unique=True, null=True)
 
-    # from userinfo:email
     email = models.EmailField(unique=True, null=False)
 
     password = models.CharField(null=True, blank=False, max_length=128)
