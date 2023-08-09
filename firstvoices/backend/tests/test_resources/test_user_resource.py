@@ -19,8 +19,8 @@ class TestUserImport:
     def test_import_base_data(self):
         """Import User object with basic fields"""
         data = [
-            f"my_email@example.com,Sample,Smith,my_email@example.com",  # noqa E501
-            f"your_email@example.com,Testy,Tot,your_email@example.com",  # noqa E501
+            "my_email@example.com,Sample,Smith,my_email@example.com",  # noqa E501
+            "your_email@example.com,Testy,Tot,your_email@example.com",  # noqa E501
         ]
         table = build_table(data)
 
