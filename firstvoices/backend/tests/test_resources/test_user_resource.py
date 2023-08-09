@@ -31,7 +31,5 @@ class TestUserImport:
         assert result.totals["new"] == len(data)
         assert User.objects.count() == len(data)
 
-        # TODO: test that the user was created with the correct fields, which fields need to be tested?
-        # new_user = User.objects.get(email=table["email"][0])
-        # assert new_user.first_name == table["first_name"][0]
-        # assert new_user.last_name == table["last_name"][0]
+        assert User.objects.filter(email=table["email"][0]).exists()
+        assert User.objects.filter(email=table["email"][1]).exists()
