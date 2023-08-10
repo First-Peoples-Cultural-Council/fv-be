@@ -20,6 +20,7 @@ from backend.resources.media import (
     PersonResource,
 )
 from backend.resources.sites import SiteMigrationResource  # , SiteResource
+from backend.resources.users import UserResource
 
 """Script to import CSV files of site content into the fv-be database.
 
@@ -58,6 +59,7 @@ status = AppImportStatus.objects.create(label=f"nuxeo_import_{available_exports[
 
 # List model resources in the correct order to import them
 import_resources = [
+    ("users", UserResource()),
     ("sites", SiteMigrationResource()),
     ("categories", CategoryMigrationResource()),
     ("contributors", PersonResource()),
