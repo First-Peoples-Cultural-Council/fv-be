@@ -29,4 +29,4 @@ COPY --from=static-collector /app/firstvoices/static /srv
 # or django-runtime for the api server. this is last so that it's the default if no target specified
 FROM django-common AS django-runtime
 EXPOSE 8000
-CMD ["gunicorn"  , "-b", "0.0.0.0:8000", "firstvoices.wsgi:application"]
+CMD ["gunicorn", "--timeout", "120", "-b", "0.0.0.0:8000", "firstvoices.wsgi:application"]
