@@ -109,6 +109,13 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
             instance.id,
         )
         logger.warning(e)
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)
 
 
 # Delete entry from index
@@ -128,6 +135,13 @@ def delete_from_index(sender, instance, **kwargs):
             ES_CONNECTION_ERROR
             % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)
 
 
 # Translation update
@@ -164,6 +178,13 @@ def update_translation(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)
 
 
 # Note update
@@ -199,6 +220,13 @@ def update_notes(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)
 
 
 # Acknowledgement update
@@ -234,6 +262,13 @@ def update_acknowledgement(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)
 
 
 # Category update
@@ -269,3 +304,10 @@ def update_categories(sender, instance, **kwargs):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+        )
+        logger.error(e)

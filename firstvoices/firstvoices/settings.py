@@ -133,7 +133,7 @@ if DEBUG:
         "loggers": {
             ELASTICSEARCH_LOGGER: {
                 "handlers": ["console"],
-                "level": "INFO",  # Change level to INFO to view connection requests
+                "level": "ERROR",  # Change level to INFO to view connection requests
             }
         },
     }

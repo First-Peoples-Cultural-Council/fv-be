@@ -1,6 +1,6 @@
 import logging
 
-from elasticsearch.exceptions import NotFoundError
+from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
 from backend.models import DictionaryEntry, Song, Story
@@ -37,6 +37,11 @@ def get_object_from_index(index, document_type, document_id):
             document_id,
         )
         logger.warning(e)
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, document_type, index, document_id)
+        logger.error(e)
 
     return None
 

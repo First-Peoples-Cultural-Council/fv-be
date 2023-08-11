@@ -91,6 +91,15 @@ def update_dictionary_entry_visibility(dictionary_entry, updated_visibility):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__,
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            dictionary_entry.id,
+        )
+        logger.error(e)
 
 
 def update_song_visibility(song, updated_visibility):
@@ -118,6 +127,11 @@ def update_song_visibility(song, updated_visibility):
                 song.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, song.id)
+        logger.error(e)
 
 
 def remove_dictionary_entry_from_index(dictionary_entry):
@@ -152,6 +166,15 @@ def remove_dictionary_entry_from_index(dictionary_entry):
                 dictionary_entry.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(
+            type(e).__name__,
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            dictionary_entry.id,
+        )
+        logger.error(e)
 
 
 def remove_song_from_index(song):
@@ -180,3 +203,8 @@ def remove_song_from_index(song):
                 song.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, song.id)
+        logger.error(e)
