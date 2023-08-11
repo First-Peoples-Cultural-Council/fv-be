@@ -92,6 +92,11 @@ def update_song_index(sender, instance, **kwargs):
             instance.id,
         )
         logger.warning(e)
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(e)
 
 
 # Delete entry from index
@@ -110,6 +115,11 @@ def delete_from_index(sender, instance, **kwargs):
         logger.error(
             ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(e)
 
 
 # Lyrics update
@@ -145,3 +155,8 @@ def update_lyrics(sender, instance, **kwargs):
                 song.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(e)

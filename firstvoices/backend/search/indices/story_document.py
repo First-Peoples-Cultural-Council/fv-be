@@ -84,7 +84,7 @@ def update_story_index(sender, instance, **kwargs):
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
+            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance.id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -92,10 +92,15 @@ def update_story_index(sender, instance, **kwargs):
         logger.warning(
             ES_NOT_FOUND_ERROR,
             "get",
-            SearchIndexEntryTypes.SONG,
+            SearchIndexEntryTypes.STORY,
             instance.id,
         )
         logger.warning(e)
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(e)
 
 
 # Delete entry from index
@@ -114,6 +119,11 @@ def delete_from_index(sender, instance, **kwargs):
         logger.error(
             ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance.id)
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(e)
 
 
 # Page update
@@ -148,3 +158,8 @@ def update_pages(sender, instance, **kwargs):
                 story.id,
             )
         )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(e)
