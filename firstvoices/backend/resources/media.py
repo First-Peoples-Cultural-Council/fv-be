@@ -1,8 +1,6 @@
 import uuid
 
-from django.conf import settings
 from django.db import connection
-from scripts.utils.aws_download_utils import file_in_aws
 
 from backend.models.media import (
     Audio,
@@ -70,13 +68,7 @@ class VisialMediaResource(SiteContentResource):
                 # we don't have transactions and we want to do a dry_run
                 pass
             else:
-                # Enable thumbnail generation if the file is in AWS else disable it
-                if file_in_aws(
-                    instance.original.content.name, settings.AWS_STORAGE_BUCKET_NAME
-                ):
-                    instance.save(generate_thumbnails=True)
-                else:
-                    instance.save(generate_thumbnails=False)
+                instance.save(generate_thumbnails=False)
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
