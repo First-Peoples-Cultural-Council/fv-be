@@ -7,6 +7,7 @@ DEFAULT_TITLE_LENGTH = 225
 # Character length values
 MAX_CHARACTER_LENGTH = 10
 CATEGORY_POS_MAX_TITLE_LENGTH = 75  # Title length for parts of speech and categories
+MAX_FILEFIELD_LENGTH = 500
 
 
 class Visibility(models.IntegerChoices):
