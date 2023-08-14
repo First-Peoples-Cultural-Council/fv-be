@@ -38,7 +38,7 @@ class AudioSpeakerMigrationResource(AudioSpeakerResource):
             ).delete()
 
 
-class VisialMediaResource(SiteContentResource):
+class VisualMediaResource(SiteContentResource):
     def __init__(self):
         super().__init__()
         self.file_instance_id = None
@@ -72,7 +72,7 @@ class VisialMediaResource(SiteContentResource):
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
-class ImageResource(VisialMediaResource):
+class ImageResource(VisualMediaResource):
     class Meta:
         model = Image
 
@@ -98,7 +98,7 @@ class ImageResource(VisialMediaResource):
         instance.original = ImageFile.objects.get(id=self.file_instance_id)
 
 
-class VideoResource(VisialMediaResource):
+class VideoResource(VisualMediaResource):
     class Meta:
         model = Video
 
