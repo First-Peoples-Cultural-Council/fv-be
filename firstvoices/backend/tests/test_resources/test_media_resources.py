@@ -156,7 +156,8 @@ class TestImageImport:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",  # noqa E501
+            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
+            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
@@ -168,8 +169,12 @@ class TestImageImport:
         id_one = uuid.uuid4()
         id_two = uuid.uuid4()
         data = [
-            f"{id_one},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,Image of a dog barking,Recorded by: My Mom,True,False,,somefile.jpg,{site.id},False,{site.slug}/{id_one}/somefile.jpg",  # noqa E501
-            f"{id_two},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,Great image from my cat Fluffy,,False,False,,my_cool_meow_file.jpg.jpg,{site.id},True,{site.slug}/{id_two}/my_cool_meow_file.jpg.jpg",  # noqa E501
+            f"{id_one},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,"
+            f"Image of a dog barking,Recorded by: My Mom,True,False,,somefile.jpg,{site.id},False,{site.slug}/"
+            f"{id_one}/somefile.jpg",
+            f"{id_two},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,"
+            f"Great image from my cat Fluffy,,False,False,,my_cool_meow_file.jpg.jpg,{site.id},True,{site.slug}/"
+            f"{id_two}/my_cool_meow_file.jpg.jpg",
         ]
         table = self.build_table(data)
 
@@ -194,7 +199,8 @@ class TestVideoImport:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",  # noqa E501
+            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
+            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
@@ -206,8 +212,12 @@ class TestVideoImport:
         id_one = uuid.uuid4()
         id_two = uuid.uuid4()
         data = [
-            f"{id_one},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,Video of a dog barking,Recorded by: My Mom,True,False,,somefile.mp4,{site.id},False,{site.slug}/{id_one}/somefile.mp4",  # noqa E501
-            f"{id_two},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,Great video from my cat Fluffy,,False,False,,my_cool_meow_file.mp4.mp4,{site.id},True,{site.slug}/{id_two}/my_cool_meow_file.mp4.mp4",  # noqa E501
+            f"{id_one},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,"
+            f"Video of a dog barking,Recorded by: My Mom,True,False,,somefile.mp4,{site.id},False,{site.slug}/"
+            f"{id_one}/somefile.mp4",
+            f"{id_two},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,"
+            f"Great video from my cat Fluffy,,False,False,,my_cool_meow_file.mp4.mp4,{site.id},True,{site.slug}/"
+            f"{id_two}/my_cool_meow_file.mp4.mp4",
         ]
         table = self.build_table(data)
 
