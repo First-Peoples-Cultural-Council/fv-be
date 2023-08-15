@@ -18,6 +18,7 @@ from PIL import Image as PILImage
 from backend.permissions import predicates
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
+from .constants import MAX_FILEFIELD_LENGTH
 
 
 class Person(BaseSiteContentModel):
@@ -51,7 +52,9 @@ class FileBase(BaseSiteContentModel):
     class Meta:
         abstract = True
 
-    content = models.FileField(upload_to=media_directory_path)
+    content = models.FileField(
+        upload_to=media_directory_path, max_length=MAX_FILEFIELD_LENGTH
+    )
     mimetype = models.CharField(blank=True, null=True)
     size = models.IntegerField(blank=True, null=True)
 
@@ -113,7 +116,10 @@ class VisualFileBase(FileBase):
 
 class ImageFile(VisualFileBase):
     content = models.ImageField(
-        upload_to=media_directory_path, height_field="height", width_field="width"
+        upload_to=media_directory_path,
+        height_field="height",
+        width_field="width",
+        max_length=MAX_FILEFIELD_LENGTH,
     )
 
     class Meta:
@@ -196,9 +202,9 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
     # from fvm:shared
     is_shared = models.BooleanField(default=False)
 
-    def save(self, **kwargs):
+    def save(self, generate_thumbnails=True, **kwargs):
         if self._state.adding:
-            self._add_media()
+            self._add_media(generate_thumbnails=generate_thumbnails)
 
         elif self._is_updating_original():
             self._update_media()
@@ -213,7 +219,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         is_content_updated = self.original.pk != old_instance.original.pk
         return is_content_updated
 
-    def _add_media(self):
+    def _add_media(self, generate_thumbnails=True):
         """
         Subclasses can override to handle tasks associated with adding media. E.g., generating thumbnails.
         """
@@ -361,9 +367,10 @@ class ThumbnailMixin(models.Model):
         """
         raise NotImplementedError
 
-    def _add_media(self):
+    def _add_media(self, generate_thumbnails=True):
         super()._add_media()
-        self.generate_resized_images()
+        if generate_thumbnails:
+            self.generate_resized_images()
 
     def _update_media(self):
         super()._update_media()

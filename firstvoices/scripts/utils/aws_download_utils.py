@@ -5,6 +5,7 @@ from datetime import datetime
 
 import boto3
 from botocore.exceptions import ClientError
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,29 @@ TIMESTAMP_REGEX_STRING = r"\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2}.\d{6}"
 EXPORT_STORAGE_DIRECTORY = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "export_data"
 )
+
+
+def get_client():
+    """
+    Gets a boto3 AWS client which can be used to access various AWS services.
+    """
+
+    if os.getenv("AWS_ACCESS_KEY_ID") is None:
+        logger.error(
+            'Please set the "AWS_ACCESS_KEY_ID" environment variable to access AWS.'
+        )
+        return False
+    if os.getenv("AWS_SECRET_ACCESS_KEY") is None:
+        logger.error(
+            'Please set the "AWS_SECRET_ACCESS_KEY" environment variable to access AWS.'
+        )
+        return False
+
+    return boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
 
 
 def get_aws_resource():
@@ -171,4 +195,30 @@ def download_latest_exports():
 
     for key in output_keys:
         download_file_from_s3(key)
+    return True
+
+
+def file_in_aws(path, bucket=settings.AWS_STORAGE_BUCKET_NAME):
+    """
+    Check if a file path exists in an S3 bucket
+
+    :param path: AWS file path to check
+    :param bucket: The name of the S3 bucket to check (defaults to the MEDIA_UPLOAD_S3_BUCKET environment variable)
+    :return: True if file exists in the bucket, else false
+    """
+    if bucket is None:
+        logger.error(
+            'Please set the "MEDIA_UPLOAD_S3_BUCKET" environment variable to access AWS.'
+        )
+
+    try:
+        client = get_client()
+        if client is False:
+            logger.error("Could not get AWS client.")
+            return False
+
+        client.get_object(Bucket=bucket, Key=path)
+        logger.warning(f"File already exists in S3 bucket ({bucket}) at path ({path}).")
+    except ClientError:
+        return False
     return True
