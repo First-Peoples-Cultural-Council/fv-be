@@ -5,6 +5,7 @@ from django.db import connection
 from backend.models.media import (
     Audio,
     AudioSpeaker,
+    File,
     Image,
     ImageFile,
     Person,
@@ -22,6 +23,25 @@ class PersonResource(SiteContentResource):
 class AudioResource(SiteContentResource):
     class Meta:
         model = Audio
+
+    def before_import_row(self, row, **kwargs):
+        file_id = uuid.uuid4()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO backend_file (id, created, last_modified, content, site_id) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                [
+                    str(file_id),
+                    row["created"],
+                    row["last_modified"],
+                    row["content"],
+                    row["site"],
+                ],
+            )
+        self.file_instance_id = file_id
+
+    def before_save_instance(self, instance, using_transactions, dry_run):
+        instance.original = File.objects.get(id=self.file_instance_id)
 
 
 class AudioSpeakerResource(SiteContentResource):

@@ -6,6 +6,7 @@ import tablib
 from backend.models.media import (
     Audio,
     AudioSpeaker,
+    File,
     Image,
     ImageFile,
     Person,
@@ -55,22 +56,31 @@ class TestPersonImport:
         assert table["bio"][0] == new_person.bio
 
 
-class TestAudioImport:
+class BaseMediaImportTest:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids",  # noqa E501
+            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
+            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
 
+
+class TestAudioImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Audio model with basic fields"""
         site = SiteFactory.create()
+        id_one = uuid.uuid4()
+        id_two = uuid.uuid4()
         data = [
-            f"{uuid.uuid4()},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,Sound of a dog barking,Recorded by: My Mom,True,False,,somefile.mp3,{site.id},False",  # noqa E501
-            f"{uuid.uuid4()},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,Great sound from my cat Fluffy,,False,False,,my_cool_meow_file.mp3.mp3,{site.id},True",  # noqa E501
+            f"{id_one},2019-12-09 10:15:11.896,user_one@test.com,2019-12-19 09:23:50.656,user_two@test.com,Woof Woof,"
+            f"Sound of a dog barking,Recorded by: My Mom,True,False,,somefile.mp3,{site.id},False,{site.slug}/"
+            f"{id_one}/somefile.mp3",
+            f"{id_two},2019-12-13 08:57:33.654,user_one@test.com,2020-07-14 13:54:26.485,user_two@test.com,Meow,"
+            f"Great sound from my cat Fluffy,,False,False,,my_cool_meow_file.mp3.mp3,{site.id},True,{site.slug}/"
+            f"{id_two}/my_cool_meow_file.mp3.mp3",
         ]
         table = self.build_table(data)
 
@@ -80,6 +90,7 @@ class TestAudioImport:
         assert not result.has_validation_errors()
         assert result.totals["new"] == len(data)
         assert Audio.objects.filter(site=site.id).count() == len(data)
+        assert File.objects.filter(site=site.id).count() == len(data)
 
         new_audio = Audio.objects.get(id=table["id"][0])
         assert table["title"][0] == new_audio.title
@@ -88,6 +99,7 @@ class TestAudioImport:
         assert table["acknowledgement"][0] == new_audio.acknowledgement
         assert table["is_shared"][0] == str(new_audio.is_shared)
         assert table["exclude_from_kids"][0] == str(new_audio.exclude_from_kids)
+        assert table["content"][0] == str(new_audio.original.content)
 
 
 class TestAudioSpeakerImport:
@@ -152,16 +164,7 @@ class TestAudioSpeakerImport:
         assert Person.objects.filter(site=unrelated_site).count() == 1
 
 
-class TestImageImport:
-    @staticmethod
-    def build_table(data: list[str]):
-        headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
-            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
-        ]
-        table = tablib.import_set("\n".join(headers + data), format="csv")
-        return table
-
+class TestImageImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Image model with basic fields"""
@@ -195,16 +198,7 @@ class TestImageImport:
         assert table["content"][0] == str(new_image.original.content)
 
 
-class TestVideoImport:
-    @staticmethod
-    def build_table(data: list[str]):
-        headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
-            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
-        ]
-        table = tablib.import_set("\n".join(headers + data), format="csv")
-        return table
-
+class TestVideoImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Video model with basic fields"""
