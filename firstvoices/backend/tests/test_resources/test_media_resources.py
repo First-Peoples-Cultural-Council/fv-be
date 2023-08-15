@@ -56,7 +56,7 @@ class TestPersonImport:
         assert table["bio"][0] == new_person.bio
 
 
-class TestAudioImport:
+class BaseMediaImportTest:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
@@ -66,6 +66,8 @@ class TestAudioImport:
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
 
+
+class TestAudioImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Audio model with basic fields"""
@@ -162,16 +164,7 @@ class TestAudioSpeakerImport:
         assert Person.objects.filter(site=unrelated_site).count() == 1
 
 
-class TestImageImport:
-    @staticmethod
-    def build_table(data: list[str]):
-        headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
-            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
-        ]
-        table = tablib.import_set("\n".join(headers + data), format="csv")
-        return table
-
+class TestImageImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Image model with basic fields"""
@@ -205,16 +198,7 @@ class TestImageImport:
         assert table["content"][0] == str(new_image.original.content)
 
 
-class TestVideoImport:
-    @staticmethod
-    def build_table(data: list[str]):
-        headers = [
-            "id,created,created_by,last_modified,last_modified_by,title,description,acknowledgement,is_shared,"
-            "fvm_for_kids,fvaudience_for_kids,nuxeo_file_name,site,exclude_from_kids,content",
-        ]
-        table = tablib.import_set("\n".join(headers + data), format="csv")
-        return table
-
+class TestVideoImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Video model with basic fields"""
