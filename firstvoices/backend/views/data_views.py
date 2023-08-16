@@ -56,7 +56,7 @@ class SitesDataViewSet(
                     queryset=DictionaryEntry.objects.visible(self.request.user),
                 ),
                 "character_set",
-                "dictionaryentry_set__translation_set__part_of_speech",
+                "dictionaryentry_set__part_of_speech",
                 "alphabet_set",
                 "dictionaryentry_set__acknowledgement_set",
                 "dictionaryentry_set__note_set",

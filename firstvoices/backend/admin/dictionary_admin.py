@@ -38,7 +38,6 @@ class AcknowledgementInline(BaseDictionaryInlineAdmin):
 
 class TranslationInline(BaseDictionaryInlineAdmin):
     model = Translation
-    fields = ("part_of_speech",) + BaseDictionaryInlineAdmin.fields
 
 
 class AlternateSpellingInline(BaseDictionaryInlineAdmin):
