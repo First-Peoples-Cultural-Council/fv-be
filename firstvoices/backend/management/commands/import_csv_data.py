@@ -29,6 +29,7 @@ from backend.resources.sites import (
     SiteResource,
 )
 from backend.resources.users import UserResource
+from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 
 
 class Command(BaseCommand):
@@ -89,6 +90,8 @@ def run_import():
         ("base-characters", CharacterResource()),
         ("variant-characters", CharacterVariantResource()),
         ("ignored-characters", IgnoredCharacterResource()),
+        ("site-widgets", SiteWidgetResource()),
+        ("widget-settings", WidgetSettingsResource()),
         # more to be added
     ]
 
