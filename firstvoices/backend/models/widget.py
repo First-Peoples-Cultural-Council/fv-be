@@ -52,7 +52,7 @@ class WidgetSettings(BaseModel):
         Widget, on_delete=models.CASCADE, related_name="%(class)s_set"
     )
     key = models.CharField(max_length=225)
-    value = models.TextField()
+    value = models.TextField(blank=True)
 
     def __str__(self):
         return self.key
