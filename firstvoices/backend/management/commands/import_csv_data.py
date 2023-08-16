@@ -9,6 +9,7 @@ from scripts.utils.aws_download_utils import (
 )
 
 from backend.models.app import AppImportStatus
+from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
 from backend.resources.characters import (
     CharacterResource,
@@ -22,7 +23,11 @@ from backend.resources.media import (
     PersonResource,
     VideoResource,
 )
-from backend.resources.sites import SiteMigrationResource, SiteResource
+from backend.resources.sites import (
+    MembershipResource,
+    SiteMigrationResource,
+    SiteResource,
+)
 from backend.resources.users import UserResource
 
 
@@ -71,7 +76,9 @@ def run_import():
     # List model resources in the correct order to import them
     import_resources = [
         ("users", UserResource()),
+        ("app-memberships", AppMembershipResource()),
         ("sites", SiteMigrationResource()),
+        ("site-memberships", MembershipResource()),
         ("categories", CategoryMigrationResource()),
         ("contributors", PersonResource()),
         ("audio-data", AudioResource()),
