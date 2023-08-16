@@ -10,6 +10,7 @@ from backend.serializers.base_serializers import (
     WritableControlledSiteContentSerializer,
     audience_fields,
 )
+from backend.serializers.category_serializers import LinkedCategorySerializer
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.parts_of_speech_serializers import (
     WritablePartsOfSpeechSerializer,
@@ -31,17 +32,12 @@ class AlternateSpellingSerializer(serializers.ModelSerializer):
         model = dictionary.AlternateSpelling
 
 
-class CategorySerializer(SiteContentLinkedTitleSerializer):
-    class Meta(SiteContentLinkedTitleSerializer.Meta):
-        model = category.Category
-
-
 class WritableCategorySerializer(serializers.PrimaryKeyRelatedField):
     def use_pk_only_optimization(self):
         return False
 
     def to_representation(self, value):
-        return CategorySerializer(context=self.context).to_representation(value)
+        return LinkedCategorySerializer(context=self.context).to_representation(value)
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -350,7 +346,7 @@ class DictionaryEntryDetailSerializer(
 
 
 class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializer):
-    categories = CategorySerializer(many=True)
+    categories = LinkedCategorySerializer(many=True)
 
     class Meta:
         model = dictionary.DictionaryEntry
