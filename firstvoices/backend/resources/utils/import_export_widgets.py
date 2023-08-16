@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from import_export.widgets import ForeignKeyWidget, Widget
 
-DUMMY_USER_EMAIL = "test@test.com"
+DUMMY_USER_EMAIL = "support@fpcc.ca"
 
 
 class ChoicesWidget(Widget):
