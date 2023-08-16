@@ -59,6 +59,7 @@ class TestDictionaryEndpoint(
             "alternateSpellings": [],
             "notes": [],
             "translations": [],
+            "partOfSpeech": None,
             "pronunciations": [],
             "site": str(site.id),
             "splitChars": [],
@@ -178,6 +179,7 @@ class TestDictionaryEndpoint(
             "alternateSpellings": [],
             "notes": [],
             "translations": [],
+            "partOfSpeech": None,
             "pronunciations": [],
             "splitChars": [],
             "splitCharsBase": [],
@@ -352,7 +354,6 @@ class TestDictionaryEndpoint(
             {
                 "id": str(model.id),
                 "text": f"{text}",
-                "partOfSpeech": None,
             }
         ]
 
@@ -821,9 +822,8 @@ class TestDictionaryEndpoint(
             "acknowledgements": [{"text": "Thank"}, {"text": "You"}],
             "alternate_spellings": [{"text": "Hello"}, {"text": "World"}],
             "notes": [{"text": self.NOTE_TEXT}, {"text": "Note 2"}],
-            "translations": [
-                {"text": "Hallo", "part_of_speech": str(part_of_speech.id)}
-            ],
+            "translations": [{"text": "Hallo"}],
+            "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Huh-lo"}],
             "related_dictionary_entries": [str(related_entry.id)],
         }
@@ -849,9 +849,7 @@ class TestDictionaryEndpoint(
         assert response_data["notes"][0]["text"] == self.NOTE_TEXT
         assert response_data["notes"][1]["text"] == "Note 2"
         assert response_data["translations"][0]["text"] == "Hallo"
-        assert response_data["translations"][0]["partOfSpeech"]["id"] == str(
-            part_of_speech.id
-        )
+        assert response_data["partOfSpeech"]["id"] == str(part_of_speech.id)
         assert response_data["pronunciations"][0]["text"] == "Huh-lo"
         assert response_data["relatedDictionaryEntries"][0]["id"] == str(
             related_entry.id
@@ -865,6 +863,7 @@ class TestDictionaryEndpoint(
         assert entry_in_db.categories.first().id == category.id
         assert entry_in_db.exclude_from_games is False
         assert entry_in_db.exclude_from_kids is False
+        assert entry_in_db.part_of_speech.id == part_of_speech.id
 
         acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
         assert acknowledgements.count() == 2
@@ -880,7 +879,6 @@ class TestDictionaryEndpoint(
         translations = Translation.objects.filter(dictionary_entry=entry_in_db)
         assert translations.count() == 1
         assert translations.first().text == "Hallo"
-        assert translations.first().part_of_speech.id == part_of_speech.id
 
         pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
         assert pronunciations.count() == 1
@@ -1006,12 +1004,8 @@ class TestDictionaryEndpoint(
             "acknowledgements": [{"text": "Thanks"}],
             "alternate_spellings": [{"text": "Gooodbye"}],
             "notes": [{"text": self.NOTE_TEXT}],
-            "translations": [
-                {
-                    "text": self.TRANSLATION_TEXT,
-                    "part_of_speech": str(part_of_speech.id),
-                }
-            ],
+            "translations": [{"text": self.TRANSLATION_TEXT}],
+            "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Good-bye"}],
             "related_dictionary_entries": [str(related_entry.id)],
         }
@@ -1036,9 +1030,7 @@ class TestDictionaryEndpoint(
         assert response_data["alternateSpellings"][0]["text"] == "Gooodbye"
         assert response_data["notes"][0]["text"] == self.NOTE_TEXT
         assert response_data["translations"][0]["text"] == self.TRANSLATION_TEXT
-        assert response_data["translations"][0]["partOfSpeech"]["id"] == str(
-            part_of_speech.id
-        )
+        assert response_data["partOfSpeech"]["id"] == str(part_of_speech.id)
         assert response_data["pronunciations"][0]["text"] == "Good-bye"
         assert response_data["relatedDictionaryEntries"][0]["id"] == str(
             related_entry.id
@@ -1052,6 +1044,7 @@ class TestDictionaryEndpoint(
         assert entry_in_db.categories.first().id == category.id
         assert entry_in_db.exclude_from_games is True
         assert entry_in_db.exclude_from_kids is True
+        assert entry_in_db.part_of_speech.id == part_of_speech.id
 
         acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
         assert acknowledgements.count() == 1
@@ -1070,7 +1063,6 @@ class TestDictionaryEndpoint(
         translations = Translation.objects.filter(dictionary_entry=entry_in_db)
         assert translations.count() == 1
         assert translations.first().text == self.TRANSLATION_TEXT
-        assert translations.first().part_of_speech.id == part_of_speech.id
 
         pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
         assert pronunciations.count() == 1

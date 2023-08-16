@@ -13,6 +13,7 @@ from backend.serializers.base_serializers import (
 from backend.serializers.category_serializers import LinkedCategorySerializer
 from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.parts_of_speech_serializers import (
+    PartsOfSpeechSerializer,
     WritablePartsOfSpeechSerializer,
 )
 
@@ -51,14 +52,8 @@ class PronunciationSerializer(serializers.ModelSerializer):
 
 
 class TranslationSerializer(serializers.ModelSerializer):
-    part_of_speech = WritablePartsOfSpeechSerializer(
-        queryset=part_of_speech.PartOfSpeech.objects.all(),
-        required=False,
-    )
-
     class Meta(DictionaryContentMeta):
         model = dictionary.Translation
-        fields = DictionaryContentMeta.fields + ("part_of_speech",)
 
 
 class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
@@ -136,6 +131,11 @@ class DictionaryEntryDetailSerializer(
     notes = NoteSerializer(many=True, required=False, source="note_set")
     translations = TranslationSerializer(
         many=True, required=False, source="translation_set"
+    )
+    part_of_speech = WritablePartsOfSpeechSerializer(
+        queryset=part_of_speech.PartOfSpeech.objects.all(),
+        required=False,
+        allow_null=True,
     )
     pronunciations = PronunciationSerializer(
         many=True, required=False, source="pronunciation_set"
@@ -334,6 +334,7 @@ class DictionaryEntryDetailSerializer(
                 "alternate_spellings",
                 "notes",
                 "translations",
+                "part_of_speech",
                 "pronunciations",
                 "split_chars",
                 "split_chars_base",
@@ -347,6 +348,7 @@ class DictionaryEntryDetailSerializer(
 
 class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializer):
     categories = LinkedCategorySerializer(many=True)
+    part_of_speech = PartsOfSpeechSerializer()
 
     class Meta:
         model = dictionary.DictionaryEntry
@@ -359,6 +361,7 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "alternate_spellings",
             "notes",
             "translations",
+            "part_of_speech",
             "pronunciations",
             "related_dictionary_entries",
             "related_audio",

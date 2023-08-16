@@ -119,7 +119,7 @@ class DictionaryViewSet(
                     "note_set",
                     "pronunciation_set",
                     "translation_set",
-                    "translation_set__part_of_speech",
+                    "part_of_speech",
                     "categories",
                     Prefetch(
                         "related_dictionary_entries",

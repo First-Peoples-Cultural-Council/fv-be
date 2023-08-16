@@ -96,14 +96,6 @@ class Translation(BaseDictionaryContentModel):
 
     # Fields
     text = models.CharField(max_length=TITLE_MAX_LENGTH)
-    # from fv-word:part_of_speech
-    part_of_speech = models.ForeignKey(
-        PartOfSpeech,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name="translations",
-    )
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)
@@ -205,6 +197,15 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     # Word of the day flag, if true, will not be included when looking for word-of-the-day
     exclude_from_wotd = models.BooleanField(default=False, blank=False)
+
+    # from fv-word:part_of_speech
+    part_of_speech = models.ForeignKey(
+        PartOfSpeech,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="dictionary_entries",
+    )
 
     # exclude_from_games from fv-word:available_in_games, fvaudience:games
     # exclude_from_kids from fvaudience:children fv:available_in_childrens_archive
