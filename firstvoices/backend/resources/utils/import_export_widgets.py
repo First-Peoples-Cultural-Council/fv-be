@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from import_export.widgets import ForeignKeyWidget, Widget
 
+DUMMY_USER_EMAIL = "test@test.com"
+
 
 class ChoicesWidget(Widget):
     """Import/export widget to use choice labels instead of internal value.
@@ -29,29 +31,23 @@ class ChoicesWidget(Widget):
 class UserForeignKeyWidget(ForeignKeyWidget):
     """Import/export widget to find/create users from their email.
 
-    When Django cannot find a User with a matching email address,
-    it will create a new one if create=True, otherwise, will return dummy user.
+    If Django cannot find a User with a matching email address, will return dummy user.
     """
 
-    def __init__(self, create=False, *args, **kwargs):
-        self.create = create
+    def __init__(self, *args, **kwargs):
         super().__init__(model=get_user_model(), field="email", *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
         """Converts email value from CSV to a User object."""
+        if not value:
+            # leave field empty if no email provided
+            return None
 
         user_exists = self.model.objects.filter(email=value).count() == 1
         if user_exists:
             return super().clean(value, row, **kwargs)
-        elif self.create:
-            # steps missing here to actually migrate/match users
-            user, _ = self.model.objects.get_or_create(
-                **{self.field: value}, defaults={"email": value}
-            )
-            return user
         else:
-            # for now, return a dummy user
             dummy_user, _ = self.model.objects.get_or_create(
-                **{self.field: "test@test.com"}, defaults={"email": "test@test.com"}
+                **{self.field: DUMMY_USER_EMAIL}, defaults={"email": DUMMY_USER_EMAIL}
             )
             return dummy_user

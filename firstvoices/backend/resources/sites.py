@@ -72,7 +72,7 @@ class MembershipResource(SiteContentResource):
     user = fields.Field(
         column_name="user",
         attribute="user",
-        widget=UserForeignKeyWidget(create=False),
+        widget=UserForeignKeyWidget(),
     )
 
     class Meta:
