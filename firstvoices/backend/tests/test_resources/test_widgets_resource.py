@@ -19,7 +19,7 @@ class TestSiteWidgetImport:
 
     @pytest.mark.django_db
     def test_import_base_data(self):
-        """Import Character object with basic fields"""
+        """Import SiteWidget object with basic fields"""
         site = SiteFactory.create()
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
@@ -62,7 +62,7 @@ class TestWidgetSettingsImport:
 
     @pytest.mark.django_db
     def test_import_base_data(self):
-        """Import Character object with basic fields"""
+        """Import WidgetSettings object with basic fields"""
         site = SiteFactory.create()
         site_widget = SiteWidgetFactory.create(site=site)
         data = [
