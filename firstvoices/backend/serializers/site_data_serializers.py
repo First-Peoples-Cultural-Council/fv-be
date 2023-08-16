@@ -124,8 +124,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
                     {
                         "Part of Speech": dictionaryentry.part_of_speech.title,
                     }
-                    if dictionaryentry.translation_set.first() is not None
-                    and dictionaryentry.part_of_speech is not None
+                    if dictionaryentry.part_of_speech is not None
                     else {}
                 ),
                 **(
