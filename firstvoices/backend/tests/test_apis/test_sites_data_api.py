@@ -289,6 +289,7 @@ class TestSitesDataEndpoint:
         )
 
         p1.save()
+        TranslationFactory.create(dictionary_entry=entry_one)
         note = NoteFactory.create(dictionary_entry=entry_one, text="test note")
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
