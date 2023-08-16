@@ -55,6 +55,7 @@ class TestAppMembershipImport:
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 0
+        assert result.totals["skip"] == 1
         old_membership = AppMembership.objects.get(user=user)
         assert old_membership.role == AppRole.SUPERADMIN
 

@@ -3,6 +3,7 @@ import tablib
 from jwt_auth.models import User
 
 from backend.resources.users import UserResource
+from backend.tests.factories import UserFactory
 
 
 def build_table(data: list[str]):
@@ -33,3 +34,19 @@ class TestUserImport:
 
         assert User.objects.filter(email=table["email"][0]).exists()
         assert User.objects.filter(email=table["email"][1]).exists()
+
+    @pytest.mark.django_db
+    def test_skip_existing_users(self):
+        """Don't migrate users who already exist in the db."""
+        user = UserFactory.create()
+        data = [
+            f"{user.email},Sample,Smith,{user.email}",
+        ]
+        table = build_table(data)
+
+        result = UserResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 0
+        assert result.totals["skip"] == 1
