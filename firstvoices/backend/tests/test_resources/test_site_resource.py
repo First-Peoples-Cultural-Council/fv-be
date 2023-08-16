@@ -100,7 +100,7 @@ class TestSiteImport:
         assert result.totals["new"] == 1
         new_site = Site.objects.get(id=table["id"][0])
         # for now: use dummy user details on migrated site - fix later to match actual data
-        assert new_site.created_by.email == "test@test.com"
+        assert new_site.created_by.email == "support@fpcc.ca"
 
 
 class TestSiteMigration:

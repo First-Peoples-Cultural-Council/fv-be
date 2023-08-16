@@ -2,11 +2,14 @@ from django.db import connection
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
-from backend.models.constants import Visibility
+from backend.models.constants import Role, Visibility
 from backend.models.media import File, ImageFile, VideoFile
-from backend.models.sites import Language, Site
-from backend.resources.base import BaseResource
-from backend.resources.utils.import_export_widgets import ChoicesWidget
+from backend.models.sites import Language, Membership, Site
+from backend.resources.base import BaseResource, SiteContentResource
+from backend.resources.utils.import_export_widgets import (
+    ChoicesWidget,
+    UserForeignKeyWidget,
+)
 
 
 class SiteResource(BaseResource):
@@ -58,3 +61,19 @@ class SiteMigrationResource(SiteResource):
                         [tuple(imagefile_ids_to_delete)],
                     )
             Site.objects.filter(id__in=dataset["id"]).delete()
+
+
+class MembershipResource(SiteContentResource):
+    role = fields.Field(
+        column_name="role",
+        widget=ChoicesWidget(Role.choices),
+        attribute="role",
+    )
+    user = fields.Field(
+        column_name="user",
+        attribute="user",
+        widget=UserForeignKeyWidget(),
+    )
+
+    class Meta:
+        model = Membership
