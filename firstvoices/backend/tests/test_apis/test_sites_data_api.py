@@ -268,16 +268,6 @@ class TestSitesDataEndpoint:
 
     @pytest.mark.django_db
     def test_dictionary_entries_optional(self):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        entry_one = factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            type=TypeOfDictionaryEntry.WORD,
-        )
-
-        acknowledgement = AcknowledgementFactory.create(
-            dictionary_entry=entry_one, text="test acknowledgement"
-        )
         p1 = PartOfSpeech(
             title="part_of_speech_1",
             created=timezone.now(),
@@ -285,10 +275,20 @@ class TestSitesDataEndpoint:
             created_by=self.user,
             last_modified_by=self.user,
         )
-        p1.save()
-        translation = TranslationFactory.create(
-            dictionary_entry=entry_one, part_of_speech=p1
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        entry_one = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=TypeOfDictionaryEntry.WORD,
+            part_of_speech=p1,
         )
+
+        acknowledgement = AcknowledgementFactory.create(
+            dictionary_entry=entry_one, text="test acknowledgement"
+        )
+
+        p1.save()
         note = NoteFactory.create(dictionary_entry=entry_one, text="test note")
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -302,7 +302,7 @@ class TestSitesDataEndpoint:
         assert dictionary_entries[0]["optional"] == [
             {
                 "Reference": acknowledgement.text,
-                "Part of Speech": translation.part_of_speech.title,
+                "Part of Speech": entry_one.part_of_speech.title,
                 "Note": note.text,
             }
         ]
