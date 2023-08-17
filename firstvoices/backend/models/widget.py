@@ -14,6 +14,8 @@ class WidgetFormats(models.IntegerChoices):
     DEFAULT = 0, _("Default")
     LEFT = 1, _("Left")
     RIGHT = 2, _("Right")
+    FULL = 3, _("Full")
+    CENTER = 4, _("Center")
 
 
 class Widget(BaseModel):

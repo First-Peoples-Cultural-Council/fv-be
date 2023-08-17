@@ -21,6 +21,7 @@ class ChoicesWidget(Widget):
 
     def clean(self, value, row=None, *args, **kwargs):
         """Returns the db value given the display value"""
+        value = value.title()
         return self.choice_values.get(value) if value else None
 
     def render(self, value, obj=None):
