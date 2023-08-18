@@ -162,9 +162,6 @@ class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):
     def test_permissions_applied_on_dictionary_entry(self):
         # Since the WOTD model has no permissions, we need to verify the dictionary entry
         # being returned satisfy the permissions
-        team_site, team_user = get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
-        )
         dict_entry_1 = DictionaryEntryFactory.create(
             site=self.site, visibility=Visibility.TEAM
         )
