@@ -22,6 +22,7 @@ class BaseAdmin(admin.ModelAdmin):
         "last_modified_by",
         "last_modified",
     )
+    list_select_related = ["created_by", "last_modified_by"]
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -42,6 +43,7 @@ class BaseAdmin(admin.ModelAdmin):
 
 class BaseSiteContentAdmin(BaseAdmin):
     list_display = ("site",) + BaseAdmin.list_display
+    list_select_related = BaseAdmin.list_select_related + ["site"]
 
 
 class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
@@ -65,10 +67,6 @@ class BaseInlineAdmin(admin.TabularInline):
     fields = (
         "admin_link",
         "id",
-        "created",
-        "created_by",
-        "last_modified",
-        "last_modified_by",
     )
 
     def item_id(self, instance):
@@ -98,6 +96,12 @@ class BaseInlineAdmin(admin.TabularInline):
 
         obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
+
+
+class BaseInlineSiteContentAdmin(BaseInlineAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site")
 
 
 class HiddenBaseAdmin(BaseAdmin):

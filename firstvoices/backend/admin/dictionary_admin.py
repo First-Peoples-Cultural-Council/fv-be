@@ -24,8 +24,7 @@ from .base_admin import (
 
 
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
-    fields = ("text", "site") + BaseInlineAdmin.fields
-    readonly_fields = ("site",) + BaseInlineAdmin.readonly_fields
+    fields = ("text",) + BaseInlineAdmin.fields
 
 
 class NotesInline(BaseDictionaryInlineAdmin):

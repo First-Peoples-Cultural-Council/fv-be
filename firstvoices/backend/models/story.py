@@ -107,3 +107,6 @@ class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
         self.visibility = self.story.visibility
         self.site = self.story.site
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"'{self.story.title}' page {self.ordering}"
