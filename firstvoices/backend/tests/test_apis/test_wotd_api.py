@@ -157,3 +157,91 @@ class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):
 
         # any 1 of the 2 entries
         assert dictionary_entry["id"] in [str(dict_entry_1.id), str(dict_entry_2.id)]
+
+    @pytest.mark.django_db
+    def test_permissions_applied_on_dictionary_entry(self):
+        # Since the WOTD model has no permissions, we need to verify the dictionary entry
+        # being returned satisfy the permissions
+        team_site, team_user = get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        dict_entry_1 = DictionaryEntryFactory.create(
+            site=self.site, visibility=Visibility.TEAM
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=self.today, site=self.site
+        )
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
+        assert response.status_code == 200
+
+        # Since we are using a non-member user, there should be no entry returned
+        # even if the WOTD contains the above team visibility entry
+        response_data = json.loads(response.content)
+        assert len(response_data) == 0
+
+    @pytest.mark.django_db
+    def test_site_visibility_matching_entry_picked(self):
+        # Verify that the words being chosen are having the same visibility as the site
+        team_site, team_user = get_site_with_member(
+            Visibility.TEAM, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=team_user)
+        within_last_year_date = self.today - timedelta(weeks=20)
+
+        dict_entry_1 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.TEAM
+        )
+        dict_entry_2 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.TEAM
+        )
+        dict_entry_3 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.MEMBERS
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=within_last_year_date, site=team_site
+        )
+
+        # only dict_entry_2 should be chosen
+        response = self.client.get(self.get_list_endpoint(site_slug=team_site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
+        assert response_data_entry["date"] == str(self.today.date())
+        assert dictionary_entry["id"] == str(dict_entry_2.id)
+        assert dictionary_entry["id"] != str(dict_entry_3.id)
+
+    @pytest.mark.django_db
+    def test_site_visibility_matching_no_new_entry_picked(self):
+        # Verify that the words being chosen are having the same visibility as the site
+        team_site, team_user = get_site_with_member(
+            Visibility.TEAM, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=team_user)
+        within_last_year_date = self.today - timedelta(weeks=20)
+
+        dict_entry_1 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.TEAM
+        )
+        dict_entry_2 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.MEMBERS
+        )
+        dict_entry_3 = DictionaryEntryFactory.create(
+            site=team_site, visibility=Visibility.MEMBERS
+        )
+        WordOfTheDayFactory.create(
+            dictionary_entry=dict_entry_1, date=within_last_year_date, site=team_site
+        )
+
+        # only dict_entry_1 can be chosen
+        response = self.client.get(self.get_list_endpoint(site_slug=team_site.slug))
+        assert response.status_code == 200
+
+        # since both the unassigned entries are members, they should not be chosen for a team site
+        response_data = json.loads(response.content)
+        response_data_entry = response_data[0]
+        dictionary_entry = response_data_entry["dictionaryEntry"]
+        assert response_data_entry["date"] == str(self.today.date())
+        assert dictionary_entry["id"] == str(dict_entry_1.id)
+        assert dictionary_entry["id"] != str(dict_entry_2.id)
+        assert dictionary_entry["id"] != str(dict_entry_3.id)
