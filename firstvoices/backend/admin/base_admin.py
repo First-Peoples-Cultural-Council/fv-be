@@ -48,7 +48,6 @@ class BaseSiteContentAdmin(BaseAdmin):
     list_select_related = BaseAdmin.list_select_related + ["site"]
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # filter related media fields for the current site
         # prefetch the media models' site info (it is used for their display name)
         if db_field.name == "related_audio":
             kwargs["queryset"] = Audio.objects.select_related("site")
