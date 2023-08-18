@@ -26,6 +26,10 @@ from .base_admin import (
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
     fields = ("text",) + BaseInlineAdmin.fields
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dictionary_entry")
+
 
 class NotesInline(BaseDictionaryInlineAdmin):
     model = Note
@@ -66,16 +70,28 @@ class DictionaryEntryCharacterInline(BaseInlineAdmin):
     model = DictionaryEntryRelatedCharacter
     fields = ("character",) + BaseInlineAdmin.fields
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dictionary_entry")
+
 
 class DictionaryEntryCategoryInline(BaseInlineAdmin):
     model = DictionaryEntryCategory
     fields = ("category",) + BaseInlineAdmin.fields
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dictionary_entry")
 
 
 class DictionaryEntryLinkInline(BaseInlineAdmin):
     model = DictionaryEntryLink
     fk_name = "from_dictionary_entry"
     fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("from_dictionary_entry")
 
 
 class WordOfTheDayInline(BaseInlineAdmin):
@@ -84,6 +100,10 @@ class WordOfTheDayInline(BaseInlineAdmin):
         "dictionary_entry",
         "date",
     ) + BaseInlineAdmin.fields
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dictionary_entry")
 
 
 @admin.register(DictionaryEntry)

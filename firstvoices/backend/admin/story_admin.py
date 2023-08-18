@@ -19,6 +19,10 @@ class StoryPageInlineAdmin(BaseInlineSiteContentAdmin):
         obj.site = obj.story.site
         super().save_model(request, obj, form, change)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("story")
+
 
 @admin.register(StoryPage)
 class StoryPageAdmin(BaseSiteContentAdmin):
