@@ -11,7 +11,7 @@ from backend.resources.base import SiteContentResource
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
-class PageResource(SiteContentResource):
+class SitePageResource(SiteContentResource):
     visibility = fields.Field(
         column_name="visibility",
         widget=ChoicesWidget(Visibility.choices),

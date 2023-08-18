@@ -23,7 +23,7 @@ from backend.resources.media import (
     PersonResource,
     VideoResource,
 )
-from backend.resources.pages import PageResource
+from backend.resources.pages import SitePageResource
 from backend.resources.sites import (
     MembershipResource,
     SiteMigrationResource,
@@ -93,7 +93,7 @@ def run_import():
         ("ignored-characters", IgnoredCharacterResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
-        ("pages", PageResource()),
+        ("pages", SitePageResource()),
         # more to be added
     ]
 
