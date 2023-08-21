@@ -19,6 +19,7 @@ from backend.resources.characters import (
 from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
+    DictionaryEntryCategoryResource,
     DictionaryEntryResource,
     NoteResource,
     PronunciationResource,
@@ -102,11 +103,12 @@ def run_import():
         ("widget-settings", WidgetSettingsResource()),
         ("dict-entries-words", DictionaryEntryResource()),
         ("dict-entries-phrases", DictionaryEntryResource()),
+        ("dict-notes", NoteResource()),
+        ("dict-acks", AcknowledgementResource()),
         ("dict-translations", TranslationResource()),
         ("dict-altspellings", AlternateSpellingResource()),
         ("dict-pronunciations", PronunciationResource()),
-        ("dict-notes", NoteResource()),
-        ("dict-acknowledgements", AcknowledgementResource()),
+        ("dict-categorylinks", DictionaryEntryCategoryResource())
         # more to be added
     ]
 
