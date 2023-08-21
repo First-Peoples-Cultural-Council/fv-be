@@ -26,28 +26,34 @@ from .base_admin import (
 class BaseDictionaryInlineAdmin(BaseInlineAdmin):
     fields = ("text",) + BaseInlineAdmin.fields
 
+
+class RelatedDictionaryEntryAdminMixin:
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("dictionary_entry")
 
 
-class NotesInline(BaseDictionaryInlineAdmin):
+class NotesInline(RelatedDictionaryEntryAdminMixin, BaseDictionaryInlineAdmin):
     model = Note
 
 
-class AcknowledgementInline(BaseDictionaryInlineAdmin):
+class AcknowledgementInline(
+    RelatedDictionaryEntryAdminMixin, BaseDictionaryInlineAdmin
+):
     model = Acknowledgement
 
 
-class TranslationInline(BaseDictionaryInlineAdmin):
+class TranslationInline(RelatedDictionaryEntryAdminMixin, BaseDictionaryInlineAdmin):
     model = Translation
 
 
-class AlternateSpellingInline(BaseDictionaryInlineAdmin):
+class AlternateSpellingInline(
+    RelatedDictionaryEntryAdminMixin, BaseDictionaryInlineAdmin
+):
     model = AlternateSpelling
 
 
-class PronunciationInline(BaseDictionaryInlineAdmin):
+class PronunciationInline(RelatedDictionaryEntryAdminMixin, BaseDictionaryInlineAdmin):
     model = Pronunciation
 
 
@@ -65,58 +71,43 @@ class CategoryInline(BaseDictionaryInlineAdmin):
     readonly_fields = ("parent",) + BaseDictionaryInlineAdmin.readonly_fields
     ordering = ["title"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("parent")
 
-class DictionaryEntryCharacterInline(BaseInlineAdmin):
+
+class DictionaryEntryCharacterInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
     model = DictionaryEntryRelatedCharacter
     fields = ("character",) + BaseInlineAdmin.fields
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("dictionary_entry")
 
-
-class DictionaryEntryCategoryInline(BaseInlineAdmin):
+class DictionaryEntryCategoryInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
     model = DictionaryEntryCategory
     fields = ("category",) + BaseInlineAdmin.fields
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("dictionary_entry")
 
-
-class DictionaryEntryLinkInline(BaseInlineAdmin):
+class DictionaryEntryLinkInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
     model = DictionaryEntryLink
     fk_name = "from_dictionary_entry"
     fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("from_dictionary_entry")
 
-
-class WordOfTheDayInline(BaseInlineAdmin):
+class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
     model = WordOfTheDay
     fields = (
         "dictionary_entry",
         "date",
     ) + BaseInlineAdmin.fields
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("dictionary_entry")
-
 
 @admin.register(DictionaryEntry)
 class DictionaryEntryAdmin(BaseSiteContentAdmin):
     inlines = [
-        DictionaryEntryCategoryInline,
         TranslationInline,
         AlternateSpellingInline,
         PronunciationInline,
         NotesInline,
         AcknowledgementInline,
-        DictionaryEntryLinkInline,
-        DictionaryEntryCharacterInline,
     ]
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     readonly_fields = ("custom_order",) + BaseSiteContentAdmin.readonly_fields
