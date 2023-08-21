@@ -31,6 +31,10 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
                 kwargs["queryset"] = queryset
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dictionary_entry", "character", "character__site")
+
 
 @admin.register(Character)
 class CharacterAdmin(BaseSiteContentAdmin):
@@ -52,6 +56,10 @@ class CharacterVariantAdmin(BaseSiteContentAdmin):
         "site",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "base_character")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("base_character")
 
 
 @admin.register(IgnoredCharacter)
@@ -75,8 +83,6 @@ class CharacterInline(BaseInlineAdmin):
     fields = (
         "title",
         "sort_order",
-        "approximate_form",
-        "note",
     ) + BaseInlineAdmin.fields
     ordering = ("sort_order",)
     readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields

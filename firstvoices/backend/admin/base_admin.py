@@ -6,6 +6,8 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
 
+from backend.models.media import Audio, Image, Video
+
 
 class BaseAdmin(admin.ModelAdmin):
     readonly_fields = (
@@ -44,6 +46,16 @@ class BaseAdmin(admin.ModelAdmin):
 class BaseSiteContentAdmin(BaseAdmin):
     list_display = ("site",) + BaseAdmin.list_display
     list_select_related = BaseAdmin.list_select_related + ["site"]
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # prefetch the media models' site info (it is used for their display name)
+        if db_field.name == "related_audio":
+            kwargs["queryset"] = Audio.objects.select_related("site")
+        if db_field.name == "related_images":
+            kwargs["queryset"] = Image.objects.select_related("site")
+        if db_field.name == "related_videos":
+            kwargs["queryset"] = Video.objects.select_related("site")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
