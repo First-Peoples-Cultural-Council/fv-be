@@ -37,10 +37,6 @@ class SiteAdmin(BaseAdmin):
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
     autocomplete_fields = ("language",)
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.prefetch_related("category_set")
-
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == "visibility":
             kwargs["help_text"] = (
