@@ -1,10 +1,9 @@
 from import_export import fields
-from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
+from import_export.widgets import ForeignKeyWidget
 
 from backend.models import (
     Acknowledgement,
     AlternateSpelling,
-    Category,
     DictionaryEntry,
     Note,
     PartOfSpeech,
@@ -23,16 +22,10 @@ class DictionaryEntryResource(SiteContentResource):
         attribute="visibility",
     )
 
-    categories = fields.Field(
-        column_name="categories",
-        attribute="categories",
-        widget=ManyToManyWidget(Category, "id"),
-    )
-
     part_of_speech = fields.Field(
         column_name="part_of_speech",
         attribute="part_of_speech",
-        widget=ForeignKeyWidget(PartOfSpeech, "id"),
+        widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
 
     class Meta:
