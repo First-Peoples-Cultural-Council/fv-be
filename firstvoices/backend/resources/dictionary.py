@@ -1,9 +1,12 @@
+import logging
+
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models import (
     Acknowledgement,
     AlternateSpelling,
+    Category,
     DictionaryEntry,
     Note,
     PartOfSpeech,
@@ -11,6 +14,7 @@ from backend.models import (
     Translation,
 )
 from backend.models.constants import Visibility
+from backend.models.dictionary import DictionaryEntryCategory
 from backend.resources.base import BaseResource, SiteContentResource
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
@@ -66,3 +70,32 @@ class AlternateSpellingResource(BaseDictionaryEntryContentResource):
 class PronunciationResource(BaseDictionaryEntryContentResource):
     class Meta:
         model = Pronunciation
+
+
+class DictionaryEntryCategoryResource(BaseResource):
+    dictionary_entry = fields.Field(
+        column_name="dictionary_entry",
+        attribute="dictionary_entry",
+        widget=ForeignKeyWidget(DictionaryEntry, "id"),
+    )
+
+    category = fields.Field(
+        column_name="category",
+        attribute="category",
+        widget=ForeignKeyWidget(Category, "id"),
+    )
+
+    class Meta:
+        model = DictionaryEntryCategory
+
+    def before_import_row(self, row, **kwargs):
+        # Skip rows with categories that don't exist
+        logger = logging.getLogger(__name__)
+
+        try:
+            Category.objects.get(id=row["category"])
+        except Category.DoesNotExist:
+            logger.warning(
+                f"Skipping row with category id {row['category']} because it does not exist"
+            )
+            raise self.skip_row("Category does not exist")

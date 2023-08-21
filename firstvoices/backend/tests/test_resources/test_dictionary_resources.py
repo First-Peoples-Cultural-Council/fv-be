@@ -8,6 +8,7 @@ from backend.models.constants import Visibility
 from backend.models.dictionary import (
     Acknowledgement,
     AlternateSpelling,
+    DictionaryEntryCategory,
     Note,
     Pronunciation,
     Translation,
@@ -16,6 +17,7 @@ from backend.models.dictionary import (
 from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
+    DictionaryEntryCategoryResource,
     DictionaryEntryResource,
     NoteResource,
     PronunciationResource,
@@ -147,3 +149,62 @@ class TestPronunciationImport(BaseDictionaryEntryContentTest):
     content_type = "pronunciation"
     model = Pronunciation
     resource = PronunciationResource
+
+
+class TestDictionaryEntryCategoryImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,site,dictionary_entry,category",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import DictionaryEntryCategory object with basic fields"""
+        site = factories.SiteFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        category = factories.CategoryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category.id}",
+        ]
+
+        table = self.build_table(data)
+        result = DictionaryEntryCategoryResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert DictionaryEntryCategory.objects.filter(
+            category=category.id
+        ).count() == len(data)
+
+        entry_category = DictionaryEntryCategory.objects.get(id=table["id"][0])
+        assert table["site"][0] == str(entry_category.site.id)
+        assert table["dictionary_entry"][0] == str(entry_category.dictionary_entry.id)
+        assert table["category"][0] == str(entry_category.category.id)
+
+    @pytest.mark.django_db
+    def test_import_base_data_with_nonexistent_category(self):
+        """Import DictionaryEntryCategory object with missing category"""
+        site = factories.SiteFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_category",
+        ]
+
+        table = self.build_table(data)
+        result = DictionaryEntryCategoryResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert result.has_validation_errors()
+        assert result.totals["new"] == 0
+        assert (
+            DictionaryEntryCategory.objects.filter(
+                dictionary_entry=dictionary_entry.id
+            ).count()
+            == 0
+        )
