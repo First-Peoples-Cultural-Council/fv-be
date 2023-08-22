@@ -12,6 +12,7 @@ from backend.models.app import AppImportStatus
 from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
 from backend.resources.characters import (
+    CharacterRelatedDictionaryEntriesResource,
     CharacterResource,
     CharacterVariantResource,
     IgnoredCharacterResource,
@@ -62,6 +63,9 @@ def run_import():
         download_latest_exports()
 
     available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
+    # extra step in case testing the import by manually copying files in a mac
+    if ".DS_Store" in available_exports:
+        available_exports.remove(".DS_Store")
     if not available_exports:
         download_latest_exports()
         available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
@@ -92,6 +96,10 @@ def run_import():
         ("ignored-characters", IgnoredCharacterResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
+        (
+            "base-characters-dict-entries-links",
+            CharacterRelatedDictionaryEntriesResource(),
+        ),
         # more to be added
     ]
 
