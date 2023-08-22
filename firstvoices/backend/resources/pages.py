@@ -65,7 +65,7 @@ class SitePageResource(SiteContentResource):
         if row["banner_video"] and row["banner_video"] != "":
             try:
                 Video.objects.get(id=row["banner_video"])
-            except Image.DoesNotExist:
+            except Video.DoesNotExist:
                 logger.warning(
                     f"Video (banner) with ID ({row['banner_video']}) could not be found when creating SitePage with ID "
                     f"({row['id']})."
