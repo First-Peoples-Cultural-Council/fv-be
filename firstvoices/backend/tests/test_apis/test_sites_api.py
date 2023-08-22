@@ -141,18 +141,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
     def test_list_blocks_team_sites_for_guest(self):
         # a language with a team site and a public site
         language0 = backend.tests.factories.access.LanguageFactory.create()
-        team_site0 = factories.SiteFactory(
-            language=language0, visibility=Visibility.TEAM
-        )
+        factories.SiteFactory(language=language0, visibility=Visibility.TEAM)
         public_site0 = factories.SiteFactory(
             language=language0, visibility=Visibility.PUBLIC
         )
-
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(
-            user=user, site=team_site0, role=Role.ASSISTANT
-        )
-        self.client.force_authenticate(user=user)
 
         # a language with only a team site
         language1 = backend.tests.factories.access.LanguageFactory.create()
@@ -165,7 +157,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        assert len(response_data) == 1, "wrong number of languages"
+        assert len(response_data) == 1
 
         sites0 = response_data[0]["sites"]
         assert len(sites0) == 1, "wrongly included a Team site"
