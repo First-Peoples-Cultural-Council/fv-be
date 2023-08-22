@@ -40,7 +40,11 @@ class SitePage(BaseControlledSiteContentModel):
     )
     subtitle = models.CharField(blank=True, max_length=constants.DEFAULT_TITLE_LENGTH)
     widgets = models.ForeignKey(
-        SiteWidgetList, on_delete=models.PROTECT, related_name="sitepage_set"
+        SiteWidgetList,
+        on_delete=models.PROTECT,
+        related_name="sitepage_set",
+        null=True,
+        blank=True,
     )
     banner_image = models.ForeignKey(
         Image,

@@ -2,6 +2,7 @@ from django.db import connection
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
+from backend.models import SitePage
 from backend.models.constants import Role, Visibility
 from backend.models.media import File, ImageFile, VideoFile
 from backend.models.sites import Language, Membership, Site
@@ -60,6 +61,10 @@ class SiteMigrationResource(SiteResource):
                         "DELETE FROM backend_file WHERE id IN %s",
                         [tuple(imagefile_ids_to_delete)],
                     )
+
+            # Delete SitePage objects since they cause the site deletion to fail due to on_delete protect (widgets).
+            SitePage.objects.filter(site_id__in=dataset["id"]).delete()
+
             Site.objects.filter(id__in=dataset["id"]).delete()
 
 
