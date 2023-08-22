@@ -16,6 +16,15 @@ from backend.resources.characters import (
     CharacterVariantResource,
     IgnoredCharacterResource,
 )
+from backend.resources.dictionary import (
+    AcknowledgementResource,
+    AlternateSpellingResource,
+    DictionaryEntryCategoryResource,
+    DictionaryEntryResource,
+    NoteResource,
+    PronunciationResource,
+    TranslationResource,
+)
 from backend.resources.media import (
     AudioResource,
     AudioSpeakerMigrationResource,
@@ -91,6 +100,14 @@ def run_import():
         ("base-characters", CharacterResource()),
         ("variant-characters", CharacterVariantResource()),
         ("ignored-characters", IgnoredCharacterResource()),
+        ("dict-entries-words", DictionaryEntryResource()),
+        ("dict-entries-phrases", DictionaryEntryResource()),
+        ("dict-notes", NoteResource()),
+        ("dict-acks", AcknowledgementResource()),
+        ("dict-translations", TranslationResource()),
+        ("dict-altspellings", AlternateSpellingResource()),
+        ("dict-pronunciations", PronunciationResource()),
+        ("dict-categorylinks", DictionaryEntryCategoryResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
         ("pages", SitePageResource()),
