@@ -32,6 +32,7 @@ from backend.resources.media import (
     PersonResource,
     VideoResource,
 )
+from backend.resources.pages import SitePageResource
 from backend.resources.sites import (
     MembershipResource,
     SiteMigrationResource,
@@ -99,8 +100,6 @@ def run_import():
         ("base-characters", CharacterResource()),
         ("variant-characters", CharacterVariantResource()),
         ("ignored-characters", IgnoredCharacterResource()),
-        ("site-widgets", SiteWidgetResource()),
-        ("widget-settings", WidgetSettingsResource()),
         ("dict-entries-words", DictionaryEntryResource()),
         ("dict-entries-phrases", DictionaryEntryResource()),
         ("dict-notes", NoteResource()),
@@ -108,7 +107,10 @@ def run_import():
         ("dict-translations", TranslationResource()),
         ("dict-altspellings", AlternateSpellingResource()),
         ("dict-pronunciations", PronunciationResource()),
-        ("dict-categorylinks", DictionaryEntryCategoryResource())
+        ("dict-categorylinks", DictionaryEntryCategoryResource()),
+        ("site-widgets", SiteWidgetResource()),
+        ("widget-settings", WidgetSettingsResource()),
+        ("pages", SitePageResource()),
         # more to be added
     ]
 

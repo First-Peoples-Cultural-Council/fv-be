@@ -72,6 +72,15 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
 class SiteWidgetListAdmin(BaseSiteContentAdmin):
     list_display = ("__str__",) + BaseSiteContentAdmin.list_display
     list_filter = ["site"]
+    fields = (
+        "site",
+        "id",
+        "created",
+        "created_by",
+        "last_modified_by",
+        "last_modified",
+    )
+    readonly_fields = BaseSiteContentAdmin.readonly_fields
     search_fields = (
         "widgets__title",
         "site__title",
