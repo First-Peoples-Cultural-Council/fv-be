@@ -17,13 +17,6 @@ class BaseAdmin(admin.ModelAdmin):
         "last_modified_by",
         "last_modified",
     )
-    fields = (
-        "id",
-        "created",
-        "created_by",
-        "last_modified_by",
-        "last_modified",
-    )
     list_display = (
         "id",
         "created_by",
