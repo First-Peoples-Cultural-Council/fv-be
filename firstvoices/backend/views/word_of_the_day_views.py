@@ -1,5 +1,6 @@
 from secrets import choice
 
+from django.db.models import F
 from django.utils.timezone import datetime, timedelta
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
@@ -59,6 +60,7 @@ class WordOfTheDayView(
             site__slug=site_slug,
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
+            visibility=F("site__visibility"),
         ).exclude(id__in=list(words_used))
         if dictionary_entry_queryset.count() > 0:
             selected_word = dictionary_entry_queryset.first()
@@ -83,6 +85,9 @@ class WordOfTheDayView(
         random_old_word = (
             WordOfTheDay.objects.filter(site__slug=site_slug)
             .exclude(dictionary_entry__id__in=words_used_since_given_date)
+            .filter(
+                dictionary_entry__visibility=F("dictionary_entry__site__visibility")
+            )
             .order_by("?")
             .first()
         )
@@ -104,6 +109,7 @@ class WordOfTheDayView(
             site__slug=site_slug,
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
+            visibility=F("site__visibility"),
         ).values_list("id", flat=True)
         if len(primary_keys_list) == 0:
             # No words found
@@ -140,10 +146,19 @@ class WordOfTheDayView(
     def list(self, request, *args, **kwargs):
         # Overriding list method from FVPermissionViewSetMixin to only get the first word
         site = self.get_validated_site()
-
-        # Logic to select queryset
         selected_word = self.get_selected_word(site[0].slug)
-        queryset = utils.filter_by_viewable(request.user, selected_word)
+
+        queryset = WordOfTheDay.objects.none()
+
+        if selected_word:
+            unfiltered_queryset = DictionaryEntry.objects.filter(
+                id=selected_word[0].dictionary_entry.id
+            )
+            filtered_queryset = utils.filter_by_viewable(
+                request.user, unfiltered_queryset
+            )
+            if filtered_queryset:
+                queryset = selected_word
 
         # serialize and return the data, with context to support hyperlinking
         serializer = self.serializer_class(

@@ -52,6 +52,10 @@ class MembershipAdmin(BaseSiteContentAdmin):
     )
     list_filter = ("role",)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("user")
+
 
 @admin.register(SiteFeature)
 class SiteFeatureAdmin(BaseSiteContentAdmin):

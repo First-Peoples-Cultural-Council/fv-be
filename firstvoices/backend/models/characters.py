@@ -256,7 +256,7 @@ class Alphabet(BaseSiteContentModel):
 
         # Convert from default g2p config json to site-specific yaml
         default_config_str = yaml.dump(
-            AppJson.objects.get(key="default_g2p_config").json
+            AppJson.objects.get(key="default_g2p_config").json, default_style='"'
         )
         site_config_str = default_config_str.format(language=site_name, code=site_code)
         site_config = yaml.safe_load(site_config_str)
