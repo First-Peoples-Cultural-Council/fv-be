@@ -12,7 +12,6 @@ from backend.models.app import AppImportStatus
 from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
 from backend.resources.characters import (
-    CharacterRelatedDictionaryEntriesResource,
     CharacterResource,
     CharacterVariantResource,
     IgnoredCharacterResource,
@@ -21,6 +20,7 @@ from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
     DictionaryEntryCategoryResource,
+    DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
     NoteResource,
     PronunciationResource,
@@ -112,13 +112,13 @@ def run_import():
         ("dict-altspellings", AlternateSpellingResource()),
         ("dict-pronunciations", PronunciationResource()),
         ("dict-categorylinks", DictionaryEntryCategoryResource()),
+        (
+            "base-characters-dict-entries-links",
+            DictionaryEntryRelatedCharacterResource(),
+        ),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
         ("pages", SitePageResource()),
-        (
-            "base-characters-dict-entries-links",
-            CharacterRelatedDictionaryEntriesResource(),
-        ),
         # more to be added
     ]
 

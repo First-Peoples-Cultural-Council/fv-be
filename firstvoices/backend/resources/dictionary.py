@@ -7,6 +7,7 @@ from backend.models import (
     Acknowledgement,
     AlternateSpelling,
     Category,
+    Character,
     DictionaryEntry,
     Note,
     PartOfSpeech,
@@ -14,7 +15,10 @@ from backend.models import (
     Translation,
 )
 from backend.models.constants import Visibility
-from backend.models.dictionary import DictionaryEntryCategory
+from backend.models.dictionary import (
+    DictionaryEntryCategory,
+    DictionaryEntryRelatedCharacter,
+)
 from backend.resources.base import BaseResource, SiteContentResource
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
@@ -99,3 +103,19 @@ class DictionaryEntryCategoryResource(BaseResource):
                 f"Skipping row with category id {row['category']} because it does not exist"
             )
             raise self.skip_row("Category does not exist")
+
+
+class DictionaryEntryRelatedCharacterResource(BaseResource):
+    character = fields.Field(
+        column_name="character",
+        attribute="character",
+        widget=ForeignKeyWidget(Character, "id"),
+    )
+    dictionary_entry = fields.Field(
+        column_name="dictionary_entry",
+        attribute="dictionary_entry",
+        widget=ForeignKeyWidget(DictionaryEntry, "id"),
+    )
+
+    class Meta:
+        model = DictionaryEntryRelatedCharacter
