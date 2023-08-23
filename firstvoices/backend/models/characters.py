@@ -12,7 +12,7 @@ from backend.utils.character_utils import CustomSorter
 
 from .app import AppJson
 from .base import BaseSiteContentModel
-from .constants import MAX_CHARACTER_LENGTH
+from .constants import MAX_CHARACTER_APPROXIMATE_FORM_LENGTH, MAX_CHARACTER_LENGTH
 from .media import RelatedMediaMixin
 
 
@@ -50,7 +50,9 @@ class Character(RelatedMediaMixin, BaseSiteContentModel):
     sort_order = models.IntegerField()
 
     # from fvcharacter:fuzzy_latin_match
-    approximate_form = models.CharField(max_length=MAX_CHARACTER_LENGTH, blank=True)
+    approximate_form = models.CharField(
+        max_length=MAX_CHARACTER_APPROXIMATE_FORM_LENGTH, blank=True
+    )
 
     # from fv:notes
     note = models.TextField(blank=True)
