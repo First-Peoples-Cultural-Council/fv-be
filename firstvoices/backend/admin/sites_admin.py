@@ -8,7 +8,12 @@ from backend.models.sites import (
     SiteMenu,
 )
 
-from .base_admin import BaseAdmin, BaseInlineAdmin, BaseSiteContentAdmin
+from .base_admin import (
+    BaseAdmin,
+    BaseInlineAdmin,
+    BaseInlineSiteContentAdmin,
+    BaseSiteContentAdmin,
+)
 
 # Admin settings for the sites models, except Site. For the main Site admin, see .admin instead.
 
@@ -80,7 +85,7 @@ class SiteMenuAdmin(BaseSiteContentAdmin):
     autocomplete_fields = ("site",)
 
 
-class MembershipInline(BaseInlineAdmin):
+class MembershipInline(BaseInlineSiteContentAdmin):
     model = Membership
     fields = (
         "user",
