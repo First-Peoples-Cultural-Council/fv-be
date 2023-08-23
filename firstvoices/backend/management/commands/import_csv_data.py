@@ -113,7 +113,7 @@ def run_import():
         ("dict-pronunciations", PronunciationResource()),
         ("dict-categorylinks", DictionaryEntryCategoryResource()),
         (
-            "base-characters-dict-entries-links",
+            "character-dictionary-links",
             DictionaryEntryRelatedCharacterResource(),
         ),
         ("site-widgets", SiteWidgetResource()),
