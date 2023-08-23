@@ -4,7 +4,6 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.sites import Language, Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget
@@ -60,7 +59,7 @@ from backend.views.base_views import FVPermissionViewSetMixin
         },
     ),
 )
-class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
+class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     """
     Summary information about language sites.
     """
@@ -70,18 +69,7 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
     pagination_class = None
     serializer_class = SiteDetailWriteSerializer
 
-    def get_queryset(self):
-        if self.action in ["retrieve", "update", "partial_update"]:
-            return self.get_detail_queryset()
-
-        return Site.objects.select_related("menu", "language").prefetch_related(
-            Prefetch(
-                "sitefeature_set", queryset=SiteFeature.objects.filter(is_enabled=True)
-            )
-        )
-
     def get_detail_queryset(self):
-        # not used for list action
         return Site.objects.select_related(
             "menu", "language", "homepage"
         ).prefetch_related(
@@ -99,18 +87,29 @@ class SiteViewSet(AutoPermissionViewSetMixin, ModelViewSet):
             ),
         )
 
+    def get_list_queryset(self):
+        return Site.objects.none()  # not used-- see the list method instead
+
     def list(self, request, *args, **kwargs):
         """
         Return a list of sites grouped by language.
         """
-        sites = Site.objects.visible(request.user).order_by(Upper("title"))
+        # retrieve visible sites in order to filter out empty languages
+        sites = Site.objects.visible(self.request.user)
         ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
 
+        # then retrieve the desired data as a Language queryset
         # sorting note: titles are converted to uppercase and then sorted which will put custom characters at the end
         languages = (
             Language.objects.filter(id__in=ids_of_languages_with_sites)
             .order_by(Upper("title"))
             .prefetch_related(
+                Prefetch(
+                    "sites",
+                    queryset=Site.objects.visible(self.request.user).order_by(
+                        Upper("title")
+                    ),
+                ),
                 Prefetch(
                     "sites__sitefeature_set",
                     queryset=SiteFeature.objects.filter(is_enabled=True),
