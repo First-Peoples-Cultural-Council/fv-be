@@ -7,7 +7,6 @@ from backend.resources.base import SiteContentResource
 
 
 class CharacterResource(SiteContentResource):
-    # add related media mapping
     related_audio = fields.Field(
         column_name="related_audio",
         attribute="related_audio",
