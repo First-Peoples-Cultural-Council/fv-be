@@ -9,6 +9,7 @@ from backend.models.dictionary import (
     Acknowledgement,
     AlternateSpelling,
     DictionaryEntryCategory,
+    DictionaryEntryRelatedCharacter,
     Note,
     Pronunciation,
     Translation,
@@ -18,6 +19,7 @@ from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
     DictionaryEntryCategoryResource,
+    DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
     NoteResource,
     PronunciationResource,
@@ -207,4 +209,38 @@ class TestDictionaryEntryCategoryImport:
                 dictionary_entry=dictionary_entry.id
             ).count()
             == 0
+        )
+
+
+class TestDictionaryEntryRelatedCharacter:
+    @staticmethod
+    def build_table(data):
+        headers = ["character,dictionary_entry,site,id"]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        site = factories.SiteFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        character = factories.CharacterFactory.create(site=site)
+        data = [
+            f"{character.id},{dictionary_entry.id},{site.id},{uuid.uuid4()}",
+        ]
+        table = self.build_table(data)
+        result = DictionaryEntryRelatedCharacterResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert DictionaryEntryRelatedCharacter.objects.filter(
+            character=character.id
+        ).count() == len(data)
+
+        entry_related_character = DictionaryEntryRelatedCharacter.objects.get(
+            id=table["id"][0]
+        )
+        assert table["character"][0] == str(entry_related_character.character.id)
+        assert table["dictionary_entry"][0] == str(
+            entry_related_character.dictionary_entry.id
         )

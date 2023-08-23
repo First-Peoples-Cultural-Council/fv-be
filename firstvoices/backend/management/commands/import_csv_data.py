@@ -20,6 +20,7 @@ from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
     DictionaryEntryCategoryResource,
+    DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
     NoteResource,
     PronunciationResource,
@@ -72,6 +73,9 @@ def run_import():
         download_latest_exports()
 
     available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
+    # extra step in case testing the import by manually copying files in a mac
+    if ".DS_Store" in available_exports:
+        available_exports.remove(".DS_Store")
     if not available_exports:
         download_latest_exports()
         available_exports = os.listdir(EXPORT_STORAGE_DIRECTORY)
@@ -108,6 +112,10 @@ def run_import():
         ("dict-altspellings", AlternateSpellingResource()),
         ("dict-pronunciations", PronunciationResource()),
         ("dict-categorylinks", DictionaryEntryCategoryResource()),
+        (
+            "character-dictionary-links",
+            DictionaryEntryRelatedCharacterResource(),
+        ),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
         ("pages", SitePageResource()),
