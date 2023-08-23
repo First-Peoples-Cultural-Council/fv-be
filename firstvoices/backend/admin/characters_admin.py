@@ -8,7 +8,11 @@ from backend.models.characters import (
 )
 from backend.models.dictionary import DictionaryEntry
 
-from .base_admin import BaseInlineAdmin, BaseSiteContentAdmin
+from .base_admin import (
+    BaseInlineAdmin,
+    BaseInlineSiteContentAdmin,
+    BaseSiteContentAdmin,
+)
 
 
 class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
@@ -78,31 +82,29 @@ class AlphabetAdmin(BaseSiteContentAdmin):
     ) + BaseSiteContentAdmin.list_display
 
 
-class CharacterInline(BaseInlineAdmin):
+class CharacterInline(BaseInlineSiteContentAdmin):
     model = Character
     fields = (
         "title",
         "sort_order",
     ) + BaseInlineAdmin.fields
     ordering = ("sort_order",)
-    readonly_fields = BaseInlineAdmin.readonly_fields + CharacterAdmin.readonly_fields
 
 
-class CharacterVariantInline(BaseInlineAdmin):
+class CharacterVariantInline(BaseInlineSiteContentAdmin):
     model = CharacterVariant
     fields = (
         "title",
         "base_character",
     ) + BaseInlineAdmin.fields
     ordering = ("base_character__sort_order", "title")
-    readonly_fields = (
-        BaseInlineAdmin.readonly_fields + CharacterVariantAdmin.readonly_fields
-    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "base_character":
+            kwargs["queryset"] = Character.objects.select_related("site")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class IgnoredCharacterInline(BaseInlineAdmin):
+class IgnoredCharacterInline(BaseInlineSiteContentAdmin):
     model = IgnoredCharacter
     fields = ("title",) + BaseInlineAdmin.fields
-    readonly_fields = (
-        BaseInlineAdmin.readonly_fields + IgnoredCharacterAdmin.readonly_fields
-    )
