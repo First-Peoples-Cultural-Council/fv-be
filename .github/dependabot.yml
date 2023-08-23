@@ -18,3 +18,5 @@ updates:
     # Check for updates to GitHub Actions every weekday
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "elasticsearch"  # specific version is required for our prod environment
