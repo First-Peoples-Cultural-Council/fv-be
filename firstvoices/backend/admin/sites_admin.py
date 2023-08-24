@@ -52,7 +52,7 @@ class MembershipAdmin(BaseSiteContentAdmin):
     list_display = ("user", "role") + BaseSiteContentAdmin.list_display
     search_fields = (
         "id",
-        "user__username",
+        "user__email",
         "site__title",
     )
     list_filter = ("role",)
