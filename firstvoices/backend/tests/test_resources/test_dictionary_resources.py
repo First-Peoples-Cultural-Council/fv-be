@@ -293,9 +293,11 @@ class TestDictionaryLinkImport:
         site = factories.SiteFactory.create()
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
         dictionary_entry2 = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry3 = factories.DictionaryEntryFactory.create(site=site)
         data = [
-            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_dictionary_entry",
             f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry2.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{uuid.uuid4()}",  # containing non-existent entry
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry3.id}",
         ]
 
         table = self.build_table(data)
@@ -303,10 +305,10 @@ class TestDictionaryLinkImport:
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
-        assert result.totals["new"] == 0
+        assert result.totals["new"] == 2
         assert (
             DictionaryEntryLink.objects.filter(
                 from_dictionary_entry=dictionary_entry.id
             ).count()
-            == 1
+            == 2
         )

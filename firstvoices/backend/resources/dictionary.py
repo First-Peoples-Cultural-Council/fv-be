@@ -1,6 +1,7 @@
 import logging
 
 from import_export import fields
+from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 
 from backend.models import (
@@ -115,6 +116,7 @@ class DictionaryEntryCategoryResource(BaseResource):
     def before_import_row(self, row, row_number=None, **kwargs):
         # skip rows with non-existent categories
         logger = logging.getLogger(__name__)
+
         try:
             Category.objects.get(id=row["category"])
         except Category.DoesNotExist:
@@ -155,16 +157,34 @@ class DictionaryEntryLinkResource(BaseResource):
     )
 
     class Meta:
+        report_skipped = True
         model = DictionaryEntryLink
 
-    def before_import_row(self, row, row_number=None, **kwargs):
-        # skip rows with non-existent "to" and "from" dictionary entries
-        logger = logging.getLogger(__name__)
-        try:
-            DictionaryEntry.objects.get(id=row["related_entry"])
-        except DictionaryEntry.DoesNotExist:
-            logger.warning(
-                f"Skipping row {row_number} because entry {row['related_entry']} does not exist."
+    def import_row(
+        self,
+        row,
+        instance_loader,
+        using_transactions=True,
+        dry_run=False,
+        raise_errors=None,
+        **kwargs,
+    ):
+        # overriding import_row to ignore errors and skip rows that fail to import
+        # without failing the entire import
+        # ref: https://github.com/django-import-export/django-import-export/issues/763
+        import_result = super().import_row(row, instance_loader, **kwargs)
+        if (
+            import_result.import_type == RowResult.IMPORT_TYPE_ERROR
+            and type(import_result.errors[0].error) == DictionaryEntry.DoesNotExist
+        ):
+            # Copy the values to display in the preview report
+            import_result.diff = [row[val] for val in row]
+            # Add a column with the error message
+            import_result.diff.append(
+                f"Errors: {[err.error for err in import_result.errors]}"
             )
-            row["related_entry"] = ""
-            # TODO: prevent the row from being imported
+            # clear errors and mark the record to skip
+            import_result.errors = []
+            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
+
+        return import_result
