@@ -196,21 +196,23 @@ class TestDictionaryEntryCategoryImport:
         """Import DictionaryEntryCategory object with missing category"""
         site = factories.SiteFactory.create()
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        category = factories.CategoryFactory.create(site=site)
         data = [
             f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_category",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category.id}",
         ]
 
         table = self.build_table(data)
         result = DictionaryEntryCategoryResource().import_data(dataset=table)
 
-        assert result.has_errors()
+        assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 0
         assert (
             DictionaryEntryCategory.objects.filter(
                 dictionary_entry=dictionary_entry.id
             ).count()
-            == 0
+            == 1
         )
 
 
@@ -287,22 +289,24 @@ class TestDictionaryLinkImport:
 
     @pytest.mark.django_db
     def test_import_base_data_with_nonexistent_dictionary_entry(self):
-        """Import DictionaryEntryLink object with missing to dictionary entry"""
+        """Import DictionaryEntryLink object with missing dictionary entry"""
         site = factories.SiteFactory.create()
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry2 = factories.DictionaryEntryFactory.create(site=site)
         data = [
             f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_dictionary_entry",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry2.id}",
         ]
 
         table = self.build_table(data)
         result = DictionaryEntryLinkResource().import_data(dataset=table)
 
-        assert result.has_errors()
+        assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 0
         assert (
             DictionaryEntryLink.objects.filter(
                 from_dictionary_entry=dictionary_entry.id
             ).count()
-            == 0
+            == 1
         )

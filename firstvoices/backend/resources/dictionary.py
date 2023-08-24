@@ -112,17 +112,17 @@ class DictionaryEntryCategoryResource(BaseResource):
     class Meta:
         model = DictionaryEntryCategory
 
-    def skip_row(self, instance, original, row, import_validation_errors=None):
+    def before_import_row(self, row, row_number=None, **kwargs):
         # skip rows with non-existent categories
         logger = logging.getLogger(__name__)
         try:
-            instance.category = Category.objects.get(id=instance.category.id)
+            Category.objects.get(id=row["category"])
         except Category.DoesNotExist:
             logger.warning(
-                f"Skipping row {instance.row_number} because category {instance.category.id} does not exist."
+                f"Skipping row {row_number} because entry {row['category']} does not exist."
             )
-            return True
-        return super().skip_row(instance, original, row, import_validation_errors)
+            row["category"] = ""
+            # TODO: prevent the row from being imported
 
 
 class DictionaryEntryRelatedCharacterResource(BaseResource):
@@ -157,16 +157,14 @@ class DictionaryEntryLinkResource(BaseResource):
     class Meta:
         model = DictionaryEntryLink
 
-    def skip_row(self, instance, original, row, import_validation_errors=None):
-        # skip rows with non-existent "to" dictionary entries
+    def before_import_row(self, row, row_number=None, **kwargs):
+        # skip rows with non-existent "to" and "from" dictionary entries
         logger = logging.getLogger(__name__)
         try:
-            instance.to_dictionary_entry = DictionaryEntry.objects.get(
-                id=instance.to_dictionary_entry.id
-            )
+            DictionaryEntry.objects.get(id=row["related_entry"])
         except DictionaryEntry.DoesNotExist:
             logger.warning(
-                f"Skipping row {instance.row_number} because entry {instance.to_dictionary_entry.id} does not exist."
+                f"Skipping row {row_number} because entry {row['related_entry']} does not exist."
             )
-            return True
-        return super().skip_row(instance, original, row, import_validation_errors)
+            row["related_entry"] = ""
+            # TODO: prevent the row from being imported
