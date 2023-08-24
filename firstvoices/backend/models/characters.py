@@ -285,7 +285,7 @@ class Alphabet(BaseSiteContentModel):
                 )
             )
         else:
-            self.logger.warning("Empty confusable map for site %s", self.site)
+            self.logger.debug("Empty confusable map for site %s", self.site)
             return None
 
     def presort_transducer(self, base_characters=None, character_variants=None):

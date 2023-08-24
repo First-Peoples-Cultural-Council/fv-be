@@ -18,6 +18,7 @@ from backend.models.constants import Visibility
 from backend.models.dictionary import (
     DictionaryEntryCategory,
     DictionaryEntryRelatedCharacter,
+    TypeOfDictionaryEntry,
 )
 from backend.resources.base import BaseResource, SiteContentResource
 from backend.resources.utils.import_export_widgets import ChoicesWidget
@@ -29,7 +30,11 @@ class DictionaryEntryResource(SiteContentResource):
         widget=ChoicesWidget(Visibility.choices),
         attribute="visibility",
     )
-
+    type = fields.Field(
+        column_name="type",
+        widget=ChoicesWidget(TypeOfDictionaryEntry.choices),
+        attribute="type",
+    )
     part_of_speech = fields.Field(
         column_name="part_of_speech",
         attribute="part_of_speech",

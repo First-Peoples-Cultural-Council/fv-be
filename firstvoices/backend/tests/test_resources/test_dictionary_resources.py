@@ -62,7 +62,7 @@ class TestDictionaryEntryImport:
         assert table["title"][0] == test_word.title
         assert table["site"][0] == str(test_word.site.id)
         assert Visibility.PUBLIC == test_word.visibility
-        assert str(TypeOfDictionaryEntry.WORD).lower() == str(test_word.type).lower()
+        assert TypeOfDictionaryEntry.WORD == test_word.type
         assert table["batch_id"][0] == test_word.batch_id
         assert not test_word.exclude_from_kids
         assert not test_word.exclude_from_games
@@ -72,9 +72,7 @@ class TestDictionaryEntryImport:
         assert table["title"][1] == test_phrase.title
         assert table["site"][1] == str(test_phrase.site.id)
         assert Visibility.TEAM == test_phrase.visibility
-        assert (
-            str(TypeOfDictionaryEntry.PHRASE).lower() == str(test_phrase.type).lower()
-        )
+        assert TypeOfDictionaryEntry.PHRASE == test_phrase.type
         assert table["batch_id"][1] == test_phrase.batch_id
         assert test_phrase.exclude_from_kids
         assert test_phrase.exclude_from_games
