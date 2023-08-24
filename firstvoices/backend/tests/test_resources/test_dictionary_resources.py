@@ -197,9 +197,11 @@ class TestDictionaryEntryCategoryImport:
         site = factories.SiteFactory.create()
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
+        category2 = factories.CategoryFactory.create(site=site)
         data = [
-            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_category",
             f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{uuid.uuid4()}",  # non-existent category
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category2.id}",
         ]
 
         table = self.build_table(data)
@@ -207,12 +209,14 @@ class TestDictionaryEntryCategoryImport:
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
-        assert result.totals["new"] == 0
+        assert result.totals["new"] == 2
+        assert result.totals["skip"] == 1
+        assert result.totals["error"] == 0
         assert (
             DictionaryEntryCategory.objects.filter(
                 dictionary_entry=dictionary_entry.id
             ).count()
-            == 1
+            == 2
         )
 
 
@@ -306,6 +310,8 @@ class TestDictionaryLinkImport:
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 2
+        assert result.totals["skip"] == 1
+        assert result.totals["error"] == 0
         assert (
             DictionaryEntryLink.objects.filter(
                 from_dictionary_entry=dictionary_entry.id
