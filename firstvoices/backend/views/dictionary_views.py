@@ -3,7 +3,6 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import viewsets
 
 from backend.models.dictionary import DictionaryEntry
-from backend.models.media import Audio, Image, Video
 from backend.serializers.dictionary_serializers import (
     DictionaryEntryDetailSerializer,
     DictionaryEntryDetailWriteResponseSerializer,
@@ -16,6 +15,7 @@ from backend.views.base_views import (
 )
 
 from . import doc_strings
+from .utils import get_media_prefetch_list
 
 
 @extend_schema_view(
@@ -112,7 +112,9 @@ class DictionaryViewSet(
         if len(site) > 0:
             return (
                 DictionaryEntry.objects.filter(site__slug=site[0].slug)
-                .select_related("site")
+                .select_related(
+                    "site", "site__language", "created_by", "last_modified_by"
+                )
                 .prefetch_related(
                     "acknowledgement_set",
                     "alternatespelling_set",
@@ -123,20 +125,14 @@ class DictionaryViewSet(
                     "categories",
                     Prefetch(
                         "related_dictionary_entries",
-                        queryset=DictionaryEntry.objects.visible(self.request.user),
+                        queryset=DictionaryEntry.objects.visible(self.request.user)
+                        .select_related("site")
+                        .prefetch_related(
+                            "translation_set",
+                            *get_media_prefetch_list(self.request.user)
+                        ),
                     ),
-                    Prefetch(
-                        "related_audio",
-                        queryset=Audio.objects.visible(self.request.user),
-                    ),
-                    Prefetch(
-                        "related_images",
-                        queryset=Image.objects.visible(self.request.user),
-                    ),
-                    Prefetch(
-                        "related_videos",
-                        queryset=Video.objects.visible(self.request.user),
-                    ),
+                    *get_media_prefetch_list(self.request.user)
                 )
             )
         else:

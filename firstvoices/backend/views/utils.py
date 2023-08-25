@@ -1,3 +1,8 @@
+from django.db.models import Prefetch
+
+from backend.models.media import Audio, Image, Video
+
+
 def get_select_related_media_fields(media_field_name):
     """
     Args:
@@ -14,3 +19,26 @@ def get_select_related_media_fields(media_field_name):
         fields = fields + [media_field_name]
 
     return fields
+
+
+def get_media_prefetch_list(user):
+    return [
+        Prefetch(
+            "related_audio",
+            queryset=Audio.objects.visible(user)
+            .select_related("original")
+            .prefetch_related("speakers"),
+        ),
+        Prefetch(
+            "related_images",
+            queryset=Image.objects.visible(user).select_related(
+                *get_select_related_media_fields(None)
+            ),
+        ),
+        Prefetch(
+            "related_videos",
+            queryset=Video.objects.visible(user).select_related(
+                *get_select_related_media_fields(None)
+            ),
+        ),
+    ]
