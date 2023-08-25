@@ -1,3 +1,5 @@
+import logging
+
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 
@@ -14,7 +16,7 @@ class CharacterResource(SiteContentResource):
         widget=ManyToManyWidget(Audio, field="id"),
     )
     related_videos = fields.Field(
-        column_name="related_videos",
+        column_name="related_video",
         attribute="related_videos",
         m2m_add=True,
         widget=ManyToManyWidget(Video, "id"),
@@ -22,6 +24,21 @@ class CharacterResource(SiteContentResource):
 
     class Meta:
         model = Character
+
+    def before_import_row(self, row, row_number=None, **kwargs):
+        logger = logging.getLogger(__name__)
+
+        audio_obj = Audio.objects.filter(id=row["related_audio"])
+        if len(audio_obj) == 0:
+            # Audio obj not found
+            logger.warning(f"Missing audio obj for character {row['id']}.")
+            row["related_audio"] = ""
+
+        video_obj = Video.objects.filter(id=row["related_video"])
+        if len(video_obj) == 0:
+            # Video obj not found
+            logger.warning(f"Missing video obj for character {row['id']}.")
+            row["related_video"] = ""
 
 
 class CharacterVariantResource(SiteContentResource):
