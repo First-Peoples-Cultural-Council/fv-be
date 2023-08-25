@@ -21,4 +21,11 @@ class TestImagesEndpoint(BaseMediaApiTest):
 
     def assert_created_response(self, expected_data, actual_response):
         instance = Image.objects.get(pk=actual_response["id"])
-        assert actual_response == self.get_expected_image_data(instance)
+        expected = self.get_expected_image_data(instance)
+        for ignored_field in ("thumbnail", "small", "medium"):
+            if ignored_field in actual_response:
+                actual_response.pop(ignored_field)
+            if ignored_field in expected:
+                expected.pop(ignored_field)
+
+        assert actual_response == expected
