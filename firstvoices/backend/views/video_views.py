@@ -8,6 +8,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -78,4 +79,6 @@ class VideoViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return Video.objects.filter(site__slug=site[0].slug)
+        return Video.objects.filter(site__slug=site[0].slug).select_related(
+            "site", *get_select_related_media_fields(None)
+        )
