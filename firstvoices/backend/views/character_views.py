@@ -142,6 +142,6 @@ class IgnoredCharactersViewSet(
         if site.count() > 0:
             return IgnoredCharacter.objects.filter(
                 site__slug=site[0].slug
-            ).select_related("site", "site_language", "created_by", "last_modified_by")
+            ).select_related("site", "site__language", "created_by", "last_modified_by")
         else:
             return IgnoredCharacter.objects.none()
