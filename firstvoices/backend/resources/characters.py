@@ -40,7 +40,7 @@ class CharacterResource(SiteContentResource):
             if len(video_obj) == 0:
                 # Video obj not found
                 logger.warning(f"Missing video obj for character {row['id']}.")
-                row["related_video"] = ""
+                row["related_videos"] = ""
 
 
 class CharacterVariantResource(SiteContentResource):
