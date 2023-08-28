@@ -18,6 +18,7 @@ from backend.views.api_doc_variables import (
     site_slug_parameter,
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -115,21 +116,39 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             return self.get_detail_queryset()
 
         site = self.get_validated_site()
-        return (
-            SitePage.objects.filter(site__slug=site[0].slug)
-            .select_related("widgets", "banner_image", "banner_video")
-            .prefetch_related()
+        return SitePage.objects.filter(site__slug=site[0].slug).select_related(
+            "widgets",
+            "banner_image",
+            "banner_video",
+            "site",
+            "site__language",
+            "created_by",
+            "last_modified_by",
         )
 
     def get_detail_queryset(self):
         site = self.get_validated_site()
         return (
             SitePage.objects.filter(site__slug=site[0].slug)
-            .select_related("widgets", "banner_image", "banner_video")
+            .select_related(
+                "widgets",
+                "banner_image",
+                "banner_video",
+                "site",
+                "site__language",
+                "created_by",
+                "last_modified_by",
+                *get_select_related_media_fields("banner_image"),
+                *get_select_related_media_fields("banner_video"),
+            )
             .prefetch_related(
                 Prefetch(
                     "widgets__widgets",
-                    queryset=SiteWidget.objects.visible(self.request.user),
+                    queryset=SiteWidget.objects.visible(self.request.user)
+                    .select_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    )
+                    .prefetch_related("widgetsettings_set"),
                 ),
             )
         )
