@@ -28,6 +28,13 @@ class TestCharacterImport:
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
 
+    @staticmethod
+    def base_import_validation(result, site, data):
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Character.objects.filter(site=site.id).count() == len(data)
+
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Character object with basic fields"""
@@ -40,10 +47,7 @@ class TestCharacterImport:
 
         result = CharacterResource().import_data(dataset=table)
 
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         assert table["title"][0] == new_char.title
@@ -66,10 +70,7 @@ class TestCharacterImport:
 
         result = CharacterResource().import_data(dataset=table)
 
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verify audio and video are present
@@ -88,10 +89,8 @@ class TestCharacterImport:
         table = self.build_table(data)
 
         result = CharacterResource().import_data(dataset=table)
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verifying missing audio and video are not present
@@ -107,10 +106,8 @@ class TestCharacterImport:
         table = self.build_table(data)
 
         result = CharacterResource().import_data(dataset=table)
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verifying audio and video are not present
@@ -128,10 +125,8 @@ class TestCharacterImport:
         table = self.build_table(data)
 
         result = CharacterResource().import_data(dataset=table)
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verify that character has 2 audio files and no video files
