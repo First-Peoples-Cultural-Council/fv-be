@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.sites import Language, Membership, Site, SiteFeature
-from backend.models.widget import SiteWidget
+from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
@@ -16,6 +16,8 @@ from backend.serializers.site_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
+
+from .utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -71,7 +73,13 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
 
     def get_detail_queryset(self):
         return Site.objects.select_related(
-            "menu", "language", "homepage"
+            "menu",
+            "language",
+            "homepage",
+            "homepage",
+            *get_select_related_media_fields("logo"),
+            *get_select_related_media_fields("banner_image"),
+            *get_select_related_media_fields("banner_video"),
         ).prefetch_related(
             Prefetch(
                 "sitefeature_set",
@@ -79,10 +87,14 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             ),
             Prefetch(
                 "homepage__widgets",
-                queryset=SiteWidget.objects.visible(self.request.user).filter(
-                    sitewidgetlistorder_set__site_widget_list__homepage_site=Site.objects.filter(
-                        slug=self.kwargs["slug"]
-                    ).first()
+                queryset=SiteWidget.objects.visible(self.request.user)
+                .select_related(
+                    "site", "site__language", "created_by", "last_modified_by"
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "widgetsettings_set", queryset=WidgetSettings.objects.all()
+                    )
                 ),
             ),
         )
@@ -106,9 +118,9 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sites",
-                    queryset=Site.objects.visible(self.request.user).order_by(
-                        Upper("title")
-                    ),
+                    queryset=Site.objects.visible(self.request.user)
+                    .order_by(Upper("title"))
+                    .select_related(*get_select_related_media_fields("logo")),
                 ),
                 Prefetch(
                     "sites__sitefeature_set",
@@ -170,7 +182,9 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         return (
             Membership.objects.filter(user=self.request.user)
-            .select_related("site", "site__language")
+            .select_related(
+                "site", "site__language", *get_select_related_media_fields("site__logo")
+            )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",
