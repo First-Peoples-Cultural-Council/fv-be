@@ -14,6 +14,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_media_prefetch_list
 
 
 @extend_schema_view(
@@ -110,13 +111,15 @@ from .api_doc_variables import id_parameter, site_slug_parameter
     ),
 )
 class SongViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    def get_detail_queryset(self):
+    def get_queryset(self):
         site = self.get_validated_site()
-        return Song.objects.filter(site__slug=site[0].slug).all()
-
-    def get_list_queryset(self):
-        site = self.get_validated_site()
-        return Song.objects.filter(site__slug=site[0].slug).order_by("id").all()
+        return (
+            Song.objects.filter(site__slug=site[0].slug)
+            .order_by("title")
+            .all()
+            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .prefetch_related("lyrics", *get_media_prefetch_list(self.request.user))
+        )
 
     def get_serializer_class(self):
         if self.action in ("list",):
