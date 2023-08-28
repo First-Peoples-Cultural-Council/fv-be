@@ -3,7 +3,7 @@ from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
 
 class BaseDocument(Document):
     # generic fields, present in all models required to be indexed
-    document_id = Text()
+    document_id = Keyword()
     site_id = Keyword()
     site_visibility = Integer()
     visibility = Integer()
