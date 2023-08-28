@@ -29,19 +29,17 @@ class CharacterResource(SiteContentResource):
         logger = logging.getLogger(__name__)
 
         if row["related_audio"] != "":
-            audio_objs = row["related_audio"].split(",")
-            for audio_obj in audio_objs:
-                audio_obj = Audio.objects.filter(id=audio_obj)
-                if len(audio_obj) == 0:
+            audio_obj_ids = row["related_audio"].split(",")
+            for audio_id in audio_obj_ids:
+                if not Audio.objects.filter(id=audio_id).exists():
                     # Audio obj not found
                     logger.warning(f"Missing audio obj for character {row['id']}.")
                     row["related_audio"] = ""
 
         if row["related_videos"] != "":
-            video_objs = row["related_videos"].split(",")
-            for video_obj in video_objs:
-                video_obj = Video.objects.filter(id=row["related_video"])
-                if len(video_obj) == 0:
+            video_obj_ids = row["related_videos"].split(",")
+            for video_id in video_obj_ids:
+                if not Video.objects.filter(id=video_id).exists():
                     # Video obj not found
                     logger.warning(f"Missing video obj for character {row['id']}.")
                     row["related_videos"] = ""
