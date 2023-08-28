@@ -73,10 +73,11 @@ class TestCharacterImport:
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verify audio and video are present
-        new_char_audio = new_char.related_audio.first()
-        assert new_char_audio.id == audio.id
-        new_char_video = new_char.related_videos.first()
-        assert new_char_video.id == video.id
+        assert new_char.related_audio.all().count() == 1
+        assert new_char.related_audio.all().first().id == audio.id
+
+        assert new_char.related_videos.all().count() == 1
+        assert new_char.related_videos.all().first().id == video.id
 
     @pytest.mark.django_db
     def test_missing_related_media(self):
@@ -133,7 +134,7 @@ class TestCharacterImport:
         assert Character.objects.filter(site=site.id).count() == len(data)
 
         new_char = Character.objects.get(id=table["id"][0])
-        # Verify that chharacter has 2 audio files and no video files
+        # Verify that character has 2 audio files and no video files
         assert new_char.related_audio.all().count() == 2
         assert new_char.related_videos.all().count() == 0
 

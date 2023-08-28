@@ -16,7 +16,7 @@ class CharacterResource(SiteContentResource):
         widget=ManyToManyWidget(Audio, field="id"),
     )
     related_videos = fields.Field(
-        column_name="related_video",
+        column_name="related_videos",
         attribute="related_videos",
         m2m_add=True,
         widget=ManyToManyWidget(Video, "id"),
