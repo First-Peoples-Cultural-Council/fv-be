@@ -29,6 +29,26 @@ class ChoicesWidget(Widget):
         return self.choice_labels.get(value)
 
 
+class ArrayOfStringsWidget(Widget):
+    """Import/export widget to split strings on custom separator."""
+
+    def __init__(self, sep: str = ",", *args, **kwargs) -> None:
+        super().__init__()
+        self.sep = sep
+
+    def clean(self, value: str, row=None, *args, **kwargs) -> list:
+        """Converts the display value (string with separator) into array on sep"""
+        if value:
+            return [string.strip() for string in value.split(sep=self.sep)]
+        return []
+
+    def render(self, value: list, obj=None) -> str:
+        """Converts the db value (array) into a single string for display, using separator"""
+        if value:
+            return self.sep.join(value)
+        return ""
+
+
 class UserForeignKeyWidget(ForeignKeyWidget):
     """Import/export widget to find/create users from their email.
 
