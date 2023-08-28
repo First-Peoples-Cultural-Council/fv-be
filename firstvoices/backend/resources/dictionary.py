@@ -1,7 +1,6 @@
-import logging
-
 from import_export import fields
-from import_export.widgets import ForeignKeyWidget
+from import_export.results import RowResult
+from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 
 from backend.models import (
     Acknowledgement,
@@ -17,9 +16,11 @@ from backend.models import (
 from backend.models.constants import Visibility
 from backend.models.dictionary import (
     DictionaryEntryCategory,
+    DictionaryEntryLink,
     DictionaryEntryRelatedCharacter,
     TypeOfDictionaryEntry,
 )
+from backend.models.media import Audio, Image, Video
 from backend.resources.base import BaseResource, SiteContentResource
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
@@ -39,6 +40,24 @@ class DictionaryEntryResource(SiteContentResource):
         column_name="part_of_speech",
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
+    )
+    related_images = fields.Field(
+        column_name="related_images",
+        attribute="related_images",
+        m2m_add=True,
+        widget=ManyToManyWidget(Image, field="id"),
+    )
+    related_audio = fields.Field(
+        column_name="related_audio",
+        attribute="related_audio",
+        m2m_add=True,
+        widget=ManyToManyWidget(Audio, field="id"),
+    )
+    related_videos = fields.Field(
+        column_name="related_videos",
+        attribute="related_videos",
+        m2m_add=True,
+        widget=ManyToManyWidget(Video, field="id"),
     )
 
     class Meta:
@@ -97,17 +116,33 @@ class DictionaryEntryCategoryResource(BaseResource):
     class Meta:
         model = DictionaryEntryCategory
 
-    def before_import_row(self, row, **kwargs):
-        # Skip rows with categories that don't exist
-        logger = logging.getLogger(__name__)
-
-        try:
-            Category.objects.get(id=row["category"])
-        except Category.DoesNotExist:
-            logger.warning(
-                f"Skipping row with category id {row['category']} because it does not exist"
+    def import_row(
+        self,
+        row,
+        instance_loader,
+        using_transactions=True,
+        dry_run=False,
+        raise_errors=None,
+        **kwargs,
+    ):
+        # overriding import_row to ignore errors and skip rows that fail to import without failing the entire import
+        # ref: https://github.com/django-import-export/django-import-export/issues/763
+        import_result = super().import_row(row, instance_loader, **kwargs)
+        if (
+            import_result.import_type == RowResult.IMPORT_TYPE_ERROR
+            and type(import_result.errors[0].error) == Category.DoesNotExist
+        ):
+            # Copy the values to display in the preview report
+            import_result.diff = [row[val] for val in row]
+            # Add a column with the error message
+            import_result.diff.append(
+                f"Errors: {[err.error for err in import_result.errors]}"
             )
-            raise self.skip_row("Category does not exist")
+            # clear errors and mark the record to skip
+            import_result.errors = []
+            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
+
+        return import_result
 
 
 class DictionaryEntryRelatedCharacterResource(BaseResource):
@@ -124,3 +159,49 @@ class DictionaryEntryRelatedCharacterResource(BaseResource):
 
     class Meta:
         model = DictionaryEntryRelatedCharacter
+
+
+class DictionaryEntryLinkResource(BaseResource):
+    from_dictionary_entry = fields.Field(
+        column_name="dictionary_entry",
+        attribute="from_dictionary_entry",
+        widget=ForeignKeyWidget(DictionaryEntry, "id"),
+    )
+
+    to_dictionary_entry = fields.Field(
+        column_name="related_entry",
+        attribute="to_dictionary_entry",
+        widget=ForeignKeyWidget(DictionaryEntry, "id"),
+    )
+
+    class Meta:
+        report_skipped = True
+        model = DictionaryEntryLink
+
+    def import_row(
+        self,
+        row,
+        instance_loader,
+        using_transactions=True,
+        dry_run=False,
+        raise_errors=None,
+        **kwargs,
+    ):
+        # overriding import_row to ignore errors and skip rows that fail to import without failing the entire import
+        # ref: https://github.com/django-import-export/django-import-export/issues/763
+        import_result = super().import_row(row, instance_loader, **kwargs)
+        if (
+            import_result.import_type == RowResult.IMPORT_TYPE_ERROR
+            and type(import_result.errors[0].error) == DictionaryEntry.DoesNotExist
+        ):
+            # Copy the values to display in the preview report
+            import_result.diff = [row[val] for val in row]
+            # Add a column with the error message
+            import_result.diff.append(
+                f"Errors: {[err.error for err in import_result.errors]}"
+            )
+            # clear errors and mark the record to skip
+            import_result.errors = []
+            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
+
+        return import_result
