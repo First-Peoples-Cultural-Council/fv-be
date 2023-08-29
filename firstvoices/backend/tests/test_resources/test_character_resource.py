@@ -83,8 +83,9 @@ class TestCharacterImport:
     @pytest.mark.django_db
     def test_missing_related_media(self):
         site = SiteFactory.create()
+        audio = AudioFactory.create(site=site)
         data = [
-            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,{uuid.uuid4()},{uuid.uuid4()}",  # noqa E501
+            f'{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,"{audio.id},{uuid.uuid4()}",{uuid.uuid4()}',  # noqa E501
         ]
         table = self.build_table(data)
 
@@ -94,7 +95,8 @@ class TestCharacterImport:
 
         new_char = Character.objects.get(id=table["id"][0])
         # Verifying missing audio and video are not present
-        assert new_char.related_audio.all().count() == 0
+        assert new_char.related_audio.all().count() == 1
+        assert audio in new_char.related_audio.all()
         assert new_char.related_videos.all().count() == 0
 
     @pytest.mark.django_db

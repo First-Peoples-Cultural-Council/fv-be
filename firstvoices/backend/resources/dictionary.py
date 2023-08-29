@@ -1,6 +1,6 @@
 from import_export import fields
 from import_export.results import RowResult
-from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
+from import_export.widgets import ForeignKeyWidget
 
 from backend.models import (
     Acknowledgement,
@@ -20,12 +20,15 @@ from backend.models.dictionary import (
     DictionaryEntryRelatedCharacter,
     TypeOfDictionaryEntry,
 )
-from backend.models.media import Audio, Image, Video
-from backend.resources.base import BaseResource, SiteContentResource
+from backend.resources.base import (
+    BaseResource,
+    RelatedMediaResourceMixin,
+    SiteContentResource,
+)
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
-class DictionaryEntryResource(SiteContentResource):
+class DictionaryEntryResource(SiteContentResource, RelatedMediaResourceMixin):
     visibility = fields.Field(
         column_name="visibility",
         widget=ChoicesWidget(Visibility.choices),
@@ -40,24 +43,6 @@ class DictionaryEntryResource(SiteContentResource):
         column_name="part_of_speech",
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
-    )
-    related_images = fields.Field(
-        column_name="related_images",
-        attribute="related_images",
-        m2m_add=True,
-        widget=ManyToManyWidget(Image, field="id"),
-    )
-    related_audio = fields.Field(
-        column_name="related_audio",
-        attribute="related_audio",
-        m2m_add=True,
-        widget=ManyToManyWidget(Audio, field="id"),
-    )
-    related_videos = fields.Field(
-        column_name="related_videos",
-        attribute="related_videos",
-        m2m_add=True,
-        widget=ManyToManyWidget(Video, field="id"),
     )
 
     class Meta:
