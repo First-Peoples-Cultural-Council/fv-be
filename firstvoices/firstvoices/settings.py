@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "backend",
     "healthcheck",
     "embed_video",
+    "django_better_admin_arrayfield",
 ]
 
 MIDDLEWARE = [
