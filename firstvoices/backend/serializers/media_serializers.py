@@ -106,7 +106,15 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
     )
     original = MediaFileUploadSerializer(
         validators=[
-            SupportedFileType(mimetypes=["audio/wav", "audio/x-wav", "audio/mpeg"])
+            SupportedFileType(
+                mimetypes=[
+                    "audio/wave",
+                    "audio/wav",
+                    "audio/x-wav",
+                    "audio/x-pn-wav",
+                    "audio/mpeg",
+                ]
+            )
         ],
     )
 
