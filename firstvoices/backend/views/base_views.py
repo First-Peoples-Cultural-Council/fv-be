@@ -4,7 +4,6 @@ from rest_framework import mixins
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from backend import permissions
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
 
@@ -148,10 +147,9 @@ class SiteContentViewSetMixin:
         if len(site) == 0:
             raise Http404
 
-        # Check if site content is visible. This uses a different permission rule than for viewing the fields on the
-        # Site model itself, which are mainly used in site listings. That's why we're checking is_visible_object
-        # rather than the model's view permission.
-        if permissions.predicates.is_visible_site_object(self.request.user, site[0]):
+        # Check permissions on the site first
+        perm = Site.get_perm("view")
+        if self.request.user.has_perm(perm, site[0]):
             return site
         else:
             raise PermissionDenied

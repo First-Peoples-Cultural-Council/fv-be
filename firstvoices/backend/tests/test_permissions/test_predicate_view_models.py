@@ -13,32 +13,34 @@ from backend.tests.factories import (
 )
 
 
-class TestCanViewSiteModel:
+class TestCanViewSite:
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
-    @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
+    @pytest.mark.parametrize("site_visibility", [Visibility.TEAM, Visibility.MEMBERS])
     @pytest.mark.django_db
-    def test_non_members_see_non_team_site_models(self, site_visibility, get_user):
+    def test_non_members_blocked_from_non_public_site_models(
+        self, site_visibility, get_user
+    ):
         user = get_user()
         site = SiteFactory.create(visibility=site_visibility)
-        assert view_models.can_view_site_model(user, site)
+        assert not view_models.can_view_site(user, site)
 
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
     @pytest.mark.django_db
-    def test_non_members_blocked_from_team_site_models(self, get_user):
+    def test_non_members_see_public_site_models(self, get_user):
         user = get_user()
-        site = SiteFactory.create(visibility=Visibility.TEAM)
-        assert not view_models.can_view_site_model(user, site)
+        site = SiteFactory.create(visibility=Visibility.PUBLIC)
+        assert view_models.can_view_site(user, site)
 
     @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.django_db
     def test_members_see_non_team_site_models(self, site_visibility):
         (site, user) = get_site_with_member(site_visibility, Role.MEMBER)
-        assert view_models.can_view_site_model(user, site)
+        assert view_models.can_view_site(user, site)
 
     @pytest.mark.django_db
     def test_members_blocked_from_team_site_models(self):
         (site, user) = get_site_with_member(Visibility.TEAM, Role.MEMBER)
-        assert not view_models.can_view_site_model(user, site)
+        assert not view_models.can_view_site(user, site)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
@@ -49,17 +51,16 @@ class TestCanViewSiteModel:
     @pytest.mark.django_db
     def test_team_always_see_own_site_models(self, site_visibility, user_role):
         (site, user) = get_site_with_member(site_visibility, user_role)
-        assert view_models.can_view_site_model(user, site)
+        assert view_models.can_view_site(user, site)
 
-    @pytest.mark.parametrize("site_visibility", [Visibility.MEMBERS, Visibility.PUBLIC])
     @pytest.mark.parametrize(
         "user_role", [Role.EDITOR, Role.ASSISTANT, Role.LANGUAGE_ADMIN]
     )
     @pytest.mark.django_db
-    def test_team_see_other_non_team_site_models(self, site_visibility, user_role):
+    def test_team_see_other_public_site_models(self, user_role):
         (site, user) = get_site_with_member(Visibility.PUBLIC, user_role)
-        site2 = SiteFactory.create(visibility=site_visibility)
-        assert view_models.can_view_site_model(user, site2)
+        site2 = SiteFactory.create(visibility=Visibility.PUBLIC)
+        assert view_models.can_view_site(user, site2)
 
     @pytest.mark.parametrize(
         "user_role", [Role.EDITOR, Role.ASSISTANT, Role.LANGUAGE_ADMIN]
@@ -68,7 +69,7 @@ class TestCanViewSiteModel:
     def test_team_blocked_from_other_team_site_models(self, user_role):
         (site, user) = get_site_with_member(Visibility.PUBLIC, user_role)
         site2 = SiteFactory.create(visibility=Visibility.TEAM)
-        assert not view_models.can_view_site_model(user, site2)
+        assert not view_models.can_view_site(user, site2)
 
     @pytest.mark.parametrize(
         "site_visibility", [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC]
@@ -79,7 +80,7 @@ class TestCanViewSiteModel:
         user = get_app_admin(role)
         site = SiteFactory.build(visibility=site_visibility)
 
-        assert view_models.can_view_site_model(user, site)
+        assert view_models.can_view_site(user, site)
 
 
 class TestCanViewMembershipModel:
