@@ -4,9 +4,15 @@ import pytest
 import tablib
 
 from backend.models.constants import Visibility
+from backend.models.media import Audio, Image, Video
 from backend.models.story import Story
 from backend.resources.stories import StoryResource
-from backend.tests.factories import SiteFactory
+from backend.tests.factories import (
+    AudioFactory,
+    ImageFactory,
+    SiteFactory,
+    VideoFactory,
+)
 
 sample_draftjs_text = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'Historia de los Tres Osos', 'type': 'unstyled', 'depth': 0, 'inlineStyleRanges': [], 'entityRanges': [], 'data': {}}]}\""  # noqa E501
 sample_draftjs_transl = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'History of the Three Bears', 'type': 'unstyled', 'depth': 0, 'inlineStyleRanges': [], 'entityRanges': [], 'data': {}}]}\""  # noqa E501
@@ -61,6 +67,9 @@ class TestStoryImport:
         assert str(new_story.exclude_from_kids) == table["exclude_from_kids"][0]
         assert str(new_story.exclude_from_games) == table["exclude_from_games"][0]
         assert new_story.author == table["author"][0]
+        assert new_story.related_audio.all().count() == 0
+        assert new_story.related_images.all().count() == 0
+        assert new_story.related_videos.all().count() == 0
 
         # other possible hide-overlay value
         new_story = Story.objects.get(id=table["id"][1])
@@ -99,3 +108,71 @@ class TestStoryImport:
 
         assert all(note.startswith("Note") for note in new_story.notes)
         assert all(ack.startswith("Thanks") for ack in new_story.acknowledgements)
+
+    @pytest.mark.django_db
+    def test_import_related_media(self):
+        """Import Story object with already loaded related media"""
+        site = SiteFactory.create()
+        audio = AudioFactory.create(site=site)
+        img_1 = ImageFactory.create(site=site)
+        img_2 = ImageFactory.create(site=site)
+        video = VideoFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
+            f",Testytest,Test story,,"
+            f",,,True,,{site.id},False,False"
+            f',Authorname,,,{audio.id},"{img_1.id},{img_2.id}",{video.id}'
+        ]
+        table = self.build_table(data)
+
+        result = StoryResource().import_data(dataset=table, raise_errors=True)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Story.objects.filter(site=site.id).count() == len(data)
+
+        new_story = Story.objects.get(id=table["id"][0])
+        # single audio, video
+        assert audio in new_story.related_audio.all()
+        assert new_story.related_audio.all().count() == 1
+        assert video in new_story.related_videos.all()
+        assert new_story.related_videos.all().count() == 1
+        # multiple images
+        assert img_1 in new_story.related_images.all()
+        assert img_2 in new_story.related_images.all()
+        assert new_story.related_images.all().count() == 2
+
+    @pytest.mark.django_db
+    def test_import_related_media_skip_nonexistent(self):
+        """Import Story object successfully if related media are not found"""
+        site = SiteFactory.create()
+        img_1 = ImageFactory.create(site=site)
+        no_audio_here = uuid.uuid4()
+        no_img_here = uuid.uuid4()
+        no_video_here = uuid.uuid4()
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
+            f",Testytest,Test story,,"
+            f",,,True,,{site.id},False,False"
+            f',Authorname,,,{no_audio_here},"{img_1.id},{no_img_here}",{no_video_here}'
+        ]
+        table = self.build_table(data)
+
+        result = StoryResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Story.objects.filter(site=site.id).count() == len(data)
+
+        new_story = Story.objects.get(id=table["id"][0])
+        # no audio, video found
+        assert new_story.related_audio.all().count() == 0
+        assert Audio.objects.filter(id=no_audio_here).count() == 0
+        assert new_story.related_videos.all().count() == 0
+        assert Video.objects.filter(id=no_video_here).count() == 0
+        # 1 of multiple images found
+        assert img_1 in new_story.related_images.all()
+        assert new_story.related_images.all().count() == 1
+        assert Image.objects.filter(id=no_img_here).count() == 0

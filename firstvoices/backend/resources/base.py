@@ -52,19 +52,19 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         column_name="related_audio",
         attribute="related_audio",
         m2m_add=True,
-        widget=widgets.ManyToManyWidget(Audio, field="id"),
+        widget=widgets.ManyToManyWidget(Audio, separator=",", field="id"),
     )
     related_images = fields.Field(
         column_name="related_images",
         attribute="related_images",
         m2m_add=True,
-        widget=widgets.ManyToManyWidget(Image, "id"),
+        widget=widgets.ManyToManyWidget(Image, separator=",", field="id"),
     )
     related_videos = fields.Field(
         column_name="related_videos",
         attribute="related_videos",
         m2m_add=True,
-        widget=widgets.ManyToManyWidget(Video, "id"),
+        widget=widgets.ManyToManyWidget(Video, separator=",", field="id"),
     )
 
     class Meta:
