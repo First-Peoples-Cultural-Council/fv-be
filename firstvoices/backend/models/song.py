@@ -2,14 +2,16 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from backend.models.constants import (
+    DEFAULT_TITLE_LENGTH,
+    MAX_NOTE_LENGTH,
+    MAX_PAGE_LENGTH,
+)
 from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
 from .base import AudienceMixin, BaseControlledSiteContentModel, BaseModel
 from .media import RelatedMediaMixin
-
-TITLE_MAX_LENGTH = 500
-NOTE_MAX_LENGTH = 1000
 
 
 class Song(
@@ -41,17 +43,21 @@ class Song(
             "delete": predicates.can_delete_controlled_data,
         }
 
-    title = models.CharField(blank=False, null=False)
-    title_translation = models.CharField(blank=True, null=False)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=False, null=False)
+    title_translation = models.CharField(
+        max_length=DEFAULT_TITLE_LENGTH, blank=True, null=False
+    )
 
-    introduction = models.CharField(blank=True, null=False)
-    introduction_translation = models.CharField(blank=True, null=False)
+    introduction = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True, null=False)
+    introduction_translation = models.TextField(
+        max_length=MAX_PAGE_LENGTH, blank=True, null=False
+    )
 
     acknowledgements = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
     notes = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
 
     hide_overlay = models.BooleanField(null=False, default=False)
@@ -99,8 +105,8 @@ class Lyric(BaseModel):
         validators=[MinValueValidator(0)], null=False, default=0
     )
 
-    text = models.TextField(max_length=NOTE_MAX_LENGTH, blank=False)
-    translation = models.TextField(max_length=NOTE_MAX_LENGTH, blank=True)
+    text = models.TextField(max_length=MAX_PAGE_LENGTH, blank=False)
+    translation = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True)
 
     def save(self, *args, **kwargs):
         # normalizing text input
