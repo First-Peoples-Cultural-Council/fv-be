@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
@@ -19,6 +21,14 @@ from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
 
 
+class ArbitraryIdSerializer(serializers.CharField):
+    def to_representation(self, value):
+        return {
+            "id": str(uuid.uuid4()),  # better for frontend
+            "text": str(value),
+        }
+
+
 class LinkedStorySerializer(SiteContentLinkedTitleSerializer):
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story
@@ -35,6 +45,7 @@ class StoryPageSummarySerializer(
     }
 
     id = serializers.UUIDField(read_only=True)
+    notes = serializers.ListField(child=ArbitraryIdSerializer(), required=False)
 
     class Meta:
         model = StoryPage
@@ -92,6 +103,10 @@ class StorySerializer(
     site = LinkedSiteSerializer(required=False, read_only=True)
     pages = StoryPageSummarySerializer(many=True, read_only=True)
     visibility = WritableVisibilityField(required=True)
+    notes = serializers.ListField(child=ArbitraryIdSerializer(), required=False)
+    acknowledgements = serializers.ListField(
+        child=ArbitraryIdSerializer(), required=False
+    )
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Story

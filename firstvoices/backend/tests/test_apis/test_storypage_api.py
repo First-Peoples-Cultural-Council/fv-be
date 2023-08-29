@@ -118,7 +118,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         )
         assert actual_response["text"] == data["text"]
         assert actual_response["translation"] == original_instance.translation
-        assert actual_response["notes"][0] == original_instance.notes[0]
+        assert actual_response["notes"][0]["text"] == original_instance.notes[0]
         assert actual_response["ordering"] == original_instance.ordering
         assert actual_response["story"]["id"] == str(original_instance.story.id)
 
@@ -351,7 +351,10 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["text"] == expected_data["text"]
         assert actual_response["translation"] == expected_data["translation"]
-        assert actual_response["notes"] == expected_data["notes"]
+
+        for i, note in enumerate(expected_data["notes"]):
+            assert actual_response["notes"][i]["text"] == note
+
         assert (
             actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
         )

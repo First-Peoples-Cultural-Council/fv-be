@@ -219,12 +219,12 @@ class TestStoryEndpoint(
             actual_response["introductionTranslation"]
             == original_instance.introduction_translation
         )
-        assert actual_response["notes"][0] == original_instance.notes[0]
+        assert actual_response["notes"][0]["text"] == original_instance.notes[0]
         assert (
             actual_response["pages"][0]["text"] == original_instance.pages.first().text
         )
         assert (
-            actual_response["acknowledgements"][0]
+            actual_response["acknowledgements"][0]["text"]
             == original_instance.acknowledgements[0]
         )
         assert (
