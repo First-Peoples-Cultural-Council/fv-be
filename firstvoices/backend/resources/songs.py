@@ -29,7 +29,7 @@ class SongResource(SiteContentResource):
             "exclude_from_kids",
             "related_audio",
             "related_images",
-            "related_video",
+            "related_videos",
             "hide_overlay",
         )
 
