@@ -40,6 +40,7 @@ from backend.resources.sites import (
     SiteMigrationResource,
     SiteResource,
 )
+from backend.resources.stories import StoryResource
 from backend.resources.users import UserResource
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 
@@ -121,6 +122,7 @@ def run_import():
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
         ("pages", SitePageResource()),
+        ("stories", StoryResource()),
         # more to be added
     ]
 
