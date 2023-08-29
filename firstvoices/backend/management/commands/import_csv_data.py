@@ -35,6 +35,7 @@ from backend.resources.media import (
     VideoResource,
 )
 from backend.resources.pages import SitePageResource
+from backend.resources.site_homepage_widgets import SiteHomepageWidgetsResource
 from backend.resources.sites import (
     MembershipResource,
     SiteMigrationResource,
@@ -121,6 +122,7 @@ def run_import():
         ("dict-entrylinks", DictionaryEntryLinkResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
+        ("sites", SiteHomepageWidgetsResource()),
         ("pages", SitePageResource()),
         ("stories", StoryResource()),
         # more to be added
@@ -133,7 +135,12 @@ def run_import():
         logger.info(f"Importing {key} models...")
 
         # Parse files to import with this resource
-        matched_files = [f for f in unmatched_files if f.startswith(key)]
+        if resource.__class__ == SiteHomepageWidgetsResource:
+            matched_files = [
+                f for f in os.listdir(current_export_dir) if f.startswith(key)
+            ]
+        else:
+            matched_files = [f for f in unmatched_files if f.startswith(key)]
         unmatched_files = [f for f in unmatched_files if f not in matched_files]
 
         if not matched_files:

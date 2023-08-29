@@ -40,7 +40,13 @@ class SitePageResource(SiteContentResource):
             created_by_user = self.get_user_or_none(row["created_by"])
             site = Site.objects.get(id=row["site"])
             widgets_list = row["widgets"].split(",")
-            site_widget_list = SiteWidgetList.objects.create(site=site)
+            site_widget_list = SiteWidgetList.objects.create(
+                site=site,
+                last_modified_by=last_modified_by_user,
+                last_modified=row["last_modified"],
+                created_by=created_by_user,
+                created=row["created"],
+            )
             for index, widget_id in enumerate(widgets_list):
                 widget = SiteWidget.objects.get(id=widget_id)
                 SiteWidgetListOrder.objects.create(
@@ -48,7 +54,9 @@ class SitePageResource(SiteContentResource):
                     site_widget_list=site_widget_list,
                     order=index,
                     last_modified_by=last_modified_by_user,
+                    last_modified=row["last_modified"],
                     created_by=created_by_user,
+                    created=row["created"],
                 )
             row["widgets"] = site_widget_list.id
 
