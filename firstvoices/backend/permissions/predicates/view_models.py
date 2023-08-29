@@ -6,15 +6,15 @@ from . import base, view
 # model-specific view permission predicates
 #
 
-# Site model is visible to all unless it has Team-only visibility
-can_view_site_model = Predicate(
+# Rule for who can see detailed site info including homepage, content APIs, etc
+can_view_site = Predicate(
     (
         base.is_public_obj
-        | base.is_members_obj
         | base.is_at_least_staff_admin
+        | base.has_member_access_to_site_obj
         | base.has_team_access
     ),
-    name="can_view_site_model",
+    name="can_view_site",
 )
 
 # Membership model is visible to admins, and relevant user
