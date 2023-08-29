@@ -21,8 +21,6 @@ class FormDataMixin:
         return encode_multipart(self.boundary_string, data)
 
 
-@pytest.mark.usefixtures("celery_session_app")
-@pytest.mark.usefixtures("celery_session_worker")
 class MediaTestMixin:
     """
     Utilities for testing media APIs
@@ -127,8 +125,6 @@ class MediaTestMixin:
         return data
 
 
-@pytest.mark.usefixtures("celery_session_app")
-@pytest.mark.usefixtures("celery_session_worker")
 class RelatedMediaTestMixin(MediaTestMixin):
     """
     For APIs that use the RelatedMediaSerializerMixin.

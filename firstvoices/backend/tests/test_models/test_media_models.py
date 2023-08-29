@@ -91,8 +91,6 @@ class TestAudioModel:
         assert File.objects.filter(pk=related_id).count() == 0
 
 
-@pytest.mark.usefixtures("celery_session_app")
-@pytest.mark.usefixtures("celery_session_worker")
 @pytest.mark.skip("Most of this is not compatible with async generation")
 class TestVideoModel:
     image_sizes = list(settings.IMAGE_SIZES.keys())

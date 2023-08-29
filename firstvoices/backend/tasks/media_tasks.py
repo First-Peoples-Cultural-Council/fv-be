@@ -8,10 +8,10 @@ def generate_media_thumbnails(model_name: str, id: str):
     """
     Calls generate_resized_images on the specified media object
     """
-    ModelClass = apps.get_model(app_label="backend", model_name=model_name)
+    model_class = apps.get_model(app_label="backend", model_name=model_name)
 
     with transaction.atomic():
         # can raise DoesNotExist, but just let it flow up
-        instance = ModelClass.objects.get(id=id)
+        instance = model_class.objects.get(id=id)
         # again, let the exceptions be logged -- nothing useful we can do here
         instance.generate_resized_images()
