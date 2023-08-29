@@ -20,6 +20,7 @@ from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
     DictionaryEntryCategoryResource,
+    DictionaryEntryLinkResource,
     DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
     NoteResource,
@@ -117,10 +118,11 @@ def run_import():
             "character-dictionary-links",
             DictionaryEntryRelatedCharacterResource(),
         ),
-        ("stories", StoryResource()),
+        ("dict-entrylinks", DictionaryEntryLinkResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
         ("pages", SitePageResource()),
+        ("stories", StoryResource()),
         # more to be added
     ]
 

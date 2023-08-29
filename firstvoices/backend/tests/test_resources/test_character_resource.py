@@ -9,7 +9,12 @@ from backend.resources.characters import (
     CharacterVariantResource,
     IgnoredCharacterResource,
 )
-from backend.tests.factories import CharacterFactory, SiteFactory
+from backend.tests.factories import (
+    AudioFactory,
+    CharacterFactory,
+    SiteFactory,
+    VideoFactory,
+)
 
 
 class TestCharacterImport:
@@ -17,27 +22,32 @@ class TestCharacterImport:
     def build_table(data: list[str]):
         headers = [
             # these headers should match what is produced by fv-nuxeo-export tool
-            "id,created,created_by,last_modified,last_modified_by,site,title,sort_order,approximate_form",
+            "id,created,created_by,last_modified,last_modified_by,site,title,sort_order,approximate_form,"
+            "related_audio,related_videos",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
+
+    @staticmethod
+    def base_import_validation(result, site, data):
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Character.objects.filter(site=site.id).count() == len(data)
 
     @pytest.mark.django_db
     def test_import_base_data(self):
         """Import Character object with basic fields"""
         site = SiteFactory.create()
         data = [
-            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,{site.id},ᐁ,1,e",  # noqa E501
-            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,",  # noqa E501
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,{site.id},ᐁ,1,e,{uuid.uuid4()},{uuid.uuid4()}",  # noqa E501
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,{uuid.uuid4()},{uuid.uuid4()}",  # noqa E501
         ]
         table = self.build_table(data)
 
         result = CharacterResource().import_data(dataset=table)
 
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert Character.objects.filter(site=site.id).count() == len(data)
+        self.base_import_validation(result, site, data)
 
         new_char = Character.objects.get(id=table["id"][0])
         assert table["title"][0] == new_char.title
@@ -47,6 +57,81 @@ class TestCharacterImport:
 
         new_char = Character.objects.get(id=table["id"][1])
         assert table["approximate_form"][1] == new_char.approximate_form
+
+    @pytest.mark.django_db
+    def test_related_media(self):
+        site = SiteFactory.create()
+        audio = AudioFactory.create()
+        video = VideoFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,t,{audio.id},{video.id}",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterResource().import_data(dataset=table)
+
+        self.base_import_validation(result, site, data)
+
+        new_char = Character.objects.get(id=table["id"][0])
+        # Verify audio and video are present
+        assert new_char.related_audio.all().count() == 1
+        assert new_char.related_audio.all().first().id == audio.id
+
+        assert new_char.related_videos.all().count() == 1
+        assert new_char.related_videos.all().first().id == video.id
+
+    @pytest.mark.django_db
+    def test_missing_related_media(self):
+        site = SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,{uuid.uuid4()},{uuid.uuid4()}",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterResource().import_data(dataset=table)
+
+        self.base_import_validation(result, site, data)
+
+        new_char = Character.objects.get(id=table["id"][0])
+        # Verifying missing audio and video are not present
+        assert new_char.related_audio.all().count() == 0
+        assert new_char.related_videos.all().count() == 0
+
+    @pytest.mark.django_db
+    def test_empty_related_media(self):
+        site = SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,,",  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterResource().import_data(dataset=table)
+
+        self.base_import_validation(result, site, data)
+
+        new_char = Character.objects.get(id=table["id"][0])
+        # Verifying audio and video are not present
+        assert new_char.related_audio.all().count() == 0
+        assert new_char.related_videos.all().count() == 0
+
+    @pytest.mark.django_db
+    def test_multiple_related_media(self):
+        site = SiteFactory.create()
+        audio = AudioFactory.create()
+        audio2 = AudioFactory.create()
+        data = [
+            f'{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,{site.id},ᐃ,2,,"{audio.id},{audio2.id}",',  # noqa E501
+        ]
+        table = self.build_table(data)
+
+        result = CharacterResource().import_data(dataset=table)
+
+        self.base_import_validation(result, site, data)
+
+        new_char = Character.objects.get(id=table["id"][0])
+        # Verify that character has 2 audio files and no video files
+        assert new_char.related_audio.all().count() == 2
+        assert new_char.related_videos.all().count() == 0
 
 
 class TestCharacterVariantImport:

@@ -4,7 +4,6 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models import DictionaryEntry
 from backend.models.characters import Character, IgnoredCharacter
-from backend.models.media import Audio, Image, Video
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
     IgnoredCharacterSerializer,
@@ -12,6 +11,7 @@ from backend.serializers.character_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_media_prefetch_list
 
 
 @extend_schema_view(
@@ -82,27 +82,22 @@ class CharactersViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
+            media_prefetches = get_media_prefetch_list(self.request.user)
             return (
                 Character.objects.filter(site__slug=site[0].slug)
                 .order_by("sort_order")
-                .prefetch_related("variants")
+                .select_related(
+                    "site", "site__language", "created_by", "last_modified_by"
+                )
                 .prefetch_related(
+                    "variants",
+                    *media_prefetches,
                     Prefetch(
                         "related_dictionary_entries",
-                        queryset=DictionaryEntry.objects.visible(self.request.user),
-                    ),
-                    Prefetch(
-                        "related_audio",
-                        queryset=Audio.objects.visible(self.request.user),
-                    ),
-                    Prefetch(
-                        "related_images",
-                        queryset=Image.objects.visible(self.request.user),
-                    ),
-                    Prefetch(
-                        "related_videos",
-                        queryset=Video.objects.visible(self.request.user),
-                    ),
+                        queryset=DictionaryEntry.objects.visible(self.request.user)
+                        .select_related("site")
+                        .prefetch_related(*media_prefetches, "translation_set"),
+                    )
                 )
             )
         else:
@@ -145,6 +140,8 @@ class IgnoredCharactersViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         if site.count() > 0:
-            return IgnoredCharacter.objects.filter(site__slug=site[0].slug)
+            return IgnoredCharacter.objects.filter(
+                site__slug=site[0].slug
+            ).select_related("site", "site__language", "created_by", "last_modified_by")
         else:
             return IgnoredCharacter.objects.none()

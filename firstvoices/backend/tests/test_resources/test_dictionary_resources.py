@@ -9,6 +9,7 @@ from backend.models.dictionary import (
     Acknowledgement,
     AlternateSpelling,
     DictionaryEntryCategory,
+    DictionaryEntryLink,
     DictionaryEntryRelatedCharacter,
     Note,
     Pronunciation,
@@ -19,6 +20,7 @@ from backend.resources.dictionary import (
     AcknowledgementResource,
     AlternateSpellingResource,
     DictionaryEntryCategoryResource,
+    DictionaryEntryLinkResource,
     DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
     NoteResource,
@@ -192,21 +194,27 @@ class TestDictionaryEntryCategoryImport:
         """Import DictionaryEntryCategory object with missing category"""
         site = factories.SiteFactory.create()
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        category = factories.CategoryFactory.create(site=site)
+        category2 = factories.CategoryFactory.create(site=site)
         data = [
-            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},nonexistent_category",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{uuid.uuid4()}",  # non-existent category
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{category2.id}",
         ]
 
         table = self.build_table(data)
         result = DictionaryEntryCategoryResource().import_data(dataset=table)
 
         assert not result.has_errors()
-        assert result.has_validation_errors()
-        assert result.totals["new"] == 0
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 2
+        assert result.totals["skip"] == 1
+        assert result.totals["error"] == 0
         assert (
             DictionaryEntryCategory.objects.filter(
                 dictionary_entry=dictionary_entry.id
             ).count()
-            == 0
+            == 2
         )
 
 
@@ -241,4 +249,70 @@ class TestDictionaryEntryRelatedCharacter:
         assert table["character"][0] == str(entry_related_character.character.id)
         assert table["dictionary_entry"][0] == str(
             entry_related_character.dictionary_entry.id
+        )
+
+
+class TestDictionaryLinkImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,site,dictionary_entry,related_entry",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import DictionaryEntryLink object with basic fields"""
+        site = factories.SiteFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry2 = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry3 = factories.DictionaryEntryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry2.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry3.id}",
+        ]
+
+        table = self.build_table(data)
+        result = DictionaryEntryLinkResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert DictionaryEntryLink.objects.filter(
+            from_dictionary_entry=dictionary_entry.id
+        ).count() == len(data)
+
+        entry_link = DictionaryEntryLink.objects.get(id=table["id"][0])
+        assert table["site"][0] == str(entry_link.site.id)
+        assert table["dictionary_entry"][0] == str(entry_link.from_dictionary_entry.id)
+        assert table["related_entry"][0] == str(entry_link.to_dictionary_entry.id)
+
+    @pytest.mark.django_db
+    def test_import_base_data_with_nonexistent_dictionary_entry(self):
+        """Import DictionaryEntryLink object with missing dictionary entry"""
+        site = factories.SiteFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry2 = factories.DictionaryEntryFactory.create(site=site)
+        dictionary_entry3 = factories.DictionaryEntryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry2.id}",
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{uuid.uuid4()}",  # containing non-existent entry
+            f"{uuid.uuid4()},,,,,{site.id},{dictionary_entry.id},{dictionary_entry3.id}",
+        ]
+
+        table = self.build_table(data)
+        result = DictionaryEntryLinkResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 2
+        assert result.totals["skip"] == 1
+        assert result.totals["error"] == 0
+        assert (
+            DictionaryEntryLink.objects.filter(
+                from_dictionary_entry=dictionary_entry.id
+            ).count()
+            == 2
         )

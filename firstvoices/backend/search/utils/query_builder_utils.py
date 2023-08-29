@@ -205,7 +205,7 @@ def get_valid_domain(input_domain_str):
 def get_valid_starts_with_char(input_str):
     # Starting alphabet can be a combination of characters as well
     # taking only first word if multiple words are supplied
-    valid_str = str(input_str).strip().lower().split(" ")[0]
+    valid_str = str(input_str).strip().split(" ")[0]
     return valid_str
 
 
