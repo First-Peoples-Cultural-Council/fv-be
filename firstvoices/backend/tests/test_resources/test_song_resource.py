@@ -3,8 +3,8 @@ import uuid
 import pytest
 import tablib
 
-from backend.models import Song
-from backend.resources.songs import SongResource
+from backend.models import Lyric, Song
+from backend.resources.songs import LyricResource, SongResource
 from backend.tests import factories
 
 
@@ -65,3 +65,45 @@ class TestSongsImport:
         assert str(new_song.related_videos.first().id) == table["related_videos"][0]
         assert new_song.get_visibility_display() == table["visibility"][0]
         assert str(new_song.site.id) == table["site"][0]
+
+
+class TestLyricsImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            "id,created,created_by,last_modified,last_modified_by,text,translation,ordering,parent_id",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        site = factories.SiteFactory.create()
+        song = factories.SongFactory.create(site=site)
+
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
+            f"Test non lyric book entry one,Test lyric translation,0,{uuid.uuid4()}",
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
+            f"Test lyric text,Test lyric translation,0,{song.id}",
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
+            f"Test non lyric book entry two,Test translation,0,{uuid.uuid4()}",
+        ]
+        table = self.build_table(data)
+
+        assert len(Lyric.objects.all()) == 0
+        assert song.lyrics.count() == 0
+
+        result = LyricResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 1
+        assert result.totals["skip"] == 2
+        assert Lyric.objects.all().count() == 1
+
+        new_lyric = Lyric.objects.get(id=table["id"][1])
+        assert new_lyric.text == table["text"][1]
+        assert new_lyric.translation == table["translation"][1]
+        assert new_lyric.ordering == int(table["ordering"][1])
+        assert new_lyric.song == song
