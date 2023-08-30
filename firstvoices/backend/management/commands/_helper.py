@@ -1,11 +1,39 @@
 from django.core.management import CommandError
+from django.db.models import signals
 from django.utils import timezone
 from elasticsearch.helpers import bulk, errors
 from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
-from backend.models import DictionaryEntry, Song, Story
+from backend.models import (
+    Acknowledgement,
+    DictionaryEntry,
+    Lyric,
+    Note,
+    Site,
+    Song,
+    Story,
+    StoryPage,
+    Translation,
+)
+from backend.models.dictionary import DictionaryEntryCategory
 from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
+from backend.search.indices.dictionary_entry_document import (
+    delete_from_index,
+    update_acknowledgement,
+    update_categories,
+    update_dictionary_entry_index,
+    update_notes,
+    update_translation,
+)
+from backend.search.indices.song_document import (
+    delete_from_index as delete_from_index_song,
+)
+from backend.search.indices.song_document import update_lyrics, update_song_index
+from backend.search.indices.story_document import (
+    delete_from_index as delete_from_index_story,
+)
+from backend.search.indices.story_document import update_pages, update_story_index
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -18,6 +46,10 @@ from backend.search.utils.object_utils import (
     get_notes_text,
     get_page_info,
     get_translation_text,
+)
+from backend.search.utils.site_signals import (
+    delete_related_docs,
+    update_document_visibility,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -183,3 +215,71 @@ def get_valid_index_name(mappings, index_name):
         return index_name
     else:
         return None
+
+
+def disconnect_signals():
+    # Disconnect signals temporarily
+    # Verify the list with signals present in all index documents present in
+    # backend.search folder if this list goes out of sync
+
+    # backend.search.indices.dictionary_entry_document
+    signals.post_save.disconnect(update_dictionary_entry_index, sender=DictionaryEntry)
+    signals.post_delete.disconnect(delete_from_index, sender=DictionaryEntry)
+    signals.post_save.disconnect(update_translation, sender=Translation)
+    signals.post_delete.disconnect(update_translation, sender=Translation)
+    signals.post_save.disconnect(update_notes, sender=Note)
+    signals.post_delete.disconnect(update_notes, sender=Note)
+    signals.post_save.disconnect(update_acknowledgement, sender=Acknowledgement)
+    signals.post_delete.disconnect(update_acknowledgement, sender=Acknowledgement)
+    signals.post_save.disconnect(update_categories, sender=DictionaryEntryCategory)
+    signals.post_delete.disconnect(update_categories, sender=DictionaryEntryCategory)
+
+    # backend.search.indices.song_document
+    signals.post_save.disconnect(update_song_index, sender=Song)
+    signals.post_delete.disconnect(delete_from_index_song, sender=Song)
+    signals.post_save.disconnect(update_lyrics, sender=Lyric)
+    signals.post_delete.disconnect(update_lyrics, sender=Lyric)
+
+    # backend.search.indices.story_document
+    signals.post_save.disconnect(update_story_index, sender=Story)
+    signals.post_delete.disconnect(delete_from_index_story, sender=Story)
+    signals.post_save.disconnect(update_pages, sender=StoryPage)
+    signals.post_delete.disconnect(update_pages, sender=StoryPage)
+
+    # backend.search.utils.site_signals
+    signals.pre_save.disconnect(update_document_visibility, sender=Site)
+    signals.post_delete.disconnect(delete_related_docs, sender=Site)
+
+
+def reconnect_signals():
+    # Reconnect signals back to models
+    # Verify the list with signals present in all index documents present in
+    # backend.search folder if this list goes out of sync
+
+    # backend.search.indices.dictionary_entry_document
+    signals.post_save.connect(update_dictionary_entry_index, sender=DictionaryEntry)
+    signals.post_delete.connect(delete_from_index, sender=DictionaryEntry)
+    signals.post_save.connect(update_translation, sender=Translation)
+    signals.post_delete.connect(update_translation, sender=Translation)
+    signals.post_save.connect(update_notes, sender=Note)
+    signals.post_delete.connect(update_notes, sender=Note)
+    signals.post_save.connect(update_acknowledgement, sender=Acknowledgement)
+    signals.post_delete.connect(update_acknowledgement, sender=Acknowledgement)
+    signals.post_save.connect(update_categories, sender=DictionaryEntryCategory)
+    signals.post_delete.connect(update_categories, sender=DictionaryEntryCategory)
+
+    # backend.search.indices.song_document
+    signals.post_save.connect(update_song_index, sender=Song)
+    signals.post_delete.connect(delete_from_index_song, sender=Song)
+    signals.post_save.connect(update_lyrics, sender=Lyric)
+    signals.post_delete.connect(update_lyrics, sender=Lyric)
+
+    # backend.search.indices.story_document
+    signals.post_save.connect(update_story_index, sender=Story)
+    signals.post_delete.connect(delete_from_index_story, sender=Story)
+    signals.post_save.connect(update_pages, sender=StoryPage)
+    signals.post_delete.connect(update_pages, sender=StoryPage)
+
+    # backend.search.utils.site_signals
+    signals.pre_save.connect(update_document_visibility, sender=Site)
+    signals.post_delete.connect(delete_related_docs, sender=Site)
