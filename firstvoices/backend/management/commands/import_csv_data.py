@@ -92,11 +92,8 @@ def run_import():
     )
 
     # Disconnecting signals
-    try:
-        disconnect_signals()
-        logger.info("Disconnected all search index related signals.")
-    except Exception as e:
-        logger.error("Could not disconnect search index related signals.", e)
+    disconnect_signals()
+    logger.info("Disconnected all search index related signals.")
 
     # List model resources in the correct order to import them
     import_resources = [
@@ -166,6 +163,7 @@ def run_import():
             except Exception as e:
                 status.no_warnings = False
                 status.save()
+                reconnect_signals()
                 raise e
 
     for file in unmatched_files:
@@ -181,8 +179,5 @@ def run_import():
     os.rmdir(current_export_dir)
 
     # re-connect signals
-    try:
-        reconnect_signals()
-        logger.info("Re-connected all search indexing related signals.")
-    except Exception as e:
-        logger.error("Could not re-connect search index related signals.", e)
+    reconnect_signals()
+    logger.info("Re-connected all search index related signals.")
