@@ -2,18 +2,22 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from backend.models.constants import (
-    DEFAULT_TITLE_LENGTH,
-    MAX_NOTE_LENGTH,
-    MAX_PAGE_LENGTH,
-)
+from backend.models.constants import MAX_NOTE_LENGTH
 from backend.permissions import predicates
 
-from .base import AudienceMixin, BaseControlledSiteContentModel
+from .base import (
+    AudienceMixin,
+    BaseControlledSiteContentModel,
+    TranslatedIntroMixin,
+    TranslatedTextMixin,
+    TranslatedTitleMixin,
+)
 from .media import RelatedMediaMixin
 
 
 class Story(
+    TranslatedTitleMixin,
+    TranslatedIntroMixin,
     AudienceMixin,
     RelatedMediaMixin,
     BaseControlledSiteContentModel,
@@ -46,16 +50,6 @@ class Story(
     # from fvbook:author
     author = models.CharField(max_length=200, blank=True)
 
-    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=False, null=False)
-    title_translation = models.CharField(
-        max_length=DEFAULT_TITLE_LENGTH, blank=True, null=False
-    )
-
-    introduction = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True, null=False)
-    introduction_translation = models.TextField(
-        max_length=MAX_PAGE_LENGTH, blank=True, null=False
-    )
-
     acknowledgements = ArrayField(
         models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
@@ -71,7 +65,7 @@ class Story(
         return self.title
 
 
-class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
+class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteContentModel):
     """
     Representing the pages within a story
 
@@ -98,9 +92,6 @@ class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
     ordering = models.SmallIntegerField(
         validators=[MinValueValidator(0)], null=False, default=0
     )
-
-    text = models.TextField(max_length=MAX_PAGE_LENGTH, blank=False)
-    translation = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True)
 
     # from fv:cultural_note
     notes = ArrayField(
