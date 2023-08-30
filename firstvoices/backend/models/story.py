@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from backend.permissions import predicates
+from backend.utils.character_utils import clean_input
 
 from .base import AudienceMixin, BaseControlledSiteContentModel
 from .media import RelatedMediaMixin
@@ -61,6 +62,19 @@ class Story(
     # from settings:settings json value
     hide_overlay = models.BooleanField(null=False, default=False)
 
+    def save(self, *args, **kwargs):
+        # normalizing text input
+        self.title = clean_input(self.title)
+        self.title_translation = clean_input(self.title_translation)
+        self.introduction = clean_input(self.introduction)
+        self.introduction_translation = clean_input(self.introduction_translation)
+        self.acknowledgements = list(
+            map(lambda x: clean_input(x), self.acknowledgements)
+        )
+        self.notes = list(map(lambda x: clean_input(x), self.notes))
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
@@ -102,6 +116,11 @@ class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
     )
 
     def save(self, *args, **kwargs):
+        # normalizing text input
+        self.text = clean_input(self.text)
+        self.translation = clean_input(self.translation)
+        self.notes = list(map(lambda x: clean_input(x), self.notes))
+
         # always match the site
         # these are saved in the db rather than set as properties to make permissions on queries simpler
         self.visibility = self.story.visibility
