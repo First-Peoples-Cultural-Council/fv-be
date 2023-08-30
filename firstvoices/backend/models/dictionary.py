@@ -2,6 +2,7 @@ import rules
 from django.db import models
 from django.utils.translation import gettext as _
 
+from backend.models.constants import DEFAULT_TITLE_LENGTH, MAX_NOTE_LENGTH
 from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
@@ -16,8 +17,6 @@ from .category import Category
 from .characters import Alphabet, Character
 from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
-
-TITLE_MAX_LENGTH = 225
 
 
 class BaseDictionaryContentModel(BaseModel):
@@ -51,7 +50,7 @@ class Note(BaseDictionaryContentModel):
         }
 
     # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
-    text = models.TextField()
+    text = models.CharField(max_length=MAX_NOTE_LENGTH)
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)
@@ -73,7 +72,7 @@ class Acknowledgement(BaseDictionaryContentModel):
         }
 
     # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
-    text = models.TextField()
+    text = models.CharField(max_length=MAX_NOTE_LENGTH)
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)
@@ -95,7 +94,7 @@ class Translation(BaseDictionaryContentModel):
         }
 
     # Fields
-    text = models.CharField(max_length=TITLE_MAX_LENGTH)
+    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)
@@ -119,7 +118,7 @@ class AlternateSpelling(BaseDictionaryContentModel):
         }
 
     # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
-    text = models.CharField(max_length=TITLE_MAX_LENGTH)
+    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
 
     def __str__(self):
         return self.text
@@ -137,7 +136,7 @@ class Pronunciation(BaseDictionaryContentModel):
         }
 
     # from fv-word:pronunciation
-    text = models.CharField(max_length=TITLE_MAX_LENGTH)
+    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
 
     def __str__(self):
         return self.text
@@ -155,7 +154,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     """
 
     # from dc:title, relatively more max_length due to phrases
-    title = models.CharField(max_length=TITLE_MAX_LENGTH)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
     type = models.CharField(
         max_length=6,
         choices=TypeOfDictionaryEntry.choices,
@@ -173,10 +172,10 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     #  (one character and one flag) used for sorting purposes. There is not much use of retaining sorting information
     #  after ~112 characters incase there are words which contain all 225 unknown characters. Thus, the field gets
     #  truncated at max length.
-    custom_order = TruncatingCharField(max_length=TITLE_MAX_LENGTH, blank=True)
+    custom_order = TruncatingCharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
 
     # from nxtag:tags
-    batch_id = models.CharField(max_length=255, blank=True)
+    batch_id = models.CharField(blank=True)
 
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField(
