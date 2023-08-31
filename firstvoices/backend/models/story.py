@@ -2,17 +2,23 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from backend.models.constants import MAX_NOTE_LENGTH
 from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
-from .base import AudienceMixin, BaseControlledSiteContentModel
+from .base import (
+    AudienceMixin,
+    BaseControlledSiteContentModel,
+    TranslatedIntroMixin,
+    TranslatedTextMixin,
+    TranslatedTitleMixin,
+)
 from .media import RelatedMediaMixin
-
-TITLE_MAX_LENGTH = 500
-NOTE_MAX_LENGTH = 1000
 
 
 class Story(
+    TranslatedTitleMixin,
+    TranslatedIntroMixin,
     AudienceMixin,
     RelatedMediaMixin,
     BaseControlledSiteContentModel,
@@ -43,20 +49,14 @@ class Story(
         }
 
     # from fvbook:author
-    author = models.CharField(max_length=100, blank=True)
-
-    title = models.CharField(blank=False, null=False)
-    title_translation = models.CharField(blank=True, null=False)
-
-    introduction = models.CharField(blank=True, null=False)
-    introduction_translation = models.CharField(blank=True, null=False)
+    author = models.CharField(max_length=200, blank=True)
 
     acknowledgements = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
 
     notes = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
 
     # from settings:settings json value
@@ -79,7 +79,7 @@ class Story(
         return self.title
 
 
-class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
+class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteContentModel):
     """
     Representing the pages within a story
 
@@ -107,12 +107,9 @@ class StoryPage(RelatedMediaMixin, BaseControlledSiteContentModel):
         validators=[MinValueValidator(0)], null=False, default=0
     )
 
-    text = models.TextField(max_length=NOTE_MAX_LENGTH, blank=False)
-    translation = models.TextField(max_length=NOTE_MAX_LENGTH, blank=True)
-
     # from fv:cultural_note
     notes = ArrayField(
-        models.TextField(max_length=NOTE_MAX_LENGTH), blank=True, default=list
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
 
     def save(self, *args, **kwargs):

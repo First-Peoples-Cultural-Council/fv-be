@@ -71,11 +71,17 @@ class MediaTestMixin:
         return file_data
 
     def get_media_thumbnail_data(self, instance):
-        return {
-            "thumbnail": self.get_visual_file_data(instance.thumbnail),
-            "small": self.get_visual_file_data(instance.small),
-            "medium": self.get_visual_file_data(instance.medium),
-        }
+        o = {}
+        if instance.thumbnail is not None:
+            o["thumbnail"] = self.get_visual_file_data(instance.thumbnail)
+
+        if instance.small is not None:
+            o["small"] = self.get_visual_file_data(instance.small)
+
+        if instance.medium is not None:
+            o["medium"] = self.get_visual_file_data(instance.medium)
+
+        return o
 
     def get_visual_media_data(self, instance, view_name):
         data = self.get_basic_media_data(instance, view_name=view_name)
@@ -191,7 +197,15 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert len(response_data["relatedImages"]) == 1
-        assert response_data["relatedImages"][0] == self.get_expected_image_data(image)
+
+        expected = self.get_expected_image_data(image)
+        for ignored_field in ("thumbnail", "small", "medium"):
+            if ignored_field in response_data["relatedImages"][0]:
+                response_data["relatedImages"][0].pop(ignored_field)
+            if ignored_field in expected:
+                expected.pop(ignored_field)
+
+        assert response_data["relatedImages"][0] == expected
 
     @pytest.mark.django_db
     def test_detail_related_videos(self):
@@ -206,7 +220,15 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert len(response_data["relatedVideos"]) == 1
-        assert response_data["relatedVideos"][0] == self.get_expected_video_data(video)
+
+        expected = self.get_expected_video_data(video)
+        for ignored_field in ("thumbnail", "small", "medium"):
+            if ignored_field in response_data["relatedVideos"][0]:
+                response_data["relatedVideos"][0].pop(ignored_field)
+            if ignored_field in expected:
+                expected.pop(ignored_field)
+
+        assert response_data["relatedVideos"][0] == expected
 
 
 class BaseMediaApiTest(

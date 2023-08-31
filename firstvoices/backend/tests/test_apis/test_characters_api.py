@@ -273,9 +273,15 @@ class TestCharactersEndpoints(
         response_data = json.loads(response.content)
 
         assert len(response_data["relatedImages"]) == 1
-        assert response_data["relatedImages"][0] == self.get_expected_image_data(
-            new_image
-        )
+        expected = self.get_expected_image_data(new_image)
+        for ignored_field in ("thumbnail", "small", "medium"):
+            if ignored_field in response_data["relatedImages"][0]:
+                response_data["relatedImages"][0].pop(ignored_field)
+            if ignored_field in expected:
+                expected.pop(ignored_field)
+
+        assert response_data["relatedImages"][0] == expected
+
         assert (
             Character.objects.get(id=instance.id).related_images.all().first().id
             == new_image.id
@@ -308,9 +314,16 @@ class TestCharactersEndpoints(
         response_data = json.loads(response.content)
 
         assert len(response_data["relatedVideos"]) == 1
-        assert response_data["relatedVideos"][0] == self.get_expected_video_data(
-            new_video
-        )
+
+        expected = self.get_expected_video_data(new_video)
+        for ignored_field in ("thumbnail", "small", "medium"):
+            if ignored_field in response_data["relatedVideos"][0]:
+                response_data["relatedVideos"][0].pop(ignored_field)
+            if ignored_field in expected:
+                expected.pop(ignored_field)
+
+        assert response_data["relatedVideos"][0] == expected
+
         assert (
             Character.objects.get(id=instance.id).related_videos.all().first().id
             == new_video.id

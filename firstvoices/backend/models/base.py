@@ -8,6 +8,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
+from backend.models.constants import DEFAULT_TITLE_LENGTH, MAX_PAGE_LENGTH
 from backend.permissions.managers import PermissionFilterMixin, PermissionsManager
 
 from .constants import Visibility
@@ -128,3 +129,31 @@ class AudienceMixin(models.Model):
 
     exclude_from_games = models.BooleanField(default=False)
     exclude_from_kids = models.BooleanField(default=False)
+
+
+class TranslatedTitleMixin(models.Model):
+    class Meta:
+        abstract = True
+
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=False, null=False)
+    title_translation = models.CharField(
+        max_length=DEFAULT_TITLE_LENGTH, blank=True, null=False
+    )
+
+
+class TranslatedIntroMixin(models.Model):
+    class Meta:
+        abstract = True
+
+    introduction = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True, null=False)
+    introduction_translation = models.TextField(
+        max_length=MAX_PAGE_LENGTH, blank=True, null=False
+    )
+
+
+class TranslatedTextMixin(models.Model):
+    class Meta:
+        abstract = True
+
+    text = models.TextField(max_length=MAX_PAGE_LENGTH, blank=False)
+    translation = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True)
