@@ -2,18 +2,14 @@ from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models import Lyric, Song
-from backend.models.constants import Visibility
-from backend.resources.base import BaseResource, SiteContentResource
-from backend.resources.utils.import_export_widgets import ChoicesWidget
+from backend.resources.base import (
+    BaseResource,
+    ControlledSiteContentResource,
+    RelatedMediaResourceMixin,
+)
 
 
-class SongResource(SiteContentResource):
-    visibility = fields.Field(
-        column_name="visibility",
-        widget=ChoicesWidget(Visibility.choices),
-        attribute="visibility",
-    )
-
+class SongResource(ControlledSiteContentResource, RelatedMediaResourceMixin):
     class Meta:
         model = Song
         fields = (
