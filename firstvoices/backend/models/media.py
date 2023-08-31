@@ -16,6 +16,8 @@ from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
 
 from backend.permissions import predicates
+from backend.tasks.media_tasks import generate_media_thumbnails
+from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 from .constants import MAX_FILEFIELD_LENGTH
@@ -367,14 +369,19 @@ class ThumbnailMixin(models.Model):
         """
         raise NotImplementedError
 
+    def _request_thumbnail_generation(self):
+        generate_media_thumbnails.apply_async(
+            (self._meta.model_name, self.id), link_error=link_error_handler.s()
+        )
+
     def _add_media(self, generate_thumbnails=True):
         super()._add_media()
         if generate_thumbnails:
-            self.generate_resized_images()
+            self._request_thumbnail_generation()
 
     def _update_media(self):
         super()._update_media()
-        self.generate_resized_images()
+        self._request_thumbnail_generation()
 
     def _delete_related_media(self, instance):
         """
