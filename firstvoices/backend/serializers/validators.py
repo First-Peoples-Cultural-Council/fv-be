@@ -72,5 +72,5 @@ class SupportedFileType:
         mimetype = magic.from_buffer(value.read(2048), mime=True)
 
         if mimetype not in self.mimetypes:
-            message = f"{self.message} - Supported types: {self.mimetypes}"
+            message = f"{self.message} - Filetype: [{mimetype}] Supported types: {self.mimetypes}"
             raise serializers.ValidationError(message)
