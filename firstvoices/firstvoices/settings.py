@@ -41,6 +41,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     "corsheaders",
+    "django_admin_env_notice",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -149,6 +150,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django_admin_env_notice.context_processors.from_settings",
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
@@ -286,3 +288,7 @@ EMBED_VIDEO_BACKENDS = (
     "embed_video.backends.YoutubeBackend",
     "embed_video.backends.VimeoBackend",
 )
+
+# Variables for the environment banners in the admin site
+ENVIRONMENT_NAME = os.getenv("ENVIRONMENT_NAME", "Local")
+ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
