@@ -154,6 +154,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
         site = self.get_validated_site()
         return (
             Category.objects.filter(site__slug=site[0].slug)
+            .select_related("site", "created_by", "last_modified_by")
             .prefetch_related("children")
             .all()
         )

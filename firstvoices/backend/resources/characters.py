@@ -17,7 +17,7 @@ class CharacterResource(SiteContentResource):
         column_name="related_videos",
         attribute="related_videos",
         m2m_add=True,
-        widget=ManyToManyWidget(Video, "id"),
+        widget=ManyToManyWidget(Video, field="id"),
     )
 
     class Meta:

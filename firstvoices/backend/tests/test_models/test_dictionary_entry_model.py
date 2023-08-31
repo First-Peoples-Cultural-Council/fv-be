@@ -3,7 +3,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import DataError
 
 from backend.models.characters import Alphabet
-from backend.models.dictionary import TITLE_MAX_LENGTH, DictionaryEntry
+from backend.models.constants import DEFAULT_TITLE_LENGTH
+from backend.models.dictionary import DictionaryEntry
 from backend.tests.factories import (
     AlphabetFactory,
     ControlledSiteContentFactory,
@@ -21,7 +22,7 @@ class TestDictionaryEntryModel:
 
     def test_max_length_success(self, db):
         site = SiteFactory.create()
-        entry_title_valid = generate_string(TITLE_MAX_LENGTH - 1)
+        entry_title_valid = generate_string(DEFAULT_TITLE_LENGTH - 1)
 
         entry = DictionaryEntry(title=entry_title_valid, type="WORD", site=site)
         entry.save()
@@ -31,7 +32,7 @@ class TestDictionaryEntryModel:
 
     def test_max_length_failure(self, db):
         site = SiteFactory.create()
-        entry_title_invalid = generate_string(TITLE_MAX_LENGTH + 1)
+        entry_title_invalid = generate_string(DEFAULT_TITLE_LENGTH + 1)
 
         with pytest.raises(DataError):
             entry_to_fail = DictionaryEntry(
@@ -55,13 +56,13 @@ class TestDictionaryEntryModel:
         """
 
         site = SiteFactory.create()
-        long_title = generate_string(TITLE_MAX_LENGTH)
+        long_title = generate_string(DEFAULT_TITLE_LENGTH)
 
         entry = DictionaryEntry(title=long_title, type="WORD", site=site)
         entry.save()
         fetched_entry = DictionaryEntry.objects.get(title=long_title)
         assert fetched_entry.title == long_title
-        assert len(fetched_entry.custom_order) == TITLE_MAX_LENGTH
+        assert len(fetched_entry.custom_order) == DEFAULT_TITLE_LENGTH
 
     def test_truncating_field_custom_order_whitespace(self, db):
         """Verify if the custom order field is does not retain any leading or trailing whitepsaces. Though spaces are

@@ -95,7 +95,7 @@ class Site(BaseModel):
         verbose_name = _("site")
         verbose_name_plural = _("sites")
         rules_permissions = {
-            "view": predicates.can_view_site_model,
+            "view": predicates.can_view_site,
             "add": predicates.is_superadmin,
             "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,

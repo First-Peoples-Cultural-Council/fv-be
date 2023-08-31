@@ -5,8 +5,9 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models.constants import Visibility
 from backend.models.sites import Language, Membership, Site, SiteFeature
-from backend.models.widget import SiteWidget
+from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
     LanguageSerializer,
@@ -16,6 +17,8 @@ from backend.serializers.site_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
+
+from .utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -70,22 +73,38 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     serializer_class = SiteDetailWriteSerializer
 
     def get_detail_queryset(self):
-        return Site.objects.select_related(
-            "menu", "language", "homepage"
-        ).prefetch_related(
-            Prefetch(
-                "sitefeature_set",
-                queryset=SiteFeature.objects.filter(is_enabled=True),
-            ),
-            Prefetch(
-                "homepage__widgets",
-                queryset=SiteWidget.objects.visible(self.request.user).filter(
-                    sitewidgetlistorder_set__site_widget_list__homepage_site=Site.objects.filter(
-                        slug=self.kwargs["slug"]
-                    ).first()
+        sites = (
+            Site.objects.all()
+            .select_related(
+                "menu",
+                "language",
+                "homepage",
+                "homepage",
+                *get_select_related_media_fields("logo"),
+                *get_select_related_media_fields("banner_image"),
+                *get_select_related_media_fields("banner_video"),
+            )
+            .prefetch_related(
+                Prefetch(
+                    "sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
                 ),
-            ),
+                Prefetch(
+                    "homepage__widgets",
+                    queryset=SiteWidget.objects.visible(self.request.user)
+                    .select_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    )
+                    .prefetch_related(
+                        Prefetch(
+                            "widgetsettings_set", queryset=WidgetSettings.objects.all()
+                        )
+                    ),
+                ),
+            )
         )
+
+        return sites
 
     def get_list_queryset(self):
         return Site.objects.none()  # not used-- see the list method instead
@@ -95,7 +114,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
         Return a list of sites grouped by language.
         """
         # retrieve visible sites in order to filter out empty languages
-        sites = Site.objects.visible(self.request.user)
+        sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
         ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
 
         # then retrieve the desired data as a Language queryset
@@ -106,8 +125,8 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sites",
-                    queryset=Site.objects.visible(self.request.user).order_by(
-                        Upper("title")
+                    queryset=sites.order_by(Upper("title")).select_related(
+                        *get_select_related_media_fields("logo")
                     ),
                 ),
                 Prefetch(
@@ -170,7 +189,9 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
         return (
             Membership.objects.filter(user=self.request.user)
-            .select_related("site", "site__language")
+            .select_related(
+                "site", "site__language", *get_select_related_media_fields("site__logo")
+            )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",

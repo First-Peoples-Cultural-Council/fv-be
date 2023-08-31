@@ -1,16 +1,15 @@
+from django.db.models import Prefetch
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models import Story
+from backend.models import Story, StoryPage
 from backend.serializers.story_serializers import StoryListSerializer, StorySerializer
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    SiteContentViewSetMixin,
-)
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_media_prefetch_list
 
 
 @extend_schema_view(
@@ -104,11 +103,32 @@ from .api_doc_variables import id_parameter, site_slug_parameter
 class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
     def get_detail_queryset(self):
         site = self.get_validated_site()
-        return Story.objects.filter(site__slug=site[0].slug).all()
+        return (
+            Story.objects.filter(site__slug=site[0].slug)
+            .all()
+            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .prefetch_related(*get_media_prefetch_list(self.request.user))
+        )
 
     def get_list_queryset(self):
         site = self.get_validated_site()
-        return Story.objects.filter(site__slug=site[0].slug).order_by("id").all()
+        return (
+            Story.objects.filter(site__slug=site[0].slug)
+            .order_by("title")
+            .all()
+            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .prefetch_related(
+                *get_media_prefetch_list(self.request.user),
+                Prefetch(
+                    "pages",
+                    queryset=StoryPage.objects.all()
+                    .select_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    )
+                    .prefetch_related(*get_media_prefetch_list(self.request.user)),
+                )
+            )
+        )
 
     def get_serializer_class(self):
         if self.action in ("list",):

@@ -98,10 +98,24 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
     """Serializer for Audio objects. Supports audio objects shared between different sites."""
 
     speakers = WriteableRelatedPersonSerializer(
-        many=True, queryset=media.Person.objects.all()
+        many=True,
+        queryset=media.Person.objects.all(),
+        style={
+            "base_template": "input.html"
+        },  # for local dev, settings for browseable api
     )
     original = MediaFileUploadSerializer(
-        validators=[SupportedFileType(mimetypes=["audio/wav", "audio/mpeg"])],
+        validators=[
+            SupportedFileType(
+                mimetypes=[
+                    "audio/wave",
+                    "audio/wav",
+                    "audio/x-wav",
+                    "audio/x-pn-wav",
+                    "audio/mpeg",
+                ]
+            )
+        ],
     )
 
     class Meta(MediaSerializer.Meta):

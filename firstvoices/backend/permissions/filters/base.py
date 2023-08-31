@@ -149,6 +149,14 @@ def has_team_access_to_site(user):
     return has_at_least_assistant_membership(user)
 
 
+def has_member_access_to_site_obj(user):
+    """Special case for getting the membership directly from a site model object"""
+    if user.is_anonymous:
+        return always_false(user)
+
+    return Q(membership_set__user=user) & Q(membership_set__role__gte=Role.MEMBER)
+
+
 def has_team_access_to_site_obj(user):
     """Special case for getting the membership directly from a site model object"""
     if user.is_anonymous:
