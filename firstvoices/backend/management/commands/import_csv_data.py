@@ -8,6 +8,7 @@ from scripts.utils.aws_download_utils import (
     download_latest_exports,
 )
 
+from backend.management.commands._helper import disconnect_signals, reconnect_signals
 from backend.models.app import AppImportStatus
 from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
@@ -90,6 +91,10 @@ def run_import():
         label=f"nuxeo_import_{available_exports[0]}"
     )
 
+    # Disconnecting signals
+    disconnect_signals()
+    logger.info("Disconnected all search index related signals.")
+
     # List model resources in the correct order to import them
     import_resources = [
         ("users", UserResource()),
@@ -158,6 +163,7 @@ def run_import():
             except Exception as e:
                 status.no_warnings = False
                 status.save()
+                reconnect_signals()
                 raise e
 
     for file in unmatched_files:
@@ -171,3 +177,7 @@ def run_import():
     for file in os.listdir(current_export_dir):
         os.remove(os.path.join(current_export_dir, file))
     os.rmdir(current_export_dir)
+
+    # re-connect signals
+    reconnect_signals()
+    logger.info("Re-connected all search index related signals.")
