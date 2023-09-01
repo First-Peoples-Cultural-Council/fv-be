@@ -38,7 +38,9 @@ class SitePage(BaseControlledSiteContentModel):
         db_index=True,
         unique=False,
     )
-    subtitle = models.CharField(blank=True, max_length=constants.DEFAULT_TITLE_LENGTH)
+    subtitle = models.CharField(
+        null=True, blank=True, max_length=constants.DEFAULT_TITLE_LENGTH
+    )
     widgets = models.ForeignKey(
         SiteWidgetList,
         on_delete=models.PROTECT,
