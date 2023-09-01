@@ -112,7 +112,12 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
                     "audio/wav",
                     "audio/x-wav",
                     "audio/x-pn-wav",
+                    "audio/vnd.wav",
                     "audio/mpeg",
+                    "audio/mp3",
+                    "audio/mpeg3",
+                    "audio/x-mpeg-3",
+                    "application/octet-stream",  # fallback for weird mp3 files; see fw-4829
                 ]
             )
         ],
