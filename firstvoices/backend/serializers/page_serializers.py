@@ -8,7 +8,7 @@ from backend.serializers.base_serializers import (
     BaseControlledSiteContentSerializer,
     WritableControlledSiteContentSerializer,
 )
-from backend.serializers.fields import NonNullCharField, SiteHyperlinkedIdentityField
+from backend.serializers.fields import NullableCharField, SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
@@ -22,7 +22,7 @@ class SitePageSerializer(
     )
 
     slug = serializers.CharField(required=False)
-    subtitle = NonNullCharField(required=False)
+    subtitle = NullableCharField(required=False)
 
     class Meta:
         model = SitePage
@@ -48,7 +48,7 @@ class SitePageDetailSerializer(SitePageSerializer):
 
 class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
     slug = serializers.CharField(required=False)
-    subtitle = NonNullCharField(required=False)
+    subtitle = NullableCharField(required=False)
     widgets = serializers.PrimaryKeyRelatedField(
         queryset=SiteWidget.objects.all(),
         allow_null=True,
