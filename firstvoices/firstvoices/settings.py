@@ -290,5 +290,5 @@ EMBED_VIDEO_BACKENDS = (
 )
 
 # Variables for the environment banners in the admin site
-ENVIRONMENT_NAME = os.getenv("ENVIRONMENT_NAME", "Local")
+ENVIRONMENT_NAME = os.getenv("SENTRY_ENVIRONMENT", "Local")
 ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
