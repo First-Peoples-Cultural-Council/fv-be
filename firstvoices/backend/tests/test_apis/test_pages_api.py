@@ -90,7 +90,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
         return {
             **controlled_standard_fields,
-            "subtitle": None,
+            "subtitle": "",
             "slug": instance.slug,
         }
 
@@ -103,7 +103,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
         return {
             **controlled_standard_fields,
-            "subtitle": None,
+            "subtitle": "",
             "slug": instance.slug,
             "widgets": [],
             "bannerImage": None,
