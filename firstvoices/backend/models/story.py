@@ -52,10 +52,6 @@ class Story(
 
     def save(self, *args, **kwargs):
         # normalizing text input
-        self.title = clean_input(self.title)
-        self.title_translation = clean_input(self.title_translation)
-        self.introduction = clean_input(self.introduction)
-        self.introduction_translation = clean_input(self.introduction_translation)
         self.acknowledgements = list(
             map(lambda x: clean_input(x), self.acknowledgements)
         )
@@ -99,8 +95,6 @@ class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     def save(self, *args, **kwargs):
         # normalizing text input
-        self.text = clean_input(self.text)
-        self.translation = clean_input(self.translation)
         self.notes = list(map(lambda x: clean_input(x), self.notes))
 
         # always match the site
