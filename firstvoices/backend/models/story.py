@@ -25,18 +25,6 @@ class Story(
 ):
     """
     Representing a story associated with a site, including unique title, pages, introduction, and media links
-
-    Notes for data migration:
-    acknowledgements from fvbook:acknowledgement
-    notes from fv:cultural_note
-
-    introduction from fvbook:introduction
-    introduction_translation from fvbook:introduction_literal_translation
-
-    title from dc:title
-    title_translation from fvbook:title_literal_translation
-
-    settings from a value in settings:settings
     """
 
     class Meta:
@@ -84,9 +72,6 @@ class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteConten
     Representing the pages within a story
 
     ordering enforces ordering via simple ascending sort
-
-    translation from fvbookentry:dominant_language_text and fv:literal_translation
-    text from dc:title
     """
 
     class Meta:
