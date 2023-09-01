@@ -117,6 +117,7 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
                     "audio/mp3",
                     "audio/mpeg3",
                     "audio/x-mpeg-3",
+                    "application/octet-stream",  # fallback for weird mp3 files; see fw-4829
                 ]
             )
         ],
