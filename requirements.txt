@@ -59,7 +59,7 @@ psycopg2-binary==2.9.7
 pycparser==2.21
 PyJWT==2.8.0
 pyrsistent==0.19.3
-pytest==7.4.0
+pytest==7.4.1
 pytest-celery==0.0.0
 pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.11.1 #https://github.com/pytest-dev/pytest-mock
