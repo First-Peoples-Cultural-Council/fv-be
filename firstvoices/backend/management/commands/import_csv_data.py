@@ -133,14 +133,8 @@ def run_import():
 
     for key, resource in import_resources:
         # Parse files to import with this resource
-        if resource.__class__ == SiteHomepageWidgetsResource:
-            logger.info("Importing Site homepage widget lists...")
-            matched_files = [
-                f for f in os.listdir(current_export_dir) if f.startswith(key)
-            ]
-        else:
-            logger.info(f"Importing {key} models...")
-            matched_files = [f for f in unmatched_files if f.startswith(key)]
+        logger.info(f"Importing from [{key}] CSV with {type(resource).__name__}...")
+        matched_files = [f for f in unmatched_files if f.startswith(key)]
         unmatched_files = [f for f in unmatched_files if f not in matched_files]
 
         if not matched_files:
