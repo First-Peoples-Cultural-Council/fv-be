@@ -17,7 +17,7 @@ class SiteListFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         list_of_sites = [(site.id, site.title) for site in Site.objects.all()]
-        return sorted(list_of_sites, key=lambda tp: tp[1])
+        return sorted(list_of_sites, key=lambda tp: tp[1].lower())
 
     def queryset(self, request, queryset):
         if self.value():

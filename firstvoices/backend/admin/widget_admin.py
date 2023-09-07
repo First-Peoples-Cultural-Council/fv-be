@@ -31,7 +31,7 @@ class WidgetAdmin(BaseAdmin):
         "widget_type",
         "format",
     ) + BaseAdmin.list_display
-    list_filter = ["widget_type", "format"]
+    list_filter = ("widget_type", "format")
     search_fields = (
         "title",
         "widget_type",
@@ -50,7 +50,7 @@ class SiteWidgetAdmin(WidgetAdmin, BaseControlledSiteContentAdmin):
         "widget_type",
         "format",
     ) + BaseControlledSiteContentAdmin.list_display
-    list_filter = ["site"] + WidgetAdmin.list_filter
+    list_filter = WidgetAdmin.list_filter + BaseSiteContentAdmin.list_filter
     search_fields = (
         WidgetAdmin.search_fields
         + ("site__title",)
@@ -71,7 +71,6 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
 @admin.register(SiteWidgetList)
 class SiteWidgetListAdmin(BaseSiteContentAdmin):
     list_display = ("__str__",) + BaseSiteContentAdmin.list_display
-    list_filter = ["site"]
     fields = (
         "site",
         "id",

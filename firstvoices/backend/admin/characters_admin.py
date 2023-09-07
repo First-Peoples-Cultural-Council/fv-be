@@ -9,7 +9,6 @@ from backend.models.characters import (
 from backend.models.dictionary import DictionaryEntry
 
 from .base_admin import (
-    BaseAdmin,
     BaseInlineAdmin,
     BaseInlineSiteContentAdmin,
     BaseSiteContentAdmin,
@@ -111,9 +110,7 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
 
 
 @admin.register(Alphabet)
-class AlphabetAdmin(BaseAdmin):
+class AlphabetAdmin(BaseSiteContentAdmin):
     fields = ("site", "input_to_canonical_map")
-    list_display = (
-        "site",
-        "input_to_canonical_map",
-    ) + BaseAdmin.list_display
+    list_display = ("input_to_canonical_map",) + BaseSiteContentAdmin.list_display
+    list_filter = ()

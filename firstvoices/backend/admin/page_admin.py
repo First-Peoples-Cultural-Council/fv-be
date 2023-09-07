@@ -9,7 +9,6 @@ from backend.models.widget import SiteWidgetList
 @admin.register(SitePage)
 class SitePageAdmin(BaseControlledSiteContentAdmin):
     list_display = ("title", "slug") + BaseControlledSiteContentAdmin.list_display
-    list_filter = ["site"]
     search_fields = (
         "title",
         "widgets__widgets__title",

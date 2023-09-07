@@ -78,11 +78,12 @@ class SiteFeatureAdmin(BaseSiteContentAdmin):
 
 
 @admin.register(SiteMenu)
-class SiteMenuAdmin(BaseAdmin):
+class SiteMenuAdmin(BaseSiteContentAdmin):
     fields = ("site", "json")
-    list_display = ("json", "site") + BaseAdmin.list_display
+    list_display = ("json",) + BaseSiteContentAdmin.list_display
     search_fields = ("site__title", "json")
     autocomplete_fields = ("site",)
+    list_filter = ()
 
 
 class MembershipInline(BaseInlineSiteContentAdmin):
