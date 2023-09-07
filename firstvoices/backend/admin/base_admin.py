@@ -7,6 +7,22 @@ from django.utils.html import format_html
 from django.utils.translation import gettext as _
 
 from backend.models.media import Audio, Image, Video
+from backend.models.sites import Site
+
+
+class SiteListFilter(admin.SimpleListFilter):
+    # Allow any model to be filtered by language site
+    title = "site"
+    parameter_name = "site"
+
+    def lookups(self, request, model_admin):
+        list_of_sites = [(site.id, site.title) for site in Site.objects.all()]
+        return sorted(list_of_sites, key=lambda tp: tp[1])
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(site__id=self.value())
+        return queryset
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -46,16 +62,32 @@ class BaseAdmin(admin.ModelAdmin):
 class BaseSiteContentAdmin(BaseAdmin):
     list_display = ("site",) + BaseAdmin.list_display
     list_select_related = BaseAdmin.list_select_related + ["site"]
+    list_filter = (SiteListFilter,)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         # prefetch the media models' site info (it is used for their display name)
         if db_field.name == "related_audio":
-            kwargs["queryset"] = Audio.objects.select_related("site")
+            kwargs["queryset"] = Audio.objects.filter(
+                site=self.get_site_from_object(request)
+            ).select_related("site")
         if db_field.name == "related_images":
-            kwargs["queryset"] = Image.objects.select_related("site")
+            kwargs["queryset"] = Image.objects.filter(
+                site=self.get_site_from_object(request)
+            ).select_related("site")
         if db_field.name == "related_videos":
-            kwargs["queryset"] = Video.objects.select_related("site")
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+            kwargs["queryset"] = Video.objects.filter(
+                site=self.get_site_from_object(request)
+            ).select_related("site")
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_site_from_object(self, request):
+        if not hasattr(self, "parent_site"):
+            self.parent_site = None
+            object_id = request.resolver_match.kwargs.get("object_id")
+            instance = self.get_object(request, object_id)
+            if instance:
+                self.parent_site = instance.site
+        return self.parent_site
 
 
 class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
@@ -111,9 +143,23 @@ class BaseInlineAdmin(admin.TabularInline):
 
 
 class BaseInlineSiteContentAdmin(BaseInlineAdmin):
+    # Should appear only on Site admin or other BaseSiteContent admin objects
+    list_select_related = ("site",)
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("site")
+
+    def get_site_from_object(self, request):
+        if not hasattr(self, "parent_site"):
+            self.parent_site = None
+            object_id = request.resolver_match.kwargs.get("object_id")
+            instance = self.parent_model.objects.get(id=object_id)
+            if instance and isinstance(instance, Site):
+                self.parent_site = instance
+            elif instance and hasattr(instance, "site"):
+                self.parent_site = instance.site
+        return self.parent_site
 
 
 class HiddenBaseAdmin(BaseAdmin):

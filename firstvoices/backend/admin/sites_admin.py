@@ -55,7 +55,7 @@ class MembershipAdmin(BaseSiteContentAdmin):
         "user__email",
         "site__title",
     )
-    list_filter = ("role",)
+    list_filter = ("role",) + BaseSiteContentAdmin.list_filter
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -78,9 +78,9 @@ class SiteFeatureAdmin(BaseSiteContentAdmin):
 
 
 @admin.register(SiteMenu)
-class SiteMenuAdmin(BaseSiteContentAdmin):
+class SiteMenuAdmin(BaseAdmin):
     fields = ("site", "json")
-    list_display = ("json",) + BaseSiteContentAdmin.list_display
+    list_display = ("json", "site") + BaseAdmin.list_display
     search_fields = ("site__title", "json")
     autocomplete_fields = ("site",)
 

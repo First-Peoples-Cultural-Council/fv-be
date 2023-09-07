@@ -101,7 +101,7 @@ class Translation(BaseDictionaryContentModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return _("Translation: %(translation)s.") % {
+        return _("Translation: %(translation)s") % {
             "translation": self.text,
         }
 
