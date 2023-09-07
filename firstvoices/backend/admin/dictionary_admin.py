@@ -19,6 +19,7 @@ from .base_admin import (
     BaseAdmin,
     BaseControlledSiteContentAdmin,
     BaseInlineAdmin,
+    BaseInlineSiteContentAdmin,
     HiddenBaseAdmin,
 )
 
@@ -84,12 +85,19 @@ class DictionaryEntryLinkInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmi
     fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
 
 
-class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
+class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineSiteContentAdmin):
     model = WordOfTheDay
     fields = (
         "dictionary_entry",
         "date",
     ) + BaseInlineAdmin.fields
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "dictionary_entry":
+            kwargs["queryset"] = DictionaryEntry.objects.filter(
+                site=self.get_site_from_object(request)
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(DictionaryEntry)
