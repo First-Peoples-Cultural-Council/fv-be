@@ -15,6 +15,36 @@ from .base_admin import (
 )
 
 
+class CharacterInline(BaseInlineSiteContentAdmin):
+    model = Character
+    fields = (
+        "title",
+        "sort_order",
+    ) + BaseInlineAdmin.fields
+    ordering = ("sort_order",)
+
+
+class CharacterVariantInline(BaseInlineSiteContentAdmin):
+    model = CharacterVariant
+    fields = (
+        "title",
+        "base_character",
+    ) + BaseInlineAdmin.fields
+    ordering = ("base_character__sort_order", "title")
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "base_character":
+            kwargs["queryset"] = Character.objects.select_related("site").filter(
+                site=self.get_site_from_object(request)
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class IgnoredCharacterInline(BaseInlineSiteContentAdmin):
+    model = IgnoredCharacter
+    fields = ("title",) + BaseInlineAdmin.fields
+
+
 class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
     model = DictionaryEntry.related_characters.through
     fields = ("character", "dictionary_entry")
@@ -48,7 +78,7 @@ class CharacterAdmin(BaseSiteContentAdmin):
         "approximate_form",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "approximate_form")
-    inlines = (CharacterRelatedDictionaryEntryInline,)
+    inlines = (CharacterVariantInline, CharacterRelatedDictionaryEntryInline)
 
 
 @admin.register(CharacterVariant)
@@ -57,9 +87,15 @@ class CharacterVariantAdmin(BaseSiteContentAdmin):
     list_display = (
         "title",
         "base_character",
-        "site",
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "base_character")
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "base_character":
+            kwargs["queryset"] = Character.objects.select_related("site").filter(
+                site=self.get_site_from_object(request)
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -76,35 +112,5 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
 @admin.register(Alphabet)
 class AlphabetAdmin(BaseSiteContentAdmin):
     fields = ("site", "input_to_canonical_map")
-    list_display = (
-        "site",
-        "input_to_canonical_map",
-    ) + BaseSiteContentAdmin.list_display
-
-
-class CharacterInline(BaseInlineSiteContentAdmin):
-    model = Character
-    fields = (
-        "title",
-        "sort_order",
-    ) + BaseInlineAdmin.fields
-    ordering = ("sort_order",)
-
-
-class CharacterVariantInline(BaseInlineSiteContentAdmin):
-    model = CharacterVariant
-    fields = (
-        "title",
-        "base_character",
-    ) + BaseInlineAdmin.fields
-    ordering = ("base_character__sort_order", "title")
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "base_character":
-            kwargs["queryset"] = Character.objects.select_related("site")
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-
-class IgnoredCharacterInline(BaseInlineSiteContentAdmin):
-    model = IgnoredCharacter
-    fields = ("title",) + BaseInlineAdmin.fields
+    list_display = ("input_to_canonical_map",) + BaseSiteContentAdmin.list_display
+    list_filter = ()

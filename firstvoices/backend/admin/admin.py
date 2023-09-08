@@ -11,7 +11,7 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .dictionary_admin import CategoryInline, DictionaryEntryInline, WordOfTheDayInline
+from .dictionary_admin import CategoryInline, WordOfTheDayInline
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 # Main Site admin settings. For related sites models, see .sites_admin
@@ -32,7 +32,6 @@ class SiteAdmin(BaseAdmin):
         IgnoredCharacterInline,
         SiteFeatureInline,
         SiteMenuInline,
-        DictionaryEntryInline,
         CategoryInline,
         WordOfTheDayInline,
     ]
@@ -50,12 +49,19 @@ class SiteAdmin(BaseAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # prefetch the media models' site info (it is used for their display name)
+        site_id = request.resolver_match.kwargs.get("object_id")
         if db_field.name in ("logo", "banner_image"):
-            kwargs["queryset"] = Image.objects.select_related("site")
+            kwargs["queryset"] = Image.objects.filter(site__id=site_id).select_related(
+                "site"
+            )
         if db_field.name == "banner_video":
-            kwargs["queryset"] = Video.objects.select_related("site")
+            kwargs["queryset"] = Video.objects.filter(site__id=site_id).select_related(
+                "site"
+            )
         if db_field.name == "homepage":
-            kwargs["queryset"] = SiteWidgetList.objects.select_related("site")
+            kwargs["queryset"] = SiteWidgetList.objects.filter(
+                site__id=site_id
+            ).select_related("site")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
