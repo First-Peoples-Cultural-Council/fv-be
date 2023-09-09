@@ -1,6 +1,6 @@
-from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator
 from django.db import models
+from django_better_admin_arrayfield.models.fields import ArrayField
 
 from backend.models.constants import MAX_NOTE_LENGTH
 from backend.permissions import predicates

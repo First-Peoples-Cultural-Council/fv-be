@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
 from backend.admin import BaseInlineAdmin, BaseSiteContentAdmin
 from backend.models import Lyric, Song
@@ -13,6 +14,6 @@ class LyricAdmin(BaseInlineAdmin):
 
 
 @admin.register(Song)
-class SongAdmin(BaseSiteContentAdmin):
+class SongAdmin(BaseSiteContentAdmin, DynamicArrayMixin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [LyricAdmin]
