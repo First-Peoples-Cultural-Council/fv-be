@@ -126,7 +126,7 @@ class TestStoryImport:
         ]
         table = self.build_table(data)
 
-        result = StoryResource().import_data(dataset=table, raise_errors=True)
+        result = StoryResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
@@ -233,7 +233,7 @@ class TestStoryPageImport:
         ]
         table = self.build_table(data)
 
-        result = StoryPageResource().import_data(dataset=table, raise_errors=True)
+        result = StoryPageResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
@@ -286,7 +286,7 @@ class TestStoryPageImport:
         ]
         table = self.build_table(data)
 
-        result = StoryPageResource().import_data(dataset=table, raise_errors=True)
+        result = StoryPageResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()

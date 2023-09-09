@@ -63,7 +63,7 @@ class TestSiteImport:
         ]
         table = build_table(data)
 
-        result = SiteResource().import_data(dataset=table, raise_errors=True)
+        result = SiteResource().import_data(dataset=table)
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == 1
@@ -93,7 +93,7 @@ class TestSiteImport:
         ]
         table = build_table(data)
 
-        result = SiteResource().import_data(dataset=table, raise_errors=True)
+        result = SiteResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
@@ -113,7 +113,7 @@ class TestSiteMigration:
         ]
         table = build_table(data)
 
-        result = SiteMigrationResource().import_data(dataset=table, raise_errors=True)
+        result = SiteMigrationResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
