@@ -1,14 +1,16 @@
 import logging
 
 from import_export import fields
-from jwt_auth.models import User
 
 from backend.models import Image, Site, SitePage
 from backend.models.constants import Visibility
 from backend.models.media import Video
 from backend.models.widget import SiteWidget, SiteWidgetList, SiteWidgetListOrder
 from backend.resources.base import SiteContentResource
-from backend.resources.utils.import_export_widgets import ChoicesWidget
+from backend.resources.utils.import_export_widgets import (
+    ChoicesWidget,
+    UserForeignKeyWidget,
+)
 
 
 class SitePageResource(SiteContentResource):
@@ -21,13 +23,6 @@ class SitePageResource(SiteContentResource):
     class Meta:
         model = SitePage
 
-    @staticmethod
-    def get_user_or_none(email):
-        try:
-            return User.objects.get(email=email)
-        except User.DoesNotExist:
-            return None
-
     def before_import_row(self, row, **kwargs):
         logger = logging.getLogger(__name__)
 
@@ -36,11 +31,17 @@ class SitePageResource(SiteContentResource):
         if row["widgets"] == "":
             row["widgets"] = None
         else:
-            last_modified_by_user = self.get_user_or_none(row["last_modified_by"])
-            created_by_user = self.get_user_or_none(row["created_by"])
+            user_widget = UserForeignKeyWidget()
+            last_modified_by_user = user_widget.clean(value=row["last_modified_by"])
+            created_by_user = user_widget.clean(value=row["created_by"])
+
             site = Site.objects.get(id=row["site"])
             widgets_list = row["widgets"].split(",")
-            site_widget_list = SiteWidgetList.objects.create(site=site)
+            site_widget_list = SiteWidgetList.objects.create(
+                site=site,
+                last_modified_by=last_modified_by_user,
+                created_by=created_by_user,
+            )
             for index, widget_id in enumerate(widgets_list):
                 widget = SiteWidget.objects.get(id=widget_id)
                 SiteWidgetListOrder.objects.create(

@@ -64,7 +64,7 @@ class UserForeignKeyWidget(ForeignKeyWidget):
             # leave field empty if no email provided
             return None
 
-        user_exists = self.model.objects.filter(email=value).count() == 1
+        user_exists = self.model.objects.filter(email=value).exists()
         if user_exists:
             return super().clean(value, row, **kwargs)
         else:

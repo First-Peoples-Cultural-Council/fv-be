@@ -41,6 +41,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     "corsheaders",
+    "django_admin_env_notice",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     "backend",
     "healthcheck",
     "embed_video",
+    "django_better_admin_arrayfield",
 ]
 
 MIDDLEWARE = [
@@ -149,6 +151,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django_admin_env_notice.context_processors.from_settings",
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
@@ -227,7 +230,6 @@ ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
 ELASTICSEARCH_DEFAULT_CONFIG = {"shards": 1, "replicas": 0}
 connections.configure(default={"hosts": ELASTICSEARCH_HOST})
 
-
 # Sentry monitoring configuration settings.
 # See docs at https://docs.sentry.io/platforms/python/guides/django/
 sentry_logging = LoggingIntegration(
@@ -258,7 +260,6 @@ sentry_sdk.init(
     ],
 )
 
-
 # File hosting on AWS S3
 # See: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
@@ -272,7 +273,9 @@ AWS_QUERYSTRING_AUTH = True  # this is the default setting, just being explicit
 AWS_QUERYSTRING_EXPIRE = (
     60 * 60
 )  # seconds until a query string expires; this is the default setting
-
+AWS_S3_OBJECT_PARAMETERS = {
+    "ContentDisposition": "attachment"
+}  # default to downloading files rather than displaying
 
 # Disallow import/export unless you have write permission
 IMPORT_EXPORT_IMPORT_PERMISSION_CODE = "change"
@@ -286,3 +289,7 @@ EMBED_VIDEO_BACKENDS = (
     "embed_video.backends.YoutubeBackend",
     "embed_video.backends.VimeoBackend",
 )
+
+# Variables for the environment banners in the admin site
+ENVIRONMENT_NAME = os.getenv("SENTRY_ENVIRONMENT", "Local")
+ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")

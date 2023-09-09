@@ -9,7 +9,7 @@ from backend.tests.test_apis.base_api_test import ReadOnlyApiTests
 
 class TestMySitesEndpoint(ReadOnlyApiTests):
     """
-    End to end tests that check the my-sites endpoint for expected behavior.
+    End-to-end tests that check the my-sites endpoint for expected behavior.
     """
 
     API_LIST_VIEW = "api:my-sites-list"

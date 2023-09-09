@@ -1,10 +1,11 @@
 from django.contrib import admin
+from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
 from backend.admin.base_admin import BaseInlineSiteContentAdmin, BaseSiteContentAdmin
 from backend.models import Story, StoryPage
 
 
-class StoryPageInlineAdmin(BaseInlineSiteContentAdmin):
+class StoryPageInlineAdmin(BaseInlineSiteContentAdmin, DynamicArrayMixin):
     model = StoryPage
     fields = (
         "ordering",

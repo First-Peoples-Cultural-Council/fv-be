@@ -54,12 +54,12 @@ class SiteMigrationResource(SiteResource):
                 if videofile_ids_to_delete:
                     cursor.execute(
                         "DELETE FROM backend_videofile WHERE id IN %s",
-                        [tuple(imagefile_ids_to_delete)],
+                        [tuple(videofile_ids_to_delete)],
                     )
                 if file_ids_to_delete:
                     cursor.execute(
                         "DELETE FROM backend_file WHERE id IN %s",
-                        [tuple(imagefile_ids_to_delete)],
+                        [tuple(file_ids_to_delete)],
                     )
 
             # Delete SitePage objects since they cause the site deletion to fail due to on_delete protect (widgets).

@@ -17,8 +17,9 @@ from backend.models.part_of_speech import PartOfSpeech
 
 from .base_admin import (
     BaseAdmin,
+    BaseControlledSiteContentAdmin,
     BaseInlineAdmin,
-    BaseSiteContentAdmin,
+    BaseInlineSiteContentAdmin,
     HiddenBaseAdmin,
 )
 
@@ -57,14 +58,6 @@ class PronunciationInline(RelatedDictionaryEntryAdminMixin, BaseDictionaryInline
     model = Pronunciation
 
 
-class DictionaryEntryInline(BaseDictionaryInlineAdmin):
-    model = DictionaryEntry
-    fields = (
-        "title",
-        "type",
-    ) + BaseInlineAdmin.fields
-
-
 class CategoryInline(BaseDictionaryInlineAdmin):
     model = Category
     fields = ("title", "parent") + BaseInlineAdmin.fields
@@ -92,16 +85,23 @@ class DictionaryEntryLinkInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmi
     fields = ("to_dictionary_entry",) + BaseInlineAdmin.fields
 
 
-class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
+class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineSiteContentAdmin):
     model = WordOfTheDay
     fields = (
         "dictionary_entry",
         "date",
     ) + BaseInlineAdmin.fields
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "dictionary_entry":
+            kwargs["queryset"] = DictionaryEntry.objects.filter(
+                site=self.get_site_from_object(request)
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 @admin.register(DictionaryEntry)
-class DictionaryEntryAdmin(BaseSiteContentAdmin):
+class DictionaryEntryAdmin(BaseControlledSiteContentAdmin):
     inlines = [
         TranslationInline,
         AlternateSpellingInline,
@@ -109,8 +109,8 @@ class DictionaryEntryAdmin(BaseSiteContentAdmin):
         NotesInline,
         AcknowledgementInline,
     ]
-    list_display = ("title",) + BaseSiteContentAdmin.list_display
-    readonly_fields = ("custom_order",) + BaseSiteContentAdmin.readonly_fields
+    list_display = ("title",) + BaseControlledSiteContentAdmin.list_display
+    readonly_fields = ("custom_order",) + BaseControlledSiteContentAdmin.readonly_fields
 
 
 @admin.register(PartOfSpeech)

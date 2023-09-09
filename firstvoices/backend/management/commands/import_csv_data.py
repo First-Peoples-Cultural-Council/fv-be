@@ -36,11 +36,13 @@ from backend.resources.media import (
     VideoResource,
 )
 from backend.resources.pages import SitePageResource
+from backend.resources.site_homepage_widgets import SiteHomepageWidgetsResource
 from backend.resources.sites import (
     MembershipResource,
     SiteMigrationResource,
     SiteResource,
 )
+from backend.resources.songs import LyricResource, SongResource
 from backend.resources.stories import StoryPageResource, StoryResource
 from backend.resources.users import UserResource
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
@@ -126,18 +128,20 @@ def run_import():
         ("dict-entrylinks", DictionaryEntryLinkResource()),
         ("site-widgets", SiteWidgetResource()),
         ("widget-settings", WidgetSettingsResource()),
+        ("sites", SiteHomepageWidgetsResource()),
         ("pages", SitePageResource()),
         ("stories", StoryResource()),
         ("book-entries", StoryPageResource()),
+        ("songs", SongResource()),
+        ("book-entries", LyricResource()),
     ]
 
     # Match export files with the correct model resource and import them
     unmatched_files = os.listdir(current_export_dir)
 
     for key, resource in import_resources:
-        logger.info(f"Importing {key} models...")
-
         # Parse files to import with this resource
+        logger.info(f"Importing from [{key}] CSV with {type(resource).__name__}...")
         matched_files = [f for f in unmatched_files if f.startswith(key)]
         unmatched_files = [f for f in unmatched_files if f not in matched_files]
 
