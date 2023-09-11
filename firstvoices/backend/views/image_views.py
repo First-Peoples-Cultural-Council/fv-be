@@ -79,6 +79,8 @@ class ImageViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return Image.objects.filter(site__slug=site[0].slug).select_related(
-            "site", *get_select_related_media_fields(None)
+        return (
+            Image.objects.filter(site__slug=site[0].slug)
+            .select_related("site", *get_select_related_media_fields(None))
+            .order_by("-created")
         )
