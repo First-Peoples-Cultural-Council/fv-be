@@ -32,7 +32,7 @@ class AppMembershipAdmin(BaseAdmin):
         "role",
     ) + BaseAdmin.list_display
     search_fields = (
-        "user",
+        "user__email",
         "role",
     )
 
