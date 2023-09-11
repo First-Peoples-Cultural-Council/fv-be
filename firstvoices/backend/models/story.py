@@ -4,6 +4,7 @@ from django_better_admin_arrayfield.models.fields import ArrayField
 
 from backend.models.constants import MAX_NOTE_LENGTH
 from backend.permissions import predicates
+from backend.utils.character_utils import clean_input
 
 from .base import (
     AudienceMixin,
@@ -24,18 +25,6 @@ class Story(
 ):
     """
     Representing a story associated with a site, including unique title, pages, introduction, and media links
-
-    Notes for data migration:
-    acknowledgements from fvbook:acknowledgement
-    notes from fv:cultural_note
-
-    introduction from fvbook:introduction
-    introduction_translation from fvbook:introduction_literal_translation
-
-    title from dc:title
-    title_translation from fvbook:title_literal_translation
-
-    settings from a value in settings:settings
     """
 
     class Meta:
@@ -61,6 +50,15 @@ class Story(
     # from settings:settings json value
     hide_overlay = models.BooleanField(null=False, default=False)
 
+    def save(self, *args, **kwargs):
+        # normalizing text input
+        self.acknowledgements = list(
+            map(lambda x: clean_input(x), self.acknowledgements)
+        )
+        self.notes = list(map(lambda x: clean_input(x), self.notes))
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
@@ -70,9 +68,6 @@ class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteConten
     Representing the pages within a story
 
     ordering enforces ordering via simple ascending sort
-
-    translation from fvbookentry:dominant_language_text and fv:literal_translation
-    text from dc:title
     """
 
     class Meta:
@@ -99,6 +94,9 @@ class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteConten
     )
 
     def save(self, *args, **kwargs):
+        # normalizing text input
+        self.notes = list(map(lambda x: clean_input(x), self.notes))
+
         # always match the site
         # these are saved in the db rather than set as properties to make permissions on queries simpler
         self.visibility = self.story.visibility

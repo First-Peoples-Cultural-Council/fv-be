@@ -59,10 +59,6 @@ class Song(
 
     def save(self, *args, **kwargs):
         # normalizing text input
-        self.title = clean_input(self.title)
-        self.title_translation = clean_input(self.title_translation)
-        self.introduction = clean_input(self.introduction)
-        self.introduction_translation = clean_input(self.introduction_translation)
         self.acknowledgements = list(
             map(lambda x: clean_input(x), self.acknowledgements)
         )
@@ -99,10 +95,3 @@ class Lyric(TranslatedTextMixin, BaseModel):
     ordering = models.SmallIntegerField(
         validators=[MinValueValidator(0)], null=False, default=0
     )
-
-    def save(self, *args, **kwargs):
-        # normalizing text input
-        self.text = clean_input(self.text)
-        self.translation = clean_input(self.translation)
-
-        super().save(*args, **kwargs)

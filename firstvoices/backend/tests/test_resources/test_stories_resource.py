@@ -5,12 +5,13 @@ import tablib
 
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
-from backend.models.story import Story
-from backend.resources.stories import StoryResource
+from backend.models.story import Story, StoryPage
+from backend.resources.stories import StoryPageResource, StoryResource
 from backend.tests.factories import (
     AudioFactory,
     ImageFactory,
     SiteFactory,
+    StoryFactory,
     VideoFactory,
 )
 
@@ -125,7 +126,7 @@ class TestStoryImport:
         ]
         table = self.build_table(data)
 
-        result = StoryResource().import_data(dataset=table, raise_errors=True)
+        result = StoryResource().import_data(dataset=table)
 
         assert not result.has_errors()
         assert not result.has_validation_errors()
@@ -176,3 +177,129 @@ class TestStoryImport:
         assert img_1 in new_story.related_images.all()
         assert new_story.related_images.all().count() == 1
         assert Image.objects.filter(id=no_img_here).count() == 0
+
+
+class TestStoryPageImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "id,created,created_by,last_modified,last_modified_by,parent_id"
+            ",text,ordering,site,translation,notes,related_audio,related_images,related_videos"
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    def test_import_base_data(self):
+        """Import StoryPage object with basic fields"""
+        site = SiteFactory.create()
+        story = StoryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,{story.id}"
+            f",{sample_draftjs_text},0,{site.id},{sample_draftjs_transl},,,,",
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,two@test.com,2022-04-06 14:45:52.750,two@test.com,{story.id}"
+            f",{sample_draftjs_text},1,{site.id},{sample_draftjs_transl},,,,",
+        ]
+        table = self.build_table(data)
+
+        result = StoryPageResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+
+        assert StoryPage.objects.filter(site=site.id).count() == len(data)
+        assert StoryPage.objects.filter(story=story.id).count() == len(data)
+
+        new_page = StoryPage.objects.get(id=table["id"][0])
+        assert str(new_page.site.id) == table["site"][0]
+        assert str(new_page.ordering) == table["ordering"][0]
+        assert new_page.text == table["text"][0]
+        assert new_page.translation == table["translation"][0]
+        assert new_page.related_audio.all().count() == 0
+        assert new_page.related_images.all().count() == 0
+        assert new_page.related_videos.all().count() == 0
+        assert new_page.visibility == story.visibility
+
+    @pytest.mark.django_db
+    def test_skip_song_lyrics(self):
+        """Ensure song lyric objects are skipped"""
+        site = SiteFactory.create()
+        no_id_here = uuid.uuid4()
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,{no_id_here}"
+            f",{sample_draftjs_text},0,{site.id},{sample_draftjs_transl},,,,",
+        ]
+        table = self.build_table(data)
+
+        result = StoryPageResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["skip"] == len(data)
+
+    @pytest.mark.parametrize(
+        "note_string,expected_len",
+        [
+            ("   Note about stuff", 1),
+            ("Note1|||Note2|||Note3", 3),
+            ('"Note, Comma, Note ||| Note2"', 2),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_import_array_fields(self, note_string, expected_len):
+        """Import StoryPage object with array field for notes"""
+        site = SiteFactory.create()
+        story = StoryFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,{story.id}"
+            f",{sample_draftjs_text},0,{site.id},{sample_draftjs_transl},{note_string},,,",
+        ]
+        table = self.build_table(data)
+
+        result = StoryPageResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert StoryPage.objects.filter(site=site.id).count() == len(data)
+
+        new_page = StoryPage.objects.get(id=table["id"][0])
+        assert len(new_page.notes) == expected_len
+        assert all(note.startswith("Note") for note in new_page.notes)
+
+    @pytest.mark.django_db
+    def test_import_related_media(self):
+        """Import Story object with already loaded related media"""
+        site = SiteFactory.create()
+        story = StoryFactory.create(site=site)
+
+        audio = AudioFactory.create(site=site)
+        img_1 = ImageFactory.create(site=site)
+        img_2 = ImageFactory.create(site=site)
+        video = VideoFactory.create(site=site)
+
+        data = [
+            f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,{story.id}"
+            f',{sample_draftjs_text},0,{site.id},{sample_draftjs_transl},,{audio.id},"{img_1.id},{img_2.id}",{video.id}'
+        ]
+        table = self.build_table(data)
+
+        result = StoryPageResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert StoryPage.objects.filter(site=site.id).count() == len(data)
+
+        new_page = StoryPage.objects.get(id=table["id"][0])
+        # single audio, video
+        assert audio in new_page.related_audio.all()
+        assert new_page.related_audio.all().count() == 1
+        assert video in new_page.related_videos.all()
+        assert new_page.related_videos.all().count() == 1
+        # multiple images
+        assert img_1 in new_page.related_images.all()
+        assert img_2 in new_page.related_images.all()
+        assert new_page.related_images.all().count() == 2

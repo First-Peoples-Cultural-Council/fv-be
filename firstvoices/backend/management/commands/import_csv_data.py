@@ -43,7 +43,7 @@ from backend.resources.sites import (
     SiteResource,
 )
 from backend.resources.songs import LyricResource, SongResource
-from backend.resources.stories import StoryResource
+from backend.resources.stories import StoryPageResource, StoryResource
 from backend.resources.users import UserResource
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 
@@ -131,9 +131,9 @@ def run_import():
         ("sites", SiteHomepageWidgetsResource()),
         ("pages", SitePageResource()),
         ("stories", StoryResource()),
+        ("book-entries", StoryPageResource()),
         ("songs", SongResource()),
-        ("book-entries", LyricResource())
-        # more to be added
+        ("book-entries", LyricResource()),
     ]
 
     # Match export files with the correct model resource and import them

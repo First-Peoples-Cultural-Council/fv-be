@@ -8,8 +8,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 from rules.contrib.models import RulesModel
 
-from backend.models.constants import DEFAULT_TITLE_LENGTH, MAX_PAGE_LENGTH
+from backend.models.constants import DEFAULT_TITLE_LENGTH
 from backend.permissions.managers import PermissionFilterMixin, PermissionsManager
+from backend.utils.character_utils import clean_input
 
 from .constants import Visibility
 
@@ -140,20 +141,33 @@ class TranslatedTitleMixin(models.Model):
         max_length=DEFAULT_TITLE_LENGTH, blank=True, null=False
     )
 
+    def save(self, *args, **kwargs):
+        self.title = clean_input(self.title)
+        self.title_translation = clean_input(self.title_translation)
+        return super().save(*args, **kwargs)
+
 
 class TranslatedIntroMixin(models.Model):
     class Meta:
         abstract = True
 
-    introduction = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True, null=False)
-    introduction_translation = models.TextField(
-        max_length=MAX_PAGE_LENGTH, blank=True, null=False
-    )
+    introduction = models.TextField(blank=True, null=False)
+    introduction_translation = models.TextField(blank=True, null=False)
+
+    def save(self, *args, **kwargs):
+        self.introduction = clean_input(self.introduction)
+        self.introduction_translation = clean_input(self.introduction_translation)
+        return super().save(*args, **kwargs)
 
 
 class TranslatedTextMixin(models.Model):
     class Meta:
         abstract = True
 
-    text = models.TextField(max_length=MAX_PAGE_LENGTH, blank=False)
-    translation = models.TextField(max_length=MAX_PAGE_LENGTH, blank=True)
+    text = models.TextField(blank=False)
+    translation = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        self.text = clean_input(self.text)
+        self.translation = clean_input(self.translation)
+        return super().save(*args, **kwargs)
