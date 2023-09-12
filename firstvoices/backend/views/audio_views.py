@@ -82,4 +82,5 @@ class AudioViewSet(
             Audio.objects.filter(site__slug=site[0].slug)
             .select_related("original", "site")
             .prefetch_related("speakers")
+            .order_by("-created")
         )
