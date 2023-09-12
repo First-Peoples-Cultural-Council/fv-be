@@ -2,6 +2,7 @@ import logging
 
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django_elasticsearch_dsl import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Keyword, Text
 
@@ -81,6 +82,9 @@ def update_story_index(sender, instance, **kwargs):
                 page_translation=page_translation,
             )
             index_entry.save()
+        # Refresh the index to ensure the index is up-to-date for related field signals
+        story_index = Index(ELASTICSEARCH_STORY_INDEX)
+        story_index.refresh()
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(

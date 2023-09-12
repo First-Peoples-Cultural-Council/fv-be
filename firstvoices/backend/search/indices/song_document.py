@@ -2,6 +2,7 @@ import logging
 
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django_elasticsearch_dsl import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Keyword, Text
 
@@ -77,6 +78,9 @@ def update_song_index(sender, instance, **kwargs):
                 lyrics_translation=lyrics_translation_text,
             )
             index_entry.save()
+        # Refresh the index to ensure the index is up-to-date for related field signals
+        song_index = Index(ELASTICSEARCH_SONG_INDEX)
+        song_index.refresh()
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
