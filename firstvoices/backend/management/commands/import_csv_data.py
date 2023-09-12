@@ -137,13 +137,13 @@ def run_import():
     ]
 
     # Match export files with the correct model resource and import them
-    unmatched_files = os.listdir(current_export_dir)
+    files_to_import = os.listdir(current_export_dir)
+    imported_files = []
 
     for key, resource in import_resources:
         # Parse files to import with this resource
         logger.info(f"Importing from [{key}] CSV with {type(resource).__name__}...")
-        matched_files = [f for f in unmatched_files if f.startswith(key)]
-        unmatched_files = [f for f in unmatched_files if f not in matched_files]
+        matched_files = [f for f in files_to_import if f.startswith(key)]
 
         if not matched_files:
             logger.warn(f"No '{key}' files found to import")
@@ -164,14 +164,16 @@ def run_import():
                         [f"{type}: {total}" for type, total in result.totals.items()]
                     )
                 )
+                imported_files.append(file)
             except Exception as e:
                 status.no_warnings = False
                 status.save()
                 reconnect_signals()
                 raise e
 
-    for file in unmatched_files:
-        logger.warn(f"\n{file} not imported (no resource defined)")
+    unimported_files = [f for f in files_to_import if f not in imported_files]
+    for file in sorted(unimported_files):
+        logger.warn(f"{file} not imported (no resource defined)")
         status.no_warnings = False
 
     # Clean up artifacts and update import status
