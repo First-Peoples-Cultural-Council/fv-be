@@ -154,7 +154,7 @@ class BaseInlineSiteContentAdmin(BaseInlineAdmin):
         if not hasattr(self, "parent_site"):
             self.parent_site = None
             object_id = request.resolver_match.kwargs.get("object_id")
-            instance = self.parent_model.objects.get(id=object_id)
+            instance = self.parent_model.objects.filter(id=object_id).first()
             if instance and isinstance(instance, Site):
                 self.parent_site = instance
             elif instance and hasattr(instance, "site"):
