@@ -1,4 +1,5 @@
 import logging
+from itertools import chain
 
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
@@ -171,8 +172,15 @@ def get_notes_text(dictionary_entry_instance):
 
 def get_categories_ids(dictionary_entry_instance):
     return [
-        str(id)
-        for id in dictionary_entry_instance.categories.values_list("id", flat=True)
+        str(category_id)
+        for category_id in list(
+            chain(
+                dictionary_entry_instance.categories.values_list("id", flat=True),
+                dictionary_entry_instance.categories.values_list(
+                    "parent_id", flat=True
+                ),
+            )
+        )
     ]
 
 

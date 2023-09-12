@@ -1,7 +1,8 @@
 import logging
 
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
+from django_elasticsearch_dsl import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Keyword, Text
 
@@ -93,6 +94,9 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
                 visibility=instance.visibility,
             )
             index_entry.save()
+        # Refresh the index to ensure the index is up-to-date for related field signals
+        dict_index = Index(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+        dict_index.refresh()
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
@@ -271,14 +275,24 @@ def update_acknowledgement(sender, instance, **kwargs):
         logger.error(e)
 
 
-# Category update
+# Category update when called through the admin site
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def update_categories(sender, instance, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
-    categories = get_categories_ids(dictionary_entry)
+    update_dictionary_entry_index_categories(dictionary_entry, instance)
 
+
+# Category update when called through the APIs
+@receiver(m2m_changed, sender=DictionaryEntryCategory)
+def update_categories_m2m(sender, instance, **kwargs):
+    dictionary_entry = instance
+    update_dictionary_entry_index_categories(dictionary_entry, instance)
+
+
+def update_dictionary_entry_index_categories(dictionary_entry, instance):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    categories = get_categories_ids(dictionary_entry)
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
