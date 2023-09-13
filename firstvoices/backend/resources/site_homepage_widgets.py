@@ -8,7 +8,7 @@ from backend.resources.utils.import_export_widgets import UserForeignKeyWidget
 class SiteHomepageWidgetsResource(resources.ModelResource):
     class Meta:
         model = Site
-        fields = ("id",)
+        fields = ("id", "created", "last_modified", "homepage")
 
     def before_import_row(self, row, row_number=None, **kwargs):
         if row["homepage_widgets"] != "":
@@ -23,8 +23,7 @@ class SiteHomepageWidgetsResource(resources.ModelResource):
                 last_modified_by=last_modified_by_user,
                 created_by=created_by_user,
             )
-            site.homepage = site_widget_list
-            site.save()
+            row["homepage"] = site_widget_list.id
             for index, widget_id in enumerate(widgets_list):
                 widget = SiteWidget.objects.get(id=widget_id)
                 SiteWidgetListOrder.objects.create(
