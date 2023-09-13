@@ -473,3 +473,52 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert actual_child_category_1_object is not None
         assert actual_parent_category_2_object is not None
         assert actual_child_category_2_object is not None
+
+    @pytest.mark.django_db
+    def test_category_list_order(self):
+        Category.objects.filter(site=self.site).delete()
+
+        parent_category_1 = ParentCategoryFactory.create(site=self.site, title="b")
+        parent_category_2 = ParentCategoryFactory.create(site=self.site, title="a")
+        child_category_1 = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_1, title="d"
+        )
+        child_category_2 = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_1, title="c"
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"nested": True},
+            )
+        )
+
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+
+        actual_parent_category_1_object = find_object_by_id(
+            response_data["results"], parent_category_1.id
+        )
+        actual_parent_category_2_object = find_object_by_id(
+            response_data["results"], parent_category_2.id
+        )
+        actual_child_category_1_object = find_object_by_id(
+            actual_parent_category_1_object["children"], child_category_1.id
+        )
+        actual_child_category_2_object = find_object_by_id(
+            actual_parent_category_1_object["children"], child_category_2.id
+        )
+
+        # Check that the parent categories are ordered by title
+        assert response_data["results"].index(
+            actual_parent_category_1_object
+        ) > response_data["results"].index(actual_parent_category_2_object)
+
+        # Check that the child categories are ordered by title within a parent category
+        assert actual_parent_category_1_object["children"].index(
+            actual_child_category_1_object
+        ) > actual_parent_category_1_object["children"].index(
+            actual_child_category_2_object
+        )

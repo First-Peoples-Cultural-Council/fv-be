@@ -192,17 +192,25 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             if len(category.children.all())
         ]
         flat_child_ids_list = list(itertools.chain(*child_categories))
-        child_queryset = Category.objects.filter(id__in=filtered_categories)
+        child_queryset = Category.objects.filter(id__in=filtered_categories).order_by(
+            "title"
+        )
 
         if nested_flag:
-            return filtered_categories.filter(
-                ~Q(
-                    id__in=flat_child_ids_list
-                )  # Remove duplicate child entries being shown at top level
-            ).prefetch_related(Prefetch("children", queryset=child_queryset))
+            return (
+                filtered_categories.filter(
+                    ~Q(
+                        id__in=flat_child_ids_list
+                    )  # Remove duplicate child entries being shown at top level
+                )
+                .prefetch_related(Prefetch("children", queryset=child_queryset))
+                .order_by("title")
+            )
         else:
-            return filtered_categories.filter().prefetch_related(
-                Prefetch("children", queryset=child_queryset)
+            return (
+                filtered_categories.filter()
+                .prefetch_related(Prefetch("children", queryset=child_queryset))
+                .order_by("title")
             )
 
     def get_serializer_class(self):
