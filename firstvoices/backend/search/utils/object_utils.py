@@ -79,7 +79,13 @@ def hydrate_objects(search_results, request):
     dictionary_objects = list(
         DictionaryEntry.objects.filter(
             id__in=dictionary_search_results_ids
-        ).prefetch_related("translation_set")
+        ).prefetch_related(
+            "translation_set",
+            "site__alphabet_set",
+            "site__ignoredcharacter_set",
+            "site__character_set",
+            "site__charactervariant_set",
+        )
     )
     song_objects = list(
         Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
@@ -95,6 +101,14 @@ def hydrate_objects(search_results, request):
                 dictionary_objects, obj["_source"]["document_id"]
             )
 
+            alphabet = dictionary_entry.site.alphabet_set.first()
+            ignored_characters = dictionary_entry.site.ignoredcharacter_set.values_list(
+                "title", flat=True
+            )
+            base_characters = dictionary_entry.site.character_set.order_by("sort_order")
+            character_variants = dictionary_entry.site.charactervariant_set.all()
+            ignorable_characters = dictionary_entry.site.character_set.all()
+
             # Serializing and adding the object to complete_objects
             complete_objects.append(
                 {
@@ -106,6 +120,11 @@ def hydrate_objects(search_results, request):
                             "request": request,
                             "view": "search",
                             "site_slug": dictionary_entry.site.slug,
+                            "alphabet": alphabet,
+                            "ignored_characters": ignored_characters,
+                            "base_characters": base_characters,
+                            "character_variants": character_variants,
+                            "ignorable_characters": ignorable_characters,
                         },
                     ).data,
                 }
