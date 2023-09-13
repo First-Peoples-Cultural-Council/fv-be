@@ -2,9 +2,8 @@ import logging
 
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from django_elasticsearch_dsl import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch_dsl import Index, Keyword, Text
 
 from backend.models import Lyric, Song
 from backend.search.indices.base_document import BaseDocument

@@ -2,9 +2,8 @@ import logging
 
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
-from django_elasticsearch_dsl import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch_dsl import Index, Keyword, Text
 
 from backend.models.dictionary import (
     Acknowledgement,
@@ -286,8 +285,9 @@ def update_categories(sender, instance, **kwargs):
 # Category update when called through the APIs
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
 def update_categories_m2m(sender, instance, **kwargs):
-    dictionary_entry = instance
-    update_dictionary_entry_index_categories(dictionary_entry, instance)
+    if instance.__class__ == DictionaryEntry:
+        dictionary_entry = instance
+        update_dictionary_entry_index_categories(dictionary_entry, instance)
 
 
 def update_dictionary_entry_index_categories(dictionary_entry, instance):
