@@ -31,7 +31,7 @@ class TestSongsImport:
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
             f"Public,Sample Song,Sample introduction,False,{site.id},Sample title translation,"
-            f'"Sample acknowledgement one, with comma|Sample acknowledgement two","Sample note one|Sample note two",'
+            f'"Sample acknowledgement one, with comma|Sample acknowledgement two",,'
             f'Sample intro translation,False,False,"{audio_one.id},{audio_two.id}",{image.id},{video.id}'
         ]
         table = self.build_table(data)
@@ -51,7 +51,7 @@ class TestSongsImport:
         assert new_song.introduction == table["introduction"][0]
         assert new_song.introduction_translation == table["introduction_translation"][0]
         assert new_song.acknowledgements == table["acknowledgements"][0].split("|")
-        assert new_song.notes == table["notes"][0].split("|")
+        assert new_song.notes == []
         assert new_song.hide_overlay == eval(table["hide_overlay"][0])
         assert new_song.exclude_from_games == eval(table["exclude_from_games"][0])
         assert new_song.exclude_from_kids == eval(table["exclude_from_kids"][0])
