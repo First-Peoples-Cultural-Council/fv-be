@@ -10,6 +10,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import NullableCharField, SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
@@ -98,6 +99,14 @@ class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
             ]
 
         return super().update(instance, validated_data)
+
+    def validate_slug(self, slug):
+        site = get_site_from_context(self)
+        if SitePage.objects.filter(site=site, slug=slug).exists():
+            raise serializers.ValidationError(
+                f"A page with the slug '{slug}' already exists."
+            )
+        return slug
 
     class Meta:
         model = SitePage
