@@ -71,6 +71,8 @@ class TestStoryImport:
         assert new_story.related_audio.all().count() == 0
         assert new_story.related_images.all().count() == 0
         assert new_story.related_videos.all().count() == 0
+        assert new_story.acknowledgements == []
+        assert new_story.notes == []
 
         # other possible hide-overlay value
         new_story = Story.objects.get(id=table["id"][1])
@@ -221,6 +223,7 @@ class TestStoryPageImport:
         assert new_page.related_images.all().count() == 0
         assert new_page.related_videos.all().count() == 0
         assert new_page.visibility == story.visibility
+        assert new_page.notes == []
 
     @pytest.mark.django_db
     def test_skip_song_lyrics(self):

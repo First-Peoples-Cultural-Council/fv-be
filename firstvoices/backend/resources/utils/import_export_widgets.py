@@ -38,9 +38,9 @@ class ArrayOfStringsWidget(Widget):
 
     def clean(self, value: str, row=None, *args, **kwargs) -> list:
         """Converts the display value (string with separator) into array on sep"""
-        if value:
-            return [string.strip() for string in value.split(sep=self.sep)]
-        return []
+        return [
+            string.strip() for string in value.split(sep=self.sep) if string.strip()
+        ]
 
     def render(self, value: list, obj=None) -> str:
         """Converts the db value (array) into a single string for display, using separator"""

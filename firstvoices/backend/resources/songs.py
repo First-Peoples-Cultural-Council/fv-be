@@ -7,15 +7,23 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
+from backend.resources.utils.import_export_widgets import ArrayOfStringsWidget
 
 
 class SongResource(ControlledSiteContentResource, RelatedMediaResourceMixin):
+    acknowledgements = fields.Field(
+        column_name="acknowledgements",
+        attribute="acknowledgements",
+        widget=ArrayOfStringsWidget(sep="|"),
+    )
+    notes = fields.Field(
+        column_name="notes",
+        attribute="notes",
+        widget=ArrayOfStringsWidget(sep="|"),
+    )
+
     class Meta:
         model = Song
-
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        instance.acknowledgements = ",".join(instance.acknowledgements).split("|")
-        instance.notes = ",".join(instance.notes).split("|")
 
 
 class LyricResource(BaseResource):
