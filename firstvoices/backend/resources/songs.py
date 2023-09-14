@@ -40,6 +40,9 @@ class LyricResource(BaseResource):
         # If the book entry is a lyric and has notes, add them to the song
         if Song.objects.filter(id=row["parent_id"]).exists() and row["notes"] != "":
             song = Song.objects.get(id=row["parent_id"])
-            for note in row["notes"].split(self.array_sep):
+
+            for note in [
+                string.strip() for string in row["notes"].split(sep=self.array_sep)
+            ]:
                 song.notes.append("From lyric: " + note)
             song.save()

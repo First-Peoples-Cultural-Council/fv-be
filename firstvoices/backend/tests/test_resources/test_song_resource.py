@@ -115,7 +115,7 @@ class TestLyricsImport:
 
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"{song.id},Test lyric text,Test lyric translation,0,Lyric note one|||Lyric note two",
+            f"{song.id},Test lyric text,Test lyric translation,0,Lyric note one||| Lyric note two ",
         ]
         table = self.build_table(data)
 
