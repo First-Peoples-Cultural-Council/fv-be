@@ -80,7 +80,7 @@ def hydrate_objects(search_results, request):
     # Fetching objects from the database
     dictionary_objects = list(
         DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
-        .select_related("site", "created_by", "last_modified_by")
+        .select_related("site", "created_by", "last_modified_by", "part_of_speech")
         .prefetch_related(
             "categories",
             "acknowledgement_set",
