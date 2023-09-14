@@ -129,7 +129,7 @@ class ReadOnlyVisibilityFieldMixin:
 
 
 class LinkedSiteSerializer(
-    serializers.HyperlinkedModelSerializer, ReadOnlyVisibilityFieldMixin
+    ReadOnlyVisibilityFieldMixin, serializers.HyperlinkedModelSerializer
 ):
     """
     Minimal info about a site, suitable for serializing a site as a related field.
@@ -178,7 +178,7 @@ class WritableSiteContentSerializer(
 
 
 class BaseControlledSiteContentSerializer(
-    BaseSiteContentSerializer, ReadOnlyVisibilityFieldMixin
+    ReadOnlyVisibilityFieldMixin, BaseSiteContentSerializer
 ):
     """
     Base serializer for controlled site content models.

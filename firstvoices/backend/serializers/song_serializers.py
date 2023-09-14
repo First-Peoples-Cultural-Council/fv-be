@@ -73,7 +73,7 @@ class SongSerializer(
 
 
 class SongListSerializer(
-    SiteContentLinkedTitleSerializer, ReadOnlyVisibilityFieldMixin
+    ReadOnlyVisibilityFieldMixin, SiteContentLinkedTitleSerializer
 ):
     visibility = serializers.SerializerMethodField(read_only=True)
 
