@@ -98,10 +98,6 @@ def hydrate_objects(search_results, request):
                 ),
             ),
             *get_media_prefetch_list(request.user)
-            # "site__alphabet_set",
-            # "site__ignoredcharacter_set",
-            # "site__character_set",
-            # "site__charactervariant_set",
         )
     )
     song_objects = list(
@@ -117,15 +113,6 @@ def hydrate_objects(search_results, request):
             dictionary_entry = get_object_by_id(
                 dictionary_objects, obj["_source"]["document_id"]
             )
-
-            # Commenting out to improve response time. Will be added back with a parameter when required for games
-            # alphabet = dictionary_entry.site.alphabet_set.first()
-            # ignored_characters = dictionary_entry.site.ignoredcharacter_set.values_list(
-            #     "title", flat=True
-            # )
-            # base_characters = dictionary_entry.site.character_set.order_by("sort_order")
-            # character_variants = dictionary_entry.site.charactervariant_set.all()
-            # ignorable_characters = dictionary_entry.site.character_set.all()
 
             # Serializing and adding the object to complete_objects
             complete_objects.append(
