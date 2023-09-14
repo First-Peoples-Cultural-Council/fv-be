@@ -77,9 +77,20 @@ def hydrate_objects(search_results, request):
 
     # Fetching objects from the database
     dictionary_objects = list(
-        DictionaryEntry.objects.filter(
-            id__in=dictionary_search_results_ids
-        ).prefetch_related("translation_set")
+        DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
+        .select_related("site", "created_by", "last_modified_by")
+        .prefetch_related(
+            "categories",
+            "acknowledgement_set",
+            "translation_set",
+            "pronunciation_set",
+            "note_set",
+            "alternatespelling_set",
+            "site__language",
+            "related_audio",
+            "related_images",
+            "related_videos",
+        )
     )
     song_objects = list(
         Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
@@ -105,7 +116,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": dictionary_entry.site.slug,
+                            "site": dictionary_entry.site,
                         },
                     ).data,
                 }
