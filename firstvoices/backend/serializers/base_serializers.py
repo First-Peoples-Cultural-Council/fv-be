@@ -1,4 +1,6 @@
 from django.core.exceptions import PermissionDenied
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
@@ -113,7 +115,22 @@ class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixi
         return super().validate(attrs)
 
 
-class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
+class ReadOnlyVisibilityFieldMixin:
+    """
+    A mixin for ModelSerializers that provides a read-only visibility field.
+    """
+
+    visibility = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_visibility(instance):
+        return instance.get_visibility_display().lower()
+
+
+class LinkedSiteSerializer(
+    serializers.HyperlinkedModelSerializer, ReadOnlyVisibilityFieldMixin
+):
     """
     Minimal info about a site, suitable for serializing a site as a related field.
     """
@@ -122,7 +139,7 @@ class LinkedSiteSerializer(serializers.HyperlinkedModelSerializer):
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    visibility = serializers.SerializerMethodField(read_only=True)
     slug = serializers.CharField(read_only=True)
 
     class Meta:
@@ -160,12 +177,14 @@ class WritableSiteContentSerializer(
         fields = BaseSiteContentSerializer.Meta.fields
 
 
-class BaseControlledSiteContentSerializer(BaseSiteContentSerializer):
+class BaseControlledSiteContentSerializer(
+    BaseSiteContentSerializer, ReadOnlyVisibilityFieldMixin
+):
     """
     Base serializer for controlled site content models.
     """
 
-    visibility = serializers.CharField(read_only=True, source="get_visibility_display")
+    visibility = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         fields = BaseSiteContentSerializer.Meta.fields + ("visibility",)

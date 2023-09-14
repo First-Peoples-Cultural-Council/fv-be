@@ -56,7 +56,7 @@ class TestSongEndpoint(
                     "translation": "Translated 3rd",
                 },
             ],
-            "acknowledgements": ["Test Authour", "Another Acknowledgement"],
+            "acknowledgements": ["Test Author", "Another Acknowledgement"],
             "excludeFromGames": True,
             "excludeFromKids": False,
         }
@@ -138,7 +138,7 @@ class TestSongEndpoint(
             "url": f"http://testserver{self.get_detail_endpoint(key=song.id, site_slug=site.slug)}",
             "id": str(song.id),
             "title": song.title,
-            "visibility": "Public",
+            "visibility": "public",
             "titleTranslation": song.title_translation,
             "excludeFromGames": False,
             "excludeFromKids": False,
@@ -238,7 +238,8 @@ class TestSongEndpoint(
         assert actual_response["id"] == str(original_instance.id)
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
         assert (
-            actual_response["visibility"] == original_instance.get_visibility_display()
+            actual_response["visibility"]
+            == original_instance.get_visibility_display().lower()
         )
         assert actual_response["notes"][0] == original_instance.notes[0]
         assert (

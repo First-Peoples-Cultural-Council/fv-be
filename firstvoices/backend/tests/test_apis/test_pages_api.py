@@ -39,7 +39,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         return {
             "title": "Title",
-            "visibility": "Public",
+            "visibility": "public",
             "subtitle": "Subtitle",
             "slug": "test-page-slug",
             "widgets": widget_ids,
@@ -58,7 +58,10 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
     def assert_updated_instance(self, expected_data, actual_instance: SitePage):
         assert actual_instance.title == expected_data["title"]
-        assert actual_instance.get_visibility_display() == expected_data["visibility"]
+        assert (
+            actual_instance.get_visibility_display().lower()
+            == expected_data["visibility"]
+        )
         assert actual_instance.subtitle == expected_data["subtitle"]
 
         actual_widgets = SiteWidget.objects.filter(
@@ -132,7 +135,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         )
 
     def get_valid_patch_data(self, site=None):
-        return {"visibility": "Members"}
+        return {"visibility": "members"}
 
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance: SitePage
@@ -146,7 +149,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert updated_instance.slug == original_instance.slug
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: SitePage):
-        assert updated_instance.get_visibility_display() == data["visibility"]
+        assert updated_instance.get_visibility_display().lower() == data["visibility"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["title"] == original_instance.title

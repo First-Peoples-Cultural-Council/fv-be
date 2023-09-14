@@ -85,7 +85,7 @@ class WritableVisibilityField(serializers.CharField):
     def to_representation(self, value):
         visibility_map = {choice[0]: choice[1] for choice in Visibility.choices}
         try:
-            return visibility_map[value]
+            return visibility_map[value].lower()
         except KeyError:
             raise serializers.ValidationError("Invalid visibility value.")
 
