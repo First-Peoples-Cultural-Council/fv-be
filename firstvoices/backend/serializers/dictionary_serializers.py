@@ -140,10 +140,11 @@ class DictionaryEntryDetailSerializer(
     pronunciations = PronunciationSerializer(
         many=True, required=False, source="pronunciation_set"
     )
-    split_chars = serializers.SerializerMethodField(read_only=True)
-    split_chars_base = serializers.SerializerMethodField(read_only=True)
-    split_words = serializers.SerializerMethodField(read_only=True)
-    split_words_base = serializers.SerializerMethodField(read_only=True)
+    # Commenting out to improve response time. Will be added back with a parameter when required for games
+    # split_chars = serializers.SerializerMethodField(read_only=True)
+    # split_chars_base = serializers.SerializerMethodField(read_only=True)
+    # split_words = serializers.SerializerMethodField(read_only=True)
+    # split_words_base = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
 
@@ -336,10 +337,10 @@ class DictionaryEntryDetailSerializer(
                 "translations",
                 "part_of_speech",
                 "pronunciations",
-                "split_chars",
-                "split_chars_base",
-                "split_words",
-                "split_words_base",
+                # "split_chars",
+                # "split_chars_base",
+                # "split_words",
+                # "split_words_base",
             )
             + RelatedMediaSerializerMixin.Meta.fields
             + RelatedDictionaryEntrySerializerMixin.Meta.fields

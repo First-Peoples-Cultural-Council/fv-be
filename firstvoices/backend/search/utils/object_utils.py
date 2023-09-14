@@ -110,13 +110,14 @@ def hydrate_objects(search_results, request):
                 dictionary_objects, obj["_source"]["document_id"]
             )
 
-            alphabet = dictionary_entry.site.alphabet_set.first()
-            ignored_characters = dictionary_entry.site.ignoredcharacter_set.values_list(
-                "title", flat=True
-            )
-            base_characters = dictionary_entry.site.character_set.order_by("sort_order")
-            character_variants = dictionary_entry.site.charactervariant_set.all()
-            ignorable_characters = dictionary_entry.site.character_set.all()
+            # Commenting out to improve response time. Will be added back with a parameter when required for games
+            # alphabet = dictionary_entry.site.alphabet_set.first()
+            # ignored_characters = dictionary_entry.site.ignoredcharacter_set.values_list(
+            #     "title", flat=True
+            # )
+            # base_characters = dictionary_entry.site.character_set.order_by("sort_order")
+            # character_variants = dictionary_entry.site.charactervariant_set.all()
+            # ignorable_characters = dictionary_entry.site.character_set.all()
 
             # Serializing and adding the object to complete_objects
             complete_objects.append(
@@ -129,11 +130,11 @@ def hydrate_objects(search_results, request):
                             "request": request,
                             "view": "search",
                             "site": dictionary_entry.site,
-                            "alphabet": alphabet,
-                            "ignored_characters": ignored_characters,
-                            "base_characters": base_characters,
-                            "character_variants": character_variants,
-                            "ignorable_characters": ignorable_characters,
+                            # "alphabet": alphabet,
+                            # "ignored_characters": ignored_characters,
+                            # "base_characters": base_characters,
+                            # "character_variants": character_variants,
+                            # "ignorable_characters": ignorable_characters,
                         },
                     ).data,
                 }
@@ -151,7 +152,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": song.site.slug,
+                            "site": song.site,
                         },
                     ).data,
                 }
@@ -169,7 +170,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": story.site.slug,
+                            "site": story.site,
                         },
                     ).data,
                 }
