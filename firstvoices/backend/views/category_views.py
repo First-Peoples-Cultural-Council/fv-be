@@ -1,6 +1,7 @@
 import itertools
 
 from django.db.models import Prefetch, Q
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -193,7 +194,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
         ]
         flat_child_ids_list = list(itertools.chain(*child_categories))
         child_queryset = Category.objects.filter(id__in=filtered_categories).order_by(
-            "title"
+            Lower("title")
         )
 
         if nested_flag:
@@ -204,13 +205,13 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                     )  # Remove duplicate child entries being shown at top level
                 )
                 .prefetch_related(Prefetch("children", queryset=child_queryset))
-                .order_by("title")
+                .order_by(Lower("title"))
             )
         else:
             return (
                 filtered_categories.filter()
                 .prefetch_related(Prefetch("children", queryset=child_queryset))
-                .order_by("title")
+                .order_by(Lower("title"))
             )
 
     def get_serializer_class(self):

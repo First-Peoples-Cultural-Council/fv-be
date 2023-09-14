@@ -479,12 +479,16 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         Category.objects.filter(site=self.site).delete()
 
         parent_category_1 = ParentCategoryFactory.create(site=self.site, title="b")
-        parent_category_2 = ParentCategoryFactory.create(site=self.site, title="a")
+        parent_category_2 = ParentCategoryFactory.create(site=self.site, title="A")
+        parent_category_3 = ParentCategoryFactory.create(site=self.site, title="C")
         child_category_1 = ChildCategoryFactory.create(
-            site=self.site, parent=parent_category_1, title="d"
+            site=self.site, parent=parent_category_1, title="e"
         )
         child_category_2 = ChildCategoryFactory.create(
-            site=self.site, parent=parent_category_1, title="c"
+            site=self.site, parent=parent_category_1, title="D"
+        )
+        child_category_3 = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_1, title="F"
         )
 
         response = self.client.get(
@@ -504,21 +508,35 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         actual_parent_category_2_object = find_object_by_id(
             response_data["results"], parent_category_2.id
         )
+        actual_parent_category_3_object = find_object_by_id(
+            response_data["results"], parent_category_3.id
+        )
         actual_child_category_1_object = find_object_by_id(
             actual_parent_category_1_object["children"], child_category_1.id
         )
         actual_child_category_2_object = find_object_by_id(
             actual_parent_category_1_object["children"], child_category_2.id
         )
+        actual_child_category_3_object = find_object_by_id(
+            actual_parent_category_1_object["children"], child_category_3.id
+        )
 
         # Check that the parent categories are ordered by title
-        assert response_data["results"].index(
-            actual_parent_category_1_object
-        ) > response_data["results"].index(actual_parent_category_2_object)
+        assert (
+            response_data["results"].index(actual_parent_category_2_object)
+            < response_data["results"].index(actual_parent_category_1_object)
+            < response_data["results"].index(actual_parent_category_3_object)
+        )
 
         # Check that the child categories are ordered by title within a parent category
-        assert actual_parent_category_1_object["children"].index(
-            actual_child_category_1_object
-        ) > actual_parent_category_1_object["children"].index(
-            actual_child_category_2_object
+        assert (
+            actual_parent_category_1_object["children"].index(
+                actual_child_category_2_object
+            )
+            < actual_parent_category_1_object["children"].index(
+                actual_child_category_1_object
+            )
+            < actual_parent_category_1_object["children"].index(
+                actual_child_category_3_object
+            )
         )
