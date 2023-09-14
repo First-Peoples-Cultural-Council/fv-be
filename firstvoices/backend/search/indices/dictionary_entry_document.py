@@ -1,9 +1,9 @@
 import logging
 
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch_dsl import Index, Keyword, Text
 
 from backend.models.dictionary import (
     Acknowledgement,
@@ -93,6 +93,9 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
                 visibility=instance.visibility,
             )
             index_entry.save()
+        # Refresh the index to ensure the index is up-to-date for related field signals
+        dict_index = Index(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
+        dict_index.refresh()
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
@@ -271,14 +274,23 @@ def update_acknowledgement(sender, instance, **kwargs):
         logger.error(e)
 
 
-# Category update
+# Category update when called through the admin site
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def update_categories(sender, instance, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
-    categories = get_categories_ids(dictionary_entry)
+    update_dictionary_entry_index_categories(instance.dictionary_entry)
 
+
+# Category update when called through the APIs
+@receiver(m2m_changed, sender=DictionaryEntryCategory)
+def update_categories_m2m(sender, instance, **kwargs):
+    if instance.__class__ == DictionaryEntry:
+        update_dictionary_entry_index_categories(instance)
+
+
+def update_dictionary_entry_index_categories(dictionary_entry):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    categories = get_categories_ids(dictionary_entry)
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -293,7 +305,11 @@ def update_categories(sender, instance, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("categories", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % (
+                "categories",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
         )
     except NotFoundError:
         logger.warning(
@@ -308,6 +324,8 @@ def update_categories(sender, instance, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__,
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            dictionary_entry.id,
         )
         logger.error(e)

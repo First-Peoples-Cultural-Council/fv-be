@@ -22,6 +22,7 @@ from backend.search.indices.dictionary_entry_document import (
     delete_from_index,
     update_acknowledgement,
     update_categories,
+    update_categories_m2m,
     update_dictionary_entry_index,
     update_notes,
     update_translation,
@@ -233,6 +234,9 @@ def disconnect_signals():
     signals.post_delete.disconnect(update_acknowledgement, sender=Acknowledgement)
     signals.post_save.disconnect(update_categories, sender=DictionaryEntryCategory)
     signals.post_delete.disconnect(update_categories, sender=DictionaryEntryCategory)
+    signals.m2m_changed.disconnect(
+        update_categories_m2m, sender=DictionaryEntryCategory
+    )
 
     # backend.search.indices.song_document
     signals.post_save.disconnect(update_song_index, sender=Song)
@@ -267,6 +271,7 @@ def reconnect_signals():
     signals.post_delete.connect(update_acknowledgement, sender=Acknowledgement)
     signals.post_save.connect(update_categories, sender=DictionaryEntryCategory)
     signals.post_delete.connect(update_categories, sender=DictionaryEntryCategory)
+    signals.m2m_changed.connect(update_categories_m2m, sender=DictionaryEntryCategory)
 
     # backend.search.indices.song_document
     signals.post_save.connect(update_song_index, sender=Song)
