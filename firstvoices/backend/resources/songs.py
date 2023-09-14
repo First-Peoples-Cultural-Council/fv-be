@@ -7,15 +7,23 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
+from backend.resources.utils.import_export_widgets import ArrayOfStringsWidget
 
 
 class SongResource(ControlledSiteContentResource, RelatedMediaResourceMixin):
+    acknowledgements = fields.Field(
+        column_name="acknowledgements",
+        attribute="acknowledgements",
+        widget=ArrayOfStringsWidget(sep="|"),
+    )
+    notes = fields.Field(
+        column_name="notes",
+        attribute="notes",
+        widget=ArrayOfStringsWidget(sep="|"),
+    )
+
     class Meta:
         model = Song
-
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        instance.acknowledgements = ",".join(instance.acknowledgements).split("|")
-        instance.notes = ",".join(instance.notes).split("|")
 
 
 class LyricResource(BaseResource):
@@ -24,6 +32,7 @@ class LyricResource(BaseResource):
         attribute="song",
         widget=ForeignKeyWidget(Song, "id"),
     )
+    array_sep = "|||"
 
     class Meta:
         model = Lyric
@@ -34,3 +43,14 @@ class LyricResource(BaseResource):
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
         return not Song.objects.filter(id=row["parent_id"]).exists()
+
+    def after_import_row(self, row, row_result, row_number=None, **kwargs):
+        # If the book entry is a lyric and has notes, add them to the song
+        if Song.objects.filter(id=row["parent_id"]).exists() and row["notes"] != "":
+            song = Song.objects.get(id=row["parent_id"])
+
+            for note in [
+                string.strip() for string in row["notes"].split(sep=self.array_sep)
+            ]:
+                song.notes.append("From lyric: " + note)
+            song.save()
