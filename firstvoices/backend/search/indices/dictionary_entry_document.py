@@ -278,19 +278,17 @@ def update_acknowledgement(sender, instance, **kwargs):
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def update_categories(sender, instance, **kwargs):
-    dictionary_entry = instance.dictionary_entry
-    update_dictionary_entry_index_categories(dictionary_entry, instance)
+    update_dictionary_entry_index_categories(instance.dictionary_entry)
 
 
 # Category update when called through the APIs
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
 def update_categories_m2m(sender, instance, **kwargs):
     if instance.__class__ == DictionaryEntry:
-        dictionary_entry = instance
-        update_dictionary_entry_index_categories(dictionary_entry, instance)
+        update_dictionary_entry_index_categories(instance)
 
 
-def update_dictionary_entry_index_categories(dictionary_entry, instance):
+def update_dictionary_entry_index_categories(dictionary_entry):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     categories = get_categories_ids(dictionary_entry)
     try:
@@ -307,7 +305,11 @@ def update_dictionary_entry_index_categories(dictionary_entry, instance):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("categories", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % (
+                "categories",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry.id,
+            )
         )
     except NotFoundError:
         logger.warning(
@@ -322,6 +324,8 @@ def update_dictionary_entry_index_categories(dictionary_entry, instance):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__,
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            dictionary_entry.id,
         )
         logger.error(e)
