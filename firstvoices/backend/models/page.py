@@ -30,12 +30,15 @@ class SitePage(BaseControlledSiteContentModel):
         # Ensures a page slug is unique across a single site
         unique_together = ["site", "slug"]
 
+        indexes = [
+            models.Index(fields=["slug", "site"], name="page_slug_idx"),
+        ]
+
     title = models.CharField(max_length=constants.DEFAULT_TITLE_LENGTH)
     slug = models.SlugField(
         max_length=200,
         blank=False,
         validators=[validate_slug, validators.reserved_site_page_slug_validator],
-        db_index=True,
         unique=False,
     )
     subtitle = models.CharField(blank=True, max_length=constants.DEFAULT_TITLE_LENGTH)

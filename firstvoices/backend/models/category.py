@@ -35,6 +35,10 @@ class Category(BaseSiteContentModel):
             "delete": predicates.is_language_admin_or_super,
         }
 
+        indexes = [
+            models.Index(fields=["title", "site"], name="category_site_title_idx"),
+        ]
+
     def __str__(self):
         return self.title
 

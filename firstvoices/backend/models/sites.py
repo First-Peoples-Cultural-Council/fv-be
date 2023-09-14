@@ -240,6 +240,10 @@ class SiteFeature(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
+        indexes = [
+            models.Index(fields=["key", "site"], name="sitefeature_key_idx"),
+        ]
+
     def __str__(self):
         return f"{self.key}: {self.is_enabled} ({self.site})"
 

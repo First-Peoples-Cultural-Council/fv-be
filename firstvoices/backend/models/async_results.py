@@ -18,6 +18,10 @@ class CustomOrderRecalculationResult(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
+        indexes = [
+            models.Index(fields=["site", "is_preview"], name="corr_site_preview_idx"),
+        ]
+
     latest_recalculation_date = models.DateTimeField(auto_now_add=True)
     latest_recalculation_result = models.JSONField()
     task_id = models.CharField(max_length=255, null=True, blank=True)

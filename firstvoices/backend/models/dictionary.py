@@ -26,7 +26,9 @@ class BaseDictionaryContentModel(BaseModel):
     """
 
     dictionary_entry = models.ForeignKey(
-        "DictionaryEntry", on_delete=models.CASCADE, related_name="%(class)s_set"
+        "DictionaryEntry",
+        on_delete=models.CASCADE,
+        related_name="%(class)s_set",
     )
 
     @property
@@ -223,6 +225,13 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
             "delete": predicates.can_delete_controlled_data,
         }
 
+        indexes = [
+            models.Index(
+                fields=["site", "type", "visibility", "exclude_from_wotd"],
+                name="dictionary_wotd_candidates_idx",
+            ),
+        ]
+
     def __str__(self):
         return self.title
 
@@ -348,6 +357,9 @@ class WordOfTheDay(BaseSiteContentModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+        indexes = [
+            models.Index(fields=["site", "date"], name="wotd_date_idx"),
+        ]
 
     def __str__(self):
         return f"{self.dictionary_entry} - {self.date}"
