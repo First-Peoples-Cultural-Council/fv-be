@@ -125,11 +125,6 @@ def hydrate_objects(search_results, request):
                             "request": request,
                             "view": "search",
                             "site": dictionary_entry.site,
-                            # "alphabet": alphabet,
-                            # "ignored_characters": ignored_characters,
-                            # "base_characters": base_characters,
-                            # "character_variants": character_variants,
-                            # "ignorable_characters": ignorable_characters,
                         },
                     ).data,
                 }
