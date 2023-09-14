@@ -24,6 +24,7 @@ class LyricResource(BaseResource):
         attribute="song",
         widget=ForeignKeyWidget(Song, "id"),
     )
+    array_sep = "|||"
 
     class Meta:
         model = Lyric
@@ -34,3 +35,11 @@ class LyricResource(BaseResource):
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
         return not Song.objects.filter(id=row["parent_id"]).exists()
+
+    def after_import_row(self, row, row_result, row_number=None, **kwargs):
+        # If the book entry is a lyric and has notes, add them to the song
+        if Song.objects.filter(id=row["parent_id"]).exists() and row["notes"] != "":
+            song = Song.objects.get(id=row["parent_id"])
+            for note in row["notes"].split(self.array_sep):
+                song.notes.append("From lyric: " + note)
+            song.save()

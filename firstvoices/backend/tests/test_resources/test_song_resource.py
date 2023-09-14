@@ -71,7 +71,7 @@ class TestLyricsImport:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            "id,created,created_by,last_modified,last_modified_by,text,translation,ordering,parent_id",
+            "id,created,created_by,last_modified,last_modified_by,parent_id,text,translation,ordering,notes",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
@@ -83,11 +83,11 @@ class TestLyricsImport:
 
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"Test non lyric book entry one,Test lyric translation,0,{uuid.uuid4()}",
+            f"{uuid.uuid4()},Test non lyric book entry one,Test lyric translation,0,",
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"Test lyric text,Test lyric translation,0,{song.id}",
+            f"{song.id},Test lyric text,Test lyric translation,0,",
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"Test non lyric book entry two,Test translation,0,{uuid.uuid4()}",
+            f"{uuid.uuid4()},Test non lyric book entry two,Test translation,0,",
         ]
         table = self.build_table(data)
 
@@ -107,3 +107,31 @@ class TestLyricsImport:
         assert new_lyric.translation == table["translation"][1]
         assert new_lyric.ordering == int(table["ordering"][1])
         assert new_lyric.song == song
+
+    @pytest.mark.django_db
+    def test_import_book_note_to_song_note(self):
+        site = factories.SiteFactory.create()
+        song = factories.SongFactory.create(site=site, notes=["Test note one"])
+
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
+            f"{song.id},Test lyric text,Test lyric translation,0,Lyric note one|||Lyric note two",
+        ]
+        table = self.build_table(data)
+
+        assert len(Lyric.objects.all()) == 0
+        assert song.lyrics.count() == 0
+        assert Song.objects.all().count() == 1
+
+        result = LyricResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 1
+        assert Lyric.objects.all().count() == 1
+
+        assert Song.objects.all().count() == 1
+        updated_song = Song.objects.get(id=song.id)
+        assert updated_song.notes[0] == "Test note one"
+        assert updated_song.notes[1] == "From lyric: Lyric note one"
+        assert updated_song.notes[2] == "From lyric: Lyric note two"
