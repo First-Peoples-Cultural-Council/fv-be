@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Prefetch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
@@ -14,6 +15,7 @@ from backend.search.utils.constants import (
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.serializers.song_serializers import SongSerializer
 from backend.serializers.story_serializers import StorySerializer
+from backend.views.utils import get_media_prefetch_list
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -87,13 +89,19 @@ def hydrate_objects(search_results, request):
             "note_set",
             "alternatespelling_set",
             "site__language",
-            "related_audio",
-            "related_images",
-            "related_videos",
-            "site__alphabet_set",
-            "site__ignoredcharacter_set",
-            "site__character_set",
-            "site__charactervariant_set",
+            Prefetch(
+                "related_dictionary_entries",
+                queryset=DictionaryEntry.objects.visible(request.user)
+                .select_related("site")
+                .prefetch_related(
+                    "translation_set", *get_media_prefetch_list(request.user)
+                ),
+            ),
+            *get_media_prefetch_list(request.user)
+            # "site__alphabet_set",
+            # "site__ignoredcharacter_set",
+            # "site__character_set",
+            # "site__charactervariant_set",
         )
     )
     song_objects = list(
