@@ -60,10 +60,6 @@ class UserForeignKeyWidget(ForeignKeyWidget):
 
     def clean(self, value, row=None, **kwargs):
         """Converts email value from CSV to a User object."""
-        if not value:
-            # leave field empty if no email provided
-            return None
-
         user_exists = self.model.objects.filter(email=value).exists()
         if user_exists:
             return super().clean(value, row, **kwargs)
