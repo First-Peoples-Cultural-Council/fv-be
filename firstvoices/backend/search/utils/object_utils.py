@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Prefetch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
@@ -14,6 +15,7 @@ from backend.search.utils.constants import (
 from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
 from backend.serializers.song_serializers import SongSerializer
 from backend.serializers.story_serializers import StorySerializer
+from backend.views.utils import get_media_prefetch_list
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -77,14 +79,25 @@ def hydrate_objects(search_results, request):
 
     # Fetching objects from the database
     dictionary_objects = list(
-        DictionaryEntry.objects.filter(
-            id__in=dictionary_search_results_ids
-        ).prefetch_related(
+        DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
+        .select_related("site", "created_by", "last_modified_by", "part_of_speech")
+        .prefetch_related(
+            "categories",
+            "acknowledgement_set",
             "translation_set",
-            "site__alphabet_set",
-            "site__ignoredcharacter_set",
-            "site__character_set",
-            "site__charactervariant_set",
+            "pronunciation_set",
+            "note_set",
+            "alternatespelling_set",
+            "site__language",
+            Prefetch(
+                "related_dictionary_entries",
+                queryset=DictionaryEntry.objects.visible(request.user)
+                .select_related("site")
+                .prefetch_related(
+                    "translation_set", *get_media_prefetch_list(request.user)
+                ),
+            ),
+            *get_media_prefetch_list(request.user)
         )
     )
     song_objects = list(
@@ -101,14 +114,6 @@ def hydrate_objects(search_results, request):
                 dictionary_objects, obj["_source"]["document_id"]
             )
 
-            alphabet = dictionary_entry.site.alphabet_set.first()
-            ignored_characters = dictionary_entry.site.ignoredcharacter_set.values_list(
-                "title", flat=True
-            )
-            base_characters = dictionary_entry.site.character_set.order_by("sort_order")
-            character_variants = dictionary_entry.site.charactervariant_set.all()
-            ignorable_characters = dictionary_entry.site.character_set.all()
-
             # Serializing and adding the object to complete_objects
             complete_objects.append(
                 {
@@ -119,12 +124,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": dictionary_entry.site.slug,
-                            "alphabet": alphabet,
-                            "ignored_characters": ignored_characters,
-                            "base_characters": base_characters,
-                            "character_variants": character_variants,
-                            "ignorable_characters": ignorable_characters,
+                            "site": dictionary_entry.site,
                         },
                     ).data,
                 }
@@ -142,7 +142,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": song.site.slug,
+                            "site": song.site,
                         },
                     ).data,
                 }
@@ -160,7 +160,7 @@ def hydrate_objects(search_results, request):
                         context={
                             "request": request,
                             "view": "search",
-                            "site_slug": story.site.slug,
+                            "site": story.site,
                         },
                     ).data,
                 }

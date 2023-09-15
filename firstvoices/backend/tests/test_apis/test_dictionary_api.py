@@ -62,10 +62,6 @@ class TestDictionaryEndpoint(
             "partOfSpeech": None,
             "pronunciations": [],
             "site": str(site.id),
-            "splitChars": [],
-            "splitCharsBase": [],
-            "splitWords": ["Word"],
-            "splitWordsBase": ["Word"],
             "relatedDictionaryEntries": [],
             "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
             "relatedImages": list(map(lambda x: str(x.id), related_images)),
@@ -181,10 +177,6 @@ class TestDictionaryEndpoint(
             "translations": [],
             "partOfSpeech": None,
             "pronunciations": [],
-            "splitChars": [],
-            "splitCharsBase": [],
-            "splitWords": instance.title.split(" "),
-            "splitWordsBase": instance.title.split(" "),
             "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
@@ -482,9 +474,6 @@ class TestDictionaryEndpoint(
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == ["b", "c", " ", "a"]
-        assert response_data["results"][0]["splitCharsBase"] == ["b", "c", " ", "a"]
-
     @pytest.mark.django_db
     def test_character_lists_generation_with_variants(self):
         user = factories.get_non_member_user()
@@ -521,27 +510,6 @@ class TestDictionaryEndpoint(
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == [
-            "Ch",
-            "x",
-            "y",
-            "AA",
-            " ",
-            "h",
-            "c",
-            "H",
-        ]
-        assert response_data["results"][0]["splitCharsBase"] == [
-            "ch",
-            "x",
-            "y",
-            "aa",
-            " ",
-            "h",
-            "c",
-            "h",
-        ]
-
     @pytest.mark.django_db
     def test_character_lists_unrecognized_characters(self):
         user = factories.get_non_member_user()
@@ -561,9 +529,6 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0]["splitChars"] == []
-        assert response_data["results"][0]["splitCharsBase"] == []
 
     @pytest.mark.django_db
     def test_character_lists_with_ignored_characters(self):
@@ -589,9 +554,6 @@ class TestDictionaryEndpoint(
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitChars"] == []
-        assert response_data["results"][0]["splitCharsBase"] == []
-
     @pytest.mark.django_db
     def test_character_lists_ignored_character_edge_case(self):
         user = factories.get_non_member_user()
@@ -615,9 +577,6 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0]["splitChars"] == ["x-", "y"]
-        assert response_data["results"][0]["splitCharsBase"] == ["x-", "y"]
 
     @pytest.mark.django_db
     def test_word_lists(self):
@@ -646,9 +605,6 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0]["splitWords"] == ["abc", "bca", "caba"]
-        assert response_data["results"][0]["splitWordsBase"] == ["abc", "bca", "caba"]
 
     @pytest.mark.django_db
     def test_word_lists_with_variants(self):
@@ -680,9 +636,6 @@ class TestDictionaryEndpoint(
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitWords"] == ["xyY", "yYx", "xYy"]
-        assert response_data["results"][0]["splitWordsBase"] == ["xyy", "yyx", "xyy"]
-
     @pytest.mark.django_db
     def test_word_lists_single_word(self):
         user = factories.get_non_member_user()
@@ -710,9 +663,6 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0]["splitWords"] == ["abc"]
-        assert response_data["results"][0]["splitWordsBase"] == ["abc"]
 
     @pytest.mark.django_db
     def test_word_lists_with_unknown_characters(self):
@@ -742,19 +692,6 @@ class TestDictionaryEndpoint(
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0]["splitWords"] == [
-            "xyY",
-            "yYx",
-            "xYy",
-            "Hello",
-        ]
-        assert response_data["results"][0]["splitWordsBase"] == [
-            "xyy",
-            "yyx",
-            "xyy",
-            "Hello",
-        ]
-
     @pytest.mark.django_db
     def test_word_lists_with_ignored_characters(self):
         user = factories.get_non_member_user()
@@ -782,9 +719,6 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0]["splitWords"] == ["xy-y", "-y-x", "x-y-"]
-        assert response_data["results"][0]["splitWordsBase"] == ["xy-y", "-y-x", "x-y-"]
 
     @pytest.mark.django_db
     def test_dictionary_entry_create_no_content(self):
