@@ -17,3 +17,4 @@ class LyricAdmin(BaseInlineAdmin):
 class SongAdmin(BaseSiteContentAdmin, DynamicArrayMixin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [LyricAdmin]
+    filter_horizontal = ("related_audio", "related_images", "related_videos")
