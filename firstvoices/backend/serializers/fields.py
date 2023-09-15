@@ -76,9 +76,8 @@ class SiteViewLinkField(serializers.Field):
 
 class WritableVisibilityField(serializers.CharField):
     def to_internal_value(self, data):
-        visibility_map = {choice[1].lower(): choice[0] for choice in Visibility.choices}
         try:
-            return visibility_map[data.lower()]
+            return Visibility[data.upper()]
         except KeyError:
             raise serializers.ValidationError("Invalid visibility option.")
 

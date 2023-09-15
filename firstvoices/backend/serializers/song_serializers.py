@@ -1,4 +1,3 @@
-from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from backend.models import Lyric, Song
@@ -75,8 +74,6 @@ class SongSerializer(
 class SongListSerializer(
     ReadOnlyVisibilityFieldMixin, SiteContentLinkedTitleSerializer
 ):
-    visibility = serializers.SerializerMethodField(read_only=True)
-
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Song
         fields = (

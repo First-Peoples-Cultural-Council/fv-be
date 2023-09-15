@@ -115,7 +115,7 @@ class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixi
         return super().validate(attrs)
 
 
-class ReadOnlyVisibilityFieldMixin:
+class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
     """
     A mixin for ModelSerializers that provides a read-only visibility field.
     """
@@ -126,6 +126,9 @@ class ReadOnlyVisibilityFieldMixin:
     @extend_schema_field(OpenApiTypes.STR)
     def get_visibility(instance):
         return instance.get_visibility_display().lower()
+
+    class Meta:
+        fields = ("visibility",)
 
 
 class LinkedSiteSerializer(
@@ -139,7 +142,6 @@ class LinkedSiteSerializer(
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
-    visibility = serializers.SerializerMethodField(read_only=True)
     slug = serializers.CharField(read_only=True)
 
     class Meta:
@@ -183,8 +185,6 @@ class BaseControlledSiteContentSerializer(
     """
     Base serializer for controlled site content models.
     """
-
-    visibility = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         fields = BaseSiteContentSerializer.Meta.fields + ("visibility",)
