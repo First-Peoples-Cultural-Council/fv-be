@@ -22,6 +22,10 @@ class FileAdmin(HiddenBaseAdmin):
     search_fields = ("content",)
     readonly_fields = ("mimetype", "size") + HiddenBaseAdmin.readonly_fields
 
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
+
 
 @admin.register(ImageFile)
 @admin.register(VideoFile)
@@ -37,6 +41,10 @@ class AudioAdmin(BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
 
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
+
 
 @admin.register(Image)
 @admin.register(Video)
@@ -48,6 +56,10 @@ class VisualMediaAdmin(BaseSiteContentAdmin):
     ) + BaseSiteContentAdmin.readonly_fields
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
 
 
 @admin.register(EmbeddedVideo)
