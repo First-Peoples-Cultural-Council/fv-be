@@ -88,7 +88,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "title": site.title,
             "slug": site.slug,
             "language": language0.title,
-            "visibility": "Public",
+            "visibility": "public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "features": [],
@@ -237,7 +237,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "title": site.title,
             "slug": site.slug,
             "language": language.title,
-            "visibility": "Public",
+            "visibility": "public",
             "url": site_url,
             "menu": menu.json,
             "features": [],
@@ -375,8 +375,27 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert len(response_data["homepage"]) == 2
 
-        response_widget_one = response_data["homepage"][0]
-        response_widget_two = response_data["homepage"][1]
+        # assert that widget one id is in the list
+        assert str(widget_one.id) in [
+            widget["id"] for widget in response_data["homepage"]
+        ]
+        # get the widget one object from the list
+        response_widget_one = [
+            widget
+            for widget in response_data["homepage"]
+            if widget["id"] == str(widget_one.id)
+        ][0]
+
+        # assert that widget two id is in the list
+        assert str(widget_two.id) in [
+            widget["id"] for widget in response_data["homepage"]
+        ]
+        # get the widget two object from the list
+        response_widget_two = [
+            widget
+            for widget in response_data["homepage"]
+            if widget["id"] == str(widget_two.id)
+        ][0]
 
         assert response_widget_one == {
             "created": widget_one.created.astimezone().isoformat(),
@@ -391,10 +410,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "visibility": widget_one.site.get_visibility_display(),
+                "visibility": widget_one.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
-            "visibility": widget_one.get_visibility_display(),
+            "visibility": widget_one.get_visibility_display().lower(),
             "type": widget_one.widget_type,
             "format": "Default",
             "settings": [
@@ -417,10 +436,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "visibility": widget_two.site.get_visibility_display(),
+                "visibility": widget_two.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
-            "visibility": widget_two.get_visibility_display(),
+            "visibility": widget_two.get_visibility_display().lower(),
             "type": widget_two.widget_type,
             "format": "Default",
             "settings": [
@@ -838,7 +857,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["title"] == original_instance.title
         assert (
-            actual_response["visibility"] == original_instance.get_visibility_display()
+            actual_response["visibility"]
+            == original_instance.get_visibility_display().lower()
         )
         assert actual_response["logo"]["id"] == str(original_instance.logo.id)
         assert actual_response["homepage"][0]["id"] == str(

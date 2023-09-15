@@ -108,7 +108,8 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["title"] == data["title"]
         assert (
-            actual_response["visibility"] == original_instance.get_visibility_display()
+            actual_response["visibility"]
+            == original_instance.get_visibility_display().lower()
         )
         assert actual_response["type"] == original_instance.widget_type
         assert actual_response["format"] == original_instance.get_format_display()

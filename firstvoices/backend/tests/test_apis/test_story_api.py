@@ -209,7 +209,8 @@ class TestStoryEndpoint(
         )
         assert actual_response["hideOverlay"] == original_instance.hide_overlay
         assert (
-            actual_response["visibility"] == original_instance.get_visibility_display()
+            actual_response["visibility"]
+            == original_instance.get_visibility_display().lower()
         )
         assert (
             actual_response["titleTranslation"] == original_instance.title_translation

@@ -256,7 +256,7 @@ class SiteContentDetailApiTestMixin:
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "visibility": instance.site.get_visibility_display(),
+                "visibility": instance.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
         }
@@ -388,7 +388,7 @@ class ControlledDetailApiTestMixin:
         standard_fields = self.get_expected_standard_fields(instance, site)
         return {
             **standard_fields,
-            "visibility": instance.get_visibility_display(),
+            "visibility": instance.get_visibility_display().lower(),
         }
 
     @pytest.mark.django_db

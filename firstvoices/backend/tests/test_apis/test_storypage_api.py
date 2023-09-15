@@ -403,7 +403,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
                 "title": site.title,
                 "slug": site.slug,
-                "visibility": instance.site.get_visibility_display(),
+                "visibility": instance.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
             "relatedAudio": [],

@@ -50,7 +50,7 @@ class TestDictionaryEndpoint(
         return {
             "title": "Word",
             "type": "word",
-            "visibility": "Public",
+            "visibility": "public",
             "customOrder": "⚑W⚑o⚑r⚑d",
             "categories": [],
             "excludeFromGames": False,
@@ -252,7 +252,8 @@ class TestDictionaryEndpoint(
         assert actual_response["title"] == data["title"]
         assert actual_response["type"] == original_instance.type
         assert (
-            actual_response["visibility"] == original_instance.get_visibility_display()
+            actual_response["visibility"]
+            == original_instance.get_visibility_display().lower()
         )
         assert actual_response["categories"][0]["id"] == str(
             original_instance.categories.first().id
@@ -772,7 +773,7 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["title"] == "Hello"
         assert response_data["type"] == TypeOfDictionaryEntry.WORD
-        assert response_data["visibility"] == "Team"
+        assert response_data["visibility"] == "team"
         assert response_data["categories"][0]["id"] == str(category.id)
         assert response_data["excludeFromGames"] is False
         assert response_data["excludeFromKids"] is False
@@ -956,7 +957,7 @@ class TestDictionaryEndpoint(
         response_data = json.loads(response.content)
         assert response_data["title"] == "Goodbye"
         assert response_data["type"] == TypeOfDictionaryEntry.PHRASE
-        assert response_data["visibility"] == "Team"
+        assert response_data["visibility"] == "team"
         assert response_data["categories"][0]["id"] == str(category.id)
         assert response_data["excludeFromGames"] is True
         assert response_data["excludeFromKids"] is True
