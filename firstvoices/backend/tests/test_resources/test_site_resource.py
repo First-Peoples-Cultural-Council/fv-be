@@ -67,6 +67,9 @@ class TestSiteImport:
         assert not result.has_validation_errors()
         assert result.totals["new"] == 1
 
+        new_site = Site.objects.get(id=table["id"][0])
+        assert new_site.created_by.email == "support@fpcc.ca"
+
     @pytest.mark.django_db
     def test_import_metadata_custom_timestamps(self):
         """
