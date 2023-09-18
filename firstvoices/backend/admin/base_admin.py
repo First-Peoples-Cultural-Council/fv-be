@@ -81,13 +81,12 @@ class BaseSiteContentAdmin(BaseAdmin):
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_site_from_object(self, request):
-        if not hasattr(self, "parent_site"):
-            self.parent_site = None
-            object_id = request.resolver_match.kwargs.get("object_id")
-            instance = self.get_object(request, object_id)
-            if instance:
-                self.parent_site = instance.site
-        return self.parent_site
+        parent_site = None
+        object_id = request.resolver_match.kwargs.get("object_id")
+        instance = self.get_object(request, object_id)
+        if instance:
+            parent_site = instance.site
+        return parent_site
 
 
 class BaseControlledSiteContentAdmin(BaseSiteContentAdmin):
@@ -151,15 +150,14 @@ class BaseInlineSiteContentAdmin(BaseInlineAdmin):
         return qs.select_related("site")
 
     def get_site_from_object(self, request):
-        if not hasattr(self, "parent_site"):
-            self.parent_site = None
-            object_id = request.resolver_match.kwargs.get("object_id")
-            instance = self.parent_model.objects.filter(id=object_id).first()
-            if instance and isinstance(instance, Site):
-                self.parent_site = instance
-            elif instance and hasattr(instance, "site"):
-                self.parent_site = instance.site
-        return self.parent_site
+        parent_site = None
+        object_id = request.resolver_match.kwargs.get("object_id")
+        instance = self.parent_model.objects.filter(id=object_id).first()
+        if instance and isinstance(instance, Site):
+            parent_site = instance
+        elif instance and hasattr(instance, "site"):
+            parent_site = instance.site
+        return parent_site
 
 
 class HiddenBaseAdmin(BaseAdmin):

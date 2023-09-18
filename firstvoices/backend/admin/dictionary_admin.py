@@ -111,6 +111,7 @@ class DictionaryEntryAdmin(BaseControlledSiteContentAdmin):
     ]
     list_display = ("title",) + BaseControlledSiteContentAdmin.list_display
     readonly_fields = ("custom_order",) + BaseControlledSiteContentAdmin.readonly_fields
+    filter_horizontal = ("related_audio", "related_images", "related_videos")
 
 
 @admin.register(PartOfSpeech)
