@@ -166,18 +166,8 @@ def hydrate_objects(search_results, request):
                         ).data,
                     }
                 )
-        except AttributeError as e:
-            if "has no site" in str(e):
-                logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-                logger.error(
-                    f"Missing site object on ES object with id: {obj['_source']['document_id']}"
-                )
         except Exception as e:
-            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-            logger.error(
-                f"Error during hydration process. \n"
-                f"Document id: {obj['_source']['document_id']}. Error: {e}"
-            )
+            handle_hydration_errors(obj, e)
 
     return complete_objects
 
@@ -224,3 +214,15 @@ def get_page_info(story_instance):
     page_translation = list(story_instance.pages.values_list("translation", flat=True))
 
     return page_text, page_translation
+
+
+def handle_hydration_errors(obj, exception):
+    """
+    Handle exceptions and log errors.
+    """
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    document_id = obj["_source"]["document_id"]
+    error_message = f"Error during hydration process. Document id: {document_id}. Error: {exception}"
+    if "has no site" in str(exception):
+        error_message = f"Missing site object on ES object with id: {document_id}. Error: {exception}"
+    logger.error(error_message)
