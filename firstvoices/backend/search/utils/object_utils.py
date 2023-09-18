@@ -172,6 +172,12 @@ def hydrate_objects(search_results, request):
                 logger.error(
                     f"Missing site object on ES object with id: {obj['_source']['document_id']}"
                 )
+        except Exception as e:
+            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+            logger.error(
+                f"Error during hydration process. \n"
+                f"Document id: {obj['_source']['document_id']}. Error: {e}"
+            )
 
     return complete_objects
 
