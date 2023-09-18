@@ -41,6 +41,10 @@ class Character(RelatedMediaMixin, BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
+        indexes = [
+            models.Index(fields=["title", "site"], name="character_title_idx"),
+        ]
+
     # from dc:title
     # Unique with site_id
     title = models.CharField(max_length=MAX_CHARACTER_LENGTH)
@@ -118,6 +122,10 @@ class CharacterVariant(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
+        indexes = [
+            models.Index(fields=["title", "site"], name="cv_site_title_idx"),
+        ]
+
     # from fvcharacter: upper_case_character
     # Unique with site_id
     title = models.CharField(max_length=MAX_CHARACTER_LENGTH)
@@ -175,6 +183,10 @@ class IgnoredCharacter(BaseSiteContentModel):
             "change": predicates.is_superadmin,
             "delete": predicates.is_superadmin,
         }
+
+        indexes = [
+            models.Index(fields=["title", "site"], name="ignoredcharacter_title_idx"),
+        ]
 
     # from fv-alphabet:ignored_characters
     # Unique with site_id
