@@ -6,10 +6,11 @@ from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 
 from backend.models.sites import Site
-from backend.search.indices import DictionaryEntryDocument, SongDocument
+from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
+    ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
     SearchIndexEntryTypes,
@@ -33,6 +34,7 @@ def update_document_visibility(sender, instance, **kwargs):
     if original_site.visibility != instance.visibility:
         dictionary_entries_set = instance.dictionaryentry_set.all()
         songs_set = instance.song_set.all()
+        stories_set = instance.story_set.all()
 
         # Updating dictionary_entries visibility
         for dictionary_entry in dictionary_entries_set:
@@ -42,12 +44,17 @@ def update_document_visibility(sender, instance, **kwargs):
         for song in songs_set:
             update_song_visibility(song, instance.visibility)
 
+        # updating story visibility
+        for story in stories_set:
+            update_story_visibility(story, instance.visibility)
+
 
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
 def delete_related_docs(sender, instance, **kwargs):
     dictionary_entries_set = instance.dictionaryentry_set.all()
     songs_set = instance.song_set.all()
+    stories_set = instance.story_set.all()
 
     # removing dictionary_entries related to the deleted site
     for dictionary_entry in dictionary_entries_set:
@@ -56,6 +63,10 @@ def delete_related_docs(sender, instance, **kwargs):
     # removing songs related to the deleted site
     for song in songs_set:
         remove_song_from_index(song)
+
+    # removing story related to the deleted site
+    for story in stories_set:
+        remove_story_from_index(story)
 
 
 # The following update and delete methods can be optimized using bulk operation
@@ -134,6 +145,38 @@ def update_song_visibility(song, updated_visibility):
         logger.error(e)
 
 
+def update_story_visibility(story, updated_visibility):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_STORY_INDEX, "story", story.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        story_doc = StoryDocument.get(id=existing_entry["_id"])
+        story_doc.update(site_visibility=updated_visibility)
+    except ConnectionError:
+        logger.warning(
+            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, story.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "sites_visibility_update_signal",
+                SearchIndexEntryTypes.STORY,
+                story.id,
+            )
+        )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, story.id)
+        logger.error(e)
+
+
 def remove_dictionary_entry_from_index(dictionary_entry):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
@@ -191,8 +234,7 @@ def remove_song_from_index(song):
         song_doc.delete()
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR
-            % ("dictionary_entry", SearchIndexEntryTypes.SONG, song.id)
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, song.id)
         )
     except NotFoundError:
         logger.warning(
@@ -207,4 +249,36 @@ def remove_song_from_index(song):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, song.id)
+        logger.error(e)
+
+
+def remove_story_from_index(story):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_STORY_INDEX, "story", story.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        story_doc = StoryDocument.get(id=existing_entry["_id"])
+        story_doc.delete()
+    except ConnectionError:
+        logger.error(
+            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, story.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "sites_delete_signal",
+                SearchIndexEntryTypes.STORY,
+                story.id,
+            )
+        )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, story.id)
         logger.error(e)
