@@ -1,47 +1,18 @@
+import logging
 import uuid
 
 from django.db import connection
+from django.utils import timezone
 
-from backend.models.media import (
-    Audio,
-    AudioSpeaker,
-    File,
-    Image,
-    ImageFile,
-    Person,
-    Video,
-    VideoFile,
-)
+from backend.models.media import Audio, AudioSpeaker, Image, Person, Video
 from backend.resources.base import SiteContentResource
+
+logger = logging.getLogger(__name__)
 
 
 class PersonResource(SiteContentResource):
     class Meta:
         model = Person
-
-
-class AudioResource(SiteContentResource):
-    class Meta:
-        model = Audio
-
-    def before_import_row(self, row, **kwargs):
-        file_id = uuid.uuid4()
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO backend_file (id, created, last_modified, content, site_id) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                [
-                    str(file_id),
-                    row["created"],
-                    row["last_modified"],
-                    row["content"],
-                    row["site"],
-                ],
-            )
-        self.file_instance_id = file_id
-
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        instance.original = File.objects.get(id=self.file_instance_id)
 
 
 class AudioSpeakerResource(SiteContentResource):
@@ -58,7 +29,46 @@ class AudioSpeakerMigrationResource(AudioSpeakerResource):
             ).delete()
 
 
-class VisualMediaResource(SiteContentResource):
+class FileDirectInsertionResourceMixin:
+    class Meta:
+        abstract = True
+
+    def before_import_row(self, row, **kwargs):
+        file_id = uuid.uuid4()
+        last_modified = row["last_modified"] if row["last_modified"] else timezone.now()
+        created = row["created"] if row["created"] else timezone.now()
+        try:
+            self.insert_file_via_sql(
+                str(file_id), created, last_modified, row["content"], row["site"]
+            )
+            row["original"] = str(file_id)
+        except Exception as e:
+            logging.error(f"Object {row['id']} could not be migrated: {e}")
+            raise e
+        return super().before_import_row(row, **kwargs)
+
+
+class AudioResource(FileDirectInsertionResourceMixin, SiteContentResource):
+    class Meta:
+        model = Audio
+
+    @staticmethod
+    def insert_file_via_sql(file_id, created, last_modified, content, site):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO backend_file (id, created, last_modified, content, site_id) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                [
+                    file_id,
+                    created,
+                    last_modified,
+                    content,
+                    site,
+                ],
+            )
+
+
+class VisualMediaResource(FileDirectInsertionResourceMixin, SiteContentResource):
     def __init__(self):
         super().__init__()
         self.file_instance_id = None
@@ -96,49 +106,41 @@ class ImageResource(VisualMediaResource):
     class Meta:
         model = Image
 
-    def before_import_row(self, row, **kwargs):
-        file_id = uuid.uuid4()
+    @staticmethod
+    def insert_file_via_sql(file_id, created, last_modified, content, site):
         with connection.cursor() as cursor:
             cursor.execute(
                 "INSERT INTO backend_imagefile (id, created, last_modified, height, width, content, site_id) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 [
                     str(file_id),
-                    row["created"],
-                    row["last_modified"],
+                    created,
+                    last_modified,
                     -1,
                     -1,
-                    row["content"],
-                    row["site"],
+                    content,
+                    site,
                 ],
             )
-        self.file_instance_id = file_id
-
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        instance.original = ImageFile.objects.get(id=self.file_instance_id)
 
 
 class VideoResource(VisualMediaResource):
     class Meta:
         model = Video
 
-    def before_import_row(self, row, **kwargs):
-        file_id = uuid.uuid4()
+    @staticmethod
+    def insert_file_via_sql(file_id, created, last_modified, content, site):
         with connection.cursor() as cursor:
             cursor.execute(
                 "INSERT INTO backend_videofile (id, created, last_modified, height, width, content, site_id) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 [
                     str(file_id),
-                    row["created"],
-                    row["last_modified"],
+                    created,
+                    last_modified,
                     -1,
                     -1,
-                    row["content"],
-                    row["site"],
+                    content,
+                    site,
                 ],
             )
-        self.file_instance_id = file_id
-
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        instance.original = VideoFile.objects.get(id=self.file_instance_id)

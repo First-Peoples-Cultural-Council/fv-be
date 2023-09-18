@@ -1,12 +1,10 @@
-from import_export import fields
+from django.contrib.auth import get_user_model
+from import_export import fields, widgets
 
 from backend.models.app import AppMembership
 from backend.models.constants import AppRole
 from backend.resources.base import BaseResource
-from backend.resources.utils.import_export_widgets import (
-    ChoicesWidget,
-    UserForeignKeyWidget,
-)
+from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
 class AppMembershipResource(BaseResource):
@@ -18,7 +16,7 @@ class AppMembershipResource(BaseResource):
     user = fields.Field(
         column_name="user",
         attribute="user",
-        widget=UserForeignKeyWidget(),
+        widget=widgets.ForeignKeyWidget(get_user_model(), field="email"),
     )
 
     class Meta:

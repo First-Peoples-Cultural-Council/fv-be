@@ -52,6 +52,25 @@ class TestSiteImport:
         assert new_site.visibility == Visibility.TEAM
 
     @pytest.mark.django_db
+    def test_import_no_metadata(self):
+        """
+        If created/modified dates or users are absent, import successfully with some default.
+        """
+        site_id = uuid.uuid4()
+        data = [
+            f"{site_id},,,,,Blank,blank,Public,,",
+        ]
+        table = build_table(data)
+
+        result = SiteResource().import_data(dataset=table)
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == 1
+
+        new_site = Site.objects.get(id=table["id"][0])
+        assert new_site.created_by.email == "support@fpcc.ca"
+
+    @pytest.mark.django_db
     def test_import_metadata_custom_timestamps(self):
         """
         Allow manual created/modified dates when creating object from import,
