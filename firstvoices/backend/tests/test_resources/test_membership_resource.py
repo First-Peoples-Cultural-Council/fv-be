@@ -37,7 +37,7 @@ class TestAppMembershipImport:
         assert new_membership.exists()
         assert new_membership.first().user == user
         assert new_membership.first().role == AppRole.STAFF
-        assert new_membership.first().created_by is None
+        assert new_membership.first().created_by.email == "support@fpcc.ca"
 
     @pytest.mark.django_db
     def test_no_overwrite(self):
@@ -91,7 +91,7 @@ class TestSiteMembershipImport:
         assert new_membership.exists()
         assert new_membership.first().user == user
         assert new_membership.first().role == Role.LANGUAGE_ADMIN
-        assert new_membership.first().created_by is None
+        assert new_membership.first().created_by.email == "support@fpcc.ca"
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(

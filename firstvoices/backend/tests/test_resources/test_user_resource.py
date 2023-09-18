@@ -1,6 +1,6 @@
 import pytest
 import tablib
-from jwt_auth.models import User
+from django.contrib.auth import get_user_model
 
 from backend.resources.users import UserResource
 from backend.tests.factories import UserFactory
@@ -30,10 +30,10 @@ class TestUserImport:
         assert not result.has_errors()
         assert not result.has_validation_errors()
         assert result.totals["new"] == len(data)
-        assert User.objects.count() == len(data)
+        assert get_user_model().objects.count() == len(data)
 
-        assert User.objects.filter(email=table["email"][0]).exists()
-        assert User.objects.filter(email=table["email"][1]).exists()
+        assert get_user_model().objects.filter(email=table["email"][0]).exists()
+        assert get_user_model().objects.filter(email=table["email"][1]).exists()
 
     @pytest.mark.django_db
     def test_skip_existing_users(self):

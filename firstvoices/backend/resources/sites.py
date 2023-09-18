@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db import connection
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget
@@ -7,10 +8,7 @@ from backend.models.constants import Role, Visibility
 from backend.models.media import File, ImageFile, VideoFile
 from backend.models.sites import Language, Membership, Site
 from backend.resources.base import BaseResource, SiteContentResource
-from backend.resources.utils.import_export_widgets import (
-    ChoicesWidget,
-    UserForeignKeyWidget,
-)
+from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
 class SiteResource(BaseResource):
@@ -77,7 +75,7 @@ class MembershipResource(SiteContentResource):
     user = fields.Field(
         column_name="user",
         attribute="user",
-        widget=UserForeignKeyWidget(),
+        widget=ForeignKeyWidget(get_user_model(), field="email"),
     )
 
     class Meta:

@@ -101,6 +101,29 @@ class TestAudioImport(BaseMediaImportTest):
         assert table["exclude_from_kids"][0] == str(new_audio.exclude_from_kids)
         assert table["content"][0] == str(new_audio.original.content)
 
+    @pytest.mark.django_db
+    def test_import_empty_metadata(self):
+        """Import Audio model with metadata missing"""
+        site = SiteFactory.create()
+        id_one = uuid.uuid4()
+        data = [
+            f"{id_one},,,,,Woof Woof,"
+            f"Sound of a dog barking,Recorded by: My Mom,True,False,,somefile.mp3,{site.id},False,{site.slug}/"
+            f"{id_one}/somefile.mp3",
+        ]
+        table = self.build_table(data)
+        result = AudioResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["new"] == len(data)
+        assert Audio.objects.filter(site=site.id).count() == 1
+        assert File.objects.filter(site=site.id).count() == 1
+        assert (
+            Audio.objects.get(id=table["id"][0]).original
+            == File.objects.filter(site=site.id).first()
+        )
+
 
 class TestAudioSpeakerImport:
     @staticmethod
