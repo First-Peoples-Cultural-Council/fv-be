@@ -97,7 +97,7 @@ def hydrate_objects(search_results, request):
                     "translation_set", *get_media_prefetch_list(request.user)
                 ),
             ),
-            *get_media_prefetch_list(request.user)
+            *get_media_prefetch_list(request.user),
         )
     )
     song_objects = list(
@@ -108,63 +108,70 @@ def hydrate_objects(search_results, request):
     )
 
     for obj in search_results:
-        # Handling DictionaryEntry objects
-        if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
-            dictionary_entry = get_object_by_id(
-                dictionary_objects, obj["_source"]["document_id"]
-            )
+        try:
+            # Handling DictionaryEntry objects
+            if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
+                dictionary_entry = get_object_by_id(
+                    dictionary_objects, obj["_source"]["document_id"]
+                )
 
-            # Serializing and adding the object to complete_objects
-            complete_objects.append(
-                {
-                    "score": obj["_score"],
-                    "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
-                    "entry": DictionaryEntryDetailSerializer(
-                        dictionary_entry,
-                        context={
-                            "request": request,
-                            "view": "search",
-                            "site": dictionary_entry.site,
-                        },
-                    ).data,
-                }
-            )
-        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
-            song = get_object_by_id(song_objects, obj["_source"]["document_id"])
+                # Serializing and adding the object to complete_objects
+                complete_objects.append(
+                    {
+                        "score": obj["_score"],
+                        "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
+                        "entry": DictionaryEntryDetailSerializer(
+                            dictionary_entry,
+                            context={
+                                "request": request,
+                                "view": "search",
+                                "site": dictionary_entry.site,
+                            },
+                        ).data,
+                    }
+                )
+            elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
+                song = get_object_by_id(song_objects, obj["_source"]["document_id"])
 
-            # Serializing and adding the object to complete_objects
-            complete_objects.append(
-                {
-                    "score": obj["_score"],
-                    "type": "song",
-                    "entry": SongSerializer(
-                        song,
-                        context={
-                            "request": request,
-                            "view": "search",
-                            "site": song.site,
-                        },
-                    ).data,
-                }
-            )
-        elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
-            story = get_object_by_id(story_objects, obj["_source"]["document_id"])
+                # Serializing and adding the object to complete_objects
+                complete_objects.append(
+                    {
+                        "score": obj["_score"],
+                        "type": "song",
+                        "entry": SongSerializer(
+                            song,
+                            context={
+                                "request": request,
+                                "view": "search",
+                                "site": song.site,
+                            },
+                        ).data,
+                    }
+                )
+            elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
+                story = get_object_by_id(story_objects, obj["_source"]["document_id"])
 
-            # Serializing and adding the object to complete_objects
-            complete_objects.append(
-                {
-                    "score": obj["_score"],
-                    "type": "story",
-                    "entry": StorySerializer(
-                        story,
-                        context={
-                            "request": request,
-                            "view": "search",
-                            "site": story.site,
-                        },
-                    ).data,
-                }
-            )
+                # Serializing and adding the object to complete_objects
+                complete_objects.append(
+                    {
+                        "score": obj["_score"],
+                        "type": "story",
+                        "entry": StorySerializer(
+                            story,
+                            context={
+                                "request": request,
+                                "view": "search",
+                                "site": story.site,
+                            },
+                        ).data,
+                    }
+                )
+        except AttributeError as e:
+            if "has no site" in str(e):
+                logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+                logger.error(
+                    f"Missing site object on ES object with id: {obj['_source']['document_id']}"
+                )
 
     return complete_objects
 
