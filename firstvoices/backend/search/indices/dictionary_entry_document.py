@@ -1,5 +1,6 @@
 import logging
 
+from celery import shared_task
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
@@ -26,6 +27,7 @@ from backend.search.utils.object_utils import (
     get_object_from_index,
     get_translation_text,
 )
+from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -47,9 +49,17 @@ class DictionaryEntryDocument(BaseDocument):
 
 # Signal to update the entry in index
 @receiver(post_save, sender=DictionaryEntry)
-def update_dictionary_entry_index(sender, instance, **kwargs):
+def request_update_dictionary_entry_index(sender, instance, **kwargs):
+    update_dictionary_entry_index.apply_async(
+        (instance.id,), link_error=link_error_handler.s()
+    )
+
+
+@shared_task
+def update_dictionary_entry_index(instance_id, **kwargs):
     # Add document to es index
     try:
+        instance = DictionaryEntry.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
         )
@@ -123,10 +133,16 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
 
 # Delete entry from index
 @receiver(post_delete, sender=DictionaryEntry)
-def delete_from_index(sender, instance, **kwargs):
+def request_delete_dictionary_entry_index(sender, instance, **kwargs):
+    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def delete_from_index(instance_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
+        instance = DictionaryEntry.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
         )
@@ -150,7 +166,13 @@ def delete_from_index(sender, instance, **kwargs):
 # Translation update
 @receiver(post_delete, sender=Translation)
 @receiver(post_save, sender=Translation)
-def update_translation(sender, instance, **kwargs):
+def request_update_translation_index(sender, instance, **kwargs):
+    update_translation.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def update_translation(instance_id, **kwargs):
+    instance = Translation.objects.get(id=instance_id)
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
 
@@ -193,7 +215,13 @@ def update_translation(sender, instance, **kwargs):
 # Note update
 @receiver(post_delete, sender=Note)
 @receiver(post_save, sender=Note)
-def update_notes(sender, instance, **kwargs):
+def request_update_notes_index(sender, instance, **kwargs):
+    update_notes.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def update_notes(instance_id, **kwargs):
+    instance = Note.objects.get(id=instance_id)
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
     notes_text = get_notes_text(dictionary_entry)
@@ -235,7 +263,15 @@ def update_notes(sender, instance, **kwargs):
 # Acknowledgement update
 @receiver(post_delete, sender=Acknowledgement)
 @receiver(post_save, sender=Acknowledgement)
-def update_acknowledgement(sender, instance, **kwargs):
+def request_update_acknowledgement_index(sender, instance, **kwargs):
+    update_acknowledgement.apply_async(
+        (instance.id,), link_error=link_error_handler.s()
+    )
+
+
+@shared_task
+def update_acknowledgement(instance_id, **kwargs):
+    instance = Acknowledgement.objects.get(id=instance_id)
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     dictionary_entry = instance.dictionary_entry
     acknowledgements_text = get_acknowledgements_text(dictionary_entry)
@@ -277,13 +313,25 @@ def update_acknowledgement(sender, instance, **kwargs):
 # Category update when called through the admin site
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
-def update_categories(sender, instance, **kwargs):
+def request_update_categories_index(sender, instance, **kwargs):
+    update_categories.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def update_categories(instance_id, **kwargs):
+    instance = DictionaryEntryCategory.objects.get(id=instance_id)
     update_dictionary_entry_index_categories(instance.dictionary_entry)
 
 
 # Category update when called through the APIs
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
-def update_categories_m2m(sender, instance, **kwargs):
+def request_update_categories_m2m(sender, instance, **kwargs):
+    update_categories_m2m.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def update_categories_m2m(instance_id, **kwargs):
+    instance = DictionaryEntryCategory.objects.get(id=instance_id)
     if instance.__class__ == DictionaryEntry:
         update_dictionary_entry_index_categories(instance)
 

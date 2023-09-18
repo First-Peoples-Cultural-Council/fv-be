@@ -19,13 +19,13 @@ from backend.models import (
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
 from backend.search.indices.dictionary_entry_document import (
-    delete_from_index,
-    update_acknowledgement,
-    update_categories,
-    update_categories_m2m,
-    update_dictionary_entry_index,
-    update_notes,
-    update_translation,
+    request_delete_dictionary_entry_index,
+    request_update_acknowledgement_index,
+    request_update_categories_index,
+    request_update_categories_m2m,
+    request_update_dictionary_entry_index,
+    request_update_notes_index,
+    request_update_translation_index,
 )
 from backend.search.indices.song_document import (
     delete_from_index as delete_from_index_song,
@@ -224,18 +224,30 @@ def disconnect_signals():
     # backend.search folder if this list goes out of sync
 
     # backend.search.indices.dictionary_entry_document
-    signals.post_save.disconnect(update_dictionary_entry_index, sender=DictionaryEntry)
-    signals.post_delete.disconnect(delete_from_index, sender=DictionaryEntry)
-    signals.post_save.disconnect(update_translation, sender=Translation)
-    signals.post_delete.disconnect(update_translation, sender=Translation)
-    signals.post_save.disconnect(update_notes, sender=Note)
-    signals.post_delete.disconnect(update_notes, sender=Note)
-    signals.post_save.disconnect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_delete.disconnect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_save.disconnect(update_categories, sender=DictionaryEntryCategory)
-    signals.post_delete.disconnect(update_categories, sender=DictionaryEntryCategory)
+    signals.post_save.disconnect(
+        request_update_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_delete.disconnect(
+        request_delete_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_save.disconnect(request_update_translation_index, sender=Translation)
+    signals.post_delete.disconnect(request_update_translation_index, sender=Translation)
+    signals.post_save.disconnect(request_update_notes_index, sender=Note)
+    signals.post_delete.disconnect(request_update_notes_index, sender=Note)
+    signals.post_save.disconnect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_delete.disconnect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_save.disconnect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.post_delete.disconnect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
     signals.m2m_changed.disconnect(
-        update_categories_m2m, sender=DictionaryEntryCategory
+        request_update_categories_m2m, sender=DictionaryEntryCategory
     )
 
     # backend.search.indices.song_document
@@ -261,17 +273,31 @@ def reconnect_signals():
     # backend.search folder if this list goes out of sync
 
     # backend.search.indices.dictionary_entry_document
-    signals.post_save.connect(update_dictionary_entry_index, sender=DictionaryEntry)
-    signals.post_delete.connect(delete_from_index, sender=DictionaryEntry)
-    signals.post_save.connect(update_translation, sender=Translation)
-    signals.post_delete.connect(update_translation, sender=Translation)
-    signals.post_save.connect(update_notes, sender=Note)
-    signals.post_delete.connect(update_notes, sender=Note)
-    signals.post_save.connect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_delete.connect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_save.connect(update_categories, sender=DictionaryEntryCategory)
-    signals.post_delete.connect(update_categories, sender=DictionaryEntryCategory)
-    signals.m2m_changed.connect(update_categories_m2m, sender=DictionaryEntryCategory)
+    signals.post_save.connect(
+        request_update_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_delete.connect(
+        request_delete_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_save.connect(request_update_translation_index, sender=Translation)
+    signals.post_delete.connect(request_update_translation_index, sender=Translation)
+    signals.post_save.connect(request_update_notes_index, sender=Note)
+    signals.post_delete.connect(request_update_notes_index, sender=Note)
+    signals.post_save.connect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_delete.connect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_save.connect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.post_delete.connect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.m2m_changed.connect(
+        request_update_categories_m2m, sender=DictionaryEntryCategory
+    )
 
     # backend.search.indices.song_document
     signals.post_save.connect(update_song_index, sender=Song)
