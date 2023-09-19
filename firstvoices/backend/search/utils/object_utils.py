@@ -109,8 +109,7 @@ def hydrate_objects(search_results, request):
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                         "entry": DictionaryEntryMinimalSerializer(
-                            dictionary_entry,
-                            context={"request": request, "view": "search"},
+                            dictionary_entry
                         ).data,
                     }
                 )
