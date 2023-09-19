@@ -265,7 +265,7 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
 
 
 class RelatedAudioMinimalSerializer(serializers.ModelSerializer):
-    original = MediaFileUploadSerializer(read_only=True)
+    original = MediaFileSerializer(read_only=True)
 
     class Meta:
         model = media.Audio

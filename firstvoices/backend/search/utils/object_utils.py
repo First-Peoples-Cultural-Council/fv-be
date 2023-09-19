@@ -1,10 +1,9 @@
 import logging
 
-from django.db.models import Prefetch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import DictionaryEntry, Site, Song, Story
+from backend.models import DictionaryEntry, Song, Story
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -81,10 +80,10 @@ def hydrate_objects(search_results, request):
         DictionaryEntry.objects.filter(
             id__in=dictionary_search_results_ids
         ).prefetch_related(
+            "site",
             "translation_set",
             "related_audio",
             "related_images",
-            Prefetch("site", queryset=Site.objects.only("id", "title", "slug").all()),
         )
     )
     song_objects = list(
@@ -109,7 +108,7 @@ def hydrate_objects(search_results, request):
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                         "entry": DictionaryEntryMinimalSerializer(
-                            dictionary_entry
+                            dictionary_entry, context={"request": request}
                         ).data,
                     }
                 )
