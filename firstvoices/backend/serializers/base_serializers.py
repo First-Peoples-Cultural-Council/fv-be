@@ -203,3 +203,10 @@ class WritableControlledSiteContentSerializer(
 
     class Meta(BaseControlledSiteContentSerializer.Meta):
         fields = BaseControlledSiteContentSerializer.Meta.fields
+
+
+class LinkedSiteMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Site
+        fields = ("id", "title", "slug")
+        read_only_fields = ("id", "title", "slug")
