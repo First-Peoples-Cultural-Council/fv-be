@@ -80,7 +80,11 @@ class AudioViewSet(
         site = self.get_validated_site()
         return (
             Audio.objects.filter(site__slug=site[0].slug)
-            .select_related("original", "site")
-            .prefetch_related("speakers")
+            .prefetch_related("original", "site", "speakers")
             .order_by("-created")
+            .defer(
+                "created_by_id",
+                "last_modified_by_id",
+                "last_modified",
+            )
         )

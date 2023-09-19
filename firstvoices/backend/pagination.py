@@ -1,6 +1,9 @@
+import inspect
 from collections import OrderedDict
 
 from django.core.paginator import InvalidPage, Page, Paginator
+from django.utils.functional import cached_property
+from django.utils.inspect import method_has_no_args
 from rest_framework import pagination
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
@@ -8,9 +11,20 @@ from rest_framework.response import Response
 from backend.search.utils.constants import ES_MAX_RESULTS, ES_PAGE_SIZE
 
 
+class FasterCountPagination(Paginator):
+    @cached_property
+    def count(self):
+        # Override the count property to select only the id field to speed up the count query
+        c = getattr(self.object_list.values("pk"), "count", None)
+        if callable(c) and not inspect.isbuiltin(c) and method_has_no_args(c):
+            return c()
+        return len(self.object_list.values("pk"))
+
+
 class PageNumberPagination(pagination.PageNumberPagination):
     page_size_query_param = "pageSize"
     max_page_size = 1000
+    django_paginator_class = FasterCountPagination
 
     def get_paginated_response(self, data):
         """
