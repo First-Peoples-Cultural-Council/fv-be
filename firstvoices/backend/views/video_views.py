@@ -81,6 +81,11 @@ class VideoViewSet(
         site = self.get_validated_site()
         return (
             Video.objects.filter(site__slug=site[0].slug)
-            .select_related("site", *get_select_related_media_fields(None))
+            .prefetch_related("site", *get_select_related_media_fields(None))
             .order_by("-created")
+            .defer(
+                "created_by_id",
+                "last_modified_by_id",
+                "last_modified",
+            )
         )
