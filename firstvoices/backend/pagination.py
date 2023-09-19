@@ -15,10 +15,10 @@ class FasterCountPagination(Paginator):
     @cached_property
     def count(self):
         # Override the count property to select only the id field to speed up the count query
-        c = getattr(self.object_list.values("id"), "count", None)
+        c = getattr(self.object_list.values("pk"), "count", None)
         if callable(c) and not inspect.isbuiltin(c) and method_has_no_args(c):
             return c()
-        return len(self.object_list.values("id"))
+        return len(self.object_list.values("pk"))
 
 
 class PageNumberPagination(pagination.PageNumberPagination):
