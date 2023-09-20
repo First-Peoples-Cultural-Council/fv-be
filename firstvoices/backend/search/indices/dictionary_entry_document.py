@@ -50,9 +50,10 @@ class DictionaryEntryDocument(BaseDocument):
 # Signal to update the entry in index
 @receiver(post_save, sender=DictionaryEntry)
 def request_update_dictionary_entry_index(sender, instance, **kwargs):
-    update_dictionary_entry_index.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
-    )
+    if DictionaryEntry.objects.filter(id=instance.id).exists():
+        update_dictionary_entry_index.apply_async(
+            (instance.id,), countdown=2, link_error=link_error_handler.s()
+        )
 
 
 @shared_task
@@ -61,7 +62,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
     try:
         instance = DictionaryEntry.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance_id
         )
         translations_text = get_translation_text(instance)
         notes_text = get_notes_text(instance)
@@ -110,7 +111,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
             ES_CONNECTION_ERROR
-            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -126,7 +127,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
@@ -142,9 +143,8 @@ def delete_from_index(instance_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
-        instance = DictionaryEntry.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance_id
         )
         if existing_entry:
             index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
@@ -152,13 +152,13 @@ def delete_from_index(instance_id, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
@@ -167,16 +167,31 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_delete, sender=Translation)
 @receiver(post_save, sender=Translation)
 def request_update_translation_index(sender, instance, **kwargs):
-    update_translation.apply_async((instance.id,), link_error=link_error_handler.s())
+    update_translation.apply_async(
+        (instance.id, instance.dictionary_entry.id),
+        countdown=2,
+        link_error=link_error_handler.s(),
+    )
 
 
 @shared_task
-def update_translation(instance_id, **kwargs):
-    instance = Translation.objects.get(id=instance_id)
+def update_translation(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
 
-    translations_text = get_translation_text(dictionary_entry)
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        translations_text = get_translation_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "translation_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
@@ -192,7 +207,7 @@ def update_translation(instance_id, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("translation", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("translation", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -207,7 +222,7 @@ def update_translation(instance_id, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
@@ -216,15 +231,31 @@ def update_translation(instance_id, **kwargs):
 @receiver(post_delete, sender=Note)
 @receiver(post_save, sender=Note)
 def request_update_notes_index(sender, instance, **kwargs):
-    update_notes.apply_async((instance.id,), link_error=link_error_handler.s())
+    update_notes.apply_async(
+        (instance.id, instance.dictionary_entry.id),
+        countdown=2,
+        link_error=link_error_handler.s(),
+    )
 
 
 @shared_task
-def update_notes(instance_id, **kwargs):
-    instance = Note.objects.get(id=instance_id)
+def update_notes(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
-    notes_text = get_notes_text(dictionary_entry)
+
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        notes_text = get_notes_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "notes_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
@@ -240,7 +271,7 @@ def update_notes(instance_id, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("notes", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("notes", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -255,7 +286,7 @@ def update_notes(instance_id, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
@@ -265,16 +296,30 @@ def update_notes(instance_id, **kwargs):
 @receiver(post_save, sender=Acknowledgement)
 def request_update_acknowledgement_index(sender, instance, **kwargs):
     update_acknowledgement.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
+        (instance.id, instance.dictionary_entry.id),
+        countdown=2,
+        link_error=link_error_handler.s(),
     )
 
 
 @shared_task
-def update_acknowledgement(instance_id, **kwargs):
-    instance = Acknowledgement.objects.get(id=instance_id)
+def update_acknowledgement(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
-    acknowledgements_text = get_acknowledgements_text(dictionary_entry)
+
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        acknowledgements_text = get_acknowledgements_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "acknowledgements_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
@@ -290,7 +335,7 @@ def update_acknowledgement(instance_id, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("acknowledgements", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("acknowledgements", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -305,7 +350,7 @@ def update_acknowledgement(instance_id, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
@@ -314,25 +359,30 @@ def update_acknowledgement(instance_id, **kwargs):
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def request_update_categories_index(sender, instance, **kwargs):
-    update_categories.apply_async((instance.id,), link_error=link_error_handler.s())
+    update_categories.apply_async(
+        (instance.id,), countdown=2, link_error=link_error_handler.s()
+    )
 
 
 @shared_task
 def update_categories(instance_id, **kwargs):
-    instance = DictionaryEntryCategory.objects.get(id=instance_id)
-    update_dictionary_entry_index_categories(instance.dictionary_entry)
+    if DictionaryEntryCategory.objects.filter(id=instance_id).exists():
+        instance = DictionaryEntryCategory.objects.get(id=instance_id)
+        update_dictionary_entry_index_categories(instance.dictionary_entry)
 
 
 # Category update when called through the APIs
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
 def request_update_categories_m2m(sender, instance, **kwargs):
-    update_categories_m2m.apply_async((instance.id,), link_error=link_error_handler.s())
+    update_categories_m2m.apply_async(
+        (instance.id,), countdown=2, link_error=link_error_handler.s()
+    )
 
 
 @shared_task
 def update_categories_m2m(instance_id, **kwargs):
-    instance = DictionaryEntryCategory.objects.get(id=instance_id)
-    if instance.__class__ == DictionaryEntry:
+    if DictionaryEntryCategory.objects.filter(id=instance_id).exists():
+        instance = DictionaryEntryCategory.objects.get(id=instance_id)
         update_dictionary_entry_index_categories(instance)
 
 
