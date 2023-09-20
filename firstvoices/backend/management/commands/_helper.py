@@ -35,9 +35,12 @@ from backend.search.indices.song_document import (
     request_update_song_index,
 )
 from backend.search.indices.story_document import (
-    delete_from_index as delete_from_index_story,
+    request_delete_from_index as request_delete_from_index_story,
 )
-from backend.search.indices.story_document import update_pages, update_story_index
+from backend.search.indices.story_document import (
+    request_update_pages,
+    request_update_story_index,
+)
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -260,10 +263,10 @@ def disconnect_signals():
     signals.post_delete.disconnect(request_update_lyrics, sender=Lyric)
 
     # backend.search.indices.story_document
-    signals.post_save.disconnect(update_story_index, sender=Story)
-    signals.post_delete.disconnect(delete_from_index_story, sender=Story)
-    signals.post_save.disconnect(update_pages, sender=StoryPage)
-    signals.post_delete.disconnect(update_pages, sender=StoryPage)
+    signals.post_save.disconnect(request_update_story_index, sender=Story)
+    signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
+    signals.post_save.disconnect(request_update_pages, sender=StoryPage)
+    signals.post_delete.disconnect(request_update_pages, sender=StoryPage)
 
     # backend.search.utils.site_signals
     signals.pre_save.disconnect(update_document_visibility, sender=Site)
@@ -309,10 +312,10 @@ def reconnect_signals():
     signals.post_delete.connect(request_update_lyrics, sender=Lyric)
 
     # backend.search.indices.story_document
-    signals.post_save.connect(update_story_index, sender=Story)
-    signals.post_delete.connect(delete_from_index_story, sender=Story)
-    signals.post_save.connect(update_pages, sender=StoryPage)
-    signals.post_delete.connect(update_pages, sender=StoryPage)
+    signals.post_save.connect(request_update_story_index, sender=Story)
+    signals.post_delete.connect(request_delete_from_index_story, sender=Story)
+    signals.post_save.connect(request_update_pages, sender=StoryPage)
+    signals.post_delete.connect(request_update_pages, sender=StoryPage)
 
     # backend.search.utils.site_signals
     signals.pre_save.connect(update_document_visibility, sender=Site)
