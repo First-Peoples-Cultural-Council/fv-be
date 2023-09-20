@@ -12,7 +12,7 @@ from backend.search.utils.constants import (
     ES_NOT_FOUND_ERROR,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
-from backend.serializers.song_serializers import SongSerializer
+from backend.serializers.song_serializers import SongMinimalSerializer
 from backend.serializers.story_serializers import StorySerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -89,7 +89,11 @@ def hydrate_objects(search_results, request):
         )
     )
     song_objects = list(
-        Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
+        Song.objects.filter(id__in=song_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
     story_objects = list(
         Story.objects.filter(id__in=story_search_results_ids).prefetch_related("pages")
@@ -123,13 +127,9 @@ def hydrate_objects(search_results, request):
                         "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "song",
-                        "entry": SongSerializer(
+                        "entry": SongMinimalSerializer(
                             song,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": song.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
