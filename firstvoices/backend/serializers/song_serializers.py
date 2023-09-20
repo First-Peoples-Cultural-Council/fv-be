@@ -10,7 +10,10 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.media_serializers import (
+    RelatedImageMinimalSerializer,
+    RelatedMediaSerializerMixin,
+)
 from backend.serializers.site_serializers import LinkedSiteSerializer
 
 
@@ -85,3 +88,22 @@ class SongListSerializer(
                 "hide_overlay",
             )
         )
+
+
+class SongMinimalSerializer(ModelSerializer):
+    site = LinkedSiteSerializer(read_only=True)
+    related_images = RelatedImageMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
+
+    class Meta:
+        model = Song
+        fields = (
+            "id",
+            "title",
+            "title_translation",
+            "hide_overlay",
+            "site",
+            "related_images",
+        )
+        read_only_fields = ("id", "title", "title_translation", "hide_overlay")

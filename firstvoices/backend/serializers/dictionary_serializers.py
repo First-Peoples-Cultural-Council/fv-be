@@ -6,12 +6,17 @@ from rest_framework import serializers
 
 from backend.models import category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
+    LinkedSiteSerializer,
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
     audience_fields,
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
-from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.media_serializers import (
+    RelatedAudioMinimalSerializer,
+    RelatedImageMinimalSerializer,
+    RelatedMediaSerializerMixin,
+)
 from backend.serializers.parts_of_speech_serializers import (
     PartsOfSpeechSerializer,
     WritablePartsOfSpeechSerializer,
@@ -360,3 +365,29 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "related_images",
             "related_videos",
         ) + audience_fields
+
+
+class DictionaryEntryMinimalSerializer(serializers.ModelSerializer):
+    site = LinkedSiteSerializer(read_only=True)
+    translations = TranslationSerializer(
+        many=True, required=False, source="translation_set", read_only=True
+    )
+    related_audio = RelatedAudioMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
+    related_images = RelatedImageMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
+
+    class Meta:
+        model = dictionary.DictionaryEntry
+        fields = (
+            "id",
+            "title",
+            "type",
+            "site",
+            "translations",
+            "related_audio",
+            "related_images",
+        )
+        read_only_fields = ("id", "title", "type")

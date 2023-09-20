@@ -1,6 +1,5 @@
 import logging
 
-from django.db.models import Prefetch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
@@ -12,10 +11,9 @@ from backend.search.utils.constants import (
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
 )
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
-from backend.serializers.song_serializers import SongSerializer
-from backend.serializers.story_serializers import StorySerializer
-from backend.views.utils import get_media_prefetch_list
+from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
+from backend.serializers.song_serializers import SongMinimalSerializer
+from backend.serializers.story_serializers import StoryMinimalSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -79,32 +77,30 @@ def hydrate_objects(search_results, request):
 
     # Fetching objects from the database
     dictionary_objects = list(
-        DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
-        .select_related("site", "created_by", "last_modified_by", "part_of_speech")
-        .prefetch_related(
-            "categories",
-            "acknowledgement_set",
+        DictionaryEntry.objects.filter(
+            id__in=dictionary_search_results_ids
+        ).prefetch_related(
+            "site",
             "translation_set",
-            "pronunciation_set",
-            "note_set",
-            "alternatespelling_set",
-            "site__language",
-            Prefetch(
-                "related_dictionary_entries",
-                queryset=DictionaryEntry.objects.visible(request.user)
-                .select_related("site")
-                .prefetch_related(
-                    "translation_set", *get_media_prefetch_list(request.user)
-                ),
-            ),
-            *get_media_prefetch_list(request.user),
+            "related_audio",
+            "related_images",
+            "related_audio__original",
+            "related_images__original",
         )
     )
     song_objects = list(
-        Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
+        Song.objects.filter(id__in=song_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
     story_objects = list(
-        Story.objects.filter(id__in=story_search_results_ids).prefetch_related("pages")
+        Story.objects.filter(id__in=story_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
 
     for obj in search_results:
@@ -118,15 +114,11 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
-                        "entry": DictionaryEntryDetailSerializer(
-                            dictionary_entry,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": dictionary_entry.site,
-                            },
+                        "entry": DictionaryEntryMinimalSerializer(
+                            dictionary_entry, context={"request": request}
                         ).data,
                     }
                 )
@@ -136,15 +128,12 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "song",
-                        "entry": SongSerializer(
+                        "entry": SongMinimalSerializer(
                             song,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": song.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
@@ -154,15 +143,12 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "story",
-                        "entry": StorySerializer(
+                        "entry": StoryMinimalSerializer(
                             story,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": story.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
