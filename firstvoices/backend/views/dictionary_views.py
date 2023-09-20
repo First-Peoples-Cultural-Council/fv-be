@@ -112,10 +112,11 @@ class DictionaryViewSet(
         if len(site) > 0:
             return (
                 DictionaryEntry.objects.filter(site__slug=site[0].slug)
-                .select_related(
-                    "site", "site__language", "created_by", "last_modified_by"
-                )
                 .prefetch_related(
+                    "site",
+                    "site__language",
+                    "created_by",
+                    "last_modified_by",
                     "acknowledgement_set",
                     "alternatespelling_set",
                     "note_set",
@@ -133,6 +134,10 @@ class DictionaryViewSet(
                         ),
                     ),
                     *get_media_prefetch_list(self.request.user)
+                )
+                .defer(
+                    "exclude_from_wotd",
+                    "batch_id",
                 )
             )
         else:
