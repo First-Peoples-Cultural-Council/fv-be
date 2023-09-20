@@ -13,7 +13,7 @@ from backend.search.utils.constants import (
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
 from backend.serializers.song_serializers import SongMinimalSerializer
-from backend.serializers.story_serializers import StorySerializer
+from backend.serializers.story_serializers import StoryMinimalSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -96,7 +96,11 @@ def hydrate_objects(search_results, request):
         )
     )
     story_objects = list(
-        Story.objects.filter(id__in=story_search_results_ids).prefetch_related("pages")
+        Story.objects.filter(id__in=story_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
 
     for obj in search_results:
@@ -142,13 +146,9 @@ def hydrate_objects(search_results, request):
                         "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "story",
-                        "entry": StorySerializer(
+                        "entry": StoryMinimalSerializer(
                             story,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": story.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
