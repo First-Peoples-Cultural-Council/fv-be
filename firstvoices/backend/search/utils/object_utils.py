@@ -84,6 +84,8 @@ def hydrate_objects(search_results, request):
             "translation_set",
             "related_audio",
             "related_images",
+            "related_audio__original",
+            "related_images__original",
         )
     )
     song_objects = list(
