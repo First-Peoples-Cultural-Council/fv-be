@@ -178,7 +178,7 @@ def request_update_translation_index(sender, instance, **kwargs):
 def update_translation(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
-    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
     try:
         dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
         translations_text = get_translation_text(dictionary_entry)
@@ -242,7 +242,7 @@ def request_update_notes_index(sender, instance, **kwargs):
 def update_notes(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
-    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
     try:
         dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
         notes_text = get_notes_text(dictionary_entry)
@@ -306,7 +306,7 @@ def request_update_acknowledgement_index(sender, instance, **kwargs):
 def update_acknowledgement(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
-    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, set to None.
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
     try:
         dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
         acknowledgements_text = get_acknowledgements_text(dictionary_entry)

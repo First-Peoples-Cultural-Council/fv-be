@@ -28,9 +28,12 @@ from backend.search.indices.dictionary_entry_document import (
     request_update_translation_index,
 )
 from backend.search.indices.song_document import (
-    delete_from_index as delete_from_index_song,
+    request_delete_from_index as request_delete_from_index_song,
 )
-from backend.search.indices.song_document import update_lyrics, update_song_index
+from backend.search.indices.song_document import (
+    request_update_lyrics,
+    request_update_song_index,
+)
 from backend.search.indices.story_document import (
     delete_from_index as delete_from_index_story,
 )
@@ -251,10 +254,10 @@ def disconnect_signals():
     )
 
     # backend.search.indices.song_document
-    signals.post_save.disconnect(update_song_index, sender=Song)
-    signals.post_delete.disconnect(delete_from_index_song, sender=Song)
-    signals.post_save.disconnect(update_lyrics, sender=Lyric)
-    signals.post_delete.disconnect(update_lyrics, sender=Lyric)
+    signals.post_save.disconnect(request_update_song_index, sender=Song)
+    signals.post_delete.disconnect(request_delete_from_index_song, sender=Song)
+    signals.post_save.disconnect(request_update_lyrics, sender=Lyric)
+    signals.post_delete.disconnect(request_update_lyrics, sender=Lyric)
 
     # backend.search.indices.story_document
     signals.post_save.disconnect(update_story_index, sender=Story)
@@ -300,10 +303,10 @@ def reconnect_signals():
     )
 
     # backend.search.indices.song_document
-    signals.post_save.connect(update_song_index, sender=Song)
-    signals.post_delete.connect(delete_from_index_song, sender=Song)
-    signals.post_save.connect(update_lyrics, sender=Lyric)
-    signals.post_delete.connect(update_lyrics, sender=Lyric)
+    signals.post_save.connect(request_update_song_index, sender=Song)
+    signals.post_delete.connect(request_delete_from_index_song, sender=Song)
+    signals.post_save.connect(request_update_lyrics, sender=Lyric)
+    signals.post_delete.connect(request_update_lyrics, sender=Lyric)
 
     # backend.search.indices.story_document
     signals.post_save.connect(update_story_index, sender=Story)

@@ -1,5 +1,6 @@
 import logging
 
+from celery import shared_task
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
@@ -14,6 +15,7 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_lyrics, get_object_from_index
+from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -33,9 +35,18 @@ class SongDocument(BaseDocument):
 
 
 @receiver(post_save, sender=Song)
-def update_song_index(sender, instance, **kwargs):
+def request_update_song_index(sender, instance, **kwargs):
+    if Song.objects.filter(id=instance.id).exists():
+        update_song_index.apply_async(
+            (instance.id,), countdown=2, link_error=link_error_handler.s()
+        )
+
+
+@shared_task
+def update_song_index(instance_id, **kwargs):
     # add song to es index
     try:
+        instance = Song.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
             ELASTICSEARCH_SONG_INDEX, "song", instance.id
         )
@@ -83,7 +94,7 @@ def update_song_index(sender, instance, **kwargs):
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance_id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -92,47 +103,71 @@ def update_song_index(sender, instance, **kwargs):
             ES_NOT_FOUND_ERROR,
             "get",
             SearchIndexEntryTypes.SONG,
-            instance.id,
+            instance_id,
         )
         logger.warning(e)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance_id)
         logger.error(e)
 
 
 # Delete entry from index
 @receiver(post_delete, sender=Song)
-def delete_from_index(sender, instance, **kwargs):
+def request_delete_from_index(sender, instance, **kwargs):
+    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
+
+
+@shared_task
+def delete_from_index(instance_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_SONG_INDEX, "song", instance.id
+            ELASTICSEARCH_SONG_INDEX, "song", instance_id
         )
         if existing_entry:
             index_entry = SongDocument.get(id=existing_entry["_id"])
             index_entry.delete()
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance.id)
+            ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, instance_id)
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance_id)
         logger.error(e)
 
 
 # Lyrics update
 @receiver(post_delete, sender=Lyric)
 @receiver(post_save, sender=Lyric)
-def update_lyrics(sender, instance, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    song = instance.song
+def request_update_lyrics(sender, instance, **kwargs):
+    update_lyrics.apply_async(
+        (instance.id, instance.song.id), countdown=2, link_error=link_error_handler.s()
+    )
 
-    lyrics_text, lyrics_translation_text = get_lyrics(song)
+
+@shared_task
+def update_lyrics(instance_id, song_id, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    # Set song and lyric text. If it doesn't exist due to deletion, warn and return.
+    try:
+        song = Song.objects.get(id=song_id)
+        lyrics_text, lyrics_translation_text = get_lyrics(song)
+    except Song.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "lyrics_update_signal",
+                SearchIndexEntryTypes.SONG,
+                song_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
@@ -147,7 +182,7 @@ def update_lyrics(sender, instance, **kwargs):
         )
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % ("lyrics", SearchIndexEntryTypes.SONG, instance.id)
+            ES_CONNECTION_ERROR % ("lyrics", SearchIndexEntryTypes.SONG, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -161,5 +196,5 @@ def update_lyrics(sender, instance, **kwargs):
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance_id)
         logger.error(e)
