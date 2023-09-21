@@ -128,7 +128,7 @@ class JWTScheme(OpenApiAuthenticationExtension):
     Extension for API documentation generator, to document JWT auth scheme.
     """
 
-    target_class = "backend.jwt_auth.JwtAuthentication"
+    target_class = "jwt_auth.authentication.JwtAuthentication"
     name = "jwtAuth"
 
     def get_security_definition(self, auto_schema):
