@@ -94,7 +94,7 @@ class BaseControlledSiteContentModel(BaseSiteContentModel):
         abstract = True
 
     visibility = models.IntegerField(
-        choices=Visibility.choices, default=Visibility.TEAM
+        choices=Visibility.choices, default=Visibility.TEAM, db_index=True
     )
 
 
