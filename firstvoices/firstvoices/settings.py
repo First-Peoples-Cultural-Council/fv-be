@@ -71,6 +71,8 @@ MIDDLEWARE = [
 ]
 
 CSRF_TRUSTED_ORIGINS = ["https://*.eks.firstvoices.io"]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 USE_X_FORWARDED_HOST = True
 
@@ -177,6 +179,10 @@ CACHES = {
 }
 
 DATABASES = {"default": database.config()}
+
+if not DEBUG:
+    CONN_MAX_AGE = os.environ.get("CONN_MAX_AGE", default=60)
+    CONN_HEALTH_CHECKS = True
 
 AUTH_USER_MODEL = "jwt_auth.User"
 
