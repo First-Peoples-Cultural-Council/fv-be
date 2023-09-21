@@ -55,8 +55,8 @@ from backend.search.utils.object_utils import (
     get_translation_text,
 )
 from backend.search.utils.site_signals import (
-    delete_related_docs,
-    update_document_visibility,
+    request_delete_related_docs,
+    request_update_document_visibility,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -269,8 +269,8 @@ def disconnect_signals():
     signals.post_delete.disconnect(request_update_pages, sender=StoryPage)
 
     # backend.search.utils.site_signals
-    signals.pre_save.disconnect(update_document_visibility, sender=Site)
-    signals.post_delete.disconnect(delete_related_docs, sender=Site)
+    signals.pre_save.disconnect(request_update_document_visibility, sender=Site)
+    signals.post_delete.disconnect(request_delete_related_docs, sender=Site)
 
 
 def reconnect_signals():
@@ -318,5 +318,5 @@ def reconnect_signals():
     signals.post_delete.connect(request_update_pages, sender=StoryPage)
 
     # backend.search.utils.site_signals
-    signals.pre_save.connect(update_document_visibility, sender=Site)
-    signals.post_delete.connect(delete_related_docs, sender=Site)
+    signals.pre_save.connect(request_update_document_visibility, sender=Site)
+    signals.post_delete.connect(request_delete_related_docs, sender=Site)
