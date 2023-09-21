@@ -85,6 +85,7 @@ def hydrate_objects(search_results, request):
             "related_audio",
             "related_images",
             "related_audio__original",
+            "related_audio__speakers",
             "related_images__original",
         )
     )
@@ -118,7 +119,8 @@ def hydrate_objects(search_results, request):
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                         "entry": DictionaryEntryMinimalSerializer(
-                            dictionary_entry, context={"request": request}
+                            dictionary_entry,
+                            context={"request": request, "site": dictionary_entry.site},
                         ).data,
                     }
                 )

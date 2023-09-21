@@ -266,14 +266,23 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
 
 class RelatedAudioMinimalSerializer(serializers.ModelSerializer):
     original = MediaFileSerializer(read_only=True)
+    speakers = PersonSerializer(many=True, read_only=True)
 
     class Meta:
         model = media.Audio
-        fields = ("id", "original")
+        fields = (
+            "id",
+            "title",
+            "description",
+            "acknowledgement",
+            "speakers",
+            "original",
+        )
         read_only_fields = ("id", "original")
 
 
 class RelatedImageMinimalSerializer(RelatedAudioMinimalSerializer):
     class Meta:
         model = media.Image
-        fields = RelatedAudioMinimalSerializer.Meta.fields
+        fields = ("id", "original")
+        read_only_fields = ("id", "original")
