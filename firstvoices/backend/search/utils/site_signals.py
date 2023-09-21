@@ -1,5 +1,6 @@
 import logging
 
+from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -16,12 +17,13 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_object_from_index
+from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
 # If a site's visibility is changed, update all docs from index related to site
 @receiver(pre_save, sender=Site)
-def update_document_visibility(sender, instance, **kwargs):
+def request_update_document_visibility(sender, instance, **kwargs):
     if instance.id is None:
         # New site, don't do anything
         return
@@ -29,29 +31,47 @@ def update_document_visibility(sender, instance, **kwargs):
     try:
         original_site = Site.objects.get(id=instance.id)
     except ObjectDoesNotExist:
+        # New site or deleted, don't do anything
         return
 
     if original_site.visibility != instance.visibility:
-        dictionary_entries_set = instance.dictionaryentry_set.all()
-        songs_set = instance.song_set.all()
-        stories_set = instance.story_set.all()
+        update_document_visibility.apply_async(
+            (instance.id, instance.visibility), link_error=link_error_handler.s()
+        )
 
-        # Updating dictionary_entries visibility
-        for dictionary_entry in dictionary_entries_set:
-            update_dictionary_entry_visibility(dictionary_entry, instance.visibility)
 
-        # Updating songs visibility
-        for song in songs_set:
-            update_song_visibility(song, instance.visibility)
+@shared_task
+def update_document_visibility(instance_id, instance_visibility, **kwargs):
+    instance = Site.objects.get(id=instance_id)
+    dictionary_entries_set = instance.dictionaryentry_set.all()
+    songs_set = instance.song_set.all()
+    stories_set = instance.story_set.all()
 
-        # updating story visibility
-        for story in stories_set:
-            update_story_visibility(story, instance.visibility)
+    # Updating dictionary_entries visibility
+    for dictionary_entry in dictionary_entries_set:
+        update_dictionary_entry_visibility(dictionary_entry, instance_visibility)
+
+    # Updating songs visibility
+    for song in songs_set:
+        update_song_visibility(song, instance_visibility)
+
+    # updating story visibility
+    for story in stories_set:
+        update_story_visibility(story, instance_visibility)
 
 
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
-def delete_related_docs(sender, instance, **kwargs):
+def request_delete_related_docs(sender, instance, **kwargs):
+    if Site.objects.filter(id=instance.id).exists():
+        delete_related_docs.apply_async(
+            (instance.id,), link_error=link_error_handler.s()
+        )
+
+
+@shared_task
+def delete_related_docs(instance_id, **kwargs):
+    instance = Site.objects.get(id=instance_id)
     dictionary_entries_set = instance.dictionaryentry_set.all()
     songs_set = instance.song_set.all()
     stories_set = instance.story_set.all()
