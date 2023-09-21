@@ -45,13 +45,13 @@ def get_object_from_index(index, document_type, document_id):
 def get_object_by_id(objects, object_id):
     # Function to find and return database object from list of objects
     filtered_objects = [
-        obj for obj in objects if str(obj.id) == object_id or obj.id == object_id
+        obj for obj in objects if str(obj.id) == str(object_id) or obj.id == object_id
     ]
 
-    if len(filtered_objects):
+    if filtered_objects:
         return filtered_objects[0]
-    else:
-        return None
+
+    raise KeyError(f"Object not found in db. id: {object_id}")
 
 
 def hydrate_objects(search_results, request):
@@ -208,7 +208,18 @@ def handle_hydration_errors(obj, exception):
     """
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     document_id = obj["_source"]["document_id"]
-    error_message = f"Error during hydration process. Document id: {document_id}. Error: {exception}"
-    if "has no site" in str(exception):
-        error_message = f"Missing site object on ES object with id: {document_id}. Error: {exception}"
-    logger.error(error_message)
+
+    error_message = str(exception)
+    log_level = "error"  # default log level
+
+    if "Object not found in db" in error_message:
+        # For cases where an indexed object is not present in the database for further hydration
+        log_level = "warning"
+        log_message = f"Object not found in database with id: {document_id}."
+    elif "has no site" in error_message:
+        # For cases where an indexed object points to a deleted site
+        log_message = f"Missing site object on ES object with id: {document_id}. Error: {error_message}"
+    else:
+        log_message = f"Error during hydration process. Document id: {document_id}. Error: {error_message}"
+
+    logger.log(logging.getLevelName(log_level.upper()), log_message)
