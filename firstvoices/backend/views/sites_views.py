@@ -79,7 +79,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
                 "menu",
                 "language",
                 "homepage",
-                "homepage",
                 *get_select_related_media_fields("logo"),
                 *get_select_related_media_fields("banner_image"),
                 *get_select_related_media_fields("banner_video"),
