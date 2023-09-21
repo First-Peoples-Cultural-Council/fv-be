@@ -181,7 +181,7 @@ CACHES = {
 DATABASES = {"default": database.config()}
 
 if not DEBUG:
-    CONN_MAX_AGE = os.environ.get("CONN_MAX_AGE", default=60)
+    CONN_MAX_AGE = os.environ.get("CONN_MAX_AGE", 60)
     CONN_HEALTH_CHECKS = True
 
 AUTH_USER_MODEL = "jwt_auth.User"
