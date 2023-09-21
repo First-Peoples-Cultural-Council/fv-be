@@ -33,10 +33,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - uses: FedericoCarboni/setup-ffmpeg@v2
         id: setup-ffmpeg
       - name: Install tox and any other packages
