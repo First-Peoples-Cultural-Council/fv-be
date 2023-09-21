@@ -41,7 +41,7 @@ class StoryDocument(BaseDocument):
 def request_update_story_index(sender, instance, **kwargs):
     if Story.objects.filter(id=instance.id).exists():
         update_story_index.apply_async(
-            (instance.id,), countdown=2, link_error=link_error_handler.s()
+            (instance.id,), countdown=10, link_error=link_error_handler.s()
         )
 
 
@@ -150,7 +150,9 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=StoryPage)
 def request_update_pages(sender, instance, **kwargs):
     update_pages.apply_async(
-        (instance.id, instance.story.id), countdown=2, link_error=link_error_handler.s()
+        (instance.id, instance.story.id),
+        countdown=10,
+        link_error=link_error_handler.s(),
     )
 
 
