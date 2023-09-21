@@ -279,9 +279,17 @@ AWS_QUERYSTRING_AUTH = True  # this is the default setting, just being explicit
 AWS_QUERYSTRING_EXPIRE = (
     60 * 60
 )  # seconds until a query string expires; this is the default setting
+
+_AWS_EXPIRY = 60 * 60 * 24 * 7
+# https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
 AWS_S3_OBJECT_PARAMETERS = {
-    "ContentDisposition": "attachment"
-}  # default to downloading files rather than displaying
+    "ContentDisposition": "attachment",  # default to downloading files rather than displaying
+    "CacheControl": f"max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate",
+}
+
+AWS_S3_MAX_MEMORY_SIZE = os.getenv(
+    "DJANGO_AWS_S3_MAX_MEMORY_SIZE", 100_000_000
+)  # 100MB
 
 # Disallow import/export unless you have write permission
 IMPORT_EXPORT_IMPORT_PERMISSION_CODE = "change"
