@@ -540,3 +540,48 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
                 actual_child_category_3_object
             )
         )
+
+    @pytest.mark.django_db
+    def test_nested_list_with_parent_and_child(self):
+        Category.objects.filter(site=self.site).delete()
+
+        word_entry = DictionaryEntryFactory(site=self.site)
+
+        parent_category_one = ParentCategoryFactory.create(
+            site=self.site, title="Parent one"
+        )
+        child_category_one = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_one, title="Child one of parent one"
+        )
+        parent_category_one.dictionary_entries.add(word_entry)
+        child_category_one.dictionary_entries.add(word_entry)
+
+        parent_category_two = ParentCategoryFactory.create(
+            site=self.site, title="Parent two"
+        )
+        child_category_two = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category_two, title="Child one of parent two"
+        )
+
+        child_category_two.dictionary_entries.add(word_entry)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"contains": TypeOfDictionaryEntry.WORD},
+            )
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+
+        assert len(response_data["results"]) == 2
+
+        assert response_data["results"][0]["id"] == str(child_category_two.id)
+        assert response_data["results"][1]["id"] == str(parent_category_one.id)
+
+        response_parent_category_one = response_data["results"][1]
+        assert len(response_parent_category_one["children"]) == 1
+        assert response_parent_category_one["children"][0]["id"] == str(
+            child_category_one.id
+        )
