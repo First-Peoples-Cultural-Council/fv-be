@@ -461,7 +461,10 @@ class Image(ThumbnailMixin, MediaBase):
         # Remove transparency values if they exist so that the image can be converted to JPEG.
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        img.save(output_img, format="JPEG", quality=90)
+        if output_size[0] == img.width and output_size[1] == img.height:
+            img.save(output_img, format="JPEG", quality="keep")
+        else:
+            img.save(output_img, format="JPEG", quality=80)
         return output_img
 
 
