@@ -132,7 +132,6 @@ class ImageFile(VisualFileBase):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-
     def save(self, **kwargs):
         try:
             self.width = self.content.file.image.width
@@ -471,7 +470,11 @@ class Image(ThumbnailMixin, MediaBase):
         # Remove transparency values if they exist so that the image can be converted to JPEG.
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        if output_size[0] == img.width and output_size[1] == img.height:
+        if (
+            output_size[0] == img.width
+            and output_size[1] == img.height
+            and img.format == "JPEG"
+        ):
             img.save(output_img, format="JPEG", quality="keep")
         else:
             img.save(output_img, format="JPEG", quality=80)
