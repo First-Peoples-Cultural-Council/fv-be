@@ -119,8 +119,6 @@ class VisualFileBase(FileBase):
 class ImageFile(VisualFileBase):
     content = models.ImageField(
         upload_to=media_directory_path,
-        height_field="height",
-        width_field="width",
         max_length=MAX_FILEFIELD_LENGTH,
     )
 
@@ -133,6 +131,20 @@ class ImageFile(VisualFileBase):
             "change": predicates.can_edit_core_uncontrolled_data,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
+
+
+    def save(self, **kwargs):
+        try:
+            self.width = self.content.file.image.width
+            self.height = self.content.file.image.height
+
+        except AttributeError as e:
+            self.logger.info(
+                f"Failed to get image dimensions for [{self.content.name}]. \n"
+                f"Error: {e}\n"
+            )
+
+        super().save(**kwargs)
 
 
 def get_local_video_file(original):
