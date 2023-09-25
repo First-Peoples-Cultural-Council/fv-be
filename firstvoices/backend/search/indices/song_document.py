@@ -38,7 +38,14 @@ class SongDocument(BaseDocument):
 def request_update_song_index(sender, instance, **kwargs):
     if Song.objects.filter(id=instance.id).exists():
         update_song_index.apply_async(
-            (instance.id,), countdown=10, link_error=link_error_handler.s()
+            (instance.id,),
+            link_error=link_error_handler.s(),
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 3,
+                "interval_step": 1,
+            },
         )
 
 
@@ -146,7 +153,14 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=Lyric)
 def request_update_lyrics(sender, instance, **kwargs):
     update_lyrics.apply_async(
-        (instance.id, instance.song.id), countdown=10, link_error=link_error_handler.s()
+        (instance.id,),
+        link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 

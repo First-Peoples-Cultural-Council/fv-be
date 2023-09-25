@@ -52,7 +52,14 @@ class DictionaryEntryDocument(BaseDocument):
 def request_update_dictionary_entry_index(sender, instance, **kwargs):
     if DictionaryEntry.objects.filter(id=instance.id).exists():
         update_dictionary_entry_index.apply_async(
-            (instance.id,), countdown=10, link_error=link_error_handler.s()
+            (instance.id,),
+            link_error=link_error_handler.s(),
+            retry=True,
+            retry_policy={
+                "max_retries": 3,
+                "interval_start": 3,
+                "interval_step": 1,
+            },
         )
 
 
@@ -168,9 +175,14 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=Translation)
 def request_update_translation_index(sender, instance, **kwargs):
     update_translation.apply_async(
-        (instance.id, instance.dictionary_entry.id),
-        countdown=10,
+        (instance.id,),
         link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 
@@ -232,9 +244,14 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_save, sender=Note)
 def request_update_notes_index(sender, instance, **kwargs):
     update_notes.apply_async(
-        (instance.id, instance.dictionary_entry.id),
-        countdown=10,
+        (instance.id,),
         link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 
@@ -296,9 +313,14 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_save, sender=Acknowledgement)
 def request_update_acknowledgement_index(sender, instance, **kwargs):
     update_acknowledgement.apply_async(
-        (instance.id, instance.dictionary_entry.id),
-        countdown=10,
+        (instance.id,),
         link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 
@@ -360,7 +382,14 @@ def update_acknowledgement(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def request_update_categories_index(sender, instance, **kwargs):
     update_categories.apply_async(
-        (instance.id,), countdown=10, link_error=link_error_handler.s()
+        (instance.id,),
+        link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 
@@ -375,7 +404,14 @@ def update_categories(instance_id, **kwargs):
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
 def request_update_categories_m2m(sender, instance, **kwargs):
     update_categories_m2m.apply_async(
-        (instance.id,), countdown=10, link_error=link_error_handler.s()
+        (instance.id,),
+        link_error=link_error_handler.s(),
+        retry=True,
+        retry_policy={
+            "max_retries": 3,
+            "interval_start": 3,
+            "interval_step": 1,
+        },
     )
 
 
