@@ -13,4 +13,4 @@ pylint-django==2.5.3  # https://github.com/PyCQA/pylint-django
 pre-commit==3.4.0  # https://github.com/pre-commit/pre-commit
 
 # Pytest --------------------------
-pytest-xdist
+pytest-xdist==3.3.1  # https://github.com/pytest-dev/pytest-xdist
