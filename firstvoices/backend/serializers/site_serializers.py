@@ -49,8 +49,12 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary_cleanup_preview",
         "ignored_characters",
         "images",
+        "pages",
         "people",
+        "songs",
+        "stories",
         "videos",
+        "widgets",
         "word_of_the_day",
     ),
 )

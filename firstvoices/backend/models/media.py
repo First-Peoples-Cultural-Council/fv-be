@@ -36,7 +36,7 @@ class Person(BaseSiteContentModel):
 
     name = models.CharField(max_length=200)
 
-    bio = models.CharField(max_length=500, blank=True, null=False)
+    bio = models.CharField(max_length=1000, blank=True, null=False)
 
     def __str__(self):
         return f"{self.name} ({self.site})"
@@ -119,8 +119,6 @@ class VisualFileBase(FileBase):
 class ImageFile(VisualFileBase):
     content = models.ImageField(
         upload_to=media_directory_path,
-        height_field="height",
-        width_field="width",
         max_length=MAX_FILEFIELD_LENGTH,
     )
 
@@ -133,6 +131,19 @@ class ImageFile(VisualFileBase):
             "change": predicates.can_edit_core_uncontrolled_data,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
+
+    def save(self, **kwargs):
+        try:
+            self.width = self.content.file.image.width
+            self.height = self.content.file.image.height
+
+        except AttributeError as e:
+            self.logger.info(
+                f"Failed to get image dimensions for [{self.content.name}]. \n"
+                f"Error: {e}\n"
+            )
+
+        super().save(**kwargs)
 
 
 def get_local_video_file(original):
@@ -206,7 +217,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
 
     def save(self, generate_thumbnails=True, **kwargs):
         if self._state.adding:
-            self._add_media(generate_thumbnails=generate_thumbnails)
+            self._add_media()
 
         elif self._is_updating_original():
             self._update_media()
@@ -221,7 +232,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         is_content_updated = self.original.pk != old_instance.original.pk
         return is_content_updated
 
-    def _add_media(self, generate_thumbnails=True):
+    def _add_media(self):
         """
         Subclasses can override to handle tasks associated with adding media. E.g., generating thumbnails.
         """
@@ -363,6 +374,13 @@ class ThumbnailMixin(models.Model):
         on_delete=models.SET_NULL,
     )
 
+    def save(self, generate_thumbnails=True, **kwargs):
+        is_modifying_original = self._state.adding or self._is_updating_original()
+        super().save(**kwargs)
+
+        if generate_thumbnails and is_modifying_original:
+            self._request_thumbnail_generation()
+
     def generate_resized_images(self):
         """
         A function to generate a set of resized images when the model is saved.
@@ -373,15 +391,6 @@ class ThumbnailMixin(models.Model):
         generate_media_thumbnails.apply_async(
             (self._meta.model_name, self.id), link_error=link_error_handler.s()
         )
-
-    def _add_media(self, generate_thumbnails=True):
-        super()._add_media()
-        if generate_thumbnails:
-            self._request_thumbnail_generation()
-
-    def _update_media(self):
-        super()._update_media()
-        self._request_thumbnail_generation()
 
     def _delete_related_media(self, instance):
         """
@@ -461,7 +470,14 @@ class Image(ThumbnailMixin, MediaBase):
         # Remove transparency values if they exist so that the image can be converted to JPEG.
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        img.save(output_img, format="JPEG", quality=90)
+        if (
+            output_size[0] == img.width
+            and output_size[1] == img.height
+            and img.format == "JPEG"
+        ):
+            img.save(output_img, format="JPEG", quality="keep")
+        else:
+            img.save(output_img, format="JPEG", quality=80)
         return output_img
 
 

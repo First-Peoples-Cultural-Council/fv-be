@@ -1,5 +1,3 @@
-import json
-
 import jwt
 import requests
 from django.conf import settings
@@ -24,7 +22,7 @@ def extract_bearer_token(auth):
 
 
 def get_signing_key(token):
-    jwks_client = jwt.PyJWKClient(settings.JWT["JWKS_URL"])
+    jwks_client = jwt.PyJWKClient(settings.JWT["JWKS_URL"], cache_keys=True)
 
     try:
         return jwks_client.get_signing_key_from_jwt(token)
@@ -98,15 +96,6 @@ class JwtAuthentication(authentication.BaseAuthentication):
     Decode JWT token and map to user
     """
 
-    def refresh_jwk(self):
-        certs_response = requests.get(settings.JWT["JWKS_URL"])
-        jwks = json.loads(certs_response.text)
-        self.jwks = jwks
-
-    def __init__(self):
-        self.jwks = None
-        self.refresh_jwk()
-
     def authenticate(self, request):
         """Verify the JWT token and find (or create) the correct user in the DB"""
 
@@ -128,7 +117,7 @@ class JWTScheme(OpenApiAuthenticationExtension):
     Extension for API documentation generator, to document JWT auth scheme.
     """
 
-    target_class = "backend.jwt_auth.JwtAuthentication"
+    target_class = "jwt_auth.authentication.JwtAuthentication"
     name = "jwtAuth"
 
     def get_security_definition(self, auto_schema):

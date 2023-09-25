@@ -16,7 +16,10 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.media_serializers import (
+    RelatedImageMinimalSerializer,
+    RelatedMediaSerializerMixin,
+)
 from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
 
@@ -139,4 +142,23 @@ class StoryListSerializer(BaseControlledSiteContentSerializer):
             BaseControlledSiteContentSerializer.Meta.fields
             + ("title_translation", "hide_overlay")
             + audience_fields
+        )
+
+
+class StoryMinimalSerializer(serializers.ModelSerializer):
+    site = LinkedSiteSerializer(read_only=True)
+    related_images = RelatedImageMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
+
+    class Meta:
+        model = Story
+        fields = (
+            "id",
+            "title",
+            "title_translation",
+            "author",
+            "hide_overlay",
+            "site",
+            "related_images",
         )

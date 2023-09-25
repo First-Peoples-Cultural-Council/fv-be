@@ -1,6 +1,5 @@
 import logging
 
-from django.db.models import Prefetch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
@@ -12,10 +11,9 @@ from backend.search.utils.constants import (
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
 )
-from backend.serializers.dictionary_serializers import DictionaryEntryDetailSerializer
-from backend.serializers.song_serializers import SongSerializer
-from backend.serializers.story_serializers import StorySerializer
-from backend.views.utils import get_media_prefetch_list
+from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
+from backend.serializers.song_serializers import SongMinimalSerializer
+from backend.serializers.story_serializers import StoryMinimalSerializer
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -47,13 +45,13 @@ def get_object_from_index(index, document_type, document_id):
 def get_object_by_id(objects, object_id):
     # Function to find and return database object from list of objects
     filtered_objects = [
-        obj for obj in objects if str(obj.id) == object_id or obj.id == object_id
+        obj for obj in objects if str(obj.id) == str(object_id) or obj.id == object_id
     ]
 
-    if len(filtered_objects):
+    if filtered_objects:
         return filtered_objects[0]
-    else:
-        return None
+
+    raise KeyError(f"Object not found in db. id: {object_id}")
 
 
 def hydrate_objects(search_results, request):
@@ -79,32 +77,31 @@ def hydrate_objects(search_results, request):
 
     # Fetching objects from the database
     dictionary_objects = list(
-        DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
-        .select_related("site", "created_by", "last_modified_by", "part_of_speech")
-        .prefetch_related(
-            "categories",
-            "acknowledgement_set",
+        DictionaryEntry.objects.filter(
+            id__in=dictionary_search_results_ids
+        ).prefetch_related(
+            "site",
             "translation_set",
-            "pronunciation_set",
-            "note_set",
-            "alternatespelling_set",
-            "site__language",
-            Prefetch(
-                "related_dictionary_entries",
-                queryset=DictionaryEntry.objects.visible(request.user)
-                .select_related("site")
-                .prefetch_related(
-                    "translation_set", *get_media_prefetch_list(request.user)
-                ),
-            ),
-            *get_media_prefetch_list(request.user),
+            "related_audio",
+            "related_images",
+            "related_audio__original",
+            "related_audio__speakers",
+            "related_images__original",
         )
     )
     song_objects = list(
-        Song.objects.filter(id__in=song_search_results_ids).prefetch_related("lyrics")
+        Song.objects.filter(id__in=song_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
     story_objects = list(
-        Story.objects.filter(id__in=story_search_results_ids).prefetch_related("pages")
+        Story.objects.filter(id__in=story_search_results_ids).prefetch_related(
+            "site",
+            "related_images",
+            "related_images__original",
+        )
     )
 
     for obj in search_results:
@@ -118,15 +115,12 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
-                        "entry": DictionaryEntryDetailSerializer(
+                        "entry": DictionaryEntryMinimalSerializer(
                             dictionary_entry,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": dictionary_entry.site,
-                            },
+                            context={"request": request, "site": dictionary_entry.site},
                         ).data,
                     }
                 )
@@ -136,15 +130,12 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "song",
-                        "entry": SongSerializer(
+                        "entry": SongMinimalSerializer(
                             song,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": song.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
@@ -154,15 +145,12 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
+                        "searchResultId": obj["_source"]["document_id"],
                         "score": obj["_score"],
                         "type": "story",
-                        "entry": StorySerializer(
+                        "entry": StoryMinimalSerializer(
                             story,
-                            context={
-                                "request": request,
-                                "view": "search",
-                                "site": story.site,
-                            },
+                            context={"request": request},
                         ).data,
                     }
                 )
@@ -222,7 +210,18 @@ def handle_hydration_errors(obj, exception):
     """
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
     document_id = obj["_source"]["document_id"]
-    error_message = f"Error during hydration process. Document id: {document_id}. Error: {exception}"
-    if "has no site" in str(exception):
-        error_message = f"Missing site object on ES object with id: {document_id}. Error: {exception}"
-    logger.error(error_message)
+
+    error_message = str(exception)
+    log_level = "error"  # default log level
+
+    if "Object not found in db" in error_message:
+        # For cases where an indexed object is not present in the database for further hydration
+        log_level = "warning"
+        log_message = f"Object not found in database with id: {document_id}."
+    elif "has no site" in error_message:
+        # For cases where an indexed object points to a deleted site
+        log_message = f"Missing site object on ES object with id: {document_id}. Error: {error_message}"
+    else:
+        log_message = f"Error during hydration process. Document id: {document_id}. Error: {error_message}"
+
+    logger.log(logging.getLevelName(log_level.upper()), log_message)
