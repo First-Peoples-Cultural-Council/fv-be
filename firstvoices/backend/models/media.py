@@ -132,10 +132,18 @@ class ImageFile(VisualFileBase):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
+    def get_image_dimensions(self):
+        # separate function to get ability to mock it for tests
+        return {
+            "width": self.content.file.image.width,
+            "height": self.content.file.image.height,
+        }
+
     def save(self, **kwargs):
         try:
-            self.width = self.content.file.image.width
-            self.height = self.content.file.image.height
+            image_dimensions = self.get_image_dimensions()
+            self.width = image_dimensions["width"]
+            self.height = image_dimensions["height"]
 
         except AttributeError as e:
             self.logger.info(

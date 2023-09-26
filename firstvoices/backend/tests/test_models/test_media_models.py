@@ -50,11 +50,12 @@ class TestFileModels:
 
     @pytest.mark.django_db
     def test_videofile_generated_properties(self):
+        # Dimensions are from conftest.py/mock_get_video_dimensions
         site = factories.SiteFactory.create()
         instance = factories.VideoFileFactory.create(site=site)
         assert instance.mimetype == "video/mp4"
-        assert instance.height == 46
-        assert instance.width == 80
+        assert instance.height == 100
+        assert instance.width == 100
 
     @pytest.mark.parametrize("media_factory", file_model_factories)
     @pytest.mark.django_db
