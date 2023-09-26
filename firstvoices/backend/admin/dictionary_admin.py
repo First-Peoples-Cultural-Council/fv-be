@@ -91,6 +91,7 @@ class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineSiteContent
         "dictionary_entry",
         "date",
     ) + BaseInlineAdmin.fields
+    autocomplete_fields = ("dictionary_entry",)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "dictionary_entry":
@@ -111,7 +112,19 @@ class DictionaryEntryAdmin(BaseControlledSiteContentAdmin):
     ]
     list_display = ("title",) + BaseControlledSiteContentAdmin.list_display
     readonly_fields = ("custom_order",) + BaseControlledSiteContentAdmin.readonly_fields
-    filter_horizontal = ("related_audio", "related_images", "related_videos")
+    autocomplete_fields = ("related_audio", "related_images", "related_videos")
+    search_fields = (
+        "title",
+        "site__title",
+        "created_by__email",
+        "last_modified_by__email",
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            "site", "created_by", "last_modified_by", "part_of_speech"
+        )
 
 
 @admin.register(PartOfSpeech)
