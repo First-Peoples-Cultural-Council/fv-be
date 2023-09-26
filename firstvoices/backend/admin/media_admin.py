@@ -40,6 +40,7 @@ class VisualMediaFileAdmin(FileAdmin):
 class AudioAdmin(BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
+    autocomplete_fields = ("original",)
 
     def delete_queryset(self, request, queryset):
         for obj in queryset.all():
@@ -56,6 +57,7 @@ class VisualMediaAdmin(BaseSiteContentAdmin):
     ) + BaseSiteContentAdmin.readonly_fields
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title",)
+    autocomplete_fields = ("original",)
 
     def delete_queryset(self, request, queryset):
         for obj in queryset.all():
