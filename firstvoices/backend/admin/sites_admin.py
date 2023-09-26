@@ -56,10 +56,7 @@ class MembershipAdmin(BaseSiteContentAdmin):
         "site__title",
     )
     list_filter = ("role",) + BaseSiteContentAdmin.list_filter
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("user")
+    list_select_related = ("user", "site", "created_by", "last_modified_by")
 
 
 @admin.register(SiteFeature)
@@ -95,6 +92,10 @@ class MembershipInline(BaseInlineSiteContentAdmin):
     readonly_fields = (
         ("user",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
     )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("user")
+        return qs
 
 
 class SiteFeatureInline(BaseInlineAdmin):
