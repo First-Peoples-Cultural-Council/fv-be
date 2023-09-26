@@ -86,6 +86,15 @@ class EmbeddedVideoAdmin(BaseSiteContentAdmin, AdminVideoMixin):
 class AudioSpeakerAdmin(BaseAdmin):
     fields = ("audio", "speaker")
     list_display = ("audio", "speaker") + BaseAdmin.list_display
+    list_select_related = (
+        "audio",
+        "audio__site",
+        "speaker",
+        "speaker__site",
+        "created_by",
+        "last_modified_by",
+    )
+    autocomplete_fields = ("audio", "speaker")
 
 
 @admin.register(Person)
