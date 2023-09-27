@@ -45,7 +45,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cov=firstvoices --cov-config=.coveragerc firstvoices/backend/tests/ --splits 4 --group ${{ matrix.group }}
+          pytest --cov=. --cov-config=.coveragerc firstvoices/ --splits 4 --group ${{ matrix.group }}
       - name: Upload coverage
         uses: actions/upload-artifact@v2
         with:
