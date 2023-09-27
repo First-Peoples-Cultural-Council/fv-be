@@ -17,7 +17,7 @@ def get_select_related_media_fields(media_field_name):
     fields = [f"{f}original", f"{f}thumbnail", f"{f}small", f"{f}medium"]
     if media_field_name:
         fields = fields + [media_field_name]
-
+    fields.append(f"{f}site")
     return fields
 
 
@@ -26,7 +26,7 @@ def get_media_prefetch_list(user):
         Prefetch(
             "related_audio",
             queryset=Audio.objects.visible(user)
-            .select_related("original")
+            .select_related("original", "site")
             .prefetch_related("speakers"),
         ),
         Prefetch(

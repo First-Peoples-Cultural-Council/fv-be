@@ -86,7 +86,7 @@ class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
         if "widgets" in validated_data:
             widgets = instance.widgets
             if not widgets:
-                widgets = SiteWidgetList.objects.create(site=instance)
+                widgets = SiteWidgetList.objects.create(site=instance.site)
             widgets = SiteWidgetListSerializer.update(self, widgets, validated_data)
             validated_data["widgets"] = widgets
             instance.widgets = widgets

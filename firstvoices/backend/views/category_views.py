@@ -1,4 +1,4 @@
-import itertools
+from copy import deepcopy
 
 from django.db.models import Prefetch, Q
 from django.db.models.functions import Lower
@@ -162,8 +162,11 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
 
     def get_list_queryset(self):
         site = self.get_validated_site()
-        list_queryset = Category.objects.filter(site__slug=site[0].slug)
-        query = Q()
+        query = Q(site__slug=site[0].slug)
+
+        # Check for the nested flag
+        nested_flag_input = self.request.GET.get("nested", True)
+        nested_flag = get_valid_boolean(nested_flag_input)
 
         # Check if type flags are present
         contains_flags = [
@@ -172,46 +175,76 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             if len(flag)
         ]
 
-        # Check for the nested flag
-        nested_flag_input = self.request.GET.get("nested", True)
-        nested_flag = get_valid_boolean(nested_flag_input)
-
+        flags_query = Q()
         if len(contains_flags) > 0:
+            flags_query.connector = Q.OR
             for flag in contains_flags:
                 # Check if flag is in valid_inputs and then add
                 if flag in self.valid_inputs:
-                    query.add(Q(dictionary_entries__type=flag), Q.OR)
-            if len(query) == 0:  # Only invalid flags were supplied
+                    flags_query.add(Q(dictionary_entries__type=flag), Q.OR)
+            if len(flags_query) == 0:  # Only invalid flags were supplied
                 return Category.objects.none()
-
-        filtered_categories = (
-            list_queryset.filter(query).order_by("id").distinct("id")
-        )  # Relevant categories which satisfy the query
-        child_categories = [
-            category.children.all().values_list("id", flat=True)
-            for category in filtered_categories
-            if len(category.children.all())
-        ]
-        flat_child_ids_list = list(itertools.chain(*child_categories))
-        child_queryset = Category.objects.filter(id__in=filtered_categories).order_by(
-            Lower("title")
-        )
+            else:
+                query.add(flags_query, Q.AND)
 
         if nested_flag:
-            return (
-                filtered_categories.filter(
-                    ~Q(
-                        id__in=flat_child_ids_list
-                    )  # Remove duplicate child entries being shown at top level
+            nested_query = deepcopy(query)
+            if len(flags_query) == 0:
+                query.add(Q(parent=None), Q.AND)
+                nested_query.add(~Q(parent=None), Q.AND)
+            else:
+                nested_query.add(~Q(parent=None), Q.AND)
+                child_query = deepcopy(query)
+                parent_query = deepcopy(query)
+
+                # Get parent categories
+                parents = Category.objects.filter(
+                    parent_query.add(Q(parent=None), Q.AND)
+                ).values_list("pk", flat=True)
+
+                # Get children categories that don't have parents in the parent set
+                child_query.add(~Q(parent=None), Q.AND)
+                children_without_parents_in_query = (
+                    Category.objects.filter(child_query)
+                    .exclude(Q(parent_id__in=parents))
+                    .values_list("pk", flat=True)
                 )
-                .prefetch_related(Prefetch("children", queryset=child_queryset))
+
+                # Add the parent and child categories to the non nested query
+                query.add(
+                    Q(pk__in=parents) | Q(pk__in=children_without_parents_in_query),
+                    Q.AND,
+                )
+
+                # Add the child categories that have parents in the parent set to the nested query
+                nested_query.add(~Q(pk__in=children_without_parents_in_query), Q.AND)
+            return (
+                Category.objects.filter(query)
+                .prefetch_related(
+                    Prefetch(
+                        "children",
+                        queryset=Category.objects.filter(nested_query).order_by(
+                            Lower("title")
+                        ),
+                    )
+                )
                 .order_by(Lower("title"))
+                .distinct()
             )
         else:
+            nested_query = deepcopy(query)
             return (
-                filtered_categories.filter()
-                .prefetch_related(Prefetch("children", queryset=child_queryset))
+                Category.objects.filter(query)
+                .prefetch_related(
+                    Prefetch(
+                        "children",
+                        queryset=Category.objects.filter(
+                            nested_query.add(~Q(parent=None), Q.AND)
+                        ).order_by(Lower("title")),
+                    )
+                )
                 .order_by(Lower("title"))
+                .distinct()
             )
 
     def get_serializer_class(self):

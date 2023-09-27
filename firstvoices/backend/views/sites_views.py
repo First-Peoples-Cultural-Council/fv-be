@@ -79,7 +79,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
                 "menu",
                 "language",
                 "homepage",
-                "homepage",
                 *get_select_related_media_fields("logo"),
                 *get_select_related_media_fields("banner_image"),
                 *get_select_related_media_fields("banner_video"),
@@ -87,7 +86,11 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(
+                        is_enabled=True
+                    ).prefetch_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    ),
                 ),
                 Prefetch(
                     "homepage__widgets",
@@ -142,7 +145,17 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
         ]
 
         # add "other" sites
-        other_sites = sites.filter(language=None)
+        other_sites = (
+            sites.filter(language=None)
+            .order_by(Upper("title"))
+            .select_related(*get_select_related_media_fields("logo"))
+            .prefetch_related(
+                Prefetch(
+                    "sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                ),
+            )
+        )
 
         if other_sites:
             other_site_json = {
