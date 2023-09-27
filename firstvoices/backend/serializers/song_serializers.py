@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from backend.models import Lyric, Song
@@ -8,7 +9,7 @@ from backend.serializers.base_serializers import (
     WritableVisibilityField,
     audience_fields,
     base_id_fields,
-    base_timestamp_fields,
+    base_timestamp_fields, ArbitraryIdSerializer,
 )
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
@@ -31,6 +32,10 @@ class SongSerializer(
     site = LinkedSiteSerializer(required=False, read_only=True)
     lyrics = LyricSerializer(many=True)
     visibility = WritableVisibilityField(required=True)
+    notes = serializers.ListField(child=ArbitraryIdSerializer(), required=False)
+    acknowledgements = serializers.ListField(
+        child=ArbitraryIdSerializer(), required=False
+    )
 
     def create(self, validated_data):
         lyrics = validated_data.pop("lyrics")

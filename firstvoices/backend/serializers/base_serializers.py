@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.exceptions import PermissionDenied
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
@@ -203,3 +205,11 @@ class WritableControlledSiteContentSerializer(
 
     class Meta(BaseControlledSiteContentSerializer.Meta):
         fields = BaseControlledSiteContentSerializer.Meta.fields
+
+
+class ArbitraryIdSerializer(serializers.CharField):
+    def to_representation(self, value):
+        return {
+            "id": str(uuid.uuid4()),  # better for frontend
+            "text": str(value),
+        }
