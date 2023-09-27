@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11.4"]
+        group: [1, 2, 3]
 
     services:
       postgres:
@@ -48,4 +49,4 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest
+          pytest --splits 5 --group ${{ matrix.group }}
