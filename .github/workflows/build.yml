@@ -4,7 +4,9 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
 jobs:
 
   pytest:
@@ -44,7 +46,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cov=. firstvoices/
+          pytest --cov --cov-config=.coveragerc
       - name: Upload coverage
         uses: actions/upload-artifact@v2
         with:
