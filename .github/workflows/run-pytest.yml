@@ -49,4 +49,4 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --splits 5 --group ${{ matrix.group }}
+          pytest --splits 4 --group ${{ matrix.group }}
