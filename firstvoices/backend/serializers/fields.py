@@ -94,3 +94,17 @@ class NullableCharField(serializers.CharField):
         if data is None:
             data = ""
         return super().validate_empty_values(data)
+
+
+class EnumField(serializers.Field):
+    enum = None
+
+    def __init__(self, enum, *args, **kwargs):
+        self.enum = enum
+        return super(EnumField, self).__init__(*args, **kwargs)
+
+    def to_representation(self, obj):
+        return self.enum(obj).label
+
+    def to_internal_value(self, data):
+        return self.enum[data.upper()]

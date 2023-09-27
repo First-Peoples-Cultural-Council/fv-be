@@ -1,12 +1,16 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from backend.models import Membership
+from backend.models.constants import Role
+from backend.serializers.base_serializers import UpdateSerializerMixin, CreateSiteContentSerializerMixin, SiteContentUrlMixin
 from backend.serializers.media_serializers import ImageSerializer
 from backend.serializers.site_serializers import (
     FeatureFlagSerializer,
     SiteSummarySerializer,
 )
+from backend.serializers import fields
 
 
 class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -37,3 +41,22 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Membership
         fields = ("role",) + SiteSummarySerializer.Meta.fields
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "email")
+
+
+class MembershipSerializer(UpdateSerializerMixin,
+                           CreateSiteContentSerializerMixin,
+                           SiteContentUrlMixin, serializers.HyperlinkedModelSerializer):
+
+    user = UserSerializer(read_only=True)
+    role = fields.EnumField(enum=Role)
+
+    class Meta:
+        model = Membership
+        fields = ("id", "url", "role", "user", "created")

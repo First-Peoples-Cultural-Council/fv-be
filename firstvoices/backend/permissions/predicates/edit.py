@@ -1,4 +1,4 @@
-from rules import predicate
+from rules import predicate, is_staff
 
 from . import base
 from .base import (
@@ -6,6 +6,7 @@ from .base import (
     has_at_least_editor_membership,
     has_language_admin_membership,
     is_superadmin,
+    is_at_least_staff_admin
 )
 
 #
@@ -22,6 +23,10 @@ is_at_least_editor_or_super = predicate(
 is_language_admin_or_super = predicate(
     has_language_admin_membership | is_superadmin,
     name="is_at_least_language_admin_or_super",
+)
+is_at_least_language_admin = predicate(
+    has_language_admin_membership | is_at_least_staff_admin,
+    name="is_at_least_language_admin",
 )
 
 """
