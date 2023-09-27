@@ -5,6 +5,7 @@ from backend.admin.base_admin import (
     BaseControlledSiteContentAdmin,
     BaseInlineAdmin,
     BaseSiteContentAdmin,
+    FilterAutocompleteBySiteMixin,
     HiddenBaseAdmin,
 )
 from backend.models.widget import (
@@ -69,7 +70,7 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
 
 
 @admin.register(SiteWidgetList)
-class SiteWidgetListAdmin(BaseSiteContentAdmin):
+class SiteWidgetListAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     list_display = ("__str__",) + BaseSiteContentAdmin.list_display
     fields = (
         "site",
@@ -85,6 +86,18 @@ class SiteWidgetListAdmin(BaseSiteContentAdmin):
         "site__title",
     ) + BaseSiteContentAdmin.search_fields
     inlines = [SiteWidgetListOrderInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term, ["site", "sitepage"]
+        )
+        return queryset, use_distinct
 
 
 class HiddenSiteWidgetListOrder(HiddenBaseAdmin):

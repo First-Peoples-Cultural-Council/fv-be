@@ -17,4 +17,9 @@ class LyricAdmin(BaseInlineAdmin):
 class SongAdmin(BaseSiteContentAdmin, DynamicArrayMixin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [LyricAdmin]
-    filter_horizontal = ("related_audio", "related_images", "related_videos")
+    autocomplete_fields = ("related_audio", "related_images", "related_videos")
+    search_fields = ("title", "id")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")

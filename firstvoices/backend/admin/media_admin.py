@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from embed_video.admin import AdminVideoMixin
 
 from backend.admin import BaseAdmin, BaseSiteContentAdmin, HiddenBaseAdmin
+from backend.admin.base_admin import FilterAutocompleteBySiteMixin
 from backend.models.media import (
     Audio,
     AudioSpeaker,
@@ -17,14 +18,26 @@ from backend.models.media import (
 
 
 @admin.register(File)
-class FileAdmin(HiddenBaseAdmin):
+class FileAdmin(FilterAutocompleteBySiteMixin, HiddenBaseAdmin):
     list_display = ("content", "mimetype") + HiddenBaseAdmin.list_display
     search_fields = ("content",)
     readonly_fields = ("mimetype", "size") + HiddenBaseAdmin.readonly_fields
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
     def delete_queryset(self, request, queryset):
         for obj in queryset.all():
             obj.delete()
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term, ["audio", "image", "video"]
+        )
+        return queryset, use_distinct
 
 
 @admin.register(ImageFile)
@@ -37,19 +50,34 @@ class VisualMediaFileAdmin(FileAdmin):
 
 
 @admin.register(Audio)
-class AudioAdmin(BaseSiteContentAdmin):
+class AudioAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
-    search_fields = ("title",)
+    search_fields = ("title", "site__title")
     autocomplete_fields = ("original",)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
 
     def delete_queryset(self, request, queryset):
         for obj in queryset.all():
             obj.delete()
 
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+            ["site", "storypage", "song", "dictionaryentry"],
+        )
+        return queryset, use_distinct
+
 
 @admin.register(Image)
 @admin.register(Video)
-class VisualMediaAdmin(BaseSiteContentAdmin):
+class VisualMediaAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     readonly_fields = (
         "thumbnail",
         "small",
@@ -59,9 +87,24 @@ class VisualMediaAdmin(BaseSiteContentAdmin):
     search_fields = ("title",)
     autocomplete_fields = ("original",)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
     def delete_queryset(self, request, queryset):
         for obj in queryset.all():
             obj.delete()
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+            ["site", "sitepage", "storypage", "song", "dictionaryentry"],
+        )
+        return queryset, use_distinct
 
 
 @admin.register(EmbeddedVideo)
