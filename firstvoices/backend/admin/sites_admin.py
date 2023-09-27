@@ -45,6 +45,10 @@ class LanguageAdmin(BaseAdmin):
     )
     autocomplete_fields = ("language_family",)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("language_family", "created_by", "last_modified_by")
+
 
 @admin.register(Membership)
 class MembershipAdmin(BaseSiteContentAdmin):
