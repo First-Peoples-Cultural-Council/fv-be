@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ "3.11.4" ]
-        group: [ 1, 2, 3, 4 ]
+        group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
         image: postgres:latest
@@ -47,7 +47,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cov --cov-config=.coveragerc --splits 4 --group ${{ matrix.group }}
+          pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage
         uses: actions/upload-artifact@v2
         with:
