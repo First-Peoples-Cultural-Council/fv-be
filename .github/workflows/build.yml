@@ -85,7 +85,6 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - name: Download all artifacts
-        # Downloads coverage1, coverage2, etc.
         uses: actions/download-artifact@v2
       - name: Run coverage
         run: |
