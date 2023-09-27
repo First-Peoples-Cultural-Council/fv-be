@@ -86,7 +86,11 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(
+                        is_enabled=True
+                    ).prefetch_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    ),
                 ),
                 Prefetch(
                     "homepage__widgets",

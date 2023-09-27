@@ -103,6 +103,9 @@ class SiteWidgetViewSet(
             return (
                 SiteWidget.objects.filter(site__slug=site[0].slug)
                 .order_by("title")
+                .select_related(
+                    "site", "site__language", "created_by", "last_modified_by"
+                )
                 .prefetch_related(
                     Prefetch(
                         "widgetsettings_set",
