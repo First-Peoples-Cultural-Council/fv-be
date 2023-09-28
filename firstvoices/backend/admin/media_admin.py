@@ -70,7 +70,7 @@ class AudioAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
             request,
             queryset,
             search_term,
-            ["site", "storypage", "song", "dictionaryentry"],
+            ["site", "storypage", "song", "dictionaryentry", "character", "story"],
         )
         return queryset, use_distinct
 
@@ -102,7 +102,15 @@ class VisualMediaAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
             request,
             queryset,
             search_term,
-            ["site", "sitepage", "storypage", "song", "dictionaryentry"],
+            [
+                "site",
+                "sitepage",
+                "storypage",
+                "song",
+                "dictionaryentry",
+                "character",
+                "story",
+            ],
         )
         return queryset, use_distinct
 
