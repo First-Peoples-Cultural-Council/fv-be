@@ -29,7 +29,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             200: inline_serializer(
                 name="SearchResults",
                 fields={
-                    "id": serializers.CharField(),
+                    "searchResultId": serializers.CharField(),
                     "score": serializers.FloatField(),
                     "type": serializers.ChoiceField(
                         choices=SearchIndexEntryTypes.choices
