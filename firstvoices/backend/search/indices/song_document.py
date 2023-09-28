@@ -153,7 +153,10 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=Lyric)
 def request_update_lyrics(sender, instance, **kwargs):
     update_lyrics.apply_async(
-        (instance.id,),
+        (
+            instance.id,
+            instance.song.id,
+        ),
         link_error=link_error_handler.s(),
         retry=True,
         retry_policy={

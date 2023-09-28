@@ -175,7 +175,10 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=Translation)
 def request_update_translation_index(sender, instance, **kwargs):
     update_translation.apply_async(
-        (instance.id,),
+        (
+            instance.id,
+            instance.dictionary_entry.id,
+        ),
         link_error=link_error_handler.s(),
         retry=True,
         retry_policy={
@@ -244,7 +247,10 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_save, sender=Note)
 def request_update_notes_index(sender, instance, **kwargs):
     update_notes.apply_async(
-        (instance.id,),
+        (
+            instance.id,
+            instance.dictionary_entry.id,
+        ),
         link_error=link_error_handler.s(),
         retry=True,
         retry_policy={
@@ -313,7 +319,10 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_save, sender=Acknowledgement)
 def request_update_acknowledgement_index(sender, instance, **kwargs):
     update_acknowledgement.apply_async(
-        (instance.id,),
+        (
+            instance.id,
+            instance.dictionary_entry.id,
+        ),
         link_error=link_error_handler.s(),
         retry=True,
         retry_policy={

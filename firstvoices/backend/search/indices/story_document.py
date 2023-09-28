@@ -157,7 +157,7 @@ def delete_from_index(instance_id, **kwargs):
 @receiver(post_save, sender=StoryPage)
 def request_update_pages(sender, instance, **kwargs):
     update_pages.apply_async(
-        (instance.id,),
+        (instance.id, instance.story.id),
         link_error=link_error_handler.s(),
         retry=True,
         retry_policy={
