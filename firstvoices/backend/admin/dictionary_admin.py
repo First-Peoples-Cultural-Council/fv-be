@@ -20,6 +20,7 @@ from .base_admin import (
     BaseControlledSiteContentAdmin,
     BaseInlineAdmin,
     BaseInlineSiteContentAdmin,
+    FilterAutocompleteBySiteMixin,
     HiddenBaseAdmin,
 )
 
@@ -102,7 +103,9 @@ class WordOfTheDayInline(RelatedDictionaryEntryAdminMixin, BaseInlineSiteContent
 
 
 @admin.register(DictionaryEntry)
-class DictionaryEntryAdmin(BaseControlledSiteContentAdmin):
+class DictionaryEntryAdmin(
+    FilterAutocompleteBySiteMixin, BaseControlledSiteContentAdmin
+):
     inlines = [
         TranslationInline,
         AlternateSpellingInline,
@@ -125,6 +128,17 @@ class DictionaryEntryAdmin(BaseControlledSiteContentAdmin):
         return qs.select_related(
             "site", "created_by", "last_modified_by", "part_of_speech"
         )
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+            ["site", "character"],
+        )
+        return queryset, use_distinct
 
 
 @admin.register(PartOfSpeech)
