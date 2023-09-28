@@ -144,17 +144,23 @@ class StoryDetailUpdateSerializer(StorySerializer):
         if "pages" in validated_data:
             with transaction.atomic():
                 updated_pages = validated_data["pages"]
+                existing_pages = instance.pages.all()
                 temp_story = Story.objects.create(site=instance.site)
-                for page in instance.pages.all():
+                for page in existing_pages:
                     if page not in updated_pages:
                         page.delete()
                     else:
                         page.story = temp_story
                         page.save()
                 for index, page in enumerate(updated_pages):
-                    page.ordering = index
-                    page.story = instance
-                    page.save()
+                    if page not in existing_pages:
+                        raise serializers.ValidationError(
+                            f"Page with ID {page.id} does not belong to the story."
+                        )
+                    else:
+                        page.ordering = index
+                        page.story = instance
+                        page.save()
                 temp_story.delete()
 
         return super().update(instance, validated_data)
