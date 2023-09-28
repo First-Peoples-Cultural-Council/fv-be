@@ -5,7 +5,7 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 
-from ...models import Lyric, Song
+from backend.models.song import Lyric, Song
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import RelatedMediaTestMixin
 
@@ -241,13 +241,13 @@ class TestSongEndpoint(
             actual_response["visibility"]
             == original_instance.get_visibility_display().lower()
         )
-        assert actual_response["notes"][0] == original_instance.notes[0]
+        assert actual_response["notes"][0]["text"] == original_instance.notes[0]
         assert (
             actual_response["lyrics"][0]["text"]
             == original_instance.lyrics.first().text
         )
         assert (
-            actual_response["acknowledgements"][0]
+            actual_response["acknowledgements"][0]["text"]
             == original_instance.acknowledgements[0]
         )
 
