@@ -4,7 +4,11 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Story, StoryPage
-from backend.serializers.story_serializers import StoryListSerializer, StorySerializer
+from backend.serializers.story_serializers import (
+    StoryDetailUpdateSerializer,
+    StoryListSerializer,
+    StorySerializer,
+)
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 from . import doc_strings
@@ -133,5 +137,7 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
     def get_serializer_class(self):
         if self.action in ("list",):
             return StoryListSerializer
+        elif self.action in ("update", "partial_update"):
+            return StoryDetailUpdateSerializer
         else:
             return StorySerializer

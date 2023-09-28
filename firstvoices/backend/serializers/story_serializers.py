@@ -1,9 +1,11 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
 from backend.models import Story, StoryPage
 from backend.serializers.base_serializers import (
+    ArbitraryIdSerializer,
     BaseControlledSiteContentSerializer,
     CreateControlledSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
@@ -12,7 +14,7 @@ from backend.serializers.base_serializers import (
     WritableVisibilityField,
     audience_fields,
     base_id_fields,
-    base_timestamp_fields, ArbitraryIdSerializer,
+    base_timestamp_fields,
 )
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
@@ -20,6 +22,7 @@ from backend.serializers.media_serializers import (
 )
 from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
+from backend.serializers.validators import SameSite
 
 
 class LinkedStorySerializer(SiteContentLinkedTitleSerializer):
@@ -123,6 +126,38 @@ class StorySerializer(
             + audience_fields
             + RelatedMediaSerializerMixin.Meta.fields
         )
+
+
+class StoryDetailUpdateSerializer(StorySerializer):
+    pages = serializers.PrimaryKeyRelatedField(
+        queryset=StoryPage.objects.all(),
+        allow_null=True,
+        many=True,
+        validators=[SameSite()],
+    )
+
+    def to_representation(self, instance):
+        data = StorySerializer(instance=instance, context=self.context).data
+        return data
+
+    def update(self, instance, validated_data):
+        if "pages" in validated_data:
+            with transaction.atomic():
+                updated_pages = validated_data["pages"]
+                temp_story = Story.objects.create(site=instance.site)
+                for page in instance.pages.all():
+                    if page not in updated_pages:
+                        page.delete()
+                    else:
+                        page.story = temp_story
+                        page.save()
+                for index, page in enumerate(updated_pages):
+                    page.ordering = index
+                    page.story = instance
+                    page.save()
+                temp_story.delete()
+
+        return super().update(instance, validated_data)
 
 
 class StoryListSerializer(BaseControlledSiteContentSerializer):
