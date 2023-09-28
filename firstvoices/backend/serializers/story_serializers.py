@@ -1,5 +1,3 @@
-import uuid
-
 from rest_framework import serializers
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
@@ -14,7 +12,7 @@ from backend.serializers.base_serializers import (
     WritableVisibilityField,
     audience_fields,
     base_id_fields,
-    base_timestamp_fields,
+    base_timestamp_fields, ArbitraryIdSerializer,
 )
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
@@ -22,14 +20,6 @@ from backend.serializers.media_serializers import (
 )
 from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
-
-
-class ArbitraryIdSerializer(serializers.CharField):
-    def to_representation(self, value):
-        return {
-            "id": str(uuid.uuid4()),  # better for frontend
-            "text": str(value),
-        }
 
 
 class LinkedStorySerializer(SiteContentLinkedTitleSerializer):
