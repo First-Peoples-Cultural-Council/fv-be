@@ -318,7 +318,7 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
 @receiver(post_delete, sender=Acknowledgement)
 @receiver(post_save, sender=Acknowledgement)
 def request_update_acknowledgement_index(sender, instance, **kwargs):
-    update_acknowledgement.apply_async(
+    update_acknowledgements.apply_async(
         (
             instance.id,
             instance.dictionary_entry.id,
@@ -334,7 +334,7 @@ def request_update_acknowledgement_index(sender, instance, **kwargs):
 
 
 @shared_task
-def update_acknowledgement(instance_id, dictionary_entry_id, **kwargs):
+def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
