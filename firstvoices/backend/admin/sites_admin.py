@@ -61,6 +61,7 @@ class MembershipAdmin(BaseSiteContentAdmin):
     )
     list_filter = ("role",) + BaseSiteContentAdmin.list_filter
     list_select_related = ("user", "site", "created_by", "last_modified_by")
+    autocomplete_fields = ("user", "site")
 
 
 @admin.register(SiteFeature)

@@ -35,6 +35,7 @@ class AppMembershipAdmin(BaseAdmin):
         "user__email",
         "role",
     )
+    autocomplete_fields = ("user",)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
