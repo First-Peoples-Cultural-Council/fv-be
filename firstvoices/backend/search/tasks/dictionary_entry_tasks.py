@@ -1,19 +1,11 @@
 import logging
 
 from celery import shared_task
-from django.db.models.signals import m2m_changed, post_delete, post_save
-from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Index, Keyword, Text
+from elasticsearch_dsl import Index
 
-from backend.models.dictionary import (
-    Acknowledgement,
-    DictionaryEntry,
-    DictionaryEntryCategory,
-    Note,
-    Translation,
-)
-from backend.search.indices.base_document import BaseDocument
+from backend.models.dictionary import DictionaryEntry, DictionaryEntryCategory
+from backend.search.documents import DictionaryEntryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
@@ -27,44 +19,11 @@ from backend.search.utils.object_utils import (
     get_object_from_index,
     get_translation_text,
 )
-from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class DictionaryEntryDocument(BaseDocument):
-    # text search fields
-    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
-    translation = Text(copy_to="primary_translation_search_fields")
-    note = Text(copy_to="other_translation_search_fields")
-    acknowledgement = Text(copy_to="other_translation_search_fields")
-
-    # filter and sorting
-    type = Keyword()
-    custom_order = Keyword()
-    categories = Keyword()
-
-    class Index:
-        name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
-
-
-# Signal to update the entry in index
-@receiver(post_save, sender=DictionaryEntry)
-def request_update_dictionary_entry_index(sender, instance, **kwargs):
-    if DictionaryEntry.objects.filter(id=instance.id).exists():
-        update_dictionary_entry_index.apply_async(
-            (instance.id,),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 3,
-                "interval_step": 1,
-            },
-        )
-
-
-@shared_task
-def update_dictionary_entry_index(instance_id, **kwargs):
+@shared_task(bind=True)
+def update_dictionary_entry_index(self, instance_id, **kwargs):
     # Add document to es index
     try:
         instance = DictionaryEntry.objects.get(id=instance_id)
@@ -127,9 +86,19 @@ def update_dictionary_entry_index(instance_id, **kwargs):
             ES_NOT_FOUND_ERROR,
             "get",
             SearchIndexEntryTypes.DICTIONARY_ENTRY,
-            instance.id,
+            instance_id,
         )
         logger.warning(e)
+    except DictionaryEntry.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -137,12 +106,6 @@ def update_dictionary_entry_index(instance_id, **kwargs):
             type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
-
-
-# Delete entry from index
-@receiver(post_delete, sender=DictionaryEntry)
-def request_delete_dictionary_entry_index(sender, instance, **kwargs):
-    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
 
 
 @shared_task
@@ -170,27 +133,8 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-# Translation update
-@receiver(post_delete, sender=Translation)
-@receiver(post_save, sender=Translation)
-def request_update_translation_index(sender, instance, **kwargs):
-    update_translation.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
-@shared_task
-def update_translation(instance_id, dictionary_entry_id, **kwargs):
+@shared_task(bind=True)
+def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
@@ -206,7 +150,7 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        return
+        self.retry(countdown=5, max_retries=3)
 
     try:
         existing_entry = get_object_from_index(
@@ -242,27 +186,8 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
         logger.error(e)
 
 
-# Note update
-@receiver(post_delete, sender=Note)
-@receiver(post_save, sender=Note)
-def request_update_notes_index(sender, instance, **kwargs):
-    update_notes.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
-@shared_task
-def update_notes(instance_id, dictionary_entry_id, **kwargs):
+@shared_task(bind=True)
+def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
@@ -278,7 +203,7 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        return
+        self.retry(countdown=5, max_retries=3)
 
     try:
         existing_entry = get_object_from_index(
@@ -314,27 +239,8 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
         logger.error(e)
 
 
-# Acknowledgement update
-@receiver(post_delete, sender=Acknowledgement)
-@receiver(post_save, sender=Acknowledgement)
-def request_update_acknowledgement_index(sender, instance, **kwargs):
-    update_acknowledgements.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
-@shared_task
-def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
+@shared_task(bind=True)
+def update_acknowledgements(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
@@ -350,7 +256,7 @@ def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        return
+        self.retry(countdown=5, max_retries=3)
 
     try:
         existing_entry = get_object_from_index(
@@ -386,42 +292,11 @@ def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
         logger.error(e)
 
 
-# Category update when called through the admin site
-@receiver(post_save, sender=DictionaryEntryCategory)
-@receiver(post_delete, sender=DictionaryEntryCategory)
-def request_update_categories_index(sender, instance, **kwargs):
-    update_categories.apply_async(
-        (instance.id,),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
 @shared_task
 def update_categories(instance_id, **kwargs):
     if DictionaryEntryCategory.objects.filter(id=instance_id).exists():
         instance = DictionaryEntryCategory.objects.get(id=instance_id)
         update_dictionary_entry_index_categories(instance.dictionary_entry)
-
-
-# Category update when called through the APIs
-@receiver(m2m_changed, sender=DictionaryEntryCategory)
-def request_update_categories_m2m_index(sender, instance, **kwargs):
-    update_categories_m2m.apply_async(
-        (instance.id,),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
 
 
 @shared_task

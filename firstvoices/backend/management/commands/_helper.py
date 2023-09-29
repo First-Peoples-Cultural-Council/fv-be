@@ -17,8 +17,12 @@ from backend.models import (
     Translation,
 )
 from backend.models.dictionary import DictionaryEntryCategory
-from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
-from backend.search.indices.dictionary_entry_document import (
+from backend.search.documents import (
+    DictionaryEntryDocument,
+    SongDocument,
+    StoryDocument,
+)
+from backend.search.signals.dictionary_entry_signals import (
     request_delete_dictionary_entry_index,
     request_update_acknowledgement_index,
     request_update_categories_index,
@@ -27,17 +31,21 @@ from backend.search.indices.dictionary_entry_document import (
     request_update_notes_index,
     request_update_translation_index,
 )
-from backend.search.indices.song_document import (
+from backend.search.signals.site_signals import (
+    request_delete_related_docs,
+    request_update_document_visibility,
+)
+from backend.search.signals.song_signals import (
     request_delete_from_index as request_delete_from_index_song,
 )
-from backend.search.indices.song_document import (
+from backend.search.signals.song_signals import (
     request_update_lyrics_index,
     request_update_song_index,
 )
-from backend.search.indices.story_document import (
+from backend.search.signals.story_signals import (
     request_delete_from_index as request_delete_from_index_story,
 )
-from backend.search.indices.story_document import (
+from backend.search.signals.story_signals import (
     request_update_pages_index,
     request_update_story_index,
 )
@@ -53,10 +61,6 @@ from backend.search.utils.object_utils import (
     get_notes_text,
     get_page_info,
     get_translation_text,
-)
-from backend.search.utils.site_signals import (
-    request_delete_related_docs,
-    request_update_document_visibility,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -91,9 +95,9 @@ def rebuild_index(index_name, index_document):
             bulk(es, dictionary_entry_iterator())
     except errors.BulkIndexError as e:
         # Alias configuration error
-        if "multiple indices" in str(e):
+        if "multiple documents" in str(e):
             raise CommandError(
-                "There are multiple indices with same alias. Try clearing all indices and then "
+                "There are multiple documents with same alias. Try clearing all documents and then "
                 "rebuilding."
             )
     except Exception as e:
@@ -229,7 +233,7 @@ def disconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.indices.dictionary_entry_document
+    # backend.search.documents.dictionary_entry_document
     signals.post_save.disconnect(
         request_update_dictionary_entry_index, sender=DictionaryEntry
     )
@@ -256,13 +260,13 @@ def disconnect_signals():
         request_update_categories_m2m_index, sender=DictionaryEntryCategory
     )
 
-    # backend.search.indices.song_document
+    # backend.search.documents.song_document
     signals.post_save.disconnect(request_update_song_index, sender=Song)
     signals.post_delete.disconnect(request_delete_from_index_song, sender=Song)
     signals.post_save.disconnect(request_update_lyrics_index, sender=Lyric)
     signals.post_delete.disconnect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.indices.story_document
+    # backend.search.documents.story_document
     signals.post_save.disconnect(request_update_story_index, sender=Story)
     signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
     signals.post_save.disconnect(request_update_pages_index, sender=StoryPage)
@@ -278,7 +282,7 @@ def reconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.indices.dictionary_entry_document
+    # backend.search.documents.dictionary_entry_document
     signals.post_save.connect(
         request_update_dictionary_entry_index, sender=DictionaryEntry
     )
@@ -305,13 +309,13 @@ def reconnect_signals():
         request_update_categories_m2m_index, sender=DictionaryEntryCategory
     )
 
-    # backend.search.indices.song_document
+    # backend.search.documents.song_document
     signals.post_save.connect(request_update_song_index, sender=Song)
     signals.post_delete.connect(request_delete_from_index_song, sender=Song)
     signals.post_save.connect(request_update_lyrics_index, sender=Lyric)
     signals.post_delete.connect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.indices.story_document
+    # backend.search.documents.story_document
     signals.post_save.connect(request_update_story_index, sender=Story)
     signals.post_delete.connect(request_delete_from_index_story, sender=Story)
     signals.post_save.connect(request_update_pages_index, sender=StoryPage)

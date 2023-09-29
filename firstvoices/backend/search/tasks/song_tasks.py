@@ -1,13 +1,11 @@
 import logging
 
 from celery import shared_task
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Index, Keyword, Text
+from elasticsearch_dsl import Index
 
-from backend.models import Lyric, Song
-from backend.search.indices.base_document import BaseDocument
+from backend.models import Song
+from backend.search.documents import SongDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_SONG_INDEX,
     ES_CONNECTION_ERROR,
@@ -15,42 +13,11 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_lyrics, get_object_from_index
-from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class SongDocument(BaseDocument):
-    # text search fields
-    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
-    title_translation = Text(copy_to="primary_translation_search_fields")
-    intro_title = Text(copy_to="secondary_language_search_fields")
-    intro_translation = Text(copy_to="secondary_translation_search_fields")
-    lyrics_text = Text(copy_to="secondary_language_search_fields")
-    lyrics_translation = Text(copy_to="secondary_translation_search_fields")
-    note = Text(copy_to="other_translation_search_fields")
-    acknowledgement = Text(copy_to="other_translation_search_fields")
-
-    class Index:
-        name = ELASTICSEARCH_SONG_INDEX
-
-
-@receiver(post_save, sender=Song)
-def request_update_song_index(sender, instance, **kwargs):
-    if Song.objects.filter(id=instance.id).exists():
-        update_song_index.apply_async(
-            (instance.id,),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 3,
-                "interval_step": 1,
-            },
-        )
-
-
-@shared_task
-def update_song_index(instance_id, **kwargs):
+@shared_task(bind=True)
+def update_song_index(self, instance_id, **kwargs):
     # add song to es index
     try:
         instance = Song.objects.get(id=instance_id)
@@ -113,17 +80,21 @@ def update_song_index(instance_id, **kwargs):
             instance_id,
         )
         logger.warning(e)
+    except Song.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.SONG, instance_id)
         logger.error(e)
-
-
-# Delete entry from index
-@receiver(post_delete, sender=Song)
-def request_delete_from_index(sender, instance, **kwargs):
-    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
 
 
 @shared_task
@@ -148,27 +119,8 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-# Lyrics update
-@receiver(post_delete, sender=Lyric)
-@receiver(post_save, sender=Lyric)
-def request_update_lyrics_index(sender, instance, **kwargs):
-    update_lyrics.apply_async(
-        (
-            instance.id,
-            instance.song.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
-@shared_task
-def update_lyrics(instance_id, song_id, **kwargs):
+@shared_task(bind=True)
+def update_lyrics(self, instance_id, song_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set song and lyric text. If it doesn't exist due to deletion, warn and return.
@@ -184,7 +136,7 @@ def update_lyrics(instance_id, song_id, **kwargs):
                 song_id,
             )
         )
-        return
+        self.retry(countdown=5, max_retries=3)
 
     try:
         existing_entry = get_object_from_index(

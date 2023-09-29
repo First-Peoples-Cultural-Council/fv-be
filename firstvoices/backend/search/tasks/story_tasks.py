@@ -1,13 +1,11 @@
 import logging
 
 from celery import shared_task
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Index, Keyword, Text
+from elasticsearch_dsl import Index
 
-from backend.models.story import Story, StoryPage
-from backend.search.indices.base_document import BaseDocument
+from backend.models.story import Story
+from backend.search.documents import StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
@@ -15,45 +13,11 @@ from backend.search.utils.constants import (
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_object_from_index, get_page_info
-from firstvoices.celery import link_error_handler
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class StoryDocument(BaseDocument):
-    # text search fields
-    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
-    title_translation = Text(copy_to="primary_translation_search_fields")
-    introduction = Text(copy_to="secondary_language_search_fields")
-    introduction_translation = Text(copy_to="secondary_translation_search_fields")
-    page_text = Text(copy_to="secondary_language_search_fields")
-    page_translation = Text(copy_to="secondary_translation_search_fields")
-    acknowledgement = Text(copy_to="other_translation_search_fields")
-    note = Text(copy_to="other_translation_search_fields")
-    author = Text(copy_to="other_translation_search_fields")
-
-    # Author to be added
-
-    class Index:
-        name = ELASTICSEARCH_STORY_INDEX
-
-
-@receiver(post_save, sender=Story)
-def request_update_story_index(sender, instance, **kwargs):
-    if Story.objects.filter(id=instance.id).exists():
-        update_story_index.apply_async(
-            (instance.id,),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 3,
-                "interval_step": 1,
-            },
-        )
-
-
-@shared_task
-def update_story_index(instance_id, **kwargs):
+@shared_task(bind=True)
+def update_story_index(self, instance_id, **kwargs):
     # add story to es index
     try:
         instance = Story.objects.get(id=instance_id)
@@ -117,17 +81,21 @@ def update_story_index(instance_id, **kwargs):
             instance_id,
         )
         logger.warning(e)
+    except Story.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance_id)
         logger.error(e)
-
-
-# Delete entry from index
-@receiver(post_delete, sender=Story)
-def request_delete_from_index(sender, instance, **kwargs):
-    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
 
 
 @shared_task
@@ -152,24 +120,8 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-# Page update
-@receiver(post_delete, sender=StoryPage)
-@receiver(post_save, sender=StoryPage)
-def request_update_pages_index(sender, instance, **kwargs):
-    update_pages.apply_async(
-        (instance.id, instance.story.id),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
-    )
-
-
-@shared_task
-def update_pages(instance_id, story_id, **kwargs):
+@shared_task(bind=True)
+def update_pages(self, instance_id, story_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set story and page text. If it doesn't exist due to deletion, warn and return.
@@ -185,7 +137,7 @@ def update_pages(instance_id, story_id, **kwargs):
                 story_id,
             )
         )
-        return
+        self.retry(countdown=5, max_retries=3)
 
     try:
         existing_entry = get_object_from_index(
