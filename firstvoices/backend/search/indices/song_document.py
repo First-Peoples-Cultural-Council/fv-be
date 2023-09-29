@@ -151,7 +151,7 @@ def delete_from_index(instance_id, **kwargs):
 # Lyrics update
 @receiver(post_delete, sender=Lyric)
 @receiver(post_save, sender=Lyric)
-def request_update_lyrics(sender, instance, **kwargs):
+def request_update_lyrics_index(sender, instance, **kwargs):
     update_lyrics.apply_async(
         (
             instance.id,

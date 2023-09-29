@@ -411,7 +411,7 @@ def update_categories(instance_id, **kwargs):
 
 # Category update when called through the APIs
 @receiver(m2m_changed, sender=DictionaryEntryCategory)
-def request_update_categories_m2m(sender, instance, **kwargs):
+def request_update_categories_m2m_index(sender, instance, **kwargs):
     update_categories_m2m.apply_async(
         (instance.id,),
         link_error=link_error_handler.s(),
