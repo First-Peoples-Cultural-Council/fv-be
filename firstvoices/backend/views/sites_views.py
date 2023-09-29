@@ -73,8 +73,8 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     serializer_class = SiteDetailWriteSerializer
 
     def get_detail_queryset(self):
-        sites = (
-            Site.objects.all()
+        return (
+            Site.objects.filter(slug=self.kwargs["slug"])
             .select_related(
                 "menu",
                 "language",
@@ -86,11 +86,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(
-                        is_enabled=True
-                    ).prefetch_related(
-                        "site", "site__language", "created_by", "last_modified_by"
-                    ),
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
                 ),
                 Prefetch(
                     "homepage__widgets",
@@ -106,8 +102,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
                 ),
             )
         )
-
-        return sites
 
     def get_list_queryset(self):
         return Site.objects.none()  # not used-- see the list method instead
