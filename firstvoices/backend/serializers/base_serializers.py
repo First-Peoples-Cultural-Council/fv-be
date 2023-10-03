@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
 from ..models import Membership, Site
@@ -208,8 +209,26 @@ class WritableControlledSiteContentSerializer(
 
 
 class ArbitraryIdSerializer(serializers.CharField):
+    """
+    Represent a text value as an object with an arbitrary id.
+    """
+
     def to_representation(self, value):
+        """
+        Transform the *outgoing* native value into primitive data.
+        """
         return {
-            "id": str(uuid.uuid4()),  # better for frontend
+            "id": str(uuid.uuid4()),
             "text": str(value),
         }
+
+    def to_internal_value(self, data):
+        """
+        Transform the *incoming* primitive data into a native value.
+        """
+        try:
+            text = data["text"]
+            return super().to_internal_value(text)
+        except KeyError as e:
+            raise ValidationError(f"Expected an object with key {e}")
+

@@ -45,8 +45,8 @@ class TestStoryEndpoint(
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
-            "notes": ["Test Note One", "Test Note Two", "Test Note Three"],
-            "acknowledgements": ["Test Author", "Another Acknowledgement"],
+            "notes": [{"id": 1, "text": "Test Note One"}, {"id": "5", "text": "Test Note Two"}, {"id": "2", "text": "Test Note Three"}],
+            "acknowledgements": [{"id": "5", "text": "Test Author"}, {"id": "51", "text": "Another Acknowledgement"}],
             "excludeFromGames": True,
             "excludeFromKids": False,
             "author": "Dr. Author",
@@ -63,9 +63,9 @@ class TestStoryEndpoint(
         )
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
-        assert actual_instance.notes[0] == expected_data["notes"][0]
+        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
         assert (
-            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]
+            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]["text"]
         )
 
     def assert_update_response(self, expected_data, actual_response):
