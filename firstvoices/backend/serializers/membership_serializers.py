@@ -5,6 +5,7 @@ from rest_framework.reverse import reverse
 from backend.models import Membership
 from backend.models.constants import Role
 from backend.serializers.base_serializers import UpdateSerializerMixin, CreateSiteContentSerializerMixin, SiteContentUrlMixin
+from backend.serializers.fields import PrimaryKeyInputField
 from backend.serializers.media_serializers import ImageSerializer
 from backend.serializers.site_serializers import (
     FeatureFlagSerializer,
@@ -54,7 +55,7 @@ class MembershipSerializer(UpdateSerializerMixin,
                            CreateSiteContentSerializerMixin,
                            SiteContentUrlMixin, serializers.HyperlinkedModelSerializer):
 
-    user = UserSerializer(read_only=True)
+    user = PrimaryKeyInputField(output_serializer=UserSerializer, queryset=get_user_model().objects.all())
     role = fields.EnumField(enum=Role)
 
     class Meta:

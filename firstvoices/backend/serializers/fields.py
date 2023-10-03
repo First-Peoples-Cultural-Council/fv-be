@@ -1,3 +1,4 @@
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
@@ -108,3 +109,20 @@ class EnumField(serializers.Field):
 
     def to_internal_value(self, data):
         return self.enum[data.upper()]
+
+
+class PrimaryKeyInputField(serializers.PrimaryKeyRelatedField):
+
+    output_serializer = None
+
+    def __init__(self, output_serializer, **kwargs):
+        if not output_serializer:
+            raise ImproperlyConfigured("output_serializer is required")
+        self.output_serializer = output_serializer
+        return super(PrimaryKeyInputField, self).__init__(**kwargs)
+
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return self.output_serializer(context=self.context).to_representation(value)
