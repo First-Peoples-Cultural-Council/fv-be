@@ -73,7 +73,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "relatedVideos": [str(factories.VideoFactory.create(site=site).id)],
             "text": "Title",
             "translation": "A translation of the title",
-            "notes": ["Test Note One", "Test Note Two", "Test Note Three"],
+            "notes": [{ "text": "Test Note One"}, { "text": "Test Note Two"}, { "text": "Test Note Three"}],
             "ordering": 99,
         }
 
@@ -334,7 +334,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert actual_instance.text == expected_data["text"]
         assert actual_instance.translation == expected_data["translation"]
         assert actual_instance.ordering == expected_data["ordering"]
-        assert actual_instance.notes == expected_data["notes"]
+        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
         assert (
             str(actual_instance.related_audio.first().id)
             == expected_data["relatedAudio"][0]
@@ -353,7 +353,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert actual_response["translation"] == expected_data["translation"]
 
         for i, note in enumerate(expected_data["notes"]):
-            assert actual_response["notes"][i]["text"] == note
+            assert actual_response["notes"][i]["text"] == note["text"]
 
         assert (
             actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
