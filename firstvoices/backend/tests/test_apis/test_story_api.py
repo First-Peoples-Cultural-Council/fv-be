@@ -45,8 +45,15 @@ class TestStoryEndpoint(
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
-            "notes": [{"id": 1, "text": "Test Note One"}, {"id": "5", "text": "Test Note Two"}, {"id": "2", "text": "Test Note Three"}],
-            "acknowledgements": [{"id": "5", "text": "Test Author"}, {"id": "51", "text": "Another Acknowledgement"}],
+            "notes": [
+                {"id": 1, "text": "Test Note One"},
+                {"id": "5", "text": "Test Note Two"},
+                {"id": "2", "text": "Test Note Three"},
+            ],
+            "acknowledgements": [
+                {"id": "5", "text": "Test Author"},
+                {"id": "51", "text": "Another Acknowledgement"},
+            ],
             "pages": [],
             "excludeFromGames": True,
             "excludeFromKids": False,
@@ -66,7 +73,8 @@ class TestStoryEndpoint(
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
         assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
         assert (
-            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]["text"]
+            actual_instance.acknowledgements[0]
+            == expected_data["acknowledgements"][0]["text"]
         )
 
     def assert_update_response(self, expected_data, actual_response):
@@ -262,13 +270,19 @@ class TestStoryEndpoint(
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
         user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
-        story = factories.StoryFactory.create(visibility=Visibility.TEAM, site=site)
+        story = factories.StoryFactory.create(visibility=Visibility.PUBLIC, site=site)
 
-        page1 = factories.StoryPageFactory.create(story=story, ordering=0)
-        page2 = factories.StoryPageFactory.create(story=story, ordering=1)
+        page1 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=0
+        )
+        page2 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=1
+        )
 
         assert Story.objects.filter(site=site).count() == 1
         assert StoryPage.objects.all().count() == 2
@@ -320,3 +334,109 @@ class TestStoryEndpoint(
 
         assert response_data["pages"][0]["text"] == page2.text
         assert response_data["pages"][1]["text"] == page1.text
+
+    @pytest.mark.django_db
+    def test_partial_update_page_order(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        story = factories.StoryFactory.create(visibility=Visibility.PUBLIC, site=site)
+
+        page1 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=0
+        )
+        page2 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=1
+        )
+
+        assert Story.objects.filter(site=site).count() == 1
+        assert StoryPage.objects.all().count() == 2
+        assert StoryPage.objects.filter(story=story).count() == 2
+        assert StoryPage.objects.get(id=page1.id).ordering == 0
+        assert StoryPage.objects.get(id=page2.id).ordering == 1
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=story.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["pages"][0]["text"] == page1.text
+        assert response_data["pages"][1]["text"] == page2.text
+
+        data = {"pages": [str(page2.id), str(page1.id)]}
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=story.id, site_slug=site.slug),
+            data=json.dumps(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert Story.objects.filter(site=site).count() == 1
+        assert StoryPage.objects.all().count() == 2
+        assert StoryPage.objects.filter(story=story).count() == 2
+        assert StoryPage.objects.get(id=page1.id).ordering == 1
+        assert StoryPage.objects.get(id=page2.id).ordering == 0
+
+        assert response_data["pages"][0]["text"] == page2.text
+        assert response_data["pages"][1]["text"] == page1.text
+
+    @pytest.mark.django_db
+    def test_update_page_order_no_orphans(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        story = factories.StoryFactory.create(visibility=Visibility.PUBLIC, site=site)
+
+        page1 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=0
+        )
+        page2 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=1
+        )
+
+        assert Story.objects.filter(site=site).count() == 1
+        assert StoryPage.objects.all().count() == 2
+        assert StoryPage.objects.filter(story=story).count() == 2
+        assert StoryPage.objects.get(id=page1.id).ordering == 0
+        assert StoryPage.objects.get(id=page2.id).ordering == 1
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=story.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["pages"][0]["text"] == page1.text
+        assert response_data["pages"][1]["text"] == page2.text
+
+        data = {"pages": [str(page2.id)]}
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=story.id, site_slug=site.slug),
+            data=json.dumps(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert Story.objects.filter(site=site).count() == 1
+        assert StoryPage.objects.all().count() == 1
+        assert StoryPage.objects.filter(story=story).count() == 1
+        assert StoryPage.objects.get(id=page2.id).ordering == 0
+
+        assert response_data["pages"][0]["text"] == page2.text

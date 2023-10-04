@@ -146,21 +146,30 @@ class StoryDetailUpdateSerializer(StorySerializer):
                 updated_pages = validated_data["pages"]
                 existing_pages = instance.pages.all()
                 temp_story = Story.objects.create(site=instance.site)
-                for page in existing_pages:
-                    if page not in updated_pages:
-                        page.delete()
-                    else:
-                        page.story = temp_story
-                        page.save()
-                for index, page in enumerate(updated_pages):
-                    if page not in existing_pages:
-                        raise serializers.ValidationError(
-                            f"Page with ID {page.id} does not belong to the story."
-                        )
-                    else:
-                        page.ordering = index
-                        page.story = instance
-                        page.save()
+
+                # Get the intersection of the existing and updated pages
+                new_pages = [
+                    page for page in updated_pages if page in set(existing_pages)
+                ]
+
+                # Delete any existing pages that are not in the updated list to ensure no orphans
+                for page in [
+                    page for page in existing_pages if page not in updated_pages
+                ]:
+                    page.delete()
+
+                # Move the new pages to a temp story so that the order can be updated
+                # (the story and ordering is unique together)
+                for page in new_pages:
+                    page.story = temp_story
+                    page.save()
+
+                # Update the ordering and move the pages back to the original story
+                for index, page in enumerate(new_pages):
+                    page.ordering = index
+                    page.story = instance
+                    page.save()
+
                 temp_story.delete()
 
         return super().update(instance, validated_data)
