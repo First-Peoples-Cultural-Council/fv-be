@@ -35,10 +35,4 @@ def lyric_draftjs_to_text():
 
 
 def extract_plain_text(draftjs):
-    plain_text = ""
-    for index, block in enumerate(draftjs["blocks"]):
-        if block["text"] != "":
-            plain_text += block["text"]
-        if index != len(draftjs["blocks"]) - 1:
-            plain_text += delimiter
-    return plain_text
+    return delimiter.join([block["text"] for block in draftjs["blocks"]])
