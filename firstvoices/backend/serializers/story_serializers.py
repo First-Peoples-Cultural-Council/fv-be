@@ -147,6 +147,13 @@ class StoryDetailUpdateSerializer(StorySerializer):
                 existing_pages = instance.pages.all()
                 temp_story = Story.objects.create(site=instance.site)
 
+                # Ensure that all updated pages belong to the story
+                for page in updated_pages:
+                    if page not in existing_pages:
+                        raise serializers.ValidationError(
+                            f"Page with ID {page.id} does not belong to the story."
+                        )
+
                 # Get the intersection of the existing and updated pages
                 new_pages = [
                     page for page in updated_pages if page in set(existing_pages)
