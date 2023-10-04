@@ -314,3 +314,13 @@ EMBED_VIDEO_BACKENDS = (
 # Variables for the environment banners in the admin site
 ENVIRONMENT_NAME = os.getenv("SENTRY_ENVIRONMENT", "Local")
 ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
+
+# Variables for the email backend (used in the contact us form)
+ENABLE_SMTP_BACKEND: bool = os.environ.get("ENABLE_SMTP_BACKEND") is not None
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "user@example.com")
+if ENABLE_SMTP_BACKEND:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST")
+    EMAIL_PORT = os.getenv("EMAIL_PORT")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
