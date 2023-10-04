@@ -14,6 +14,11 @@ class JoinRequest(BaseSiteContentModel):
     class Meta:
         verbose_name = _("Join Request")
         verbose_name_plural = _("Join Requests")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["site", "user"], name="unique_site_user_join_request"
+            )
+        ]
 
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="join_requests"
