@@ -16,6 +16,7 @@ from .dictionary import (  # noqa F401
     Pronunciation,
     Translation,
 )
+from .join_requests import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
 from .page import SitePage  # noqa F401
 from .part_of_speech import PartOfSpeech  # noqa F401
