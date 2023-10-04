@@ -29,3 +29,11 @@ class AppRole(models.IntegerChoices):
     # enum intentionally has gaps to allow future changes to keep sequential order
     STAFF = 0, _("Staff")
     SUPERADMIN = 10, _("Superadmin")
+
+
+class JoinRequestStatus(models.IntegerChoices):
+    # enum intentionally has gaps to allow future changes to keep sequential order
+    PENDING = 0, _("Pending")
+    APPROVED = 10, _("Approved")
+    REJECTED = 20, _("Rejected")
+    CANCELLED = 30, _("Cancelled")
