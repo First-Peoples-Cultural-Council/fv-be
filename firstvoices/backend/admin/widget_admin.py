@@ -42,7 +42,9 @@ class WidgetAdmin(BaseAdmin):
 
 
 @admin.register(SiteWidget)
-class SiteWidgetAdmin(WidgetAdmin, BaseControlledSiteContentAdmin):
+class SiteWidgetAdmin(
+    FilterAutocompleteBySiteMixin, WidgetAdmin, BaseControlledSiteContentAdmin
+):
     def get_queryset(self, request):
         return SiteWidget.objects.all()
 
@@ -59,6 +61,14 @@ class SiteWidgetAdmin(WidgetAdmin, BaseControlledSiteContentAdmin):
     )
     inlines = [WidgetSettingsInline]
 
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term, ["sitewidgetlist"]
+        )
+        return queryset, use_distinct
+
 
 class SiteWidgetListOrderInline(BaseInlineAdmin):
     model = SiteWidgetListOrder
@@ -67,6 +77,7 @@ class SiteWidgetListOrderInline(BaseInlineAdmin):
         "order",
     ) + BaseInlineAdmin.fields
     readonly_fields = BaseInlineAdmin.readonly_fields
+    autocomplete_fields = ("site_widget",)
 
 
 @admin.register(SiteWidgetList)
