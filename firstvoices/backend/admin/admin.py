@@ -1,9 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
-from backend.models.media import Image, Video
 from backend.models.sites import Site
-from backend.models.widget import SiteWidgetList
 
 from .base_admin import BaseAdmin
 from .characters_admin import (
@@ -36,7 +34,13 @@ class SiteAdmin(BaseAdmin):
         WordOfTheDayInline,
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_email")
-    autocomplete_fields = ("language",)
+    autocomplete_fields = (
+        "language",
+        "homepage",
+        "logo",
+        "banner_image",
+        "banner_video",
+    )
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == "visibility":
@@ -47,22 +51,11 @@ class SiteAdmin(BaseAdmin):
             )
         return super().formfield_for_choice_field(db_field, request, **kwargs)
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # prefetch the media models' site info (it is used for their display name)
-        site_id = request.resolver_match.kwargs.get("object_id")
-        if db_field.name in ("logo", "banner_image"):
-            kwargs["queryset"] = Image.objects.filter(site__id=site_id).select_related(
-                "site"
-            )
-        if db_field.name == "banner_video":
-            kwargs["queryset"] = Video.objects.filter(site__id=site_id).select_related(
-                "site"
-            )
-        if db_field.name == "homepage":
-            kwargs["queryset"] = SiteWidgetList.objects.filter(
-                site__id=site_id
-            ).select_related("site")
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            "language", "language__language_family", "created_by", "last_modified_by"
+        )
 
 
 admin.site.unregister(Group)
