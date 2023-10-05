@@ -4,6 +4,7 @@ from django.utils.translation import gettext as _
 
 from backend.models.base import BaseSiteContentModel
 from backend.models.constants import JoinRequestStatus
+from backend.permissions import predicates
 
 
 class JoinRequest(BaseSiteContentModel):
@@ -19,6 +20,12 @@ class JoinRequest(BaseSiteContentModel):
                 fields=["site", "user"], name="unique_site_user_join_request"
             )
         ]
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
+        }
 
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="join_requests"
