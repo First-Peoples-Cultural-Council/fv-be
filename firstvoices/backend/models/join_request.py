@@ -3,8 +3,15 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.models.base import BaseSiteContentModel
-from backend.models.constants import JoinRequestStatus
 from backend.permissions import predicates
+
+
+class JoinRequestStatus(models.IntegerChoices):
+    # enum intentionally has gaps to allow future changes to keep sequential order
+    CANCELLED = -20, _("Cancelled")
+    REJECTED = -10, _("Rejected")
+    PENDING = 0, _("Pending")
+    APPROVED = 10, _("Approved")
 
 
 class JoinRequest(BaseSiteContentModel):
@@ -26,6 +33,9 @@ class JoinRequest(BaseSiteContentModel):
             "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_language_admin_or_super,
         }
+        indexes = [
+            models.Index(fields=["site", "status"], name="join_request_status_idx"),
+        ]
 
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="join_requests"

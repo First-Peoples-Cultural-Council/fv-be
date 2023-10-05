@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from backend.models.join_requests import JoinRequest
+from backend.models.join_request import JoinRequest
 
 from .base_admin import BaseSiteContentAdmin
 
