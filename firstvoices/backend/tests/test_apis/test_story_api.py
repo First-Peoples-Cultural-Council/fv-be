@@ -390,7 +390,7 @@ class TestStoryEndpoint(
         assert response_data["pages"][1]["text"] == page1.text
 
     @pytest.mark.django_db
-    def test_update_page_order_no_orphans(self):
+    def test_update_page_missing_page_id(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
         user = factories.get_non_member_user()
@@ -413,15 +413,7 @@ class TestStoryEndpoint(
         assert StoryPage.objects.filter(story=story).count() == 2
         assert StoryPage.objects.get(id=page1.id).ordering == 0
         assert StoryPage.objects.get(id=page2.id).ordering == 1
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=story.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["pages"][0]["text"] == page1.text
-        assert response_data["pages"][1]["text"] == page2.text
+        assert Story.objects.get(id=story.id).pages.count() == 2
 
         data = {"pages": [str(page2.id)]}
 
@@ -431,15 +423,19 @@ class TestStoryEndpoint(
             content_type=self.content_type,
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 400
         response_data = json.loads(response.content)
+        assert (
+            response_data[0]
+            == f"Existing story page with ID {page1.id} is missing from the updated list."
+        )
 
         assert Story.objects.filter(site=site).count() == 1
-        assert StoryPage.objects.all().count() == 1
-        assert StoryPage.objects.filter(story=story).count() == 1
-        assert StoryPage.objects.get(id=page2.id).ordering == 0
-
-        assert response_data["pages"][0]["text"] == page2.text
+        assert StoryPage.objects.all().count() == 2
+        assert StoryPage.objects.filter(story=story).count() == 2
+        assert StoryPage.objects.get(id=page1.id).ordering == 0
+        assert StoryPage.objects.get(id=page2.id).ordering == 1
+        assert Story.objects.get(id=story.id).pages.count() == 2
 
     @pytest.mark.django_db
     def test_update_page_order_wrong_story(self):

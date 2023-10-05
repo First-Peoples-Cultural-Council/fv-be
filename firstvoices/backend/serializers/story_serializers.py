@@ -148,31 +148,29 @@ class StoryDetailUpdateSerializer(StorySerializer):
                 temp_story = Story.objects.create(site=instance.site)
 
                 # Ensure that all updated pages belong to the story
-                for page in updated_pages:
-                    if page not in existing_pages:
-                        raise serializers.ValidationError(
-                            f"Page with ID {page.id} does not belong to the story."
-                        )
+                pages_belonging_to_other_stories = list(
+                    set(updated_pages) - set(existing_pages)
+                )
+                for page in pages_belonging_to_other_stories:
+                    raise serializers.ValidationError(
+                        f"Page with ID {page.id} does not belong to the story."
+                    )
 
-                # Get the intersection of the existing and updated pages
-                new_pages = [
-                    page for page in updated_pages if page in set(existing_pages)
-                ]
-
-                # Delete any existing pages that are not in the updated list to ensure no orphans
-                for page in [
-                    page for page in existing_pages if page not in updated_pages
-                ]:
-                    page.delete()
+                # Ensure that all existing pages are in the updated list
+                missing_updated_pages = list(set(existing_pages) - set(updated_pages))
+                for page in missing_updated_pages:
+                    raise serializers.ValidationError(
+                        f"Existing story page with ID {page.id} is missing from the updated list."
+                    )
 
                 # Move the new pages to a temp story so that the order can be updated
                 # (the story and ordering is unique together)
-                for page in new_pages:
+                for page in updated_pages:
                     page.story = temp_story
                     page.save()
 
                 # Update the ordering and move the pages back to the original story
-                for index, page in enumerate(new_pages):
+                for index, page in enumerate(updated_pages):
                     page.ordering = index
                     page.story = instance
                     page.save()
