@@ -85,3 +85,17 @@ class TestConvertLyricsDraftjsToText:
 
         assert Lyric.objects.count() == 1
         assert Lyric.objects.first().text == existing_text
+
+    @pytest.mark.django_db
+    def test_lyric_missing_blocks(self):
+        existing_text = """{
+                  "entityMap": {}
+                }"""
+        factories.LyricsFactory.create(text=existing_text)
+
+        assert Lyric.objects.count() == 1
+
+        convert_lyrics_draftjs_to_text.lyric_draftjs_to_text()
+
+        assert Lyric.objects.count() == 1
+        assert Lyric.objects.first().text == existing_text
