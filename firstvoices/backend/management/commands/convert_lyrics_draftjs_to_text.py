@@ -42,5 +42,7 @@ def extract_plain_text(draftjs, lyric_id=None):
     if "blocks" in draftjs:
         return delimiter.join([block["text"] for block in draftjs["blocks"]])
     else:
-        logger.warning("No blocks found in draftjs for lyric")
+        logger.warning(
+            f"No blocks found in draftjs for lyric with ID {lyric_id} when converting draftjs to text."
+        )
         return None
