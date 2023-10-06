@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
+from backend.models import JoinRequest
 from backend.models.app import AppMembership
 from backend.models.sites import Language, LanguageFamily, Membership, Site
 
@@ -63,6 +64,14 @@ class AppMembershipFactory(DjangoModelFactory):
         model = AppMembership
 
     user = factory.SubFactory(UserFactory)
+
+
+class JoinRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = JoinRequest
+
+    user = factory.SubFactory(UserFactory)
+    site = factory.SubFactory(SiteFactory)
 
 
 def get_anonymous_user():
