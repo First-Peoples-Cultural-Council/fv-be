@@ -1,4 +1,5 @@
 import json
+import logging
 from json import JSONDecodeError
 
 from django.core.management import BaseCommand
@@ -19,7 +20,7 @@ def lyric_draftjs_to_text():
 
     for lyric in lyric_text_list:
         try:
-            new_lyric_text = extract_plain_text(json.loads(lyric.text))
+            new_lyric_text = extract_plain_text(json.loads(lyric.text), lyric.id)
             if new_lyric_text is not None:
                 lyric.text = new_lyric_text
                 lyric.save()
@@ -36,8 +37,10 @@ def lyric_draftjs_to_text():
             continue
 
 
-def extract_plain_text(draftjs):
+def extract_plain_text(draftjs, lyric_id=None):
+    logger = logging.getLogger(__name__)
     if "blocks" in draftjs:
         return delimiter.join([block["text"] for block in draftjs["blocks"]])
     else:
+        logger.warning("No blocks found in draftjs for lyric")
         return None
