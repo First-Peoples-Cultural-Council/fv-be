@@ -17,6 +17,7 @@ from backend.search.tasks.dictionary_entry_tasks import (
     update_notes,
     update_translation,
 )
+from backend.search.utils.constants import ES_RETRY_POLICY
 from firstvoices.celery import link_error_handler
 
 
@@ -28,11 +29,7 @@ def request_update_dictionary_entry_index(sender, instance, **kwargs):
             (instance.id,),
             link_error=link_error_handler.s(),
             retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 3,
-                "interval_step": 1,
-            },
+            retry_policy=ES_RETRY_POLICY,
         )
 
 
@@ -53,11 +50,7 @@ def request_update_translation_index(sender, instance, **kwargs):
         ),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )
 
 
@@ -72,11 +65,7 @@ def request_update_notes_index(sender, instance, **kwargs):
         ),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )
 
 
@@ -91,11 +80,7 @@ def request_update_acknowledgement_index(sender, instance, **kwargs):
         ),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )
 
 
@@ -107,11 +92,7 @@ def request_update_categories_index(sender, instance, **kwargs):
         (instance.id,),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )
 
 
@@ -122,9 +103,5 @@ def request_update_categories_m2m_index(sender, instance, **kwargs):
         (instance.id,),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )

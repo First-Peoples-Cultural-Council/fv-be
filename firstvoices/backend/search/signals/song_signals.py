@@ -2,6 +2,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from backend.models import Lyric, Song
+from backend.search import ES_RETRY_POLICY
 from backend.search.tasks.song_tasks import (
     delete_from_index,
     update_lyrics,
@@ -17,11 +18,7 @@ def request_update_song_index(sender, instance, **kwargs):
             (instance.id,),
             link_error=link_error_handler.s(),
             retry=True,
-            retry_policy={
-                "max_retries": 3,
-                "interval_start": 3,
-                "interval_step": 1,
-            },
+            retry_policy=ES_RETRY_POLICY,
         )
 
 
@@ -42,9 +39,5 @@ def request_update_lyrics_index(sender, instance, **kwargs):
         ),
         link_error=link_error_handler.s(),
         retry=True,
-        retry_policy={
-            "max_retries": 3,
-            "interval_start": 3,
-            "interval_step": 1,
-        },
+        retry_policy=ES_RETRY_POLICY,
     )
