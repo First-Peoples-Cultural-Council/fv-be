@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.urls import NoReverseMatch, reverse
+from django.utils.html import format_html
 
 from backend.models.characters import (
     Alphabet,
@@ -23,6 +25,10 @@ class CharacterInline(BaseInlineSiteContentAdmin):
     ) + BaseInlineAdmin.fields
     ordering = ("sort_order",)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
 
 class CharacterVariantInline(BaseInlineSiteContentAdmin):
     model = CharacterVariant
@@ -31,6 +37,10 @@ class CharacterVariantInline(BaseInlineSiteContentAdmin):
         "base_character",
     ) + BaseInlineAdmin.fields
     ordering = ("base_character__sort_order", "title")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "base_character":
@@ -50,20 +60,7 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
     fields = ("character", "dictionary_entry")
     readonly_fields = BaseInlineAdmin.readonly_fields
     can_delete = True
-
-    # see fw-4234 about filtering the dictionary entries by site here
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "dictionary_entry":
-            # Get the Character from the request and filter dictionary entries by its site_id
-            character_id = request.resolver_match.kwargs.get("object_id")
-            if character_id:
-                queryset = DictionaryEntry.objects.filter(
-                    site_id=self.model.character.field.related_model.objects.get(
-                        pk=character_id
-                    ).site_id
-                )
-                kwargs["queryset"] = queryset
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    autocomplete_fields = ("dictionary_entry",)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -79,6 +76,11 @@ class CharacterAdmin(BaseSiteContentAdmin):
     ) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "approximate_form")
     inlines = (CharacterVariantInline, CharacterRelatedDictionaryEntryInline)
+    autocomplete_fields = ("related_audio", "related_images", "related_videos")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
 
 
 @admin.register(CharacterVariant)
@@ -99,7 +101,13 @@ class CharacterVariantAdmin(BaseSiteContentAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("base_character")
+        return qs.select_related(
+            "base_character",
+            "base_character__site",
+            "site",
+            "created_by",
+            "last_modified_by",
+        )
 
 
 @admin.register(IgnoredCharacter)
@@ -111,6 +119,26 @@ class IgnoredCharacterAdmin(BaseSiteContentAdmin):
 
 @admin.register(Alphabet)
 class AlphabetAdmin(BaseSiteContentAdmin):
-    fields = ("site", "input_to_canonical_map")
-    list_display = ("input_to_canonical_map",) + BaseSiteContentAdmin.list_display
+    fields = ("id", "site", "input_to_canonical_map")
+    list_display = (
+        ("input_to_canonical_map",)
+        + BaseSiteContentAdmin.list_display
+        + ("admin_link",)
+    )
     list_filter = ()
+
+    def admin_link(self, instance):
+        try:
+            url = reverse(
+                f"admin:{instance._meta.app_label}_{instance._meta.model_name}_change",
+                args=(instance.id,),
+            )
+            # see fw-4179, i18n for 'Edit' not working here for some reason
+            return format_html('<a href="{}">{}: {}</a>', url, "Edit", str(instance))
+        except NoReverseMatch as e:
+            self.logger.warning(
+                self,
+                f"{instance._meta.app_label}_{instance._meta.model_name} model has no _change url configured",
+                e,
+            )
+            return None

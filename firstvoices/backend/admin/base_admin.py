@@ -1,5 +1,7 @@
 import logging
+import re
 
+from django.apps import apps
 from django.contrib import admin
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
@@ -170,3 +172,35 @@ class HiddenBaseAdmin(BaseAdmin):
 
     def has_module_permission(self, request):
         return {}
+
+
+class FilterAutocompleteBySiteMixin(admin.ModelAdmin):
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term
+        )
+        if referer_models_list is None or request.path != "/admin/autocomplete/":
+            return queryset, use_distinct
+        # Filter the queryset by site (used for autocomplete_fields in change and add forms)
+        referer_list = request.headers.get("Referer").split("/")
+        if (
+            referer_list[5] in referer_models_list
+            and len(referer_list) >= 8
+            and referer_list[7] in ["change", "add"]
+        ):
+            object_id = re.search(
+                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+                referer_list[6],
+            ).group(0)
+            object_class = apps.get_model("backend", referer_list[5])
+            if object_class == Site:
+                queryset = queryset.filter(
+                    site_id=object_class.objects.filter(pk=object_id).first().id
+                )
+            else:
+                queryset = queryset.filter(
+                    site_id=object_class.objects.filter(pk=object_id).first().site_id
+                )
+        return queryset, use_distinct

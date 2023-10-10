@@ -35,6 +35,11 @@ class AppMembershipAdmin(BaseAdmin):
         "user__email",
         "role",
     )
+    autocomplete_fields = ("user",)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("user", "created_by", "last_modified_by")
 
 
 @admin.register(AppImportStatus)
