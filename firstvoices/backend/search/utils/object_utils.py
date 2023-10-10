@@ -115,7 +115,7 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
-                        "searchResultId": obj["_source"]["document_id"],
+                        "searchResultId": obj["_id"],
                         "score": obj["_score"],
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                         "entry": DictionaryEntryMinimalSerializer(
@@ -130,7 +130,7 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
-                        "searchResultId": obj["_source"]["document_id"],
+                        "searchResultId": obj["_id"],
                         "score": obj["_score"],
                         "type": "song",
                         "entry": SongMinimalSerializer(
@@ -145,7 +145,7 @@ def hydrate_objects(search_results, request):
                 # Serializing and adding the object to complete_objects
                 complete_objects.append(
                     {
-                        "searchResultId": obj["_source"]["document_id"],
+                        "searchResultId": obj["_id"],
                         "score": obj["_score"],
                         "type": "story",
                         "entry": StoryMinimalSerializer(
