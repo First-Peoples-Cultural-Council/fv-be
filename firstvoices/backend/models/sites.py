@@ -12,7 +12,7 @@ from . import Image
 from .base import BaseModel, BaseSiteContentModel
 from .constants import Role, Visibility
 from .media import Video
-from .utils import load_default_categories
+from .utils import load_default_categories, load_default_widgets
 from .widget import SiteWidgetList
 
 
@@ -186,6 +186,8 @@ class Site(BaseModel):
         if new_model:
             # Add default categories for all new sites.
             load_default_categories(self)
+            # Add default no-settings widgets for new sites
+            load_default_widgets(self)
 
 
 class Membership(BaseSiteContentModel):

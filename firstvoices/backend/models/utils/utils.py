@@ -2,6 +2,12 @@ import json
 from os import path
 
 from backend.models.category import Category
+from backend.models.widget import SiteWidget
+
+# constants for the default widgets, subset of the complete list of widgets
+WIDGET_ALPHABET = "WIDGET_ALPHABET"
+WIDGET_STATS = "WIDGET_STATS"
+WIDGET_WOTD = "WIDGET_WOTD"
 
 
 def load_data(json_file):
@@ -57,3 +63,22 @@ def load_default_categories(site):
             last_modified_by=site.last_modified_by,
         )
         c.save()
+
+
+def load_default_widgets(site):
+    """
+    Function to add a set of default widgets to any new site.
+    """
+
+    # list of default widgets
+    default_widgets = [
+        {"type": WIDGET_ALPHABET, "title": "alphabet"},
+        {"type": WIDGET_STATS, "title": "new-this-week-statistics"},
+        {"type": WIDGET_WOTD, "title": "word-of-the-day"},
+    ]
+
+    for widget in default_widgets:
+        new_widget = SiteWidget.objects.create(
+            site=site, widget_type=widget["type"], title=widget["title"]
+        )
+        new_widget.save()
