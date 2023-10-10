@@ -42,7 +42,7 @@ class Command(BaseCommand):
             rebuild_index(index_name, index_document)
         else:
             self.stdout.write(
-                "Invalid or no index name provided. Building all documents."
+                "Invalid or no index name provided. Building all indices."
             )
             for mapping in self.index_mappings.values():
                 index_name = mapping["index_name"]

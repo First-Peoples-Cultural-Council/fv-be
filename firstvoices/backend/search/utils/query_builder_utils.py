@@ -26,7 +26,7 @@ class SearchDomains(Enum):
 
 def get_indices(types):
     """
-    Returns list of documents to go through depending on the docType
+    Returns list of indices to go through depending on the docType
     words|phrases = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
     songs = ELASTICSEARCH_SONG_INDEX
     stories = ELASTICSEARCH_STORY_INDEX
