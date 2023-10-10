@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
 from backend.models.sites import Site
 
@@ -16,7 +17,7 @@ from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 
 @admin.register(Site)
-class SiteAdmin(BaseAdmin):
+class SiteAdmin(BaseAdmin, DynamicArrayMixin):
     list_display = (
         "title",
         "slug",
@@ -40,6 +41,7 @@ class SiteAdmin(BaseAdmin):
         "logo",
         "banner_image",
         "banner_video",
+        "contact_users",
     )
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):

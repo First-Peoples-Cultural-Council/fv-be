@@ -4,6 +4,7 @@ from django.core.validators import validate_slug
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext as _
+from django_better_admin_arrayfield.models.fields import ArrayField
 
 from backend.permissions import predicates
 from backend.permissions.managers import PermissionsManager
@@ -131,7 +132,13 @@ class Site(BaseModel):
     )
 
     # from fvdialect:contact_email
-    contact_email = models.EmailField(null=True, blank=True)
+    contact_email_old = models.EmailField(null=True, blank=True)
+
+    contact_email = ArrayField(
+        models.EmailField(max_length=254), blank=True, default=list
+    )
+
+    contact_users = models.ManyToManyField(get_user_model(), blank=True)
 
     homepage = models.OneToOneField(
         SiteWidgetList,
