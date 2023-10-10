@@ -41,7 +41,8 @@ class TestSongEndpoint(
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
-            "notes": ["Test Note One", "Test Note Two", "Test Note Three"],
+            "notes": [{"id": 1, "text": "Test Note One"}, {"id": "5", "text": "Test Note Two"}, {"id": "2", "text": "Test Note Three"}],
+            "acknowledgements": [{"id": "5", "text": "Test Author"}, {"id": "51", "text": "Another Acknowledgement"}],
             "lyrics": [
                 {
                     "text": "First lyrics page",
@@ -56,7 +57,6 @@ class TestSongEndpoint(
                     "translation": "Translated 3rd",
                 },
             ],
-            "acknowledgements": ["Test Author", "Another Acknowledgement"],
             "excludeFromGames": True,
             "excludeFromKids": False,
         }
@@ -72,9 +72,9 @@ class TestSongEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
         assert actual_instance.hide_overlay == expected_data["hideOverlay"]
-        assert actual_instance.notes[0] == expected_data["notes"][0]
+        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
         assert (
-            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]
+            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]["text"]
         )
 
         actual_lyrics = Lyric.objects.filter(song__id=actual_instance.id)

@@ -1,26 +1,30 @@
 from django.contrib import admin
 
-from backend.admin.base_admin import BaseControlledSiteContentAdmin
-from backend.models.media import Image, Video
+from backend.admin.base_admin import (
+    BaseControlledSiteContentAdmin,
+    FilterAutocompleteBySiteMixin,
+)
 from backend.models.page import SitePage
-from backend.models.widget import SiteWidgetList
 
 
 @admin.register(SitePage)
-class SitePageAdmin(BaseControlledSiteContentAdmin):
+class SitePageAdmin(FilterAutocompleteBySiteMixin, BaseControlledSiteContentAdmin):
     list_display = ("title", "slug") + BaseControlledSiteContentAdmin.list_display
     search_fields = (
         "title",
         "widgets__widgets__title",
         "site__title",
     ) + BaseControlledSiteContentAdmin.search_fields
+    autocomplete_fields = ("widgets", "banner_image", "banner_video")
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # prefetch the media models' site info (it is used for their display name)
-        if db_field.name == "banner_image":
-            kwargs["queryset"] = Image.objects.select_related("site")
-        if db_field.name == "banner_video":
-            kwargs["queryset"] = Video.objects.select_related("site")
-        if db_field.name == "widgets":
-            kwargs["queryset"] = SiteWidgetList.objects.select_related("site")
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term, ["sitepage"]
+        )
+        return queryset, use_distinct

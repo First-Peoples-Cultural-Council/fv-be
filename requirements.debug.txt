@@ -7,7 +7,7 @@ django-extensions==3.2.3  # https://github.com/django-extensions/django-extensio
 # Linting ------------------------------------------
 flake8==6.1.0  # https://github.com/PyCQA/flake8
 flake8-isort==6.1.0  # https://github.com/gforcada/flake8-isort
-coverage==7.3.1  # https://github.com/nedbat/coveragepy
+coverage==7.3.2  # https://github.com/nedbat/coveragepy
 black==23.7.0  # https://github.com/psf/black
 pylint-django==2.5.3  # https://github.com/PyCQA/pylint-django
 pre-commit==3.4.0  # https://github.com/pre-commit/pre-commit
@@ -15,3 +15,4 @@ pre-commit==3.4.0  # https://github.com/pre-commit/pre-commit
 # Pytest --------------------------
 pytest-xdist==3.3.1  # https://github.com/pytest-dev/pytest-xdist
 pytest-split==0.8.1  # https://github.com/jerry-git/pytest-split
+pytest-cov==4.1.0  # https://github.com/pytest-dev/pytest-cov

@@ -29,15 +29,21 @@ class StoryPageInlineAdmin(BaseInlineSiteContentAdmin, DynamicArrayMixin):
 class StoryPageAdmin(BaseSiteContentAdmin):
     list_display = ("story", "ordering") + BaseSiteContentAdmin.list_display
     list_select_related = ["story"] + BaseSiteContentAdmin.list_select_related
-    filter_horizontal = ("related_audio", "related_images", "related_videos")
+    autocomplete_fields = ("related_audio", "related_images", "related_videos")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("story", "site", "created_by", "last_modified_by")
 
 
 @admin.register(Story)
 class StoryAdmin(BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     inlines = [StoryPageInlineAdmin]
-    filter_horizontal = ("related_audio", "related_images", "related_videos")
+    autocomplete_fields = ("related_audio", "related_images", "related_videos")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("pages")
+        return qs.select_related(
+            "site", "created_by", "last_modified_by"
+        ).prefetch_related("pages")
