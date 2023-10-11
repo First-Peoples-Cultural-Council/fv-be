@@ -136,7 +136,7 @@ def update_lyrics(self, instance_id, song_id, **kwargs):
                 song_id,
             )
         )
-        self.retry(countdown=5, max_retries=3)
+        return
 
     try:
         existing_entry = get_object_from_index(

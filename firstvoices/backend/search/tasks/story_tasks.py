@@ -4,7 +4,7 @@ from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Index
 
-from backend.models.story import Story
+from backend.models.story import Story, StoryPage
 from backend.search.documents import StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
@@ -124,22 +124,11 @@ def delete_from_index(instance_id, **kwargs):
 def update_pages(self, instance_id, story_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
-    # Set story and page text. If it doesn't exist due to deletion, warn and return.
     try:
-        story = Story.objects.get(id=story_id)
+        instance = StoryPage.objects.get(id=instance_id)
+        story = Story.objects.get(id=instance.story_id)
         page_text, page_translation = get_page_info(story)
-    except Story.DoesNotExist:
-        logger.warning(
-            ES_NOT_FOUND_ERROR
-            % (
-                "story_page_update_signal",
-                SearchIndexEntryTypes.STORY,
-                story_id,
-            )
-        )
-        self.retry(countdown=5, max_retries=3)
 
-    try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_STORY_INDEX, "story", story.id
         )
@@ -159,9 +148,29 @@ def update_pages(self, instance_id, story_id, **kwargs):
             % (
                 "story_page_update_signal",
                 SearchIndexEntryTypes.STORY,
-                story.id,
+                story_id,
             )
         )
+    except StoryPage.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
+    except Story.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "pagess_update_signal",
+                SearchIndexEntryTypes.STORY,
+                story_id,
+            )
+        )
+        return
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)

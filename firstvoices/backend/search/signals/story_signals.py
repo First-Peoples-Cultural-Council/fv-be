@@ -14,12 +14,15 @@ from firstvoices.celery import link_error_handler
 @receiver(post_save, sender=Story)
 def request_update_story_index(sender, instance, **kwargs):
     if Story.objects.filter(id=instance.id).exists():
-        update_story_index.apply_async(
-            (instance.id,),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy=ES_RETRY_POLICY,
-        )
+        if instance.title == "":
+            return
+        else:
+            update_story_index.apply_async(
+                (instance.id,),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
 
 
 # Delete entry from index
@@ -32,9 +35,10 @@ def request_delete_from_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=StoryPage)
 @receiver(post_save, sender=StoryPage)
 def request_update_pages_index(sender, instance, **kwargs):
-    update_pages.apply_async(
-        (instance.id, instance.story.id),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy=ES_RETRY_POLICY,
-    )
+    if StoryPage.objects.filter(id=instance.id).exists():
+        update_pages.apply_async(
+            (instance.id, instance.story_id),
+            link_error=link_error_handler.s(),
+            retry=True,
+            retry_policy=ES_RETRY_POLICY,
+        )

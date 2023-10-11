@@ -150,13 +150,13 @@ def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        self.retry(countdown=5, max_retries=3)
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -174,7 +174,7 @@ def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
             % (
                 "translation_update_signal",
                 SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                dictionary_entry.id,
+                dictionary_entry_id,
             )
         )
     except Exception as e:
@@ -203,13 +203,13 @@ def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        self.retry(countdown=5, max_retries=3)
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -227,7 +227,7 @@ def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
             % (
                 "notes_update_signal",
                 SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                dictionary_entry.id,
+                dictionary_entry_id,
             )
         )
     except Exception as e:
@@ -256,13 +256,13 @@ def update_acknowledgements(self, instance_id, dictionary_entry_id, **kwargs):
                 dictionary_entry_id,
             )
         )
-        self.retry(countdown=5, max_retries=3)
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
