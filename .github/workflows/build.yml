@@ -49,7 +49,7 @@ jobs:
         run: |
           pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage${{ matrix.group }}
           path: firstvoices/.coverage
