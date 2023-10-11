@@ -146,27 +146,9 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert widget == self.get_expected_list_response_item(instance, site)
 
-    @pytest.mark.django_db
+    @pytest.mark.skip(reason="Test case is same as test_list_permissions.")
     def test_list_minimal(self):
-        site = self.create_site_with_non_member(Visibility.PUBLIC)
-        default_widgets_count = SiteWidget.objects.filter(site=site).count()
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == default_widgets_count + 1
-        assert len(response_data["results"]) == default_widgets_count + 1
-
-        # getting current widget from list of widgets
-        widget = list(
-            filter(lambda x: x["id"] == str(instance.id), response_data["results"])
-        )[0]
-
-        assert widget == self.get_expected_list_response_item(instance, site)
+        pass
 
     @pytest.mark.django_db
     def test_list_empty(self):

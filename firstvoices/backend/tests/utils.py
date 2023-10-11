@@ -29,17 +29,17 @@ def setup_widget_list():
     widget_one = widget_list_one.widgets.all()[0]
     widget_two = widget_list_one.widgets.all()[1]
     widget_three = widget_list_one.widgets.all()[2]
-    widget_four = widget_list_two.widgets.all()[0]
-    widget_five = widget_list_two.widgets.all()[1]
-    widget_six = widget_list_two.widgets.all()[2]
+    widget_two_one = widget_list_two.widgets.all()[0]
+    widget_two_two = widget_list_two.widgets.all()[1]
+    widget_two_three = widget_list_two.widgets.all()[2]
 
     widgets = [
         widget_one,
         widget_two,
         widget_three,
-        widget_four,
-        widget_five,
-        widget_six,
+        widget_two_one,
+        widget_two_two,
+        widget_two_three,
     ]
     # Set the widgets to all belong to the same site.
     update_widget_sites(
@@ -79,6 +79,9 @@ def update_widget_list_order(widgets, widget_list_two):
     assert widget_two_list_one_order.order == 0
     assert widget_three_list_one_order.order == 1
     assert widget_four_list_two_order.order == 2
+    widget_five_list_two_order = SiteWidgetListOrder.objects.filter(
+        site_widget=widgets[4]
+    ).first()  # refresh the five_list_two_order object
     assert widget_five_list_two_order.order == 3
     assert widget_six_list_two_order.order == 1
 
