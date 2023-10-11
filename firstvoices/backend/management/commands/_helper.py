@@ -98,7 +98,7 @@ def rebuild_index(index_name, index_document):
         # Alias configuration error
         if "multiple indices" in str(e):
             raise CommandError(
-                "There are multiple indices with same alias. Try clearing all documents and then "
+                "There are multiple indices with same alias. Try clearing all indices and then "
                 "rebuilding."
             )
     except Exception as e:
