@@ -146,7 +146,9 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert widget == self.get_expected_list_response_item(instance, site)
 
-    @pytest.mark.skip(reason="Test case is same as test_list_permissions.")
+    @pytest.mark.skip(
+        reason="Test is same as test_list_permissions. Removed the code to reduce duplication."
+    )
     def test_list_minimal(self):
         pass
 
