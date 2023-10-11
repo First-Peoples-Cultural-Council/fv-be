@@ -79,6 +79,9 @@ def load_default_widgets(site):
 
     for widget in default_widgets:
         new_widget = SiteWidget.objects.create(
-            site=site, widget_type=widget["type"], title=widget["title"]
+            site=site,
+            widget_type=widget["type"],
+            title=widget["title"],
+            visibility=site.visibility,
         )
         new_widget.save()

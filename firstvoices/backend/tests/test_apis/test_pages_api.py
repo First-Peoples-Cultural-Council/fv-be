@@ -322,11 +322,12 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         widget_one = factories.SiteWidgetFactory.create(site=site)
         widget_two = factories.SiteWidgetFactory.create(site=site)
 
-        assert len(SiteWidget.objects.all()) == 2
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 2
         assert len(SiteWidgetList.objects.all()) == 0
         assert len(SiteWidgetListOrder.objects.all()) == 0
         assert len(SitePage.objects.all()) == 0
@@ -348,7 +349,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response.status_code == 201
 
         # Check that the correct number of model instances have been created.
-        assert len(SiteWidget.objects.all()) == 2
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 2
         assert len(SiteWidgetList.objects.all()) == 1
         assert len(SiteWidgetListOrder.objects.all()) == 2
         assert len(SitePage.objects.all()) == 1
@@ -376,8 +377,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
-        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(SiteWidgetList.objects.all()) == 0
         assert len(SiteWidgetListOrder.objects.all()) == 0
         assert len(SitePage.objects.all()) == 0
@@ -399,7 +401,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response.status_code == 201
 
         # Check that the correct number of model instances have been created.
-        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(SiteWidgetList.objects.all()) == 1
         assert len(SiteWidgetListOrder.objects.all()) == 0
         assert len(SitePage.objects.all()) == 1
@@ -416,6 +418,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         widget_list = factories.SiteWidgetListWithThreeWidgetsFactory.create(site=site)
         page = factories.SitePageFactory.create(
@@ -441,7 +444,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert len(page.widgets.widgets.all()) == 3
         assert len(SiteWidgetList.objects.all()) == 1
-        assert len(SiteWidget.objects.all()) == 5
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 2
         assert len(SiteWidgetListOrder.objects.all()) == 3
         assert len(SitePage.objects.all()) == 1
 
@@ -454,7 +457,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response.status_code == 200
 
         assert len(SiteWidgetList.objects.all()) == 1
-        assert len(SiteWidget.objects.all()) == 5
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 2
         assert len(SiteWidgetListOrder.objects.all()) == 2
         assert len(SitePage.objects.all()) == 1
 
@@ -480,6 +483,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         widget_list = factories.SiteWidgetListWithThreeWidgetsFactory.create(site=site)
         page = factories.SitePageFactory.create(
@@ -490,7 +494,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert SiteWidgetList.objects.filter(sitepage_set__id=page.id).exists()
 
         assert len(SiteWidgetList.objects.all()) == 1
-        assert len(SiteWidget.objects.all()) == 3
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(SiteWidgetListOrder.objects.all()) == 3
         assert len(SitePage.objects.all()) == 1
 
@@ -503,6 +507,6 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert not SiteWidgetList.objects.filter(sitepage_set__id=page.id).exists()
 
         assert len(SiteWidgetList.objects.all()) == 0
-        assert len(SiteWidget.objects.all()) == 3
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(SiteWidgetListOrder.objects.all()) == 0
         assert len(SitePage.objects.all()) == 0
