@@ -46,6 +46,7 @@ from backend.search.signals.story_signals import (
     request_delete_from_index as request_delete_from_index_story,
 )
 from backend.search.signals.story_signals import (
+    request_delete_story_page_from_index,
     request_update_pages_index,
     request_update_story_index,
 )
@@ -270,7 +271,9 @@ def disconnect_signals():
     signals.post_save.disconnect(request_update_story_index, sender=Story)
     signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
     signals.post_save.disconnect(request_update_pages_index, sender=StoryPage)
-    signals.post_delete.disconnect(request_update_pages_index, sender=StoryPage)
+    signals.post_delete.disconnect(
+        request_delete_story_page_from_index, sender=StoryPage
+    )
 
     # backend.search.utils.site_signals
     signals.pre_save.disconnect(request_update_document_visibility, sender=Site)
@@ -319,7 +322,7 @@ def reconnect_signals():
     signals.post_save.connect(request_update_story_index, sender=Story)
     signals.post_delete.connect(request_delete_from_index_story, sender=Story)
     signals.post_save.connect(request_update_pages_index, sender=StoryPage)
-    signals.post_delete.connect(request_update_pages_index, sender=StoryPage)
+    signals.post_delete.connect(request_delete_story_page_from_index, sender=StoryPage)
 
     # backend.search.utils.site_signals
     signals.pre_save.connect(request_update_document_visibility, sender=Site)

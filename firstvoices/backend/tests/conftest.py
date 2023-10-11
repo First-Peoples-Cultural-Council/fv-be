@@ -39,37 +39,56 @@ def mock_get_image_dimensions(mocker):
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_search_indexing():
-    with patch(
-        "backend.search.signals.dictionary_entry_signals.update_dictionary_entry_index"
-    ) as mocked_update_dictionary_entry_index, patch(
-        "backend.search.signals.dictionary_entry_signals.delete_from_index"
-    ) as mocked_delete_dictionary_entry_index, patch(
-        "backend.search.signals.dictionary_entry_signals.update_translation"
-    ) as mocked_update_translation, patch(
-        "backend.search.signals.dictionary_entry_signals.update_notes"
-    ) as mocked_update_notes, patch(
-        "backend.search.signals.dictionary_entry_signals.update_acknowledgements"
-    ) as mocked_update_acknowledgements, patch(
-        "backend.search.signals.dictionary_entry_signals.update_categories"
-    ) as mocked_update_categories, patch(
-        "backend.search.signals.dictionary_entry_signals.update_categories_m2m"
-    ) as mocked_update_categories_m2m, patch(
-        "backend.search.signals.song_signals.update_song_index"
-    ) as mocked_update_song_index, patch(
-        "backend.search.signals.song_signals.delete_from_index"
-    ) as mocked_delete_song_index, patch(
-        "backend.search.signals.song_signals.update_lyrics"
-    ) as mocked_update_lyrics, patch(
-        "backend.search.signals.story_signals.update_story_index"
-    ) as mocked_update_story_index, patch(
-        "backend.search.signals.story_signals.delete_from_index"
-    ) as mocked_delete_story_index, patch(
-        "backend.search.signals.story_signals.update_pages"
-    ) as mocked_request_update_pages, patch(
-        "backend.search.signals.site_signals.update_document_visibility"
-    ) as mocked_update_document_visibility, patch(
-        "backend.search.signals.site_signals.delete_related_docs"
-    ) as mocked_delete_related_docs:
+    with (
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_dictionary_entry_index"
+        ) as mocked_update_dictionary_entry_index,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.delete_from_index"
+        ) as mocked_delete_dictionary_entry_index,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_translation"
+        ) as mocked_update_translation,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_notes"
+        ) as mocked_update_notes,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_acknowledgements"
+        ) as mocked_update_acknowledgements,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_categories"
+        ) as mocked_update_categories,
+        patch(
+            "backend.search.signals.dictionary_entry_signals.update_categories_m2m"
+        ) as mocked_update_categories_m2m,
+        patch(
+            "backend.search.signals.song_signals.update_song_index"
+        ) as mocked_update_song_index,
+        patch(
+            "backend.search.signals.song_signals.delete_from_index"
+        ) as mocked_delete_song_index,
+        patch(
+            "backend.search.signals.song_signals.update_lyrics"
+        ) as mocked_update_lyrics,
+        patch(
+            "backend.search.signals.story_signals.update_story_index"
+        ) as mocked_update_story_index,
+        patch(
+            "backend.search.signals.story_signals.delete_from_index"
+        ) as mocked_delete_story_index,
+        patch(
+            "backend.search.signals.story_signals.update_pages"
+        ) as mocked_request_update_pages,
+        patch(
+            "backend.search.signals.story_signals.delete_pages"
+        ) as mocked_delete_pages,
+        patch(
+            "backend.search.signals.site_signals.update_document_visibility"
+        ) as mocked_update_document_visibility,
+        patch(
+            "backend.search.signals.site_signals.delete_related_docs"
+        ) as mocked_delete_related_docs,
+    ):
         mocked_update_dictionary_entry_index.return_value = None
         mocked_delete_dictionary_entry_index.return_value = None
         mocked_update_translation.return_value = None
@@ -83,6 +102,7 @@ def mock_search_indexing():
         mocked_update_story_index.return_value = None
         mocked_delete_story_index.return_value = None
         mocked_request_update_pages.return_value = None
+        mocked_delete_pages.return_value = None
         mocked_update_document_visibility.return_value = None
         mocked_delete_related_docs.return_value = None
         yield
