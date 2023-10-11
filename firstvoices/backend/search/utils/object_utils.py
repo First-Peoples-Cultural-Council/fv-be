@@ -3,7 +3,7 @@ import logging
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import DictionaryEntry, Song, Story
+from backend.models import DictionaryEntry, Song, Story, StoryPage
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -198,8 +198,9 @@ def get_lyrics(song_instance):
 
 
 def get_page_info(story_instance):
-    page_text = list(story_instance.pages.values_list("text", flat=True))
-    page_translation = list(story_instance.pages.values_list("translation", flat=True))
+    pages = StoryPage.objects.filter(story=story_instance)
+    page_text = list(pages.values_list("text", flat=True))
+    page_translation = list(pages.values_list("translation", flat=True))
 
     return page_text, page_translation
 
