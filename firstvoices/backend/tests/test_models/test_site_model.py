@@ -13,12 +13,15 @@ class TestSiteModel:
     Tests for Site model.
     """
 
+    TEST_SITE_TITLE = "Site 1"
+    TEST_SITE_SLUG = "site_1"
+
     def test_adding_default_categories(self, db):
         """Verify the number of default categories being added when a site is created."""
         admin_user = get_app_admin(AppRole.STAFF)
         site = Site(
-            title="Site 1",
-            slug="site_1",
+            title=self.TEST_SITE_TITLE,
+            slug=self.TEST_SITE_SLUG,
             created_by=admin_user,
             last_modified_by=admin_user,
         )
@@ -32,8 +35,8 @@ class TestSiteModel:
         """Verify the default widgets are added when a site is created."""
         admin_user = get_app_admin(AppRole.STAFF)
         site = Site(
-            title="Site 1",
-            slug="site_1",
+            title=self.TEST_SITE_TITLE,
+            slug=self.TEST_SITE_SLUG,
             created_by=admin_user,
             last_modified_by=admin_user,
         )
@@ -54,8 +57,8 @@ class TestSiteModel:
         image = factories.ImageFactory()
 
         site = Site(
-            title="Site 1",
-            slug="site_1",
+            title=self.TEST_SITE_TITLE,
+            slug=self.TEST_SITE_SLUG,
             created_by=admin_user,
             last_modified_by=admin_user,
             banner_image=image,
