@@ -86,7 +86,7 @@ def update_story_index(self, instance_id, **kwargs):
         logger.warning(
             ES_NOT_FOUND_ERROR,
             "get",
-            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            SearchIndexEntryTypes.STORY,
             instance_id,
         )
         logger.warning(e)

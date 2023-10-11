@@ -96,9 +96,9 @@ def rebuild_index(index_name, index_document):
             bulk(es, dictionary_entry_iterator())
     except errors.BulkIndexError as e:
         # Alias configuration error
-        if "multiple documents" in str(e):
+        if "multiple indices" in str(e):
             raise CommandError(
-                "There are multiple documents with same alias. Try clearing all documents and then "
+                "There are multiple indices with same alias. Try clearing all documents and then "
                 "rebuilding."
             )
     except Exception as e:
