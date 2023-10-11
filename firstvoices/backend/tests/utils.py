@@ -26,17 +26,17 @@ def setup_widget_list():
     widget_list_two = factories.SiteWidgetListWithThreeWidgetsFactory.create(site=site)
 
     # Get the widgets from each of the factories.
-    widget_one = widget_list_one.widgets.all()[0]
-    widget_two = widget_list_one.widgets.all()[1]
-    widget_three = widget_list_one.widgets.all()[2]
-    widget_two_one = widget_list_two.widgets.all()[0]
-    widget_two_two = widget_list_two.widgets.all()[1]
-    widget_two_three = widget_list_two.widgets.all()[2]
+    widget_one_one = widget_list_one.widgets.order_by("title").all()[0]
+    widget_one_two = widget_list_one.widgets.order_by("title").all()[1]
+    widget_one_three = widget_list_one.widgets.order_by("title").all()[2]
+    widget_two_one = widget_list_two.widgets.order_by("title").all()[0]
+    widget_two_two = widget_list_two.widgets.order_by("title").all()[1]
+    widget_two_three = widget_list_two.widgets.order_by("title").all()[2]
 
     widgets = [
-        widget_one,
-        widget_two,
-        widget_three,
+        widget_one_one,
+        widget_one_two,
+        widget_one_three,
         widget_two_one,
         widget_two_two,
         widget_two_three,
