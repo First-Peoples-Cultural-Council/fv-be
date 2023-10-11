@@ -23,6 +23,13 @@ ES_PAGE_SIZE = 25
 # Maximum page size
 ES_MAX_RESULTS = 100
 
+# Retry policy
+ES_RETRY_POLICY = {
+    "max_retries": 3,
+    "interval_start": 3,
+    "interval_step": 1,
+}
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")

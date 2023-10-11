@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
 
 from backend.management.commands._helper import get_valid_index_name, rebuild_index
-from backend.search.indices.dictionary_entry_document import DictionaryEntryDocument
-from backend.search.indices.song_document import SongDocument
-from backend.search.indices.story_document import StoryDocument
+from backend.search.documents.dictionary_entry_document import DictionaryEntryDocument
+from backend.search.documents.song_document import SongDocument
+from backend.search.documents.story_document import StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,

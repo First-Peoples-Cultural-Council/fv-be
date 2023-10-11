@@ -17,24 +17,39 @@ from backend.models import (
     Translation,
 )
 from backend.models.dictionary import DictionaryEntryCategory
-from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
-from backend.search.indices.dictionary_entry_document import (
-    delete_from_index,
-    update_acknowledgement,
-    update_categories,
-    update_categories_m2m,
-    update_dictionary_entry_index,
-    update_notes,
-    update_translation,
+from backend.search.documents import (
+    DictionaryEntryDocument,
+    SongDocument,
+    StoryDocument,
 )
-from backend.search.indices.song_document import (
-    delete_from_index as delete_from_index_song,
+from backend.search.signals.dictionary_entry_signals import (
+    request_delete_dictionary_entry_index,
+    request_update_acknowledgement_index,
+    request_update_categories_index,
+    request_update_categories_m2m_index,
+    request_update_dictionary_entry_index,
+    request_update_notes_index,
+    request_update_translation_index,
 )
-from backend.search.indices.song_document import update_lyrics, update_song_index
-from backend.search.indices.story_document import (
-    delete_from_index as delete_from_index_story,
+from backend.search.signals.site_signals import (
+    request_delete_related_docs,
+    request_update_document_visibility,
 )
-from backend.search.indices.story_document import update_pages, update_story_index
+from backend.search.signals.song_signals import (
+    request_delete_from_index as request_delete_from_index_song,
+)
+from backend.search.signals.song_signals import (
+    request_update_lyrics_index,
+    request_update_song_index,
+)
+from backend.search.signals.story_signals import (
+    request_delete_from_index as request_delete_from_index_story,
+)
+from backend.search.signals.story_signals import (
+    request_delete_story_page_from_index,
+    request_update_pages_index,
+    request_update_story_index,
+)
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -47,10 +62,6 @@ from backend.search.utils.object_utils import (
     get_notes_text,
     get_page_info,
     get_translation_text,
-)
-from backend.search.utils.site_signals import (
-    delete_related_docs,
-    update_document_visibility,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -223,36 +234,50 @@ def disconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.indices.dictionary_entry_document
-    signals.post_save.disconnect(update_dictionary_entry_index, sender=DictionaryEntry)
-    signals.post_delete.disconnect(delete_from_index, sender=DictionaryEntry)
-    signals.post_save.disconnect(update_translation, sender=Translation)
-    signals.post_delete.disconnect(update_translation, sender=Translation)
-    signals.post_save.disconnect(update_notes, sender=Note)
-    signals.post_delete.disconnect(update_notes, sender=Note)
-    signals.post_save.disconnect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_delete.disconnect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_save.disconnect(update_categories, sender=DictionaryEntryCategory)
-    signals.post_delete.disconnect(update_categories, sender=DictionaryEntryCategory)
+    # backend.search.documents.dictionary_entry_document
+    signals.post_save.disconnect(
+        request_update_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_delete.disconnect(
+        request_delete_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_save.disconnect(request_update_translation_index, sender=Translation)
+    signals.post_delete.disconnect(request_update_translation_index, sender=Translation)
+    signals.post_save.disconnect(request_update_notes_index, sender=Note)
+    signals.post_delete.disconnect(request_update_notes_index, sender=Note)
+    signals.post_save.disconnect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_delete.disconnect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_save.disconnect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.post_delete.disconnect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
     signals.m2m_changed.disconnect(
-        update_categories_m2m, sender=DictionaryEntryCategory
+        request_update_categories_m2m_index, sender=DictionaryEntryCategory
     )
 
-    # backend.search.indices.song_document
-    signals.post_save.disconnect(update_song_index, sender=Song)
-    signals.post_delete.disconnect(delete_from_index_song, sender=Song)
-    signals.post_save.disconnect(update_lyrics, sender=Lyric)
-    signals.post_delete.disconnect(update_lyrics, sender=Lyric)
+    # backend.search.documents.song_document
+    signals.post_save.disconnect(request_update_song_index, sender=Song)
+    signals.post_delete.disconnect(request_delete_from_index_song, sender=Song)
+    signals.post_save.disconnect(request_update_lyrics_index, sender=Lyric)
+    signals.post_delete.disconnect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.indices.story_document
-    signals.post_save.disconnect(update_story_index, sender=Story)
-    signals.post_delete.disconnect(delete_from_index_story, sender=Story)
-    signals.post_save.disconnect(update_pages, sender=StoryPage)
-    signals.post_delete.disconnect(update_pages, sender=StoryPage)
+    # backend.search.documents.story_document
+    signals.post_save.disconnect(request_update_story_index, sender=Story)
+    signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
+    signals.post_save.disconnect(request_update_pages_index, sender=StoryPage)
+    signals.post_delete.disconnect(
+        request_delete_story_page_from_index, sender=StoryPage
+    )
 
     # backend.search.utils.site_signals
-    signals.pre_save.disconnect(update_document_visibility, sender=Site)
-    signals.post_delete.disconnect(delete_related_docs, sender=Site)
+    signals.pre_save.disconnect(request_update_document_visibility, sender=Site)
+    signals.post_delete.disconnect(request_delete_related_docs, sender=Site)
 
 
 def reconnect_signals():
@@ -260,31 +285,45 @@ def reconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.indices.dictionary_entry_document
-    signals.post_save.connect(update_dictionary_entry_index, sender=DictionaryEntry)
-    signals.post_delete.connect(delete_from_index, sender=DictionaryEntry)
-    signals.post_save.connect(update_translation, sender=Translation)
-    signals.post_delete.connect(update_translation, sender=Translation)
-    signals.post_save.connect(update_notes, sender=Note)
-    signals.post_delete.connect(update_notes, sender=Note)
-    signals.post_save.connect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_delete.connect(update_acknowledgement, sender=Acknowledgement)
-    signals.post_save.connect(update_categories, sender=DictionaryEntryCategory)
-    signals.post_delete.connect(update_categories, sender=DictionaryEntryCategory)
-    signals.m2m_changed.connect(update_categories_m2m, sender=DictionaryEntryCategory)
+    # backend.search.documents.dictionary_entry_document
+    signals.post_save.connect(
+        request_update_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_delete.connect(
+        request_delete_dictionary_entry_index, sender=DictionaryEntry
+    )
+    signals.post_save.connect(request_update_translation_index, sender=Translation)
+    signals.post_delete.connect(request_update_translation_index, sender=Translation)
+    signals.post_save.connect(request_update_notes_index, sender=Note)
+    signals.post_delete.connect(request_update_notes_index, sender=Note)
+    signals.post_save.connect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_delete.connect(
+        request_update_acknowledgement_index, sender=Acknowledgement
+    )
+    signals.post_save.connect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.post_delete.connect(
+        request_update_categories_index, sender=DictionaryEntryCategory
+    )
+    signals.m2m_changed.connect(
+        request_update_categories_m2m_index, sender=DictionaryEntryCategory
+    )
 
-    # backend.search.indices.song_document
-    signals.post_save.connect(update_song_index, sender=Song)
-    signals.post_delete.connect(delete_from_index_song, sender=Song)
-    signals.post_save.connect(update_lyrics, sender=Lyric)
-    signals.post_delete.connect(update_lyrics, sender=Lyric)
+    # backend.search.documents.song_document
+    signals.post_save.connect(request_update_song_index, sender=Song)
+    signals.post_delete.connect(request_delete_from_index_song, sender=Song)
+    signals.post_save.connect(request_update_lyrics_index, sender=Lyric)
+    signals.post_delete.connect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.indices.story_document
-    signals.post_save.connect(update_story_index, sender=Story)
-    signals.post_delete.connect(delete_from_index_story, sender=Story)
-    signals.post_save.connect(update_pages, sender=StoryPage)
-    signals.post_delete.connect(update_pages, sender=StoryPage)
+    # backend.search.documents.story_document
+    signals.post_save.connect(request_update_story_index, sender=Story)
+    signals.post_delete.connect(request_delete_from_index_story, sender=Story)
+    signals.post_save.connect(request_update_pages_index, sender=StoryPage)
+    signals.post_delete.connect(request_delete_story_page_from_index, sender=StoryPage)
 
     # backend.search.utils.site_signals
-    signals.pre_save.connect(update_document_visibility, sender=Site)
-    signals.post_delete.connect(delete_related_docs, sender=Site)
+    signals.pre_save.connect(request_update_document_visibility, sender=Site)
+    signals.post_delete.connect(request_delete_related_docs, sender=Site)

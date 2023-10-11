@@ -1,12 +1,14 @@
 import logging
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models.signals import post_delete, pre_save
-from django.dispatch import receiver
+from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 
 from backend.models.sites import Site
-from backend.search.indices import DictionaryEntryDocument, SongDocument, StoryDocument
+from backend.search.documents import (
+    DictionaryEntryDocument,
+    SongDocument,
+    StoryDocument,
+)
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_SONG_INDEX,
@@ -19,39 +21,29 @@ from backend.search.utils.object_utils import get_object_from_index
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-# If a site's visibility is changed, update all docs from index related to site
-@receiver(pre_save, sender=Site)
-def update_document_visibility(sender, instance, **kwargs):
-    if instance.id is None:
-        # New site, don't do anything
-        return
+@shared_task
+def update_document_visibility(instance_id, instance_visibility, **kwargs):
+    instance = Site.objects.get(id=instance_id)
+    dictionary_entries_set = instance.dictionaryentry_set.all()
+    songs_set = instance.song_set.all()
+    stories_set = instance.story_set.all()
 
-    try:
-        original_site = Site.objects.get(id=instance.id)
-    except ObjectDoesNotExist:
-        return
+    # Updating dictionary_entries visibility
+    for dictionary_entry in dictionary_entries_set:
+        update_dictionary_entry_visibility(dictionary_entry, instance_visibility)
 
-    if original_site.visibility != instance.visibility:
-        dictionary_entries_set = instance.dictionaryentry_set.all()
-        songs_set = instance.song_set.all()
-        stories_set = instance.story_set.all()
+    # Updating songs visibility
+    for song in songs_set:
+        update_song_visibility(song, instance_visibility)
 
-        # Updating dictionary_entries visibility
-        for dictionary_entry in dictionary_entries_set:
-            update_dictionary_entry_visibility(dictionary_entry, instance.visibility)
-
-        # Updating songs visibility
-        for song in songs_set:
-            update_song_visibility(song, instance.visibility)
-
-        # updating story visibility
-        for story in stories_set:
-            update_story_visibility(story, instance.visibility)
+    # updating story visibility
+    for story in stories_set:
+        update_story_visibility(story, instance_visibility)
 
 
-# If a site is deleted, delete all docs from index related to site
-@receiver(post_delete, sender=Site)
-def delete_related_docs(sender, instance, **kwargs):
+@shared_task
+def delete_related_docs(instance_id, **kwargs):
+    instance = Site.objects.get(id=instance_id)
     dictionary_entries_set = instance.dictionaryentry_set.all()
     songs_set = instance.song_set.all()
     stories_set = instance.story_set.all()

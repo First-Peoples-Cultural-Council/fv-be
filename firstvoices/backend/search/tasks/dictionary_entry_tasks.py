@@ -1,18 +1,11 @@
 import logging
 
-from django.db.models.signals import m2m_changed, post_delete, post_save
-from django.dispatch import receiver
+from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Index, Keyword, Text
+from elasticsearch_dsl import Index
 
-from backend.models.dictionary import (
-    Acknowledgement,
-    DictionaryEntry,
-    DictionaryEntryCategory,
-    Note,
-    Translation,
-)
-from backend.search.indices.base_document import BaseDocument
+from backend.models.dictionary import DictionaryEntry, DictionaryEntryCategory
+from backend.search.documents import DictionaryEntryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
@@ -29,29 +22,13 @@ from backend.search.utils.object_utils import (
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class DictionaryEntryDocument(BaseDocument):
-    # text search fields
-    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
-    translation = Text(copy_to="primary_translation_search_fields")
-    note = Text(copy_to="other_translation_search_fields")
-    acknowledgement = Text(copy_to="other_translation_search_fields")
-
-    # filter and sorting
-    type = Keyword()
-    custom_order = Keyword()
-    categories = Keyword()
-
-    class Index:
-        name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
-
-
-# Signal to update the entry in index
-@receiver(post_save, sender=DictionaryEntry)
-def update_dictionary_entry_index(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_dictionary_entry_index(self, instance_id, **kwargs):
     # Add document to es index
     try:
+        instance = DictionaryEntry.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance_id
         )
         translations_text = get_translation_text(instance)
         notes_text = get_notes_text(instance)
@@ -100,7 +77,7 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
             ES_CONNECTION_ERROR
-            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -109,26 +86,35 @@ def update_dictionary_entry_index(sender, instance, **kwargs):
             ES_NOT_FOUND_ERROR,
             "get",
             SearchIndexEntryTypes.DICTIONARY_ENTRY,
-            instance.id,
+            instance_id,
         )
         logger.warning(e)
+    except DictionaryEntry.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.DICTIONARY_ENTRY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
 
-# Delete entry from index
-@receiver(post_delete, sender=DictionaryEntry)
-def delete_from_index(sender, instance, **kwargs):
+@shared_task
+def delete_from_index(instance_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance.id
+            ELASTICSEARCH_DICTIONARY_ENTRY_INDEX, "dictionary_entry", instance_id
         )
         if existing_entry:
             index_entry = DictionaryEntryDocument.get(id=existing_entry["_id"])
@@ -136,31 +122,41 @@ def delete_from_index(sender, instance, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("dictionary_entry", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
 
-# Translation update
-@receiver(post_delete, sender=Translation)
-@receiver(post_save, sender=Translation)
-def update_translation(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
 
-    translations_text = get_translation_text(dictionary_entry)
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        translations_text = get_translation_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "translation_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -170,7 +166,7 @@ def update_translation(sender, instance, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("translation", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("translation", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -178,31 +174,42 @@ def update_translation(sender, instance, **kwargs):
             % (
                 "translation_update_signal",
                 SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                dictionary_entry.id,
+                dictionary_entry_id,
             )
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
 
-# Note update
-@receiver(post_delete, sender=Note)
-@receiver(post_save, sender=Note)
-def update_notes(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
-    notes_text = get_notes_text(dictionary_entry)
+
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        notes_text = get_notes_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "notes_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -212,7 +219,7 @@ def update_notes(sender, instance, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("notes", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("notes", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -220,31 +227,42 @@ def update_notes(sender, instance, **kwargs):
             % (
                 "notes_update_signal",
                 SearchIndexEntryTypes.DICTIONARY_ENTRY,
-                dictionary_entry.id,
+                dictionary_entry_id,
             )
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
 
-# Acknowledgement update
-@receiver(post_delete, sender=Acknowledgement)
-@receiver(post_save, sender=Acknowledgement)
-def update_acknowledgement(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_acknowledgements(self, instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    dictionary_entry = instance.dictionary_entry
-    acknowledgements_text = get_acknowledgements_text(dictionary_entry)
+
+    # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
+    try:
+        dictionary_entry = DictionaryEntry.objects.get(id=dictionary_entry_id)
+        acknowledgements_text = get_acknowledgements_text(dictionary_entry)
+    except DictionaryEntry.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "acknowledgements_update_signal",
+                SearchIndexEntryTypes.DICTIONARY_ENTRY,
+                dictionary_entry_id,
+            )
+        )
+        return
 
     try:
         existing_entry = get_object_from_index(
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "dictionary_entry",
-            dictionary_entry.id,
+            dictionary_entry_id,
         )
         if not existing_entry:
             raise NotFoundError
@@ -254,7 +272,7 @@ def update_acknowledgement(sender, instance, **kwargs):
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
-            % ("acknowledgements", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id)
+            % ("acknowledgements", SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id)
         )
     except NotFoundError:
         logger.warning(
@@ -269,22 +287,22 @@ def update_acknowledgement(sender, instance, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance.id
+            type(e).__name__, SearchIndexEntryTypes.DICTIONARY_ENTRY, instance_id
         )
         logger.error(e)
 
 
-# Category update when called through the admin site
-@receiver(post_save, sender=DictionaryEntryCategory)
-@receiver(post_delete, sender=DictionaryEntryCategory)
-def update_categories(sender, instance, **kwargs):
-    update_dictionary_entry_index_categories(instance.dictionary_entry)
+@shared_task
+def update_categories(instance_id, **kwargs):
+    if DictionaryEntryCategory.objects.filter(id=instance_id).exists():
+        instance = DictionaryEntryCategory.objects.get(id=instance_id)
+        update_dictionary_entry_index_categories(instance.dictionary_entry)
 
 
-# Category update when called through the APIs
-@receiver(m2m_changed, sender=DictionaryEntryCategory)
-def update_categories_m2m(sender, instance, **kwargs):
-    if instance.__class__ == DictionaryEntry:
+@shared_task
+def update_categories_m2m(instance_id, **kwargs):
+    if DictionaryEntryCategory.objects.filter(id=instance_id).exists():
+        instance = DictionaryEntryCategory.objects.get(id=instance_id)
         update_dictionary_entry_index_categories(instance)
 
 

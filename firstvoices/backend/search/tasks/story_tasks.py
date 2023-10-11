@@ -1,12 +1,11 @@
 import logging
 
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
+from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from elasticsearch_dsl import Index, Keyword, Text
+from elasticsearch_dsl import Index
 
 from backend.models.story import Story, StoryPage
-from backend.search.indices.base_document import BaseDocument
+from backend.search.documents import StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
@@ -17,28 +16,11 @@ from backend.search.utils.object_utils import get_object_from_index, get_page_in
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-class StoryDocument(BaseDocument):
-    # text search fields
-    title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
-    title_translation = Text(copy_to="primary_translation_search_fields")
-    introduction = Text(copy_to="secondary_language_search_fields")
-    introduction_translation = Text(copy_to="secondary_translation_search_fields")
-    page_text = Text(copy_to="secondary_language_search_fields")
-    page_translation = Text(copy_to="secondary_translation_search_fields")
-    acknowledgement = Text(copy_to="other_translation_search_fields")
-    note = Text(copy_to="other_translation_search_fields")
-    author = Text(copy_to="other_translation_search_fields")
-
-    # Author to be added
-
-    class Index:
-        name = ELASTICSEARCH_STORY_INDEX
-
-
-@receiver(post_save, sender=Story)
-def update_story_index(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_story_index(self, instance_id, **kwargs):
     # add story to es index
     try:
+        instance = Story.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
             ELASTICSEARCH_STORY_INDEX, "song", instance.id
         )
@@ -87,7 +69,7 @@ def update_story_index(sender, instance, **kwargs):
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(
-            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance.id)
+            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance_id)
         )
         logger.error(e)
     except NotFoundError as e:
@@ -96,49 +78,59 @@ def update_story_index(sender, instance, **kwargs):
             ES_NOT_FOUND_ERROR,
             "get",
             SearchIndexEntryTypes.STORY,
-            instance.id,
+            instance_id,
         )
         logger.warning(e)
+    except Story.DoesNotExist as e:
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.warning(
+            ES_NOT_FOUND_ERROR,
+            "get",
+            SearchIndexEntryTypes.STORY,
+            instance_id,
+        )
+        logger.warning(e)
+        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance_id)
         logger.error(e)
 
 
-# Delete entry from index
-@receiver(post_delete, sender=Story)
-def delete_from_index(sender, instance, **kwargs):
+@shared_task
+def delete_from_index(instance_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     try:
         existing_entry = get_object_from_index(
-            ELASTICSEARCH_STORY_INDEX, "story", instance.id
+            ELASTICSEARCH_STORY_INDEX, "story", instance_id
         )
         if existing_entry:
             index_entry = StoryDocument.get(id=existing_entry["_id"])
             index_entry.delete()
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance.id)
+            ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, instance_id)
         )
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance_id)
         logger.error(e)
 
 
-# Page update
-@receiver(post_delete, sender=StoryPage)
-@receiver(post_save, sender=StoryPage)
-def update_pages(sender, instance, **kwargs):
+@shared_task(bind=True)
+def update_pages(self, instance_id, story_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    story = instance.story
 
-    page_text, page_translation = get_page_info(story)
+    if not StoryPage.objects.filter(id=instance_id).exists():
+        self.retry(countdown=5, max_retries=3)
 
     try:
+        story = Story.objects.get(id=story_id)
+        page_text, page_translation = get_page_info(story)
+
         existing_entry = get_object_from_index(
             ELASTICSEARCH_STORY_INDEX, "story", story.id
         )
@@ -149,8 +141,7 @@ def update_pages(sender, instance, **kwargs):
         story_doc.update(page_text=page_text, page_translation=page_translation)
     except ConnectionError:
         logger.error(
-            ES_CONNECTION_ERROR
-            % ("story_page", SearchIndexEntryTypes.STORY, instance.id)
+            ES_CONNECTION_ERROR % ("story_page", SearchIndexEntryTypes.STORY, story_id)
         )
     except NotFoundError:
         logger.warning(
@@ -158,11 +149,67 @@ def update_pages(sender, instance, **kwargs):
             % (
                 "story_page_update_signal",
                 SearchIndexEntryTypes.STORY,
-                story.id,
+                story_id,
             )
         )
+    except Story.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "pages_update_signal",
+                SearchIndexEntryTypes.STORY,
+                story_id,
+            )
+        )
+        return
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance.id)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance_id)
+        logger.error(e)
+
+
+@shared_task(bind=True)
+def delete_pages(self, story_id, **kwargs):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        story = Story.objects.get(id=story_id)
+        page_text, page_translation = get_page_info(story)
+
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_STORY_INDEX, "story", story.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        story_doc = StoryDocument.get(id=existing_entry["_id"])
+        story_doc.update(page_text=page_text, page_translation=page_translation)
+    except ConnectionError:
+        logger.error(
+            ES_CONNECTION_ERROR % ("story_page", SearchIndexEntryTypes.STORY, story_id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "story_page_update_signal",
+                SearchIndexEntryTypes.STORY,
+                story_id,
+            )
+        )
+    except Story.DoesNotExist:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "pagess_update_signal",
+                SearchIndexEntryTypes.STORY,
+                story_id,
+            )
+        )
+        return
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, story_id)
         logger.error(e)
