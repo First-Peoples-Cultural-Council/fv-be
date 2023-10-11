@@ -41,6 +41,7 @@ def request_update_pages_index(sender, instance, **kwargs):
                 instance.id,
                 instance.story_id,
             ),
+            countdown=10,
             link_error=link_error_handler.s(),
             retry=True,
             retry_policy=ES_RETRY_POLICY,
