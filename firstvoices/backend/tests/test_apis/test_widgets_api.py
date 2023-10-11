@@ -139,9 +139,12 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response_data["count"] == default_widgets_count + 1
         assert len(response_data["results"]) == default_widgets_count + 1
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
+        # getting current widget from list of widgets
+        widget = list(
+            filter(lambda x: x["id"] == str(instance.id), response_data["results"])
+        )[0]
+
+        assert widget == self.get_expected_list_response_item(instance, site)
 
     @pytest.mark.django_db
     def test_list_minimal(self):
@@ -158,9 +161,12 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response_data["count"] == default_widgets_count + 1
         assert len(response_data["results"]) == default_widgets_count + 1
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
+        # getting current widget from list of widgets
+        widget = list(
+            filter(lambda x: x["id"] == str(instance.id), response_data["results"])
+        )[0]
+
+        assert widget == self.get_expected_list_response_item(instance, site)
 
     @pytest.mark.django_db
     def test_list_empty(self):
