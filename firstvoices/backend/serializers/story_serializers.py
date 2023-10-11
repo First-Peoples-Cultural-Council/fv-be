@@ -65,6 +65,8 @@ class StoryPageDetailSerializer(
     story = LinkedStorySerializer(read_only=True)
     site = LinkedSiteSerializer(read_only=True)
 
+    translation = serializers.CharField(required=False, allow_blank=True, default="")
+
     class Meta(StoryPageSummarySerializer.Meta):
         fields = (
             base_timestamp_fields
@@ -97,8 +99,14 @@ class StorySerializer(
     WritableControlledSiteContentSerializer,
 ):
     site = LinkedSiteSerializer(required=False, read_only=True)
-    pages = StoryPageSummarySerializer(many=True, read_only=True)
     visibility = WritableVisibilityField(required=True)
+
+    title_translation = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction_translation = serializers.CharField(required=False, allow_blank=True, default="")
+
+    pages = StoryPageSummarySerializer(many=True, read_only=True)
+
     notes = serializers.ListField(child=ArbitraryIdSerializer(), required=False)
     acknowledgements = serializers.ListField(
         child=ArbitraryIdSerializer(), required=False

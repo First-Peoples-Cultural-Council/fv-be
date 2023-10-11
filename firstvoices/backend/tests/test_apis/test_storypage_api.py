@@ -77,6 +77,23 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "ordering": 99,
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "text": "Title",
+            "ordering": 8,
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
+            "translation": "",
+            "notes": [],
+        }
+
+
     def create_original_instance_for_patch(self, site):
         audio = factories.AudioFactory.create(site=site)
         image = factories.ImageFactory.create(site=site)
@@ -323,6 +340,27 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         self.assert_created_instance(pk, data)
         self.assert_created_response(data, response_data)
 
+    @pytest.mark.django_db
+    def test_create_with_nulls_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=site.visibility)
+        data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id)),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_created_instance(pk, expected_data)
+        self.assert_created_response(expected_data, response_data)
+
     def assert_created_instance(self, pk, data):
         instance = StoryPage.objects.get(pk=pk)
         return self.assert_updated_instance(data, instance)
@@ -334,19 +372,22 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert actual_instance.text == expected_data["text"]
         assert actual_instance.translation == expected_data["translation"]
         assert actual_instance.ordering == expected_data["ordering"]
-        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
-        assert (
-            str(actual_instance.related_audio.first().id)
-            == expected_data["relatedAudio"][0]
-        )
-        assert (
-            str(actual_instance.related_images.first().id)
-            == expected_data["relatedImages"][0]
-        )
-        assert (
-            str(actual_instance.related_videos.first().id)
-            == expected_data["relatedVideos"][0]
-        )
+
+        assert len(expected_data["notes"]) == len(actual_instance.notes)
+        for i, n in enumerate(expected_data["notes"]):
+            assert actual_instance.notes[i] == n["text"]
+
+        assert len(actual_instance.related_audio.all()) == len(expected_data["relatedAudio"])
+        for i, item in enumerate(expected_data["relatedAudio"]):
+            assert str(actual_instance.related_audio.all()[i].id) == item
+
+        assert len(actual_instance.related_images.all()) == len(expected_data["relatedImages"])
+        for i, item in enumerate(expected_data["relatedImages"]):
+            assert str(actual_instance.related_images.all()[i].id) == item
+
+        assert len(actual_instance.related_videos.all()) == len(expected_data["relatedVideos"])
+        for i, item in enumerate(expected_data["relatedVideos"]):
+            assert str(actual_instance.related_videos.all()[i].id) == item
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["text"] == expected_data["text"]
@@ -355,17 +396,17 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         for i, note in enumerate(expected_data["notes"]):
             assert actual_response["notes"][i]["text"] == note["text"]
 
-        assert (
-            actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
-        )
-        assert (
-            actual_response["relatedVideos"][0]["id"]
-            == expected_data["relatedVideos"][0]
-        )
-        assert (
-            actual_response["relatedImages"][0]["id"]
-            == expected_data["relatedImages"][0]
-        )
+        assert len(actual_response["relatedAudio"]) == len(expected_data["relatedAudio"])
+        for i, a in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == a
+
+        assert len(actual_response["relatedVideos"]) == len(expected_data["relatedVideos"])
+        for i, v in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == v
+
+        assert len(actual_response["relatedImages"]) == len(expected_data["relatedImages"])
+        for i, img in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == img
 
     def add_related_objects(self, instance):
         # nothing to add

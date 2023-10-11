@@ -56,7 +56,7 @@ class SiteWidgetDetailSerializer(
         )
 
     def create(self, validated_data):
-        settings = validated_data.pop("widgetsettings_set")
+        settings = validated_data.pop("widgetsettings_set") if "widgetsettings_set" in validated_data else []
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
         ]

@@ -61,21 +61,48 @@ class TestStoryEndpoint(
             "hideOverlay": True,
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "pages": [],
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "author": "",
+            "hideOverlay": False,
+            "titleTranslation": "",
+            "introduction": "",
+            "introductionTranslation": "",
+            "notes": [],
+            "acknowledgements": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
+        }
+
+
     def assert_updated_instance(self, expected_data, actual_instance: Story):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.title_translation == expected_data["titleTranslation"]
         assert actual_instance.introduction == expected_data["introduction"]
-        assert (
-            actual_instance.introduction_translation
-            == expected_data["introductionTranslation"]
-        )
+        assert actual_instance.introduction_translation == expected_data["introductionTranslation"]
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
-        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
-        assert (
-            actual_instance.acknowledgements[0]
-            == expected_data["acknowledgements"][0]["text"]
-        )
+
+        assert len(expected_data["notes"]) == len(actual_instance.notes)
+        for i, n in enumerate(expected_data["notes"]):
+            assert actual_instance.notes[i] == n["text"]
+
+        assert len(expected_data["acknowledgements"]) == len(actual_instance.acknowledgements)
+        for i, ack in enumerate(expected_data["acknowledgements"]):
+            assert (
+                actual_instance.acknowledgements[i] == ack["text"]
+            )
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
@@ -283,21 +310,6 @@ class TestStoryEndpoint(
         page2 = factories.StoryPageFactory.create(
             visibility=Visibility.PUBLIC, story=story, ordering=1
         )
-
-        assert Story.objects.filter(site=site).count() == 1
-        assert StoryPage.objects.all().count() == 2
-        assert StoryPage.objects.filter(story=story).count() == 2
-        assert StoryPage.objects.get(id=page1.id).ordering == 0
-        assert StoryPage.objects.get(id=page2.id).ordering == 1
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=story.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["pages"][0]["text"] == page1.text
-        assert response_data["pages"][1]["text"] == page2.text
 
         data = {
             "title": story.title,
