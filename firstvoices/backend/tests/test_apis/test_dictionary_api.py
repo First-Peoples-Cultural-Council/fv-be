@@ -1,3 +1,4 @@
+import copy
 import json
 
 import pytest
@@ -53,8 +54,8 @@ class TestDictionaryEndpoint(
             "visibility": "public",
             "customOrder": "⚑W⚑o⚑r⚑d",
             "categories": [],
-            "excludeFromGames": False,
-            "excludeFromKids": False,
+            "excludeFromGames": True,
+            "excludeFromKids": True,
             "acknowledgements": [],
             "alternateSpellings": [],
             "notes": [],
@@ -67,6 +68,34 @@ class TestDictionaryEndpoint(
             "relatedImages": list(map(lambda x: str(x.id), related_images)),
             "relatedVideos": list(map(lambda x: str(x.id), related_videos)),
         }
+
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Word",
+            "type": "word",
+            "visibility": "public",
+            "site": str(site.id),
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "customOrder": "⚑W⚑o⚑r⚑d",
+            "categories": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "acknowledgements": [],
+            "alternateSpellings": [],
+            "notes": [],
+            "translations": [],
+            "partOfSpeech": None,
+            "pronunciations": [],
+            "relatedDictionaryEntries": [],
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
+        }
+
 
     def add_related_objects(self, instance):
         factories.AcknowledgementFactory.create(dictionary_entry=instance)
