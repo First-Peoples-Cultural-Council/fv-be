@@ -150,6 +150,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         reason="Test is same as test_list_permissions. Removed the code to reduce duplication."
     )
     def test_list_minimal(self):
+        # Skipping test as it is same as the test_list_permissions test above.
         pass
 
     @pytest.mark.django_db
