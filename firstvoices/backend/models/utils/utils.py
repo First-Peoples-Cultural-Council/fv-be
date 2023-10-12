@@ -2,12 +2,8 @@ import json
 from os import path
 
 from backend.models.category import Category
+from backend.models.constants import WIDGET_ALPHABET, WIDGET_STATS, WIDGET_WOTD
 from backend.models.widget import SiteWidget
-
-# constants for the default widgets, subset of the complete list of widgets
-WIDGET_ALPHABET = "WIDGET_ALPHABET"
-WIDGET_STATS = "WIDGET_STATS"
-WIDGET_WOTD = "WIDGET_WOTD"
 
 
 def load_data(json_file):

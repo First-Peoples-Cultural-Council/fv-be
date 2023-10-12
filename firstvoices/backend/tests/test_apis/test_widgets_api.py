@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import WIDGET_TEXT, AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, WidgetFormats, WidgetSettings
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
@@ -27,7 +27,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         return {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": list(map(lambda x: {"key": x.key, "value": x.value}, settings)),
         }
@@ -255,7 +255,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         data = {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [
                 {"key": "key: 000", "value": "value: 000"},
@@ -293,7 +293,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         data = {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [],
         }
@@ -328,7 +328,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         data = {
             "title": "Title Updated",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [
                 {"key": "key: 000", "value": "value: 000"},
@@ -361,7 +361,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         data_no_settings = {
             "title": "Title Updated Two",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [],
         }

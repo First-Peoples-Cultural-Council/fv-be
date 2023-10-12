@@ -9,6 +9,12 @@ CATEGORY_POS_MAX_TITLE_LENGTH = 75  # Title length for parts of speech and categ
 MAX_FILEFIELD_LENGTH = 500
 MAX_NOTE_LENGTH = 500
 
+# constants for the default widgets, subset of the complete list of widgets
+WIDGET_ALPHABET = "WIDGET_ALPHABET"
+WIDGET_STATS = "WIDGET_STATS"
+WIDGET_WOTD = "WIDGET_WOTD"
+WIDGET_TEXT = "WIDGET_TEXT"
+
 
 class Visibility(models.IntegerChoices):
     # enum intentionally has gaps to allow future changes to keep sequential order

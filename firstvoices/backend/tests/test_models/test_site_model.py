@@ -1,9 +1,9 @@
 import pytest
 from django.db import IntegrityError
 
-from backend.models.constants import AppRole
+from backend.models.constants import WIDGET_ALPHABET, WIDGET_STATS, WIDGET_WOTD, AppRole
 from backend.models.sites import Site
-from backend.models.utils import WIDGET_ALPHABET, WIDGET_STATS, WIDGET_WOTD, load_data
+from backend.models.utils import load_data
 from backend.tests import factories
 from backend.tests.factories import get_app_admin
 
