@@ -44,7 +44,7 @@ class TestContactUsEndpoint(BaseApiTest, FormDataMixin):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_anonymous(self):
+    def test_contact_us_anonymous(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
         user = factories.get_anonymous_user()
@@ -55,7 +55,7 @@ class TestContactUsEndpoint(BaseApiTest, FormDataMixin):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_non_member_user(self):
+    def test_contact_us_non_member_user(self):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -77,7 +77,7 @@ class TestContactUsEndpoint(BaseApiTest, FormDataMixin):
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
-    def test_member_user(self, role):
+    def test_contact_us_member_user(self, role):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.MEMBERS,
