@@ -134,6 +134,27 @@ class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
         fields = ("visibility",)
 
 
+class UserDetailFieldMixin(metaclass=serializers.SerializerMetaclass):
+    """
+    A mixin for models to display user details beyond just the email address.
+    """
+
+    user = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_user(instance):
+        return {
+            "id": instance.user.id,
+            "email": instance.user.email,
+            "first_name": instance.user.first_name,
+            "last_name": instance.user.last_name,
+        }
+
+    class Meta:
+        fields = ("user",)
+
+
 class LinkedSiteSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.HyperlinkedModelSerializer
 ):
@@ -231,4 +252,3 @@ class ArbitraryIdSerializer(serializers.CharField):
             return super().to_internal_value(text)
         except KeyError as e:
             raise ValidationError(f"Expected an object with key {e}")
-
