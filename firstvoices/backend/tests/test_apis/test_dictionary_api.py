@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import (
     Acknowledgement,
@@ -36,7 +37,13 @@ class TestDictionaryEndpoint(
     model = DictionaryEntry
 
     def create_minimal_instance(self, site, visibility):
-        return factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+        entry = factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+        factories.AcknowledgementFactory.create(dictionary_entry=entry)
+        factories.AlternateSpellingFactory.create(dictionary_entry=entry)
+        factories.NoteFactory.create(dictionary_entry=entry)
+        factories.PronunciationFactory.create(dictionary_entry=entry)
+        factories.TranslationFactory.create(dictionary_entry=entry)
+        return entry
 
     def get_valid_data(self, site=None):
         related_images = []
@@ -48,6 +55,8 @@ class TestDictionaryEndpoint(
             related_videos.append(factories.VideoFactory.create(site=site))
             related_audio.append(factories.AudioFactory.create(site=site))
 
+        pos = factories.PartOfSpeechFactory.create()
+
         return {
             "title": "Word",
             "type": "word",
@@ -56,12 +65,12 @@ class TestDictionaryEndpoint(
             "categories": [],
             "excludeFromGames": True,
             "excludeFromKids": True,
-            "acknowledgements": [],
-            "alternateSpellings": [],
-            "notes": [],
-            "translations": [],
-            "partOfSpeech": None,
-            "pronunciations": [],
+            "acknowledgements": [{"text": "acknowledgements 1"}],
+            "alternateSpellings": [{"text": "alternateSpellings 1"}],
+            "notes": [{"text": "notes 1"}],
+            "translations": [{"text": "translations 1"}],
+            "partOfSpeech": str(pos.id),
+            "pronunciations": [{"text": "pronunciations 1"}],
             "site": str(site.id),
             "relatedDictionaryEntries": [],
             "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
@@ -96,7 +105,6 @@ class TestDictionaryEndpoint(
             "relatedVideos": [],
         }
 
-
     def add_related_objects(self, instance):
         factories.AcknowledgementFactory.create(dictionary_entry=instance)
         factories.AlternateSpellingFactory.create(dictionary_entry=instance)
@@ -121,14 +129,10 @@ class TestDictionaryEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
-        acknowledgements = Acknowledgement.objects.filter(
-            dictionary_entry=actual_instance
-        )
+        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=actual_instance)
         assert len(acknowledgements) == len(expected_data["acknowledgements"])
 
-        alternate_spellings = AlternateSpelling.objects.filter(
-            dictionary_entry=actual_instance
-        )
+        alternate_spellings = AlternateSpelling.objects.filter(dictionary_entry=actual_instance)
         assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
 
         notes = Note.objects.filter(dictionary_entry=actual_instance)
@@ -200,12 +204,31 @@ class TestDictionaryEndpoint(
             "categories": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "acknowledgements": [],
-            "alternateSpellings": [],
-            "notes": [],
-            "translations": [],
-            "partOfSpeech": None,
-            "pronunciations": [],
+            "acknowledgements": [{
+                "id": str(x.id),
+                "text": x.text
+            } for x in instance.acknowledgement_set.all()],
+            "alternateSpellings": [{
+                "id": str(x.id),
+                "text": x.text
+            } for x in instance.alternatespelling_set.all()],
+            "notes": [{
+                "id": str(x.id),
+                "text": x.text
+            } for x in instance.note_set.all()],
+            "translations": [{
+                "id": str(x.id),
+                "text": x.text
+            } for x in instance.translation_set.all()],
+            "partOfSpeech": {
+                "id": str(instance.part_of_speech.id),
+                "title": instance.part_of_speech.title,
+                "parent": None
+            } if instance.part_of_speech else None,
+            "pronunciations": [{
+                "id": str(x.id),
+                "text": x.text
+            } for x in instance.pronunciation_set.all()],
             "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
@@ -773,7 +796,7 @@ class TestDictionaryEndpoint(
 
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
-        part_of_speech = factories.PartOfSpeechFactory.create()
+        part_of_speech = backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
         related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         data = {
@@ -946,7 +969,7 @@ class TestDictionaryEndpoint(
 
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
-        part_of_speech = factories.PartOfSpeechFactory.create()
+        part_of_speech = backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
         related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         entry = factories.DictionaryEntryFactory.create(

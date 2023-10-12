@@ -129,21 +129,27 @@ class DictionaryEntryDetailSerializer(
         many=True,
         required=False,
         source="acknowledgement_set",
+        default=[]
     )
     alternate_spellings = AlternateSpellingSerializer(
-        many=True, required=False, source="alternatespelling_set"
+        many=True, required=False, source="alternatespelling_set",
+        default=[]
     )
-    notes = NoteSerializer(many=True, required=False, source="note_set")
+    notes = NoteSerializer(many=True, required=False, source="note_set",
+        default=[])
     translations = TranslationSerializer(
-        many=True, required=False, source="translation_set"
+        many=True, required=False, source="translation_set",
+        default=[]
     )
     part_of_speech = WritablePartsOfSpeechSerializer(
         queryset=part_of_speech.PartOfSpeech.objects.all(),
         required=False,
         allow_null=True,
+        default=None
     )
     pronunciations = PronunciationSerializer(
-        many=True, required=False, source="pronunciation_set"
+        many=True, required=False, source="pronunciation_set",
+        default=[]
     )
 
     logger = logging.getLogger(__name__)
