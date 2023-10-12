@@ -12,7 +12,7 @@ from drf_spectacular.utils import (
     extend_schema_view,
     inline_serializer,
 )
-from rest_framework import mixins, parsers, serializers
+from rest_framework import mixins, serializers
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -49,10 +49,6 @@ class ContactUsView(
 ):
     http_method_names = ["post"]
     serializer_class = None
-    parser_classes = [
-        parsers.FormParser,
-        parsers.MultiPartParser,
-    ]
 
     def get_queryset(self):
         return self.get_validated_site()

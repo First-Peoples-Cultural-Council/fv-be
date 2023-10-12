@@ -1,21 +1,24 @@
+import json
+
 import pytest
 from django.core import mail
 from django.urls import reverse
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest
-from backend.tests.test_apis.base_media_test import FormDataMixin
+from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
 
 
-class TestContactUsEndpoint(BaseApiTest, FormDataMixin):
+class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
+    content_type = "application/json"
+
     def get_endpoint(self, site_slug):
         return reverse(
             "api:contact-us-list", current_app=self.APP_NAME, args=[site_slug]
         )
 
     def get_valid_data(self):
-        return self.format_upload_data(
+        return json.dumps(
             {
                 "name": "Test User",
                 "email": "testuser@example.com",
