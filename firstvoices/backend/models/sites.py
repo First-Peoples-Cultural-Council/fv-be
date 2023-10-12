@@ -11,7 +11,7 @@ from backend.permissions.managers import PermissionsManager
 
 from . import Image
 from .base import BaseModel, BaseSiteContentModel
-from .constants import Role, Visibility
+from .constants import MAX_EMAIL_LENGTH, Role, Visibility
 from .media import Video
 from .utils import load_default_categories
 from .widget import SiteWidgetList
@@ -135,7 +135,7 @@ class Site(BaseModel):
     contact_email_old = models.EmailField(null=True, blank=True)
 
     contact_email = ArrayField(
-        models.EmailField(max_length=254), blank=True, default=list
+        models.EmailField(max_length=MAX_EMAIL_LENGTH), blank=True, default=list
     )
 
     contact_users = models.ManyToManyField(get_user_model(), blank=True)

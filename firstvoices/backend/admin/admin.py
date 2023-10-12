@@ -17,7 +17,7 @@ from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 
 @admin.register(Site)
-class SiteAdmin(BaseAdmin, DynamicArrayMixin):
+class SiteAdmin(DynamicArrayMixin, BaseAdmin):
     list_display = (
         "title",
         "slug",
