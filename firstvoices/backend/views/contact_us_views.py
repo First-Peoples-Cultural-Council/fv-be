@@ -85,7 +85,8 @@ class ContactUsView(
                     raise ContactUsError()
                 else:
                     logger.warning(
-                        f'No emails found in the contact_email and contact_users fields found on site "{site.title}".'
+                        f'No emails found in the contact_email and contact_users fields found on site "{site.title}". '
+                        "The fallback email will be used."
                     )
 
                     # Validate that the default emails are a list of strings
