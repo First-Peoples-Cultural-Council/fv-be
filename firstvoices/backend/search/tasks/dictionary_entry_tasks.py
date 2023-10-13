@@ -22,8 +22,8 @@ from backend.search.utils.object_utils import (
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-@shared_task(bind=True)
-def update_dictionary_entry_index(self, instance_id, **kwargs):
+@shared_task
+def update_dictionary_entry_index(instance_id, **kwargs):
     # Add document to es index
     try:
         instance = DictionaryEntry.objects.get(id=instance_id)
@@ -89,16 +89,6 @@ def update_dictionary_entry_index(self, instance_id, **kwargs):
             instance_id,
         )
         logger.warning(e)
-    except DictionaryEntry.DoesNotExist as e:
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.warning(
-            ES_NOT_FOUND_ERROR,
-            "get",
-            SearchIndexEntryTypes.DICTIONARY_ENTRY,
-            instance_id,
-        )
-        logger.warning(e)
-        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -133,8 +123,8 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-@shared_task(bind=True)
-def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
+@shared_task
+def update_translation(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
@@ -186,8 +176,8 @@ def update_translation(self, instance_id, dictionary_entry_id, **kwargs):
         logger.error(e)
 
 
-@shared_task(bind=True)
-def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
+@shared_task
+def update_notes(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.
@@ -239,8 +229,8 @@ def update_notes(self, instance_id, dictionary_entry_id, **kwargs):
         logger.error(e)
 
 
-@shared_task(bind=True)
-def update_acknowledgements(self, instance_id, dictionary_entry_id, **kwargs):
+@shared_task
+def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set dictionary entry and sub-model text. If it doesn't exist due to deletion, warn and return.

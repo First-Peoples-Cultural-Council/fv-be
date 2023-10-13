@@ -16,8 +16,8 @@ from backend.search.utils.object_utils import get_lyrics, get_object_from_index
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-@shared_task(bind=True)
-def update_song_index(self, instance_id, **kwargs):
+@shared_task
+def update_song_index(instance_id, **kwargs):
     # add song to es index
     try:
         instance = Song.objects.get(id=instance_id)
@@ -80,16 +80,6 @@ def update_song_index(self, instance_id, **kwargs):
             instance_id,
         )
         logger.warning(e)
-    except Song.DoesNotExist as e:
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.warning(
-            ES_NOT_FOUND_ERROR,
-            "get",
-            SearchIndexEntryTypes.SONG,
-            instance_id,
-        )
-        logger.warning(e)
-        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -119,8 +109,8 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-@shared_task(bind=True)
-def update_lyrics(self, instance_id, song_id, **kwargs):
+@shared_task
+def update_lyrics(instance_id, song_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
     # Set song and lyric text. If it doesn't exist due to deletion, warn and return.
