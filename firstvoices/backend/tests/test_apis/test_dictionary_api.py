@@ -239,7 +239,6 @@ class TestDictionaryEndpoint(
         audio = factories.AudioFactory.create(site=site)
         image = factories.ImageFactory.create(site=site)
         video = factories.VideoFactory.create(site=site)
-        category = factories.CategoryFactory.create(site=site)
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=site,
             title="Title",
@@ -250,13 +249,23 @@ class TestDictionaryEndpoint(
             related_images=(image,),
             related_videos=(video,),
         )
+
+        factories.AcknowledgementFactory.create(dictionary_entry=dictionary_entry)
+        factories.AlternateSpellingFactory.create(dictionary_entry=dictionary_entry)
+        factories.NoteFactory.create(dictionary_entry=dictionary_entry)
+        factories.PronunciationFactory.create(dictionary_entry=dictionary_entry)
+        factories.TranslationFactory.create(dictionary_entry=dictionary_entry)
+
         entry_two = factories.DictionaryEntryFactory.create(site=site)
         factories.DictionaryEntryLinkFactory.create(
             from_dictionary_entry=dictionary_entry, to_dictionary_entry=entry_two
         )
+
+        category = factories.CategoryFactory.create(site=site)
         factories.DictionaryEntryCategoryFactory.create(
             category=category, dictionary_entry=dictionary_entry
         )
+
         character = factories.CharacterFactory.create(site=site)
         factories.DictionaryEntryRelatedCharacterFactory.create(
             character=character, dictionary_entry=dictionary_entry
@@ -293,6 +302,21 @@ class TestDictionaryEndpoint(
         self.assert_patch_instance_original_fields_related_media(
             original_instance, updated_instance
         )
+
+        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=updated_instance)
+        assert len(acknowledgements) == len(original_instance.acknowledgement_set.all())
+
+        alternate_spellings = AlternateSpelling.objects.filter(dictionary_entry=updated_instance)
+        assert len(alternate_spellings) == len(original_instance.alternatespelling_set.all())
+
+        notes = Note.objects.filter(dictionary_entry=updated_instance)
+        assert len(notes) == len(original_instance.note_set.all())
+
+        translations = Translation.objects.filter(dictionary_entry=updated_instance)
+        assert len(translations) == len(original_instance.translation_set.all())
+
+        pronunciations = Pronunciation.objects.filter(dictionary_entry=updated_instance)
+        assert len(pronunciations) == len(original_instance.pronunciation_set.all())
 
     def assert_patch_instance_updated_fields(
         self, data, updated_instance: DictionaryEntry
