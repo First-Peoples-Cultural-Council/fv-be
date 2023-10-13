@@ -228,9 +228,13 @@ FIXTURES_DIR = BASE_DIR / "backend" / "fixtures"
 
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "America/Vancouver"
-CELERY_BROKER_URL = os.getenv(
-    "CELERY_BROKER_URL", "amqp://rabbitmq:rabbitmq@localhost:5672//fv"
-)
+
+if not DEBUG:
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+else:
+    CELERY_BROKER_URL = os.getenv(
+        "CELERY_BROKER_URL", "amqp://rabbitmq:rabbitmq@localhost:5672//fv"
+    )
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost/0")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_ALWAYS_EAGER = True
