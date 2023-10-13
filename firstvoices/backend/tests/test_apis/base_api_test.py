@@ -419,6 +419,15 @@ class WriteApiTestMixin:
         """Returns a valid data object suitable for create/update requests"""
         raise NotImplementedError
 
+    def get_valid_data_with_nulls(self, site=None):
+        """Returns a valid data object with all optional fields omitted (including strings that can be blank),
+        suitable for create/update requests"""
+        raise NotImplementedError
+
+    def add_expected_defaults(self, data):
+        """Returns a data object with default values filled in for all non-required fields"""
+        raise NotImplementedError
+
     def format_upload_data(self, data):
         """Subclasses can override this to support something other than json"""
         return json.dumps(data)
@@ -491,6 +500,27 @@ class SiteContentCreateApiTestMixin:
 
         self.assert_created_instance(pk, data)
         self.assert_created_response(data, response_data)
+
+    @pytest.mark.django_db
+    def test_create_with_nulls_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_created_instance(pk, expected_data)
+        self.assert_created_response(expected_data, response_data)
 
     def assert_created_instance(self, pk, data):
         raise NotImplementedError()
@@ -637,6 +667,29 @@ class SiteContentUpdateApiTestMixin:
 
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
+
+    @pytest.mark.django_db
+    def test_update_with_nulls_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
+        self.assert_update_response(expected_data, response_data)
 
 
 class ControlledSiteContentUpdateApiTestMixin:

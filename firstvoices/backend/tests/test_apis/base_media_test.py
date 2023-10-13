@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import sys
@@ -259,6 +260,24 @@ class BaseMediaApiTest(
             "original": self.get_sample_file(
                 self.sample_filename, self.sample_filetype
             ),
+        }
+
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "A title for the media",
+            "original": self.get_sample_file(
+                self.sample_filename, self.sample_filetype
+            ),
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "description": "",
+            "acknowledgement": "",
+            "isShared": False,
+            "excludeFromGames": False,
+            "excludeFromKids": False,
         }
 
     def assert_created_instance(self, pk, data):

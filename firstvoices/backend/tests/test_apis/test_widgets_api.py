@@ -27,9 +27,23 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         return {
             "title": "Title",
             "visibility": "Public",
-            "type": WIDGET_TEXT,
-            "format": "Default",
+            "type": "WIDGET_CUSTOM",
+            "format": WidgetFormats.FULL.label,
             "settings": list(map(lambda x: {"key": x.key, "value": x.value}, settings)),
+        }
+
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "type": "WIDGET_TESTING",
+            "format": WidgetFormats.CENTER.label,
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "settings": []
         }
 
     def add_related_objects(self, instance):

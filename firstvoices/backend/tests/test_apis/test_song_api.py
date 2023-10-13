@@ -61,6 +61,42 @@ class TestSongEndpoint(
             "excludeFromKids": False,
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "lyrics": [
+                {
+                    "text": "First lyrics page",
+                    "translation": "Translated 1st",
+                },
+                {
+                    "text": "Second lyrics page",
+                    "translation": "Translated 2nd",
+                },
+                {
+                    "text": "Third lyrics page",
+                    "translation": "Translated 3rd",
+                },
+            ],
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "hideOverlay": False,
+            "titleTranslation": "",
+            "introduction": "",
+            "introductionTranslation": "",
+            "notes": [],
+            "acknowledgements": [],
+            "excludeFromGames": False,
+            "excludeFromKids": False,
+            "relatedAudio": [],
+            "relatedImages": [],
+            "relatedVideos": [],
+        }
+
     def assert_updated_instance(self, expected_data, actual_instance: Song):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.title_translation == expected_data["titleTranslation"]
@@ -72,10 +108,16 @@ class TestSongEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
         assert actual_instance.hide_overlay == expected_data["hideOverlay"]
-        assert actual_instance.notes[0] == expected_data["notes"][0]["text"]
-        assert (
-            actual_instance.acknowledgements[0] == expected_data["acknowledgements"][0]["text"]
-        )
+
+        assert len(expected_data["notes"]) == len(actual_instance.notes)
+        for i, n in enumerate(expected_data["notes"]):
+            assert actual_instance.notes[i] == n["text"]
+
+        assert len(expected_data["acknowledgements"]) == len(actual_instance.acknowledgements)
+        for i, ack in enumerate(expected_data["acknowledgements"]):
+            assert (
+                actual_instance.acknowledgements[i] == ack["text"]
+            )
 
         actual_lyrics = Lyric.objects.filter(song__id=actual_instance.id)
 
@@ -87,20 +129,23 @@ class TestSongEndpoint(
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
-        assert (
-            actual_response["lyrics"][0]["text"] == expected_data["lyrics"][0]["text"]
-        )
-        assert (
-            actual_response["relatedAudio"][0]["id"] == expected_data["relatedAudio"][0]
-        )
-        assert (
-            actual_response["relatedVideos"][0]["id"]
-            == expected_data["relatedVideos"][0]
-        )
-        assert (
-            actual_response["relatedImages"][0]["id"]
-            == expected_data["relatedImages"][0]
-        )
+
+        assert len(actual_response["lyrics"]) == len(expected_data["lyrics"])
+        for i, l in enumerate(expected_data["lyrics"]):
+            assert actual_response["lyrics"][i]["text"] ==l["text"]
+            assert actual_response["lyrics"][i]["translation"] == l["translation"]
+
+        assert len(actual_response["relatedAudio"]) == len(expected_data["relatedAudio"])
+        for i, a in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == a
+
+        assert len(actual_response["relatedVideos"]) == len(expected_data["relatedVideos"])
+        for i, v in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == v
+
+        assert len(actual_response["relatedImages"]) == len(expected_data["relatedImages"])
+        for i, img in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == img
 
     def assert_created_instance(self, pk, data):
         instance = Song.objects.get(pk=pk)

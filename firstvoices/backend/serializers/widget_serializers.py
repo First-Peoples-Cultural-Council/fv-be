@@ -56,7 +56,7 @@ class SiteWidgetDetailSerializer(
         )
 
     def create(self, validated_data):
-        settings = validated_data.pop("widgetsettings_set")
+        settings = validated_data.pop("widgetsettings_set") if "widgetsettings_set" in validated_data else []
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
         ]
@@ -130,12 +130,13 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
         new_site_widget_list = SiteWidgetList.objects.create(site=site)
 
         # Create new SiteWidgetListOrder objects for each widget in the validated data.
-        SiteWidgetListSerializer.create_site_widget_list_order_instances(
-            validated_data["widgets"],
-            new_site_widget_list,
-            self.context["request"].user,
-            site,
-        )
+        if "widgets" in validated_data:
+            SiteWidgetListSerializer.create_site_widget_list_order_instances(
+                validated_data["widgets"],
+                new_site_widget_list,
+                self.context["request"].user,
+                site,
+            )
 
         validated_data["widgets"] = new_site_widget_list
 
@@ -152,11 +153,12 @@ class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixi
             item.delete()
 
         # Create new SiteWidgetListOrder objects for each widget in the validated data.
-        SiteWidgetListSerializer.create_site_widget_list_order_instances(
-            validated_data["widgets"],
-            new_site_widget_list,
-            self.context["request"].user,
-            site,
-        )
+        if "widgets" in validated_data:
+            SiteWidgetListSerializer.create_site_widget_list_order_instances(
+                validated_data["widgets"],
+                new_site_widget_list,
+                self.context["request"].user,
+                site,
+            )
 
         return SiteWidgetList.objects.get(id=instance.id)
