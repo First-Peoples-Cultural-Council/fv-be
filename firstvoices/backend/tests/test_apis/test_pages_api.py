@@ -173,7 +173,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     )
     @pytest.mark.django_db
     def test_page_permissions(self, user_role, expected_visible_pages):
-        user = factories.UserFactory.create(id=1)
+        user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
