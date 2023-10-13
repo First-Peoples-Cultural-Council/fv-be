@@ -15,5 +15,9 @@ class ElasticSearchConnectionError(APIException):
 
 class ContactUsError(APIException):
     status_code = 500
-    default_detail = "An error occurred while trying to send the email."
+    default_detail = (
+        "We have encountered an unexpected error while trying to send the email. Please report this to our "
+        "Help Desk."
+    )
+
     default_code = "contact_us_error"
