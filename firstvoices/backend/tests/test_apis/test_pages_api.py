@@ -200,9 +200,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         widget_list = factories.SiteWidgetListWithThreeWidgetsFactory.create(site=site)
 
         # Get the widgets from the widget list
-        widget_one = widget_list.widgets.all()[0]
-        widget_two = widget_list.widgets.all()[1]
-        widget_three = widget_list.widgets.all()[2]
+        widget_one = widget_list.widgets.order_by("title").all()[0]
+        widget_two = widget_list.widgets.order_by("title").all()[1]
+        widget_three = widget_list.widgets.order_by("title").all()[2]
         update_widget_sites(site, [widget_one, widget_two, widget_three])
 
         site_page = factories.SitePageFactory.create(
