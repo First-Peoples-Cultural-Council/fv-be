@@ -17,8 +17,8 @@ from backend.search.utils.object_utils import get_object_from_index
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-@shared_task(bind=True)
-def update_media_index(self, instance_id, media_type, **kwargs):
+@shared_task
+def update_media_index(instance_id, media_type, **kwargs):
     # get object instance
     media_model_map = {
         "audio": Audio,
@@ -79,16 +79,6 @@ def update_media_index(self, instance_id, media_type, **kwargs):
             instance_id,
         )
         logger.warning(e)
-    except Image.DoesNotExist as e:  # cover all media types
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.warning(
-            ES_NOT_FOUND_ERROR,
-            "get",
-            SearchIndexEntryTypes.MEDIA,
-            instance_id,
-        )
-        logger.warning(e)
-        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)

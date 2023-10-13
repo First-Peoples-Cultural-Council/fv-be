@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -18,14 +19,16 @@ def request_update_media_index(sender, instance, **kwargs):
     if any(
         model.objects.filter(id=instance.id).exists() for model in [Audio, Image, Video]
     ):
-        update_media_index.apply_async(
-            (
-                instance.id,
-                media_type,
-            ),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy=ES_RETRY_POLICY,
+        transaction.on_commit(
+            lambda: update_media_index.apply_async(
+                (
+                    instance.id,
+                    media_type,
+                ),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
         )
 
 
@@ -34,4 +37,6 @@ def request_update_media_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=Image)
 @receiver(post_delete, sender=Video)
 def request_delete_from_index(sender, instance, **kwargs):
-    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
+    transaction.on_commit(
+        delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
+    )
