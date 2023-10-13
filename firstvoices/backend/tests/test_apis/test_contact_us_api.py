@@ -11,13 +11,14 @@ from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
 
 class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     content_type = "application/json"
+    contact_email = "contact@email.com"
 
     def get_endpoint(self, site_slug):
         return reverse(
             "api:contact-us-list", current_app=self.APP_NAME, args=[site_slug]
         )
 
-    def get_valid_data(self):
+    def get_valid_data(self, site=None):
         return json.dumps(
             {
                 "name": "Test User",
@@ -62,7 +63,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemail@email.com"],
+            contact_email=[self.contact_email],
         )
 
         user = factories.get_non_member_user()
@@ -84,7 +85,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.MEMBERS,
-            contact_email=["contactemail@email.com"],
+            contact_email=[self.contact_email],
         )
 
         user = factories.UserFactory.create()
@@ -126,7 +127,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemail@email.com"],
+            contact_email=[self.contact_email],
         )
         factories.AppJsonFactory.create(
             key="contact_us_excluded_words", json=["restricted"]
@@ -150,7 +151,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemail@email.com"],
+            contact_email=[self.contact_email],
         )
 
         user = factories.get_non_member_user()
