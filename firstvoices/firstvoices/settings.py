@@ -25,11 +25,15 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s"
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG: bool = os.environ.get("DEBUG_DISABLE") is None
+
+if not DEBUG:
+    # SECURITY WARNING: keep the secret key used in production secret!
+    SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+else:
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",
+                                "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s")
 
 ALLOWED_HOSTS = [
     os.environ.get("HOST_HEADER"),
