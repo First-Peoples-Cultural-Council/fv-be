@@ -16,7 +16,15 @@ class TestJoinRequestEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
 
     model = JoinRequest
 
-    def get_expected_standard_fields(self, instance, site):
+    def create_minimal_instance(self, site, visibility=None):
+        return factories.JoinRequestFactory(
+            site=site,
+            status=JoinRequestStatus.PENDING,
+            reason=JoinRequestReason.OTHER,
+            reason_note="Test reason note",
+        )
+
+    def get_expected_response(self, instance, site):
         return {
             "created": instance.created.astimezone().isoformat(),
             "createdBy": instance.created_by.email,
@@ -32,20 +40,6 @@ class TestJoinRequestEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
                 "visibility": instance.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
-        }
-
-    def create_minimal_instance(self, site, visibility=None):
-        return factories.JoinRequestFactory(
-            site=site,
-            status=JoinRequestStatus.PENDING,
-            reason=JoinRequestReason.OTHER,
-            reason_note="Test reason note",
-        )
-
-    def get_expected_response(self, instance, site):
-        standard_fields = self.get_expected_standard_fields(instance, site)
-        return {
-            **standard_fields,
             "user": {
                 "id": int(instance.user.id),
                 "email": instance.user.email,
