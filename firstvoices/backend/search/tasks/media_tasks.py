@@ -4,8 +4,8 @@ from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Index
 
-from backend.models import Image
 from backend.models.constants import Visibility
+from backend.models.media import Audio, Image, Video
 from backend.search.documents import MediaDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
@@ -19,9 +19,17 @@ from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 @shared_task(bind=True)
 def update_media_index(self, instance_id, media_type, **kwargs):
+    # get object instance
+    media_model_map = {
+        "audio": Audio,
+        "image": Image,
+        "video": Video,
+    }
+    model_class = media_model_map[media_type]
+    instance = model_class.objects.get(id=instance_id)
+
     # Add media to ES index
     try:
-        instance = Image.objects.get(id=instance_id)
         existing_entry = get_object_from_index(
             ELASTICSEARCH_MEDIA_INDEX, "media", instance.id
         )
@@ -35,7 +43,7 @@ def update_media_index(self, instance_id, media_type, **kwargs):
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=Visibility.PUBLIC,
                 title=instance.title,
-                type="image",  # todo: media type
+                type=media_type,
                 filename=instance.original.content.name,
                 description=instance.description,
             )
@@ -48,7 +56,7 @@ def update_media_index(self, instance_id, media_type, **kwargs):
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=Visibility.PUBLIC,
                 title=instance.title,
-                type="image",  # todo: media type
+                type=media_type,
                 filename=instance.original.content.name,
                 description=instance.description,
             )
