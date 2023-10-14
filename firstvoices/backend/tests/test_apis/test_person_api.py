@@ -30,6 +30,17 @@ class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
             "bio": "Cool new biography",
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "name": "Cool new name",
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "bio": "",
+        }
+
     def assert_updated_instance(self, expected_data, actual_instance):
         assert actual_instance.name == expected_data["name"]
         assert actual_instance.bio == expected_data["bio"]

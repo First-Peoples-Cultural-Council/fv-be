@@ -7,6 +7,7 @@ from backend.models.base import (
     BaseModel,
     BaseSiteContentModel,
 )
+from backend.models.constants import WIDGET_TEXT
 from backend.permissions import predicates
 
 
@@ -30,7 +31,7 @@ class Widget(BaseModel):
         }
 
     title = models.CharField(max_length=225)
-    widget_type = models.CharField(max_length=255, default="WIDGET_TEXT")
+    widget_type = models.CharField(max_length=255, default=WIDGET_TEXT)
     format = models.IntegerField(
         choices=WidgetFormats.choices, default=WidgetFormats.DEFAULT
     )

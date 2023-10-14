@@ -2,7 +2,7 @@ import factory
 from django.utils.timezone import datetime
 from factory.django import DjangoModelFactory
 
-from backend.models import PartOfSpeech, dictionary
+from backend.models import dictionary
 from backend.tests.factories.access import SiteFactory, UserFactory
 from backend.tests.factories.character_factories import CharacterFactory
 from backend.tests.factories.dictionary_entry import DictionaryEntryFactory
@@ -10,6 +10,7 @@ from backend.tests.factories.dictionary_entry import DictionaryEntryFactory
 
 class DictionaryModelFactory(DjangoModelFactory):
     dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
+    text = factory.Sequence(lambda n: "Sample text %03d" % n)
 
 
 class AcknowledgementFactory(DictionaryModelFactory):
@@ -69,15 +70,6 @@ class DictionaryEntryRelatedCharacterFactory(DjangoModelFactory):
 
     dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
     character = factory.SubFactory(CharacterFactory)
-
-
-class PartOfSpeechFactory(DjangoModelFactory):
-    class Meta:
-        model = PartOfSpeech
-
-    title = factory.Sequence(lambda n: "Part of Speech %03d" % n)
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
 
 
 class WordOfTheDayFactory(DjangoModelFactory):

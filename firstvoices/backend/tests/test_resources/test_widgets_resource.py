@@ -3,6 +3,7 @@ import uuid
 import pytest
 import tablib
 
+from backend.models.utils import WIDGET_TEXT
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 from backend.tests.factories import SiteFactory, SiteWidgetFactory
@@ -23,9 +24,9 @@ class TestSiteWidgetImport:
         site = SiteFactory.create()
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"Sample Widget,Team,WIDGET_TEXT,Right,{site.id}",
+            f"Sample Widget,Team,{WIDGET_TEXT},Right,{site.id}",
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-21 10:20:15.754,user_two@test.com,"
-            f"Widget Title,Public,WIDGET_TEXT,Default,{site.id}",
+            f"Widget Title,Public,{WIDGET_TEXT},Default,{site.id}",
         ]
         table = self.build_table(data)
 

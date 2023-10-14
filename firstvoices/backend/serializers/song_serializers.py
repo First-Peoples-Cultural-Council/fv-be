@@ -30,8 +30,14 @@ class SongSerializer(
     WritableControlledSiteContentSerializer,
 ):
     site = LinkedSiteSerializer(required=False, read_only=True)
-    lyrics = LyricSerializer(many=True)
     visibility = WritableVisibilityField(required=True)
+
+    title_translation = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction_translation = serializers.CharField(required=False, allow_blank=True, default="")
+
+    lyrics = LyricSerializer(many=True)
+
     notes = serializers.ListField(child=ArbitraryIdSerializer(), required=False)
     acknowledgements = serializers.ListField(
         child=ArbitraryIdSerializer(), required=False

@@ -69,6 +69,8 @@ License: Apache Software License 2.0
    - `SENTRY_TRACES_SAMPLE_RATE`: the sample rate for error events, in the range of 0.0 to 1.0 (defaults to 1.0 if not set, meaning 100% of the errors are sent).
    - `DJANGO_ADMIN_URL`: sets the URL of the admin panel for security purposes (defaults to `admin/` if not set).
    - `DATA_S3_BUCKET`: the name of the S3 Bucket that export data is stored in (if using the aws_download_utils.py script to download export data).
+   - `DJANGO_SECRET_KEY`: required for non-debug (production) installations
+   - `ENVIRONMENT_COLOR`: optional css-compatible color string, to highlight the environment name on the admin site
    - If using [venv](https://docs.python.org/3/library/venv.html)
      - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
    - If using [direnv](https://direnv.net/)

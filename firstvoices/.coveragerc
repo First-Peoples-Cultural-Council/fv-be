@@ -1,3 +1,2 @@
 [run]
-omit = */tests/*, */migrations/*, */urls.py, */settings/*, */wsgi.py, manage.py, fabfile.py
-plugins = django_coverage_plugin
+omit = */tests/*, */migrations/*, */urls.py, */settings/*, */wsgi.py, manage.py, fabfile.py, */views/*

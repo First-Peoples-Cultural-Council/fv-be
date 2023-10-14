@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import AppRole, Visibility
+from backend.models.constants import WIDGET_TEXT, AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, WidgetFormats, WidgetSettings
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
@@ -27,9 +27,23 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         return {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
-            "format": "Default",
+            "type": "WIDGET_CUSTOM",
+            "format": WidgetFormats.FULL.label,
             "settings": list(map(lambda x: {"key": x.key, "value": x.value}, settings)),
+        }
+
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "type": "WIDGET_TESTING",
+            "format": WidgetFormats.CENTER.label,
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "settings": []
         }
 
     def add_related_objects(self, instance):
@@ -123,10 +137,82 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         )
 
     @pytest.mark.django_db
+    def test_list_permissions(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        self.create_minimal_instance(site=site, visibility=Visibility.MEMBERS)
+        self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == default_widgets_count + 1
+        assert len(response_data["results"]) == default_widgets_count + 1
+
+        # getting current widget from list of widgets
+        widget = list(
+            filter(lambda x: x["id"] == str(instance.id), response_data["results"])
+        )[0]
+
+        assert widget == self.get_expected_list_response_item(instance, site)
+
+    @pytest.mark.skip(
+        reason="Test is same as test_list_permissions. Removed the code to reduce duplication."
+    )
+    def test_list_minimal(self):
+        # Skipping test as it is same as the test_list_permissions test above.
+        pass
+
+    @pytest.mark.django_db
+    def test_list_empty(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == default_widgets_count
+
+    @pytest.mark.parametrize("role", Role)
+    @pytest.mark.django_db
+    def test_list_member_access(self, role):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert len(response_data["results"]) == default_widgets_count
+
+    @pytest.mark.django_db
+    def test_list_team_access(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
+        self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == default_widgets_count
+
+    @pytest.mark.django_db
     def test_widget_permissions(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         factories.SiteWidgetFactory.create(site=site, visibility=Visibility.PUBLIC)
         factories.SiteWidgetFactory.create(site=site, visibility=Visibility.MEMBERS)
@@ -137,8 +223,12 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        assert response_data["count"] == 1, "did not filter out blocked sites"
-        assert len(response_data["results"]) == 1, "did not include available site"
+        assert (
+            response_data["count"] == default_widgets_count + 1
+        ), "did not filter out blocked sites"
+        assert (
+            len(response_data["results"]) == default_widgets_count + 1
+        ), "did not include available site"
 
     @pytest.mark.django_db
     def test_detail_widget_settings(self):
@@ -174,18 +264,19 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         data = {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [
                 {"key": "key: 000", "value": "value: 000"},
             ],
         }
 
-        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(WidgetSettings.objects.all()) == 0
 
         response = self.client.post(
@@ -194,13 +285,12 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert response.status_code == 201
 
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 1
 
-        widget = SiteWidget.objects.all().first()
-        settings = WidgetSettings.objects.all().first()
+        widget = SiteWidget.objects.filter(title=data["title"]).first()
+        settings = WidgetSettings.objects.filter(widget=widget).first()
 
-        assert widget.title == data["title"]
         assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
@@ -212,16 +302,17 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         data = {
             "title": "Title",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [],
         }
 
-        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidget.objects.all()) == default_widgets_count
         assert len(WidgetSettings.objects.all()) == 0
 
         response = self.client.post(
@@ -230,12 +321,11 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert response.status_code == 201
 
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 0
 
-        widget = SiteWidget.objects.all().first()
+        widget = SiteWidget.objects.filter(title=data["title"]).first()
 
-        assert widget.title == data["title"]
         assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
@@ -245,20 +335,21 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
 
         widget = SiteWidget.objects.create(site=site)
 
         data = {
             "title": "Title Updated",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [
                 {"key": "key: 000", "value": "value: 000"},
             ],
         }
 
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 0
 
         response = self.client.put(
@@ -269,13 +360,12 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert response.status_code == 200
 
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 1
 
-        widget = SiteWidget.objects.all().first()
-        settings = WidgetSettings.objects.all().first()
+        widget = SiteWidget.objects.filter(title=data["title"]).first()
+        settings = WidgetSettings.objects.filter(widget=widget).first()
 
-        assert widget.title == data["title"]
         assert widget.get_visibility_display() == data["visibility"]
         assert widget.widget_type == data["type"]
         assert widget.get_format_display() == data["format"]
@@ -285,7 +375,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         data_no_settings = {
             "title": "Title Updated Two",
             "visibility": "Public",
-            "type": "WIDGET_TEXT",
+            "type": WIDGET_TEXT,
             "format": "Default",
             "settings": [],
         }
@@ -297,12 +387,11 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         )
         assert response.status_code == 200
 
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 0
 
-        widget = SiteWidget.objects.all().first()
+        widget = SiteWidget.objects.filter(title=data_no_settings["title"]).first()
 
-        assert widget.title == data_no_settings["title"]
         assert widget.get_visibility_display() == data_no_settings["visibility"]
         assert widget.widget_type == data_no_settings["type"]
         assert widget.get_format_display() == data_no_settings["format"]
@@ -311,6 +400,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     def test_detail_widget_delete(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         user = factories.get_app_admin(AppRole.SUPERADMIN)
+        default_widgets_count = SiteWidget.objects.filter(site=site).count()
         self.client.force_authenticate(user=user)
 
         widget = factories.SiteWidgetFactory.create(
@@ -320,7 +410,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
 
         assert SiteWidget.objects.filter(id=widget.id).exists()
         assert WidgetSettings.objects.filter(id=settings_one.id).exists()
-        assert len(SiteWidget.objects.all()) == 1
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count + 1
         assert len(WidgetSettings.objects.all()) == 1
 
         response = self.client.delete(
@@ -330,5 +420,5 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         assert response.status_code == 204
         assert not SiteWidget.objects.filter(id=widget.id).exists()
         assert not WidgetSettings.objects.filter(id=settings_one.id).exists()
-        assert len(SiteWidget.objects.all()) == 0
+        assert len(SiteWidget.objects.filter(site=site)) == default_widgets_count
         assert len(WidgetSettings.objects.all()) == 0

@@ -46,7 +46,7 @@ class TestSiteImport:
         assert new_site.last_modified_by.email == table["last_modified_by"][0]
         assert new_site.visibility == Visibility.PUBLIC
         assert new_site.language == test_language
-        assert new_site.contact_email == table["contact_email"][0]
+        assert new_site.contact_email[0] == table["contact_email"][0]
 
         new_site = Site.objects.get(id=table["id"][1])
         assert new_site.visibility == Visibility.TEAM
