@@ -39,8 +39,6 @@ class JoinRequestViewSet(
     API endpoint that allows join requests to be viewed or edited.
     """
 
-    http_method_names = ["get"]
-
     serializer_class = JoinRequestDetailSerializer
 
     def get_queryset(self):

@@ -5,18 +5,20 @@ from backend.models.join_request import (
 )
 from backend.serializers import fields
 from backend.serializers.base_serializers import (
-    BaseSiteContentSerializer,
+    WritableSiteContentSerializer,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.user_serializers import UserDetailSerializer
+from backend.serializers.user_serializers import UserLookupField
 
 
-class JoinRequestDetailSerializer(BaseSiteContentSerializer):
-    url = SiteHyperlinkedIdentityField(view_name="api:join-request-detail")
-    user = UserDetailSerializer(read_only=True)
-    status = fields.EnumField(enum=JoinRequestStatus)
-    reason = fields.EnumField(enum=JoinRequestReason)
+class JoinRequestDetailSerializer(WritableSiteContentSerializer):
+    url = SiteHyperlinkedIdentityField(
+        view_name="api:join-request-detail", read_only=True
+    )
+    user = UserLookupField(required=True, allow_null=False)
+    status = fields.EnumField(enum=JoinRequestStatus, required=True, allow_null=False)
+    reason = fields.EnumField(enum=JoinRequestReason, required=True, allow_null=False)
 
     class Meta:
         model = JoinRequest
