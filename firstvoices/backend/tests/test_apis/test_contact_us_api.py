@@ -1,4 +1,6 @@
 import json
+from smtplib import SMTPException
+from unittest.mock import patch
 
 import pytest
 from django.core import mail
@@ -80,6 +82,30 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         )
         assert response.status_code == 202
         assert len(mail.outbox) == 1
+
+    @pytest.mark.parametrize("exception_type", [ConnectionRefusedError, SMTPException])
+    @pytest.mark.django_db
+    def test_post_smtp_connection_refused(self, exception_type):
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=[self.contact_email],
+        )
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        assert len(mail.outbox) == 0
+
+        with patch("django.core.mail.send_mail") as mocked_mail:
+            mocked_mail.side_effect = exception_type("Test exception")
+            response = self.client.post(
+                self.get_endpoint(site.slug),
+                data=self.get_valid_data(),
+                content_type=self.content_type,
+            )
+            assert response.status_code == 500
+            assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
