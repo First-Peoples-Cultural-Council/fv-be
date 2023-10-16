@@ -3,7 +3,8 @@
 Backend for the FirstVoices application
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
-[![Run Pytest](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml/badge.svg?branch=main)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/run-pytest.yml)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=First-Peoples-Cultural-Council_fv-be&metric=coverage)](https://sonarcloud.io/summary/new_code?id=First-Peoples-Cultural-Council_fv-be)
+[![Build](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/build.yml/badge.svg)](https://github.com/First-Peoples-Cultural-Council/fv-be/actions/workflows/build.yml)
 
 License: Apache Software License 2.0
 
