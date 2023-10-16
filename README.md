@@ -285,12 +285,12 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
 To build/rebuild elasticsearch indices:
 1. Make sure the elasticsearch server is running. The instructions can be found in this file
 on how to start the server locally if required.
-2. Run the following command from `firstvoices/` folder:
+2. Also make sure a celery worker is running. The instructions can be found in this file under _Celery_ section.
+3. Run the following command from `firstvoices/` folder:
 `python3 manage.py rebuild_index`
-3. A success message should be displayed if the process gets completed.
-4. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
-Currently, the following indices are supported:
-   1. `dictionary_entries`
+4. A success message should be displayed if the process gets completed.
+5. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
+Currently, the following indices are supported: `dictionary_entries, songs, stories`
 
 
 ### Test coverage
