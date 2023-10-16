@@ -13,6 +13,7 @@ from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
 class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     content_type = "application/json"
     contact_email = "contact@email.com"
+    contact_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
 
     def get_endpoint(self, site_slug):
         return reverse(
@@ -223,7 +224,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemailone@email.com", "contactemailtwo@email.com"],
+            contact_email=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -256,7 +257,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemailone@email.com", "contactemailtwo@email.com"],
+            contact_email=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -319,7 +320,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=["contactemailone@email.com", "contactemailtwo@email.com"],
+            contact_email=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -345,7 +346,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
             visibility=Visibility.PUBLIC,
             contact_email=[],
         )
-        fallback_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
+        fallback_email_list = self.contact_email_list
         factories.AppJsonFactory.create(
             key="contact_us_default_emails", json=fallback_email_list
         )
@@ -366,5 +367,5 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         email_list = response_data[0]["emailList"]
         assert len(email_list) == 2
 
-        assert "contactemailone@email.com" in email_list
-        assert "contactemailtwo@email.com" in email_list
+        assert self.contact_email_list[0] in email_list
+        assert self.contact_email_list[1] in email_list
