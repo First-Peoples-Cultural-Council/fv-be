@@ -8,7 +8,7 @@ from backend.serializers.base_serializers import (
     BaseControlledSiteContentSerializer,
     WritableControlledSiteContentSerializer,
 )
-from backend.serializers.fields import NullableCharField, SiteHyperlinkedIdentityField
+from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
 from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
@@ -23,7 +23,7 @@ class SitePageSerializer(
     )
 
     slug = serializers.CharField(required=False)
-    subtitle = NullableCharField(required=False)
+    subtitle = serializers.CharField(required=False)
 
     class Meta:
         model = SitePage
@@ -49,22 +49,25 @@ class SitePageDetailSerializer(SitePageSerializer):
 
 class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
     slug = serializers.CharField(required=False)
-    subtitle = NullableCharField(required=False)
+    subtitle = serializers.CharField(required=False)
     widgets = serializers.PrimaryKeyRelatedField(
         queryset=SiteWidget.objects.all(),
         allow_null=True,
         many=True,
         validators=[SameSite()],
+        required=False,
     )
     banner_image = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
         validators=[SameSite()],
+        required=False,
     )
     banner_video = serializers.PrimaryKeyRelatedField(
         queryset=Video.objects.all(),
         allow_null=True,
         validators=[SameSite()],
+        required=False,
     )
 
     def to_representation(self, instance):

@@ -41,10 +41,26 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "title": "Title",
             "visibility": "public",
             "subtitle": "Subtitle",
-            "slug": "test-page-slug",
+            "slug": "test-page-slug",  # required for create
             "widgets": widget_ids,
             "banner_image": str(banner_image.id),
             "banner_video": None,
+        }
+
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "public",
+            "slug": "test-page-slug",
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "subtitle": "",
+            "widgets": [],
+            "banner_image": None,
+            "banner_video": None
         }
 
     def add_related_objects(self, instance):
@@ -64,25 +80,40 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         )
         assert actual_instance.subtitle == expected_data["subtitle"]
 
-        actual_widgets = SiteWidget.objects.filter(
-            sitewidgetlist_set__id=actual_instance.widgets_id
-        )
-        actual_widget_ids = list(map(lambda x: str(x.id), actual_widgets))
-        for index, actual_id in enumerate(actual_widget_ids):
-            assert actual_id == expected_data["widgets"][index]
+        actual_widget_ids = [str(x["id"]) for x in actual_instance.widgets.widgets.values("id")]
+        assert len(actual_widget_ids) == len(expected_data["widgets"])
 
-        assert str(actual_instance.banner_image.id) == expected_data["banner_image"]
-        assert actual_instance.banner_video == expected_data["banner_video"]
+        for index, actual_id in enumerate(actual_widget_ids):
+            assert str(actual_id) == expected_data["widgets"][index]
+
+        if expected_data["banner_image"]:
+            assert str(actual_instance.banner_image.id) == expected_data["banner_image"]
+        else:
+            assert actual_instance.banner_image is None
+
+        if expected_data["banner_video"]:
+            assert str(actual_instance.banner_video.id) == expected_data["banner_video"]
+        else:
+            assert actual_instance.banner_video is None
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
         assert actual_response["visibility"] == expected_data["visibility"]
         assert actual_response["subtitle"] == expected_data["subtitle"]
-        assert actual_response["widgets"][0]["id"] == expected_data["widgets"][0]
-        assert actual_response["widgets"][1]["id"] == expected_data["widgets"][1]
-        assert actual_response["widgets"][2]["id"] == expected_data["widgets"][2]
-        assert actual_response["bannerImage"]["id"] == expected_data["banner_image"]
-        assert actual_response["bannerVideo"] == expected_data["banner_video"]
+
+        assert len(actual_response["widgets"]) == len(expected_data["widgets"])
+        for i, w in enumerate(expected_data["widgets"]):
+            assert actual_response["widgets"][i]["id"] == expected_data["widgets"][i]
+
+        if expected_data["banner_image"]:
+            assert actual_response["bannerImage"]["id"] == expected_data["banner_image"]
+        else:
+            assert actual_response["bannerImage"] is None
+
+        if expected_data["banner_video"]:
+            assert actual_response["bannerVideo"]["id"] == expected_data["banner_video"]
+        else:
+            assert actual_response["bannerVideo"] is None
 
     def get_expected_response(self, instance, site):
         controlled_standard_fields = self.get_expected_controlled_standard_fields(
@@ -200,9 +231,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         widget_list = factories.SiteWidgetListWithThreeWidgetsFactory.create(site=site)
 
         # Get the widgets from the widget list
-        widget_one = widget_list.widgets.all()[0]
-        widget_two = widget_list.widgets.all()[1]
-        widget_three = widget_list.widgets.all()[2]
+        widget_one = widget_list.widgets.order_by("title").all()[0]
+        widget_two = widget_list.widgets.order_by("title").all()[1]
+        widget_three = widget_list.widgets.order_by("title").all()[2]
         update_widget_sites(site, [widget_one, widget_two, widget_three])
 
         site_page = factories.SitePageFactory.create(

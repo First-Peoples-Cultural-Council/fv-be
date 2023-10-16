@@ -151,7 +151,7 @@ class TestSitesDataEndpoint:
             ":content/pexels-stijn-dijkstra-2583852.jpg",
             "theme": [],
             "secondary_theme": None,
-            "optional": [{}],
+            "optional": [{'Part of Speech': entry_one.part_of_speech.title}],
             "compare_form": entry_one.title,
             "sort_form": entry_one.title,
             "sorting_form": [
@@ -184,7 +184,7 @@ class TestSitesDataEndpoint:
             ":content/pexels-stijn-dijkstra-2583852.jpg",
             "theme": [],
             "secondary_theme": None,
-            "optional": [{}],
+            "optional": [{'Part of Speech': entry_two.part_of_speech.title}],
             "compare_form": entry_two.title,
             "sort_form": entry_two.title,
             "sorting_form": [

@@ -7,6 +7,7 @@ VALID_DOCUMENT_TYPES = ["word", "phrase", "song", "story"]
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"
 ELASTICSEARCH_SONG_INDEX = "songs"
 ELASTICSEARCH_STORY_INDEX = "stories"
+ELASTICSEARCH_MEDIA_INDEX = "media"
 
 # Error messages
 ES_CONNECTION_ERROR = (
@@ -35,3 +36,4 @@ class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")
     SONG = "song", _("song")
     STORY = "story", _("story")
+    MEDIA = "media", _("media")

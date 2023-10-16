@@ -1,3 +1,4 @@
+import copy
 import json
 
 import pytest
@@ -57,15 +58,33 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "parent_id": str(parent.id),
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return {
+            "title": "Cool new title",
+        }
+
+    def add_expected_defaults(self, data):
+        return {
+            **data,
+            "parent": None,
+            "description": ""
+        }
+
     def assert_updated_instance(self, expected_data, actual_instance):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.description == expected_data["description"]
-        assert str(actual_instance.parent.id) == expected_data["parent_id"]
+        if "parent_id" in expected_data:
+            assert str(actual_instance.parent.id) == expected_data["parent_id"]
+        else:
+            assert actual_instance.parent == expected_data["parent"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
         assert actual_response["description"] == expected_data["description"]
-        assert actual_response["parent"]["id"] == expected_data["parent_id"]
+        if "parent_id" in expected_data:
+            assert actual_response["parent"]["id"] == expected_data["parent_id"]
+        else:
+            assert actual_response["parent"] == expected_data["parent"]
 
     def assert_created_instance(self, pk, data):
         instance = Category.objects.get(pk=pk)

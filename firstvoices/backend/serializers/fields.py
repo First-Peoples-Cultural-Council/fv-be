@@ -87,10 +87,3 @@ class WritableVisibilityField(serializers.CharField):
             return visibility_map[value].lower()
         except KeyError:
             raise serializers.ValidationError("Invalid visibility value.")
-
-
-class NullableCharField(serializers.CharField):
-    def validate_empty_values(self, data):
-        if data is None:
-            data = ""
-        return super().validate_empty_values(data)

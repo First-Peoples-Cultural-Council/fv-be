@@ -80,6 +80,12 @@ def mock_search_indexing():
             "backend.search.signals.story_signals.update_pages"
         ) as mocked_request_update_pages,
         patch(
+            "backend.search.signals.media_signals.update_media_index"
+        ) as mocked_update_media_index,
+        patch(
+            "backend.search.signals.media_signals.delete_from_index"
+        ) as mocked_delete_media_index,
+        patch(
             "backend.search.signals.site_signals.update_document_visibility"
         ) as mocked_update_document_visibility,
         patch(
@@ -101,4 +107,6 @@ def mock_search_indexing():
         mocked_request_update_pages.return_value = None
         mocked_update_document_visibility.return_value = None
         mocked_delete_related_docs.return_value = None
+        mocked_update_media_index.return_value = None
+        mocked_delete_media_index.return_value = None
         yield

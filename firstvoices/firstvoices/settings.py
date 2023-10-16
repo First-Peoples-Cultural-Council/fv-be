@@ -25,11 +25,15 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s"
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG: bool = os.environ.get("DEBUG_DISABLE") is None
+
+if not DEBUG:
+    # SECURITY WARNING: keep the secret key used in production secret!
+    SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+else:
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",
+                                "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s")
 
 ALLOWED_HOSTS = [
     os.environ.get("HOST_HEADER"),
@@ -224,9 +228,13 @@ FIXTURES_DIR = BASE_DIR / "backend" / "fixtures"
 
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "America/Vancouver"
-CELERY_BROKER_URL = os.getenv(
-    "CELERY_BROKER_URL", "amqp://rabbitmq:rabbitmq@localhost:5672//fv"
-)
+
+if not DEBUG:
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+else:
+    CELERY_BROKER_URL = os.getenv(
+        "CELERY_BROKER_URL", "amqp://rabbitmq:rabbitmq@localhost:5672//fv"
+    )
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost/0")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_ALWAYS_EAGER = True
