@@ -14,6 +14,7 @@ from pathlib import Path
 import sentry_sdk
 from dotenv import load_dotenv
 from elasticsearch_dsl import connections
+from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -273,6 +274,7 @@ sentry_sdk.init(
             signals_spans=True,
             cache_spans=True,
         ),
+        CeleryIntegration(),
     ],
 )
 
