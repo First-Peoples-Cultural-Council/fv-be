@@ -3,7 +3,7 @@ import uuid
 import pytest
 import tablib
 
-from backend.models.utils import WIDGET_TEXT
+from backend.models.constants import WIDGET_TEXT
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 from backend.tests.factories import SiteFactory, SiteWidgetFactory
