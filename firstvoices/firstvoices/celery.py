@@ -38,8 +38,7 @@ def setup_periodic_tasks(sender, **kwargs):
 def check_celery_status(task_name, instance_id):
     logger = logging.getLogger(__name__)
     try:
-        inspector = app.control.inspect()
-        if inspector.stats():
+        if app.control.ping():
             return True
         else:
             logger.error(
