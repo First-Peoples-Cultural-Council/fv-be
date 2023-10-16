@@ -48,5 +48,7 @@ def check_celery_status(task_name, instance_id):
             )
             return False
     except Exception as e:
-        logger.error(f"Celery is not available: {e}")
+        logger.error(
+            f"Could not complete task: {task_name} on model {instance_id} as Celery is not available: {e}"
+        )
         return False
