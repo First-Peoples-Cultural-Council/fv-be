@@ -11,6 +11,7 @@ from backend.views.custom_order_recalculate_views import (
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.image_views import ImageViewSet
+from backend.views.join_request_views import JoinRequestViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
@@ -61,6 +62,7 @@ sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
+sites_router.register(r"join-requests", JoinRequestViewSet, basename="join-request")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")

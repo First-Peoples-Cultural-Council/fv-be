@@ -231,4 +231,3 @@ class ArbitraryIdSerializer(serializers.CharField):
             return super().to_internal_value(text)
         except KeyError as e:
             raise ValidationError(f"Expected an object with key {e}")
-

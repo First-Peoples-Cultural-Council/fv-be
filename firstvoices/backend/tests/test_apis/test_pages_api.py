@@ -60,7 +60,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "subtitle": "",
             "widgets": [],
             "banner_image": None,
-            "banner_video": None
+            "banner_video": None,
         }
 
     def add_related_objects(self, instance):
@@ -80,7 +80,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         )
         assert actual_instance.subtitle == expected_data["subtitle"]
 
-        actual_widget_ids = [str(x["id"]) for x in actual_instance.widgets.widgets.values("id")]
+        actual_widget_ids = [
+            str(x["id"]) for x in actual_instance.widgets.widgets.values("id")
+        ]
         assert len(actual_widget_ids) == len(expected_data["widgets"])
 
         for index, actual_id in enumerate(actual_widget_ids):
@@ -204,7 +206,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     )
     @pytest.mark.django_db
     def test_page_permissions(self, user_role, expected_visible_pages):
-        user = factories.UserFactory.create(id=1)
+        user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
