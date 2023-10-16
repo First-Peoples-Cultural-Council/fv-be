@@ -4,6 +4,7 @@ import pytest
 from django.core import mail
 from django.urls import reverse
 
+from backend.models import Site
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
@@ -28,7 +29,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         )
 
     @pytest.mark.django_db
-    def test_contact_us_404(self):
+    def test_contact_us_post_404(self):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
@@ -37,7 +38,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_403(self):
+    def test_contact_us_post_403(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.MEMBERS)
 
         user = factories.get_non_member_user()
@@ -48,7 +49,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_anonymous(self):
+    def test_contact_us_post_anonymous(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
         user = factories.get_anonymous_user()
@@ -59,7 +60,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_non_member_user(self):
+    def test_post_non_member_user(self):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -81,7 +82,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
-    def test_contact_us_member_user(self, role):
+    def test_post_member_user(self, role):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.MEMBERS,
@@ -123,7 +124,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         ],
     )
     @pytest.mark.django_db
-    def test_contact_us_restricted_word(self, data):
+    def test_post_restricted_word(self, data):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -147,7 +148,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_invalid_from_email(self):
+    def test_post_invalid_from_email(self):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -177,7 +178,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         "create_fallback, expected_response", ((True, 202), (False, 500))
     )
     @pytest.mark.django_db
-    def test_contact_us_fallback_email(self, create_fallback, expected_response):
+    def test_post_fallback_email(self, create_fallback, expected_response):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
         if create_fallback:
@@ -199,7 +200,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 1 if create_fallback else len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_no_emails_available(self):
+    def test_post_no_emails_available(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
         user = factories.get_non_member_user()
@@ -216,7 +217,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
-    def test_contact_us_multiple_emails_and_users(self):
+    def test_post_multiple_emails_and_users(self):
         user_one = factories.UserFactory.create()
         user_two = factories.UserFactory.create()
         site = factories.SiteFactory.create(
@@ -247,3 +248,123 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
                 user_one.email,
                 user_two.email,
             ]
+
+    @pytest.mark.django_db
+    def test_contact_us_get(self):
+        user_one = factories.UserFactory.create()
+        user_two = factories.UserFactory.create()
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=["contactemailone@email.com", "contactemailtwo@email.com"],
+        )
+        site.contact_users.add(user_one)
+        site.contact_users.add(user_two)
+        site.save()
+
+        site = Site.objects.get(slug="test")
+        assert site.contact_users.count() == 2
+        assert len(site.contact_email) == 2
+
+        factories.MembershipFactory.create(
+            user=user_one, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user_one)
+
+        response = self.client.get(self.get_endpoint(site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        email_list = response_data[0]["emailList"]
+        assert len(email_list) == 4
+
+        assert site.contact_email[0] in email_list
+        assert site.contact_email[1] in email_list
+        assert site.contact_users.all()[0].email in email_list
+        assert site.contact_users.all()[1].email in email_list
+
+    @pytest.mark.django_db
+    def test_contact_us_get_404(self):
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_endpoint("missing-slug"))
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_contact_us_get_403(self):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.MEMBERS)
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_endpoint(site.slug))
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role, expected_response_status_code",
+        [
+            (Role.MEMBER, 403),
+            (Role.EDITOR, 403),
+            (Role.ASSISTANT, 403),
+            (Role.LANGUAGE_ADMIN, 200),
+            (None, 403),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_contact_us_get_roles(self, role, expected_response_status_code):
+        user_one = factories.UserFactory.create()
+        user_two = factories.UserFactory.create()
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=["contactemailone@email.com", "contactemailtwo@email.com"],
+        )
+        site.contact_users.add(user_one)
+        site.contact_users.add(user_two)
+        site.save()
+
+        site = Site.objects.get(slug="test")
+        assert site.contact_users.count() == 2
+        assert len(site.contact_email) == 2
+
+        if role:
+            factories.MembershipFactory.create(user=user_one, site=site, role=role)
+
+        self.client.force_authenticate(user=user_one)
+
+        response = self.client.get(self.get_endpoint(site.slug))
+        assert response.status_code == expected_response_status_code
+
+    @pytest.mark.django_db
+    def test_contact_us_get_fallback_email(self):
+        user_one = factories.UserFactory.create()
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=[],
+        )
+        fallback_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
+        factories.AppJsonFactory.create(
+            key="contact_us_default_emails", json=fallback_email_list
+        )
+
+        assert site.contact_users.count() == 0
+        assert len(site.contact_email) == 0
+
+        factories.MembershipFactory.create(
+            user=user_one, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user_one)
+
+        response = self.client.get(self.get_endpoint(site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        email_list = response_data[0]["emailList"]
+        assert len(email_list) == 2
+
+        assert "contactemailone@email.com" in email_list
+        assert "contactemailtwo@email.com" in email_list
