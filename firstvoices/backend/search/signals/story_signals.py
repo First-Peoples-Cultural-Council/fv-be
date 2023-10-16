@@ -9,12 +9,11 @@ from backend.search.tasks.story_tasks import (
     update_pages,
     update_story_index,
 )
-from firstvoices.celery import check_celery_status, link_error_handler
+from firstvoices.celery import link_error_handler
 
 
 @receiver(post_save, sender=Story)
 def request_update_story_index(sender, instance, **kwargs):
-    check_celery_status("update_story_index", instance.id)
     if Story.objects.filter(id=instance.id).exists():
         if instance.title == "":
             return
@@ -32,7 +31,6 @@ def request_update_story_index(sender, instance, **kwargs):
 # Delete entry from index
 @receiver(post_delete, sender=Story)
 def request_delete_from_index(sender, instance, **kwargs):
-    check_celery_status("delete_from_index", instance.id)
     delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
 
 
@@ -40,7 +38,6 @@ def request_delete_from_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=StoryPage)
 @receiver(post_save, sender=StoryPage)
 def request_update_pages_index(sender, instance, **kwargs):
-    check_celery_status("update_pages", instance.id)
     if Story.objects.filter(id=instance.story_id).exists():
         transaction.on_commit(
             lambda: update_pages.apply_async(

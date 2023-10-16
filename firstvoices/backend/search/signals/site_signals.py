@@ -7,13 +7,12 @@ from backend.search.tasks.site_tasks import (
     delete_related_docs,
     update_document_visibility,
 )
-from firstvoices.celery import check_celery_status, link_error_handler
+from firstvoices.celery import link_error_handler
 
 
 # If a site's visibility is changed, update all docs from index related to site
 @receiver(pre_save, sender=Site)
 def request_update_document_visibility(sender, instance, **kwargs):
-    check_celery_status("update_document_visibility", instance.id)
     if instance.id is None:
         # New site, don't do anything
         return
@@ -33,7 +32,6 @@ def request_update_document_visibility(sender, instance, **kwargs):
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
 def request_delete_related_docs(sender, instance, **kwargs):
-    check_celery_status("delete_related_docs", instance.id)
     if Site.objects.filter(id=instance.id).exists():
         delete_related_docs.apply_async(
             (instance.id,), link_error=link_error_handler.s()
