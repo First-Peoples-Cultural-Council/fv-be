@@ -143,7 +143,7 @@ if DEBUG:
         "root": {"handlers": ["console"], "level": "WARNING"},
         "loggers": {
             ELASTICSEARCH_LOGGER: {
-                "handlers": {"console": {"class": "logging.StreamHandler"}},
+                "handlers": ["console"],
                 "level": "ERROR",  # Change level to INFO to view connection requests
             },
         },
