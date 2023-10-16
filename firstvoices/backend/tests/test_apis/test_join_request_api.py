@@ -44,8 +44,8 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
                 "firstName": instance.user.first_name,
                 "lastName": instance.user.last_name,
             },
-            "status": "Pending",
-            "reason": "Other",
+            "status": "pending",
+            "reason": "other",
             "reasonNote": "Test reason note",
         }
 
@@ -60,23 +60,33 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             "reason_note": "Test reason note",
         }
 
+    def get_valid_data_with_nulls(self, site=None):
+        return self.get_valid_data(site)
+
+    def add_expected_defaults(self, data):
+        return data
+
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert actual_instance.status.get_status_display() == expected_data["status"]
-        assert actual_instance.reason.get_reason_display() == expected_data["reason"]
+        assert actual_instance.user.email == expected_data["user"]
+        assert actual_instance.get_status_display().lower() == expected_data["status"]
+        assert actual_instance.get_reason_display().lower() == expected_data["reason"]
         assert actual_instance.reason_note == expected_data["reason_note"]
 
     def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["user"]["email"] == expected_data["user"]
         assert actual_response["status"] == expected_data["status"]
         assert actual_response["reason"] == expected_data["reason"]
         assert actual_response["reasonNote"] == expected_data["reason_note"]
 
     def assert_created_instance(self, pk, data):
         instance = JoinRequest.objects.get(pk=pk)
-        assert instance.status.get_status_display() == data["status"]
-        assert instance.reason.get_reason_display() == data["reason"]
+        assert instance.user.email == data["user"]
+        assert instance.get_status_display().lower() == data["status"]
+        assert instance.get_reason_display().lower() == data["reason"]
         assert instance.reason_note == data["reason_note"]
 
     def assert_created_response(self, expected_data, actual_response):
+        assert actual_response["user"]["email"] == expected_data["user"]
         assert actual_response["status"] == expected_data["status"]
         assert actual_response["reason"] == expected_data["reason"]
         assert actual_response["reasonNote"] == expected_data["reason_note"]
@@ -92,8 +102,26 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def get_valid_patch_data(self, site=None):
         return {
-            "status": JoinRequestStatus.APPROVED,
+            "status": "approved",
         }
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance: JoinRequest
+    ):
+        assert original_instance.user == updated_instance.user
+        assert original_instance.reason == updated_instance.reason
+        assert original_instance.reason_note == updated_instance.reason_note
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance: JoinRequest):
+        assert updated_instance.get_status_display().lower() == data["status"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["user"]["email"] == original_instance.user.email
+        assert actual_response["status"] == data["status"]
+        assert (
+            actual_response["reason"] == original_instance.get_reason_display().lower()
+        )
+        assert actual_response["reasonNote"] == original_instance.reason_note
 
     def add_related_objects(self, instance):
         # no related objects to add
