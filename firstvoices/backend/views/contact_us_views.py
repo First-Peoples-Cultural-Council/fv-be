@@ -68,6 +68,10 @@ class ContactUsView(
         return self.get_validated_site()
 
     def list(self, request, *args, **kwargs):
+        """
+        Returns the list of receiver emails used by the contact us post endpoint.
+        """
+
         site = self.get_validated_site().first()
         perm = Site.get_perm("change")
         if not request.user.has_perm(perm, site):
@@ -137,6 +141,12 @@ class ContactUsView(
 
     @staticmethod
     def validate_no_excluded_words(message, name, from_email, site):
+        """
+        Validates that the email, name, and message do not contain any excluded words. If the message contains any
+        excluded words, an error is raised. The excluded words list can be set in the AppJson model with the key
+        'contact_us_excluded_words'.
+        """
+
         logger = logging.getLogger(__name__)
         excluded_words = AppJson.objects.filter(key="contact_us_excluded_words")
         if excluded_words.count() > 0:
