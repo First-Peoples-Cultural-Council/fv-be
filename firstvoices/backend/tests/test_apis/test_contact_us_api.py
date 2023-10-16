@@ -149,6 +149,30 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
+    def test_post_invalid_restricted_word_list_set(self):
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=[self.contact_email],
+        )
+        factories.AppJsonFactory.create(
+            key="contact_us_excluded_words", json={"invalid": "not a list of strings"}
+        )
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        assert len(mail.outbox) == 0
+
+        response = self.client.post(
+            self.get_endpoint(site.slug),
+            data=self.get_valid_data(),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 500
+        assert len(mail.outbox) == 0
+
+    @pytest.mark.django_db
     def test_post_invalid_from_email(self):
         site = factories.SiteFactory.create(
             slug="test",
@@ -369,3 +393,25 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         assert self.contact_email_list[0] in email_list
         assert self.contact_email_list[1] in email_list
+
+    @pytest.mark.django_db
+    def test_invalid_fallback_email_set(self):
+        user_one = factories.UserFactory.create()
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_email=[],
+        )
+        factories.AppJsonFactory.create(
+            key="contact_us_default_emails",
+            json={"invalid": "not a list of email strings"},
+        )
+
+        factories.MembershipFactory.create(
+            user=user_one, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user_one)
+
+        response = self.client.get(self.get_endpoint(site.slug))
+        assert response.status_code == 500
