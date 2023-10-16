@@ -32,3 +32,21 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(minute="*/3"),
         debug_task.s(),
     )
+
+
+# Check if Celery is available
+def check_celery_status(task_name, instance_id):
+    logger = logging.getLogger(__name__)
+    try:
+        inspector = app.control.inspect()
+        if inspector.stats():
+            return True
+        else:
+            logger.error(
+                f"Could not complete task: {task_name} on model {instance_id} as no Celery workers are "
+                f"available."
+            )
+            return False
+    except Exception as e:
+        logger.error(f"Celery is not available: {e}")
+        return False

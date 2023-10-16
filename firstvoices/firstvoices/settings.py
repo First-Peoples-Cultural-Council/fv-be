@@ -32,8 +32,10 @@ if not DEBUG:
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 else:
-    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",
-                                "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s")
+    SECRET_KEY = os.environ.get(
+        "DJANGO_SECRET_KEY",
+        "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s",
+    )
 
 ALLOWED_HOSTS = [
     os.environ.get("HOST_HEADER"),
@@ -140,9 +142,9 @@ if DEBUG:
         "root": {"handlers": ["console"], "level": "WARNING"},
         "loggers": {
             ELASTICSEARCH_LOGGER: {
-                "handlers": ["console"],
-                "level": "INFO",  # Change level to INFO to view connection requests
-            }
+                "handlers": {"console": {"class": "logging.StreamHandler"}},
+                "level": "ERROR",  # Change level to INFO to view connection requests
+            },
         },
     }
 
