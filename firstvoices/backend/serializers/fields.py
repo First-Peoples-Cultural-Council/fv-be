@@ -94,7 +94,7 @@ class EnumField(serializers.Field):
 
     def __init__(self, enum, *args, **kwargs):
         self.enum = enum
-        return super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def to_representation(self, obj):
         return self.enum(obj).label
