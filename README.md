@@ -101,7 +101,7 @@ License: Apache Software License 2.0
       http://localhost:9200/ and verify the status.
 1. (Optional) By default, the App will send emails to console but an SMTP server can be used by setting the following environment variables:
    - `ENABLE_SMTP_BACKEND`: Set to `True` to enable the SMTP backend.
-   - `DEFAULT_FROM_EMAIL`: The email address that emails will be sent from.
+   - `EMAIL_SENDER_ADDRESS`: The email address that emails will be sent from.
    - `EMAIL_HOST`: The host address of the SMTP server.
    - `EMAIL_PORT`: The port of the SMTP server.
 
