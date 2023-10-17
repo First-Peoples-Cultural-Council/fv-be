@@ -83,9 +83,12 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert response.status_code == 202
         assert len(mail.outbox) == 1
 
-    @pytest.mark.parametrize("exception_type", [ConnectionRefusedError, SMTPException])
+    @pytest.mark.parametrize(
+        "exception",
+        [ConnectionRefusedError("Test exception"), SMTPException("Test exception")],
+    )
     @pytest.mark.django_db
-    def test_post_smtp_connection_refused(self, exception_type):
+    def test_post_smtp_connection_refused(self, exception):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -97,8 +100,9 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         assert len(mail.outbox) == 0
 
-        with patch("django.core.mail.send_mail") as mocked_mail:
-            mocked_mail.side_effect = exception_type("Test exception")
+        with patch("backend.views.contact_us_views.send_mail") as mocked_mail:
+            mocked_mail.side_effect = exception
+
             response = self.client.post(
                 self.get_endpoint(site.slug),
                 data=self.get_valid_data(),
