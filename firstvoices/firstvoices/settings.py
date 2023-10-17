@@ -14,6 +14,7 @@ from pathlib import Path
 import sentry_sdk
 from dotenv import load_dotenv
 from elasticsearch_dsl import connections
+from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
@@ -32,8 +33,10 @@ if not DEBUG:
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 else:
-    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",
-                                "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s")
+    SECRET_KEY = os.environ.get(
+        "DJANGO_SECRET_KEY",
+        "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s",
+    )
 
 ALLOWED_HOSTS = [
     os.environ.get("HOST_HEADER"),
@@ -142,7 +145,7 @@ if DEBUG:
             ELASTICSEARCH_LOGGER: {
                 "handlers": ["console"],
                 "level": "INFO",  # Change level to INFO to view connection requests
-            }
+            },
         },
     }
 
@@ -271,6 +274,7 @@ sentry_sdk.init(
             signals_spans=True,
             cache_spans=True,
         ),
+        CeleryIntegration(),
     ],
 )
 

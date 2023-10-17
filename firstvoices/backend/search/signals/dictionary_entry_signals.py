@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
@@ -25,11 +26,13 @@ from firstvoices.celery import link_error_handler
 @receiver(post_save, sender=DictionaryEntry)
 def request_update_dictionary_entry_index(sender, instance, **kwargs):
     if DictionaryEntry.objects.filter(id=instance.id).exists():
-        update_dictionary_entry_index.apply_async(
-            (instance.id,),
-            link_error=link_error_handler.s(),
-            retry=True,
-            retry_policy=ES_RETRY_POLICY,
+        transaction.on_commit(
+            lambda: update_dictionary_entry_index.apply_async(
+                (instance.id,),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
         )
 
 
@@ -43,56 +46,67 @@ def request_delete_dictionary_entry_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=Translation)
 @receiver(post_save, sender=Translation)
 def request_update_translation_index(sender, instance, **kwargs):
-    update_translation.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy=ES_RETRY_POLICY,
-    )
+    if DictionaryEntry.objects.filter(id=instance.dictionary_entry.id).exists():
+        transaction.on_commit(
+            lambda: update_translation.apply_async(
+                (
+                    instance.id,
+                    instance.dictionary_entry.id,
+                ),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
+        )
 
 
 # Note update
 @receiver(post_delete, sender=Note)
 @receiver(post_save, sender=Note)
 def request_update_notes_index(sender, instance, **kwargs):
-    update_notes.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy=ES_RETRY_POLICY,
-    )
+    if DictionaryEntry.objects.filter(id=instance.dictionary_entry.id).exists():
+        transaction.on_commit(
+            lambda: update_notes.apply_async(
+                (
+                    instance.id,
+                    instance.dictionary_entry.id,
+                ),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
+        )
 
 
 # Acknowledgement update
 @receiver(post_delete, sender=Acknowledgement)
 @receiver(post_save, sender=Acknowledgement)
 def request_update_acknowledgement_index(sender, instance, **kwargs):
-    update_acknowledgements.apply_async(
-        (
-            instance.id,
-            instance.dictionary_entry.id,
-        ),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy=ES_RETRY_POLICY,
-    )
+    if DictionaryEntry.objects.filter(id=instance.dictionary_entry.id).exists():
+        transaction.on_commit(
+            lambda: update_acknowledgements.apply_async(
+                (
+                    instance.id,
+                    instance.dictionary_entry.id,
+                ),
+                link_error=link_error_handler.s(),
+                retry=True,
+                retry_policy=ES_RETRY_POLICY,
+            )
+        )
 
 
 # Category update when called through the admin site
 @receiver(post_save, sender=DictionaryEntryCategory)
 @receiver(post_delete, sender=DictionaryEntryCategory)
 def request_update_categories_index(sender, instance, **kwargs):
-    update_categories.apply_async(
-        (instance.id,),
-        link_error=link_error_handler.s(),
-        retry=True,
-        retry_policy=ES_RETRY_POLICY,
+    transaction.on_commit(
+        lambda: update_categories.apply_async(
+            (instance.id,),
+            link_error=link_error_handler.s(),
+            retry=True,
+            retry_policy=ES_RETRY_POLICY,
+        )
     )
 
 

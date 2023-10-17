@@ -4,7 +4,7 @@ from celery import shared_task
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Index
 
-from backend.models.story import Story, StoryPage
+from backend.models.story import Story
 from backend.search.documents import StoryDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
@@ -16,8 +16,8 @@ from backend.search.utils.object_utils import get_object_from_index, get_page_in
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
-@shared_task(bind=True)
-def update_story_index(self, instance_id, **kwargs):
+@shared_task
+def update_story_index(instance_id, **kwargs):
     # add story to es index
     try:
         instance = Story.objects.get(id=instance_id)
@@ -81,16 +81,6 @@ def update_story_index(self, instance_id, **kwargs):
             instance_id,
         )
         logger.warning(e)
-    except Story.DoesNotExist as e:
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.warning(
-            ES_NOT_FOUND_ERROR,
-            "get",
-            SearchIndexEntryTypes.STORY,
-            instance_id,
-        )
-        logger.warning(e)
-        self.retry(countdown=5, max_retries=3)
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
@@ -120,23 +110,19 @@ def delete_from_index(instance_id, **kwargs):
         logger.error(e)
 
 
-@shared_task(bind=True)
-def update_pages(self, instance_id, story_id, **kwargs):
+@shared_task
+def update_pages(sender, story_id, **kwargs):
     logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    story = Story.objects.get(id=story_id)
 
-    if not StoryPage.objects.filter(id=instance_id).exists():
-        self.retry(countdown=5, max_retries=3)
+    page_text, page_translation = get_page_info(story)
 
     try:
-        story = Story.objects.get(id=story_id)
-        page_text, page_translation = get_page_info(story)
-
         existing_entry = get_object_from_index(
             ELASTICSEARCH_STORY_INDEX, "story", story.id
         )
         if not existing_entry:
             raise NotFoundError
-
         story_doc = StoryDocument.get(id=existing_entry["_id"])
         story_doc.update(page_text=page_text, page_translation=page_translation)
     except ConnectionError:
@@ -149,65 +135,9 @@ def update_pages(self, instance_id, story_id, **kwargs):
             % (
                 "story_page_update_signal",
                 SearchIndexEntryTypes.STORY,
-                story_id,
+                story.id,
             )
         )
-    except Story.DoesNotExist:
-        logger.warning(
-            ES_NOT_FOUND_ERROR
-            % (
-                "pages_update_signal",
-                SearchIndexEntryTypes.STORY,
-                story_id,
-            )
-        )
-        return
-    except Exception as e:
-        # Fallback exception case
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-        logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, instance_id)
-        logger.error(e)
-
-
-@shared_task(bind=True)
-def delete_pages(self, story_id, **kwargs):
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-
-    try:
-        story = Story.objects.get(id=story_id)
-        page_text, page_translation = get_page_info(story)
-
-        existing_entry = get_object_from_index(
-            ELASTICSEARCH_STORY_INDEX, "story", story.id
-        )
-        if not existing_entry:
-            raise NotFoundError
-
-        story_doc = StoryDocument.get(id=existing_entry["_id"])
-        story_doc.update(page_text=page_text, page_translation=page_translation)
-    except ConnectionError:
-        logger.error(
-            ES_CONNECTION_ERROR % ("story_page", SearchIndexEntryTypes.STORY, story_id)
-        )
-    except NotFoundError:
-        logger.warning(
-            ES_NOT_FOUND_ERROR
-            % (
-                "story_page_update_signal",
-                SearchIndexEntryTypes.STORY,
-                story_id,
-            )
-        )
-    except Story.DoesNotExist:
-        logger.warning(
-            ES_NOT_FOUND_ERROR
-            % (
-                "pagess_update_signal",
-                SearchIndexEntryTypes.STORY,
-                story_id,
-            )
-        )
-        return
     except Exception as e:
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
