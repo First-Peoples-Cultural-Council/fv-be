@@ -37,6 +37,4 @@ def request_update_media_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=Image)
 @receiver(post_delete, sender=Video)
 def request_delete_from_index(sender, instance, **kwargs):
-    transaction.on_commit(
-        delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
-    )
+    delete_from_index.apply_async((instance.id,), link_error=link_error_handler.s())
