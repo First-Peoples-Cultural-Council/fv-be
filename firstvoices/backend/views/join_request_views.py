@@ -31,6 +31,29 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
+    create=extend_schema(
+        description=_("Create a join request."),
+        responses={
+            201: OpenApiResponse(
+                description=doc_strings.success_201,
+                response=JoinRequestDetailSerializer,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+    ),
+    destroy=extend_schema(
+        description=_("Delete a join request."),
+        responses={
+            204: OpenApiResponse(
+                description=doc_strings.success_204_deleted,
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+    ),
 )
 class JoinRequestViewSet(
     SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
@@ -39,9 +62,8 @@ class JoinRequestViewSet(
     API endpoint that allows join requests to be viewed or edited.
     """
 
-    http_method_names = ["get"]
-
     serializer_class = JoinRequestDetailSerializer
+    http_method_names = ["get", "post", "delete"]
 
     def get_queryset(self):
         site = self.get_validated_site()
