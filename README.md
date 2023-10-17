@@ -99,6 +99,11 @@ License: Apache Software License 2.0
    `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
    1. For ElasticSearch, to confirm the service is up and running, visit
       http://localhost:9200/ and verify the status.
+1. (Optional) By default, the App will send emails to console but an SMTP server can be used by setting the following environment variables:
+   - `ENABLE_SMTP_BACKEND`: Set to `True` to enable the SMTP backend.
+   - `DEFAULT_FROM_EMAIL`: The email address that emails will be sent from.
+   - `EMAIL_HOST`: The host address of the SMTP server.
+   - `EMAIL_PORT`: The port of the SMTP server.
 
 ---
 
