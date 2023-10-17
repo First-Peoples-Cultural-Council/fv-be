@@ -5,6 +5,14 @@ from elasticsearch.helpers import bulk, errors
 from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
+from backend.management.commands.utils.iterators import (
+    audio_iterator,
+    dictionary_entry_iterator,
+    image_iterator,
+    song_iterator,
+    story_iterator,
+    video_iterator,
+)
 from backend.models import (
     Acknowledgement,
     DictionaryEntry,
@@ -16,15 +24,8 @@ from backend.models import (
     StoryPage,
     Translation,
 )
-from backend.models.constants import Visibility
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
-from backend.search.documents import (
-    DictionaryEntryDocument,
-    MediaDocument,
-    SongDocument,
-    StoryDocument,
-)
 from backend.search.signals.dictionary_entry_signals import (
     request_delete_dictionary_entry_index,
     request_update_acknowledgement_index,
@@ -62,14 +63,6 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
-)
-from backend.search.utils.object_utils import (
-    get_acknowledgements_text,
-    get_categories_ids,
-    get_lyrics,
-    get_notes_text,
-    get_page_info,
-    get_translation_text,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -147,133 +140,6 @@ def get_current_index(es_connection, index_name):
         return Index(related_indices[0])
     else:
         return None
-
-
-def dictionary_entry_iterator():
-    queryset = DictionaryEntry.objects.all()
-    for entry in queryset:
-        translations_text = get_translation_text(entry)
-        notes_text = get_notes_text(entry)
-        acknowledgements_text = get_acknowledgements_text(entry)
-        categories = get_categories_ids(entry)
-
-        index_entry = DictionaryEntryDocument(
-            document_id=str(entry.id),
-            site_id=str(entry.site.id),
-            site_visibility=entry.site.visibility,
-            title=entry.title,
-            type=entry.type,
-            translation=translations_text,
-            acknowledgement=acknowledgements_text,
-            note=notes_text,
-            categories=categories,
-            exclude_from_kids=entry.exclude_from_kids,
-            exclude_from_games=entry.exclude_from_games,
-            custom_order=entry.custom_order,
-            visibility=entry.visibility,
-        )
-        yield index_entry.to_dict(True)
-
-
-def song_iterator():
-    queryset = Song.objects.all()
-    for instance in queryset:
-        lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = SongDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            intro_title=instance.introduction,
-            intro_translation=instance.introduction_translation,
-            lyrics_text=lyrics_text,
-            lyrics_translation=lyrics_translation_text,
-        )
-        yield song_doc.to_dict(True)
-
-
-def story_iterator():
-    queryset = Story.objects.all()
-    for instance in queryset:
-        page_text, page_translation = get_page_info(instance)
-        story_doc = StoryDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            introduction=instance.introduction,
-            introduction_translation=instance.introduction_translation,
-            author=instance.author,
-            page_text=page_text,
-            page_translation=page_translation,
-        )
-        yield story_doc.to_dict(True)
-
-
-def audio_iterator():
-    queryset = Audio.objects.all()
-    for instance in queryset:
-        audio_doc = MediaDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=Visibility.PUBLIC,
-            title=instance.title,
-            type="audio",
-            filename=instance.original.content.name,
-            description=instance.description,
-        )
-        yield audio_doc.to_dict(True)
-
-
-def image_iterator():
-    queryset = Image.objects.all()
-    for instance in queryset:
-        image_doc = MediaDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=Visibility.PUBLIC,
-            title=instance.title,
-            type="image",
-            filename=instance.original.content.name,
-            description=instance.description,
-        )
-        yield image_doc.to_dict(True)
-
-
-def video_iterator():
-    queryset = Video.objects.all()
-    for instance in queryset:
-        video_doc = MediaDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=Visibility.PUBLIC,
-            title=instance.title,
-            type="video",
-            filename=instance.original.content.name,
-            description=instance.description,
-        )
-        yield video_doc.to_dict(True)
 
 
 def add_write_alias(index, index_name):
