@@ -9,11 +9,14 @@ from backend.utils.contact_us_utils import get_fallback_emails
 class ContactUsSerializer(serializers.ModelSerializer):
     email_list = serializers.SerializerMethodField()
 
+    def validate(self, data):
+        return data
+
     @staticmethod
     @extend_schema_field(ListField(child=CharField()))
     def get_email_list(obj):
         email_list = []
-        for email in obj.contact_email:
+        for email in obj.contact_emails:
             email_list.append(email)
         for user in obj.contact_users.all():
             email_list.append(user.email)

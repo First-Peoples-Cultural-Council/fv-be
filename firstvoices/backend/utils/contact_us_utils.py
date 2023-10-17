@@ -7,7 +7,7 @@ from backend.views.exceptions import ContactUsError
 def get_fallback_emails():
     """
     Returns the list of default emails to use if no emails or users are set on the site contact_users and
-    contact_email fields. The list of default emails are set in the AppJson model with the key
+    contact_emails fields. The list of default emails are set in the AppJson model with the key
     'contact_us_default_emails'.
     """
 

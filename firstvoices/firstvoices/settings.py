@@ -32,8 +32,10 @@ if not DEBUG:
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 else:
-    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",
-                                "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s")
+    SECRET_KEY = os.environ.get(
+        "DJANGO_SECRET_KEY",
+        "django-insecure-5^%n@uxu*tev&gyzsf-2_s8bdr#thg%qbtor3&k0zodl12j-1s",
+    )
 
 ALLOWED_HOSTS = [
     os.environ.get("HOST_HEADER"),
@@ -317,10 +319,11 @@ ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
 
 # Variables for the email backend (used in the contact us form)
 ENABLE_SMTP_BACKEND: bool = os.environ.get("ENABLE_SMTP_BACKEND") is not None
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "user@example.com")
 if ENABLE_SMTP_BACKEND:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS")
     EMAIL_HOST = os.getenv("EMAIL_HOST")
     EMAIL_PORT = os.getenv("EMAIL_PORT")
 else:
+    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

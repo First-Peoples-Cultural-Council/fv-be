@@ -3,7 +3,7 @@ import re
 from smtplib import SMTPException
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.mail import send_mail
 from django.core.validators import validate_email
 from drf_spectacular.utils import (
@@ -12,7 +12,7 @@ from drf_spectacular.utils import (
     extend_schema_view,
     inline_serializer,
 )
-from rest_framework import mixins, serializers
+from rest_framework import mixins, serializers, status
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -69,13 +69,17 @@ class ContactUsView(
 
     def list(self, request, *args, **kwargs):
         """
-        Returns the list of receiver emails used by the contact us post endpoint.
+        Returns the list of receiver emails used by the contact-us post endpoint.
         """
 
         site = self.get_validated_site().first()
+
+        # Using the Site model "change" permission here as only Language Admins and Super Admins should be able to
+        # access the contact-us email list.
         perm = Site.get_perm("change")
+
         if not request.user.has_perm(perm, site):
-            return Response({"message": error_403}, status=403)
+            return Response({"message": error_403}, status=status.HTTP_403_FORBIDDEN)
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -91,27 +95,39 @@ class ContactUsView(
         site = self.get_validated_site().first()
         if request.user.is_anonymous:
             return Response(
-                {"message": "You must be logged in to send an email."}, status=403
+                {"message": "You must be logged in to send an email."},
+                status=status.HTTP_403_FORBIDDEN,
             )
         try:
-            to_email_list = site.contact_email
-            to_email_list.extend(site.contact_users.values_list("email", flat=True))
+            # Validate that all fields are present in the request
+            if any(field not in request.data for field in ["name", "email", "message"]):
+                raise ValidationError(
+                    "Please fill out all fields before submitting the form."
+                )
             name = request.data["name"]
             from_email = request.data["email"]
             message = request.data["message"]
 
-            # Validate that the email field from the form is a valid email address
+            # Validate the input fields
+            if not name or not from_email or not message:
+                raise ValidationError(
+                    "Please fill out all fields before submitting the form."
+                )
             validate_email(from_email)
+
+            # If the site has excluded words, validate that the message does not contain any of them
+            self.validate_no_excluded_words(message, name, from_email, site)
+
+            # Get the list of emails from the site contact emails and users fields
+            to_email_list = site.contact_emails
+            to_email_list.extend(site.contact_users.values_list("email", flat=True))
 
             # If the site does not have any contact emails or users, fallback to the default emails in AppJson
             if to_email_list is None or len(to_email_list) == 0:
                 logger.warning(
-                    f'No emails found in the contact_email and contact_users fields found on site "{site.title}".'
+                    f'No emails found in the contact_emails and contact_users fields found on site "{site.title}".'
                 )
                 to_email_list = get_fallback_emails()
-
-            # If the site has excluded words, validate that the message does not contain any of them
-            self.validate_no_excluded_words(message, name, from_email, site)
 
             try:
                 # Format the final email
@@ -125,14 +141,14 @@ class ContactUsView(
                     subject=f"Contact Us Form Submission from {name} ({from_email})",
                     message=final_message,
                     recipient_list=to_email_list,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    from_email=settings.EMAIL_SENDER_ADDRESS,
                 )
-            except (ConnectionRefusedError, SMTPException) as e:
-                logger.error(f"Contact us email failed to send. Error: {e}")
-                raise ContactUsError()
+            except (ConnectionRefusedError, SMTPException):
+                raise ContactUsError("Contact us email failed to send.")
 
             return Response(
-                {"message": "The email has been successfully sent."}, status=202
+                {"message": "The email has been successfully sent."},
+                status=status.HTTP_202_ACCEPTED,
             )
         except Exception as e:
             raise ContactUsError(e.message) if hasattr(
@@ -159,12 +175,12 @@ class ContactUsView(
                 logger.error(
                     'The "contact_us_excluded_words" field in AppJson model must be a list of strings.'
                 )
-                raise ContactUsError()
+                raise ImproperlyConfigured()
 
             # Validate that the message does not contain any excluded words
             for word in word_list:
                 if re.search(word.lower(), (message + name + from_email).lower()):
-                    logger.error(
+                    logger.info(
                         f'Contact us message directed to site "{site.title}" contains excluded word. '
                         "The message will not be sent."
                     )

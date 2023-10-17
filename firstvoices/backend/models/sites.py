@@ -134,7 +134,7 @@ class Site(BaseModel):
     # from fvdialect:contact_email
     contact_email_old = models.EmailField(null=True, blank=True)
 
-    contact_email = ArrayField(
+    contact_emails = ArrayField(
         models.EmailField(max_length=MAX_EMAIL_LENGTH), blank=True, default=list
     )
 

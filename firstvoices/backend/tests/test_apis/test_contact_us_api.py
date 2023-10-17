@@ -14,7 +14,7 @@ from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
 
 class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     content_type = "application/json"
-    contact_email = "contact@email.com"
+    contact_emails = "contact@email.com"
     contact_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
 
     def get_endpoint(self, site_slug):
@@ -67,7 +67,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
 
         user = factories.get_non_member_user()
@@ -92,7 +92,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
 
         user = factories.get_non_member_user()
@@ -117,7 +117,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.MEMBERS,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
 
         user = factories.UserFactory.create()
@@ -159,10 +159,63 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
         factories.AppJsonFactory.create(
             key="contact_us_excluded_words", json=["restricted"]
+        )
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        assert len(mail.outbox) == 0
+
+        response = self.client.post(
+            self.get_endpoint(site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 500
+        assert len(mail.outbox) == 0
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {
+                "name": "Test Username",
+                "email": "testuser@example.com",
+                "message": "",
+            },
+            {
+                "name": "Test Username",
+                "email": "",
+                "message": "Test message.",
+            },
+            {
+                "name": "",
+                "email": "testuser@example.com",
+                "message": "Test message.",
+            },
+            {
+                "name": "Test Username",
+                "email": "testuser@example.com",
+            },
+            {
+                "name": "Test Username",
+                "message": "Test message.",
+            },
+            {
+                "email": "testuser@example.com",
+                "message": "Test message.",
+            },
+        ],
+    )
+    @pytest.mark.django_db
+    def test_post_blank_fields(self, data):
+        site = factories.SiteFactory.create(
+            slug="test",
+            visibility=Visibility.PUBLIC,
+            contact_emails=[self.contact_emails],
         )
 
         user = factories.get_non_member_user()
@@ -183,7 +236,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
         factories.AppJsonFactory.create(
             key="contact_us_excluded_words", json={"invalid": "not a list of strings"}
@@ -207,7 +260,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[self.contact_email],
+            contact_emails=[self.contact_emails],
         )
 
         user = factories.get_non_member_user()
@@ -278,7 +331,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=self.contact_email_list,
+            contact_emails=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -298,8 +351,8 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 1
         for email in mail.outbox[0].to:
             assert email in [
-                site.contact_email[0],
-                site.contact_email[1],
+                site.contact_emails[0],
+                site.contact_emails[1],
                 user_one.email,
                 user_two.email,
             ]
@@ -311,7 +364,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=self.contact_email_list,
+            contact_emails=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -319,7 +372,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         site = Site.objects.get(slug="test")
         assert site.contact_users.count() == 2
-        assert len(site.contact_email) == 2
+        assert len(site.contact_emails) == 2
 
         factories.MembershipFactory.create(
             user=user_one, site=site, role=Role.LANGUAGE_ADMIN
@@ -334,8 +387,8 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         email_list = response_data[0]["emailList"]
         assert len(email_list) == 4
 
-        assert site.contact_email[0] in email_list
-        assert site.contact_email[1] in email_list
+        assert site.contact_emails[0] in email_list
+        assert site.contact_emails[1] in email_list
         assert site.contact_users.all()[0].email in email_list
         assert site.contact_users.all()[1].email in email_list
 
@@ -374,7 +427,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=self.contact_email_list,
+            contact_emails=self.contact_email_list,
         )
         site.contact_users.add(user_one)
         site.contact_users.add(user_two)
@@ -382,7 +435,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         site = Site.objects.get(slug="test")
         assert site.contact_users.count() == 2
-        assert len(site.contact_email) == 2
+        assert len(site.contact_emails) == 2
 
         if role:
             factories.MembershipFactory.create(user=user_one, site=site, role=role)
@@ -398,7 +451,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[],
+            contact_emails=[],
         )
         fallback_email_list = self.contact_email_list
         factories.AppJsonFactory.create(
@@ -406,7 +459,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         )
 
         assert site.contact_users.count() == 0
-        assert len(site.contact_email) == 0
+        assert len(site.contact_emails) == 0
 
         factories.MembershipFactory.create(
             user=user_one, site=site, role=Role.LANGUAGE_ADMIN
@@ -430,7 +483,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
-            contact_email=[],
+            contact_emails=[],
         )
         factories.AppJsonFactory.create(
             key="contact_us_default_emails",
