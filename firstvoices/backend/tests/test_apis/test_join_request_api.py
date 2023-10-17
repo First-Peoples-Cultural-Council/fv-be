@@ -11,6 +11,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
 
     API_LIST_VIEW = "api:join-request-list"
     API_DETAIL_VIEW = "api:join-request-detail"
+    REASON_NOTE = "Test reason note"
 
     model = JoinRequest
 
@@ -19,7 +20,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             site=site,
             status=JoinRequestStatus.PENDING,
             reason=JoinRequestReason.OTHER,
-            reason_note="Test reason note",
+            reason_note=self.REASON_NOTE,
         )
 
     def get_expected_response(self, instance, site):
@@ -46,7 +47,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             },
             "status": "pending",
             "reason": "other",
-            "reasonNote": "Test reason note",
+            "reasonNote": self.REASON_NOTE,
         }
 
     def get_expected_detail_response(self, instance, site):
@@ -57,7 +58,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             "user": factories.UserFactory().email,
             "status": "pending",
             "reason": "other",
-            "reason_note": "Test reason note",
+            "reason_note": self.REASON_NOTE,
         }
 
     def get_valid_data_with_nulls(self, site=None):
@@ -86,10 +87,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
         assert instance.reason_note == data["reason_note"]
 
     def assert_created_response(self, expected_data, actual_response):
-        assert actual_response["user"]["email"] == expected_data["user"]
-        assert actual_response["status"] == expected_data["status"]
-        assert actual_response["reason"] == expected_data["reason"]
-        assert actual_response["reasonNote"] == expected_data["reason_note"]
+        self.assert_update_response(expected_data, actual_response)
 
     def create_original_instance_for_patch(self, site):
         return factories.JoinRequestFactory(
@@ -97,7 +95,7 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             user=factories.UserFactory(),
             status=JoinRequestStatus.PENDING,
             reason=JoinRequestReason.OTHER,
-            reason_note="Test reason note",
+            reason_note=self.REASON_NOTE,
         )
 
     def get_valid_patch_data(self, site=None):
