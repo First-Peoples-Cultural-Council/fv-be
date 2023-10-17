@@ -1,10 +1,23 @@
+import pytest
+
 from backend.models import JoinRequest
+from backend.models.constants import AppRole
 from backend.models.join_request import JoinRequestReason, JoinRequestStatus
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    WriteApiTestMixin,
+)
 
 
-class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestJoinRequestEndpoints(
+    WriteApiTestMixin,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+):
     """
     End-to-end tests that the join request endpoints have the expected behaviour.
     """
@@ -98,29 +111,6 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
             reason_note=self.REASON_NOTE,
         )
 
-    def get_valid_patch_data(self, site=None):
-        return {
-            "status": "approved",
-        }
-
-    def assert_patch_instance_original_fields(
-        self, original_instance, updated_instance: JoinRequest
-    ):
-        assert original_instance.user == updated_instance.user
-        assert original_instance.reason == updated_instance.reason
-        assert original_instance.reason_note == updated_instance.reason_note
-
-    def assert_patch_instance_updated_fields(self, data, updated_instance: JoinRequest):
-        assert updated_instance.get_status_display().lower() == data["status"]
-
-    def assert_update_patch_response(self, original_instance, data, actual_response):
-        assert actual_response["user"]["email"] == original_instance.user.email
-        assert actual_response["status"] == data["status"]
-        assert (
-            actual_response["reason"] == original_instance.get_reason_display().lower()
-        )
-        assert actual_response["reasonNote"] == original_instance.reason_note
-
     def add_related_objects(self, instance):
         # no related objects to add
         pass
@@ -128,3 +118,24 @@ class TestJoinRequestEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_related_objects_deleted(self, instance):
         # no related objects to delete
         pass
+
+    @pytest.mark.django_db
+    def test_join_request_unique_validation(self):
+        """
+        Test that a join request cannot be created for the same user and site.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory()
+        factories.JoinRequestFactory(site=site, user=user)
+
+        data = {
+            "user": user.email,
+            "status": "pending",
+            "reason": "other",
+            "reason_note": self.REASON_NOTE,
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 400
