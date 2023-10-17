@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from django.core import mail
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 
 from backend.models import Site
@@ -496,5 +497,5 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         self.client.force_authenticate(user=user_one)
 
-        response = self.client.get(self.get_endpoint(site.slug))
-        assert response.status_code == 500
+        with pytest.raises(ImproperlyConfigured):
+            self.client.get(self.get_endpoint(site.slug))
