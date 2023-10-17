@@ -1,7 +1,7 @@
 from django.db.models import TextChoices
 from django.utils.translation import gettext as _
 
-VALID_DOCUMENT_TYPES = ["word", "phrase", "song", "story"]
+VALID_DOCUMENT_TYPES = ["word", "phrase", "song", "story", "audio", "image", "video"]
 
 # Index names
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"

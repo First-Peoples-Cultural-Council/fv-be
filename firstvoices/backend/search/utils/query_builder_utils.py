@@ -7,10 +7,10 @@ from backend.models import Membership
 from backend.models.category import Category
 from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.permissions.utils import get_app_role
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
     VALID_DOCUMENT_TYPES,
@@ -40,6 +40,8 @@ def get_indices(types):
             indices.add(ELASTICSEARCH_SONG_INDEX)
         elif doc_type == "story":
             indices.add(ELASTICSEARCH_STORY_INDEX)
+        elif doc_type == "audio" or doc_type == "image" or doc_type == "video":
+            indices.add(ELASTICSEARCH_MEDIA_INDEX)
 
     return list(indices)
 
@@ -54,13 +56,15 @@ def get_cleaned_search_term(q):
 
 # sub-queries utils
 def get_types_query(types):
-    # Adding type filters
-    # If only one of the "words" or "phrases" is present, we need to filter out the other one
-    # no action required if both are present
-    if "word" in types and "phrase" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE.value))
-    elif "phrase" in types and "word" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD.value))
+    # Adding type filters using a negation list
+    exclude_list = [
+        input_type
+        for input_type in ["audio", "image", "video", "word", "phrase"]
+        if input_type not in types
+    ]
+
+    if exclude_list:
+        return Q("bool", filter=[~Q("terms", type=exclude_list)])
     else:
         return None
 
