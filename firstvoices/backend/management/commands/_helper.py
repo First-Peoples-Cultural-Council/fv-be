@@ -5,6 +5,14 @@ from elasticsearch.helpers import bulk, errors
 from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
+from backend.management.commands.utils.iterators import (
+    audio_iterator,
+    dictionary_entry_iterator,
+    image_iterator,
+    song_iterator,
+    story_iterator,
+    video_iterator,
+)
 from backend.models import (
     Acknowledgement,
     DictionaryEntry,
@@ -17,11 +25,7 @@ from backend.models import (
     Translation,
 )
 from backend.models.dictionary import DictionaryEntryCategory
-from backend.search.documents import (
-    DictionaryEntryDocument,
-    SongDocument,
-    StoryDocument,
-)
+from backend.models.media import Audio, Image, Video
 from backend.search.signals.dictionary_entry_signals import (
     request_delete_dictionary_entry_index,
     request_update_acknowledgement_index,
@@ -31,6 +35,10 @@ from backend.search.signals.dictionary_entry_signals import (
     request_update_notes_index,
     request_update_translation_index,
 )
+from backend.search.signals.media_signals import (
+    request_delete_from_index as request_delete_from_index_media,
+)
+from backend.search.signals.media_signals import request_update_media_index
 from backend.search.signals.site_signals import (
     request_delete_related_docs,
     request_update_document_visibility,
@@ -51,16 +59,9 @@ from backend.search.signals.story_signals import (
 )
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
-)
-from backend.search.utils.object_utils import (
-    get_acknowledgements_text,
-    get_categories_ids,
-    get_lyrics,
-    get_notes_text,
-    get_page_info,
-    get_translation_text,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -93,6 +94,10 @@ def rebuild_index(index_name, index_document):
             bulk(es, story_iterator())
         elif index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
+        elif index_name == ELASTICSEARCH_MEDIA_INDEX:
+            bulk(es, image_iterator())
+            bulk(es, audio_iterator())
+            bulk(es, video_iterator())
     except errors.BulkIndexError as e:
         # Alias configuration error
         if "multiple indices" in str(e):
@@ -136,79 +141,6 @@ def get_current_index(es_connection, index_name):
         return None
 
 
-def dictionary_entry_iterator():
-    queryset = DictionaryEntry.objects.all()
-    for entry in queryset:
-        translations_text = get_translation_text(entry)
-        notes_text = get_notes_text(entry)
-        acknowledgements_text = get_acknowledgements_text(entry)
-        categories = get_categories_ids(entry)
-
-        index_entry = DictionaryEntryDocument(
-            document_id=str(entry.id),
-            site_id=str(entry.site.id),
-            site_visibility=entry.site.visibility,
-            title=entry.title,
-            type=entry.type,
-            translation=translations_text,
-            acknowledgement=acknowledgements_text,
-            note=notes_text,
-            categories=categories,
-            exclude_from_kids=entry.exclude_from_kids,
-            exclude_from_games=entry.exclude_from_games,
-            custom_order=entry.custom_order,
-            visibility=entry.visibility,
-        )
-        yield index_entry.to_dict(True)
-
-
-def song_iterator():
-    queryset = Song.objects.all()
-    for instance in queryset:
-        lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = SongDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            intro_title=instance.introduction,
-            intro_translation=instance.introduction_translation,
-            lyrics_text=lyrics_text,
-            lyrics_translation=lyrics_translation_text,
-        )
-        yield song_doc.to_dict(True)
-
-
-def story_iterator():
-    queryset = Story.objects.all()
-    for instance in queryset:
-        page_text, page_translation = get_page_info(instance)
-        story_doc = StoryDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            introduction=instance.introduction,
-            introduction_translation=instance.introduction_translation,
-            author=instance.author,
-            page_text=page_text,
-            page_translation=page_translation,
-        )
-        yield story_doc.to_dict(True)
-
-
 def add_write_alias(index, index_name):
     alias_config = {"is_write_index": True}
 
@@ -218,6 +150,8 @@ def add_write_alias(index, index_name):
         index.aliases(songs=alias_config)
     elif index_name == ELASTICSEARCH_STORY_INDEX:
         index.aliases(stories=alias_config)
+    elif index_name == ELASTICSEARCH_MEDIA_INDEX:
+        index.aliases(media=alias_config)
     return index
 
 
@@ -233,7 +167,7 @@ def disconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.documents.dictionary_entry_document
+    # backend.search.signals.dictionary_entry_signals
     signals.post_save.disconnect(
         request_update_dictionary_entry_index, sender=DictionaryEntry
     )
@@ -260,16 +194,24 @@ def disconnect_signals():
         request_update_categories_m2m_index, sender=DictionaryEntryCategory
     )
 
-    # backend.search.documents.song_document
+    # backend.search.signals.song_signals
     signals.post_save.disconnect(request_update_song_index, sender=Song)
     signals.post_delete.disconnect(request_delete_from_index_song, sender=Song)
     signals.post_save.disconnect(request_update_lyrics_index, sender=Lyric)
     signals.post_delete.disconnect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.documents.story_document
+    # backend.search.signals.story_signals
     signals.post_save.disconnect(request_update_story_index, sender=Story)
     signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
     signals.post_save.disconnect(request_update_pages_index, sender=StoryPage)
+
+    # backend.search.signals.media_signals
+    signals.post_save.disconnect(request_update_media_index, sender=Audio)
+    signals.post_save.disconnect(request_update_media_index, sender=Image)
+    signals.post_save.disconnect(request_update_media_index, sender=Video)
+    signals.post_delete.disconnect(request_delete_from_index_media, sender=Audio)
+    signals.post_delete.disconnect(request_delete_from_index_media, sender=Image)
+    signals.post_delete.disconnect(request_delete_from_index_media, sender=Video)
 
     # backend.search.utils.site_signals
     signals.pre_save.disconnect(request_update_document_visibility, sender=Site)
@@ -281,7 +223,7 @@ def reconnect_signals():
     # Verify the list with signals present in all index documents present in
     # backend.search folder if this list goes out of sync
 
-    # backend.search.documents.dictionary_entry_document
+    # backend.search.signals.dictionary_entry_signals
     signals.post_save.connect(
         request_update_dictionary_entry_index, sender=DictionaryEntry
     )
@@ -308,16 +250,24 @@ def reconnect_signals():
         request_update_categories_m2m_index, sender=DictionaryEntryCategory
     )
 
-    # backend.search.documents.song_document
+    # backend.search.signals.song_signals
     signals.post_save.connect(request_update_song_index, sender=Song)
     signals.post_delete.connect(request_delete_from_index_song, sender=Song)
     signals.post_save.connect(request_update_lyrics_index, sender=Lyric)
     signals.post_delete.connect(request_update_lyrics_index, sender=Lyric)
 
-    # backend.search.documents.story_document
+    # backend.search.signals.story_signals
     signals.post_save.connect(request_update_story_index, sender=Story)
     signals.post_delete.connect(request_delete_from_index_story, sender=Story)
     signals.post_save.connect(request_update_pages_index, sender=StoryPage)
+
+    # backend.search.signals.media_signals
+    signals.post_save.connect(request_update_media_index, sender=Audio)
+    signals.post_save.connect(request_update_media_index, sender=Image)
+    signals.post_save.connect(request_update_media_index, sender=Video)
+    signals.post_delete.connect(request_delete_from_index_media, sender=Audio)
+    signals.post_delete.connect(request_delete_from_index_media, sender=Image)
+    signals.post_delete.connect(request_delete_from_index_media, sender=Video)
 
     # backend.search.utils.site_signals
     signals.pre_save.connect(request_update_document_visibility, sender=Site)

@@ -6,11 +6,13 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from backend.models.sites import Site
 from backend.search.documents import (
     DictionaryEntryDocument,
+    MediaDocument,
     SongDocument,
     StoryDocument,
 )
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
@@ -27,6 +29,9 @@ def update_document_visibility(instance_id, instance_visibility, **kwargs):
     dictionary_entries_set = instance.dictionaryentry_set.all()
     songs_set = instance.song_set.all()
     stories_set = instance.story_set.all()
+    audio_set = instance.audio_set.all()
+    image_set = instance.image_set.all()
+    video_set = instance.video_set.all()
 
     # Updating dictionary_entries visibility
     for dictionary_entry in dictionary_entries_set:
@@ -39,6 +44,14 @@ def update_document_visibility(instance_id, instance_visibility, **kwargs):
     # updating story visibility
     for story in stories_set:
         update_story_visibility(story, instance_visibility)
+
+    # Updating media visibility
+    for audio in audio_set:
+        update_media_visibility(audio, instance_visibility)
+    for image in image_set:
+        update_media_visibility(image, instance_visibility)
+    for video in video_set:
+        update_media_visibility(video, instance_visibility)
 
 
 @shared_task
@@ -166,6 +179,38 @@ def update_story_visibility(story, updated_visibility):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, story.id)
+        logger.error(e)
+
+
+def update_media_visibility(media_instance, updated_visibility):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_MEDIA_INDEX, "media", media_instance.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        media_doc = MediaDocument.get(id=existing_entry["_id"])
+        media_doc.update(site_visibility=updated_visibility)
+    except ConnectionError:
+        logger.warning(
+            ES_CONNECTION_ERROR
+            % ("media", SearchIndexEntryTypes.MEDIA, media_instance.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "sites_visibility_update_signal",
+                SearchIndexEntryTypes.MEDIA,
+                media_instance.id,
+            )
+        )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.MEDIA, media_instance.id)
         logger.error(e)
 
 
