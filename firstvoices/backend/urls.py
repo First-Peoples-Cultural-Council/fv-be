@@ -4,6 +4,7 @@ from backend.router import CustomRouter
 from backend.views.audio_views import AudioViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
+from backend.views.contact_us_views import ContactUsView
 from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
     CustomOrderRecalculateView,
@@ -39,6 +40,7 @@ sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
+sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(

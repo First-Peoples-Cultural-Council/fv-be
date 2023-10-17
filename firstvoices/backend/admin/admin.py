@@ -34,7 +34,7 @@ class SiteAdmin(DynamicArrayMixin, BaseAdmin):
         CategoryInline,
         WordOfTheDayInline,
     ]
-    search_fields = ("id", "title", "slug", "language__title", "contact_email")
+    search_fields = ("id", "title", "slug", "language__title", "contact_emails")
     autocomplete_fields = (
         "language",
         "homepage",
