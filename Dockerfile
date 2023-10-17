@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apk add build-base
 RUN apk add libffi-dev
 RUN apk add libmagic
+RUN apk add openblas-dev
 RUN apk add --no-cache ffmpeg
 RUN pip3 install gunicorn
 
