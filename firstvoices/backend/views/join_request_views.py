@@ -25,7 +25,9 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 @extend_schema_view(
     list=extend_schema(
-        description=_("A list of join requests associated with the specified site."),
+        description=_(
+            "A list of pending join requests associated with the specified site."
+        ),
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
