@@ -136,12 +136,9 @@ class JoinRequestViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return JoinRequest.objects.filter(site__slug=site[0].slug).select_related(
-                "site", "site__language", "created_by", "last_modified_by", "user"
-            )
-        else:
-            return JoinRequest.objects.none()
+        return JoinRequest.objects.filter(site__slug=site[0].slug).select_related(
+            "site", "site__language", "created_by", "last_modified_by", "user"
+        )
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
