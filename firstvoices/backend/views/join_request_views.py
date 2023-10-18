@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from django.db import transaction
-from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiResponse,
@@ -142,8 +141,7 @@ class JoinRequestViewSet(
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
-        site = self.get_validated_site().first()
-        join_request = self.get_validated_join_request(site, pk)
+        join_request = self.get_object()
 
         self.update_join_request_status(
             join_request, JoinRequestStatus.IGNORED, request.user
@@ -154,8 +152,7 @@ class JoinRequestViewSet(
 
     @action(detail=True, methods=["post"])
     def reject(self, request, site_slug=None, pk=None):
-        site = self.get_validated_site().first()
-        join_request = self.get_validated_join_request(site, pk)
+        join_request = self.get_object()
 
         self.update_join_request_status(
             join_request, JoinRequestStatus.REJECTED, request.user
@@ -168,8 +165,6 @@ class JoinRequestViewSet(
 
     @action(detail=True, methods=["post"])
     def approve(self, request, site_slug=None, pk=None):
-        site = self.get_validated_site().first()
-
         if "role" not in request.data:
             raise ValidationError({"role": ["This field is required."]})
 
@@ -181,15 +176,18 @@ class JoinRequestViewSet(
                 {"role": ["value must be one of: " + ", ".join(Role.names)]}
             )
 
-        join_request = self.get_validated_join_request(site, pk)
-        user = join_request.user
+        join_request = self.get_object()
 
-        has_membership = Membership.objects.filter(site=site, user=user).first()
+        has_membership = Membership.objects.filter(
+            site=join_request.site, user=join_request.user
+        ).first()
         if has_membership:
             raise ValidationError("User already has a membership on this site")
 
         with transaction.atomic():
-            Membership.objects.create(user=user, site=site, role=role)
+            Membership.objects.create(
+                user=join_request.user, site=join_request.site, role=role
+            )
             self.update_join_request_status(
                 join_request, JoinRequestStatus.APPROVED, request.user
             )
@@ -199,17 +197,8 @@ class JoinRequestViewSet(
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_validated_join_request(self, site, pk):
-        try:
-            join_requests = JoinRequest.objects.filter(pk=pk, site=site)
-        except ValidationError:
-            # pk is not a valid uuid
-            raise Http404
-
-        if len(join_requests) == 0:
-            raise Http404
-
-        return join_requests.first()
+    def get_join_request(self, site, pk):
+        return JoinRequest.objects.filter(pk=pk, site=site).first()
 
     def update_join_request_status(self, join_request, status, user):
         join_request.status = status
