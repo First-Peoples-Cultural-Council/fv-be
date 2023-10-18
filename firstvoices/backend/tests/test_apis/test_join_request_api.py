@@ -520,3 +520,26 @@ class TestJoinRequestEndpoints(
     def assert_request_rejected(self, join_request):
         updated_join_request = JoinRequest.objects.get(pk=join_request.pk)
         assert updated_join_request.status == JoinRequestStatus.REJECTED
+
+    @pytest.mark.django_db
+    def test_only_pending_requests_viewable_in_list(self):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
+        factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.APPROVED
+        )
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.IGNORED)
+        factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.REJECTED
+        )
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["status"] == "pending"
