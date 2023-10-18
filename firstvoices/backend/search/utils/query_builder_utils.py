@@ -178,11 +178,12 @@ def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
         return allowed_values
 
     values = input_types.split(",")
-    selected_values = [
-        value.strip().lower()
-        for value in values
-        if value.strip().lower() in allowed_values
-    ]
+    selected_values = []
+
+    for value in values:
+        stripped_value = value.strip().lower()
+        if stripped_value in allowed_values and stripped_value not in selected_values:
+            selected_values.append(stripped_value)
 
     if len(selected_values) == 0:
         return None

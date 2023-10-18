@@ -28,30 +28,72 @@ class TestSearchFilters:
 
 @pytest.mark.django_db
 class TestTypesFilter:
-    expected_phrases_filter = "'must_not': [{'match': {'type': 'phrase'}}]}"
-    expected_word_filter = "'must_not': [{'match': {'type': 'word'}}]}"
-
-    def test_words(self):
-        search_query = get_search_query(types=["word"])
+    @pytest.mark.parametrize(
+        "type_to_exclude, expected_query",
+        [
+            (
+                ["word"],
+                "'must_not': [{'terms': {'type': ['audio', 'image', 'video', 'phrase']}}]}",
+            ),
+            (
+                ["phrase"],
+                "'must_not': [{'terms': {'type': ['audio', 'image', 'video', 'word']}}]}",
+            ),
+            (
+                ["image"],
+                "'must_not': [{'terms': {'type': ['audio', 'video', 'word', 'phrase']}}]}",
+            ),
+            (
+                ["audio"],
+                "'must_not': [{'terms': {'type': ['image', 'video', 'word', 'phrase']}}]}",
+            ),
+            (
+                ["video"],
+                "'must_not': [{'terms': {'type': ['audio', 'image', 'word', 'phrase']}}]}",
+            ),
+        ],
+    )
+    def test_basic_exclusion_cases(self, type_to_exclude, expected_query):
+        search_query = get_search_query(types=type_to_exclude)
         search_query = search_query.to_dict()
 
-        assert self.expected_phrases_filter in str(search_query)
-        assert self.expected_word_filter not in str(search_query)
+        assert expected_query in str(search_query)
 
-    def test_phrases(self):
-        search_query = get_search_query(types=["phrase"])
+    @pytest.mark.parametrize(
+        "type_to_exclude, expected_query",
+        [
+            (
+                ["word", "audio"],
+                "'must_not': [{'terms': {'type': ['image', 'video', 'phrase']}}]}",
+            ),
+            (
+                ["word", "phrase"],
+                "'must_not': [{'terms': {'type': ['audio', 'image', 'video']}}]}",
+            ),
+            (
+                ["audio", "image", "video"],
+                "'must_not': [{'terms': {'type': ['word', 'phrase']}}]}",
+            ),
+            (
+                ["audio", "phrase"],
+                "'must_not': [{'terms': {'type': ['image', 'video', 'word']}}]}",
+            ),
+        ],
+    )
+    def test_multiple_exclusion_cases(self, type_to_exclude, expected_query):
+        search_query = get_search_query(types=type_to_exclude)
         search_query = search_query.to_dict()
 
-        assert self.expected_phrases_filter not in str(search_query)
-        assert self.expected_word_filter in str(search_query)
+        assert expected_query in str(search_query)
 
-    @pytest.mark.parametrize("types", [["phrase", "word"], ["word", "phrase"]])
-    def test_words_and_phrases(self, types):
-        search_query = get_search_query(types=types)
+    def test_all_types_supplied(self):
+        search_query = get_search_query(
+            types=["audio", "image", "video", "word", "phrase"]
+        )
         search_query = search_query.to_dict()
 
-        assert self.expected_phrases_filter not in str(search_query)
-        assert self.expected_word_filter not in str(search_query)
+        # Checking there must not be a filter present for types in the query
+        assert "'must_not': [{'terms': {'type':" not in str(search_query)
 
 
 @pytest.mark.django_db
