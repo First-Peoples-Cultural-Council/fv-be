@@ -25,7 +25,9 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 @extend_schema_view(
     list=extend_schema(
-        description=_("A list of join requests associated with the specified site."),
+        description=_(
+            "A list of pending join requests associated with the specified site."
+        ),
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
@@ -135,7 +137,9 @@ class JoinRequestViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return JoinRequest.objects.filter(site__slug=site[0].slug).select_related(
+        return JoinRequest.objects.filter(
+            site__slug=site[0].slug, status=JoinRequestStatus.PENDING
+        ).select_related(
             "site", "site__language", "created_by", "last_modified_by", "user"
         )
 
