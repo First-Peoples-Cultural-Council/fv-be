@@ -51,17 +51,6 @@ class TestTypesFilter:
                 ["video"],
                 "'must_not': [{'terms': {'type': ['audio', 'image', 'word', 'phrase']}}]}",
             ),
-        ],
-    )
-    def test_basic_exclusion_cases(self, type_to_exclude, expected_query):
-        search_query = get_search_query(types=type_to_exclude)
-        search_query = search_query.to_dict()
-
-        assert expected_query in str(search_query)
-
-    @pytest.mark.parametrize(
-        "type_to_exclude, expected_query",
-        [
             (
                 ["word", "audio"],
                 "'must_not': [{'terms': {'type': ['image', 'video', 'phrase']}}]}",
@@ -80,7 +69,7 @@ class TestTypesFilter:
             ),
         ],
     )
-    def test_multiple_exclusion_cases(self, type_to_exclude, expected_query):
+    def test_exclusion_cases(self, type_to_exclude, expected_query):
         search_query = get_search_query(types=type_to_exclude)
         search_query = search_query.to_dict()
 
