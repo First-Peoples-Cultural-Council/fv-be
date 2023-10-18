@@ -11,7 +11,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -209,13 +209,7 @@ class JoinRequestViewSet(
         if len(join_requests) == 0:
             raise Http404
 
-        # Check join request change permissions
-        perm = JoinRequest.get_perm("change")
-        jr = join_requests.first()
-        if not self.request.user.has_perm(perm, jr):
-            raise PermissionDenied
-        else:
-            return jr
+        return join_requests.first()
 
     def update_join_request_status(self, join_request, status, user):
         join_request.status = status

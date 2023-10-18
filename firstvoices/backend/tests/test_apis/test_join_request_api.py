@@ -286,10 +286,22 @@ class TestJoinRequestEndpoints(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
     )
     @pytest.mark.django_db
-    def test_actions_404_missing_join_request(self, viewname):
+    def test_actions_404_invalid_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         response = self.client.post(
             self.get_action_endpoint(viewname, key="fake-key", site_slug=site.slug)
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
+    @pytest.mark.django_db
+    def test_actions_404_missing_join_request(self, viewname):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        response = self.client.post(
+            self.get_action_endpoint(viewname, key=str(site.id), site_slug=site.slug)
         )
 
         assert response.status_code == 404
