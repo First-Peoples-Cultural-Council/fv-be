@@ -123,6 +123,13 @@ def is_superadmin(user):
 
 
 #
+# combo site-and-app role filters
+#
+def is_at_least_language_admin(user):
+    return has_at_least_language_admin_membership(user) | is_at_least_staff_admin(user)
+
+
+#
 # access-based filters
 #
 def has_public_access_to_obj(user=None):

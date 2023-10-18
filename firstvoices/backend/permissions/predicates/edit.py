@@ -1,4 +1,4 @@
-from rules import predicate
+from rules import Predicate
 
 from . import base
 from .base import (
@@ -12,16 +12,16 @@ from .base import (
 # role-based predicates for edit permissions
 #
 
-is_at_least_assistant_or_super = predicate(
+is_at_least_assistant_or_super = Predicate(
     has_at_least_assistant_membership | is_superadmin,
     name="is_at_least_assistant_or_super",
 )
-is_at_least_editor_or_super = predicate(
+is_at_least_editor_or_super = Predicate(
     has_at_least_editor_membership | is_superadmin, name="is_at_least_editor_or_super"
 )
-is_language_admin_or_super = predicate(
+is_language_admin_or_super = Predicate(
     has_language_admin_membership | is_superadmin,
-    name="is_at_least_language_admin_or_super",
+    name="is_language_admin_or_super",
 )
 
 """
@@ -30,7 +30,7 @@ Same as ``can_edit_core_uncontrolled_data`` but does not check the visibility of
 - Assistant has permission for Team-visibility data
 - Editor, Language Admin, and Superadmin have permission
 """
-can_add_core_uncontrolled_data = predicate(
+can_add_core_uncontrolled_data = Predicate(
     base.has_at_least_editor_membership
     | base.is_superadmin
     | (
@@ -47,7 +47,7 @@ Same as ``can_add_core_uncontrolled_data`` but also checks the visibility of the
 - Assistant has permission for Team-visibility data
 - Editor, Language Admin, and Superadmin have permission
 """
-can_edit_core_uncontrolled_data = predicate(
+can_edit_core_uncontrolled_data = Predicate(
     base.has_at_least_editor_membership
     | base.is_superadmin
     | (
@@ -59,18 +59,18 @@ can_edit_core_uncontrolled_data = predicate(
 )
 
 # just a convenient alias
-can_delete_core_uncontrolled_data = predicate(
+can_delete_core_uncontrolled_data = Predicate(
     is_at_least_editor_or_super, name="can_edit_core_uncontrolled_data"
 )
 
 # This predicate must be combined with the CreateControlledSiteContentSerializerMixin in
 # backend/serializers/base_serializers.py
-can_add_controlled_data = predicate(
+can_add_controlled_data = Predicate(
     is_at_least_assistant_or_super,
     name="can_add_controlled_data",
 )
 
-can_edit_controlled_data = predicate(
+can_edit_controlled_data = Predicate(
     base.has_at_least_editor_membership
     | base.is_superadmin
     | (
@@ -82,6 +82,6 @@ can_edit_controlled_data = predicate(
 )
 
 # another convenient alias
-can_delete_controlled_data = predicate(
+can_delete_controlled_data = Predicate(
     is_at_least_editor_or_super, name="can_delete_controlled_data"
 )
