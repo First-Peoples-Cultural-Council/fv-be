@@ -344,23 +344,6 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 403
 
-    @pytest.mark.parametrize(
-        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
-    )
-    @pytest.mark.django_db
-    def test_actions_403_staff(self, viewname):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.STAFF)
-
-        join_request = factories.JoinRequestFactory.create(site=site)
-
-        response = self.client.post(
-            self.get_action_endpoint(
-                viewname, key=str(join_request.id), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 403
-
     @pytest.mark.django_db
     def test_approve_400_missing_role(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
@@ -424,9 +407,10 @@ class TestJoinRequestEndpoints(
         assert response.status_code == 200
         self.assert_request_approved(join_request, site)
 
+    @pytest.mark.parametrize("app_role", AppRole)
     @pytest.mark.django_db
-    def test_approve_success_superadmin(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+    def test_approve_success_superadmin(self, app_role):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC, app_role)
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
