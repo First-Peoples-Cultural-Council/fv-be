@@ -47,8 +47,8 @@ class JoinRequest(BaseSiteContentModel):
         rules_permissions = {
             "view": predicates.is_at_least_language_admin,
             "add": rules.is_authenticated,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "change": predicates.is_at_least_language_admin,
+            "delete": predicates.is_at_least_language_admin,
         }
         indexes = [
             models.Index(fields=["site", "status"], name="join_request_status_idx"),
