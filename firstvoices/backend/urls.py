@@ -57,6 +57,7 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
 sites_router.register(r"images", ImageViewSet, basename="image")
+sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
@@ -64,7 +65,6 @@ sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
-sites_router.register(r"join-requests", JoinRequestViewSet, basename="join-request")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")

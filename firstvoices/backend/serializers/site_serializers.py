@@ -81,7 +81,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     )
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
-    join_requests = SiteViewLinkField(view_name="api:join-request-list")
+    join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")

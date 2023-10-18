@@ -217,7 +217,8 @@ class SiteContentListApiTestMixin:
 
     @pytest.mark.django_db
     def test_list_minimal(self):
-        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        self.client.force_authenticate(user=user)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
@@ -336,7 +337,9 @@ class SiteContentDetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_minimal(self):
-        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        self.client.force_authenticate(user=user)
+
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
