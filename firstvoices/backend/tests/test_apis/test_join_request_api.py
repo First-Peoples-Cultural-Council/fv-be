@@ -390,6 +390,23 @@ class TestJoinRequestEndpoints(
         assert response.status_code == 400
 
     @pytest.mark.django_db
+    def test_approve_400_already_a_member(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+
+        join_request = factories.JoinRequestFactory.create(site=site)
+        factories.MembershipFactory(user=join_request.user, site=join_request.site)
+
+        response = self.client.post(
+            self.get_approve_endpoint(
+                key=str(join_request.id), site_slug=join_request.site.slug
+            ),
+            data=self.format_upload_data({"role": "member"}),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
     def test_approve_success_admin(self):
         site, user = factories.get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
