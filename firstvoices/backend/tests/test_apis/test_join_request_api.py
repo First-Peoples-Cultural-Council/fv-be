@@ -1,9 +1,10 @@
 import json
+
 import pytest
 from rest_framework.reverse import reverse
 
 from backend.models import JoinRequest, Membership
-from backend.models.constants import Visibility, Role, AppRole
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.join_request import JoinRequestReason, JoinRequestStatus
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
@@ -16,6 +17,7 @@ from backend.tests.test_apis.base_api_test import (
 approve_viewname = "api:joinrequest-approve"
 ignore_viewname = "api:joinrequest-ignore"
 reject_viewname = "api:joinrequest-reject"
+
 
 class TestJoinRequestEndpoints(
     WriteApiTestMixin,
@@ -147,10 +149,12 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_member_access(self, role):
+        # See custom permission tests instead
         pass
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_team_access(self):
+        # See custom permission tests instead
         pass
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
@@ -162,9 +166,7 @@ class TestJoinRequestEndpoints(
         factories.MembershipFactory.create(user=user, site=site, role=role)
         self.client.force_authenticate(user=user)
 
-        instance = self.create_minimal_instance(
-            site=site, visibility=visibility
-        )
+        instance = self.create_minimal_instance(site=site, visibility=visibility)
 
         response = self.client.get(
             self.get_detail_endpoint(
@@ -179,12 +181,12 @@ class TestJoinRequestEndpoints(
     def test_detail_language_admin_access(self, visibility):
         site = factories.SiteFactory.create(visibility=visibility)
         user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.LANGUAGE_ADMIN)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
-        instance = self.create_minimal_instance(
-            site=site, visibility=visibility
-        )
+        instance = self.create_minimal_instance(site=site, visibility=visibility)
 
         response = self.client.get(
             self.get_detail_endpoint(
@@ -200,9 +202,7 @@ class TestJoinRequestEndpoints(
     def test_detail_app_admin_access(self, visibility, app_role):
         site = self.create_site_with_app_admin(visibility, app_role)
 
-        instance = self.create_minimal_instance(
-            site=site, visibility=visibility
-        )
+        instance = self.create_minimal_instance(site=site, visibility=visibility)
 
         response = self.client.get(
             self.get_detail_endpoint(
@@ -233,7 +233,9 @@ class TestJoinRequestEndpoints(
     def test_list_language_admin_access(self, visibility):
         site = factories.SiteFactory.create(visibility=visibility)
         user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.LANGUAGE_ADMIN)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
@@ -266,17 +268,23 @@ class TestJoinRequestEndpoints(
     def get_reject_endpoint(self, key, site_slug):
         return self.get_action_endpoint(reject_viewname, site_slug, key)
 
-    @pytest.mark.parametrize("viewname", [approve_viewname, ignore_viewname, reject_viewname])
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
     @pytest.mark.django_db
     def test_actions_404_missing_site(self, viewname):
         join_request = factories.JoinRequestFactory.create()
         response = self.client.post(
-            self.get_action_endpoint(viewname, key=str(join_request.id), site_slug="fake-slug")
+            self.get_action_endpoint(
+                viewname, key=str(join_request.id), site_slug="fake-slug"
+            )
         )
 
         assert response.status_code == 404
 
-    @pytest.mark.parametrize("viewname", [approve_viewname, ignore_viewname, reject_viewname])
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
     @pytest.mark.django_db
     def test_actions_404_missing_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -286,7 +294,9 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 404
 
-    @pytest.mark.parametrize("viewname", [approve_viewname, ignore_viewname, reject_viewname])
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
     @pytest.mark.django_db
     def test_actions_403_admin_of_other_site(self, viewname):
         _, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
@@ -296,12 +306,16 @@ class TestJoinRequestEndpoints(
         join_request = factories.JoinRequestFactory.create(site=other_site)
 
         response = self.client.post(
-            self.get_action_endpoint(viewname, key=str(join_request.id), site_slug=other_site.slug)
+            self.get_action_endpoint(
+                viewname, key=str(join_request.id), site_slug=other_site.slug
+            )
         )
 
         assert response.status_code == 403
 
-    @pytest.mark.parametrize("viewname", [approve_viewname, ignore_viewname, reject_viewname])
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_actions_403_not_admin(self, role, viewname):
@@ -311,12 +325,16 @@ class TestJoinRequestEndpoints(
         join_request = factories.JoinRequestFactory.create(site=site)
 
         response = self.client.post(
-            self.get_action_endpoint(viewname, key=str(join_request.id), site_slug=site.slug)
+            self.get_action_endpoint(
+                viewname, key=str(join_request.id), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 403
 
-    @pytest.mark.parametrize("viewname", [approve_viewname, ignore_viewname, reject_viewname])
+    @pytest.mark.parametrize(
+        "viewname", [approve_viewname, ignore_viewname, reject_viewname]
+    )
     @pytest.mark.django_db
     def test_actions_403_staff(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.STAFF)
@@ -324,7 +342,9 @@ class TestJoinRequestEndpoints(
         join_request = factories.JoinRequestFactory.create(site=site)
 
         response = self.client.post(
-            self.get_action_endpoint(viewname, key=str(join_request.id), site_slug=site.slug)
+            self.get_action_endpoint(
+                viewname, key=str(join_request.id), site_slug=site.slug
+            )
         )
 
         assert response.status_code == 403
@@ -336,7 +356,9 @@ class TestJoinRequestEndpoints(
         join_request = factories.JoinRequestFactory.create(site=site)
 
         response = self.client.post(
-            self.get_approve_endpoint(key=str(join_request.id), site_slug=join_request.site.slug)
+            self.get_approve_endpoint(
+                key=str(join_request.id), site_slug=join_request.site.slug
+            )
         )
 
         assert response.status_code == 400
@@ -357,7 +379,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_approve_success_admin(self):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         join_request = factories.JoinRequestFactory.create(site=site)
@@ -387,14 +411,18 @@ class TestJoinRequestEndpoints(
         self.assert_request_approved(join_request, site)
 
     def assert_request_approved(self, join_request, site):
-        membership = Membership.objects.filter(site=site, user=join_request.user, role=Role.MEMBER)
+        membership = Membership.objects.filter(
+            site=site, user=join_request.user, role=Role.MEMBER
+        )
         assert membership.count() == 1
         updated_join_request = JoinRequest.objects.get(pk=join_request.pk)
         assert updated_join_request.status == JoinRequestStatus.APPROVED
 
     @pytest.mark.django_db
     def test_ignore_success_admin(self):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         join_request = factories.JoinRequestFactory.create(site=site)
@@ -427,10 +455,11 @@ class TestJoinRequestEndpoints(
         updated_join_request = JoinRequest.objects.get(pk=join_request.pk)
         assert updated_join_request.status == JoinRequestStatus.IGNORED
 
-
     @pytest.mark.django_db
     def test_reject_success_admin(self):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         join_request = factories.JoinRequestFactory.create(site=site)
