@@ -197,9 +197,6 @@ class JoinRequestViewSet(
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_join_request(self, site, pk):
-        return JoinRequest.objects.filter(pk=pk, site=site).first()
-
     def update_join_request_status(self, join_request, status, user):
         join_request.status = status
         join_request.last_modified_by = user
