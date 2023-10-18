@@ -4,16 +4,24 @@ from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
 from backend.models import DictionaryEntry, Song, Story, StoryPage
+from backend.models.media import Audio, Image, Video
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
 )
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
+from backend.serializers.media_serializers import (
+    AudioSerializer,
+    ImageSerializer,
+    VideoSerializer,
+)
 from backend.serializers.song_serializers import SongMinimalSerializer
 from backend.serializers.story_serializers import StoryMinimalSerializer
+from backend.views.utils import get_select_related_media_fields
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -65,6 +73,9 @@ def hydrate_objects(search_results, request):
     dictionary_search_results_ids = []
     song_search_results_ids = []
     story_search_results_ids = []
+    audio_search_results_ids = []
+    image_search_results_ids = []
+    video_search_results_ids = []
 
     # Separating object IDs into lists based on their data types
     for obj in search_results:
@@ -74,6 +85,13 @@ def hydrate_objects(search_results, request):
             song_search_results_ids.append(obj["_source"]["document_id"])
         elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
             story_search_results_ids.append(obj["_source"]["document_id"])
+        elif ELASTICSEARCH_MEDIA_INDEX in obj["_index"]:
+            if obj["_source"]["type"] == "audio":
+                audio_search_results_ids.append(obj["_source"]["document_id"])
+            elif obj["_source"]["type"] == "image":
+                image_search_results_ids.append(obj["_source"]["document_id"])
+            elif obj["_source"]["type"] == "video":
+                video_search_results_ids.append(obj["_source"]["document_id"])
 
     # Fetching objects from the database
     dictionary_objects = list(
@@ -102,6 +120,24 @@ def hydrate_objects(search_results, request):
             "related_images",
             "related_images__original",
         )
+    )
+
+    audio_objects = list(
+        Audio.objects.filter(id__in=audio_search_results_ids)
+        .prefetch_related("original", "site", "speakers")
+        .defer("created_by_id", "last_modified_by_id", "last_modified")
+    )
+
+    image_objects = list(
+        Image.objects.filter(id__in=image_search_results_ids)
+        .prefetch_related("site", *get_select_related_media_fields(None))
+        .defer("created_by_id", "last_modified_by_id", "last_modified")
+    )
+
+    video_objects = list(
+        Video.objects.filter(id__in=video_search_results_ids)
+        .prefetch_related("site", *get_select_related_media_fields(None))
+        .defer("created_by_id", "last_modified_by_id", "last_modified")
     )
 
     for obj in search_results:
@@ -154,6 +190,55 @@ def hydrate_objects(search_results, request):
                         ).data,
                     }
                 )
+            elif (
+                ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
+                and obj["_source"]["type"] == "audio"
+            ):
+                audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
+
+                complete_objects.append(
+                    {
+                        "searchResultId": obj["_id"],
+                        "score": obj["_score"],
+                        "type": "audio",
+                        "entry": AudioSerializer(
+                            audio, context={"request": request}
+                        ).data,
+                    }
+                )
+            elif (
+                ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
+                and obj["_source"]["type"] == "image"
+            ):
+                image = get_object_by_id(image_objects, obj["_source"]["document_id"])
+
+                complete_objects.append(
+                    {
+                        "searchResultId": obj["_id"],
+                        "score": obj["_score"],
+                        "type": "image",
+                        "entry": ImageSerializer(
+                            image, context={"request": request}
+                        ).data,
+                    }
+                )
+            elif (
+                ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
+                and obj["_source"]["type"] == "video"
+            ):
+                video = get_object_by_id(video_objects, obj["_source"]["document_id"])
+
+                complete_objects.append(
+                    {
+                        "searchResultId": obj["_id"],
+                        "score": obj["_score"],
+                        "type": "video",
+                        "entry": VideoSerializer(
+                            video, context={"request": request}
+                        ).data,
+                    }
+                )
+
         except Exception as e:
             handle_hydration_errors(obj, e)
 
