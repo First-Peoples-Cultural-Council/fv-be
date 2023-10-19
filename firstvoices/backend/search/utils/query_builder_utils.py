@@ -15,7 +15,11 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
     TYPE_AUDIO,
     TYPE_IMAGE,
+    TYPE_PHRASE,
+    TYPE_SONG,
+    TYPE_STORY,
     TYPE_VIDEO,
+    TYPE_WORD,
     VALID_DOCUMENT_TYPES,
 )
 from backend.utils.character_utils import clean_input
@@ -37,11 +41,11 @@ def get_indices(types):
     indices = set()
 
     for doc_type in types:
-        if doc_type == "word" or doc_type == "phrase":
+        if doc_type == TYPE_WORD or doc_type == TYPE_PHRASE:
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
-        elif doc_type == "song":
+        elif doc_type == TYPE_SONG:
             indices.add(ELASTICSEARCH_SONG_INDEX)
-        elif doc_type == "story":
+        elif doc_type == TYPE_STORY:
             indices.add(ELASTICSEARCH_STORY_INDEX)
         elif doc_type == TYPE_AUDIO or doc_type == TYPE_IMAGE or doc_type == TYPE_VIDEO:
             indices.add(ELASTICSEARCH_MEDIA_INDEX)
@@ -62,7 +66,7 @@ def get_types_query(types):
     # Adding type filters using a negation list
     exclude_list = [
         input_type
-        for input_type in [TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO, "word", "phrase"]
+        for input_type in [TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO, TYPE_WORD, TYPE_PHRASE]
         if input_type not in types
     ]
 
