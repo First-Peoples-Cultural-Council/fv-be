@@ -371,6 +371,11 @@ docker-compatible defaults shown):
 For async and periodic tasks to successfully execute, a worker process must be running. In another terminal, with the
 virtual environment setup, execute `celery -A firstvoices worker -B` in the `./firstvoices` directory
 
+## Management Commands
+The following management commands are available to run from the `firstvoices` directory:
+- `python manage.py convert_lyrics_draftjs_to_text` - Converts all lyric text and translations from draftjs to plain text.
+- `python manage.py update_missing_media_metadata` - Queues up asynchronous Celery workers which will update the metadata on any ImageFile, VideoFile, and File (audio) instances that are missing metadata.
+
 ## Useful Local URLs On Startup
 
 - Admin panel (login using a superuser account as explained in the [Setting Up Your Users](#setting-up-your-users) section): `localhost:8000/admin`
