@@ -5,6 +5,7 @@ from django.dispatch import receiver
 from backend.models.media import Audio, Image, Video
 from backend.search import ES_RETRY_POLICY
 from backend.search.tasks.media_tasks import delete_from_index, update_media_index
+from backend.search.utils.constants import TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO
 from firstvoices.celery import link_error_handler
 
 
@@ -12,8 +13,8 @@ from firstvoices.celery import link_error_handler
 @receiver(post_save, sender=Image)
 @receiver(post_save, sender=Video)
 def request_update_media_index(sender, instance, **kwargs):
-    media_model_map = {Audio: "audio", Image: "image", Video: "video"}
-    media_type = media_model_map.get(sender, "image")  # defaults to "image"
+    media_model_map = {Audio: TYPE_AUDIO, Image: TYPE_IMAGE, Video: TYPE_VIDEO}
+    media_type = media_model_map.get(sender, TYPE_IMAGE)  # defaults to "image"
 
     # Check if instance exists
     if any(

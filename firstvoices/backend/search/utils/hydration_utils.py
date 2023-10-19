@@ -7,6 +7,9 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
+    TYPE_AUDIO,
+    TYPE_IMAGE,
+    TYPE_VIDEO,
 )
 from backend.search.utils.object_utils import get_object_by_id
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
@@ -28,9 +31,9 @@ def separate_object_ids(search_results):
         ELASTICSEARCH_SONG_INDEX: [],
         ELASTICSEARCH_STORY_INDEX: [],
         ELASTICSEARCH_MEDIA_INDEX: {
-            "audio": [],
-            "image": [],
-            "video": [],
+            TYPE_AUDIO: [],
+            TYPE_IMAGE: [],
+            TYPE_VIDEO: [],
         },
     }
 
@@ -113,21 +116,21 @@ def hydrate_objects(search_results, request):
     )
 
     audio_objects = fetch_objects_from_database(
-        search_results_dict[ELASTICSEARCH_MEDIA_INDEX]["audio"],
+        search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_AUDIO],
         Audio,
         prefetch_fields=["original", "site", "speakers"],
         defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
 
     image_objects = fetch_objects_from_database(
-        search_results_dict[ELASTICSEARCH_MEDIA_INDEX]["image"],
+        search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_IMAGE],
         Image,
         prefetch_fields=["site", *get_select_related_media_fields(None)],
         defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
 
     video_objects = fetch_objects_from_database(
-        search_results_dict[ELASTICSEARCH_MEDIA_INDEX]["video"],
+        search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_VIDEO],
         Video,
         prefetch_fields=["site", *get_select_related_media_fields(None)],
         defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
@@ -166,30 +169,30 @@ def hydrate_objects(search_results, request):
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
-                and obj["_source"]["type"] == "audio"
+                and obj["_source"]["type"] == TYPE_AUDIO
             ):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
-                complete_object["type"] = "audio"
+                complete_object["type"] = TYPE_AUDIO
                 complete_object["entry"] = AudioSerializer(
                     audio, context={"request": request}
                 ).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
-                and obj["_source"]["type"] == "image"
+                and obj["_source"]["type"] == TYPE_IMAGE
             ):
                 image = get_object_by_id(image_objects, obj["_source"]["document_id"])
-                complete_object["type"] = "image"
+                complete_object["type"] = TYPE_IMAGE
                 complete_object["entry"] = ImageSerializer(
                     image, context={"request": request}
                 ).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
-                and obj["_source"]["type"] == "video"
+                and obj["_source"]["type"] == TYPE_VIDEO
             ):
                 video = get_object_by_id(video_objects, obj["_source"]["document_id"])
-                complete_object["type"] = "video"
+                complete_object["type"] = TYPE_VIDEO
                 complete_object["entry"] = VideoSerializer(
                     video, context={"request": request}
                 ).data
