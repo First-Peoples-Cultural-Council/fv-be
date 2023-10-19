@@ -18,6 +18,11 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     contact_emails = "contact@email.com"
     contact_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
 
+    @pytest.fixture(autouse=True)
+    def configure_settings(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
     def get_endpoint(self, site_slug):
         return reverse(
             "api:contact-us-list", current_app=self.APP_NAME, args=[site_slug]
@@ -89,7 +94,8 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         [ConnectionRefusedError("Test exception"), SMTPException("Test exception")],
     )
     @pytest.mark.django_db
-    def test_post_smtp_connection_refused(self, exception):
+    def test_post_smtp_connection_refused(self, caplog, exception):
+        caplog.set_level("ERROR")
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -101,7 +107,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         assert len(mail.outbox) == 0
 
-        with patch("backend.views.contact_us_views.send_mail") as mocked_mail:
+        with patch("backend.tasks.send_email_tasks.send_mail") as mocked_mail:
             mocked_mail.side_effect = exception
 
             response = self.client.post(
@@ -109,8 +115,9 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
                 data=self.get_valid_data(),
                 content_type=self.content_type,
             )
-            assert response.status_code == 500
+            assert response.status_code == 202
             assert len(mail.outbox) == 0
+            assert f"Contact us email failed to send. Error: {exception}" in caplog.text
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
