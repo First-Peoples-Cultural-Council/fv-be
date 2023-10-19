@@ -173,7 +173,7 @@ class DictionarySerializerContextMixin:
 
         context = super().get_serializer_context()
 
-        alphabet = Alphabet.objects.filter(site=site).first()
+        alphabet = Alphabet.objects.get_or_create(site=site)[0]
         ignored_characters = IgnoredCharacter.objects.filter(site=site).values_list(
             "title", flat=True
         )
