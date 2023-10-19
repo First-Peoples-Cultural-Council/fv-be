@@ -1,6 +1,8 @@
+import logging
 from unittest.mock import patch
 
 import pytest
+from django.core import management
 
 from backend.models.media import File, ImageFile, VideoFile
 from backend.tasks.update_metadata_tasks import (
@@ -75,9 +77,9 @@ class TestUpdateMetadataTasks:
     @pytest.mark.django_db
     def test_no_image_metadata_to_update_and_save_not_called(self):
         site = factories.SiteFactory.create()
-        factories.ImageFactory.create(site=site)
+        factories.ImageFileFactory.create(site=site)
 
-        assert ImageFile.objects.count() == 4
+        assert ImageFile.objects.count() == 1
 
         with patch("backend.models.media.ImageFile.save") as mock_save:
             update_missing_image_metadata()
@@ -86,7 +88,7 @@ class TestUpdateMetadataTasks:
     @pytest.mark.django_db
     def test_no_video_metadata_to_update_and_save_not_called(self):
         site = factories.SiteFactory.create()
-        factories.VideoFactory.create(site=site)
+        factories.VideoFileFactory.create(site=site)
 
         assert VideoFile.objects.count() == 1
 
@@ -104,3 +106,53 @@ class TestUpdateMetadataTasks:
         with patch("backend.models.media.File.save") as mock_save:
             update_missing_audio_metadata()
             assert not mock_save.called
+
+    @pytest.mark.django_db
+    def test_image_file_not_found(self, caplog):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        image = factories.ImageFileFactory.create(site=site)
+        ImageFile.objects.filter(pk=image.pk).update(mimetype=None)
+
+        with patch(
+            "backend.models.media.ImageFile.save", side_effect=FileNotFoundError()
+        ):
+            update_missing_image_metadata()
+            assert f"File not found for ImageFile {image.id}." in caplog.text
+
+    @pytest.mark.django_db
+    def test_video_file_not_found(self, caplog):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        video = factories.VideoFileFactory.create(site=site)
+        VideoFile.objects.filter(pk=video.pk).update(mimetype=None)
+
+        with patch(
+            "backend.models.media.VideoFile.save", side_effect=FileNotFoundError()
+        ):
+            update_missing_video_metadata()
+            assert f"File not found for VideoFile {video.id}." in caplog.text
+
+    @pytest.mark.django_db
+    def test_audio_file_not_found(self, caplog):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        audio = factories.FileFactory.create(site=site)
+        File.objects.filter(pk=audio.pk).update(mimetype=None)
+
+        with patch("backend.models.media.File.save", side_effect=FileNotFoundError()):
+            update_missing_audio_metadata()
+            assert f"File not found for audio File {audio.id}." in caplog.text
+
+    def test_command(self):
+        with patch(
+            "backend.tasks.update_metadata_tasks.update_missing_image_metadata.apply_async"
+        ) as mock_image, patch(
+            "backend.tasks.update_metadata_tasks.update_missing_video_metadata.apply_async"
+        ) as mock_video, patch(
+            "backend.tasks.update_metadata_tasks.update_missing_audio_metadata.apply_async"
+        ) as mock_audio:
+            management.call_command("update_missing_media_metadata")
+            assert mock_image.called
+            assert mock_video.called
+            assert mock_audio.called
