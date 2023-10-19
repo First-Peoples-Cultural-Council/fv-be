@@ -118,7 +118,7 @@ class TestUpdateMetadataTasks:
             "backend.models.media.ImageFile.save", side_effect=FileNotFoundError()
         ):
             update_missing_image_metadata()
-            assert f"File not found for ImageFile {image.id}." in caplog.text
+            assert f"File not found for ImageFile - {image.id}." in caplog.text
 
     @pytest.mark.django_db
     def test_video_file_not_found(self, caplog):
@@ -131,7 +131,7 @@ class TestUpdateMetadataTasks:
             "backend.models.media.VideoFile.save", side_effect=FileNotFoundError()
         ):
             update_missing_video_metadata()
-            assert f"File not found for VideoFile {video.id}." in caplog.text
+            assert f"File not found for VideoFile - {video.id}." in caplog.text
 
     @pytest.mark.django_db
     def test_audio_file_not_found(self, caplog):
@@ -142,7 +142,7 @@ class TestUpdateMetadataTasks:
 
         with patch("backend.models.media.File.save", side_effect=FileNotFoundError()):
             update_missing_audio_metadata()
-            assert f"File not found for audio File {audio.id}." in caplog.text
+            assert f"File not found for File - {audio.id}." in caplog.text
 
     def test_command(self):
         with patch(
