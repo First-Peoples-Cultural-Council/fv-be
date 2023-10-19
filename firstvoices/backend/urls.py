@@ -4,6 +4,7 @@ from backend.router import CustomRouter
 from backend.views.audio_views import AudioViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
+from backend.views.contact_us_views import ContactUsView
 from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
     CustomOrderRecalculateView,
@@ -39,6 +40,7 @@ sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
+sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
@@ -55,6 +57,7 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
 sites_router.register(r"images", ImageViewSet, basename="image")
+sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
@@ -62,7 +65,6 @@ sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
-sites_router.register(r"join-requests", JoinRequestViewSet, basename="join-request")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")

@@ -13,10 +13,9 @@ from backend.serializers.base_serializers import (
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.user_serializers import UserLookupField
 
-
 class JoinRequestDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
-        view_name="api:join-request-detail", read_only=True
+        view_name="api:joinrequest-detail", read_only=True
     )
     user = UserLookupField(required=True, allow_null=False)
     status = fields.EnumField(enum=JoinRequestStatus, required=True, allow_null=False)

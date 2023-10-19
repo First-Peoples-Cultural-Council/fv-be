@@ -1,3 +1,4 @@
+import rules
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
@@ -44,10 +45,10 @@ class JoinRequest(BaseSiteContentModel):
             )
         ]
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.is_language_admin_or_super,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "view": predicates.is_at_least_language_admin,
+            "add": rules.is_authenticated,
+            "change": predicates.is_at_least_language_admin,
+            "delete": predicates.is_at_least_language_admin,
         }
         indexes = [
             models.Index(fields=["site", "status"], name="join_request_status_idx"),
