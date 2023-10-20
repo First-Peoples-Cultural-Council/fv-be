@@ -1,6 +1,8 @@
-from unittest.mock import MagicMock
+import logging
+from unittest.mock import MagicMock, patch
 
 import pytest
+from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
 from backend.models import DictionaryEntry, Song
@@ -25,6 +27,28 @@ class TestGetObjectFromIndex:
         mock_execute = mocker.patch.object(Search, "execute", new_callable=MagicMock)
 
         return mock_execute
+
+    class ConnectionError(ConnectionError):
+        @property
+        def error(self):
+            return "Connection Error"
+
+        @property
+        def info(self):
+            return "Simulated connection error"
+
+    class NotFoundError(NotFoundError):
+        @property
+        def status_code(self):
+            return 404
+
+        @property
+        def error(self):
+            return "Not found exception"
+
+        @property
+        def info(self):
+            return "Simulated not found exception"
 
     def test_successful_search(self, mock_search_query_execute):
         mock_es_results = {
@@ -79,16 +103,34 @@ class TestGetObjectFromIndex:
 
         assert result is None
 
-    @pytest.mark.skip(reason="Cannot emulate the connection error.")
-    def test_connection_error(self):
-        # Skipping as could not emulate the connection error. ES client always raises the connection timeout
-        # error before the mocked connection error occurs.
-        pass
+    def test_connection_error(self, caplog):
+        test_index = "test_index"
+        document_type = "dictionary_entry"
+        document_id = "0101"
 
-    @pytest.mark.skip(reason="Cannot emulate the not found error")
-    def test_not_found_error(self):
-        # Skipping as could not emulate the not found error.
-        pass
+        with patch(
+            "elasticsearch_dsl.Search.execute", side_effect=self.ConnectionError()
+        ):
+            with pytest.raises(ConnectionError):
+                get_object_from_index(test_index, document_type, document_id)
+            assert "Elasticsearch server down." in caplog.text
+            assert document_type in caplog.text
+            assert document_id in caplog.text
+
+    def test_not_found_error(self, caplog):
+        caplog.set_level(logging.WARNING)
+
+        test_index = "test_index"
+        document_type = "dictionary_entry"
+        document_id = "0101"
+
+        with patch(
+            "elasticsearch_dsl.Search.execute", side_effect=self.NotFoundError()
+        ):
+            get_object_from_index(test_index, document_type, document_id)
+            assert "Indexed document not found." in caplog.text
+            assert test_index in caplog.text
+            assert document_id in caplog.text
 
 
 @pytest.mark.django_db
