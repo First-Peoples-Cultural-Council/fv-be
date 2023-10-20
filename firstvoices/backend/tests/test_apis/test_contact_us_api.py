@@ -117,7 +117,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
             )
             assert response.status_code == 202
             assert len(mail.outbox) == 0
-            assert f"Contact us email failed to send. Error: {exception}" in caplog.text
+            assert f"Failed to send email. Error: {exception}" in caplog.text
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db

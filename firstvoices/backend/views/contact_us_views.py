@@ -15,7 +15,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from backend.models import AppJson, Site
 from backend.serializers.contact_us_serializers import ContactUsSerializer
-from backend.tasks.send_email_tasks import send_contact_us_email
+from backend.tasks.send_email_tasks import send_email_task
 from backend.utils.contact_us_utils import get_fallback_emails
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -127,9 +127,16 @@ class ContactUsView(
                 )
                 to_email_list = get_fallback_emails()
 
-            send_contact_us_email.apply_async(
-                (name, from_email, message, to_email_list)
+            # Format the final email
+            subject = f"Contact Us Form Submission from {name} ({from_email})"
+            final_message = (
+                "The following message was sent from the contact us form on the FirstVoices website:\n\n"
+                f"Name: {name}\n"
+                f"Email: {from_email}\n\n"
+                f"Message:\n{message}\n"
             )
+
+            send_email_task.apply_async((subject, final_message, to_email_list))
 
             return Response(
                 {"message": "The email has been accepted."},
