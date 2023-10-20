@@ -3,17 +3,8 @@ import logging
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import DictionaryEntry, Song, Story, StoryPage
-from backend.search.utils.constants import (
-    ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
-    ELASTICSEARCH_SONG_INDEX,
-    ELASTICSEARCH_STORY_INDEX,
-    ES_CONNECTION_ERROR,
-    ES_NOT_FOUND_ERROR,
-)
-from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
-from backend.serializers.song_serializers import SongMinimalSerializer
-from backend.serializers.story_serializers import StoryMinimalSerializer
+from backend.models import StoryPage
+from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -52,112 +43,6 @@ def get_object_by_id(objects, object_id):
         return filtered_objects[0]
 
     raise KeyError(f"Object not found in db. id: {object_id}")
-
-
-def hydrate_objects(search_results, request):
-    """
-    To enhance the raw objects returned from ElasticSearch, we add the necessary properties.
-    First, we segregate all the IDs from the search results into separate lists based on their respective models.
-    Next, we query the database using these IDs. Once we retrieve the objects from the database, we iterate over the
-    search results and include a serialized object for each entry.
-    """
-    complete_objects = []
-    dictionary_search_results_ids = []
-    song_search_results_ids = []
-    story_search_results_ids = []
-
-    # Separating object IDs into lists based on their data types
-    for obj in search_results:
-        if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
-            dictionary_search_results_ids.append(obj["_source"]["document_id"])
-        elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
-            song_search_results_ids.append(obj["_source"]["document_id"])
-        elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
-            story_search_results_ids.append(obj["_source"]["document_id"])
-
-    # Fetching objects from the database
-    dictionary_objects = list(
-        DictionaryEntry.objects.filter(
-            id__in=dictionary_search_results_ids
-        ).prefetch_related(
-            "site",
-            "translation_set",
-            "related_audio",
-            "related_images",
-            "related_audio__original",
-            "related_audio__speakers",
-            "related_images__original",
-        )
-    )
-    song_objects = list(
-        Song.objects.filter(id__in=song_search_results_ids).prefetch_related(
-            "site",
-            "related_images",
-            "related_images__original",
-        )
-    )
-    story_objects = list(
-        Story.objects.filter(id__in=story_search_results_ids).prefetch_related(
-            "site",
-            "related_images",
-            "related_images__original",
-        )
-    )
-
-    for obj in search_results:
-        try:
-            # Handling DictionaryEntry objects
-            if ELASTICSEARCH_DICTIONARY_ENTRY_INDEX in obj["_index"]:
-                dictionary_entry = get_object_by_id(
-                    dictionary_objects, obj["_source"]["document_id"]
-                )
-
-                # Serializing and adding the object to complete_objects
-                complete_objects.append(
-                    {
-                        "searchResultId": obj["_id"],
-                        "score": obj["_score"],
-                        "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
-                        "entry": DictionaryEntryMinimalSerializer(
-                            dictionary_entry,
-                            context={"request": request, "site": dictionary_entry.site},
-                        ).data,
-                    }
-                )
-            elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
-                song = get_object_by_id(song_objects, obj["_source"]["document_id"])
-
-                # Serializing and adding the object to complete_objects
-                complete_objects.append(
-                    {
-                        "searchResultId": obj["_id"],
-                        "score": obj["_score"],
-                        "type": "song",
-                        "entry": SongMinimalSerializer(
-                            song,
-                            context={"request": request},
-                        ).data,
-                    }
-                )
-            elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
-                story = get_object_by_id(story_objects, obj["_source"]["document_id"])
-
-                # Serializing and adding the object to complete_objects
-                complete_objects.append(
-                    {
-                        "searchResultId": obj["_id"],
-                        "score": obj["_score"],
-                        "type": "story",
-                        "entry": StoryMinimalSerializer(
-                            story,
-                            context={"request": request},
-                        ).data,
-                    }
-                )
-        except Exception as e:
-            handle_hydration_errors(obj, e)
-
-    return complete_objects
 
 
 def get_translation_text(dictionary_entry_instance):
@@ -203,26 +88,3 @@ def get_page_info(story_instance):
     page_translation = list(pages.values_list("translation", flat=True))
 
     return page_text, page_translation
-
-
-def handle_hydration_errors(obj, exception):
-    """
-    Handle exceptions and log errors.
-    """
-    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
-    document_id = obj["_source"]["document_id"]
-
-    error_message = str(exception)
-    log_level = "error"  # default log level
-
-    if "Object not found in db" in error_message:
-        # For cases where an indexed object is not present in the database for further hydration
-        log_level = "warning"
-        log_message = f"Object not found in database with id: {document_id}."
-    elif "has no site" in error_message:
-        # For cases where an indexed object points to a deleted site
-        log_message = f"Missing site object on ES object with id: {document_id}. Error: {error_message}"
-    else:
-        log_message = f"Error during hydration process. Document id: {document_id}. Error: {error_message}"
-
-    logger.log(logging.getLevelName(log_level.upper()), log_message)

@@ -7,12 +7,19 @@ from backend.models import Membership
 from backend.models.category import Category
 from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.permissions.utils import get_app_role
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
+    TYPE_AUDIO,
+    TYPE_IMAGE,
+    TYPE_PHRASE,
+    TYPE_SONG,
+    TYPE_STORY,
+    TYPE_VIDEO,
+    TYPE_WORD,
     VALID_DOCUMENT_TYPES,
 )
 from backend.utils.character_utils import clean_input
@@ -34,12 +41,14 @@ def get_indices(types):
     indices = set()
 
     for doc_type in types:
-        if doc_type == "word" or doc_type == "phrase":
+        if doc_type == TYPE_WORD or doc_type == TYPE_PHRASE:
             indices.add(ELASTICSEARCH_DICTIONARY_ENTRY_INDEX)
-        elif doc_type == "song":
+        elif doc_type == TYPE_SONG:
             indices.add(ELASTICSEARCH_SONG_INDEX)
-        elif doc_type == "story":
+        elif doc_type == TYPE_STORY:
             indices.add(ELASTICSEARCH_STORY_INDEX)
+        elif doc_type == TYPE_AUDIO or doc_type == TYPE_IMAGE or doc_type == TYPE_VIDEO:
+            indices.add(ELASTICSEARCH_MEDIA_INDEX)
 
     return list(indices)
 
@@ -54,13 +63,15 @@ def get_cleaned_search_term(q):
 
 # sub-queries utils
 def get_types_query(types):
-    # Adding type filters
-    # If only one of the "words" or "phrases" is present, we need to filter out the other one
-    # no action required if both are present
-    if "word" in types and "phrase" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.PHRASE.value))
-    elif "phrase" in types and "word" not in types:
-        return Q(~Q("match", type=TypeOfDictionaryEntry.WORD.value))
+    # Adding type filters using a negation list
+    exclude_list = [
+        input_type
+        for input_type in [TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO, TYPE_WORD, TYPE_PHRASE]
+        if input_type not in types
+    ]
+
+    if exclude_list:
+        return Q("bool", filter=[~Q("terms", type=exclude_list)])
     else:
         return None
 
@@ -174,11 +185,12 @@ def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
         return allowed_values
 
     values = input_types.split(",")
-    selected_values = [
-        value.strip().lower()
-        for value in values
-        if value.strip().lower() in allowed_values
-    ]
+    selected_values = []
+
+    for value in values:
+        stripped_value = value.strip().lower()
+        if stripped_value in allowed_values and stripped_value not in selected_values:
+            selected_values.append(stripped_value)
 
     if len(selected_values) == 0:
         return None
