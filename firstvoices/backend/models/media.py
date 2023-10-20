@@ -180,8 +180,13 @@ class VideoFile(VisualFileBase):
             with get_local_video_file(self.content) as temp_file:
                 video_info = self.get_video_info(temp_file)
 
-            self.width = int(video_info["width"])
-            self.height = int(video_info["height"])
+            if video_info is None:
+                self.logger.error(
+                    f"Failed to get video info for [{self.content.name}]. \n"
+                )
+            else:
+                self.width = int(video_info["width"])
+                self.height = int(video_info["height"])
 
         except ffmpeg.Error as e:
             self.logger.error(
