@@ -76,7 +76,6 @@ class TestJoinRequestEndpoints(
     def get_valid_data(self, site=None):
         return {
             "user": factories.UserFactory().email,
-            "status": "pending",
             "reason": "other",
             "reason_note": self.REASON_NOTE,
         }
@@ -95,14 +94,12 @@ class TestJoinRequestEndpoints(
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["user"]["email"] == expected_data["user"]
-        assert actual_response["status"] == expected_data["status"]
         assert actual_response["reason"] == expected_data["reason"]
         assert actual_response["reasonNote"] == expected_data["reason_note"]
 
     def assert_created_instance(self, pk, data):
         instance = JoinRequest.objects.get(pk=pk)
         assert instance.user.email == data["user"]
-        assert instance.get_status_display().lower() == data["status"]
         assert instance.get_reason_display().lower() == data["reason"]
         assert instance.reason_note == data["reason_note"]
 
