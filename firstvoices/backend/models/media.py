@@ -181,7 +181,7 @@ class VideoFile(VisualFileBase):
                 video_info = self.get_video_info(temp_file)
 
             if video_info is None:
-                self.logger.error(
+                self.logger.warning(
                     f"Failed to get video info for [{self.content.name}]. \n"
                 )
             else:
