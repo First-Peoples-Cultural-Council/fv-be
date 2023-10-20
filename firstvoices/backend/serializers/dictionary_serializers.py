@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from backend.models import category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
-    LinkedSiteSerializer,
+    LinkedSiteMinimalSerializer,
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
     audience_fields,
@@ -126,30 +126,23 @@ class DictionaryEntryDetailSerializer(
         required=False,
     )
     acknowledgements = AcknowledgementSerializer(
-        many=True,
-        required=False,
-        source="acknowledgement_set",
-        default=[]
+        many=True, required=False, source="acknowledgement_set", default=[]
     )
     alternate_spellings = AlternateSpellingSerializer(
-        many=True, required=False, source="alternatespelling_set",
-        default=[]
+        many=True, required=False, source="alternatespelling_set", default=[]
     )
-    notes = NoteSerializer(many=True, required=False, source="note_set",
-        default=[])
+    notes = NoteSerializer(many=True, required=False, source="note_set", default=[])
     translations = TranslationSerializer(
-        many=True, required=False, source="translation_set",
-        default=[]
+        many=True, required=False, source="translation_set", default=[]
     )
     part_of_speech = WritablePartsOfSpeechSerializer(
         queryset=part_of_speech.PartOfSpeech.objects.all(),
         required=False,
         allow_null=True,
-        default=None
+        default=None,
     )
     pronunciations = PronunciationSerializer(
-        many=True, required=False, source="pronunciation_set",
-        default=[]
+        many=True, required=False, source="pronunciation_set", default=[]
     )
 
     logger = logging.getLogger(__name__)
@@ -374,7 +367,7 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
 
 
 class DictionaryEntryMinimalSerializer(serializers.ModelSerializer):
-    site = LinkedSiteSerializer(read_only=True)
+    site = LinkedSiteMinimalSerializer(read_only=True)
     translations = TranslationSerializer(
         many=True, required=False, source="translation_set", read_only=True
     )

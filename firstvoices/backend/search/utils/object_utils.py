@@ -77,10 +77,9 @@ def hydrate_objects(search_results, request):
 
     # Fetching objects from the database
     dictionary_objects = list(
-        DictionaryEntry.objects.filter(
-            id__in=dictionary_search_results_ids
-        ).prefetch_related(
-            "site",
+        DictionaryEntry.objects.filter(id__in=dictionary_search_results_ids)
+        .select_related("site")
+        .prefetch_related(
             "translation_set",
             "related_audio",
             "related_images",
@@ -90,15 +89,17 @@ def hydrate_objects(search_results, request):
         )
     )
     song_objects = list(
-        Song.objects.filter(id__in=song_search_results_ids).prefetch_related(
-            "site",
+        Song.objects.filter(id__in=song_search_results_ids)
+        .select_related("site")
+        .prefetch_related(
             "related_images",
             "related_images__original",
         )
     )
     story_objects = list(
-        Story.objects.filter(id__in=story_search_results_ids).prefetch_related(
-            "site",
+        Story.objects.filter(id__in=story_search_results_ids)
+        .select_related("site")
+        .prefetch_related(
             "related_images",
             "related_images__original",
         )
@@ -120,7 +121,7 @@ def hydrate_objects(search_results, request):
                         "type": dictionary_entry.type.lower(),  # 'word' or 'phrase' instead of 'dictionary_entry'
                         "entry": DictionaryEntryMinimalSerializer(
                             dictionary_entry,
-                            context={"request": request, "site": dictionary_entry.site},
+                            context={"request": request},
                         ).data,
                     }
                 )
