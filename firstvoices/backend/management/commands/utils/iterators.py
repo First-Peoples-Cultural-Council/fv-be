@@ -1,3 +1,5 @@
+import logging
+
 from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
@@ -33,36 +35,42 @@ def media_doc_generator(instance, media_type):
 
 
 def audio_iterator():
+    logger = logging.getLogger("rebuild_index")
+
     queryset = Audio.objects.all()
     for instance in queryset:
         try:
             yield media_doc_generator(instance, "audio").to_dict(True)
         except AttributeError:
-            print(
+            logger.warning(
                 f"Skipping document due to missing properties. object: audio, id: {instance.id}."
             )
             continue
 
 
 def image_iterator():
+    logger = logging.getLogger("rebuild_index")
+
     queryset = Image.objects.all()
     for instance in queryset:
         try:
             yield media_doc_generator(instance, "image").to_dict(True)
         except AttributeError:
-            print(
+            logger.warning(
                 f"Skipping document due to missing properties. object: image, id: {instance.id}."
             )
             continue
 
 
 def video_iterator():
+    logger = logging.getLogger("rebuild_index")
+
     queryset = Video.objects.all()
     for instance in queryset:
         try:
             yield media_doc_generator(instance, "video").to_dict(True)
         except AttributeError:
-            print(
+            logger.warning(
                 f"Skipping document due to missing properties. object: video, id: {instance.id}."
             )
             continue
