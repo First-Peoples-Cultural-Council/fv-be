@@ -1,10 +1,7 @@
 import logging
 import re
-from smtplib import SMTPException
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.core.mail import send_mail
 from django.core.validators import validate_email
 from drf_spectacular.utils import (
     OpenApiResponse,
@@ -18,6 +15,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from backend.models import AppJson, Site
 from backend.serializers.contact_us_serializers import ContactUsSerializer
+from backend.tasks.send_email_tasks import send_email_task
 from backend.utils.contact_us_utils import get_fallback_emails
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -129,25 +127,19 @@ class ContactUsView(
                 )
                 to_email_list = get_fallback_emails()
 
-            try:
-                # Format the final email
-                final_message = (
-                    "The following message was sent from the contact us form on the FirstVoices website:\n\n"
-                    f"Name: {name}\n"
-                    f"Email: {from_email}\n\n"
-                    f"Message:\n{message}\n"
-                )
-                send_mail(
-                    subject=f"Contact Us Form Submission from {name} ({from_email})",
-                    message=final_message,
-                    recipient_list=to_email_list,
-                    from_email=settings.EMAIL_SENDER_ADDRESS,
-                )
-            except (ConnectionRefusedError, SMTPException):
-                raise ContactUsError("Contact us email failed to send.")
+            # Format the final email
+            subject = f"Contact Us Form Submission from {name} ({from_email})"
+            final_message = (
+                "The following message was sent from the contact us form on the FirstVoices website:\n\n"
+                f"Name: {name}\n"
+                f"Email: {from_email}\n\n"
+                f"Message:\n{message}\n"
+            )
+
+            send_email_task.apply_async((subject, final_message, to_email_list))
 
             return Response(
-                {"message": "The email has been successfully sent."},
+                {"message": "The email has been accepted."},
                 status=status.HTTP_202_ACCEPTED,
             )
         except Exception as e:
