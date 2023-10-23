@@ -174,7 +174,7 @@ def hydrate_objects(search_results, request):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_AUDIO
                 complete_object["entry"] = AudioSerializer(
-                    audio, context={"request": request}
+                    audio, context={"request": request, "site": audio.site}
                 ).data
 
             elif (
