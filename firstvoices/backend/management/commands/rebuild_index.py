@@ -1,3 +1,5 @@
+import logging
+
 from django.core.management.base import BaseCommand
 
 from backend.management.commands._helper import get_valid_index_name, rebuild_index
@@ -40,16 +42,18 @@ class Command(BaseCommand):
         # If an index name is supplied, only rebuild that, else rebuild all
         index_name = get_valid_index_name(self.index_mappings, options["index_name"])
 
+        # Setting logger level to get all logs
+        logger = logging.getLogger("rebuild_index")
+        logger.setLevel(logging.INFO)
+
         if index_name:
             index_document = self.index_mappings[index_name]["document"]
             rebuild_index(index_name, index_document)
         else:
-            self.stdout.write(
-                "Invalid or no index name provided. Building all indices."
-            )
+            logger.info("Invalid or no index name provided. Building all indices.")
             for mapping in self.index_mappings.values():
                 index_name = mapping["index_name"]
                 index_document = mapping["document"]
                 rebuild_index(index_name, index_document)
 
-        self.stdout.write(self.style.SUCCESS("Index rebuild complete."))
+        logger.info("Index rebuild complete.")
