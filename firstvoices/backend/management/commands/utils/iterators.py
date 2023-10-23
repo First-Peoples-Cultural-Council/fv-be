@@ -35,19 +35,37 @@ def media_doc_generator(instance, media_type):
 def audio_iterator():
     queryset = Audio.objects.all()
     for instance in queryset:
-        yield media_doc_generator(instance, "audio").to_dict(True)
+        try:
+            yield media_doc_generator(instance, "audio").to_dict(True)
+        except AttributeError:
+            print(
+                f"Skipping document due to missing properties. object: audio, id: {instance.id}."
+            )
+            continue
 
 
 def image_iterator():
     queryset = Image.objects.all()
     for instance in queryset:
-        yield media_doc_generator(instance, "image").to_dict(True)
+        try:
+            yield media_doc_generator(instance, "image").to_dict(True)
+        except AttributeError:
+            print(
+                f"Skipping document due to missing properties. object: image, id: {instance.id}."
+            )
+            continue
 
 
 def video_iterator():
     queryset = Video.objects.all()
     for instance in queryset:
-        yield media_doc_generator(instance, "video").to_dict(True)
+        try:
+            yield media_doc_generator(instance, "video").to_dict(True)
+        except AttributeError:
+            print(
+                f"Skipping document due to missing properties. object: video, id: {instance.id}."
+            )
+            continue
 
 
 def story_iterator():
