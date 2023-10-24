@@ -6,6 +6,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
+from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
 
 
 class FVPermissionViewSetMixin:
@@ -41,6 +42,7 @@ class FVPermissionViewSetMixin:
         "retrieve": "view",
         "update": "change",
     }
+    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
 
     def initial(self, *args, **kwargs):
         """Ensures user has permission to perform the requested action."""
@@ -128,6 +130,8 @@ class SiteContentViewSetMixin:
     """
     Provides common methods for handling site content, usually for data models that use the ``BaseSiteContentModel``.
     """
+
+    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
 
     def get_site_slug(self):
         return self.kwargs["site_slug"]

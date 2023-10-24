@@ -1,4 +1,6 @@
+from django.core.cache import caches
 from django.db.models import Prefetch
+from rest_framework.throttling import UserRateThrottle
 
 from backend.models.media import Audio, Image, Video
 
@@ -42,3 +44,15 @@ def get_media_prefetch_list(user):
             ),
         ),
     ]
+
+
+class CustomUserRateThrottle(UserRateThrottle):
+    cache = caches["throttle"]
+
+
+class BurstRateThrottle(CustomUserRateThrottle):
+    scope = "burst"
+
+
+class SustainedRateThrottle(CustomUserRateThrottle):
+    scope = "sustained"
