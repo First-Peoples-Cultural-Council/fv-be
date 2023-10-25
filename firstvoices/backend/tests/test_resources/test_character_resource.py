@@ -17,6 +17,7 @@ from backend.tests.factories import (
 )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestCharacterImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -136,6 +137,7 @@ class TestCharacterImport:
         assert new_char.related_videos.all().count() == 0
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestCharacterVariantImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -171,6 +173,7 @@ class TestCharacterVariantImport:
         assert table["base_character"][0] == str(new_variant.base_character.id)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestIgnoredCharacterImport:
     @staticmethod
     def build_table(data: list[str]):

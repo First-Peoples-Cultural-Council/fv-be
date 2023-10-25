@@ -24,6 +24,7 @@ from backend.resources.media import (
 from backend.tests.factories import AudioFactory, PersonFactory, SiteFactory
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestPersonImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -67,6 +68,7 @@ class BaseMediaImportTest:
         return table
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAudioImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
@@ -125,6 +127,7 @@ class TestAudioImport(BaseMediaImportTest):
         )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAudioSpeakerImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -187,6 +190,7 @@ class TestAudioSpeakerImport:
         assert Person.objects.filter(site=unrelated_site).count() == 1
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestImageImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):
@@ -221,6 +225,7 @@ class TestImageImport(BaseMediaImportTest):
         assert table["content"][0] == str(new_image.original.content)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestVideoImport(BaseMediaImportTest):
     @pytest.mark.django_db
     def test_import_base_data(self):

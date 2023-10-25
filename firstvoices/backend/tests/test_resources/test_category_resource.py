@@ -16,6 +16,7 @@ def build_table(data):
     return table
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestCategoryImport:
     def setup(self):
         self.site1 = SiteFactory.create()

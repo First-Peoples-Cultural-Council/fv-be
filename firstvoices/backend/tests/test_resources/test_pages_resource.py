@@ -10,6 +10,7 @@ from backend.tests import factories
 from backend.tests.factories import SiteFactory
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSitePageImport:
     @staticmethod
     def build_table(data: list[str]):

@@ -30,6 +30,7 @@ from backend.resources.dictionary import (
 from backend.tests import factories
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestDictionaryEntryImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -123,36 +124,42 @@ class BaseDictionaryEntryContentTest:
         assert table["dictionary_entry"][0] == str(content.dictionary_entry.id)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestNoteImport(BaseDictionaryEntryContentTest):
     content_type = "note"
     model = Note
     resource = NoteResource
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAcknowledgementImport(BaseDictionaryEntryContentTest):
     content_type = "acknowledgement"
     model = Acknowledgement
     resource = AcknowledgementResource
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestTranslationImport(BaseDictionaryEntryContentTest):
     content_type = "translation"
     model = Translation
     resource = TranslationResource
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAlternateSpellingImport(BaseDictionaryEntryContentTest):
     content_type = "alternate_spelling"
     model = AlternateSpelling
     resource = AlternateSpellingResource
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestPronunciationImport(BaseDictionaryEntryContentTest):
     content_type = "pronunciation"
     model = Pronunciation
     resource = PronunciationResource
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestDictionaryEntryCategoryImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -218,6 +225,7 @@ class TestDictionaryEntryCategoryImport:
         )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestDictionaryEntryRelatedCharacter:
     @staticmethod
     def build_table(data):
@@ -252,6 +260,7 @@ class TestDictionaryEntryRelatedCharacter:
         )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestDictionaryLinkImport:
     @staticmethod
     def build_table(data: list[str]):

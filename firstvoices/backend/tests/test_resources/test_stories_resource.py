@@ -19,6 +19,7 @@ sample_draftjs_text = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'Histo
 sample_draftjs_transl = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'History of the Three Bears', 'type': 'unstyled', 'depth': 0, 'inlineStyleRanges': [], 'entityRanges': [], 'data': {}}]}\""  # noqa E501
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestStoryImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -181,6 +182,7 @@ class TestStoryImport:
         assert Image.objects.filter(id=no_img_here).count() == 0
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestStoryPageImport:
     @staticmethod
     def build_table(data: list[str]):

@@ -20,6 +20,7 @@ def build_table(data: list[str]):
     return table
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSiteImport:
     @pytest.mark.django_db
     def test_import_base_data(self):
@@ -122,6 +123,7 @@ class TestSiteImport:
         assert new_site.created_by.email == "support@fpcc.ca"
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSiteMigration:
     @pytest.mark.django_db
     def test_delete_site_before_import(self):

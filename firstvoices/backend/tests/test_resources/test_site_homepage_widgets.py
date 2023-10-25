@@ -7,6 +7,7 @@ from backend.resources.site_homepage_widgets import SiteHomepageWidgetsResource
 from backend.tests import factories
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSiteHomepageWidgetsImport:
     @staticmethod
     def build_table(data: list[str]):
