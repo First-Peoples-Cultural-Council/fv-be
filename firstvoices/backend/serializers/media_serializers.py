@@ -306,6 +306,7 @@ class ImageMinimalSerializer(MediaMinimalSerializer):
 
 class VideoMinimalSerializer(ImageMinimalSerializer):
     original = VideoUploadSerializer(read_only=True)
+    small = MediaImageFileSerializer(read_only=True)
 
     class Meta(MediaMinimalSerializer.Meta):
         model = media.Video
