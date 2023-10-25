@@ -22,16 +22,30 @@ class TestThrottling(BaseApiTest):
         settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "3/min"
         settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "1000/day"
         yield "settings"
-        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "60/min"
-        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "1000/day"
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "200/min"
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "2000/day"
 
     @pytest.fixture
     def use_sustained_rate(self):
         settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "1000/min"
         settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "3/day"
         yield "settings"
-        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "60/min"
-        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "1000/day"
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["burst"] = "200/min"
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["sustained"] = "2000/day"
+
+    def run_throttling_test(self, user_role):
+        if user_role:
+            factories.MembershipFactory.create(
+                user=self.user, site=self.site, role=user_role
+            )
+        self.client.force_authenticate(user=self.user)
+
+        for _ in range(0, 3):
+            response = self.client.get(self.get_list_endpoint())
+            assert response.status_code == 200
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 429
 
     @pytest.mark.usefixtures("use_burst_rate")
     @pytest.mark.parametrize(
@@ -40,18 +54,7 @@ class TestThrottling(BaseApiTest):
     )
     @pytest.mark.django_db
     def test_throttling_burst_limit(self, user_role):
-        if user_role:
-            factories.MembershipFactory.create(
-                user=self.user, site=self.site, role=user_role
-            )
-        self.client.force_authenticate(user=self.user)
-
-        for i in range(0, 3):
-            response = self.client.get(self.get_list_endpoint())
-            assert response.status_code == 200
-
-        response = self.client.get(self.get_list_endpoint())
-        assert response.status_code == 429
+        self.run_throttling_test(user_role)
 
     @pytest.mark.usefixtures("use_sustained_rate")
     @pytest.mark.parametrize(
@@ -60,15 +63,4 @@ class TestThrottling(BaseApiTest):
     )
     @pytest.mark.django_db
     def test_throttling_sustained_limit(self, user_role):
-        if user_role:
-            factories.MembershipFactory.create(
-                user=self.user, site=self.site, role=user_role
-            )
-        self.client.force_authenticate(user=self.user)
-
-        for i in range(0, 3):
-            response = self.client.get(self.get_list_endpoint())
-            assert response.status_code == 200
-
-        response = self.client.get(self.get_list_endpoint())
-        assert response.status_code == 429
+        self.run_throttling_test(user_role)
