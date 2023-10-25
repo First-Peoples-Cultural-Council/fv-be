@@ -286,3 +286,39 @@ class RelatedImageMinimalSerializer(RelatedAudioMinimalSerializer):
         model = media.Image
         fields = ("id", "original")
         read_only_fields = ("id", "original")
+
+
+class MediaMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ("id", "original", "title", "description")
+        read_only_fields = ("id", "original", "title", "description")
+
+
+class ImageMinimalSerializer(MediaMinimalSerializer):
+    original = ImageUploadSerializer(read_only=True)
+    small = MediaImageFileSerializer(read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = media.Image
+        fields = MediaMinimalSerializer.Meta.fields + ("small",)
+        read_only_fields = MediaMinimalSerializer.Meta.read_only_fields + ("small",)
+
+
+class VideoMinimalSerializer(ImageMinimalSerializer):
+    original = VideoUploadSerializer(read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = media.Video
+
+
+class AudioMinimalSerializer(MediaMinimalSerializer):
+    original = MediaFileUploadSerializer(read_only=True)
+    speakers = WriteableRelatedPersonSerializer(many=True, read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = media.Audio
+        fields = MediaMinimalSerializer.Meta.fields + ("acknowledgement", "speakers")
+        read_only_fields = MediaMinimalSerializer.Meta.read_only_fields + (
+            "acknowledgement",
+            "speakers",
+        )

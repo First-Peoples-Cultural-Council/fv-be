@@ -11,6 +11,9 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    TYPE_AUDIO,
+    TYPE_IMAGE,
+    TYPE_VIDEO,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_object_from_index
@@ -21,9 +24,9 @@ from firstvoices.settings import ELASTICSEARCH_LOGGER
 def update_media_index(instance_id, media_type, **kwargs):
     # get object instance
     media_model_map = {
-        "audio": Audio,
-        "image": Image,
-        "video": Video,
+        TYPE_AUDIO: Audio,
+        TYPE_IMAGE: Image,
+        TYPE_VIDEO: Video,
     }
     model_class = media_model_map[media_type]
     instance = model_class.objects.get(id=instance_id)

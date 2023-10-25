@@ -60,6 +60,9 @@ def delete_related_docs(instance_id, **kwargs):
     dictionary_entries_set = instance.dictionaryentry_set.all()
     songs_set = instance.song_set.all()
     stories_set = instance.story_set.all()
+    audio_set = instance.audio_set.all()
+    image_set = instance.image_set.all()
+    video_set = instance.video_set.all()
 
     # removing dictionary_entries related to the deleted site
     for dictionary_entry in dictionary_entries_set:
@@ -72,6 +75,14 @@ def delete_related_docs(instance_id, **kwargs):
     # removing story related to the deleted site
     for story in stories_set:
         remove_story_from_index(story)
+
+    # removing media related to deleted site
+    for audio in audio_set:
+        remove_media_from_index(audio)
+    for image in image_set:
+        remove_media_from_index(image)
+    for video in video_set:
+        remove_media_from_index(video)
 
 
 # The following update and delete methods can be optimized using bulk operation
@@ -318,4 +329,37 @@ def remove_story_from_index(story):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.STORY, story.id)
+        logger.error(e)
+
+
+def remove_media_from_index(media_instance):
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        existing_entry = get_object_from_index(
+            ELASTICSEARCH_MEDIA_INDEX, "media", media_instance.id
+        )
+        if not existing_entry:
+            raise NotFoundError
+
+        media_doc = MediaDocument.get(id=existing_entry["_id"])
+        media_doc.delete()
+    except ConnectionError:
+        logger.error(
+            ES_CONNECTION_ERROR
+            % ("media", SearchIndexEntryTypes.MEDIA, media_instance.id)
+        )
+    except NotFoundError:
+        logger.warning(
+            ES_NOT_FOUND_ERROR
+            % (
+                "sites_delete_signal",
+                SearchIndexEntryTypes.MEDIA,
+                media_instance.id,
+            )
+        )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.MEDIA, media_instance.id)
         logger.error(e)

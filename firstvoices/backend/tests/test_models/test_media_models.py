@@ -1,5 +1,6 @@
 import logging
 import os
+from unittest.mock import patch
 
 import factory
 import ffmpeg
@@ -289,6 +290,20 @@ class TestVideoModel:
         )
         assert generated_images[0].width <= settings.IMAGE_SIZES["thumbnail"]
         assert generated_images[0].height <= settings.IMAGE_SIZES["thumbnail"]
+
+    @pytest.mark.django_db
+    def test_ffmpeg_probe_returning_none(self, caplog):
+        caplog.set_level(logging.WARNING)
+        video = factories.VideoFileFactory.create()
+        with patch(
+            "backend.models.media.VideoFile.get_video_info"
+        ) as mock_get_video_info:
+            mock_get_video_info.return_value = None
+            video.save(update_metadata_command=True)
+            assert (
+                f"Failed to get video info for [{video.content.name}]. \n"
+                in caplog.text
+            )
 
 
 @pytest.mark.skip("Most of this is not compatible with async generation")
