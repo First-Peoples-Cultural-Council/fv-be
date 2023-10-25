@@ -14,7 +14,7 @@ from backend.search.utils.constants import (
 from backend.search.utils.object_utils import get_object_by_id
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
 from backend.serializers.media_serializers import (
-    AudioSerializer,
+    AudioMinimalSerializer,
     ImageMinimalSerializer,
     VideoMinimalSerializer,
 )
@@ -172,7 +172,7 @@ def hydrate_objects(search_results, request):
             ):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_AUDIO
-                complete_object["entry"] = AudioSerializer(
+                complete_object["entry"] = AudioMinimalSerializer(
                     audio, context={"request": request, "site": audio.site}
                 ).data
 
