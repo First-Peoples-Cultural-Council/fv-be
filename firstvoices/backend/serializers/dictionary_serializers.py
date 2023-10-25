@@ -13,7 +13,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
 from backend.serializers.media_serializers import (
-    RelatedAudioMinimalSerializer,
+    AudioMinimalSerializer,
     RelatedImageMinimalSerializer,
     RelatedMediaSerializerMixin,
 )
@@ -371,9 +371,7 @@ class DictionaryEntryMinimalSerializer(serializers.ModelSerializer):
     translations = TranslationSerializer(
         many=True, required=False, source="translation_set", read_only=True
     )
-    related_audio = RelatedAudioMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
+    related_audio = AudioMinimalSerializer(many=True, required=False, read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
     )

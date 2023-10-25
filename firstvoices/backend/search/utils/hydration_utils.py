@@ -149,7 +149,7 @@ def hydrate_objects(search_results, request):
                 ] = dictionary_entry.type.lower()  # 'word' or 'phrase'
                 complete_object["entry"] = DictionaryEntryMinimalSerializer(
                     dictionary_entry,
-                    context={"request": request},
+                    context={"request": request, "site": dictionary_entry.site},
                 ).data
 
             elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
