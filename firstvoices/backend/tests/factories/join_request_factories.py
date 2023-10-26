@@ -17,5 +17,7 @@ class JoinRequestFactory(DjangoModelFactory):
 
 
 class JoinRequestReasonFactory(DjangoModelFactory):
+    join_request = factory.SubFactory(JoinRequestFactory)
+
     class Meta:
         model = JoinRequestReason
