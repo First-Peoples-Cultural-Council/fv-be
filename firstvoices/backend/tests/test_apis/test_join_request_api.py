@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 
 from backend.models import JoinRequest, Membership
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.join_request import JoinRequestReason, JoinRequestStatus
+from backend.models.join_request import JoinRequestReasonChoices, JoinRequestStatus
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
@@ -39,7 +39,7 @@ class TestJoinRequestEndpoints(
         return factories.JoinRequestFactory(
             site=site,
             status=JoinRequestStatus.PENDING,
-            reason=JoinRequestReason.OTHER,
+            reason=JoinRequestReasonChoices.OTHER,
             reason_note=self.REASON_NOTE,
         )
 
@@ -111,7 +111,7 @@ class TestJoinRequestEndpoints(
             site=site,
             user=factories.UserFactory(),
             status=JoinRequestStatus.PENDING,
-            reason=JoinRequestReason.OTHER,
+            reason=JoinRequestReasonChoices.OTHER,
             reason_note=self.REASON_NOTE,
         )
 
