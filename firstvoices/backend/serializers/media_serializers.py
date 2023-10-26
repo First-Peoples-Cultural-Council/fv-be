@@ -282,10 +282,19 @@ class AudioMinimalSerializer(serializers.ModelSerializer):
 
 
 class RelatedImageMinimalSerializer(serializers.ModelSerializer):
+    original = ImageUploadSerializer(read_only=True)
+
     class Meta:
         model = media.Image
         fields = ("id", "original")
         read_only_fields = ("id", "original")
+
+
+class RelatedVideoMinimalSerializer(RelatedImageMinimalSerializer):
+    original = VideoUploadSerializer(read_only=True)
+
+    class Meta(RelatedImageMinimalSerializer.Meta):
+        model = media.Video
 
 
 class MediaMinimalSerializer(serializers.ModelSerializer):

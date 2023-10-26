@@ -21,6 +21,7 @@ from backend.serializers.base_serializers import (
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
     RelatedMediaSerializerMixin,
+    RelatedVideoMinimalSerializer,
 )
 from backend.serializers.utils import get_story_from_context
 from backend.serializers.validators import SameSite
@@ -208,6 +209,9 @@ class StoryMinimalSerializer(serializers.ModelSerializer):
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
     )
+    related_videos = RelatedVideoMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
 
     class Meta:
         model = Story
@@ -219,4 +223,5 @@ class StoryMinimalSerializer(serializers.ModelSerializer):
             "hide_overlay",
             "site",
             "related_images",
+            "related_videos",
         )

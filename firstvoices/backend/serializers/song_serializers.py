@@ -17,6 +17,7 @@ from backend.serializers.base_serializers import (
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
     RelatedMediaSerializerMixin,
+    RelatedVideoMinimalSerializer,
 )
 
 
@@ -112,6 +113,9 @@ class SongMinimalSerializer(ModelSerializer):
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
     )
+    related_videos = RelatedVideoMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
 
     class Meta:
         model = Song
@@ -122,5 +126,6 @@ class SongMinimalSerializer(ModelSerializer):
             "hide_overlay",
             "site",
             "related_images",
+            "related_videos",
         )
         read_only_fields = ("id", "title", "title_translation", "hide_overlay")
