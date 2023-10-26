@@ -67,6 +67,11 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
             raise serializers.ValidationError(
                 "A join request for this site and user already exists."
             )
+
+        if not attrs["reasons_set"]:
+            raise serializers.ValidationError(
+                "A join request must have at least one reason."
+            )
         return attrs
 
     class Meta:

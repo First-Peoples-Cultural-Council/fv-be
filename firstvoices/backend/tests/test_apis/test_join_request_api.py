@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 
 from backend.models import JoinRequest, Membership
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.join_request import JoinRequestReasonChoices, JoinRequestStatus
+from backend.models.join_request import JoinRequestReason, JoinRequestStatus
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
@@ -36,12 +36,13 @@ class TestJoinRequestEndpoints(
     model = JoinRequest
 
     def create_minimal_instance(self, site, visibility=None):
-        return factories.JoinRequestFactory(
+        request = factories.JoinRequestFactory(
             site=site,
             status=JoinRequestStatus.PENDING,
-            reason=JoinRequestReasonChoices.OTHER,
             reason_note=self.REASON_NOTE,
         )
+        factories.JoinRequestReasonFactory.create(join_request=request)
+        return request
 
     def get_expected_response(self, instance, site):
         return {
@@ -66,7 +67,7 @@ class TestJoinRequestEndpoints(
                 "lastName": instance.user.last_name,
             },
             "status": "pending",
-            "reason": "other",
+            "reasons": [{"reason": "other"}],
             "reasonNote": self.REASON_NOTE,
         }
 
@@ -75,8 +76,7 @@ class TestJoinRequestEndpoints(
 
     def get_valid_data(self, site=None):
         return {
-            "user": factories.UserFactory().email,
-            "reason": "other",
+            "reasons": [{"reason": "other"}],
             "reason_note": self.REASON_NOTE,
         }
 
@@ -89,31 +89,33 @@ class TestJoinRequestEndpoints(
     def assert_updated_instance(self, expected_data, actual_instance):
         assert actual_instance.user.email == expected_data["user"]
         assert actual_instance.get_status_display().lower() == expected_data["status"]
-        assert actual_instance.get_reason_display().lower() == expected_data["reason"]
         assert actual_instance.reason_note == expected_data["reason_note"]
 
+        reasons = JoinRequestReason.objects.filter(join_request=actual_instance)
+        assert len(reasons) == len(expected_data["reasons"])
+
     def assert_update_response(self, expected_data, actual_response):
-        assert actual_response["user"]["email"] == expected_data["user"]
-        assert actual_response["reason"] == expected_data["reason"]
+        assert actual_response["reasons"][0] == expected_data["reasons"][0]
         assert actual_response["reasonNote"] == expected_data["reason_note"]
+
+        reasons = actual_response["reasons"]
+        assert len(reasons) == len(expected_data["reasons"])
 
     def assert_created_instance(self, pk, data):
         instance = JoinRequest.objects.get(pk=pk)
-        assert instance.user.email == data["user"]
-        assert instance.get_reason_display().lower() == data["reason"]
-        assert instance.reason_note == data["reason_note"]
+        return self.get_expected_response(instance, instance.site)
 
     def assert_created_response(self, expected_data, actual_response):
         self.assert_update_response(expected_data, actual_response)
 
     def create_original_instance_for_patch(self, site):
-        return factories.JoinRequestFactory(
+        request = factories.JoinRequestFactory(
             site=site,
             user=factories.UserFactory(),
             status=JoinRequestStatus.PENDING,
-            reason=JoinRequestReasonChoices.OTHER,
             reason_note=self.REASON_NOTE,
         )
+        factories.JoinRequestReasonFactory.create(join_request=request)
 
     def add_related_objects(self, instance):
         # no related objects to add
@@ -524,3 +526,63 @@ class TestJoinRequestEndpoints(
         assert response.status_code == 200
         assert len(response_data["results"]) == 1
         assert response_data["results"][0]["status"] == "pending"
+
+    @pytest.mark.django_db
+    def test_reasons_are_required(self):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [],
+            "reason_note": self.REASON_NOTE,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_reasons_are_unique(self):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [{"reason": "other"}, {"reason": "other"}],
+            "reason_note": self.REASON_NOTE,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_reason_key_validation(self):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [{"reason": "other"}, {"reason": "invalid"}],
+            "reason_note": self.REASON_NOTE,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
