@@ -1,5 +1,8 @@
+import logging
+
 from rest_framework import serializers
 
+from backend.models.constants import Role
 from backend.models.join_request import (
     JoinRequest,
     JoinRequestReason,
@@ -13,6 +16,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.user_serializers import UserDetailSerializer
+from backend.tasks.send_email_tasks import send_email_task
 
 
 class JoinRequestReasonSerializer(serializers.ModelSerializer):
@@ -73,6 +77,34 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
                 "A join request must have at least one reason."
             )
         return attrs
+
+    def create(self, validated_data):
+        logger = logging.getLogger(__name__)
+        created = super().create(validated_data)
+
+        site_language_admin_email_list = list(
+            created.site.membership_set.filter(role=Role.LANGUAGE_ADMIN).values_list(
+                "user__email", flat=True
+            )
+        )
+        if len(site_language_admin_email_list) == 0:
+            logger.warning(
+                f"No language admins found for site {created.site.slug}. Join request email will not be sent."
+            )
+        else:
+            subject = f"FirstVoices: New join request for {created.site.title}"
+            message = (
+                f"FirstVoices: You have received a new request to join your site {created.site.title}\n\n"
+                f"User: {created.user}\n"
+                f"Reason: {created.get_reason_display()}\n"
+                f"Reason Note: {created.reason_note}\n\n"
+                f"Please visit your FirstVoices site to approve or reject this request.\n\n"
+            )
+            send_email_task.apply_async(
+                (subject, message, site_language_admin_email_list)
+            )
+
+        return created
 
     class Meta:
         model = JoinRequest

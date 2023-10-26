@@ -1,6 +1,8 @@
 import json
+import logging
 
 import pytest
+from django.core import mail
 from rest_framework.reverse import reverse
 
 from backend.models import JoinRequest, Membership
@@ -124,6 +126,11 @@ class TestJoinRequestEndpoints(
     def assert_related_objects_deleted(self, instance):
         # no related objects to delete
         pass
+
+    @pytest.fixture(autouse=True)
+    def configure_settings(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
 
     @pytest.mark.django_db
     def test_join_request_unique_validation(self):
@@ -273,6 +280,9 @@ class TestJoinRequestEndpoints(
     @pytest.mark.django_db
     def test_actions_404_missing_site(self, viewname):
         join_request = factories.JoinRequestFactory.create()
+
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug="fake-slug"
@@ -280,6 +290,7 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 404
+        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -287,11 +298,15 @@ class TestJoinRequestEndpoints(
     @pytest.mark.django_db
     def test_actions_404_invalid_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_action_endpoint(viewname, key="fake-key", site_slug=site.slug)
         )
 
         assert response.status_code == 404
+        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -299,11 +314,15 @@ class TestJoinRequestEndpoints(
     @pytest.mark.django_db
     def test_actions_404_missing_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_action_endpoint(viewname, key=str(site.id), site_slug=site.slug)
         )
 
         assert response.status_code == 404
+        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -316,6 +335,8 @@ class TestJoinRequestEndpoints(
         other_site = factories.SiteFactory.create()
         join_request = factories.JoinRequestFactory.create(site=other_site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug=other_site.slug
@@ -323,6 +344,7 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 403
+        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -335,6 +357,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug=site.slug
@@ -342,12 +366,15 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 403
+        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_missing_role(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
 
         join_request = factories.JoinRequestFactory.create(site=site)
+
+        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(
@@ -356,12 +383,15 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
+        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_invalid_role(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
 
         join_request = factories.JoinRequestFactory.create(site=site)
+
+        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
@@ -370,6 +400,7 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
+        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_already_a_member(self):
@@ -377,6 +408,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
         factories.MembershipFactory(user=join_request.user, site=join_request.site)
+
+        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(
@@ -387,6 +420,7 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
+        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_success_admin(self):
@@ -397,6 +431,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
             data=self.format_upload_data({"role": "member"}),
@@ -405,6 +441,7 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         self.assert_request_approved(join_request, site)
+        assert len(mail.outbox) == 1
 
     @pytest.mark.parametrize("app_role", AppRole)
     @pytest.mark.django_db
@@ -413,6 +450,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
             data=self.format_upload_data({"role": "member"}),
@@ -421,6 +460,7 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         self.assert_request_approved(join_request, site)
+        assert len(mail.outbox) == 1
 
     def assert_request_approved(self, join_request, site):
         membership = Membership.objects.filter(
@@ -476,6 +516,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_reject_endpoint(key=str(join_request.id), site_slug=site.slug),
             data=self.format_upload_data({"role": "member"}),
@@ -484,6 +526,7 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         self.assert_request_rejected(join_request)
+        assert len(mail.outbox) == 1
 
     @pytest.mark.django_db
     def test_reject_success_superadmin(self):
@@ -491,6 +534,8 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
+        assert len(mail.outbox) == 0
+
         response = self.client.post(
             self.get_reject_endpoint(key=str(join_request.id), site_slug=site.slug),
             data=self.format_upload_data({"role": "member"}),
@@ -499,6 +544,7 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         self.assert_request_rejected(join_request)
+        assert len(mail.outbox) == 1
 
     def assert_request_rejected(self, join_request):
         updated_join_request = JoinRequest.objects.get(pk=join_request.pk)
@@ -586,3 +632,60 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_create_language_admin_email_sent(self):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        anon_user = factories.UserFactory.create()
+        self.client.force_authenticate(user=anon_user)
+
+        assert len(mail.outbox) == 0
+        assert JoinRequest.objects.count() == 0
+
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(
+                {
+                    "user": anon_user.email,
+                    "reason": "other",
+                    "reason_note": self.REASON_NOTE,
+                }
+            ),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 201
+        assert JoinRequest.objects.count() == 1
+        assert len(mail.outbox) == 1
+
+    @pytest.mark.django_db
+    def test_create_no_language_admin_for_email(self, caplog):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        anon_user = factories.UserFactory.create()
+        self.client.force_authenticate(user=anon_user)
+
+        assert len(mail.outbox) == 0
+        assert JoinRequest.objects.count() == 0
+
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(
+                {
+                    "user": anon_user.email,
+                    "reason": "other",
+                    "reason_note": self.REASON_NOTE,
+                }
+            ),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 201
+        assert JoinRequest.objects.count() == 1
+        assert len(mail.outbox) == 0
+        assert (
+            f"No language admins found for site {site.slug}. Join request email will not be sent."
+            in caplog.text
+        )

@@ -13,6 +13,10 @@ def send_email_task(subject, message, to_email_list):
     """
     logger = logging.getLogger(__name__)
     try:
+        message = (
+            message
+            + "\nThis is an automated message, please do not reply to this email.\n\n"
+        )
         send_mail(
             subject=subject,
             message=message,

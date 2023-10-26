@@ -19,6 +19,7 @@ from backend.models.constants import Role
 from backend.models.join_request import JoinRequest, JoinRequestStatus
 from backend.serializers import fields
 from backend.serializers.join_request_serializers import JoinRequestDetailSerializer
+from backend.tasks.send_email_tasks import send_email_task
 from backend.views import doc_strings
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -162,7 +163,14 @@ class JoinRequestViewSet(
             join_request, JoinRequestStatus.REJECTED, request.user
         )
 
-        # notify user here, see FW-5077
+        subject = f"Thank you for your interest in joining the FirstVoices site {join_request.site.title}."
+        message = (
+            f"Thank you for your interest in joining the FirstVoices site {join_request.site.title}.\n\n"
+            f"At this time the site is not accepting new members and your request to join the site has not been "
+            f"approved.\n\n"
+            f"If you think this may be an error please contact hello@firstvoices.com.\n\n"
+        )
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -196,7 +204,12 @@ class JoinRequestViewSet(
                 join_request, JoinRequestStatus.APPROVED, request.user
             )
 
-        # notify user here, see FW-5077
+        subject = f"Your FirstVoices account has been approved to join {join_request.site.title}."
+        message = (
+            f"Thank you for your interest in joining the FirstVoices site {join_request.site.title}.\n\n"
+            f"Your account has been approved with the {role.label} role and you can now log in to the site.\n\n"
+        )
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
