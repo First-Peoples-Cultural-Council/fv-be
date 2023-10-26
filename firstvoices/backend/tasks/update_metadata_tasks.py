@@ -20,6 +20,10 @@ def update_missing_media_metadata(missing_media_files):
             logger.warning(
                 f"File not found for {file.__class__.__name__} - {file.id}. Error: {e}"
             )
+        except Exception as e:
+            logger.warning(
+                f"File could not be updated for {file.__class__.__name__} - {file.id}. Error: {e}"
+            )
         else:
             logger.debug(
                 f"Successfully updated metadata for {file.__class__.__name__} - {file.id} with path {file.content}."
