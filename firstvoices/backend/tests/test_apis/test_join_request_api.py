@@ -129,7 +129,7 @@ class TestJoinRequestEndpoints(
 
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
-        # Sets the celery tasks to run synchronously for testing
+        # Runs the email sending celery task synchronously during testing
         settings.CELERY_TASK_ALWAYS_EAGER = True
 
     @pytest.mark.django_db
@@ -635,9 +635,7 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_create_language_admin_email_sent(self):
-        site, user = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
-        )
+        site, _ = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
 
         anon_user = factories.UserFactory.create()
         self.client.force_authenticate(user=anon_user)
