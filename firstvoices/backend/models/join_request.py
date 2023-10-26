@@ -76,6 +76,12 @@ class JoinRequestReason(BaseModel):
     class Meta:
         verbose_name = _("Join Request Reason")
         verbose_name_plural = _("Join Request Reasons")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["join_request", "reason"],
+                name="unique_reasons_per_join_request",
+            )
+        ]
         rules_permissions = {
             "view": rules.always_allow,
             "add": rules.is_authenticated,
