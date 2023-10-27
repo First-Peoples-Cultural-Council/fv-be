@@ -14,13 +14,12 @@ from backend.search.utils.constants import (
 from backend.search.utils.object_utils import get_object_by_id
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
 from backend.serializers.media_serializers import (
-    AudioSerializer,
-    ImageSerializer,
-    VideoSerializer,
+    AudioMinimalSerializer,
+    ImageMinimalSerializer,
+    VideoMinimalSerializer,
 )
 from backend.serializers.song_serializers import SongMinimalSerializer
 from backend.serializers.story_serializers import StoryMinimalSerializer
-from backend.views.utils import get_select_related_media_fields
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 
@@ -60,9 +59,11 @@ def separate_object_ids(search_results):
 
 
 def fetch_objects_from_database(
-    id_list, model, prefetch_fields=None, defer_fields=None
+    id_list, model, select_related_fields=None, prefetch_fields=None, defer_fields=None
 ):
     objects = model.objects.filter(id__in=id_list)
+    if select_related_fields:
+        objects = objects.select_related(*select_related_fields)
     if prefetch_fields:
         objects = objects.prefetch_related(*prefetch_fields)
     if defer_fields:
@@ -84,8 +85,8 @@ def hydrate_objects(search_results, request):
     dictionary_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_DICTIONARY_ENTRY_INDEX],
         DictionaryEntry,
+        select_related_fields=["site"],
         prefetch_fields=[
-            "site",
             "translation_set",
             "related_audio",
             "related_images",
@@ -108,6 +109,7 @@ def hydrate_objects(search_results, request):
     story_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_STORY_INDEX],
         Story,
+        select_related_fields=["site"],
         prefetch_fields=[
             "site",
             "related_images",
@@ -118,6 +120,7 @@ def hydrate_objects(search_results, request):
     audio_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_AUDIO],
         Audio,
+        select_related_fields=["site"],
         prefetch_fields=["original", "site", "speakers"],
         defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
@@ -125,15 +128,11 @@ def hydrate_objects(search_results, request):
     image_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_IMAGE],
         Image,
-        prefetch_fields=["site", *get_select_related_media_fields(None)],
-        defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
 
     video_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_VIDEO],
         Video,
-        prefetch_fields=["site", *get_select_related_media_fields(None)],
-        defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
 
     for obj in search_results:
@@ -173,7 +172,7 @@ def hydrate_objects(search_results, request):
             ):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_AUDIO
-                complete_object["entry"] = AudioSerializer(
+                complete_object["entry"] = AudioMinimalSerializer(
                     audio, context={"request": request, "site": audio.site}
                 ).data
 
@@ -183,9 +182,7 @@ def hydrate_objects(search_results, request):
             ):
                 image = get_object_by_id(image_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_IMAGE
-                complete_object["entry"] = ImageSerializer(
-                    image, context={"request": request}
-                ).data
+                complete_object["entry"] = ImageMinimalSerializer(image).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
@@ -193,9 +190,7 @@ def hydrate_objects(search_results, request):
             ):
                 video = get_object_by_id(video_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_VIDEO
-                complete_object["entry"] = VideoSerializer(
-                    video, context={"request": request}
-                ).data
+                complete_object["entry"] = VideoMinimalSerializer(video).data
         except Exception as e:
             handle_hydration_errors(obj, e)
 

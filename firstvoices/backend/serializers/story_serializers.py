@@ -8,6 +8,9 @@ from backend.serializers.base_serializers import (
     ArbitraryIdSerializer,
     BaseControlledSiteContentSerializer,
     CreateControlledSiteContentSerializerMixin,
+    LinkedSiteMinimalSerializer,
+    LinkedSiteSerializer,
+    ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     WritableControlledSiteContentSerializer,
@@ -19,8 +22,8 @@ from backend.serializers.base_serializers import (
 from backend.serializers.media_serializers import (
     RelatedImageMinimalSerializer,
     RelatedMediaSerializerMixin,
+    RelatedVideoMinimalSerializer,
 )
-from backend.serializers.site_serializers import LinkedSiteSerializer
 from backend.serializers.utils import get_story_from_context
 from backend.serializers.validators import SameSite
 
@@ -101,9 +104,13 @@ class StorySerializer(
     site = LinkedSiteSerializer(required=False, read_only=True)
     visibility = WritableVisibilityField(required=True)
 
-    title_translation = serializers.CharField(required=False, allow_blank=True, default="")
+    title_translation = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
     introduction = serializers.CharField(required=False, allow_blank=True, default="")
-    introduction_translation = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction_translation = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
 
     pages = StoryPageSummarySerializer(many=True, read_only=True)
 
@@ -198,9 +205,12 @@ class StoryListSerializer(BaseControlledSiteContentSerializer):
         )
 
 
-class StoryMinimalSerializer(serializers.ModelSerializer):
-    site = LinkedSiteSerializer(read_only=True)
+class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
+    site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
+        many=True, required=False, read_only=True
+    )
+    related_videos = RelatedVideoMinimalSerializer(
         many=True, required=False, read_only=True
     )
 
@@ -214,4 +224,6 @@ class StoryMinimalSerializer(serializers.ModelSerializer):
             "hide_overlay",
             "site",
             "related_images",
+            "related_videos",
+            "visibility",
         )
