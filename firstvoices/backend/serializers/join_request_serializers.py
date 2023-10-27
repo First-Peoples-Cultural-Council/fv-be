@@ -27,7 +27,7 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
         view_name="api:joinrequest-detail", read_only=True
     )
-    user = UserDetailSerializer(required=False, allow_null=False, read_only=True)
+    user = UserDetailSerializer(allow_null=False, read_only=True)
     status = fields.EnumField(
         enum=JoinRequestStatus,
         allow_null=False,
