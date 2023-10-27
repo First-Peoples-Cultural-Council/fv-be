@@ -100,4 +100,10 @@ class EnumField(serializers.Field):
         return self.enum(obj).label.lower()
 
     def to_internal_value(self, data):
-        return self.enum[data.upper()]
+        try:
+            return self.enum[data.upper()]
+        except KeyError:
+            # raise error and show valid enum keys
+            raise serializers.ValidationError(
+                f"Invalid value {data}. Valid values are: {', '.join(self.enum.names)}"
+            )
