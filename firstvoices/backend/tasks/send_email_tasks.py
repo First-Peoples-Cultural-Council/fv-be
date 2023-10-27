@@ -15,7 +15,7 @@ def send_email_task(subject, message, to_email_list):
     try:
         message = (
             message
-            + "\nThis is an automated message, please do not reply to this email.\n\n"
+            + "\nThis is an automated message. Please do not reply to this email.\n\n"
         )
         send_mail(
             subject=subject,

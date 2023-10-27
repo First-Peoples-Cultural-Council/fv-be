@@ -207,7 +207,7 @@ class JoinRequestViewSet(
         subject = f"Your FirstVoices account has been approved to join {join_request.site.title}."
         message = (
             f"Thank you for your interest in joining the FirstVoices site {join_request.site.title}.\n\n"
-            f"Your account has been approved with the {role.label} role and you can now log in to the site.\n\n"
+            f"Your account has been approved with the {role.label} role and you can now sign in to the site.\n\n"
         )
         send_email_task.apply_async((subject, message, [join_request.user.email]))
 

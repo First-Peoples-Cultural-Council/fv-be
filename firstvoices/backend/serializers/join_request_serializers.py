@@ -79,9 +79,15 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
         return attrs
 
     def create(self, validated_data):
-        logger = logging.getLogger(__name__)
         created = super().create(validated_data)
 
+        self.notify_language_admins(created)
+
+        return created
+
+    @staticmethod
+    def notify_language_admins(created):
+        logger = logging.getLogger(__name__)
         site_language_admin_email_list = list(
             created.site.membership_set.filter(role=Role.LANGUAGE_ADMIN).values_list(
                 "user__email", flat=True
@@ -103,8 +109,6 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
             send_email_task.apply_async(
                 (subject, message, site_language_admin_email_list)
             )
-
-        return created
 
     class Meta:
         model = JoinRequest
