@@ -7,6 +7,7 @@ from rest_framework import serializers
 from backend.models import category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
     LinkedSiteMinimalSerializer,
+    ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
     audience_fields,
@@ -366,7 +367,9 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
         ) + audience_fields
 
 
-class DictionaryEntryMinimalSerializer(serializers.ModelSerializer):
+class DictionaryEntryMinimalSerializer(
+    ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
+):
     site = LinkedSiteMinimalSerializer(read_only=True)
     translations = TranslationSerializer(
         many=True, required=False, source="translation_set", read_only=True
@@ -386,5 +389,6 @@ class DictionaryEntryMinimalSerializer(serializers.ModelSerializer):
             "translations",
             "related_audio",
             "related_images",
+            "visibility",
         )
         read_only_fields = ("id", "title", "type")

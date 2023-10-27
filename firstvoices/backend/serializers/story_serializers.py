@@ -10,6 +10,7 @@ from backend.serializers.base_serializers import (
     CreateControlledSiteContentSerializerMixin,
     LinkedSiteMinimalSerializer,
     LinkedSiteSerializer,
+    ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     WritableControlledSiteContentSerializer,
@@ -204,7 +205,7 @@ class StoryListSerializer(BaseControlledSiteContentSerializer):
         )
 
 
-class StoryMinimalSerializer(serializers.ModelSerializer):
+class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
@@ -224,4 +225,5 @@ class StoryMinimalSerializer(serializers.ModelSerializer):
             "site",
             "related_images",
             "related_videos",
+            "visibility",
         )

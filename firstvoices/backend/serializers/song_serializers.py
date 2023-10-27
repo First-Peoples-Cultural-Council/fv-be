@@ -108,7 +108,7 @@ class SongListSerializer(
         )
 
 
-class SongMinimalSerializer(ModelSerializer):
+class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
@@ -127,5 +127,6 @@ class SongMinimalSerializer(ModelSerializer):
             "site",
             "related_images",
             "related_videos",
+            "visibility",
         )
         read_only_fields = ("id", "title", "title_translation", "hide_overlay")

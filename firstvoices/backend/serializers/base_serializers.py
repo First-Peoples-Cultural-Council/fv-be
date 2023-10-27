@@ -152,14 +152,16 @@ class LinkedSiteSerializer(
         fields = base_id_fields + ("slug", "visibility", "language")
 
 
-class LinkedSiteMinimalSerializer(serializers.ModelSerializer):
+class LinkedSiteMinimalSerializer(
+    ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
+):
     """
     Minimal info about a site, suitable for search results.
     """
 
     class Meta:
         model = Site
-        fields = ("id", "slug", "title")
+        fields = ("id", "slug", "title", "visibility")
         read_only_fields = ("id", "slug", "title")
 
 
