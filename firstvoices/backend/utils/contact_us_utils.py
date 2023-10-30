@@ -15,7 +15,7 @@ def get_fallback_emails():
     logger = logging.getLogger(__name__)
     if AppJson.objects.filter(key="contact_us_default_emails").count() == 0:
         raise ImproperlyConfigured(
-            'No default email set in AppJson model with key "contact_us_default_email".'
+            'No default email set in AppJson model with key "contact_us_default_emails".'
         )
     else:
         logger.warning("The fallback email will be used.")
