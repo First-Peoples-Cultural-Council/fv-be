@@ -15,6 +15,7 @@ from backend.tests.test_apis.base_api_test import (
     SiteContentDestroyApiTestMixin,
     WriteApiTestMixin,
 )
+from backend.views.utils import get_site_url_from_appjson
 
 approve_viewname = "api:joinrequest-approve"
 ignore_viewname = "api:joinrequest-ignore"
@@ -637,6 +638,10 @@ class TestJoinRequestEndpoints(
     def test_create_language_admin_email_sent(self):
         site, _ = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
 
+        factories.AppJsonFactory.create(
+            key="frontend_base_url", json="https://test.com"
+        )
+
         anon_user = factories.UserFactory.create()
         self.client.force_authenticate(user=anon_user)
 
@@ -648,7 +653,7 @@ class TestJoinRequestEndpoints(
             data=self.format_upload_data(
                 {
                     "user": anon_user.email,
-                    "reason": "other",
+                    "reasons": [{"reason": "other"}],
                     "reason_note": self.REASON_NOTE,
                 }
             ),
@@ -674,7 +679,7 @@ class TestJoinRequestEndpoints(
             data=self.format_upload_data(
                 {
                     "user": anon_user.email,
-                    "reason": "other",
+                    "reasons": [{"reason": "other"}],
                     "reason_note": self.REASON_NOTE,
                 }
             ),
@@ -687,3 +692,23 @@ class TestJoinRequestEndpoints(
             f"No language admins found for site {site.slug}. Join request email will not be sent."
             in caplog.text
         )
+
+    @pytest.mark.django_db
+    def test_get_base_url_from_appjson(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.AppJsonFactory.create(
+            key="frontend_base_url", json="https://test.com"
+        )
+        base_url = get_site_url_from_appjson(site)
+        assert base_url == "https://test.com/" + site.slug + "/"
+
+    @pytest.mark.django_db
+    def test_get_base_url_no_appjson(self, caplog):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        base_url = get_site_url_from_appjson(site)
+        assert base_url is None
+        assert (
+            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join '
+            "request emails."
+        ) in caplog.text

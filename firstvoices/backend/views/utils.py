@@ -1,7 +1,10 @@
 from django.core.cache import caches
+import logging
+
 from django.db.models import Prefetch
 from rest_framework.throttling import UserRateThrottle
 
+from backend.models import AppJson
 from backend.models.media import Audio, Image, Video
 
 
@@ -44,6 +47,20 @@ def get_media_prefetch_list(user):
             ),
         ),
     ]
+
+
+def get_site_url_from_appjson(site):
+    logger = logging.getLogger(__name__)
+    base_url = AppJson.objects.filter(key="frontend_base_url")
+    if base_url.count() > 0:
+        return base_url[0].json + "/" + site.slug + "/"
+    else:
+        logger.warning(
+            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join request '
+            'emails. Please add a key "frontend_base_url" to AppJson with the base URL of the frontend as the value '
+            'string (eg: "https://firstvoices.com").'
+        )
+        return None
 
 
 class CustomUserRateThrottle(UserRateThrottle):
