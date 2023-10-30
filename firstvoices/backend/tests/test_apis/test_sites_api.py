@@ -559,9 +559,9 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         widget_list = factories.SiteWidgetListWithEachWidgetVisibilityFactory.create(
             site=site
         )
-        widget_public = widget_list.widgets.all()[0]
-        widget_members = widget_list.widgets.all()[1]
-        widget_team = widget_list.widgets.all()[2]
+        widget_public = widget_list.widgets.order_by("title").all()[0]
+        widget_members = widget_list.widgets.order_by("title").all()[1]
+        widget_team = widget_list.widgets.order_by("title").all()[2]
         update_widget_sites(site, [widget_public, widget_members, widget_team])
 
         site.homepage = widget_list
@@ -714,8 +714,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
 
         existing_list = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
-        existing_widget_one = existing_list.widgets.all()[0]
-        existing_widget_two = existing_list.widgets.all()[1]
+        existing_widget_one = existing_list.widgets.order_by("title").all()[0]
+        existing_widget_two = existing_list.widgets.order_by("title").all()[1]
         existing_widget_one_order_id = SiteWidgetListOrder.objects.get(
             site_widget=existing_widget_one
         ).id
