@@ -549,7 +549,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
     )
     @pytest.mark.django_db
     def test_detail_homepage_permissions(self, user_role, expected_visible_widgets):
-        user = factories.UserFactory.create(id=1)
+        user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
