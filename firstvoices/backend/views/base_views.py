@@ -9,7 +9,15 @@ from backend.permissions import utils
 from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
 
 
-class FVPermissionViewSetMixin:
+class ThrottlingMixin:
+    """
+    A mixin to provide request usage throttling for viewsets.
+    """
+
+    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
+
+
+class FVPermissionViewSetMixin(ThrottlingMixin):
     """
     Forked from ``rules.contrib.rest_framework.AutoPermissionViewSetMixin`` to provide extension points.
 
@@ -42,7 +50,6 @@ class FVPermissionViewSetMixin:
         "retrieve": "view",
         "update": "change",
     }
-    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
 
     def initial(self, *args, **kwargs):
         """Ensures user has permission to perform the requested action."""
@@ -130,8 +137,6 @@ class SiteContentViewSetMixin:
     """
     Provides common methods for handling site content, usually for data models that use the ``BaseSiteContentModel``.
     """
-
-    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
 
     def get_site_slug(self):
         return self.kwargs["site_slug"]

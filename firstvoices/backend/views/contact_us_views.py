@@ -19,7 +19,7 @@ from backend.tasks.send_email_tasks import send_email_task
 from backend.utils.contact_us_utils import get_fallback_emails
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
-from backend.views.base_views import SiteContentViewSetMixin
+from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
 from backend.views.doc_strings import error_403
 from backend.views.exceptions import ContactUsError
 
@@ -53,6 +53,7 @@ from backend.views.exceptions import ContactUsError
     ),
 )
 class ContactUsView(
+    ThrottlingMixin,
     SiteContentViewSetMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
