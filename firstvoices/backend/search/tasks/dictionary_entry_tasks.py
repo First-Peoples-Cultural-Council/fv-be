@@ -10,6 +10,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
@@ -51,6 +52,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=instance.visibility,
+                retry_on_conflict=RETRY_ON_CONFLICT,
             )
         else:
             # Create new entry if it doesn't exist
@@ -152,7 +154,9 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(translation=translations_text)
+        dictionary_entry_doc.update(
+            translation=translations_text, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
@@ -205,7 +209,9 @@ def update_notes(instance_id, dictionary_entry_id, **kwargs):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(note=notes_text)
+        dictionary_entry_doc.update(
+            note=notes_text, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
@@ -258,7 +264,9 @@ def update_acknowledgements(instance_id, dictionary_entry_id, **kwargs):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(acknowledgement=acknowledgements_text)
+        dictionary_entry_doc.update(
+            acknowledgement=acknowledgements_text, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
@@ -309,7 +317,9 @@ def update_dictionary_entry_index_categories(dictionary_entry):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(categories=categories)
+        dictionary_entry_doc.update(
+            categories=categories, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR
