@@ -17,6 +17,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_object_from_index
@@ -99,7 +100,9 @@ def update_dictionary_entry_visibility(dictionary_entry, updated_visibility):
             raise NotFoundError
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
-        dictionary_entry_doc.update(site_visibility=updated_visibility)
+        dictionary_entry_doc.update(
+            site_visibility=updated_visibility, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR
@@ -140,7 +143,9 @@ def update_song_visibility(song, updated_visibility):
             raise NotFoundError
 
         song_doc = SongDocument.get(id=existing_entry["_id"])
-        song_doc.update(site_visibility=updated_visibility)
+        song_doc.update(
+            site_visibility=updated_visibility, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR % ("song", SearchIndexEntryTypes.SONG, song.id)
@@ -172,7 +177,9 @@ def update_story_visibility(story, updated_visibility):
             raise NotFoundError
 
         story_doc = StoryDocument.get(id=existing_entry["_id"])
-        story_doc.update(site_visibility=updated_visibility)
+        story_doc.update(
+            site_visibility=updated_visibility, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR % ("story", SearchIndexEntryTypes.STORY, story.id)
@@ -203,7 +210,9 @@ def update_media_visibility(media_instance, updated_visibility):
             raise NotFoundError
 
         media_doc = MediaDocument.get(id=existing_entry["_id"])
-        media_doc.update(site_visibility=updated_visibility)
+        media_doc.update(
+            site_visibility=updated_visibility, retry_on_conflict=RETRY_ON_CONFLICT
+        )
     except ConnectionError:
         logger.warning(
             ES_CONNECTION_ERROR

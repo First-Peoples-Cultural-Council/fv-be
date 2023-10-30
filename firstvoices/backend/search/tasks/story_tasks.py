@@ -10,6 +10,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_STORY_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_object_from_index, get_page_info
@@ -43,6 +44,7 @@ def update_story_index(instance_id, **kwargs):
                 author=instance.author,
                 page_text=page_text,
                 page_translation=page_translation,
+                retry_on_conflict=RETRY_ON_CONFLICT,
             )
         else:
             index_entry = StoryDocument(
@@ -124,7 +126,11 @@ def update_pages(sender, story_id, **kwargs):
         if not existing_entry:
             raise NotFoundError
         story_doc = StoryDocument.get(id=existing_entry["_id"])
-        story_doc.update(page_text=page_text, page_translation=page_translation)
+        story_doc.update(
+            page_text=page_text,
+            page_translation=page_translation,
+            retry_on_conflict=RETRY_ON_CONFLICT,
+        )
     except ConnectionError:
         logger.error(
             ES_CONNECTION_ERROR % ("story_page", SearchIndexEntryTypes.STORY, story_id)
