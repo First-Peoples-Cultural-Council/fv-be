@@ -356,8 +356,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         factories.SiteWidgetListOrderFactory.reset_sequence()
         widget_list = factories.SiteWidgetListWithTwoWidgetsFactory.create(site=site)
 
-        widget_one = widget_list.widgets.all()[0]
-        widget_two = widget_list.widgets.all()[1]
+        widget_one = widget_list.widgets.order_by("title").all()[0]
+        widget_two = widget_list.widgets.order_by("title").all()[1]
         update_widget_sites(site, [widget_one, widget_two])
 
         widget_one_settings_one = factories.WidgetSettingsFactory.create(
