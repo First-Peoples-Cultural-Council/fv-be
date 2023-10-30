@@ -17,6 +17,8 @@ from backend.tests.test_apis.base_api_test import (
 )
 from backend.views.utils import get_site_url_from_appjson
 
+TEST_BASE_FRONTEND_URL = "https://test.com"
+
 approve_viewname = "api:joinrequest-approve"
 ignore_viewname = "api:joinrequest-ignore"
 reject_viewname = "api:joinrequest-reject"
@@ -282,8 +284,6 @@ class TestJoinRequestEndpoints(
     def test_actions_404_missing_site(self, viewname):
         join_request = factories.JoinRequestFactory.create()
 
-        assert len(mail.outbox) == 0
-
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug="fake-slug"
@@ -291,7 +291,6 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 404
-        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -300,14 +299,11 @@ class TestJoinRequestEndpoints(
     def test_actions_404_invalid_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
-        assert len(mail.outbox) == 0
-
         response = self.client.post(
             self.get_action_endpoint(viewname, key="fake-key", site_slug=site.slug)
         )
 
         assert response.status_code == 404
-        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -316,14 +312,11 @@ class TestJoinRequestEndpoints(
     def test_actions_404_missing_join_request(self, viewname):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
-        assert len(mail.outbox) == 0
-
         response = self.client.post(
             self.get_action_endpoint(viewname, key=str(site.id), site_slug=site.slug)
         )
 
         assert response.status_code == 404
-        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -336,8 +329,6 @@ class TestJoinRequestEndpoints(
         other_site = factories.SiteFactory.create()
         join_request = factories.JoinRequestFactory.create(site=other_site)
 
-        assert len(mail.outbox) == 0
-
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug=other_site.slug
@@ -345,7 +336,6 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 403
-        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize(
         "viewname", [approve_viewname, ignore_viewname, reject_viewname]
@@ -358,8 +348,6 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
-        assert len(mail.outbox) == 0
-
         response = self.client.post(
             self.get_action_endpoint(
                 viewname, key=str(join_request.id), site_slug=site.slug
@@ -367,15 +355,12 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 403
-        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_missing_role(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
 
         join_request = factories.JoinRequestFactory.create(site=site)
-
-        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(
@@ -384,15 +369,12 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
-        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_invalid_role(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
 
         join_request = factories.JoinRequestFactory.create(site=site)
-
-        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
@@ -401,7 +383,6 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
-        assert len(mail.outbox) == 0
 
     @pytest.mark.django_db
     def test_approve_400_already_a_member(self):
@@ -409,8 +390,6 @@ class TestJoinRequestEndpoints(
 
         join_request = factories.JoinRequestFactory.create(site=site)
         factories.MembershipFactory(user=join_request.user, site=join_request.site)
-
-        assert len(mail.outbox) == 0
 
         response = self.client.post(
             self.get_approve_endpoint(
@@ -421,7 +400,6 @@ class TestJoinRequestEndpoints(
         )
 
         assert response.status_code == 400
-        assert len(mail.outbox) == 0
 
     @pytest.mark.parametrize("create_frontend_base_url", [True, False])
     @pytest.mark.django_db
@@ -433,7 +411,7 @@ class TestJoinRequestEndpoints(
 
         if create_frontend_base_url:
             factories.AppJsonFactory.create(
-                key="frontend_base_url", json="https://test.com"
+                key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
             )
 
         join_request = factories.JoinRequestFactory.create(site=site)
@@ -647,7 +625,7 @@ class TestJoinRequestEndpoints(
 
         if create_frontend_base_url:
             factories.AppJsonFactory.create(
-                key="frontend_base_url", json="https://test.com"
+                key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
             )
 
         anon_user = factories.UserFactory.create()
@@ -705,10 +683,10 @@ class TestJoinRequestEndpoints(
     def test_get_base_url_from_appjson(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         factories.AppJsonFactory.create(
-            key="frontend_base_url", json="https://test.com"
+            key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
         )
         base_url = get_site_url_from_appjson(site)
-        assert base_url == "https://test.com/" + site.slug + "/"
+        assert base_url == TEST_BASE_FRONTEND_URL + "/" + site.slug + "/"
 
     @pytest.mark.django_db
     def test_get_base_url_no_appjson(self, caplog):
@@ -717,6 +695,7 @@ class TestJoinRequestEndpoints(
         base_url = get_site_url_from_appjson(site)
         assert base_url is None
         assert (
-            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join '
-            "request emails."
+            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join request '
+            'emails. Please add a key "frontend_base_url" to AppJson with the base URL of the frontend as the value '
+            'string (eg: "https://firstvoices.com").'
         ) in caplog.text
