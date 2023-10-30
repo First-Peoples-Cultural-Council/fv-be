@@ -618,6 +618,25 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 400
 
+    def create_join_request(self, site):
+        anon_user = factories.UserFactory.create()
+        self.client.force_authenticate(user=anon_user)
+        assert len(mail.outbox) == 0
+        assert JoinRequest.objects.count() == 0
+        response = self.client.post(
+            self.get_list_endpoint(site.slug),
+            data=self.format_upload_data(
+                {
+                    "user": anon_user.email,
+                    "reasons": [{"reason": "other"}],
+                    "reason_note": self.REASON_NOTE,
+                }
+            ),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 201
+        assert JoinRequest.objects.count() == 1
+
     @pytest.mark.parametrize("create_frontend_base_url", [True, False])
     @pytest.mark.django_db
     def test_create_language_admin_email_sent(self, create_frontend_base_url):
@@ -628,25 +647,7 @@ class TestJoinRequestEndpoints(
                 key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
             )
 
-        anon_user = factories.UserFactory.create()
-        self.client.force_authenticate(user=anon_user)
-
-        assert len(mail.outbox) == 0
-        assert JoinRequest.objects.count() == 0
-
-        response = self.client.post(
-            self.get_list_endpoint(site.slug),
-            data=self.format_upload_data(
-                {
-                    "user": anon_user.email,
-                    "reasons": [{"reason": "other"}],
-                    "reason_note": self.REASON_NOTE,
-                }
-            ),
-            content_type=self.content_type,
-        )
-        assert response.status_code == 201
-        assert JoinRequest.objects.count() == 1
+        self.create_join_request(site)
         assert len(mail.outbox) == 1
 
     @pytest.mark.django_db
@@ -654,25 +655,7 @@ class TestJoinRequestEndpoints(
         caplog.set_level(logging.WARNING)
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
-        anon_user = factories.UserFactory.create()
-        self.client.force_authenticate(user=anon_user)
-
-        assert len(mail.outbox) == 0
-        assert JoinRequest.objects.count() == 0
-
-        response = self.client.post(
-            self.get_list_endpoint(site.slug),
-            data=self.format_upload_data(
-                {
-                    "user": anon_user.email,
-                    "reasons": [{"reason": "other"}],
-                    "reason_note": self.REASON_NOTE,
-                }
-            ),
-            content_type=self.content_type,
-        )
-        assert response.status_code == 201
-        assert JoinRequest.objects.count() == 1
+        self.create_join_request(site)
         assert len(mail.outbox) == 0
         assert (
             f"No language admins found for site {site.slug}. Join request email will not be sent."
@@ -695,7 +678,7 @@ class TestJoinRequestEndpoints(
         base_url = get_site_url_from_appjson(site)
         assert base_url is None
         assert (
-            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join request '
-            'emails. Please add a key "frontend_base_url" to AppJson with the base URL of the frontend as the value '
-            'string (eg: "https://firstvoices.com").'
+            'No AppJson instance with key "frontend_base_url" found. Site URLs will not be included in join '
+            'request emails. Please add a key "frontend_base_url" to AppJson with the base URL of the frontend '
+            'as the value string (eg: "https://firstvoices.com").'
         ) in caplog.text
