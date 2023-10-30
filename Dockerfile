@@ -5,10 +5,10 @@ FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
 
 WORKDIR /app
-RUN apk add build-base
-RUN apk add libffi-dev
-RUN apk add libmagic
-RUN apk add openblas-dev
+RUN apk add --no-cache build-base
+RUN apk add --no-cache libffi-dev
+RUN apk add --no-cache libmagic
+RUN apk add --no-cache openblas-dev
 RUN apk add --no-cache ffmpeg
 RUN pip3 install gunicorn
 
