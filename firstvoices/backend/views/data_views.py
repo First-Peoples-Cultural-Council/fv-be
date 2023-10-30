@@ -6,7 +6,7 @@ from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.site_data_serializers import SiteDataSerializer
 from backend.views.api_doc_variables import site_slug_parameter
-from backend.views.base_views import SiteContentViewSetMixin
+from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
 
 
 def dict_entry_type_mtd_conversion(type):
@@ -37,6 +37,7 @@ def dict_entry_type_mtd_conversion(type):
     ),
 )
 class SitesDataViewSet(
+    ThrottlingMixin,
     AutoPermissionViewSetMixin,
     SiteContentViewSetMixin,
     mixins.ListModelMixin,
