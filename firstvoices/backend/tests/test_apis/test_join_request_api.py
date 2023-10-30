@@ -423,12 +423,18 @@ class TestJoinRequestEndpoints(
         assert response.status_code == 400
         assert len(mail.outbox) == 0
 
+    @pytest.mark.parametrize("create_frontend_base_url", [True, False])
     @pytest.mark.django_db
-    def test_approve_success_admin(self):
+    def test_approve_success_admin(self, create_frontend_base_url):
         site, user = factories.get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
         self.client.force_authenticate(user=user)
+
+        if create_frontend_base_url:
+            factories.AppJsonFactory.create(
+                key="frontend_base_url", json="https://test.com"
+            )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
@@ -634,13 +640,15 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 400
 
+    @pytest.mark.parametrize("create_frontend_base_url", [True, False])
     @pytest.mark.django_db
-    def test_create_language_admin_email_sent(self):
+    def test_create_language_admin_email_sent(self, create_frontend_base_url):
         site, _ = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
 
-        factories.AppJsonFactory.create(
-            key="frontend_base_url", json="https://test.com"
-        )
+        if create_frontend_base_url:
+            factories.AppJsonFactory.create(
+                key="frontend_base_url", json="https://test.com"
+            )
 
         anon_user = factories.UserFactory.create()
         self.client.force_authenticate(user=anon_user)
