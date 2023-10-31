@@ -1,6 +1,8 @@
+from collections import OrderedDict
 from datetime import datetime
 
-from rest_framework import serializers
+from django.core.paginator import Paginator
+from rest_framework import pagination, serializers
 
 from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
@@ -48,10 +50,23 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
             else None
         )
         request = self.context.get("request")
-        dictionary_entries = DictionaryEntryDataSerializer(
+        serializer = DictionaryEntryDataSerializer(
             queryset, many=True, context={"request": request}
-        ).data
+        )
+
+        paginator = DictionaryEntryPaginator()
+        paginated_data = paginator.paginate_queryset(
+            queryset=serializer.data, request=request
+        )
+        dictionary_entries = paginator.get_paginated_response(paginated_data)
         return dictionary_entries
+
+    def to_representation(self, instance):
+        output = super().to_representation(instance)
+        data = output.pop("data", None)
+        for key, value in data.items():
+            output[key] = value
+        return output
 
     class Meta:
         model = Site
@@ -169,4 +184,31 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             "compare_form",
             "sort_form",
             "sorting_form",
+        )
+
+
+class DictionaryEntryPaginator(pagination.PageNumberPagination):
+    django_paginator_class = Paginator
+    page_size = 100
+
+    def get_paginated_response(self, data):
+        return OrderedDict(
+            [
+                ("count", self.page.paginator.count),
+                ("pages", self.page.paginator.num_pages),
+                ("pageSize", self.get_page_size(self.request)),
+                (
+                    "next",
+                    self.page.next_page_number() if self.page.has_next() else None,
+                ),
+                ("next_url", self.get_next_link()),
+                (
+                    "previous",
+                    self.page.previous_page_number()
+                    if self.page.has_previous()
+                    else None,
+                ),
+                ("previous_url", self.get_previous_link()),
+                ("data", data),
+            ]
         )
