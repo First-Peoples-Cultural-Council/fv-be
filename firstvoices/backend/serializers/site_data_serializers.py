@@ -19,9 +19,10 @@ def dict_entry_type_mtd_conversion(type):
 
 
 class SiteDataSerializer(SiteContentLinkedTitleSerializer):
-    site_data_export = serializers.SerializerMethodField()
+    config = serializers.SerializerMethodField()
+    data = serializers.SerializerMethodField()
 
-    def get_site_data_export(self, site):
+    def get_config(self, site):
         request = self.context.get("request")
         characters_list = [
             character
@@ -38,6 +39,9 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
             "L2": {"name": "English"},
             "build": datetime.now().strftime("%Y%m%d%H%M"),
         }
+        return config
+
+    def get_data(self, site):
         queryset = (
             site.dictionaryentry_set
             if site is not None and site.dictionaryentry_set is not None
@@ -47,12 +51,11 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
         dictionary_entries = DictionaryEntryDataSerializer(
             queryset, many=True, context={"request": request}
         ).data
-
-        return {"config": config, "data": dictionary_entries}
+        return dictionary_entries
 
     class Meta:
         model = Site
-        fields = ("site_data_export",)
+        fields = ("config", "data")
 
 
 class CategoriesDataSerializer(serializers.ModelSerializer):

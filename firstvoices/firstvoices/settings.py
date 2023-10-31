@@ -105,9 +105,6 @@ REST_FRAMEWORK = {
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
-    "JSON_UNDERSCOREIZE": {
-        "ignore_fields": ("site_data_export",),
-    },
     "DEFAULT_THROTTLE_CLASSES": [
         "backend.views.utils.BurstRateThrottle",
         "backend.views.utils.SustainedRateThrottle",

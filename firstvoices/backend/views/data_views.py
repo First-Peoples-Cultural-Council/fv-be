@@ -1,12 +1,25 @@
+import json
+
 from django.db.models import Prefetch
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import mixins, serializers, viewsets
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.site_data_serializers import SiteDataSerializer
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
+
+
+class SnakeCaseJSONRenderer(BrowsableAPIRenderer):
+    def get_default_renderer(self, view):
+        return JSONRenderer()
+
+    def render(self, data, media_type=None, renderer_context=None):
+        # convert data keys to snake_case
+        data = json.loads(json.dumps(data, separators=(",", ":")))
+        return super().render(data, renderer_context=renderer_context)
 
 
 def dict_entry_type_mtd_conversion(type):
@@ -46,6 +59,7 @@ class SitesDataViewSet(
     http_method_names = ["get"]
     serializer_class = SiteDataSerializer
     pagination_class = None
+    renderer_classes = [SnakeCaseJSONRenderer]
 
     def get_queryset(self):
         sites = (
@@ -56,6 +70,7 @@ class SitesDataViewSet(
                     "dictionaryentry_set",
                     queryset=DictionaryEntry.objects.visible(self.request.user),
                 ),
+                "category_set",
                 "character_set",
                 "dictionaryentry_set__part_of_speech",
                 "alphabet_set",
