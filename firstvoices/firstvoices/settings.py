@@ -108,6 +108,14 @@ REST_FRAMEWORK = {
     "JSON_UNDERSCOREIZE": {
         "ignore_fields": ("site_data_export",),
     },
+    "DEFAULT_THROTTLE_CLASSES": [
+        "backend.views.utils.BurstRateThrottle",
+        "backend.views.utils.SustainedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "burst": os.getenv("BURST_THROTTLE_RATE", "60/min"),
+        "sustained": os.getenv("SUSTAINED_THROTTLE_RATE", "1000/day"),
+    },
 }
 
 # LOGGERS
@@ -120,7 +128,11 @@ if DEBUG:
             "DEFAULT_RENDERER_CLASSES": (
                 "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
                 "rest_framework.renderers.BrowsableAPIRenderer",
-            )
+            ),
+            "DEFAULT_THROTTLE_RATES": {
+                "burst": os.getenv("BURST_THROTTLE_RATE", "10000/min"),
+                "sustained": os.getenv("SUSTAINED_THROTTLE_RATE", "100000/day"),
+            },
         }
     )
 
@@ -182,6 +194,10 @@ CACHES = {
     "auth": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "auth",
+    },
+    "throttle": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "throttle",
     },
 }
 

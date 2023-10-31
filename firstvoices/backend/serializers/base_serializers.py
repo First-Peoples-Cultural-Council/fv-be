@@ -138,7 +138,7 @@ class LinkedSiteSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.HyperlinkedModelSerializer
 ):
     """
-    Minimal info about a site, suitable for serializing a site as a related field.
+    Info about a linked site, suitable for serializing a site as a related field.
     """
 
     url = serializers.HyperlinkedIdentityField(
@@ -150,6 +150,19 @@ class LinkedSiteSerializer(
     class Meta:
         model = Site
         fields = base_id_fields + ("slug", "visibility", "language")
+
+
+class LinkedSiteMinimalSerializer(
+    ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
+):
+    """
+    Minimal info about a site, suitable for search results.
+    """
+
+    class Meta:
+        model = Site
+        fields = ("id", "slug", "title", "visibility")
+        read_only_fields = ("id", "slug", "title")
 
 
 class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):

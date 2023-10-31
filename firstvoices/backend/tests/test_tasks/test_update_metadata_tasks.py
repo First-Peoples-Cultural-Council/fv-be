@@ -3,6 +3,9 @@ from unittest.mock import patch
 
 import pytest
 from django.core import management
+from django.core.exceptions import BadRequest
+from django.db import DataError
+from PIL import UnidentifiedImageError
 
 from backend.models.media import File, ImageFile, VideoFile
 from backend.tasks.update_metadata_tasks import (
@@ -11,6 +14,12 @@ from backend.tasks.update_metadata_tasks import (
     update_missing_video_metadata,
 )
 from backend.tests import factories
+
+audio_file_save_function = "backend.models.media.File.save"
+
+video_file_save_function = "backend.models.media.VideoFile.save"
+
+image_file_save_function = "backend.models.media.ImageFile.save"
 
 
 class TestUpdateMetadataTasks:
@@ -81,7 +90,7 @@ class TestUpdateMetadataTasks:
 
         assert ImageFile.objects.count() == 1
 
-        with patch("backend.models.media.ImageFile.save") as mock_save:
+        with patch(image_file_save_function) as mock_save:
             update_missing_image_metadata()
             assert not mock_save.called
 
@@ -92,7 +101,7 @@ class TestUpdateMetadataTasks:
 
         assert VideoFile.objects.count() == 1
 
-        with patch("backend.models.media.VideoFile.save") as mock_save:
+        with patch(video_file_save_function) as mock_save:
             update_missing_video_metadata()
             assert not mock_save.called
 
@@ -103,7 +112,7 @@ class TestUpdateMetadataTasks:
 
         assert File.objects.count() == 1
 
-        with patch("backend.models.media.File.save") as mock_save:
+        with patch(audio_file_save_function) as mock_save:
             update_missing_audio_metadata()
             assert not mock_save.called
 
@@ -114,9 +123,7 @@ class TestUpdateMetadataTasks:
         image = factories.ImageFileFactory.create(site=site)
         ImageFile.objects.filter(pk=image.pk).update(mimetype=None)
 
-        with patch(
-            "backend.models.media.ImageFile.save", side_effect=FileNotFoundError()
-        ):
+        with patch(image_file_save_function, side_effect=FileNotFoundError()):
             update_missing_image_metadata()
             assert f"File not found for ImageFile - {image.id}." in caplog.text
 
@@ -127,9 +134,7 @@ class TestUpdateMetadataTasks:
         video = factories.VideoFileFactory.create(site=site)
         VideoFile.objects.filter(pk=video.pk).update(mimetype=None)
 
-        with patch(
-            "backend.models.media.VideoFile.save", side_effect=FileNotFoundError()
-        ):
+        with patch(video_file_save_function, side_effect=FileNotFoundError()):
             update_missing_video_metadata()
             assert f"File not found for VideoFile - {video.id}." in caplog.text
 
@@ -140,9 +145,49 @@ class TestUpdateMetadataTasks:
         audio = factories.FileFactory.create(site=site)
         File.objects.filter(pk=audio.pk).update(mimetype=None)
 
-        with patch("backend.models.media.File.save", side_effect=FileNotFoundError()):
+        with patch(audio_file_save_function, side_effect=FileNotFoundError()):
             update_missing_audio_metadata()
             assert f"File not found for File - {audio.id}." in caplog.text
+
+    @pytest.mark.parametrize("exception", [Exception(), UnidentifiedImageError()])
+    @pytest.mark.django_db
+    def test_image_exception(self, caplog, exception):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        image = factories.ImageFileFactory.create(site=site)
+        ImageFile.objects.filter(pk=image.pk).update(mimetype=None)
+
+        with patch(image_file_save_function, side_effect=exception):
+            update_missing_image_metadata()
+            assert (
+                f"File could not be updated for ImageFile - {image.id}." in caplog.text
+            )
+
+    @pytest.mark.parametrize("exception", [Exception(), DataError()])
+    @pytest.mark.django_db
+    def test_video_exception(self, caplog, exception):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        video = factories.VideoFileFactory.create(site=site)
+        VideoFile.objects.filter(pk=video.pk).update(mimetype=None)
+
+        with patch(video_file_save_function, side_effect=exception):
+            update_missing_video_metadata()
+            assert (
+                f"File could not be updated for VideoFile - {video.id}." in caplog.text
+            )
+
+    @pytest.mark.parametrize("exception", [Exception(), BadRequest()])
+    @pytest.mark.django_db
+    def test_audio_exception(self, caplog, exception):
+        caplog.set_level(logging.WARNING)
+        site = factories.SiteFactory.create()
+        audio = factories.FileFactory.create(site=site)
+        File.objects.filter(pk=audio.pk).update(mimetype=None)
+
+        with patch(audio_file_save_function, side_effect=exception):
+            update_missing_audio_metadata()
+            assert f"File could not be updated for File - {audio.id}." in caplog.text
 
     def test_command(self):
         with patch(

@@ -19,6 +19,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_document_types,
     get_valid_domain,
 )
+from backend.views.base_views import ThrottlingMixin
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -216,7 +217,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
         ],
     ),
 )
-class BaseSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class BaseSearchViewSet(
+    ThrottlingMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+):
     http_method_names = ["get"]
     queryset = ""
     pagination_class = SearchPageNumberPagination

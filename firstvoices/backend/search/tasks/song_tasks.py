@@ -10,6 +10,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_SONG_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import get_lyrics, get_object_from_index
@@ -43,6 +44,7 @@ def update_song_index(instance_id, **kwargs):
                 intro_translation=instance.introduction_translation,
                 lyrics_text=lyrics_text,
                 lyrics_translation=lyrics_translation_text,
+                retry_on_conflict=RETRY_ON_CONFLICT,
             )
         else:
             index_entry = SongDocument(
@@ -137,7 +139,9 @@ def update_lyrics(instance_id, song_id, **kwargs):
 
         song_doc = SongDocument.get(id=existing_entry["_id"])
         song_doc.update(
-            lyrics_text=lyrics_text, lyrics_translation=lyrics_translation_text
+            lyrics_text=lyrics_text,
+            lyrics_translation=lyrics_translation_text,
+            retry_on_conflict=RETRY_ON_CONFLICT,
         )
     except ConnectionError:
         logger.error(

@@ -6,9 +6,18 @@ from rest_framework.viewsets import GenericViewSet
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.permissions import utils
+from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
 
 
-class FVPermissionViewSetMixin:
+class ThrottlingMixin:
+    """
+    A mixin to provide request usage throttling for viewsets.
+    """
+
+    throttle_classes = [BurstRateThrottle, SustainedRateThrottle]
+
+
+class FVPermissionViewSetMixin(ThrottlingMixin):
     """
     Forked from ``rules.contrib.rest_framework.AutoPermissionViewSetMixin`` to provide extension points.
 

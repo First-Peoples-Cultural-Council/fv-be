@@ -11,6 +11,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
+    RETRY_ON_CONFLICT,
     TYPE_AUDIO,
     TYPE_IMAGE,
     TYPE_VIDEO,
@@ -49,6 +50,7 @@ def update_media_index(instance_id, media_type, **kwargs):
                 type=media_type,
                 filename=instance.original.content.name,
                 description=instance.description,
+                retry_on_conflict=RETRY_ON_CONFLICT,
             )
         else:
             index_entry = MediaDocument(
