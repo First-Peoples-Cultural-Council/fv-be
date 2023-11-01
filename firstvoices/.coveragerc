@@ -1,2 +1,17 @@
 [run]
-omit = */tests/*, */migrations/*, */backend/admin/*, */backend/resources/*, */__init__.py, */jwt_auth/admin.py, */jwt_auth/tests.py, */urls.py, */wsgi.py, */manage.py, */settings.py
+source = .
+omit =
+    */tests/*
+    */migrations/*
+    */backend/admin/*
+    */backend/resources/*
+    */__init__.py
+    */jwt_auth/admin.py
+    */jwt_auth/tests.py
+    */urls.py
+    */wsgi.py
+    */manage.py
+    */settings.py
+
+[report]
+include_namespace_packages=True
