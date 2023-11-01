@@ -68,11 +68,14 @@ def recalculate_custom_order(site_slug: str):
         original_title = entry.title
         original_custom_order = entry.custom_order
 
-        # Save the entry to recalculate custom order and clean title
-        entry.save()
+        cleaned_title = alphabet.clean_confusables(entry.title)
+        new_order = alphabet.get_custom_order(cleaned_title)
 
-        cleaned_title = entry.title
-        new_order = entry.custom_order
+        # Save the entry to recalculate custom order and clean title
+        DictionaryEntry.objects.filter(id=entry.id).update(
+            title=cleaned_title,
+            custom_order=new_order,
+        )
 
         append_updated_entry(
             updated_entries,
@@ -84,7 +87,7 @@ def recalculate_custom_order(site_slug: str):
 
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
         if "⚑" in new_order:
-            chars = alphabet.get_character_list(entry.title)
+            chars = alphabet.get_character_list(cleaned_title)
             for char in chars:
                 custom_order = alphabet.get_custom_order(char)
                 if "⚑" in custom_order:
