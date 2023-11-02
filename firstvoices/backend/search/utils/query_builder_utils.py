@@ -179,6 +179,10 @@ def get_games_query(games):
     return Q("bool", filter=[Q("term", exclude_from_games=not games)])
 
 
+def get_visibility_query(visibility):
+    return Q("bool", filter=[Q("terms", visibility=visibility)])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
@@ -241,3 +245,24 @@ def get_valid_boolean(input_val):
         return True
     else:
         return False
+
+
+def get_valid_visibility(input_visibility_str):
+    if not input_visibility_str:
+        return ""
+
+    input_visibility = input_visibility_str.split(",")
+    selected_values = []
+
+    for value in input_visibility:
+        string_upper = value.strip().upper()
+        if (
+            string_upper == Visibility.TEAM.label.upper()
+            or string_upper == Visibility.MEMBERS.label.upper()
+            or string_upper == Visibility.PUBLIC.label.upper()
+        ) and Visibility[string_upper] not in selected_values:
+            selected_values.append(Visibility[string_upper])
+
+    if len(selected_values) == 0:
+        return None
+    return selected_values

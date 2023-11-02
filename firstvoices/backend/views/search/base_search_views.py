@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_visibility,
 )
 from backend.views.base_views import ThrottlingMixin
 from backend.views.exceptions import ElasticSearchConnectionError
@@ -214,6 +215,46 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="visibility",
+                description="Filter by document visibility. Possible options are Team, Members, Public",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Retrieves results from documents with any visibility.",
+                    ),
+                    OpenApiExample(
+                        "Team",
+                        value="Team",
+                        description="Searches for documents that are visible to team users on a site.",
+                    ),
+                    OpenApiExample(
+                        "Members",
+                        value="Members",
+                        description="Searches for documents that are visible to members of a site.",
+                    ),
+                    OpenApiExample(
+                        "Public",
+                        value="Public",
+                        description="Searches for documents that are visible to the public.",
+                    ),
+                    OpenApiExample(
+                        "Team, Members",
+                        value="Team, Members",
+                        description="Searches for documents that are visible to team users and members of a site.",
+                    ),
+                    OpenApiExample(
+                        "invalid_type",
+                        value="None",
+                        description="If no valid document types are provided, "
+                        "the API returns an empty set of results.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -244,6 +285,9 @@ class BaseSearchViewSet(
         games_flag = self.request.GET.get("games", False)
         games_flag = get_valid_boolean(games_flag)
 
+        visibility = self.request.GET.get("visibility", "")
+        valid_visibility = get_valid_visibility(visibility)
+
         search_params = {
             "q": input_q,
             "user": user,
@@ -254,6 +298,7 @@ class BaseSearchViewSet(
             "site_id": "",  # used in site-search
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
+            "visibility": valid_visibility,
         }
 
         return search_params
@@ -307,6 +352,7 @@ class BaseSearchViewSet(
             site_id=search_params["site_id"],
             starts_with_char=search_params["starts_with_char"],
             category_id=search_params["category_id"],
+            visibility=search_params["visibility"],
         )
 
         # Pagination

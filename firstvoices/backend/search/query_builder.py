@@ -12,6 +12,7 @@ from backend.search.utils.query_builder_utils import (
     get_starts_with_query,
     get_types_query,
     get_view_permissions_filter,
+    get_visibility_query,
 )
 from backend.search.utils.search_term_query import get_search_term_query
 
@@ -31,6 +32,7 @@ def get_search_query(
     category_id="",
     kids=False,
     games=False,
+    visibility="",
 ):
     # Building initial query
     indices = get_indices(types)
@@ -74,5 +76,8 @@ def get_search_query(
 
     if games:
         search_query = search_query.query(get_games_query(games))
+
+    if visibility != "":
+        search_query = search_query.query(get_visibility_query(visibility))
 
     return search_query

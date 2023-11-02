@@ -1,10 +1,12 @@
 import pytest
 
+from backend.models.constants import Visibility
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import (
     get_valid_category_id,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_visibility,
 )
 from backend.tests import factories
 
@@ -67,3 +69,30 @@ class TestValidCategory:
         actual_category_id = get_valid_category_id(self.site, "not_real_category")
 
         assert actual_category_id is None
+
+
+class TestValidVisibility:
+    @pytest.mark.parametrize(
+        "input_visibility, expected_visibility",
+        [
+            ("Team", [Visibility.TEAM]),
+            ("TeAm", [Visibility.TEAM]),
+            ("Members", [Visibility.MEMBERS]),
+            ("members", [Visibility.MEMBERS]),
+            ("Public", [Visibility.PUBLIC]),
+            ("invalid, Team", [Visibility.TEAM]),
+            ("Team, Members", [Visibility.TEAM, Visibility.MEMBERS]),
+            (
+                "Team, Members, Public",
+                [Visibility.TEAM, Visibility.MEMBERS, Visibility.PUBLIC],
+            ),
+        ],
+    )
+    def test_valid_inputs(self, input_visibility, expected_visibility):
+        actual_visibility = get_valid_visibility(input_visibility)
+        for value in actual_visibility:
+            assert value in expected_visibility
+
+    def test_invalid_input(self):
+        actual_visibility = get_valid_visibility("bananas")
+        assert actual_visibility is None
