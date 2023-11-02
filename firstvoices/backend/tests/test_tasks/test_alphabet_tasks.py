@@ -288,3 +288,26 @@ class TestAlphabetTasks:
                 }
             ],
         }
+
+    @pytest.mark.django_db
+    def test_last_modified_not_updated(self, site, alphabet):
+        factories.CharacterFactory.create(site=site, title="a")
+        factories.CharacterFactory.create(site=site, title="b")
+        entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
+        entry_last_modified = entry.last_modified
+        factories.CharacterFactory.create(site=site, title="c")
+
+        result = recalculate_custom_order(site_slug=site.slug)
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [
+                {
+                    "title": "abc",
+                    "cleaned_title": "",
+                    "is_title_updated": False,
+                    "previous_custom_order": "!#⚑c",
+                    "new_custom_order": "!#$",
+                }
+            ],
+        }
+        assert entry.last_modified == entry_last_modified
