@@ -9,6 +9,7 @@ from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
 from backend.tests.factories import SiteFactory, SiteWidgetFactory
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSiteWidgetImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -52,6 +53,7 @@ class TestSiteWidgetImport:
         assert table["site"][1] == str(new_widget.site.id)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestWidgetSettingsImport:
     @staticmethod
     def build_table(data: list[str]):

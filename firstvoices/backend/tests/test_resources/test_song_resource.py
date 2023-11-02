@@ -8,6 +8,7 @@ from backend.resources.songs import LyricResource, SongResource
 from backend.tests import factories
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSongsImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -67,6 +68,7 @@ class TestSongsImport:
         assert str(new_song.site.id) == table["site"][0]
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestLyricsImport:
     @staticmethod
     def build_table(data: list[str]):

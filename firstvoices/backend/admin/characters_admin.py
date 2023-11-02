@@ -126,6 +126,7 @@ class AlphabetAdmin(BaseSiteContentAdmin):
         + ("admin_link",)
     )
     list_filter = ()
+    search_fields = ("site__title",)
 
     def admin_link(self, instance):
         try:

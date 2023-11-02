@@ -13,6 +13,7 @@ from backend.models.app import AppImportStatus
 from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
 from backend.resources.characters import (
+    AlphabetConfusablesResource,
     CharacterResource,
     CharacterVariantResource,
     IgnoredCharacterResource,
@@ -113,6 +114,7 @@ def run_import():
         ("base-characters", CharacterResource()),
         ("variant-characters", CharacterVariantResource()),
         ("ignored-characters", IgnoredCharacterResource()),
+        ("confusables", AlphabetConfusablesResource()),
         ("dict-entries-words", DictionaryEntryResource()),
         ("dict-entries-phrases", DictionaryEntryResource()),
         ("dict-notes", NoteResource()),
@@ -147,8 +149,6 @@ def run_import():
 
         if not matched_files:
             logger.warn(f"No '{key}' files found to import")
-            status.no_warnings = False
-            status.save()
 
         # Perform import
         for file in matched_files:

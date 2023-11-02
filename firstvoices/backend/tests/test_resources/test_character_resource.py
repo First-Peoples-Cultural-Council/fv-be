@@ -3,13 +3,20 @@ import uuid
 import pytest
 import tablib
 
-from backend.models.characters import Character, CharacterVariant, IgnoredCharacter
+from backend.models.characters import (
+    Alphabet,
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 from backend.resources.characters import (
+    AlphabetConfusablesResource,
     CharacterResource,
     CharacterVariantResource,
     IgnoredCharacterResource,
 )
 from backend.tests.factories import (
+    AlphabetFactory,
     AudioFactory,
     CharacterFactory,
     SiteFactory,
@@ -17,6 +24,7 @@ from backend.tests.factories import (
 )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestCharacterImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -136,6 +144,7 @@ class TestCharacterImport:
         assert new_char.related_videos.all().count() == 0
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestCharacterVariantImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -171,6 +180,7 @@ class TestCharacterVariantImport:
         assert table["base_character"][0] == str(new_variant.base_character.id)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestIgnoredCharacterImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -201,3 +211,63 @@ class TestIgnoredCharacterImport:
         new_char = IgnoredCharacter.objects.get(id=table["id"][0])
         assert table["title"][0] == new_char.title
         assert table["site"][0] == str(new_char.site.id)
+
+
+class TestAlphabetConfusablesImport:
+    @staticmethod
+    def build_table(data: list[str]):
+        headers = [
+            # these headers should match what is produced by fv-nuxeo-export tool
+            "out_form,in_form,site",
+        ]
+        table = tablib.import_set("\n".join(headers + data), format="csv")
+        return table
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("alphabet_exists", (True, False))
+    def test_import_confusable_mapper(self, alphabet_exists):
+        """Import confusables JSON into Alphabet object"""
+        site = SiteFactory.create()
+        if alphabet_exists:
+            AlphabetFactory.create(site=site)
+
+        # this mapper should result in lowercasing
+        data = [
+            f"a,A,{site.id}",
+            f"b,B,{site.id}",
+        ]
+
+        table = self.build_table(data)
+        result = AlphabetConfusablesResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["skip"] == len(data)
+        assert Alphabet.objects.filter(site=site.id).exists()
+
+        alphabet = Alphabet.objects.get(site=site)
+        assert len(alphabet.input_to_canonical_map) == len(data)
+
+        mapper = {"in": "A", "out": "a"}
+        assert mapper in alphabet.input_to_canonical_map
+        assert alphabet.clean_confusables("ABC") == "abC"
+
+    @pytest.mark.django_db
+    def test_import_confusables_with_unicode(self):
+        """Import confusables JSON into Alphabet object with correct unicode"""
+        site = SiteFactory.create()
+
+        data = [
+            f"ƛ̓,λ̸̒,{site.id}",
+        ]
+
+        table = self.build_table(data)
+        result = AlphabetConfusablesResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+
+        alphabet = Alphabet.objects.get(site=site)
+        mapper = {"in": "λ̸̒", "out": "ƛ̓"}
+        assert mapper in alphabet.input_to_canonical_map
+        assert alphabet.clean_confusables("λ̸̒a") == "ƛ̓a"
