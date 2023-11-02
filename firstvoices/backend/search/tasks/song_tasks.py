@@ -45,6 +45,9 @@ def update_song_index(instance_id, **kwargs):
                 lyrics_text=lyrics_text,
                 lyrics_translation=lyrics_translation_text,
                 retry_on_conflict=RETRY_ON_CONFLICT,
+                hasAudio=instance.related_audio.exists(),
+                hasVideo=instance.related_videos.exists(),
+                hasImage=instance.related_images.exists(),
             )
         else:
             index_entry = SongDocument(
@@ -62,6 +65,9 @@ def update_song_index(instance_id, **kwargs):
                 intro_translation=instance.introduction_translation,
                 lyrics_text=lyrics_text,
                 lyrics_translation=lyrics_translation_text,
+                hasAudio=instance.related_audio.exists(),
+                hasVideo=instance.related_videos.exists(),
+                hasImage=instance.related_images.exists(),
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals

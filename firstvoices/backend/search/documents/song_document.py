@@ -15,5 +15,10 @@ class SongDocument(BaseDocument):
     note = Text(copy_to="other_translation_search_fields")
     acknowledgement = Text(copy_to="other_translation_search_fields")
 
+    # filter and sorting
+    hasAudio = Keyword()
+    hasVideo = Keyword()
+    hasImage = Keyword()
+
     class Index:
         name = ELASTICSEARCH_SONG_INDEX

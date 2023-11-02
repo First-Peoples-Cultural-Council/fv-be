@@ -45,6 +45,9 @@ def update_story_index(instance_id, **kwargs):
                 page_text=page_text,
                 page_translation=page_translation,
                 retry_on_conflict=RETRY_ON_CONFLICT,
+                hasAudio=instance.related_audio.exists(),
+                hasVideo=instance.related_videos.exists(),
+                hasImage=instance.related_images.exists(),
             )
         else:
             index_entry = StoryDocument(
@@ -63,6 +66,9 @@ def update_story_index(instance_id, **kwargs):
                 author=instance.author,
                 page_text=page_text,
                 page_translation=page_translation,
+                hasAudio=instance.related_audio.exists(),
+                hasVideo=instance.related_videos.exists(),
+                hasImage=instance.related_images.exists(),
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals

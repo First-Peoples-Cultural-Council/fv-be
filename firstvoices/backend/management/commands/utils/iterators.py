@@ -96,6 +96,9 @@ def story_iterator():
             author=instance.author,
             page_text=page_text,
             page_translation=page_translation,
+            hasAudio=instance.related_audio.exists(),
+            hasVideo=instance.related_videos.exists(),
+            hasImage=instance.related_images.exists(),
         )
         yield story_doc.to_dict(True)
 
@@ -122,6 +125,9 @@ def dictionary_entry_iterator():
             exclude_from_games=entry.exclude_from_games,
             custom_order=entry.custom_order,
             visibility=entry.visibility,
+            hasAudio=entry.related_audio.exists(),
+            hasVideo=entry.related_videos.exists(),
+            hasImage=entry.related_images.exists(),
         )
         yield index_entry.to_dict(True)
 
@@ -145,5 +151,8 @@ def song_iterator():
             intro_translation=instance.introduction_translation,
             lyrics_text=lyrics_text,
             lyrics_translation=lyrics_translation_text,
+            hasAudio=instance.related_audio.exists(),
+            hasVideo=instance.related_videos.exists(),
+            hasImage=instance.related_images.exists(),
         )
         yield song_doc.to_dict(True)

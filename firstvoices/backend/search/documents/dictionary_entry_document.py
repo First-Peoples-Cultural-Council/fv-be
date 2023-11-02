@@ -15,6 +15,9 @@ class DictionaryEntryDocument(BaseDocument):
     type = Keyword()
     custom_order = Keyword()
     categories = Keyword()
+    hasAudio = Keyword()
+    hasVideo = Keyword()
+    hasImage = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX

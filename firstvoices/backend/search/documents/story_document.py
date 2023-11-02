@@ -16,7 +16,10 @@ class StoryDocument(BaseDocument):
     note = Text(copy_to="other_translation_search_fields")
     author = Text(copy_to="other_translation_search_fields")
 
-    # Author to be added
+    # filter and sorting
+    hasAudio = Keyword()
+    hasVideo = Keyword()
+    hasImage = Keyword()
 
     class Index:
         name = ELASTICSEARCH_STORY_INDEX
