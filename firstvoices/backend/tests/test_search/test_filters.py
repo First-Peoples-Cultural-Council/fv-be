@@ -1,7 +1,7 @@
 import pytest
 
 import backend.tests.factories as factories
-from backend.models.constants import AppRole, Role
+from backend.models.constants import AppRole, Role, Visibility
 from backend.search.query_builder import get_search_query
 
 
@@ -207,3 +207,36 @@ class TestSearchPermissions:
         search_query = search_query.to_dict()
 
         assert self.public_permissions_filter not in str(search_query)
+
+
+class TestVisibilityParam:
+    def test_default(self):
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
+        assert "filter" not in search_query["query"]["bool"] or "visibility" not in str(
+            search_query["query"]["bool"]["filter"]
+        )
+
+    @pytest.mark.parametrize(
+        "visibility",
+        [
+            [Visibility.PUBLIC],
+            [Visibility.MEMBERS],
+            [Visibility.TEAM],
+            [Visibility.PUBLIC, Visibility.MEMBERS],
+            [Visibility.PUBLIC, Visibility.TEAM],
+            [Visibility.MEMBERS, Visibility.TEAM],
+            [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM],
+        ],
+    )
+    def test_team(self, visibility):
+        search_query = get_search_query(visibility=visibility)
+        search_query = search_query.to_dict()
+
+        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
+        assert "visibility" in filtered_terms
+        assert len(filtered_terms["visibility"]) == len(visibility)
+
+        for value in visibility:
+            assert value in filtered_terms["visibility"]
