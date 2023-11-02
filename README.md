@@ -60,7 +60,7 @@ License: Apache Software License 2.0
    - `AWS_SECRET_ACCESS_KEY`
    - `MEDIA_UPLOAD_S3_BUCKET`
    - `MEDIA_UPLOAD_S3_REGION`
-1. Configure optional environment variables as needed (used for the reset-local-database.sh script and Sentry):
+1. Configure optional environment variables as needed (used for the reset-local-database.sh script, Sentry and Elasticsearch):
    - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
    - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
    - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
@@ -72,6 +72,8 @@ License: Apache Software License 2.0
    - `DATA_S3_BUCKET`: the name of the S3 Bucket that export data is stored in (if using the aws_download_utils.py script to download export data).
    - `DJANGO_SECRET_KEY`: required for non-debug (production) installations
    - `ENVIRONMENT_COLOR`: optional css-compatible color string, to highlight the environment name on the admin site
+   - `ELASTICSEARCH_DEFAULT_SHARDS`: if you want to change the number of shards (used for elasticsearch purposes)
+   - `ELASTICSEARCH_DEFAULT_REPLICAS`: if you want to change the number of replicas (used for elasticsearch purposes)
    - If using [venv](https://docs.python.org/3/library/venv.html)
      - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
    - If using [direnv](https://direnv.net/)

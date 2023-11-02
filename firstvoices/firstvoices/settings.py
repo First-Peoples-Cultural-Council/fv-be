@@ -262,6 +262,7 @@ CELERY_IMPORTS = ("backend.tasks.update_metadata_tasks",)
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
+# The following defaults are defaults in context of non-production environments.
 ELASTICSEARCH_DEFAULT_CONFIG = {
     "shards": os.getenv("ELASTICSEARCH_DEFAULT_SHARDS", 1),
     "replicas": os.getenv("ELASTICSEARCH_DEFAULT_REPLICAS", 0),
