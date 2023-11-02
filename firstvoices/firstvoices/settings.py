@@ -338,7 +338,7 @@ ENVIRONMENT_NAME = os.getenv("SENTRY_ENVIRONMENT", "Local")
 ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
 
 # Variables for the email backend (used in the contact us form)
-ENABLE_SMTP_BACKEND: bool = os.environ.get("ENABLE_SMTP_BACKEND") is not None
+ENABLE_SMTP_BACKEND: bool = os.getenv("ENABLE_SMTP_BACKEND", "").upper() == "TRUE"
 if ENABLE_SMTP_BACKEND:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS")
