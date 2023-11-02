@@ -236,6 +236,7 @@ class TestVisibilityParam:
 
         filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
         assert "visibility" in filtered_terms
+        assert len(filtered_terms["visibility"]) == len(visibility)
 
         for value in visibility:
             assert value in filtered_terms["visibility"]
