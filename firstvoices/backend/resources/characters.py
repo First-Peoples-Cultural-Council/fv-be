@@ -46,7 +46,7 @@ class IgnoredCharacterResource(SiteContentResource):
 
 
 class AlphabetConfusablesResource(SiteContentResource):
-    "Convert rows to a JSON list and save to the site Alphabet."
+    """Convert rows to a JSON list and save to the site Alphabet."""
 
     class Meta:
         model = Alphabet
@@ -65,5 +65,5 @@ class AlphabetConfusablesResource(SiteContentResource):
         return super().before_import(dataset, using_transactions, dry_run, **kwargs)
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
-        "Never import individual rows."
+        """Never import individual rows."""
         return True
