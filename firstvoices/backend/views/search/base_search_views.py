@@ -374,7 +374,7 @@ class BaseSearchViewSet(
         search_results = response["hits"]["hits"]
 
         # Adding data to objects
-        hydrated_objects = hydrate_objects(search_results, request)
+        hydrated_objects = hydrate_objects(search_results)
 
         page = self.paginator.apply_search_pagination(
             request=request,

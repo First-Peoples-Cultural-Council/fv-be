@@ -1,3 +1,7 @@
+import pytest
+
+from backend.models.constants import Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
@@ -6,7 +10,17 @@ from backend.search.utils.constants import (
 )
 from backend.search.utils.hydration_utils import (
     handle_hydration_errors,
+    hydrate_objects,
     separate_object_ids,
+)
+from backend.tests.factories import (
+    AudioFactory,
+    AudioSpeakerFactory,
+    DictionaryEntryFactory,
+    ImageFactory,
+    PersonFactory,
+    SiteFactory,
+    TranslationFactory,
 )
 
 
@@ -112,3 +126,133 @@ class TestHandleHydrationErrors:
         handle_hydration_errors(self.minimal_obj, exception)
         expected_error_message = f"Error during hydration process. Document id: {self.doc_id}. Error: Random exception"
         assert expected_error_message in caplog.text
+
+
+@pytest.mark.django_db
+class TestHydrateObjects:
+    def test_dictionary_entries_hydration(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        entry = DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
+
+        translation_1 = TranslationFactory.create(
+            dictionary_entry=entry, text="translation_1"
+        )
+        translation_2 = TranslationFactory.create(
+            dictionary_entry=entry, text="translation_2"
+        )
+
+        audio = AudioFactory.create(site=site)
+        entry.related_audio.add(audio)
+        speaker = PersonFactory.create(site=site, bio="bio")
+        AudioSpeakerFactory.create(audio=audio, speaker=speaker)
+
+        image = ImageFactory.create(site=site)
+        entry.related_images.add(image)
+
+        # Only adding the fields required for hydarate_objects method to work,
+        # the rest should be fetched from the db
+        minimal_dictionary_search_result = {
+            "_index": "dictionary_entries_2023_11_01_21_32_51",
+            "_id": "searchId123",
+            "_score": 1.0,
+            "_source": {
+                "document_id": entry.id,
+                "site_id": site.id,
+            },
+        }
+
+        # Verifying the structure for only one word with all fields present
+        actual_hydrated_object = hydrate_objects([minimal_dictionary_search_result])[0]
+        hydrated_object_entry = actual_hydrated_object["entry"]
+
+        assert (
+            actual_hydrated_object["searchResultId"]
+            == minimal_dictionary_search_result["_id"]
+        )
+        assert (
+            actual_hydrated_object["type"] == TypeOfDictionaryEntry.WORD.label.lower()
+        )
+
+        # entry
+        assert hydrated_object_entry["id"] == str(entry.id)
+        assert hydrated_object_entry["title"] == entry.title
+        assert hydrated_object_entry["type"] == entry.type
+        assert (
+            hydrated_object_entry["visibility"]
+            == entry.get_visibility_display().lower()
+        )
+
+        # Site
+        assert hydrated_object_entry["site"]["id"] == str(site.id)
+        assert hydrated_object_entry["site"]["slug"] == site.slug
+        assert hydrated_object_entry["site"]["title"] == site.title
+        assert (
+            hydrated_object_entry["site"]["visibility"]
+            == site.get_visibility_display().lower()
+        )
+
+        # Translations
+        assert hydrated_object_entry["translations"][0]["id"] == str(translation_1.id)
+        assert hydrated_object_entry["translations"][0]["text"] == translation_1.text
+        assert hydrated_object_entry["translations"][1]["id"] == str(translation_2.id)
+        assert hydrated_object_entry["translations"][1]["text"] == translation_2.text
+
+        # Related audio
+        assert hydrated_object_entry["related_audio"][0]["id"] == str(audio.id)
+        assert hydrated_object_entry["related_audio"][0]["title"] == audio.title
+        assert (
+            hydrated_object_entry["related_audio"][0]["description"]
+            == audio.description
+        )
+        assert (
+            hydrated_object_entry["related_audio"][0]["acknowledgement"]
+            == audio.acknowledgement
+        )
+        # speakers
+        assert hydrated_object_entry["related_audio"][0]["speakers"][0]["id"] == str(
+            speaker.id
+        )
+        assert (
+            hydrated_object_entry["related_audio"][0]["speakers"][0]["name"]
+            == speaker.name
+        )
+        assert (
+            hydrated_object_entry["related_audio"][0]["speakers"][0]["bio"]
+            == speaker.bio
+        )
+        # original
+        assert (
+            hydrated_object_entry["related_audio"][0]["original"]["path"]
+            == audio.original.content.url
+        )
+        assert (
+            hydrated_object_entry["related_audio"][0]["original"]["mimetype"]
+            == audio.original.mimetype
+        )
+        assert (
+            hydrated_object_entry["related_audio"][0]["original"]["size"]
+            == audio.original.size
+        )
+
+        # related images
+        assert hydrated_object_entry["related_images"][0]["id"] == str(image.id)
+        assert (
+            hydrated_object_entry["related_images"][0]["original"]["path"]
+            == image.original.content.url
+        )
+        assert (
+            hydrated_object_entry["related_images"][0]["original"]["mimetype"]
+            == image.original.mimetype
+        )
+        assert (
+            hydrated_object_entry["related_images"][0]["original"]["size"]
+            == image.original.size
+        )
+        assert (
+            hydrated_object_entry["related_images"][0]["original"]["height"]
+            == image.original.height
+        )
+        assert (
+            hydrated_object_entry["related_images"][0]["original"]["width"]
+            == image.original.width
+        )
