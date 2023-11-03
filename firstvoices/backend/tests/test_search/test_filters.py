@@ -240,3 +240,42 @@ class TestVisibilityParam:
 
         for value in visibility:
             assert value in filtered_terms["visibility"]
+
+
+class TestHasMediaParams:
+    @staticmethod
+    def snake_case_to_camel_case(snake_str):
+        temp = snake_str.split("_")
+        result = temp[0] + "".join(ele.title() for ele in temp[1:])
+        return result
+
+    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    def test_default(self, has_media):
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or self.snake_case_to_camel_case(has_media) not in str(
+            search_query["query"]["bool"]["filter"]
+        )
+
+    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    def test_has_media_true(self, has_media):
+        expected_true_filter = (
+            f"{{'term': {{'{self.snake_case_to_camel_case(has_media)}': True}}}}"
+        )
+        search_query = get_search_query(**{has_media: True})
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)
+
+    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    def test_has_media_false(self, has_media):
+        expected_true_filter = (
+            f"{{'term': {{'{self.snake_case_to_camel_case(has_media)}': False}}}}"
+        )
+        search_query = get_search_query(**{has_media: False})
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)

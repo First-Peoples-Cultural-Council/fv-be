@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_has_media,
     get_valid_visibility,
 )
 from backend.views.base_views import ThrottlingMixin
@@ -288,6 +289,15 @@ class BaseSearchViewSet(
         visibility = self.request.GET.get("visibility", "")
         valid_visibility = get_valid_visibility(visibility)
 
+        has_audio = self.request.GET.get("hasAudio", "")
+        valid_has_audio = get_valid_has_media(has_audio)
+
+        has_video = self.request.GET.get("hasVideo", "")
+        valid_has_video = get_valid_has_media(has_video)
+
+        has_image = self.request.GET.get("hasImage", "")
+        valid_has_image = get_valid_has_media(has_image)
+
         search_params = {
             "q": input_q,
             "user": user,
@@ -299,6 +309,9 @@ class BaseSearchViewSet(
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
             "visibility": valid_visibility,
+            "has_audio": valid_has_audio,
+            "has_video": valid_has_video,
+            "has_image": valid_has_image,
         }
 
         return search_params
@@ -353,6 +366,9 @@ class BaseSearchViewSet(
             starts_with_char=search_params["starts_with_char"],
             category_id=search_params["category_id"],
             visibility=search_params["visibility"],
+            has_audio=search_params["has_audio"],
+            has_video=search_params["has_video"],
+            has_image=search_params["has_image"],
         )
 
         # Pagination

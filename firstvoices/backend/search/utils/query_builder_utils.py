@@ -183,6 +183,18 @@ def get_visibility_query(visibility):
     return Q("bool", filter=[Q("terms", visibility=visibility)])
 
 
+def get_has_audio_query(has_audio):
+    return Q("bool", filter=[Q("term", hasAudio=has_audio)])
+
+
+def get_has_video_query(has_video):
+    return Q("bool", filter=[Q("term", hasVideo=has_video)])
+
+
+def get_has_image_query(has_image):
+    return Q("bool", filter=[Q("term", hasImage=has_image)])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
@@ -245,6 +257,17 @@ def get_valid_boolean(input_val):
         return True
     else:
         return False
+
+
+def get_valid_has_media(input_val):
+    if input_val == "":
+        return ""
+    elif str(input_val).strip().lower() in ["true"]:
+        return True
+    elif str(input_val).strip().lower() in ["false"]:
+        return False
+    else:
+        return None
 
 
 def get_valid_visibility(input_visibility_str):

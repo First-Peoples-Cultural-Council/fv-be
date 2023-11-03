@@ -6,6 +6,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_category_id,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_has_media,
     get_valid_visibility,
 )
 from backend.tests import factories
@@ -96,3 +97,21 @@ class TestValidVisibility:
     def test_invalid_input(self):
         actual_visibility = get_valid_visibility("bananas")
         assert actual_visibility is None
+
+
+class TestValidHasMedia:
+    @pytest.mark.parametrize(
+        "input_has_media, expected_has_media",
+        [
+            ("True", True),
+            ("False", False),
+            ("", ""),
+        ],
+    )
+    def test_valid_inputs(self, input_has_media, expected_has_media):
+        actual_has_media = get_valid_has_media(input_has_media)
+        assert actual_has_media == expected_has_media
+
+    def test_invalid_input(self):
+        actual_has_media = get_valid_has_media("bananas")
+        assert actual_has_media is None
