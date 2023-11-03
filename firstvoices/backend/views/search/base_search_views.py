@@ -354,6 +354,18 @@ class BaseSearchViewSet(
         if search_params["category_id"] is None:
             return Response(data=[])
 
+        # If invalid visibility is passed, return empty list as a response
+        if search_params["visibility"] is None:
+            return Response(data=[])
+
+        # If invalid has_media is passed, return empty list as a response
+        if (
+            search_params["has_audio"] is None
+            or search_params["has_video"] is None
+            or search_params["has_image"] is None
+        ):
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
             user=search_params["user"],
