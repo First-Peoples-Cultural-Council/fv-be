@@ -43,23 +43,18 @@ class ImageFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Image-%03d" % n)
     original = factory.SubFactory(ImageFileFactory)
-    thumbnail = factory.SubFactory(ImageFileFactory)
-    small = factory.SubFactory(ImageFileFactory)
-    medium = factory.SubFactory(ImageFileFactory)
 
 
 def get_video_content(size="thumbnail"):
-    path = (
-        os.path.dirname(os.path.realpath(__file__))
-        + f"/resources/video_example_{size}.mp4"
-    )
-    image_file = open(path, "rb")
+    filename = f"video_example_{size}.mp4"
+    path = os.path.dirname(os.path.realpath(__file__)) + f"/resources/{filename}"
+    file = open(path, "rb")
     content = InMemoryUploadedFile(
-        image_file,
+        file,
         "FileField",
-        "TestVideo.mp4",
+        filename,
         "video/mp4",
-        sys.getsizeof(image_file),
+        sys.getsizeof(file),
         None,
     )
     return content
@@ -80,9 +75,6 @@ class VideoFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Video-%03d" % n)
     original = factory.SubFactory(VideoFileFactory)
-    thumbnail = factory.SubFactory(ImageFileFactory)
-    small = factory.SubFactory(ImageFileFactory)
-    medium = factory.SubFactory(ImageFileFactory)
 
 
 class EmbeddedVideoFactory(DjangoModelFactory):
