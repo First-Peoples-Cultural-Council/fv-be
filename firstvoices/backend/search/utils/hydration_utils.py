@@ -213,9 +213,6 @@ def handle_hydration_errors(obj, exception):
         # For cases where an indexed object is not present in the database for further hydration
         log_level = "warning"
         log_message = f"Object not found in database with id: {document_id}."
-    elif "has no site" in error_message:
-        # For cases where an indexed object points to a deleted site
-        log_message = f"Missing site object on ES object with id: {document_id}. Error: {error_message}"
     else:
         log_message = f"Error during hydration process. Document id: {document_id}. Error: {error_message}"
 
