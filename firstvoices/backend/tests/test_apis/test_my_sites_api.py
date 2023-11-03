@@ -30,7 +30,7 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
             "title": instance.site.title,
             "slug": instance.site.slug,
             "language": instance.site.language.title,
-            "visibility": instance.site.get_visibility_display(),
+            "visibility": instance.site.get_visibility_display().lower(),
             "logo": None,
             "url": f"http://testserver/api/1.0/my-sites/{instance.site.slug}",
             "features": [],
@@ -75,8 +75,13 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["count"] == 2
-        assert response_data["results"][0]["visibility"] == Visibility.MEMBERS.label
-        assert response_data["results"][1]["visibility"] == Visibility.PUBLIC.label
+        assert (
+            response_data["results"][0]["visibility"]
+            == Visibility.MEMBERS.label.lower()
+        )
+        assert (
+            response_data["results"][1]["visibility"] == Visibility.PUBLIC.label.lower()
+        )
 
     @pytest.mark.django_db
     def test_assistant_role(self):

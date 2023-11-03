@@ -34,6 +34,12 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
             request=self.context["request"],
         )
 
+    def to_representation(self, instance):
+        """Covert visibility to lowercase"""
+        site = super().to_representation(instance)
+        site["visibility"] = site["visibility"].lower()
+        return site
+
     class Meta:
         model = Membership
         fields = ("role",) + SiteSummarySerializer.Meta.fields
