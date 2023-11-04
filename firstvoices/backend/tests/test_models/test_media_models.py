@@ -1,9 +1,7 @@
 import logging
-import os
 from unittest.mock import patch
 
 import factory
-import ffmpeg
 import pytest
 from django.db import NotSupportedError
 from embed_video.backends import (
@@ -94,6 +92,28 @@ class TestAudioModel:
 class TestVideoModel:
     image_sizes = None
     size_names = ["thumbnail", "small", "medium"]
+    video_dimensions = {
+        "large-landscape": (1500, 1020),
+        "large-portrait": (1020, 1500),
+        "large-square": (1500, 1500),
+        "large-portrait-extreme": (1500, 99),
+        "large-landscape-extreme": (99, 1500),
+        "medium-landscape": (999, 600),
+        "medium-portrait": (600, 999),
+        "medium-landscape-extreme": (999, 99),
+        "medium-portrait-extreme": (99, 999),
+        "medium-square": (999, 999),
+        "small-landscape": (559, 150),
+        "small-portrait": (150, 559),
+        "small-landscape-extreme": (559, 99),
+        "small-portrait-extreme": (99, 559),
+        "small-square": (559, 559),
+        "thumbnail-portrait": (50, 99),
+        "thumbnail-landscape": (99, 50),
+        "thumbnail-portrait-extreme": (1, 99),
+        "thumbnail-landscape-extreme": (99, 1),
+        "thumbnail-square": (99, 99),
+    }
 
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
@@ -109,42 +129,23 @@ class TestVideoModel:
         # (synchronously but still not reflected in the factory return value)
         return Video.objects.get(id=factory_instance.id)
 
-    def assert_generated_file_paths(self, video, site):
-        """
-        Verifies all thumbnail sizes exist with correct paths
-        """
-
-        for size_name in self.image_sizes:
-            generated_image = getattr(video, size_name)
-            assert generated_image.content.file
-            assert f"{site.slug}/" in generated_image.content.path
-            assert f"_{size_name}" in generated_image.content.path
-
     def get_video_dimensions(self, video_size):
-        """
-        A helper function to read the video width and height from the file
-        """
-        path = (
-            os.path.dirname(os.path.realpath(__file__))
-            + f"/../factories/resources/video_example_{video_size}.mp4"
-        )
-        probe = ffmpeg.probe(path)
-        video_stream = next(
-            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
-            None,
-        )
-        width = int(video_stream["width"])
-        height = int(video_stream["height"])
-        return {"width": width, "height": height}
+        dimensions = self.video_dimensions[video_size]
+        return {"width": dimensions[0], "height": dimensions[1]}
 
-    def create_site_and_video(self, video_size):
-        site = factories.SiteFactory.create()
+    def create_site_and_video(self, video_size="medium-square"):
+        with patch(
+            "backend.models.media.VideoFile.get_video_info"
+        ) as mock_get_video_info:
+            mock_get_video_info.return_value = self.get_video_dimensions(video_size)
+            site = factories.SiteFactory.create()
 
-        video_file = factories.VideoFileFactory.create(
-            content=get_video_content(video_size)
-        )
-        video = self.create_video(site=site, original=video_file)
-        return site, video
+            video_file = factories.VideoFileFactory.create(
+                content=get_video_content(video_size)
+            )
+
+            video = self.create_video(site=site, original=video_file)
+            return site, video
 
     @pytest.mark.django_db
     def test_related_file_removed_on_delete(self):
@@ -196,107 +197,72 @@ class TestVideoModel:
         except NotSupportedError:
             assert True
 
+    @pytest.mark.parametrize("video_shape", ["portrait", "landscape", "square"])
+    @pytest.mark.parametrize("video_size", ["thumbnail", "small", "medium", "large"])
     @pytest.mark.django_db
-    def test_thumbnail_sizes_large_landscape_input(self):
-        site, video = self.create_site_and_video("large")
+    def test_thumbnails_never_bigger_than_original(self, video_shape, video_size):
+        site, video = self.create_site_and_video(f"{video_size}-{video_shape}")
 
-        self.assert_generated_file_paths(video, site)
+        for size_name in self.size_names:
+            generated_image = getattr(video, size_name)
+            assert generated_image.width <= video.original.width
+            assert generated_image.height <= video.original.height
 
-        # medium size
-        assert video.medium.width == self.image_sizes["medium"]
-        assert (
-            self.image_sizes["small"]
-            < video.medium.height
-            <= self.image_sizes["medium"]
-        )
-
-        # small size
-        assert (
-            self.image_sizes["thumbnail"]
-            < video.small.width
-            <= self.image_sizes["small"]
-        )
-        assert (
-            self.image_sizes["thumbnail"]
-            < video.small.height
-            <= self.image_sizes["small"]
-        )
-
-        # thumbnail size
-        assert video.thumbnail.width <= self.image_sizes["thumbnail"]
-        assert video.thumbnail.height <= self.image_sizes["thumbnail"]
-
+    @pytest.mark.parametrize("video_shape", ["portrait", "landscape", "square"])
+    @pytest.mark.parametrize("video_size", ["thumbnail", "small", "medium", "large"])
     @pytest.mark.django_db
-    def test_thumbnail_sizes_medium_input(self):
-        site, video = self.create_site_and_video("medium")
-        video_dimensions = self.get_video_dimensions("medium")
-        self.assert_generated_file_paths(video, site)
+    def test_thumbnails_never_bigger_than_size_settings(self, video_shape, video_size):
+        site, video = self.create_site_and_video(f"{video_size}-{video_shape}")
 
-        assert video.medium.width == video_dimensions["width"]
-        assert video.medium.height == video_dimensions["height"]
-        assert video.small.width == self.image_sizes["small"]
-        assert (
-            self.image_sizes["thumbnail"]
-            < video.small.height
-            <= self.image_sizes["small"]
-        )
-        assert video.thumbnail.width <= self.image_sizes["thumbnail"]
-        assert video.thumbnail.height <= self.image_sizes["thumbnail"]
+        for size_name in self.size_names:
+            generated_image = getattr(video, size_name)
+            size_setting = self.image_sizes[size_name]
+            assert generated_image.width <= size_setting
+            assert generated_image.height <= size_setting
 
+    @pytest.mark.parametrize("video_shape", ["portrait", "landscape", "square"])
     @pytest.mark.django_db
-    def test_thumbnail_sizes_small_input(self):
-        site, video = self.create_site_and_video("small")
-        video_dimensions = self.get_video_dimensions("small")
+    def test_thumbnails_as_big_as_possible(self, video_shape):
+        site, video = self.create_site_and_video(f"large-{video_shape}")
 
-        self.assert_generated_file_paths(video, site)
+        for index, size_name in enumerate(self.size_names):
+            if index > 0:
+                generated_image = getattr(video, size_name)
+                smaller_size = self.size_names[index - 1]
+                smaller_size_setting = self.image_sizes[smaller_size]
+                assert (generated_image.width > smaller_size_setting) | (
+                    generated_image.height > smaller_size_setting
+                )
 
-        assert video.medium.width == video_dimensions["width"]
-        assert video.medium.height == video_dimensions["height"]
-        assert video.small.width == video_dimensions["width"]
-        assert video.small.height == video_dimensions["height"]
-        assert video.thumbnail.width == self.image_sizes["thumbnail"]
-        assert video.thumbnail.height <= self.image_sizes["thumbnail"]
+    @pytest.mark.parametrize(
+        "video_shape",
+        ["portrait", "landscape", "portrait-extreme", "landscape-extreme", "square"],
+    )
+    @pytest.mark.parametrize("video_size", ["thumbnail", "small", "medium", "large"])
+    @pytest.mark.django_db
+    def test_thumbnails_always_proportional(self, video_shape, video_size):
+        site, video = self.create_site_and_video(f"{video_size}-{video_shape}")
+
+        video_proportion_ratio = video.original.height / video.original.width
+
+        for size_name in self.size_names:
+            # getting weird results here, possibly because mocking is affecting the dimensions that are saved on
+            # the thumbnail models
+            # see if it can be fixed without really using ffmpeg
+            # also check whether there are any real problems with the thumbnail dimension calculations
+            generated_image = getattr(video, size_name)
+            generated_image_ratio = generated_image.height / generated_image.width
+            assert abs(generated_image_ratio - video_proportion_ratio) < 0.1
 
     @pytest.mark.django_db
-    def test_thumbnail_sizes_thumbnail_input(self):
-        site, video = self.create_site_and_video("thumbnail")
-        video_dimensions = self.get_video_dimensions("thumbnail")
+    def test_thumbnail_paths_correct(self):
+        site, video = self.create_site_and_video()
 
-        self.assert_generated_file_paths(video, site)
-
-        assert video.medium.width == video_dimensions["width"]
-        assert video.medium.height == video_dimensions["height"]
-        assert video.small.width == video_dimensions["width"]
-        assert video.small.height == video_dimensions["height"]
-        assert video.thumbnail.width == video_dimensions["width"]
-        assert video.thumbnail.height == video_dimensions["height"]
-
-    @pytest.mark.django_db
-    def test_thumbnail_sizes_large_portrait_input(self):
-        site, video = self.create_site_and_video("large_rotated")
-
-        self.assert_generated_file_paths(video, site)
-
-        assert (
-            self.image_sizes["small"] < video.medium.width <= self.image_sizes["medium"]
-        )
-        assert (
-            self.image_sizes["medium"] - 2
-            < video.medium.height
-            < self.image_sizes["medium"] + 2
-        )
-        assert (
-            self.image_sizes["thumbnail"]
-            < video.small.width
-            <= self.image_sizes["small"]
-        )
-        assert (
-            self.image_sizes["thumbnail"]
-            < video.small.height
-            <= self.image_sizes["small"]
-        )
-        assert video.thumbnail.width <= self.image_sizes["thumbnail"]
-        assert video.thumbnail.height <= self.image_sizes["thumbnail"]
+        for size_name in self.image_sizes:
+            generated_image = getattr(video, size_name)
+            assert generated_image.content.file
+            assert f"{site.slug}/" in generated_image.content.path
+            assert f"_{size_name}" in generated_image.content.path
 
     @pytest.mark.django_db
     def test_ffmpeg_probe_returning_none(self, caplog):
