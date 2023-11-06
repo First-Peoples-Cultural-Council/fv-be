@@ -29,6 +29,7 @@ from backend.resources.dictionary import (
     PronunciationResource,
     TranslationResource,
 )
+from backend.resources.join_requests import JoinRequestResource
 from backend.resources.media import (
     AudioResource,
     AudioSpeakerMigrationResource,
@@ -104,6 +105,7 @@ def run_import():
         ("app-memberships", AppMembershipResource()),
         ("sites", SiteMigrationResource()),
         ("site-memberships", MembershipResource()),
+        ("join-requests", JoinRequestResource()),
         ("categories", CategoryMigrationResource()),
         ("contributors", PersonResource()),
         ("audio-data", AudioResource()),
