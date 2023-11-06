@@ -3,11 +3,10 @@ import logging
 from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
-from backend.search.documents import (
-    DictionaryEntryDocument,
-    MediaDocument,
-    SongDocument,
-    StoryDocument,
+from backend.search.documents import DictionaryEntryDocument, MediaDocument
+from backend.search.utils.get_index_documents import (
+    get_new_song_index_document,
+    get_new_story_index_document,
 )
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
@@ -80,26 +79,7 @@ def story_iterator():
     queryset = Story.objects.all()
     for instance in queryset:
         page_text, page_translation = get_page_info(instance)
-        story_doc = StoryDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            introduction=instance.introduction,
-            introduction_translation=instance.introduction_translation,
-            author=instance.author,
-            page_text=page_text,
-            page_translation=page_translation,
-            hasAudio=instance.related_audio.exists(),
-            hasVideo=instance.related_videos.exists(),
-            hasImage=instance.related_images.exists(),
-        )
+        story_doc = get_new_story_index_document(instance, page_text, page_translation)
         yield story_doc.to_dict(True)
 
 
@@ -136,23 +116,7 @@ def song_iterator():
     queryset = Song.objects.all()
     for instance in queryset:
         lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = SongDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            intro_title=instance.introduction,
-            intro_translation=instance.introduction_translation,
-            lyrics_text=lyrics_text,
-            lyrics_translation=lyrics_translation_text,
-            hasAudio=instance.related_audio.exists(),
-            hasVideo=instance.related_videos.exists(),
-            hasImage=instance.related_images.exists(),
+        song_doc = get_new_song_index_document(
+            instance, lyrics_text, lyrics_translation_text
         )
         yield song_doc.to_dict(True)

@@ -13,6 +13,7 @@ from backend.search.utils.constants import (
     RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
+from backend.search.utils.get_index_documents import get_new_story_index_document
 from backend.search.utils.object_utils import get_object_from_index, get_page_info
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -50,25 +51,8 @@ def update_story_index(instance_id, **kwargs):
                 hasImage=instance.related_images.exists(),
             )
         else:
-            index_entry = StoryDocument(
-                document_id=str(instance.id),
-                site_id=str(instance.site.id),
-                site_visibility=instance.site.visibility,
-                exclude_from_games=instance.exclude_from_games,
-                exclude_from_kids=instance.exclude_from_kids,
-                visibility=instance.visibility,
-                title=instance.title,
-                title_translation=instance.title_translation,
-                note=instance.notes,
-                acknowledgement=instance.acknowledgements,
-                introduction=instance.introduction,
-                introduction_translation=instance.introduction_translation,
-                author=instance.author,
-                page_text=page_text,
-                page_translation=page_translation,
-                hasAudio=instance.related_audio.exists(),
-                hasVideo=instance.related_videos.exists(),
-                hasImage=instance.related_images.exists(),
+            index_entry = get_new_story_index_document(
+                instance, page_text, page_translation
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals
