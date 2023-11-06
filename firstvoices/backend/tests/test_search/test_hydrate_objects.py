@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 
 from backend.models.constants import Visibility
@@ -118,6 +120,22 @@ def assert_translations(hydrated_object_entry, translation):
 
 @pytest.mark.django_db
 class TestHydrateObjects:
+    def test_hydrate_exception_case(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        invalid_uuid = uuid.uuid4()
+        search_result_with_invalid_id = {
+            "_index": "dictionary_entries_2023_11_01_21_32_51",
+            "_id": "searchId123",
+            "_score": 1.0,
+            "_source": {
+                "document_id": invalid_uuid,
+                "site_id": site.id,
+            },
+        }
+
+        hydrate_objects([search_result_with_invalid_id])
+        assert f"Object not found in database with id: {invalid_uuid}" in caplog.text
+
     @pytest.mark.parametrize(
         "entry_type", [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
     )

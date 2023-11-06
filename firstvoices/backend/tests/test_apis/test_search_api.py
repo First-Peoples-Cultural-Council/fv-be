@@ -1,15 +1,17 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+from elasticsearch.exceptions import ConnectionError
 from elasticsearch_dsl import Search
 
-from backend.models.constants import AppRole, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
+from backend.views.exceptions import ElasticSearchConnectionError
 
 from ...pagination import SearchPageNumberPagination
-from .base_api_test import BaseApiTest
+from .base_api_test import BaseApiTest, BaseSiteContentApiTest
 
 
 class TestSearchAPI(BaseApiTest):
@@ -181,3 +183,91 @@ class TestSearchAPI(BaseApiTest):
         response_data = json.loads(response.content)
 
         assert response_data["pageSize"] == 25
+
+    @pytest.mark.django_db
+    def test_invalid_types_passed(self):
+        response = self.client.get(self.get_list_endpoint() + "?types=cars")
+        response_data = json.loads(response.content)
+
+        assert response_data == []
+
+    @pytest.mark.django_db
+    def test_invalid_domains_passed(self):
+        response = self.client.get(self.get_list_endpoint() + "?domain=creative")
+        response_data = json.loads(response.content)
+
+        assert response_data == []
+
+    @pytest.mark.django_db
+    def test_connection_error(self, mock_search_query_execute):
+        mock_search_query_execute.side_effect = ConnectionError()
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 500
+        assert (
+            response.content.decode()
+            == f'{{"detail":"{ElasticSearchConnectionError.default_detail}"}}'
+        )
+
+    @pytest.mark.django_db
+    def test_without_pagination_response(self, mock_search_query_execute):
+        # Improbable scenario, but in case the paginator returns None for a page number,
+        # Verifying the response contains a list of objects
+
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, type=TypeOfDictionaryEntry.WORD
+        )
+
+        mock_es_results = {
+            "hits": {
+                "hits": [
+                    {
+                        "_index": "dictionary_entries_2023_06_23_06_11_22",
+                        "_id": "QcHg5ogB3WiEloeO9rdy",
+                        "_score": 1.0,
+                        "_source": {
+                            "document_id": entry.id,
+                            "site_id": site.id,
+                        },
+                    }
+                ],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
+        with patch(
+            "backend.pagination.SearchPageNumberPagination.apply_search_pagination",
+            return_value=None,
+        ):
+            response = self.client.get(self.get_list_endpoint())
+            data = response.data
+
+            assert response.status_code == 200
+            assert type(data) is list
+            assert (
+                data[0]["searchResultId"] == mock_es_results["hits"]["hits"][0]["_id"]
+            )
+            assert data[0]["entry"]["id"] == str(entry.id)
+
+
+class TestSiteSearchAPI(BaseSiteContentApiTest):
+    """Remaining tests that cover the site search."""
+
+    API_LIST_VIEW = "api:site-search-list"
+    API_DETAIL_VIEW = "api:site-search-detail"
+
+    @pytest.mark.django_db
+    def test_invalid_category_id(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug) + "?category=xyzCategory"
+        )
+        response_data = json.loads(response.content)
+
+        assert response_data == []
