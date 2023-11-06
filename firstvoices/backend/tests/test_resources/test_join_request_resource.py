@@ -20,13 +20,20 @@ class TestJoinRequestImport:
         return table
 
     @pytest.mark.django_db
-    def test_import_base_data(self):
-        """Import JoinRequest object with basic fields and one reason."""
+    @pytest.mark.parametrize(
+        "reasons,expected_reason_count",
+        [
+            ('"LANGUAGE_LEARNER"', 1),
+            ('"LANGUAGE_LEARNER,COMMUNITY_MEMBER,HERITAGE"', 3),
+        ],
+    )
+    def test_import_base_data(self, reasons, expected_reason_count):
+        """Import JoinRequest object with basic fields and single/multiple reasons"""
         site = factories.SiteFactory.create()
         user = factories.UserFactory.create()
         data = [
             f"{uuid.uuid4()},2021-04-09 22:52:17.460,{user.email},2021-04-09 22:52:17.460,{user.email},{site.id},"
-            f'{user.email},reason note,PENDING,"LANGUAGE_LEARNER"',
+            f"{user.email},reason note,PENDING,{reasons}",
         ]
         table = self.build_table(data)
 
@@ -41,31 +48,7 @@ class TestJoinRequestImport:
         join_request = JoinRequest.objects.get(id=table["id"][0])
         assert join_request.user == user
         assert join_request.site == site
-        assert join_request.reasons_set.count() == 1
-
-    @pytest.mark.django_db
-    def test_import_multi_reason(self):
-        """Import JoinRequest object with basic fields and multiple reasons"""
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        data = [
-            f"{uuid.uuid4()},2021-04-09 22:52:17.460,{user.email},2021-04-09 22:52:17.460,{user.email},{site.id},"
-            f'{user.email},reason note,PENDING,"LANGUAGE_LEARNER,COMMUNITY_MEMBER,HERITAGE"',
-        ]
-        table = self.build_table(data)
-
-        result = JoinRequestResource().import_data(dataset=table)
-
-        assert not result.has_errors()
-        assert not result.has_validation_errors()
-        assert result.totals["new"] == len(data)
-        assert JoinRequest.objects.count() == len(data)
-
-        assert JoinRequest.objects.filter(id=table["id"][0]).exists()
-        join_request = JoinRequest.objects.get(id=table["id"][0])
-        assert join_request.user == user
-        assert join_request.site == site
-        assert join_request.reasons_set.count() == 3
+        assert join_request.reasons_set.count() == expected_reason_count
 
     @pytest.mark.django_db
     def test_import_skip_unknown_user(self):
