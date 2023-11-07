@@ -51,6 +51,8 @@ def update_media_index(instance_id, media_type, **kwargs):
                 filename=instance.original.content.name,
                 description=instance.description,
                 retry_on_conflict=RETRY_ON_CONFLICT,
+                created=instance.created,
+                last_modified=instance.last_modified,
             )
         else:
             index_entry = MediaDocument(
@@ -64,6 +66,8 @@ def update_media_index(instance_id, media_type, **kwargs):
                 type=media_type,
                 filename=instance.original.content.name,
                 description=instance.description,
+                created=instance.created,
+                last_modified=instance.last_modified,
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals

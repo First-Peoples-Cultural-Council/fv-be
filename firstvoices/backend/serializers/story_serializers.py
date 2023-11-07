@@ -218,6 +218,9 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
         model = Story
         fields = (
             "id",
+            "created",
+            "last_modified",
+            "visibility",
             "title",
             "title_translation",
             "author",
@@ -225,5 +228,4 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
             "site",
             "related_images",
             "related_videos",
-            "visibility",
         )

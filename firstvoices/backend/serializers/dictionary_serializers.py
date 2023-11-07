@@ -383,12 +383,14 @@ class DictionaryEntryMinimalSerializer(
         model = dictionary.DictionaryEntry
         fields = (
             "id",
+            "created",
+            "last_modified",
+            "visibility",
             "title",
             "type",
             "site",
             "translations",
             "related_audio",
             "related_images",
-            "visibility",
         )
         read_only_fields = ("id", "title", "type")
