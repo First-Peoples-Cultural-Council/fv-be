@@ -100,7 +100,6 @@ class Site(BaseModel):
             "add": predicates.is_superadmin,
             "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_superadmin,
-            "join": rules.is_authenticated,
         }
 
         constraints = [

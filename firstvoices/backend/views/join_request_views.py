@@ -148,23 +148,21 @@ class JoinRequestViewSet(
         )
 
     def get_validated_site(self):
-        if self.action == "create":
-            site_perm = "join"
-        else:
-            site_perm = "view"
-
         site_slug = self.get_site_slug()
         site = Site.objects.filter(slug=site_slug)
 
         if len(site) == 0:
             raise Http404
 
-        # Check permissions on the site first
-        perm = Site.get_perm(site_perm)
-        if self.request.user.has_perm(perm, site[0]):
-            return site
+        # Check permissions on the site first, skip if the action is create
+        if self.action != "create":
+            perm = Site.get_perm("view")
+            if self.request.user.has_perm(perm, site[0]):
+                return site
+            else:
+                raise PermissionDenied
         else:
-            raise PermissionDenied
+            return site
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
