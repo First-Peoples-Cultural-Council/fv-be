@@ -192,6 +192,84 @@ class TestQueryParams:
         assert expected_exact_match_other_translation_string in str(search_query)
         assert expected_fuzzy_match_other_translation_string in str(search_query)
 
+    @pytest.mark.parametrize(
+        "q", ["Lorem ipsum dolor sit amet, consectetur adipiscing elit."]
+    )
+    def test_search_term_length_gt_50(self, q):
+        # Testing for search term having length more than 50 characters
+        search_query = get_search_query(q=q)
+        search_query = search_query.to_dict()
+
+        expected_exact_match_primary_language_string = (
+            "'match_phrase': {'primary_language_search_fields': {'query': "
+            "'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 5}}"
+        )
+        expected_fuzzy_match_primary_language_string = (
+            "'fuzzy': {'primary_language_search_fields': {'value': 'Lorem ipsum dolor sit amet, consectetur "
+            "adipiscing elit.', 'fuzziness': '2', 'boost': 3}}"
+        )
+        expected_exact_match_primary_translation_string = (
+            "'match_phrase': {'primary_translation_search_fields': {"
+            "'query': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 5}}"
+        )
+        expected_fuzzy_match_primary_translation_string = (
+            "'fuzzy': {'primary_translation_search_fields': {'value': "
+            "'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'fuzziness': '2', 'boost': 3}}"
+        )
+
+        # Secondary fields
+        expected_exact_match_secondary_language_string = (
+            "'match_phrase': {'secondary_language_search_fields': {"
+            "'query': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 4}}"
+        )
+        expected_fuzzy_match_secondary_language_string = (
+            "'fuzzy': {'secondary_language_search_fields': {'value': "
+            "'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'fuzziness': '2', 'boost': 2}}"
+        )
+        expected_exact_match_secondary_translation_string = (
+            "'match_phrase': {'secondary_translation_search_fields': "
+            "{'query': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 4}}"
+        )
+        expected_fuzzy_match_secondary_translation_string = (
+            "'fuzzy': {'secondary_translation_search_fields': {"
+            "'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'fuzziness': '2', 'boost': 2}}"
+        )
+
+        # Other fields
+        expected_exact_match_other_language_string = (
+            "'match_phrase': {'other_language_search_fields': {'query': "
+            "'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 1.5}}"
+        )
+        expected_fuzzy_match_other_language_string = (
+            "'fuzzy': {'other_language_search_fields': {'value': "
+            "'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'fuzziness': '2', 'boost': 1.0}}"
+        )
+        expected_exact_match_other_translation_string = (
+            "'match_phrase': {'other_translation_search_fields': "
+            "{'query': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'slop': 3, 'boost': 1.5}}"
+        )
+        expected_fuzzy_match_other_translation_string = (
+            "'fuzzy': {'other_translation_search_fields': "
+            "{'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', 'fuzziness': '2', 'boost': 1.0}}"
+        )
+
+        assert expected_exact_match_primary_language_string in str(search_query)
+        assert expected_fuzzy_match_primary_language_string not in str(search_query)
+        assert expected_exact_match_primary_translation_string in str(search_query)
+        assert expected_fuzzy_match_primary_translation_string not in str(search_query)
+
+        assert expected_exact_match_secondary_language_string in str(search_query)
+        assert expected_fuzzy_match_secondary_language_string not in str(search_query)
+        assert expected_exact_match_secondary_translation_string in str(search_query)
+        assert expected_fuzzy_match_secondary_translation_string not in str(
+            search_query
+        )
+
+        assert expected_exact_match_other_language_string in str(search_query)
+        assert expected_fuzzy_match_other_language_string not in str(search_query)
+        assert expected_exact_match_other_translation_string in str(search_query)
+        assert expected_fuzzy_match_other_translation_string not in str(search_query)
+
 
 @pytest.mark.django_db
 class TestDomain:

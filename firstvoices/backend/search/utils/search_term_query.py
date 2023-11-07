@@ -174,6 +174,16 @@ def get_search_term_query(search_term, domain):
     subqueries = []
 
     subquery_domains = {
+        "language_exact": [
+            exact_match_primary_language_query,
+            exact_match_secondary_language_query,
+            exact_match_other_language_query,
+        ],
+        "translation_exact": [
+            exact_match_primary_translation_query,
+            exact_match_secondary_translation_query,
+            exact_match_other_translation_query,
+        ],
         "language": [
             exact_match_primary_language_query,
             fuzzy_match_primary_language_query,
@@ -194,8 +204,15 @@ def get_search_term_query(search_term, domain):
     subquery_domains["both"] = (
         subquery_domains["language"] + subquery_domains["translation"]
     )
+    subquery_domains["both_exact"] = (
+        subquery_domains["language_exact"] + subquery_domains["translation_exact"]
+    )
 
-    subqueries += subquery_domains.get(domain, [])
+    if len(search_term) >= 50:
+        # Use only exact field matching, no fuzzy matching
+        subqueries += subquery_domains.get(domain + "_exact", [])
+    else:
+        subqueries += subquery_domains.get(domain, [])
 
     return Q(
         "bool",
