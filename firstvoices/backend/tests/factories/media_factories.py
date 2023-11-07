@@ -46,15 +46,9 @@ class ImageFactory(DjangoModelFactory):
 
 
 def get_video_content(size="thumbnail"):
-    """
-    Returns an InMemoryUploadedFile with arbitrary video content and a filename matching the provided size.
-
-    To test specific video dimensions or other properties, mock the required values.
-    """
-    path = os.path.dirname(os.path.realpath(__file__)) + "/resources/video_example.mp4"
-    file = open(path, "rb")
     filename = f"video_example_{size}.mp4"
-
+    path = os.path.dirname(os.path.realpath(__file__)) + f"/resources/{filename}"
+    file = open(path, "rb")
     content = InMemoryUploadedFile(
         file,
         "FileField",
