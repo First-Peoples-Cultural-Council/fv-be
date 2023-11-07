@@ -1,5 +1,7 @@
 from elasticsearch_dsl import Q
 
+from backend.search.utils.constants import FUZZY_SEARCH_CUTOFF
+
 BASE_BOOST = 1.0  # default value of boost
 EXACT_MATCH_PRIMARY_BOOST = 5
 EXACT_MATCH_SECONDARY_BOOST = 4
@@ -208,7 +210,7 @@ def get_search_term_query(search_term, domain):
         subquery_domains["language_exact"] + subquery_domains["translation_exact"]
     )
 
-    if len(search_term) >= 50:
+    if len(search_term) >= FUZZY_SEARCH_CUTOFF:
         # Use only exact field matching, no fuzzy matching
         subqueries += subquery_domains.get(domain + "_exact", [])
     else:

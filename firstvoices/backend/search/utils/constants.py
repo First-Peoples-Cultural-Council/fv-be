@@ -4,6 +4,10 @@ from django.utils.translation import gettext as _
 # retry_on_conflict for all update calls
 RETRY_ON_CONFLICT = 10
 
+# Only exact search will be used if the length of
+# search term crosses this threshold
+FUZZY_SEARCH_CUTOFF = 50
+
 # Index names
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"
 ELASTICSEARCH_SONG_INDEX = "songs"
