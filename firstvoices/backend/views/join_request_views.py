@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiResponse,
@@ -14,7 +16,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models import Membership
+from backend.models import Membership, Site
 from backend.models.constants import Role
 from backend.models.join_request import JoinRequest, JoinRequestStatus
 from backend.serializers import fields
@@ -144,6 +146,25 @@ class JoinRequestViewSet(
         ).select_related(
             "site", "site__language", "created_by", "last_modified_by", "user"
         )
+
+    def get_validated_site(self):
+        if self.action == "create":
+            site_perm = "join"
+        else:
+            site_perm = "view"
+
+        site_slug = self.get_site_slug()
+        site = Site.objects.filter(slug=site_slug)
+
+        if len(site) == 0:
+            raise Http404
+
+        # Check permissions on the site first
+        perm = Site.get_perm(site_perm)
+        if self.request.user.has_perm(perm, site[0]):
+            return site
+        else:
+            raise PermissionDenied
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
