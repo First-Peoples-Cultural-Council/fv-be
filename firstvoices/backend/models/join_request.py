@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.models.base import BaseModel, BaseSiteContentModel
-from backend.models.constants import MAX_NOTE_LENGTH
+from backend.models.constants import MAX_REASON_NOTE_LENGTH
 from backend.permissions import predicates
 
 
@@ -62,7 +62,7 @@ class JoinRequest(BaseSiteContentModel):
         choices=JoinRequestStatus.choices, default=JoinRequestStatus.PENDING
     )
 
-    reason_note = models.CharField(max_length=MAX_NOTE_LENGTH)
+    reason_note = models.CharField(max_length=MAX_REASON_NOTE_LENGTH)
 
     def __str__(self):
         return f"Request from {self.user} to join {self.site}. Status: {self.status}"
