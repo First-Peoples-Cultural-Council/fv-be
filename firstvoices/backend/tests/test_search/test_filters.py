@@ -278,4 +278,4 @@ class TestHasMediaParams:
         search_query = get_search_query(**{has_media: False})
         search_query = search_query.to_dict()
 
-        assert expected_true_filter in str(search_query)
+        assert expected_true_filter not in str(search_query)
