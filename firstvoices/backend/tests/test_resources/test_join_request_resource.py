@@ -49,6 +49,8 @@ class TestJoinRequestImport:
         assert join_request.user == user
         assert join_request.site == site
         assert join_request.reasons_set.count() == expected_reason_count
+        assert join_request.get_status_display().lower() == "pending"
+        assert join_request.reason_note == "reason note"
 
     @pytest.mark.django_db
     def test_import_skip_unknown_user(self):
