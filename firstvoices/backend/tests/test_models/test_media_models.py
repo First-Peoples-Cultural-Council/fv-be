@@ -388,7 +388,7 @@ class TestImageModel:
         thumbnail = getattr(image, thumbnail_field)
         generated_image = thumbnail.content
         assert generated_image.file
-        # assert f"/{site.slug}/" in generated_image.path
+        assert f"/{site.slug}/" in generated_image.path
         assert f"_{thumbnail_field}" in generated_image.path
         assert generated_image.width == self.image_sizes[thumbnail_field]
         assert generated_image.height == self.image_sizes[thumbnail_field] / 2
