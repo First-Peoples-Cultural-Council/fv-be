@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_order_by,
     get_valid_visibility,
 )
 from backend.views.base_views import ThrottlingMixin
@@ -255,6 +256,56 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="orderBy",
+                description="Order results by dateCreated, dateModified or alphabet. Results can be optionally "
+                "returned in reverse order by passing the reverse=true parameter.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Retrieves results from documents with the default ordering by score.",
+                    ),
+                    OpenApiExample(
+                        "Date Created",
+                        value="dateCreated",
+                        description="Returns results ordered by the created date and time.",
+                    ),
+                    OpenApiExample(
+                        "Date Modified",
+                        value="dateModified",
+                        description="Returns results ordered by the last modified date and time.",
+                    ),
+                    OpenApiExample(
+                        "Alphabet",
+                        value="alphabet",
+                        description="Returns results ordered by a site's custom alphabet.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="reverse",
+                description="If the orderBy parameter is used the reverse parameter can be used to return results in "
+                "reverse order.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "False",
+                        value="false",
+                        description="Results are returned in default order.",
+                    ),
+                    OpenApiExample(
+                        "True",
+                        value="true",
+                        description="Results are returned in reverse order.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -297,6 +348,12 @@ class BaseSearchViewSet(
         has_image = self.request.GET.get("hasImage", False)
         has_image = get_valid_boolean(has_image)
 
+        order_by = self.request.GET.get("orderBy", "")
+        valid_order_by = get_valid_order_by(order_by)
+
+        reverse_flag = self.request.GET.get("reverse", "")
+        reverse_flag = get_valid_boolean(reverse_flag)
+
         search_params = {
             "q": input_q,
             "user": user,
@@ -311,6 +368,8 @@ class BaseSearchViewSet(
             "has_audio": has_audio,
             "has_video": has_video,
             "has_image": has_image,
+            "order_by": valid_order_by,
+            "reverse_ordering": reverse_flag,
         }
 
         return search_params
@@ -379,10 +438,41 @@ class BaseSearchViewSet(
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
 
-        # Sort by score, then by custom sort order
-        search_query = search_query.sort(
-            "_score", {"custom_order": {"unmapped_type": "keyword"}}, "title.raw"
-        )
+        # Grab the reverse sort boolean from the search params to allow reverse ordering
+        date_order = "desc"
+        text_order = "asc"
+        if search_params["reverse_ordering"]:
+            date_order = "asc"
+            text_order = "desc"
+
+        match search_params["order_by"]:
+            case "":
+                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
+                search_query = search_query.sort(
+                    "_score",
+                    {"custom_order": {"unmapped_type": "keyword"}},
+                    "title.raw",
+                )
+            case "dateCreated":
+                # Sort by created, then by custom sort order, and finally title.
+                search_query = search_query.sort(
+                    {"created": {"order": date_order}},
+                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
+                    {"title.raw": {"order": text_order}},
+                )
+            case "dateModified":
+                # Sort by last_modified, then by custom sort order, and finally title.
+                search_query = search_query.sort(
+                    {"last_modified": {"order": date_order}},
+                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
+                    {"title.raw": {"order": text_order}},
+                )
+            case "alphabet":
+                # Sort by custom sort order, and finally title. Allows descending order.
+                search_query = search_query.sort(
+                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
+                    {"title.raw": {"order": text_order}},
+                )
 
         # Get search results
         try:

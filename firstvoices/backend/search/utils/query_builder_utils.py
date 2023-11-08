@@ -278,3 +278,19 @@ def get_valid_visibility(input_visibility_str):
     if len(selected_values) == 0:
         return None
     return selected_values
+
+
+def get_valid_order_by(input_order_by_str):
+    input_string = input_order_by_str.strip()
+
+    if not input_string:
+        return ""
+
+    if (
+        input_string == "dateCreated"
+        or input_string == "dateModified"
+        or input_string == "alphabet"
+    ):
+        return input_string
+    else:  # if invalid string is passed
+        return None
