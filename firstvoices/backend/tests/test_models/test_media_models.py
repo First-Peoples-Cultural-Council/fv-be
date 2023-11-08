@@ -1,7 +1,6 @@
 import logging
 from unittest.mock import patch
 
-import factory
 import pytest
 from django.db import NotSupportedError
 from embed_video.backends import (
@@ -73,6 +72,17 @@ class TestFileModels:
 
         with pytest.raises(ValueError):
             file_field.file
+
+    @pytest.mark.django_db
+    def test_update_file_content_not_supported(self):
+        file = factories.VideoFileFactory.create()
+        try:
+            new_content = get_video_content("small")
+            file.content = new_content
+            file.save()
+            assert False
+        except NotSupportedError:
+            assert True
 
 
 class TestAudioModel:
@@ -213,9 +223,13 @@ class TestThumbnailDimensions:
         ) < 0.1
 
 
-class TestVideoModel:
+class ThumbnailTestMixin:
     image_sizes = None
     size_names = ["thumbnail", "small", "medium"]
+    media_model = None
+    model_factory = None
+    file_model = None
+    file_factory = None
 
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
@@ -223,84 +237,85 @@ class TestVideoModel:
         settings.CELERY_TASK_ALWAYS_EAGER = True
         self.image_sizes = settings.IMAGE_SIZES
 
-    def create_video(self, **kwargs):
+    def create_media_model(self, **kwargs):
         # create an instance
-        factory_instance = factories.VideoFactory.create(**kwargs)
+        factory_instance = self.model_factory.create(**kwargs)
 
         # retrieve a fresh copy after thumbnail generation task has run
         # (synchronously but still not reflected in the factory return value)
-        return Video.objects.get(id=factory_instance.id)
+        return self.media_model.objects.get(id=factory_instance.id)
 
-    def create_site_and_video(self, video_size="thumbnail"):
+    def create_original_file(self, size="thumbnail"):
+        raise NotImplementedError
+
+    def create_site_and_instance(self, size="thumbnail"):
         site = factories.SiteFactory.create()
-        video_file = factories.VideoFileFactory.create(
-            content=get_video_content(video_size)
-        )
-        video = self.create_video(site=site, original=video_file)
-        return site, video
+        file = self.create_original_file(size)
+        model = self.create_media_model(site=site, original=file)
+        return site, model
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_related_file_removed_on_delete(self):
-        media_instance = self.create_video()
+        media_instance = self.create_media_model()
         related_id = media_instance.original.id
         related_image_ids = [
             media_instance.thumbnail.id,
             media_instance.small.id,
             media_instance.medium.id,
         ]
-        assert VideoFile.objects.filter(pk=related_id).count() == 1
+
+        assert self.file_model.objects.filter(pk=related_id).count() == 1
         for related_id in related_image_ids:
             assert ImageFile.objects.filter(pk=related_id).count() == 1
 
         media_instance.delete()
 
-        assert VideoFile.objects.filter(pk=related_id).count() == 0
+        assert self.file_model.objects.filter(pk=related_id).count() == 0
         for related_id in related_image_ids:
             assert ImageFile.objects.filter(pk=related_id).count() == 0
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_related_file_removed_on_update(self):
-        media_instance = self.create_video()
+        media_instance = self.create_media_model()
         related_id = media_instance.original.id
         related_image_ids = [
             media_instance.thumbnail.id,
             media_instance.small.id,
             media_instance.medium.id,
         ]
-        assert VideoFile.objects.filter(pk=related_id).count() == 1
+        assert self.file_model.objects.filter(pk=related_id).count() == 1
         for related_id in related_image_ids:
             assert ImageFile.objects.filter(pk=related_id).count() == 1
 
-        media_instance.original = factories.VideoFileFactory.create()
+        media_instance.original = self.file_factory.create()
         media_instance.save()
 
-        assert VideoFile.objects.filter(pk=related_id).count() == 0
+        assert self.file_model.objects.filter(pk=related_id).count() == 0
         for related_id in related_image_ids:
             assert ImageFile.objects.filter(pk=related_id).count() == 0
 
     @pytest.mark.django_db
-    def test_update_video_file_not_supported(self):
-        media_instance = self.create_video()
-        try:
-            new_content = get_video_content("small")
-            media_instance.original.content = new_content
-            media_instance.original.save()
-            assert False
-        except NotSupportedError:
-            assert True
-
-    @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_thumbnail_paths_correct(self):
-        site, video = self.create_site_and_video()
+        site, media_instance = self.create_site_and_instance()
 
         for size_name in self.image_sizes:
-            generated_image = getattr(video, size_name)
+            generated_image = getattr(media_instance, size_name)
             assert generated_image.content.file
             assert f"{site.slug}/" in generated_image.content.path
             assert f"_{size_name}" in generated_image.content.path
+
+
+class TestVideoModel(ThumbnailTestMixin):
+    media_model = Video
+    model_factory = factories.VideoFactory
+    file_model = VideoFile
+    file_factory = factories.VideoFileFactory
+
+    def create_original_file(self, size="thumbnail"):
+        return self.file_factory.create(content=get_video_content(size))
 
     @pytest.mark.django_db
     def test_ffmpeg_probe_returning_none(self, caplog):
@@ -317,101 +332,14 @@ class TestVideoModel:
             )
 
 
-class TestImageModel:
-    image_sizes = None
-    size_names = ["thumbnail", "small", "medium"]
+class TestImageModel(ThumbnailTestMixin):
+    media_model = Image
+    model_factory = factories.ImageFactory
+    file_model = ImageFile
+    file_factory = factories.ImageFileFactory
 
-    @pytest.fixture(autouse=True)
-    def configure_settings(self, settings):
-        # Runs the thumbnail generation synchronously during testing
-        settings.CELERY_TASK_ALWAYS_EAGER = True
-        self.image_sizes = settings.IMAGE_SIZES
-
-    def create_image(self, **kwargs):
-        # create an instance
-        factory_instance = factories.ImageFactory.create(**kwargs)
-
-        # retrieve a fresh copy after thumbnail generation task has run
-        # (synchronously but still not reflected in the factory return value)
-        return Image.objects.get(id=factory_instance.id)
-
-    @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_related_files_removed_on_delete(self):
-        media_instance = self.create_image()
-        related_ids = [
-            media_instance.original.id,
-            media_instance.thumbnail.id,
-            media_instance.small.id,
-            media_instance.medium.id,
-        ]
-
-        for related_id in related_ids:
-            assert ImageFile.objects.filter(pk=related_id).count() == 1
-
-        media_instance.delete()
-
-        for related_id in related_ids:
-            assert ImageFile.objects.filter(pk=related_id).count() == 0
-
-    @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_related_files_removed_on_update(self):
-        media_instance = self.create_image()
-        related_ids = [
-            media_instance.original.id,
-            media_instance.thumbnail.id,
-            media_instance.small.id,
-            media_instance.medium.id,
-        ]
-
-        for related_id in related_ids:
-            assert ImageFile.objects.filter(pk=related_id).count() == 1
-
-        media_instance.original = factories.ImageFileFactory.create()
-        media_instance.save()
-
-        for related_id in related_ids:
-            assert ImageFile.objects.filter(pk=related_id).count() == 0
-
-    @pytest.mark.parametrize("thumbnail_field", size_names)
-    @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_resized_images_wide(self, thumbnail_field):
-        site = factories.SiteFactory.create()
-
-        # Check resizing when the width of the input image is larger
-        wide_image_file = factories.ImageFileFactory.create(
-            content=factory.django.ImageField(width=1200, height=600), site=site
-        )
-        image = self.create_image(site=site, original=wide_image_file)
-        thumbnail = getattr(image, thumbnail_field)
-        generated_image = thumbnail.content
-        assert generated_image.file
-        assert f"/{site.slug}/" in generated_image.path
-        assert f"_{thumbnail_field}" in generated_image.path
-        assert generated_image.width == self.image_sizes[thumbnail_field]
-        assert generated_image.height == self.image_sizes[thumbnail_field] / 2
-
-    @pytest.mark.parametrize("thumbnail_field", size_names)
-    @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_resized_images_tall(self, thumbnail_field):
-        site = factories.SiteFactory.create()
-
-        # Check resized images when the height of the input image is larger
-        tall_image_file = factories.ImageFileFactory.create(
-            content=factory.django.ImageField(width=600, height=1200), site=site
-        )
-
-        image = self.create_image(site=site, original=tall_image_file)
-        thumbnail = getattr(image, thumbnail_field)
-        generated_image = thumbnail.content
-        assert generated_image.file
-        assert f"/{site.slug}/" in generated_image.path
-        assert f"_{thumbnail_field}" in generated_image.path
-        assert generated_image.width == self.image_sizes[thumbnail_field] / 2
-        assert generated_image.height == self.image_sizes[thumbnail_field]
+    def create_original_file(self, size="thumbnail"):
+        return self.file_factory.create()
 
 
 class TestEmbeddedVideoModel:
