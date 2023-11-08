@@ -75,9 +75,7 @@ class TestJoinRequestImport:
         data = [
             f"{unknown_site_id},2021-04-09 22:52:17.460,{user.email},2021-04-09 22:52:17.460,{user.email},"
             f"{unknown_site_id},"
-            f"{user.email},reason note,PENDING,"
-            "LANGUAGE_LEARNER"
-            "",
+            f'{user.email},reason note,PENDING,"LANGUAGE_LEARNER"',
         ]
         table = self.build_table(data)
 
