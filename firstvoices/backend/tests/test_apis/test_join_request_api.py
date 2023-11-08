@@ -146,9 +146,7 @@ class TestJoinRequestEndpoints(
         factories.JoinRequestFactory(site=site, user=user)
 
         data = {
-            "user": user.email,
-            "status": "pending",
-            "reason": "other",
+            "reasons": [{"reason": "other"}],
             "reason_note": self.REASON_NOTE,
         }
         response = self.client.post(
@@ -163,6 +161,11 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_team_access(self):
+        # See custom permission tests instead
+        pass
+
+    @pytest.mark.skip("This endpoint has custom permissions")
+    def test_create_private_site_403(self):
         # See custom permission tests instead
         pass
 
@@ -682,3 +685,20 @@ class TestJoinRequestEndpoints(
             'request emails. Please add a key "frontend_base_url" to AppJson with the base URL of the frontend '
             'as the value string (eg: "https://firstvoices.com").'
         ) in caplog.text
+
+    @pytest.mark.django_db
+    def test_create_request_for_private_site(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [{"reason": "other"}],
+            "reason_note": self.REASON_NOTE,
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+        assert JoinRequest.objects.count() == 1
