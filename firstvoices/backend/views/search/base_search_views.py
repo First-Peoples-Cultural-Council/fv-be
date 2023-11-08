@@ -351,7 +351,7 @@ class BaseSearchViewSet(
         order_by = self.request.GET.get("orderBy", "")
         valid_order_by = get_valid_order_by(order_by)
 
-        reverse_flag = self.request.GET.get("reverse", "")
+        reverse_flag = self.request.GET.get("reverse", False)
         reverse_flag = get_valid_boolean(reverse_flag)
 
         search_params = {
@@ -416,6 +416,10 @@ class BaseSearchViewSet(
         if search_params["visibility"] is None:
             return Response(data=[])
 
+        # If invalid order_by is passed, return empty list as a response
+        if search_params["order_by"] is None:
+            return Response(data=[])
+
         # Get search query
         search_query = get_search_query(
             user=search_params["user"],
@@ -446,13 +450,6 @@ class BaseSearchViewSet(
             text_order = "desc"
 
         match search_params["order_by"]:
-            case "":
-                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
-                search_query = search_query.sort(
-                    "_score",
-                    {"custom_order": {"unmapped_type": "keyword"}},
-                    "title.raw",
-                )
             case "dateCreated":
                 # Sort by created, then by custom sort order, and finally title.
                 search_query = search_query.sort(
@@ -472,6 +469,13 @@ class BaseSearchViewSet(
                 search_query = search_query.sort(
                     {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
                     {"title.raw": {"order": text_order}},
+                )
+            case _:
+                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
+                search_query = search_query.sort(
+                    "_score",
+                    {"custom_order": {"unmapped_type": "keyword"}},
+                    "title.raw",
                 )
 
         # Get search results
