@@ -449,33 +449,38 @@ class BaseSearchViewSet(
             date_order = "asc"
             text_order = "desc"
 
+        custom_order_sort = {
+            "custom_order": {"unmapped_type": "keyword", "order": text_order}
+        }
+        title_order_sort = {"title.raw": {"order": text_order}}
+
         match search_params["order_by"]:
             case "dateCreated":
                 # Sort by created, then by custom sort order, and finally title.
                 search_query = search_query.sort(
                     {"created": {"order": date_order}},
-                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
-                    {"title.raw": {"order": text_order}},
+                    custom_order_sort,
+                    title_order_sort,
                 )
             case "dateModified":
                 # Sort by last_modified, then by custom sort order, and finally title.
                 search_query = search_query.sort(
                     {"last_modified": {"order": date_order}},
-                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
-                    {"title.raw": {"order": text_order}},
+                    custom_order_sort,
+                    title_order_sort,
                 )
             case "alphabet":
                 # Sort by custom sort order, and finally title. Allows descending order.
                 search_query = search_query.sort(
-                    {"custom_order": {"unmapped_type": "keyword", "order": text_order}},
-                    {"title.raw": {"order": text_order}},
+                    custom_order_sort,
+                    title_order_sort,
                 )
             case _:
                 # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
                 search_query = search_query.sort(
                     "_score",
-                    {"custom_order": {"unmapped_type": "keyword"}},
-                    "title.raw",
+                    custom_order_sort,
+                    title_order_sort,
                 )
 
         # Get search results
