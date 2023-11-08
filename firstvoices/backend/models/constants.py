@@ -8,6 +8,7 @@ MAX_CHARACTER_APPROXIMATE_FORM_LENGTH = 20
 CATEGORY_POS_MAX_TITLE_LENGTH = 75  # Title length for parts of speech and categories
 MAX_FILEFIELD_LENGTH = 500
 MAX_NOTE_LENGTH = 500
+MAX_REASON_NOTE_LENGTH = 2500
 MAX_EMAIL_LENGTH = 254
 
 # constants for the default widgets, subset of the complete list of widgets

@@ -52,11 +52,32 @@ class TestJoinRequestImport:
 
     @pytest.mark.django_db
     def test_import_skip_unknown_user(self):
-        """Import JoinRequest object with basic fields and unknown user"""
+        """Import JoinRequest object with unknown user, should skip row"""
         site = factories.SiteFactory.create()
         data = [
             f"{uuid.uuid4()},2021-04-09 22:52:17.460,user_one@test.com,2021-04-09 22:52:17.460,user_one@test.com,"
             f'{site.id},user_one@test.com,reason note,PENDING,"LANGUAGE_LEARNER"',
+        ]
+        table = self.build_table(data)
+
+        result = JoinRequestResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["skip"] == len(data)
+        assert JoinRequest.objects.count() == 0
+
+    @pytest.mark.django_db
+    def test_import_skip_unknown_site(self):
+        """Import JoinRequest object with unknown site, should skip row"""
+        unknown_site_id = uuid.uuid4()
+        user = factories.UserFactory.create()
+        data = [
+            f"{unknown_site_id},2021-04-09 22:52:17.460,{user.email},2021-04-09 22:52:17.460,{user.email},"
+            f"{unknown_site_id},"
+            f"{user.email},reason note,PENDING,"
+            "LANGUAGE_LEARNER"
+            "",
         ]
         table = self.build_table(data)
 
