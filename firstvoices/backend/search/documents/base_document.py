@@ -22,6 +22,6 @@ class BaseDocument(Document):
 
 class MediaReportingDocumentMixin:
     # fields for media filtering/reporting
-    hasAudio = Boolean()
-    hasVideo = Boolean()
-    hasImage = Boolean()
+    has_audio = Boolean()
+    has_video = Boolean()
+    has_image = Boolean()

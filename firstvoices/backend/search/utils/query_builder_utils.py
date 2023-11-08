@@ -184,15 +184,15 @@ def get_visibility_query(visibility):
 
 
 def get_has_audio_query(has_audio):
-    return Q("bool", filter=[Q("term", hasAudio=has_audio)])
+    return Q("bool", filter=[Q("term", has_audio=has_audio)])
 
 
 def get_has_video_query(has_video):
-    return Q("bool", filter=[Q("term", hasVideo=has_video)])
+    return Q("bool", filter=[Q("term", has_video=has_video)])
 
 
 def get_has_image_query(has_image):
-    return Q("bool", filter=[Q("term", hasImage=has_image)])
+    return Q("bool", filter=[Q("term", has_image=has_image)])
 
 
 # Search params validation

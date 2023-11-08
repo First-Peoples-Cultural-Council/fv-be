@@ -46,9 +46,9 @@ def update_story_index(instance_id, **kwargs):
                 page_text=page_text,
                 page_translation=page_translation,
                 retry_on_conflict=RETRY_ON_CONFLICT,
-                hasAudio=instance.related_audio.exists(),
-                hasVideo=instance.related_videos.exists(),
-                hasImage=instance.related_images.exists(),
+                has_audio=instance.related_audio.exists(),
+                has_video=instance.related_videos.exists(),
+                has_image=instance.related_images.exists(),
             )
         else:
             index_entry = create_story_index_document(

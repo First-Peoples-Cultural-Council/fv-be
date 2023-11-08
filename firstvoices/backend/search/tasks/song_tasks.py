@@ -46,9 +46,9 @@ def update_song_index(instance_id, **kwargs):
                 lyrics_text=lyrics_text,
                 lyrics_translation=lyrics_translation_text,
                 retry_on_conflict=RETRY_ON_CONFLICT,
-                hasAudio=instance.related_audio.exists(),
-                hasVideo=instance.related_videos.exists(),
-                hasImage=instance.related_images.exists(),
+                has_audio=instance.related_audio.exists(),
+                has_video=instance.related_videos.exists(),
+                has_image=instance.related_images.exists(),
             )
         else:
             index_entry = create_song_index_document(

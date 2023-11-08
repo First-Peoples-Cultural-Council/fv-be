@@ -105,9 +105,9 @@ def dictionary_entry_iterator():
             exclude_from_games=entry.exclude_from_games,
             custom_order=entry.custom_order,
             visibility=entry.visibility,
-            hasAudio=entry.related_audio.exists(),
-            hasVideo=entry.related_videos.exists(),
-            hasImage=entry.related_images.exists(),
+            has_audio=entry.related_audio.exists(),
+            has_video=entry.related_videos.exists(),
+            has_image=entry.related_images.exists(),
         )
         yield index_entry.to_dict(True)
 

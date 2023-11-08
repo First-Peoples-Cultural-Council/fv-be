@@ -53,9 +53,9 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=instance.visibility,
                 retry_on_conflict=RETRY_ON_CONFLICT,
-                hasAudio=instance.related_audio.exists(),
-                hasVideo=instance.related_videos.exists(),
-                hasImage=instance.related_images.exists(),
+                has_audio=instance.related_audio.exists(),
+                has_video=instance.related_videos.exists(),
+                has_image=instance.related_images.exists(),
             )
         else:
             # Create new entry if it doesn't exist
@@ -73,9 +73,9 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=instance.visibility,
-                hasAudio=instance.related_audio.exists(),
-                hasVideo=instance.related_videos.exists(),
-                hasImage=instance.related_images.exists(),
+                has_audio=instance.related_audio.exists(),
+                has_video=instance.related_videos.exists(),
+                has_image=instance.related_images.exists(),
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals
