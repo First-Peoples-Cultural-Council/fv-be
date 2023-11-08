@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import sys
@@ -66,34 +65,30 @@ class MediaTestMixin:
         }
 
     def get_visual_file_data(self, file):
-        file_data = self.get_file_data(file)
-        file_data["height"] = file.height
-        file_data["width"] = file.width
-        return file_data
+        if file:
+            return {
+                **self.get_file_data(file),
+                "height": file.height,
+                "width": file.width,
+            }
+        else:
+            return None
 
     def get_media_thumbnail_data(self, instance):
-        o = {}
-        if instance.thumbnail is not None:
-            o["thumbnail"] = self.get_visual_file_data(instance.thumbnail)
-
-        if instance.small is not None:
-            o["small"] = self.get_visual_file_data(instance.small)
-
-        if instance.medium is not None:
-            o["medium"] = self.get_visual_file_data(instance.medium)
-
-        return o
+        return {
+            "thumbnail": self.get_visual_file_data(instance.thumbnail),
+            "small": self.get_visual_file_data(instance.small),
+            "medium": self.get_visual_file_data(instance.medium),
+        }
 
     def get_visual_media_data(self, instance, view_name):
         data = self.get_basic_media_data(instance, view_name=view_name)
         thumbnail_data = self.get_media_thumbnail_data(instance)
-        return (
-            data
-            | thumbnail_data
-            | {
-                "original": self.get_visual_file_data(instance.original),
-            }
-        )
+        return {
+            **data,
+            **thumbnail_data,
+            "original": self.get_visual_file_data(instance.original),
+        }
 
     def get_expected_image_data(self, instance):
         return self.get_visual_media_data(instance, view_name="api:image-detail")

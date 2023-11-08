@@ -217,7 +217,9 @@ class SiteContentListApiTestMixin:
 
     @pytest.mark.django_db
     def test_list_minimal(self):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
@@ -337,7 +339,9 @@ class SiteContentDetailApiTestMixin:
 
     @pytest.mark.django_db
     def test_detail_minimal(self):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
@@ -759,8 +763,9 @@ class SiteContentDestroyApiTestMixin:
         raise NotImplementedError
 
     def assert_instance_deleted(self, instance):
-        with pytest.raises(ObjectDoesNotExist):
-            type(instance).objects.get(id=instance.id)
+        if instance:
+            with pytest.raises(ObjectDoesNotExist):
+                type(instance).objects.get(id=instance.id)
 
     @pytest.mark.django_db
     def test_destroy_success_204(self):

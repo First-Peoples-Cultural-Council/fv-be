@@ -347,19 +347,19 @@ def get_output_dimensions(max_size, input_width, input_height):
     :param input_height: The input image height.
     :return: The output image size as a tuple (width, height).
     """
+    if input_width <= max_size and input_height <= max_size:
+        return input_width, input_height
+
     if input_width >= input_height:
-        if input_width > max_size:
-            return (
-                max_size,
-                round(input_height / (input_width / max_size)),
-            )
-    else:
-        if input_height > max_size:
-            return (
-                round(input_width / (input_height / max_size)),
-                max_size,
-            )
-    return input_width, input_height
+        return (
+            max_size,
+            round(input_height / (input_width / max_size)),
+        )
+
+    return (
+        round(input_width / (input_height / max_size)),
+        max_size,
+    )
 
 
 class ThumbnailMixin(models.Model):
