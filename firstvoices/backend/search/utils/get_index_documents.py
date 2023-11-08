@@ -1,7 +1,7 @@
 from backend.search.documents import SongDocument, StoryDocument
 
 
-def get_new_story_index_document(instance, page_text, page_translation):
+def create_story_index_document(instance, page_text, page_translation):
     return StoryDocument(
         document_id=str(instance.id),
         site_id=str(instance.site.id),
@@ -24,7 +24,7 @@ def get_new_story_index_document(instance, page_text, page_translation):
     )
 
 
-def get_new_song_index_document(instance, lyrics_text, lyrics_translation_text):
+def create_song_index_document(instance, lyrics_text, lyrics_translation_text):
     return SongDocument(
         document_id=str(instance.id),
         site_id=str(instance.site.id),

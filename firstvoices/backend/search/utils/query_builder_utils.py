@@ -259,17 +259,6 @@ def get_valid_boolean(input_val):
         return False
 
 
-def get_valid_has_media(input_val):
-    if input_val == "":
-        return ""
-    elif str(input_val).strip().lower() in ["true"]:
-        return True
-    elif str(input_val).strip().lower() in ["false"]:
-        return False
-    else:
-        return None
-
-
 def get_valid_visibility(input_visibility_str):
     if not input_visibility_str:
         return ""

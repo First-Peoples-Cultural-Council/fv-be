@@ -18,3 +18,10 @@ class BaseDocument(Document):
     secondary_translation_search_fields = Text()
     other_language_search_fields = Text()
     other_translation_search_fields = Text()
+
+
+class MediaReportingDocumentMixin:
+    # fields for media filtering/reporting
+    hasAudio = Boolean()
+    hasVideo = Boolean()
+    hasImage = Boolean()

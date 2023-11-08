@@ -13,7 +13,7 @@ from backend.search.utils.constants import (
     RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.get_index_documents import get_new_story_index_document
+from backend.search.utils.get_index_documents import create_story_index_document
 from backend.search.utils.object_utils import get_object_from_index, get_page_info
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -51,7 +51,7 @@ def update_story_index(instance_id, **kwargs):
                 hasImage=instance.related_images.exists(),
             )
         else:
-            index_entry = get_new_story_index_document(
+            index_entry = create_story_index_document(
                 instance, page_text, page_translation
             )
             index_entry.save()

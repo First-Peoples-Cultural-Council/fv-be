@@ -13,7 +13,7 @@ from backend.search.utils.constants import (
     RETRY_ON_CONFLICT,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.get_index_documents import get_new_song_index_document
+from backend.search.utils.get_index_documents import create_song_index_document
 from backend.search.utils.object_utils import get_lyrics, get_object_from_index
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -51,7 +51,7 @@ def update_song_index(instance_id, **kwargs):
                 hasImage=instance.related_images.exists(),
             )
         else:
-            index_entry = get_new_song_index_document(
+            index_entry = create_song_index_document(
                 instance, lyrics_text, lyrics_translation_text
             )
             index_entry.save()

@@ -5,8 +5,8 @@ from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.search.documents import DictionaryEntryDocument, MediaDocument
 from backend.search.utils.get_index_documents import (
-    get_new_song_index_document,
-    get_new_story_index_document,
+    create_song_index_document,
+    create_story_index_document,
 )
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
@@ -79,7 +79,7 @@ def story_iterator():
     queryset = Story.objects.all()
     for instance in queryset:
         page_text, page_translation = get_page_info(instance)
-        story_doc = get_new_story_index_document(instance, page_text, page_translation)
+        story_doc = create_story_index_document(instance, page_text, page_translation)
         yield story_doc.to_dict(True)
 
 
@@ -116,7 +116,7 @@ def song_iterator():
     queryset = Song.objects.all()
     for instance in queryset:
         lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = get_new_song_index_document(
+        song_doc = create_song_index_document(
             instance, lyrics_text, lyrics_translation_text
         )
         yield song_doc.to_dict(True)
