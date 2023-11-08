@@ -3,11 +3,10 @@ import logging
 from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
-from backend.search.documents import (
-    DictionaryEntryDocument,
-    MediaDocument,
-    SongDocument,
-    StoryDocument,
+from backend.search.documents import DictionaryEntryDocument, MediaDocument
+from backend.search.utils.get_index_documents import (
+    create_song_index_document,
+    create_story_index_document,
 )
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
@@ -80,23 +79,7 @@ def story_iterator():
     queryset = Story.objects.all()
     for instance in queryset:
         page_text, page_translation = get_page_info(instance)
-        story_doc = StoryDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            introduction=instance.introduction,
-            introduction_translation=instance.introduction_translation,
-            author=instance.author,
-            page_text=page_text,
-            page_translation=page_translation,
-        )
+        story_doc = create_story_index_document(instance, page_text, page_translation)
         yield story_doc.to_dict(True)
 
 
@@ -122,6 +105,9 @@ def dictionary_entry_iterator():
             exclude_from_games=entry.exclude_from_games,
             custom_order=entry.custom_order,
             visibility=entry.visibility,
+            has_audio=entry.related_audio.exists(),
+            has_video=entry.related_videos.exists(),
+            has_image=entry.related_images.exists(),
         )
         yield index_entry.to_dict(True)
 
@@ -130,20 +116,7 @@ def song_iterator():
     queryset = Song.objects.all()
     for instance in queryset:
         lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = SongDocument(
-            document_id=str(instance.id),
-            site_id=str(instance.site.id),
-            site_visibility=instance.site.visibility,
-            exclude_from_games=instance.exclude_from_games,
-            exclude_from_kids=instance.exclude_from_kids,
-            visibility=instance.visibility,
-            title=instance.title,
-            title_translation=instance.title_translation,
-            note=instance.notes,
-            acknowledgement=instance.acknowledgements,
-            intro_title=instance.introduction,
-            intro_translation=instance.introduction_translation,
-            lyrics_text=lyrics_text,
-            lyrics_translation=lyrics_translation_text,
+        song_doc = create_song_index_document(
+            instance, lyrics_text, lyrics_translation_text
         )
         yield song_doc.to_dict(True)
