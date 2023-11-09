@@ -6,7 +6,12 @@ import tablib
 from backend.models.constants import AppRole, Role
 from backend.resources.app import AppMembership, AppMembershipResource
 from backend.resources.sites import Membership, MembershipResource
-from backend.tests.factories import AppMembershipFactory, SiteFactory, UserFactory
+from backend.tests.factories import (
+    AppMembershipFactory,
+    MembershipFactory,
+    SiteFactory,
+    UserFactory,
+)
 
 
 class TestAppMembershipImport:
@@ -120,3 +125,22 @@ class TestSiteMembershipImport:
         new_membership = Membership.objects.filter(id=table["id"][0])
         assert new_membership.exists()
         assert new_membership.first().role == django_choice
+
+    @pytest.mark.django_db
+    def test_skip_existing(self):
+        """Import skips memberships that already exist in the database"""
+        site = SiteFactory.create()
+        user = UserFactory.create()
+        MembershipFactory.create(user=user, site=site, role=Role.LANGUAGE_ADMIN)
+
+        id_one = uuid.uuid4()
+        data = [
+            f"{user.email},Language Admin,0,{id_one},,,,,{site.id}",
+        ]
+        table = self.build_table(data)
+        result = MembershipResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["skip"] == len(data)
+        assert Membership.objects.filter(user=user, site=site).count() == 1
