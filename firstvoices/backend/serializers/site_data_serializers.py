@@ -20,8 +20,21 @@ def dict_entry_type_mtd_conversion(type):
             return None
 
 
+class CategoriesDataSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(source="title")
+    parent_category = serializers.CharField(source="parent")
+
+    class Meta:
+        model = Category
+        fields = (
+            "category",
+            "parent_category",
+        )
+
+
 class SiteDataSerializer(SiteContentLinkedTitleSerializer):
     config = serializers.SerializerMethodField()
+    categories = CategoriesDataSerializer(source="category_set", many=True)
     data = serializers.SerializerMethodField()
 
     def get_config(self, site):
@@ -70,19 +83,33 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
 
     class Meta:
         model = Site
-        fields = ("config", "data")
+        fields = ("config", "categories", "data")
 
 
-class CategoriesDataSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(source="title")
-    parent_category = serializers.CharField(source="parent")
+class AudioDataSerializer(serializers.ModelSerializer):
+    speaker = serializers.SerializerMethodField()
+    filename = serializers.FileField(source="original.content")
+
+    @staticmethod
+    def get_speaker(audio):
+        return (
+            audio.speakers.first().name if audio.speakers.first() is not None else None
+        )
 
     class Meta:
-        model = Category
+        model = DictionaryEntry
         fields = (
-            "category",
-            "parent_category",
+            "speaker",
+            "filename",
         )
+
+
+class ImageDataSerializer(serializers.ModelSerializer):
+    filename = serializers.FileField(source="original.content")
+
+    class Meta:
+        model = DictionaryEntry
+        fields = ("filename",)
 
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
@@ -99,36 +126,31 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     sort_form = serializers.SerializerMethodField()
     sorting_form = serializers.SerializerMethodField()
 
-    def get_source(self, dictionaryentry):
+    @staticmethod
+    def get_source(dictionaryentry):
         return dict_entry_type_mtd_conversion(dictionaryentry.type)
 
-    def get_definition(self, dictionaryentry):
+    @staticmethod
+    def get_definition(dictionaryentry):
         if dictionaryentry.translation_set.first() is not None:
             return dictionaryentry.translation_set.first().text
         else:
             return None
 
-    # These are placeholder values and need to be updated when the audio models have been implemented.
-    def get_audio(self, dictionaryentry):
-        return [
-            {
-                "speaker": None,
-                "filename": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/136e1a0a-a707-41a9-9ec8-1a4f05b55454"
-                "/file:content/TestMP3.mp3",
-            }
-        ]
+    @staticmethod
+    def get_audio(dictionaryentry):
+        return AudioDataSerializer(dictionaryentry.related_audio.all(), many=True).data
 
-    # These are placeholder values and need to be updated when the image models have been implemented.
-    def get_img(self, dictionaryentry):
-        return (
-            "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/5c9eef16-4665-40b9-89ce-debc0301f93b/file:content"
-            "/pexels-stijn-dijkstra-2583852.jpg"
-        )
+    @staticmethod
+    def get_img(dictionaryentry):
+        return ImageDataSerializer(dictionaryentry.related_images.all(), many=True).data
 
-    def get_secondary_theme(self, dictionaryentry):
+    @staticmethod
+    def get_secondary_theme(dictionaryentry):
         return None
 
-    def get_optional(self, dictionaryentry):
+    @staticmethod
+    def get_optional(dictionaryentry):
         return (
             {
                 **(
@@ -155,14 +177,16 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             },
         )
 
-    def get_sort_form(self, dictionaryentry):
+    @staticmethod
+    def get_sort_form(dictionaryentry):
         alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
         if alphabet_mapper is not None:
             return alphabet_mapper.get_base_form(dictionaryentry.title)
         else:
             return dictionaryentry.title
 
-    def get_sorting_form(self, dictionaryentry):
+    @staticmethod
+    def get_sorting_form(dictionaryentry):
         alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
         if alphabet_mapper is not None:
             return alphabet_mapper.get_numerical_sort_form(dictionaryentry.title)

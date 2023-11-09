@@ -78,6 +78,9 @@ class SitesDataViewSet(
                 "dictionaryentry_set__note_set",
                 "dictionaryentry_set__categories",
                 "dictionaryentry_set__categories__parent",
+                "dictionaryentry_set__related_audio",
+                "dictionaryentry_set__related_videos",
+                "dictionaryentry_set__related_images",
             )
         )
         return sites
