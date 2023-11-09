@@ -18,7 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
-    get_valid_order_by,
+    get_valid_sort,
     get_valid_visibility,
 )
 from backend.views.base_views import ThrottlingMixin
@@ -257,9 +257,9 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
-                name="orderBy",
-                description="Order results by dateCreated, dateModified or alphabet. Results can be optionally "
-                "returned in reverse order by passing the reverse=true parameter.",
+                name="sort",
+                description="Sort results by date created, date last modified or title. Results can be optionally "
+                'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
                 required=False,
                 default="",
                 type=str,
@@ -271,38 +271,28 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                     OpenApiExample(
                         "Date Created",
-                        value="dateCreated",
-                        description="Returns results ordered by the created date and time.",
+                        value="created",
+                        description="Returns results ordered by the created date and time in ascending order.",
                     ),
                     OpenApiExample(
                         "Date Modified",
-                        value="dateModified",
-                        description="Returns results ordered by the last modified date and time.",
+                        value="modified",
+                        description="Returns results ordered by the last modified date and time in ascending order.",
                     ),
                     OpenApiExample(
-                        "Alphabet",
-                        value="alphabet",
-                        description="Returns results ordered by a site's custom alphabet.",
-                    ),
-                ],
-            ),
-            OpenApiParameter(
-                name="reverse",
-                description="If the orderBy parameter is used the reverse parameter can be used to return results in "
-                "reverse order.",
-                required=False,
-                default="",
-                type=str,
-                examples=[
-                    OpenApiExample(
-                        "False",
-                        value="false",
-                        description="Results are returned in default order.",
+                        "Title",
+                        value="title",
+                        description="Returns results ordered by title according to a site's custom alphabet.",
                     ),
                     OpenApiExample(
-                        "True",
-                        value="true",
-                        description="Results are returned in reverse order.",
+                        "Date Created Descending",
+                        value="created_desc",
+                        description="Returns results ordered by the created date and time in descending order.",
+                    ),
+                    OpenApiExample(
+                        "Date Modified Descending",
+                        value="modified_desc",
+                        description="Returns results ordered by the last modified date and time in descending order.",
                     ),
                 ],
             ),
@@ -348,11 +338,8 @@ class BaseSearchViewSet(
         has_image = self.request.GET.get("hasImage", False)
         has_image = get_valid_boolean(has_image)
 
-        order_by = self.request.GET.get("orderBy", "")
-        valid_order_by = get_valid_order_by(order_by)
-
-        reverse_flag = self.request.GET.get("reverse", False)
-        reverse_flag = get_valid_boolean(reverse_flag)
+        sort = self.request.GET.get("sort", "")
+        valid_sort, descending = get_valid_sort(sort)
 
         search_params = {
             "q": input_q,
@@ -368,8 +355,8 @@ class BaseSearchViewSet(
             "has_audio": has_audio,
             "has_video": has_video,
             "has_image": has_image,
-            "order_by": valid_order_by,
-            "reverse_ordering": reverse_flag,
+            "sort": valid_sort,
+            "descending": descending,
         }
 
         return search_params
@@ -416,10 +403,6 @@ class BaseSearchViewSet(
         if search_params["visibility"] is None:
             return Response(data=[])
 
-        # If invalid order_by is passed, return empty list as a response
-        if search_params["order_by"] is None:
-            return Response(data=[])
-
         # Get search query
         search_query = get_search_query(
             user=search_params["user"],
@@ -442,34 +425,32 @@ class BaseSearchViewSet(
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
 
-        # Grab the reverse sort boolean from the search params to allow reverse ordering
-        date_order = "desc"
-        text_order = "asc"
-        if search_params["reverse_ordering"]:
-            date_order = "asc"
-            text_order = "desc"
-
+        sort_direction = (
+            "desc"
+            if search_params["descending"] and search_params["sort"] is not None
+            else "asc"
+        )
         custom_order_sort = {
-            "custom_order": {"unmapped_type": "keyword", "order": text_order}
+            "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }
-        title_order_sort = {"title.raw": {"order": text_order}}
+        title_order_sort = {"title.raw": {"order": sort_direction}}
 
-        match search_params["order_by"]:
-            case "dateCreated":
-                # Sort by created, then by custom sort order, and finally title.
+        match search_params["sort"]:
+            case "created":
+                # Sort by created, then by custom sort order, and finally title. Allows descending order.
                 search_query = search_query.sort(
-                    {"created": {"order": date_order}},
+                    {"created": {"order": sort_direction}},
                     custom_order_sort,
                     title_order_sort,
                 )
-            case "dateModified":
-                # Sort by last_modified, then by custom sort order, and finally title.
+            case "modified":
+                # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
                 search_query = search_query.sort(
-                    {"last_modified": {"order": date_order}},
+                    {"last_modified": {"order": sort_direction}},
                     custom_order_sort,
                     title_order_sort,
                 )
-            case "alphabet":
+            case "title":
                 # Sort by custom sort order, and finally title. Allows descending order.
                 search_query = search_query.sort(
                     custom_order_sort,

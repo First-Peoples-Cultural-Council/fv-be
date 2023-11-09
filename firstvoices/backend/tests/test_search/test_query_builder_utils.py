@@ -6,7 +6,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_category_id,
     get_valid_document_types,
     get_valid_domain,
-    get_valid_order_by,
+    get_valid_sort,
     get_valid_visibility,
 )
 from backend.tests import factories
@@ -99,20 +99,23 @@ class TestValidVisibility:
         assert actual_visibility is None
 
 
-class TestValidOrderBy:
+class TestValidSort:
     @pytest.mark.parametrize(
-        "input_order_by, expected_order_by",
+        "input_sort, expected_sort",
         [
-            ("dateCreated", "dateCreated"),
-            ("dateModified", "dateModified"),
-            ("alphabet", "alphabet"),
-            ("", ""),
+            ("created", ("created", False)),
+            ("modified", ("modified", False)),
+            ("title", ("title", False)),
+            ("created_desc", ("created", True)),
+            ("modified_desc", ("modified", True)),
+            ("title_desc", ("title", True)),
         ],
     )
-    def test_valid_inputs(self, input_order_by, expected_order_by):
-        actual_order_by = get_valid_order_by(input_order_by)
-        assert actual_order_by == expected_order_by
+    def test_valid_inputs(self, input_sort, expected_sort):
+        actual_sort = get_valid_sort(input_sort)
+        assert actual_sort == expected_sort
 
     def test_invalid_input(self):
-        actual_order_by = get_valid_order_by("bananas")
-        assert actual_order_by is None
+        actual_sort, descending = get_valid_sort("bananas")
+        assert actual_sort is None
+        assert descending is False
