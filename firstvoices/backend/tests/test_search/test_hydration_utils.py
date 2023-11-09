@@ -4,7 +4,10 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
 )
-from backend.search.utils.hydration_utils import separate_object_ids
+from backend.search.utils.hydration_utils import (
+    handle_hydration_errors,
+    separate_object_ids,
+)
 
 
 class TestSeparateObjectIds:
@@ -93,3 +96,19 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_MEDIA_INDEX: {"audio": [], "image": [], "video": []},
         }
         assert separate_object_ids(search_results) == expected_output
+
+
+class TestHandleHydrationErrors:
+    doc_id = 123
+    minimal_obj = {"_source": {"document_id": doc_id}}
+
+    def test_object_not_found_in_db(self, caplog):
+        exception = KeyError(f"Object not found in db. id: {self.doc_id}")
+        handle_hydration_errors(self.minimal_obj, exception)
+        assert f"Object not found in database with id: {self.doc_id}" in caplog.text
+
+    def test_general_exception(self, caplog):
+        exception = Exception("Random exception")
+        handle_hydration_errors(self.minimal_obj, exception)
+        expected_error_message = f"Error during hydration process. Document id: {self.doc_id}. Error: Random exception"
+        assert expected_error_message in caplog.text

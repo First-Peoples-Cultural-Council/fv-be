@@ -71,7 +71,7 @@ def fetch_objects_from_database(
     return objects
 
 
-def hydrate_objects(search_results, request):
+def hydrate_objects(search_results):
     """
     To enhance the raw objects returned from ElasticSearch, we add the necessary properties.
     First, we segregate all the IDs from the search results into separate lists based on their respective models.
@@ -148,23 +148,18 @@ def hydrate_objects(search_results, request):
                     "type"
                 ] = dictionary_entry.type.lower()  # 'word' or 'phrase'
                 complete_object["entry"] = DictionaryEntryMinimalSerializer(
-                    dictionary_entry,
-                    context={"request": request, "site": dictionary_entry.site},
+                    dictionary_entry
                 ).data
 
             elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:
                 song = get_object_by_id(song_objects, obj["_source"]["document_id"])
                 complete_object["type"] = "song"
-                complete_object["entry"] = SongMinimalSerializer(
-                    song, context={"request": request}
-                ).data
+                complete_object["entry"] = SongMinimalSerializer(song).data
 
             elif ELASTICSEARCH_STORY_INDEX in obj["_index"]:
                 story = get_object_by_id(story_objects, obj["_source"]["document_id"])
                 complete_object["type"] = "story"
-                complete_object["entry"] = StoryMinimalSerializer(
-                    story, context={"request": request}
-                ).data
+                complete_object["entry"] = StoryMinimalSerializer(story).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
@@ -172,9 +167,7 @@ def hydrate_objects(search_results, request):
             ):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_AUDIO
-                complete_object["entry"] = AudioMinimalSerializer(
-                    audio, context={"request": request, "site": audio.site}
-                ).data
+                complete_object["entry"] = AudioMinimalSerializer(audio).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
@@ -213,9 +206,6 @@ def handle_hydration_errors(obj, exception):
         # For cases where an indexed object is not present in the database for further hydration
         log_level = "warning"
         log_message = f"Object not found in database with id: {document_id}."
-    elif "has no site" in error_message:
-        # For cases where an indexed object points to a deleted site
-        log_message = f"Missing site object on ES object with id: {document_id}. Error: {error_message}"
     else:
         log_message = f"Error during hydration process. Document id: {document_id}. Error: {error_message}"
 

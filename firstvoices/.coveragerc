@@ -12,6 +12,7 @@ omit =
     */wsgi.py
     */manage.py
     */settings.py
+    */backend/search/tasks/*
 
 [report]
 include_namespace_packages=True
