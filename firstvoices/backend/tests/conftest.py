@@ -2,39 +2,41 @@ from unittest.mock import patch
 
 import pytest
 
-from backend.models.media import ImageFile, VideoFile
+from backend.models.media import Image, ImageFile, Video, VideoFile
 
 MOCK_MEDIA_DIMENSIONS = {"width": 100, "height": 100}
 
 
-@pytest.fixture(autouse=True, scope="session")
-def image_thumbnail_generation_does_nothing():
-    with patch("backend.models.media.Image._request_thumbnail_generation") as mocked:
-        mocked.return_value = None
-        yield
-
-
-@pytest.fixture(autouse=True, scope="session")
-def video_thumbnail_generation_does_nothing():
-    with patch("backend.models.media.Video._request_thumbnail_generation") as mocked:
-        mocked.return_value = None
-        yield
+@pytest.fixture(autouse=True)
+def image_thumbnail_generation_does_nothing(request, mocker):
+    if "disable_thumbnail_mocks" not in request.keywords:
+        mocker.patch.object(Image, "_request_thumbnail_generation", return_value=None)
+    yield
 
 
 @pytest.fixture(autouse=True)
-def mock_get_video_dimensions(mocker):
-    mock_video_dimensions = mocker.patch.object(
-        VideoFile, "get_video_info", return_value=MOCK_MEDIA_DIMENSIONS
-    )
-    yield mock_video_dimensions
+def video_thumbnail_generation_does_nothing(request, mocker):
+    if "disable_thumbnail_mocks" not in request.keywords:
+        mocker.patch.object(Video, "_request_thumbnail_generation", return_value=None)
+    yield
 
 
 @pytest.fixture(autouse=True)
-def mock_get_image_dimensions(mocker):
-    mock_image_dimensions = mocker.patch.object(
-        ImageFile, "get_image_dimensions", return_value=MOCK_MEDIA_DIMENSIONS
-    )
-    yield mock_image_dimensions
+def mock_get_video_dimensions(request, mocker):
+    if "disable_thumbnail_mocks" not in request.keywords:
+        mocker.patch.object(
+            VideoFile, "get_video_info", return_value=MOCK_MEDIA_DIMENSIONS
+        )
+    yield
+
+
+@pytest.fixture(autouse=True)
+def mock_get_image_dimensions(request, mocker):
+    if "disable_thumbnail_mocks" not in request.keywords:
+        mocker.patch.object(
+            ImageFile, "get_image_dimensions", return_value=MOCK_MEDIA_DIMENSIONS
+        )
+    yield
 
 
 @pytest.fixture(autouse=True, scope="session")

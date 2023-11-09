@@ -1,7 +1,25 @@
 import pytest
 
 from backend.search.query_builder import get_search_query
+from backend.search.utils.constants import FUZZY_SEARCH_CUTOFF
+from backend.search.utils.search_term_query import (
+    EXACT_MATCH_OTHER_BOOST,
+    EXACT_MATCH_PRIMARY_BOOST,
+    EXACT_MATCH_SECONDARY_BOOST,
+    FUZZY_MATCH_OTHER_BOOST,
+    FUZZY_MATCH_PRIMARY_BOOST,
+    FUZZY_MATCH_SECONDARY_BOOST,
+)
 from backend.tests import factories
+from backend.tests.utils import generate_string
+
+
+def get_match_query(field_name, query, boost):
+    return f"'match_phrase': {{'{field_name}': {{'query': '{query}', 'slop': 3, 'boost': {boost}}}}}"
+
+
+def get_fuzzy_query(field_name, query, boost):
+    return f"'fuzzy': {{'{field_name}': {{'value': '{query}', 'fuzziness': '2', 'boost': {boost}}}}}"
 
 
 @pytest.mark.django_db
@@ -19,58 +37,72 @@ class TestQueryParams:
         # relates to: SearchQueryTest.java - testPaddedQuery()
         search_query = get_search_query(q=q)
         search_query = search_query.to_dict()
+        expected_search_term = "test"
 
-        expected_exact_match_primary_language_string = (
-            "'match_phrase': {'primary_language_search_fields': {'query': "
-            "'test', 'slop': 3, 'boost': 5}}"
+        # Primary fields
+        expected_exact_match_primary_language_string = get_match_query(
+            "primary_language_search_fields",
+            expected_search_term,
+            EXACT_MATCH_PRIMARY_BOOST,
         )
-        expected_fuzzy_match_primary_language_string = (
-            "'fuzzy': {'primary_language_search_fields': {'value': 'test', "
-            "'fuzziness': '2', 'boost': 3}}"
+        expected_fuzzy_match_primary_language_string = get_fuzzy_query(
+            "primary_language_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_PRIMARY_BOOST,
         )
-        expected_exact_match_primary_translation_string = (
-            "'match_phrase': {'primary_translation_search_fields': {"
-            "'query': 'test', 'slop': 3, 'boost': 5}}"
+        expected_exact_match_primary_translation_string = get_match_query(
+            "primary_translation_search_fields",
+            expected_search_term,
+            EXACT_MATCH_PRIMARY_BOOST,
         )
-        expected_fuzzy_match_primary_translation_string = (
-            "'fuzzy': {'primary_translation_search_fields': {'value': "
-            "'test', 'fuzziness': '2', 'boost': 3}}"
+        expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
+            "primary_translation_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_PRIMARY_BOOST,
         )
 
         # Secondary fields
-        expected_exact_match_secondary_language_string = (
-            "'match_phrase': {'secondary_language_search_fields': {"
-            "'query': 'test', 'slop': 3, 'boost': 4}}"
+        expected_exact_match_secondary_language_string = get_match_query(
+            "secondary_language_search_fields",
+            expected_search_term,
+            EXACT_MATCH_SECONDARY_BOOST,
         )
-        expected_fuzzy_match_secondary_language_string = (
-            "'fuzzy': {'secondary_language_search_fields': {'value': "
-            "'test', 'fuzziness': '2', 'boost': 2}}"
+        expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
+            "secondary_language_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_SECONDARY_BOOST,
         )
-        expected_exact_match_secondary_translation_string = (
-            "'match_phrase': {'secondary_translation_search_fields': "
-            "{'query': 'test', 'slop': 3, 'boost': 4}}"
+        expected_exact_match_secondary_translation_string = get_match_query(
+            "secondary_translation_search_fields",
+            expected_search_term,
+            EXACT_MATCH_SECONDARY_BOOST,
         )
-        expected_fuzzy_match_secondary_translation_string = (
-            "'fuzzy': {'secondary_translation_search_fields': {"
-            "'value': 'test', 'fuzziness': '2', 'boost': 2}}"
+        expected_fuzzy_match_secondary_translation_string = get_fuzzy_query(
+            "secondary_translation_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_SECONDARY_BOOST,
         )
 
         # Other fields
-        expected_exact_match_other_language_string = (
-            "'match_phrase': {'other_language_search_fields': {'query': "
-            "'test', 'slop': 3, 'boost': 1.5}}"
+        expected_exact_match_other_language_string = get_match_query(
+            "other_language_search_fields",
+            expected_search_term,
+            EXACT_MATCH_OTHER_BOOST,
         )
-        expected_fuzzy_match_other_language_string = (
-            "'fuzzy': {'other_language_search_fields': {'value': "
-            "'test', 'fuzziness': '2', 'boost': 1.0}}"
+        expected_fuzzy_match_other_language_string = get_fuzzy_query(
+            "other_language_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_OTHER_BOOST,
         )
-        expected_exact_match_other_translation_string = (
-            "'match_phrase': {'other_translation_search_fields': "
-            "{'query': 'test', 'slop': 3, 'boost': 1.5}}"
+        expected_exact_match_other_translation_string = get_match_query(
+            "other_translation_search_fields",
+            expected_search_term,
+            EXACT_MATCH_OTHER_BOOST,
         )
-        expected_fuzzy_match_other_translation_string = (
-            "'fuzzy': {'other_translation_search_fields': "
-            "{'value': 'test', 'fuzziness': '2', 'boost': 1.0}}"
+        expected_fuzzy_match_other_translation_string = get_fuzzy_query(
+            "other_translation_search_fields",
+            expected_search_term,
+            FUZZY_MATCH_OTHER_BOOST,
         )
 
         assert expected_exact_match_primary_language_string in str(search_query)
@@ -103,78 +135,54 @@ class TestQueryParams:
         search_query = get_search_query(q=input_str)
         search_query = search_query.to_dict()
 
-        expected_exact_match_primary_language_string = (
-            "'match_phrase': {'primary_language_search_fields': {'query': '"
-            + expected_str
-            + "', "
-            "'slop': 3, 'boost': 5}}"
+        # Primary fields
+        expected_exact_match_primary_language_string = get_match_query(
+            "primary_language_search_fields", expected_str, EXACT_MATCH_PRIMARY_BOOST
         )
-        expected_fuzzy_match_primary_language_string = (
-            "'fuzzy': {'primary_language_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 3}}"
+        expected_fuzzy_match_primary_language_string = get_fuzzy_query(
+            "primary_language_search_fields", expected_str, FUZZY_MATCH_PRIMARY_BOOST
         )
-        expected_exact_match_primary_translation_string = (
-            "'match_phrase': {'primary_translation_search_fields': {'query': '"
-            + expected_str
-            + "', 'slop': 3, 'boost': 5}}"
+        expected_exact_match_primary_translation_string = get_match_query(
+            "primary_translation_search_fields", expected_str, EXACT_MATCH_PRIMARY_BOOST
         )
-        expected_fuzzy_match_primary_translation_string = (
-            "'fuzzy': {'primary_translation_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 3}}"
+        expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
+            "primary_translation_search_fields", expected_str, FUZZY_MATCH_PRIMARY_BOOST
         )
 
         # Secondary fields
-        expected_exact_match_secondary_language_string = (
-            "'match_phrase': {'secondary_language_search_fields': {'query': '"
-            + expected_str
-            + "', 'slop': 3, 'boost': 4}}"
+        expected_exact_match_secondary_language_string = get_match_query(
+            "secondary_language_search_fields",
+            expected_str,
+            EXACT_MATCH_SECONDARY_BOOST,
         )
-        expected_fuzzy_match_secondary_language_string = (
-            "'fuzzy': {'secondary_language_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 2}}"
+        expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
+            "secondary_language_search_fields",
+            expected_str,
+            FUZZY_MATCH_SECONDARY_BOOST,
         )
-        expected_exact_match_secondary_translation_string = (
-            "'match_phrase': {'secondary_translation_search_fields': {'query': '"
-            + expected_str
-            + "', 'slop': 3, 'boost': 4}}"
+        expected_exact_match_secondary_translation_string = get_match_query(
+            "secondary_translation_search_fields",
+            expected_str,
+            EXACT_MATCH_SECONDARY_BOOST,
         )
-        expected_fuzzy_match_secondary_translation_string = (
-            "'fuzzy': {'secondary_translation_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 2}}"
+        expected_fuzzy_match_secondary_translation_string = get_fuzzy_query(
+            "secondary_translation_search_fields",
+            expected_str,
+            FUZZY_MATCH_SECONDARY_BOOST,
         )
 
         # Other fields
-        expected_exact_match_other_language_string = (
-            "'match_phrase': {'other_language_search_fields': {'query': '"
-            + expected_str
-            + "', "
-            "'slop': 3, 'boost': 1.5}}"
+        expected_exact_match_other_language_string = get_match_query(
+            "other_language_search_fields", expected_str, EXACT_MATCH_OTHER_BOOST
         )
-        expected_fuzzy_match_other_language_string = (
-            "'fuzzy': {'other_language_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 1.0}}"
+        expected_fuzzy_match_other_language_string = get_fuzzy_query(
+            "other_language_search_fields", expected_str, FUZZY_MATCH_OTHER_BOOST
         )
-        expected_exact_match_other_translation_string = (
-            "'match_phrase': {'other_translation_search_fields': {'query': '"
-            + expected_str
-            + "', "
-            "'slop': 3, 'boost': 1.5}}"
+        expected_exact_match_other_translation_string = get_match_query(
+            "other_translation_search_fields", expected_str, EXACT_MATCH_OTHER_BOOST
         )
-        expected_fuzzy_match_other_translation_string = (
-            "'fuzzy': {'other_translation_search_fields': {'value': '"
-            + expected_str
-            + "', "
-            "'fuzziness': '2', 'boost': 1.0}}"
+        expected_fuzzy_match_other_translation_string = get_fuzzy_query(
+            "other_translation_search_fields", expected_str, FUZZY_MATCH_OTHER_BOOST
         )
 
         assert expected_exact_match_primary_language_string in str(search_query)
@@ -192,61 +200,136 @@ class TestQueryParams:
         assert expected_exact_match_other_translation_string in str(search_query)
         assert expected_fuzzy_match_other_translation_string in str(search_query)
 
+    def test_search_term_length_gt_threshold(self):
+        # Testing for search term having length more than the defined fuzzy search cutoff
+        search_term = generate_string(FUZZY_SEARCH_CUTOFF + 5)
+
+        search_query = get_search_query(q=search_term)
+        search_query = search_query.to_dict()
+
+        expected_exact_match_primary_language_string = get_match_query(
+            "primary_language_search_fields", search_term, EXACT_MATCH_PRIMARY_BOOST
+        )
+        expected_fuzzy_match_primary_language_string = get_fuzzy_query(
+            "primary_language_search_fields", search_term, FUZZY_MATCH_PRIMARY_BOOST
+        )
+        expected_exact_match_primary_translation_string = get_match_query(
+            "primary_translation_search_fields", search_term, EXACT_MATCH_PRIMARY_BOOST
+        )
+        expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
+            "primary_translation_search_fields", search_term, FUZZY_MATCH_PRIMARY_BOOST
+        )
+
+        # Secondary fields
+        expected_exact_match_secondary_language_string = get_match_query(
+            "secondary_language_search_fields", search_term, EXACT_MATCH_SECONDARY_BOOST
+        )
+        expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
+            "secondary_language_search_fields", search_term, FUZZY_MATCH_SECONDARY_BOOST
+        )
+        expected_exact_match_secondary_translation_string = get_match_query(
+            "secondary_translation_search_fields",
+            search_term,
+            EXACT_MATCH_SECONDARY_BOOST,
+        )
+        expected_fuzzy_match_secondary_translation_string = get_fuzzy_query(
+            "secondary_translation_search_fields",
+            search_term,
+            FUZZY_MATCH_SECONDARY_BOOST,
+        )
+
+        # Other fields
+        expected_exact_match_other_language_string = get_match_query(
+            "other_language_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
+        )
+        expected_fuzzy_match_other_language_string = get_fuzzy_query(
+            "other_language_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
+        )
+        expected_exact_match_other_translation_string = get_match_query(
+            "other_translation_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
+        )
+        expected_fuzzy_match_other_translation_string = get_fuzzy_query(
+            "other_translation_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
+        )
+
+        assert expected_exact_match_primary_language_string in str(search_query)
+        assert expected_fuzzy_match_primary_language_string not in str(search_query)
+        assert expected_exact_match_primary_translation_string in str(search_query)
+        assert expected_fuzzy_match_primary_translation_string not in str(search_query)
+
+        assert expected_exact_match_secondary_language_string in str(search_query)
+        assert expected_fuzzy_match_secondary_language_string not in str(search_query)
+        assert expected_exact_match_secondary_translation_string in str(search_query)
+        assert expected_fuzzy_match_secondary_translation_string not in str(
+            search_query
+        )
+
+        assert expected_exact_match_other_language_string in str(search_query)
+        assert expected_fuzzy_match_other_language_string not in str(search_query)
+        assert expected_exact_match_other_translation_string in str(search_query)
+        assert expected_fuzzy_match_other_translation_string not in str(search_query)
+
 
 @pytest.mark.django_db
 class TestDomain:
+    search_term = "test_query"
+
     # Primary language fields
-    expected_exact_match_primary_language_string = (
-        "'match_phrase': {'primary_language_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 5}}"
+    expected_exact_match_primary_language_string = get_match_query(
+        "primary_language_search_fields",
+        search_term,
+        EXACT_MATCH_PRIMARY_BOOST,
     )
-    expected_fuzzy_match_primary_language_string = (
-        "'fuzzy': {'primary_language_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 3}}"
+    expected_fuzzy_match_primary_language_string = get_fuzzy_query(
+        "primary_language_search_fields",
+        search_term,
+        FUZZY_MATCH_PRIMARY_BOOST,
     )
-    expected_exact_match_primary_translation_string = (
-        "'match_phrase': {'primary_translation_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 5}}"
+    expected_exact_match_primary_translation_string = get_match_query(
+        "primary_translation_search_fields",
+        search_term,
+        EXACT_MATCH_PRIMARY_BOOST,
     )
-    expected_fuzzy_match_primary_translation_string = (
-        "'fuzzy': {'primary_translation_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 3}}"
+    expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
+        "primary_translation_search_fields",
+        search_term,
+        FUZZY_MATCH_PRIMARY_BOOST,
     )
 
     # Secondary fields
-    expected_exact_match_secondary_language_string = (
-        "'match_phrase': {'secondary_language_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 4}}"
+    expected_exact_match_secondary_language_string = get_match_query(
+        "secondary_language_search_fields",
+        search_term,
+        EXACT_MATCH_SECONDARY_BOOST,
     )
-    expected_fuzzy_match_secondary_language_string = (
-        "'fuzzy': {'secondary_language_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 2}}"
+    expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
+        "secondary_language_search_fields",
+        search_term,
+        FUZZY_MATCH_SECONDARY_BOOST,
     )
-    expected_exact_match_secondary_translation_string = (
-        "'match_phrase': {'secondary_translation_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 4}}"
+    expected_exact_match_secondary_translation_string = get_match_query(
+        "secondary_translation_search_fields",
+        search_term,
+        EXACT_MATCH_SECONDARY_BOOST,
     )
-    expected_fuzzy_match_secondary_translation_string = (
-        "'fuzzy': {'secondary_translation_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 2}}"
+    expected_fuzzy_match_secondary_translation_string = get_fuzzy_query(
+        "secondary_translation_search_fields",
+        search_term,
+        FUZZY_MATCH_SECONDARY_BOOST,
     )
 
     # Other fields
-    expected_exact_match_other_language_string = (
-        "'match_phrase': {'other_language_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 1.5}}"
+    expected_exact_match_other_language_string = get_match_query(
+        "other_language_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
     )
-    expected_fuzzy_match_other_language_string = (
-        "'fuzzy': {'other_language_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 1.0}}"
+    expected_fuzzy_match_other_language_string = get_fuzzy_query(
+        "other_language_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
     )
-    expected_exact_match_other_translation_string = (
-        "'match_phrase': {'other_translation_search_fields': "
-        "{'query': 'test_query', 'slop': 3, 'boost': 1.5}}"
+    expected_exact_match_other_translation_string = get_match_query(
+        "other_translation_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
     )
-    expected_fuzzy_match_other_translation_string = (
-        "'fuzzy': {'other_translation_search_fields': "
-        "{'value': 'test_query', 'fuzziness': '2', 'boost': 1.0}}"
+    expected_fuzzy_match_other_translation_string = get_fuzzy_query(
+        "other_translation_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
     )
 
     def test_english(self):

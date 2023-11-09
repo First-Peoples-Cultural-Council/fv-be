@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiResponse,
@@ -14,13 +16,15 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models import Membership
+from backend.models import Membership, Site
 from backend.models.constants import Role
 from backend.models.join_request import JoinRequest, JoinRequestStatus
 from backend.serializers import fields
 from backend.serializers.join_request_serializers import JoinRequestDetailSerializer
+from backend.tasks.send_email_tasks import send_email_task
 from backend.views import doc_strings
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_site_url_from_appjson
 
 
 @extend_schema_view(
@@ -143,6 +147,23 @@ class JoinRequestViewSet(
             "site", "site__language", "created_by", "last_modified_by", "user"
         )
 
+    def get_validated_site(self):
+        site_slug = self.get_site_slug()
+        site = Site.objects.filter(slug=site_slug)
+
+        if len(site) == 0:
+            raise Http404
+
+        # Check permissions on the site first, skip if the action is create
+        if self.action != "create":
+            perm = Site.get_perm("view")
+            if self.request.user.has_perm(perm, site[0]):
+                return site
+            else:
+                raise PermissionDenied
+        else:
+            return site
+
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
         join_request = self.get_object()
@@ -162,7 +183,20 @@ class JoinRequestViewSet(
             join_request, JoinRequestStatus.REJECTED, request.user
         )
 
-        # notify user here, see FW-5077
+        subject = (
+            f"Update on your request to join {join_request.site.title} on FirstVoices"
+        )
+        message = (
+            f"Thank you for requesting to join the {join_request.site.title} site on FirstVoices. "
+            "A community administrator has reviewed your request. At this time, your request to view private content "
+            "has not been approved. The site may not be accepting members at this time.\n\n"
+            "Your request may be re-reviewed at a later date.\n\n"
+            "All decisions regarding requests to view private content are made solely by community-based language "
+            "administrators.\n\n"
+            "If you think this may be a technical error, you can contact FirstVoices staff at "
+            "hello@firstvoices.com.\n\n"
+        )
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -196,7 +230,23 @@ class JoinRequestViewSet(
                 join_request, JoinRequestStatus.APPROVED, request.user
             )
 
-        # notify user here, see FW-5077
+        subject = f"Welcome to the {join_request.site.title} FirstVoices site!"
+        message = (
+            f"Thank you for requesting to join the {join_request.site.title} site on FirstVoices.\n"
+            "A community administrator has approved your request.\n\n"
+            f"You are now approved on the {join_request.site.title} site with the role: {role.label}\n"
+            ""
+        )
+        base_url = get_site_url_from_appjson(join_request.site)
+        if base_url:
+            message = (
+                message
+                + f"Visit the {join_request.site.title} site here: {base_url}\n\n"
+            )
+        else:
+            message = message + "\n"
+
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)

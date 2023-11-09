@@ -1,10 +1,13 @@
 from elasticsearch_dsl import Keyword, Text
 
-from backend.search.documents.base_document import BaseDocument
+from backend.search.documents.base_document import (
+    BaseDocument,
+    MediaReportingDocumentMixin,
+)
 from backend.search.utils.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 
 
-class DictionaryEntryDocument(BaseDocument):
+class DictionaryEntryDocument(MediaReportingDocumentMixin, BaseDocument):
     # text search fields
     title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
     translation = Text(copy_to="primary_translation_search_fields")

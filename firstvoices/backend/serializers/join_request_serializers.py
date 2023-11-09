@@ -1,5 +1,8 @@
+import logging
+
 from rest_framework import serializers
 
+from backend.models.constants import Role
 from backend.models.join_request import (
     JoinRequest,
     JoinRequestReason,
@@ -13,6 +16,8 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.user_serializers import UserDetailSerializer
+from backend.tasks.send_email_tasks import send_email_task
+from backend.views.utils import get_site_url_from_appjson
 
 
 class JoinRequestReasonSerializer(serializers.ModelSerializer):
@@ -56,6 +61,8 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
                     join_request=created, reason=value["reason"]
                 )
 
+        self.notify_language_admins(created, reason_values)
+
         return created
 
     def validate(self, attrs):
@@ -73,6 +80,42 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
                 "A join request must have at least one reason."
             )
         return attrs
+
+    @staticmethod
+    def notify_language_admins(created, reason_values):
+        logger = logging.getLogger(__name__)
+        site_language_admin_email_list = list(
+            created.site.membership_set.filter(role=Role.LANGUAGE_ADMIN).values_list(
+                "user__email", flat=True
+            )
+        )
+        if len(site_language_admin_email_list) == 0:
+            logger.warning(
+                f"No language admins found for site {created.site.slug}. Join request email will not be sent."
+            )
+        else:
+            subject = f"FirstVoices: New membership request for {created.site.title}"
+            message = (
+                f"You have received a new membership request to join the {created.site.title} language site.\n\n"
+                f"User: {created.user}\n"
+                f"Reason(s) for joining:\n"
+                f"{', '.join([value['reason'].label for value in reason_values])}\n\n"
+                f"Message:\n"
+                f"{created.reason_note}\n\n"
+                f"To take action on this request, please login to FirstVoices and view your pending memberships.\n"
+            )
+            base_url = get_site_url_from_appjson(created.site)
+            if base_url:
+                message = (
+                    message
+                    + f"Visit the {created.site.title} dashboard here: {base_url}dashboard/\n\n"
+                )
+            else:
+                message = message + "\n"
+
+            send_email_task.apply_async(
+                (subject, message, site_language_admin_email_list)
+            )
 
     class Meta:
         model = JoinRequest
