@@ -259,12 +259,6 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
     API_LIST_VIEW = "api:site-search-list"
     API_DETAIL_VIEW = "api:site-search-detail"
 
-    @pytest.fixture
-    def mock_search_query_execute(self, mocker):
-        mock_execute = mocker.patch.object(Search, "execute", new_callable=MagicMock)
-
-        return mock_execute
-
     def test_invalid_category_id(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
@@ -278,19 +272,18 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
 
         assert response_data == []
 
-    def test_starts_with_char_param(self, mocker):
-        mock_get_search_query = mocker.patch(
-            "backend.search.query_builder.get_search_query", new_callable=MagicMock
-        )
-        mock_get_search_query.return_value = Search()
-
+    def test_starts_with_char_param(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
         )
         self.client.force_authenticate(user=user)
 
-        self.client.get(
-            self.get_list_endpoint(site_slug=site.slug) + "?startsWithChar=x"
-        )
+        with patch(
+            "backend.views.search.base_search_views.get_search_query",
+            return_value=Search(),
+        ) as mock_get_search_query:
+            self.client.get(
+                self.get_list_endpoint(site_slug=site.slug) + "?startsWithChar=x"
+            )
 
-        assert mock_get_search_query.call_args.kwargs["starts_with_char"] == "x"
+            assert mock_get_search_query.call_args.kwargs["starts_with_char"] == "x"
