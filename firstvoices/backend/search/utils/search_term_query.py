@@ -211,7 +211,9 @@ def get_search_term_query(search_term, domain):
     )
 
     if len(search_term) >= FUZZY_SEARCH_CUTOFF:
-        # Use only exact field matching, no fuzzy matching
+        # Use only exact field matching and no fuzzy matching to avoid excessive computation for large queries
+        # and to prevent Elasticsearch from encountering exceptions due to generating too many states
+        # during fuzzy search.
         subqueries += subquery_domains.get(domain + "_exact", [])
     else:
         subqueries += subquery_domains.get(domain, [])
