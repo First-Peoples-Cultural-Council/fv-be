@@ -278,37 +278,19 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
 
         assert response_data == []
 
-    def test_starts_with_char_param(self, mock_search_query_execute):
+    def test_starts_with_char_param(self, mocker):
+        mock_get_search_query = mocker.patch(
+            "backend.search.query_builder.get_search_query", new_callable=MagicMock
+        )
+        mock_get_search_query.return_value = Search()
+
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
         )
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, type=TypeOfDictionaryEntry.WORD
-        )
         self.client.force_authenticate(user=user)
 
-        mock_es_results = {
-            "hits": {
-                "hits": [
-                    {
-                        "_index": "dictionary_entries_2023_06_23_06_11_22",
-                        "_id": "QcHg5ogB3WiEloeO9rdy",
-                        "_score": 1.0,
-                        "_source": {
-                            "document_id": entry.id,
-                            "site_id": site.id,
-                            "title": "xyz",
-                        },
-                    }
-                ],
-                "total": {"value": 1, "relation": "eq"},
-            }
-        }
-
-        mock_search_query_execute.return_value = mock_es_results
-
-        response = self.client.get(
+        self.client.get(
             self.get_list_endpoint(site_slug=site.slug) + "?startsWithChar=x"
         )
 
-        assert "startsWithChar=x" in response.request["QUERY_STRING"]
+        assert mock_get_search_query.call_args.kwargs["starts_with_char"] == "x"
