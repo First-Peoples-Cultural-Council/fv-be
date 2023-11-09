@@ -87,3 +87,23 @@ class TestJoinRequestImport:
         assert not result.has_validation_errors()
         assert result.totals["skip"] == len(data)
         assert JoinRequest.objects.count() == 0
+
+    @pytest.mark.django_db
+    def test_skip_existing_join_requests(self):
+        """Import JoinRequest object with existing join request, should skip row"""
+        site = factories.SiteFactory.create()
+        user = factories.UserFactory.create()
+        factories.JoinRequestFactory.create(site=site, user=user)
+        data = [
+            f"{site.id},2021-04-09 22:52:17.460,{user.email},2021-04-09 22:52:17.460,{user.email},"
+            f"{site.id},"
+            f'{user.email},reason note,PENDING,"LANGUAGE_LEARNER"',
+        ]
+        table = self.build_table(data)
+
+        result = JoinRequestResource().import_data(dataset=table)
+
+        assert not result.has_errors()
+        assert not result.has_validation_errors()
+        assert result.totals["skip"] == len(data)
+        assert JoinRequest.objects.count() == 1

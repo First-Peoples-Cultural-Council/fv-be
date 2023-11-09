@@ -80,3 +80,12 @@ class MembershipResource(SiteContentResource):
 
     class Meta:
         model = Membership
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        """Skip memberships that already exist."""
+        membership_exists = Membership.objects.filter(
+            user=instance.user, site=instance.site
+        ).exists()
+        if membership_exists:
+            return True
+        return super().skip_row(instance, original, row, import_validation_errors)
