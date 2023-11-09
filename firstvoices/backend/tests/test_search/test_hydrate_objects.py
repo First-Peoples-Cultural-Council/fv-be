@@ -10,6 +10,7 @@ from backend.tests.factories import (
     AudioSpeakerFactory,
     DictionaryEntryFactory,
     ImageFactory,
+    ImageFileFactory,
     PersonFactory,
     SiteFactory,
     SongFactory,
@@ -337,11 +338,12 @@ class TestHydrateObjects:
     @pytest.mark.parametrize("media_type", ["image", "video"])
     def test_image_video_hydration(self, media_type):
         site = SiteFactory(visibility=Visibility.PUBLIC)
+        small = ImageFileFactory.create(site=site)
 
         if media_type == "video":
-            entry = VideoFactory.create(site=site, description="test desc")
+            entry = VideoFactory.create(site=site, description="test desc", small=small)
         else:
-            entry = ImageFactory.create(site=site, description="test desc")
+            entry = ImageFactory.create(site=site, description="test desc", small=small)
 
         # Only adding the fields required for hydrate_objects method to work,
         # the rest should be fetched from the db
