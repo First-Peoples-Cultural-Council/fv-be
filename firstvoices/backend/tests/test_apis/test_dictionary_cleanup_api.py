@@ -108,6 +108,9 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         assert response.status_code == 202
         assert response_data == self.SUCCESS_MESSAGE
 
+    @pytest.mark.skip(
+        reason="This test now checks async code which can be done in a separate integration test suite."
+    )
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_e2e(
         self,
@@ -191,6 +194,9 @@ class TestDictionaryCleanup(TestDictionaryCleanupPreview):
         )
         return response
 
+    @pytest.mark.skip(
+        reason="This test now checks async code which can be done in a separate integration test suite."
+    )
     @pytest.mark.django_db(transaction=True, serialized_rollback=True)
     def test_recalculate_e2e(
         self,
