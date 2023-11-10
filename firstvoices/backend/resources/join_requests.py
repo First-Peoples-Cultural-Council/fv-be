@@ -61,7 +61,11 @@ class JoinRequestResource(SiteContentResource):
 
     def after_import_row(self, row, row_result, row_number=None, **kwargs):
         # add join request reasons
-        if JoinRequest.objects.filter(id=row["id"]).exists() and row["reasons"] != "":
+        if (
+            row_result.import_type != RowResult.IMPORT_TYPE_SKIP
+            and JoinRequest.objects.filter(id=row["id"]).exists()
+            and row["reasons"] != ""
+        ):
             join_request = JoinRequest.objects.get(id=row["id"])
             reasons = row["reasons"].strip().split(",")
 
@@ -72,3 +76,12 @@ class JoinRequestResource(SiteContentResource):
                     reason=JoinRequestReasonChoices[reason].value,
                 )
                 join_request_reason.save()
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        """Skip join requests that already exist."""
+        join_request_exists = JoinRequest.objects.filter(
+            user=instance.user, site=instance.site
+        ).exists()
+        if join_request_exists:
+            return True
+        return super().skip_row(instance, original, row, import_validation_errors)
