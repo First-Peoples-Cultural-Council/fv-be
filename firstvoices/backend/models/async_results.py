@@ -28,4 +28,4 @@ class CustomOrderRecalculationResult(BaseSiteContentModel):
     is_preview = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.site.title + " - " + str(self.date)
+        return self.site.title + " - " + str(self.latest_recalculation_date)

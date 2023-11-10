@@ -22,16 +22,26 @@ class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
     @staticmethod
     @extend_schema_field(OpenApiTypes.STR)
     def get_latest_recalculation_result(obj):
+        if (
+            hasattr(obj, "latest_recalculation_result")
+            and obj.latest_recalculation_result
+        ):
+            unknown_character_count = obj.latest_recalculation_result.get(
+                "unknown_character_count", 0
+            )
+            updated_entries = obj.latest_recalculation_result["updated_entries"]
+        else:
+            unknown_character_count = 0
+            updated_entries = []
+
         ordered_result = OrderedDict(
             {
-                "unknown_character_count": obj.latest_recalculation_result[
-                    "unknown_character_count"
-                ],
+                "unknown_character_count": unknown_character_count,
                 "updated_entries": [],
             }
         )
 
-        for entry in obj.latest_recalculation_result["updated_entries"]:
+        for entry in updated_entries:
             ordered_entry = OrderedDict(
                 {
                     "title": entry["title"],

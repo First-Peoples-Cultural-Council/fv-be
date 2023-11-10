@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 
@@ -67,21 +68,26 @@ class CustomOrderRecalculateView(
 
         # Call the recalculation task
         try:
-            recalculation_results = recalculate_custom_order.apply_async((site_slug,))
-
-            # Delete any previous results
-            CustomOrderRecalculationResult.objects.filter(
+            # Check if preview task for the same site is ongoing
+            previous_tasks = CustomOrderRecalculationResult.objects.filter(
                 site=site[0], is_preview=False
-            ).delete()
-
-            # Save the result to the database
-            CustomOrderRecalculationResult.objects.create(
-                site=site[0],
-                latest_recalculation_result=recalculation_results.get(timeout=360),
-                task_id=recalculation_results.task_id,
-                is_preview=False,
             )
+            running_tasks = 0
+            if len(previous_tasks) > 0:
+                for task in previous_tasks:
+                    status = AsyncResult(task.task_id).status
+                    if status == "PENDING":
+                        running_tasks += 1
 
+            if running_tasks > 0:
+                return Response(
+                    {
+                        "message": "Recalculation is already running. Please use retrieve API to verify status."
+                    },
+                    status=202,
+                )
+
+            recalculate_custom_order.apply_async((site_slug,))
             return Response({"message": "Recalculation has been queued."}, status=202)
 
         except recalculate_custom_order_preview.OperationalError:
@@ -139,23 +145,26 @@ class CustomOrderRecalculatePreviewView(
 
         # Call the recalculation preview task
         try:
-            recalculation_results = recalculate_custom_order_preview.apply_async(
-                (site_slug,)
-            )
-
-            # Delete any previous preview results
-            CustomOrderRecalculationResult.objects.filter(
+            # Check if preview task for the same site is ongoing
+            previous_tasks = CustomOrderRecalculationResult.objects.filter(
                 site=site[0], is_preview=True
-            ).delete()
-
-            # Save the result to the database
-            CustomOrderRecalculationResult.objects.create(
-                site=site[0],
-                latest_recalculation_result=recalculation_results.get(timeout=360),
-                task_id=recalculation_results.task_id,
-                is_preview=True,
             )
+            running_tasks = 0
+            if len(previous_tasks) > 0:
+                for task in previous_tasks:
+                    status = AsyncResult(task.task_id).status
+                    if status == "PENDING":
+                        running_tasks += 1
 
+            if running_tasks > 0:
+                return Response(
+                    {
+                        "message": "Cleanup preview is already running. Please use retrieve API to verify status."
+                    },
+                    status=202,
+                )
+
+            recalculate_custom_order_preview.apply_async((site_slug,))
             return Response(
                 {"message": "Recalculation preview has been queued."}, status=202
             )

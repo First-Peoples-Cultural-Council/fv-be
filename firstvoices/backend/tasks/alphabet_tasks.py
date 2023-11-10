@@ -1,6 +1,11 @@
-from celery import shared_task
+from celery import current_task, shared_task
 
-from backend.models import Alphabet, DictionaryEntry, Site
+from backend.models import (
+    Alphabet,
+    CustomOrderRecalculationResult,
+    DictionaryEntry,
+    Site,
+)
 
 
 @shared_task
@@ -13,10 +18,20 @@ def recalculate_custom_order_preview(site_slug: str):
     site = Site.objects.get(slug=site_slug)
     alphabet = Alphabet.objects.get(site=site)
     preview = {}
+    task_id = current_task.request.id
 
     # First, get the changes in custom order and title for every entry, and store entries with unknown characters
     updated_entries = []
     unknown_character_count = {}
+
+    # Saving an empty row to depict that the task has started
+    CustomOrderRecalculationResult.objects.create(
+        site=site,
+        latest_recalculation_result=preview,
+        task_id=task_id,
+        is_preview=True,
+    )
+
     for entry in DictionaryEntry.objects.filter(site=site):
         original_title = entry.title
         original_custom_order = entry.custom_order
@@ -46,6 +61,17 @@ def recalculate_custom_order_preview(site_slug: str):
     preview["unknown_character_count"] = unknown_character_count
     preview["updated_entries"] = updated_entries
 
+    # Delete any previous preview results
+    CustomOrderRecalculationResult.objects.filter(site=site, is_preview=True).delete()
+
+    # Save the result to the database
+    CustomOrderRecalculationResult.objects.create(
+        site=site,
+        latest_recalculation_result=preview,
+        task_id=task_id,
+        is_preview=True,
+    )
+
     return preview
 
 
@@ -59,9 +85,18 @@ def recalculate_custom_order(site_slug: str):
     site = Site.objects.get(slug=site_slug)
     alphabet = Alphabet.objects.get(site=site)
     results = {}
+    task_id = current_task.request.id
 
     updated_entries = []
     unknown_character_count = {}
+
+    # Saving an empty row to depict that the task has started
+    CustomOrderRecalculationResult.objects.create(
+        site=site,
+        latest_recalculation_result=results,
+        task_id=task_id,
+        is_preview=False,
+    )
 
     # Return the results of the recalculation i.e. the changes in custom order and title for every entry
     for entry in DictionaryEntry.objects.filter(site=site):
@@ -97,6 +132,17 @@ def recalculate_custom_order(site_slug: str):
 
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries
+
+    # Delete any previous results
+    CustomOrderRecalculationResult.objects.filter(site=site, is_preview=False).delete()
+
+    # Save the result to the database
+    CustomOrderRecalculationResult.objects.create(
+        site=site,
+        latest_recalculation_result=results,
+        task_id=task_id,
+        is_preview=False,
+    )
 
     return results
 
