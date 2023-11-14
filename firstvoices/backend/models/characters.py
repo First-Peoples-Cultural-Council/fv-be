@@ -5,6 +5,7 @@ import yaml
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.utils import IntegrityError
+from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
@@ -239,21 +240,23 @@ class Alphabet(BaseSiteContentModel):
     # JSON representation of a g2p mapping from confusable characters to canonical characters
     input_to_canonical_map = models.JSONField(default=list)
 
-    @property
+    @cached_property
     def base_characters(self):
         """
         Characters for the site in sort order.
         """
         return Character.objects.filter(site=self.site).order_by("sort_order")
 
-    @property
+    @cached_property
     def variant_characters(self):
         """
         All variant characters for the site.
         """
-        return CharacterVariant.objects.filter(site=self.site)
+        return CharacterVariant.objects.filter(site=self.site).select_related(
+            "base_character"
+        )
 
-    @property
+    @cached_property
     def ignorable_characters(self):
         """
         Ignorable characters for the site.
