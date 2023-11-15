@@ -73,7 +73,8 @@ def get_or_create_user_for_token(user_token, auth):
         except KeyError as e:
             # Configuration problem: name values not available
             logger.error(
-                f"Identity Token does not contain required name fields. Error:  {e}"
+                f"Identity Token does not contain required name fields. Error:  [{e}] "
+                + f"Available fields: [{user_info.keys()}]"
             )
 
         return user
@@ -102,6 +103,13 @@ def get_or_create_user_for_token(user_token, auth):
             except IntegrityError:
                 raise exceptions.AuthenticationFailed(
                     "Can't add user account because that email is already in use."
+                )
+
+            except KeyError as e:
+                # Configuration problem: name values not available
+                logger.error(
+                    f"Identity Token does not contain required name fields. Error:  [{e}] "
+                    + f"Available fields: [{user_info.keys()}]"
                 )
 
 
