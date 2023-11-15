@@ -85,19 +85,27 @@ def get_or_create_user_for_token(user_token, auth):
             user_info = retrieve_user_info_for_token(auth)
             user = user_model.objects.get(sub=None, email=user_info["email"])
             user.sub = sub
-            user.first_name = user_info["first_name"]
-            user.last_name = user_info["last_name"]
+            user.save()
+
+            user.first_name = user_info["given_name"]
+            user.last_name = user_info["family_name"]
             user.save()
             return user
 
         except user_model.DoesNotExist:
             # try to add new user
             try:
+                first_name = (
+                    user_info["given_name"] if "given_name" in user_info else ""
+                )
+                last_name = (
+                    user_info["family_name"] if "family_name" in user_info else ""
+                )
                 return user_model.objects.create(
                     sub=sub,
                     email=user_info["email"],
-                    first_name=user_info["first_name"],
-                    last_name=user_info["last_name"],
+                    first_name=first_name,
+                    last_name=last_name,
                 )
 
             except IntegrityError:

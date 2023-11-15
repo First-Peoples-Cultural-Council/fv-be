@@ -25,8 +25,8 @@ def mock_userinfo_response(user_email, first_name="Firsty", last_name="Lasty"):
     type(response).status_code = PropertyMock(return_value=200)
     response.json.return_value = {
         "email": user_email,
-        "first_name": first_name,
-        "last_name": last_name,
+        "given_name": first_name,
+        "family_name": last_name,
     }
     return response
 
