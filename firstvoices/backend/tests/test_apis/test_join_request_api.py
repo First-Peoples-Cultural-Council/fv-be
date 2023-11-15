@@ -7,7 +7,7 @@ from rest_framework.reverse import reverse
 
 from backend.models import JoinRequest, Membership
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.join_request import JoinRequestReason, JoinRequestStatus
+from backend.models.join_request import JoinRequestReasonChoices, JoinRequestStatus
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
@@ -41,13 +41,13 @@ class TestJoinRequestEndpoints(
     model = JoinRequest
 
     def create_minimal_instance(self, site, visibility=None):
-        request = factories.JoinRequestFactory(
+        join_request = factories.JoinRequestFactory(
             site=site,
             status=JoinRequestStatus.PENDING,
             reason_note=self.REASON_NOTE,
         )
-        factories.JoinRequestReasonFactory.create(join_request=request)
-        return request
+        factories.JoinRequestReasonFactory.create(join_request=join_request)
+        return join_request
 
     def get_expected_response(self, instance, site):
         return {
@@ -94,10 +94,7 @@ class TestJoinRequestEndpoints(
     def assert_updated_instance(self, expected_data, actual_instance):
         assert actual_instance.user.email == expected_data["user"]
         assert actual_instance.get_status_display().lower() == expected_data["status"]
-        assert actual_instance.reason_note == expected_data["reason_note"]
-
-        reasons = JoinRequestReason.objects.filter(join_request=actual_instance)
-        assert len(reasons) == len(expected_data["reasons"])
+        self.assert_reason_fields(expected_data, actual_instance)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["reasons"][0] == expected_data["reasons"][0]
@@ -108,7 +105,14 @@ class TestJoinRequestEndpoints(
 
     def assert_created_instance(self, pk, data):
         instance = JoinRequest.objects.get(pk=pk)
-        return self.get_expected_response(instance, instance.site)
+        self.assert_reason_fields(data, instance)
+
+    def assert_reason_fields(self, data, instance):
+        assert instance.reason_note == data["reason_note"]
+        assert instance.reasons_set.count() == len(data["reasons"])
+        expected_reason_names = [x["reason"].upper() for x in data["reasons"]]
+        for reason in instance.reasons_set.all():
+            assert JoinRequestReasonChoices(reason.reason).name in expected_reason_names
 
     def assert_created_response(self, expected_data, actual_response):
         self.assert_update_response(expected_data, actual_response)
