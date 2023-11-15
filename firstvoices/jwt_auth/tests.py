@@ -128,23 +128,12 @@ class TestGetOrCreateUserForToken:
         expected_first_name = "Firstaline"
         expected_last_name = "Lasterton"
 
-        with patch(
-            request,
-            return_value=mock_userinfo_response(
-                expected_email, expected_first_name, expected_last_name
-            ),
-        ):
-            token = {"sub": sub}
-            found_user = authentication.get_or_create_user_for_token(token, None)
+        self.authenticate_and_assert_user(
+            expected_email, expected_first_name, expected_last_name, sub
+        )
 
-            assert found_user.id is not None
-            assert found_user.sub == sub
-            assert found_user.email == expected_email
-            assert found_user.first_name == expected_first_name
-            assert found_user.last_name == expected_last_name
-
-            new_user = User.objects.filter(sub=sub)
-            assert new_user.count() == 1
+        new_user = User.objects.filter(sub=sub)
+        assert new_user.count() == 1
 
     @pytest.mark.django_db
     def test_unclaimed_user(self):
@@ -156,22 +145,12 @@ class TestGetOrCreateUserForToken:
         # unclaimed user has email only
         UserFactory.create(sub=None, email=email, first_name="", last_name="")
 
-        with patch(
-            request,
-            return_value=mock_userinfo_response(
-                email, expected_first_name, expected_last_name
-            ),
-        ):
-            token = {"sub": sub}
-            found_user = authentication.get_or_create_user_for_token(token, None)
+        self.authenticate_and_assert_user(
+            email, expected_first_name, expected_last_name, sub
+        )
 
-            assert found_user.email == email
-            assert found_user.sub == sub
-            assert found_user.first_name == expected_first_name
-            assert found_user.last_name == expected_last_name
-
-            claimed_user = User.objects.filter(email=email, sub=sub)
-            assert claimed_user.count() == 1
+        claimed_user = User.objects.filter(email=email, sub=sub)
+        assert claimed_user.count() == 1
 
     @pytest.mark.django_db
     def test_already_claimed_user(self):
@@ -195,7 +174,7 @@ class TestGetOrCreateUserForToken:
                 authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
-    def test_user_with_no_names(self):
+    def test_claimed_user_with_no_names(self):
         sub = "123_new_user"
         email = f"{datetime.timestamp(datetime.now())}@email.email"
         expected_first_name = "Firstiful"
@@ -204,6 +183,38 @@ class TestGetOrCreateUserForToken:
         # existing user has no names in db
         UserFactory.create(sub=sub, email=email, first_name="", last_name="")
 
+        self.authenticate_and_assert_user(
+            email, expected_first_name, expected_last_name, sub
+        )
+
+    @pytest.mark.django_db
+    def test_unclaimed_user_with_no_names(self):
+        sub = "123_new_user"
+        email = f"{datetime.timestamp(datetime.now())}@email.email"
+        expected_first_name = "Firstilene"
+        expected_last_name = "Lasterson"
+
+        # existing user has no names in db
+        UserFactory.create(sub=None, email=email, first_name="", last_name="")
+
+        self.authenticate_and_assert_user(
+            email, expected_first_name, expected_last_name, sub
+        )
+
+    @pytest.mark.django_db
+    def test_new_user_with_no_names(self):
+        sub = "123_new_user"
+        email = f"{datetime.timestamp(datetime.now())}@email.email"
+        expected_first_name = "Firster"
+        expected_last_name = "Lastt"
+
+        self.authenticate_and_assert_user(
+            email, expected_first_name, expected_last_name, sub
+        )
+
+    def authenticate_and_assert_user(
+        self, email, expected_first_name, expected_last_name, sub
+    ):
         with patch(
             request,
             return_value=mock_userinfo_response(
@@ -217,9 +228,6 @@ class TestGetOrCreateUserForToken:
             assert found_user.sub == sub
             assert found_user.first_name == expected_first_name
             assert found_user.last_name == expected_last_name
-
-            claimed_user = User.objects.filter(email=email, sub=sub)
-            assert claimed_user.count() == 1
 
 
 class TestAuthenticate:
