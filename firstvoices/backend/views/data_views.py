@@ -6,7 +6,9 @@ from rest_framework import mixins, serializers, viewsets
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
+from backend.models import Alphabet, Site
 from backend.models.dictionary import DictionaryEntry
+from backend.models.media import Audio, Image
 from backend.serializers.site_data_serializers import SiteDataSerializer
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
@@ -62,25 +64,43 @@ class SitesDataViewSet(
     renderer_classes = [SnakeCaseJSONRenderer]
 
     def get_queryset(self):
-        sites = (
-            self.get_validated_site()
-            .select_related("language")
-            .prefetch_related(
+        site = self.get_validated_site()
+        if site.count() > 0:
+            return site.select_related(
+                "language", "created_by", "last_modified_by"
+            ).prefetch_related(
+                "category_set__parent",
                 Prefetch(
                     "dictionaryentry_set",
-                    queryset=DictionaryEntry.objects.visible(self.request.user),
+                    queryset=DictionaryEntry.objects.all()
+                    .select_related(
+                        "part_of_speech",
+                    )
+                    .prefetch_related(
+                        Prefetch(
+                            "related_audio",
+                            queryset=Audio.objects.all()
+                            .select_related(
+                                "original",
+                            )
+                            .prefetch_related(
+                                "speakers",
+                            ),
+                        ),
+                        Prefetch(
+                            "related_images",
+                            queryset=Image.objects.all().select_related(
+                                "original",
+                            ),
+                        ),
+                        Prefetch("site__alphabet_set", queryset=Alphabet.objects.all()),
+                        "translation_set",
+                        "categories",
+                        "categories__parent",
+                        "acknowledgement_set",
+                        "note_set",
+                    ),
                 ),
-                "category_set",
-                "character_set",
-                "dictionaryentry_set__part_of_speech",
-                "alphabet_set",
-                "dictionaryentry_set__acknowledgement_set",
-                "dictionaryentry_set__note_set",
-                "dictionaryentry_set__categories",
-                "dictionaryentry_set__categories__parent",
-                "dictionaryentry_set__related_audio",
-                "dictionaryentry_set__related_videos",
-                "dictionaryentry_set__related_images",
             )
-        )
-        return sites
+        else:
+            return Site.objects.none()

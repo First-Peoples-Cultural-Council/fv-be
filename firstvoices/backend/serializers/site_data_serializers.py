@@ -6,6 +6,7 @@ from rest_framework import pagination, serializers
 
 from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.media import Audio, Image
 from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
@@ -57,16 +58,12 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
         return config
 
     def get_data(self, site):
-        queryset = (
-            site.dictionaryentry_set
-            if site is not None and site.dictionaryentry_set is not None
-            else None
-        )
+        dict_set = site.dictionaryentry_set
+        queryset = dict_set if site is not None and dict_set is not None else None
         request = self.context.get("request")
         serializer = DictionaryEntryDataSerializer(
             queryset, many=True, context={"request": request}
         )
-
         paginator = DictionaryEntryPaginator()
         paginated_data = paginator.paginate_queryset(
             queryset=serializer.data, request=request
@@ -83,7 +80,11 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
 
     class Meta:
         model = Site
-        fields = ("config", "categories", "data")
+        fields = (
+            "config",
+            "categories",
+            "data",
+        )
 
 
 class AudioDataSerializer(serializers.ModelSerializer):
@@ -92,12 +93,12 @@ class AudioDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_speaker(audio):
-        return (
-            audio.speakers.first().name if audio.speakers.first() is not None else None
-        )
+        speakers = audio.speakers.all()
+        name = speakers[0].name if speakers.count() > 0 else None
+        return name
 
     class Meta:
-        model = DictionaryEntry
+        model = Audio
         fields = (
             "speaker",
             "filename",
@@ -108,7 +109,7 @@ class ImageDataSerializer(serializers.ModelSerializer):
     filename = serializers.FileField(source="original.content")
 
     class Meta:
-        model = DictionaryEntry
+        model = Image
         fields = ("filename",)
 
 
@@ -132,18 +133,18 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_definition(dictionaryentry):
-        if dictionaryentry.translation_set.first() is not None:
-            return dictionaryentry.translation_set.first().text
+        if dictionaryentry.translation_set.count() > 0:
+            return dictionaryentry.translation_set.all()[0].text
         else:
             return None
 
     @staticmethod
     def get_audio(dictionaryentry):
-        return AudioDataSerializer(dictionaryentry.related_audio.all(), many=True).data
+        return AudioDataSerializer(dictionaryentry.related_audio, many=True).data
 
     @staticmethod
     def get_img(dictionaryentry):
-        return ImageDataSerializer(dictionaryentry.related_images.all(), many=True).data
+        return ImageDataSerializer(dictionaryentry.related_images, many=True).data
 
     @staticmethod
     def get_secondary_theme(dictionaryentry):
@@ -155,9 +156,9 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             {
                 **(
                     {
-                        "Reference": dictionaryentry.acknowledgement_set.first().text,
+                        "Reference": dictionaryentry.acknowledgement_set.all()[0].text,
                     }
-                    if dictionaryentry.acknowledgement_set.first() is not None
+                    if dictionaryentry.acknowledgement_set.count() > 0
                     else {}
                 ),
                 **(
@@ -169,9 +170,9 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
                 ),
                 **(
                     {
-                        "Note": dictionaryentry.note_set.first().text,
+                        "Note": dictionaryentry.note_set.all()[0].text,
                     }
-                    if dictionaryentry.note_set.first() is not None
+                    if dictionaryentry.note_set.count() > 0
                     else {}
                 ),
             },
@@ -179,7 +180,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_sort_form(dictionaryentry):
-        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all()[0]
         if alphabet_mapper is not None:
             return alphabet_mapper.get_base_form(dictionaryentry.title)
         else:
@@ -187,7 +188,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_sorting_form(dictionaryentry):
-        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all()[0]
         if alphabet_mapper is not None:
             return alphabet_mapper.get_numerical_sort_form(dictionaryentry.title)
         else:
@@ -213,7 +214,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
 class DictionaryEntryPaginator(pagination.PageNumberPagination):
     django_paginator_class = Paginator
-    page_size = 100
+    page_size = 50
 
     def get_paginated_response(self, data):
         return OrderedDict(
