@@ -67,8 +67,8 @@ def get_or_create_user_for_token(user_token, auth):
         # fill in new name fields if empty
         try:
             user_info = retrieve_user_info_for_token(auth)
-            user.first_name = user_info["first_name"]
-            user.last_name = user_info["last_name"]
+            user.first_name = user_info["given_name"]
+            user.last_name = user_info["family_name"]
             user.save()
         except KeyError as e:
             # Configuration problem: name values not available
