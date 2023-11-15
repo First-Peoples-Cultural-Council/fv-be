@@ -106,9 +106,15 @@ class TestValidSort:
             ("created", ("created", False)),
             ("modified", ("modified", False)),
             ("title", ("title", False)),
+            ("crEaTed", ("created", False)),
+            ("MODIFIED", ("modified", False)),
+            ("TiTlE", ("title", False)),
             ("created_desc", ("created", True)),
             ("modified_desc", ("modified", True)),
             ("title_desc", ("title", True)),
+            ("crEaTed_desC", ("created", True)),
+            ("MODIFIED_DeSc", ("modified", True)),
+            ("TiTlE_DESC", ("title", True)),
         ],
     )
     def test_valid_inputs(self, input_sort, expected_sort):
@@ -118,4 +124,4 @@ class TestValidSort:
     def test_invalid_input(self):
         actual_sort, descending = get_valid_sort("bananas")
         assert actual_sort is None
-        assert descending is False
+        assert descending is None

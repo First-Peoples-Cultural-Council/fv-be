@@ -425,11 +425,7 @@ class BaseSearchViewSet(
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
 
-        sort_direction = (
-            "desc"
-            if search_params["descending"] and search_params["sort"] is not None
-            else "asc"
-        )
+        sort_direction = "desc" if search_params["descending"] else "asc"
         custom_order_sort = {
             "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }

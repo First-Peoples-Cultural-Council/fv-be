@@ -281,7 +281,7 @@ def get_valid_visibility(input_visibility_str):
 
 
 def get_valid_sort(input_sort_by_str):
-    input_string = input_sort_by_str.strip().split("_")
+    input_string = input_sort_by_str.lower().strip().split("_")
 
     descending = len(input_string) > 1 and input_string[1] == "desc"
 
@@ -292,4 +292,4 @@ def get_valid_sort(input_sort_by_str):
     ):
         return input_string[0], descending
     else:  # if invalid string is passed
-        return None, descending
+        return None, None
