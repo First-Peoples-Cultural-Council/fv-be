@@ -1,4 +1,5 @@
 from celery.result import AsyncResult
+from django.urls import reverse
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 
@@ -34,6 +35,10 @@ from backend.views.exceptions import CeleryError
         description="Queues a custom order recalculation task for the specified site.",
         responses={
             202: OpenApiResponse(description="Recalculation has been queued."),
+            303: OpenApiResponse(
+                description="Recalculation is already running. Refer to the redirect-url(location)"
+                " in the response headers to get the current status."
+            ),
             403: OpenApiResponse(
                 description="Todo: Action not authorized for this User"
             ),
@@ -80,12 +85,11 @@ class CustomOrderRecalculateView(
                         running_tasks += 1
 
             if running_tasks > 0:
-                return Response(
-                    {
-                        "message": "Recalculation is already running. Please use retrieve API to verify status."
-                    },
-                    status=202,
+                response = Response(status=303)
+                response["Location"] = reverse(
+                    "api:dictionary-cleanup-list", kwargs=kwargs
                 )
+                return response
 
             recalculate_custom_order.apply_async((site_slug,))
             return Response({"message": "Recalculation has been queued."}, status=202)
@@ -109,6 +113,11 @@ class CustomOrderRecalculateView(
         description="Queues a custom order recalculation preview task for the specified site. ",
         responses={
             202: OpenApiResponse(description="Recalculation preview has been queued."),
+            303: OpenApiResponse(
+                description="Recalculation preview is already running. Refer to the "
+                "redirect-url(location) in the response headers to get the "
+                "current status."
+            ),
             403: OpenApiResponse(
                 description="Todo: Action not authorized for this User"
             ),
@@ -157,12 +166,11 @@ class CustomOrderRecalculatePreviewView(
                         running_tasks += 1
 
             if running_tasks > 0:
-                return Response(
-                    {
-                        "message": "Cleanup preview is already running. Please use retrieve API to verify status."
-                    },
-                    status=202,
+                response = Response(status=303)
+                response["Location"] = reverse(
+                    "api:dictionary-cleanup-preview-list", kwargs=kwargs
                 )
+                return response
 
             recalculate_custom_order_preview.apply_async((site_slug,))
             return Response(
