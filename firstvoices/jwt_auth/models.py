@@ -35,14 +35,6 @@ class User(AbstractUser):
     password = models.CharField(null=True, blank=False, max_length=128)
 
     @property
-    def first_name(self):
-        return ""
-
-    @property
-    def last_name(self):
-        return ""
-
-    @property
     def username(self):
         return self.id
 
