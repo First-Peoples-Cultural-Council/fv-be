@@ -16,18 +16,12 @@ class UserFactory(DjangoModelFactory):
 
     sub = factory.Sequence(lambda n: "user id %03d" % n)
     email = factory.Sequence(lambda n: "user%03d@email.com" % n)
-    first_name = factory.Sequence(lambda n: "Firsty%03d" % n)
-    last_name = factory.Sequence(lambda n: "Lasty the %03d" % n)
 
 
-def mock_userinfo_response(user_email, first_name="Firsty", last_name="Lasty"):
+def mock_userinfo_response(user_email):
     response = MagicMock()
     type(response).status_code = PropertyMock(return_value=200)
-    response.json.return_value = {
-        "email": user_email,
-        "first_name": first_name,
-        "last_name": last_name,
-    }
+    response.json.return_value = {"email": user_email}
     return response
 
 
@@ -54,14 +48,9 @@ class TestUserModel:
     @pytest.mark.django_db
     def test_token_user(self):
         """
-        Users added during token authentication will have both a sub and user info.
+        Users added during token authentication will have both an email and a sub.
         """
-        u = User.objects.create(
-            sub="sample-sub-123",
-            email="another.email@cool.com",
-            first_name="Doctor",
-            last_name="Forbes",
-        )
+        u = User.objects.create(sub="sample-sub-123", email="another.email@cool.com")
         assert u.id is not None
 
     @pytest.mark.django_db
@@ -81,7 +70,7 @@ class TestUserModel:
     @pytest.mark.django_db
     def test_blank_subs_ok(self):
         """
-        Verify that multiple users can have blank subs.
+        Verify that multiple users can have blank subs, but non-blank subs must be unique.
         """
         u1 = User.objects.create(email="only.email@email.com")
         u2 = User.objects.create(email="no.subs@email.com")
@@ -91,7 +80,7 @@ class TestUserModel:
     @pytest.mark.django_db
     def test_unique_subs(self):
         """
-        Verify that non-blank subs must be unique.
+        Verify that multiple users can have blank subs, but non-blank subs must be unique.
         """
         sub = "same-sub-456"
 
@@ -124,25 +113,15 @@ class TestGetOrCreateUserForToken:
         existing_user = User.objects.filter(sub=sub)
         assert existing_user.count() == 0
 
-        expected_email = "surprising_new_email@email.email"
-        expected_first_name = "Firstaline"
-        expected_last_name = "Lasterton"
-
         with patch(
             request,
-            return_value=mock_userinfo_response(
-                expected_email, expected_first_name, expected_last_name
-            ),
+            return_value=mock_userinfo_response("surprising_new_email@email.email"),
         ):
             token = {"sub": sub}
             found_user = authentication.get_or_create_user_for_token(token, None)
 
             assert found_user.id is not None
             assert found_user.sub == sub
-            assert found_user.email == expected_email
-            assert found_user.first_name == expected_first_name
-            assert found_user.last_name == expected_last_name
-
             new_user = User.objects.filter(sub=sub)
             assert new_user.count() == 1
 
@@ -150,26 +129,16 @@ class TestGetOrCreateUserForToken:
     def test_unclaimed_user(self):
         sub = "123_new_user"
         email = f"{datetime.timestamp(datetime.now())}@email.email"
-        expected_first_name = "Firstiful"
-        expected_last_name = "Van Lastname"
 
-        # unclaimed user has email only
-        UserFactory.create(sub=None, email=email, first_name="", last_name="")
+        # unclaimed user has email but no sub
+        UserFactory.create(sub=None, email=email)
 
-        with patch(
-            request,
-            return_value=mock_userinfo_response(
-                email, expected_first_name, expected_last_name
-            ),
-        ):
+        with patch(request, return_value=mock_userinfo_response(email)):
             token = {"sub": sub}
             found_user = authentication.get_or_create_user_for_token(token, None)
 
             assert found_user.email == email
             assert found_user.sub == sub
-            assert found_user.first_name == expected_first_name
-            assert found_user.last_name == expected_last_name
-
             claimed_user = User.objects.filter(email=email, sub=sub)
             assert claimed_user.count() == 1
 
@@ -194,37 +163,8 @@ class TestGetOrCreateUserForToken:
             with pytest.raises(AuthenticationFailed):
                 authentication.get_or_create_user_for_token(token, None)
 
-    @pytest.mark.django_db
-    def test_user_with_no_names(self):
-        sub = "123_new_user"
-        email = f"{datetime.timestamp(datetime.now())}@email.email"
-        expected_first_name = "Firstiful"
-        expected_last_name = "Van Lastname"
-
-        # existing user has no names in db
-        UserFactory.create(sub=sub, email=email, first_name="", last_name="")
-
-        with patch(
-            request,
-            return_value=mock_userinfo_response(
-                email, expected_first_name, expected_last_name
-            ),
-        ):
-            token = {"sub": sub}
-            found_user = authentication.get_or_create_user_for_token(token, None)
-
-            assert found_user.email == email
-            assert found_user.sub == sub
-            assert found_user.first_name == expected_first_name
-            assert found_user.last_name == expected_last_name
-
-            claimed_user = User.objects.filter(email=email, sub=sub)
-            assert claimed_user.count() == 1
-
 
 class TestAuthenticate:
-    """Implement as part of fw-4800"""
-
     pass
     # no auth header
     # no bearer scheme
