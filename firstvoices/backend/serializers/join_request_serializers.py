@@ -1,6 +1,5 @@
 import logging
 
-import redis.exceptions
 from rest_framework import serializers
 
 from backend.models.constants import Role
@@ -114,12 +113,9 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
             else:
                 message = message + "\n"
 
-            try:
-                send_email_task.apply_async(
-                    (subject, message, site_language_admin_email_list)
-                )
-            except redis.exceptions.ConnectionError as e:
-                logger.error(f"Could not queue task. Error: {e}")
+            send_email_task.apply_async(
+                (subject, message, site_language_admin_email_list)
+            )
 
     class Meta:
         model = JoinRequest

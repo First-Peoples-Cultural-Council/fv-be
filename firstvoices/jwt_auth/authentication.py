@@ -1,5 +1,3 @@
-import logging
-
 import jwt
 import requests
 from django.conf import settings
@@ -53,51 +51,27 @@ def get_user_token(bearer_token, signing_key):
 
 
 def get_or_create_user_for_token(user_token, auth):
-    logger = logging.getLogger(__name__)
     user_model = get_user_model()
     sub = user_token["sub"]
 
     try:
         # try to find existing account for this sub
-        user = user_model.objects.get(sub=sub)
-
-        if user.first_name or user.last_name:
-            return user
-
-        # fill in new name fields if empty
-        try:
-            user_info = retrieve_user_info_for_token(auth)
-            user.first_name = user_info["first_name"]
-            user.last_name = user_info["last_name"]
-            user.save()
-        except KeyError as e:
-            # Configuration problem: name values not available
-            logger.error(
-                f"Identity Token does not contain required name fields. Error:  {e}"
-            )
-
-        return user
+        return user_model.objects.get(sub=sub)
 
     except user_model.DoesNotExist:
         # try to find existing account for this email, with a blank sub (migrated or added manually)
+        email = retrieve_email_for_token(auth)
+
         try:
-            user_info = retrieve_user_info_for_token(auth)
-            user = user_model.objects.get(sub=None, email=user_info["email"])
+            user = user_model.objects.get(sub=None, email=email)
             user.sub = sub
-            user.first_name = user_info["first_name"]
-            user.last_name = user_info["last_name"]
             user.save()
             return user
 
         except user_model.DoesNotExist:
             # try to add new user
             try:
-                return user_model.objects.create(
-                    sub=sub,
-                    email=user_info["email"],
-                    first_name=user_info["first_name"],
-                    last_name=user_info["last_name"],
-                )
+                return user_model.objects.create(sub=sub, email=email)
 
             except IntegrityError:
                 raise exceptions.AuthenticationFailed(
@@ -105,13 +79,13 @@ def get_or_create_user_for_token(user_token, auth):
                 )
 
 
-def retrieve_user_info_for_token(auth):
+def retrieve_email_for_token(auth):
     userinfo_response = requests.get(
         settings.JWT["USERINFO_URL"], headers={"Authorization": auth}
     )
 
     if userinfo_response.status_code == 200:
-        return userinfo_response.json()
+        return userinfo_response.json()["email"]
 
     else:
         raise exceptions.AuthenticationFailed("Failed to resolve user information")

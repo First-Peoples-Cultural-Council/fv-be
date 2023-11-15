@@ -21,8 +21,6 @@ class UserFactory(DjangoModelFactory):
         model = get_user_model()
 
     email = factory.Sequence(lambda n: "user%03d@email.com" % n)
-    first_name = factory.Sequence(lambda n: "Firsty%03d" % n)
-    last_name = factory.Sequence(lambda n: "Lasty the %03d" % n)
 
 
 class LanguageFamilyFactory(DjangoModelFactory):

@@ -1,7 +1,5 @@
-import logging
 from datetime import datetime
 
-import redis.exceptions
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404
@@ -198,12 +196,7 @@ class JoinRequestViewSet(
             "If you think this may be a technical error, you can contact FirstVoices staff at "
             "hello@firstvoices.com.\n\n"
         )
-
-        try:
-            send_email_task.apply_async((subject, message, [join_request.user.email]))
-        except redis.exceptions.ConnectionError as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Could not queue task. Error: {e}")
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -253,11 +246,7 @@ class JoinRequestViewSet(
         else:
             message = message + "\n"
 
-        try:
-            send_email_task.apply_async((subject, message, [join_request.user.email]))
-        except redis.exceptions.ConnectionError as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Could not queue task. Error: {e}")
+        send_email_task.apply_async((subject, message, [join_request.user.email]))
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
