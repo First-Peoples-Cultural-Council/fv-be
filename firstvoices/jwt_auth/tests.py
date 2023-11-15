@@ -201,8 +201,8 @@ class TestGetOrCreateUserForToken:
         expected_first_name = "Firstiful"
         expected_last_name = "Van Lastname"
 
-        # unclaimed user has email but no sub
-        UserFactory.create(sub=None, email=email, first_name="", last_name="")
+        # existing user has no names in db
+        UserFactory.create(sub=sub, email=email, first_name="", last_name="")
 
         with patch(
             request,

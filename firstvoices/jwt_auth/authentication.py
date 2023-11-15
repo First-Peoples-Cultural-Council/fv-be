@@ -72,7 +72,9 @@ def get_or_create_user_for_token(user_token, auth):
             user.save()
         except KeyError as e:
             # Configuration problem: name values not available
-            logger.error("Identity Token does not contain required name fields: ", e)
+            logger.error(
+                f"Identity Token does not contain required name fields. Error:  {e}"
+            )
 
         return user
 
