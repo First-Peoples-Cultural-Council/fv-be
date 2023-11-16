@@ -20,337 +20,55 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
     @staticmethod
     def get_empty_stats_page():
+        data_models = ["words", "phrases", "songs", "stories"]
+        media_models = ["images", "audio", "video"]
+        time_periods = [
+            "lastYear",
+            "last6Months",
+            "last3Months",
+            "lastMonth",
+            "lastWeek",
+            "last3Days",
+            "today",
+        ]
+
+        aggregate_data = {}
+        for data_model in data_models:
+            aggregate_data[data_model] = {
+                "total": 0,
+                "availableInChildrensArchive": 0,
+                "public": 0,
+            }
+
+        for media_model in media_models:
+            aggregate_data[media_model] = {
+                "total": 0,
+                "availableInChildrensArchive": 0,
+            }
+
+        temporal_data = {}
+        for data_model in data_models:
+            temporal_data[data_model] = {}
+            for time_period in time_periods:
+                temporal_data[data_model][time_period] = {
+                    "created": 0,
+                    "lastModified": 0,
+                    "public": 0,
+                    "members": 0,
+                    "team": 0,
+                }
+
+        for media_model in media_models:
+            temporal_data[media_model] = {}
+            for time_period in time_periods:
+                temporal_data[media_model][time_period] = {
+                    "created": 0,
+                    "lastModified": 0,
+                }
+
         return {
-            "aggregate": {
-                "words": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                    "public": 0,
-                },
-                "phrases": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                    "public": 0,
-                },
-                "songs": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                    "public": 0,
-                },
-                "stories": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                    "public": 0,
-                },
-                "images": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                },
-                "audio": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                },
-                "video": {
-                    "total": 0,
-                    "availableInChildrensArchive": 0,
-                },
-            },
-            "temporal": {
-                "words": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                },
-                "phrases": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                },
-                "songs": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                },
-                "stories": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                        "public": 0,
-                        "members": 0,
-                        "team": 0,
-                    },
-                },
-                "images": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                },
-                "audio": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                },
-                "video": {
-                    "lastYear": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last6Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Months": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastMonth": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "lastWeek": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "last3Days": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                    "today": {
-                        "created": 0,
-                        "lastModified": 0,
-                    },
-                },
-            },
+            "aggregate": aggregate_data,
+            "temporal": temporal_data,
         }
 
     @pytest.fixture
@@ -404,10 +122,6 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
     @pytest.mark.skip(reason="Stats API does not create an instance")
     def test_list_minimal(self):
         pass
-
-    # TODO: Add tests for the following:
-    # - Test each aggregate by model
-    # - Test each temporal by model and time range
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
