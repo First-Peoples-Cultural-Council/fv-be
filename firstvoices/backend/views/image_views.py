@@ -81,7 +81,7 @@ class ImageViewSet(
         site = self.get_validated_site()
         return (
             Image.objects.filter(site__slug=site[0].slug)
-            .prefetch_related("site", *get_select_related_media_fields(None))
+            .select_related(*get_select_related_media_fields(None))
             .order_by("-created")
             .defer(
                 "created_by_id",
