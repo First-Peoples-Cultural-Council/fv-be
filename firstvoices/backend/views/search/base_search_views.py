@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_sort,
     get_valid_visibility,
 )
 from backend.views.base_views import ThrottlingMixin
@@ -255,6 +256,46 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="sort",
+                description="Sort results by date created, date last modified or title. Results can be optionally "
+                'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Retrieves results from documents with the default ordering by score.",
+                    ),
+                    OpenApiExample(
+                        "Date Created",
+                        value="created",
+                        description="Returns results ordered by the created date and time in ascending order.",
+                    ),
+                    OpenApiExample(
+                        "Date Modified",
+                        value="modified",
+                        description="Returns results ordered by the last modified date and time in ascending order.",
+                    ),
+                    OpenApiExample(
+                        "Title",
+                        value="title",
+                        description="Returns results ordered by title according to a site's custom alphabet.",
+                    ),
+                    OpenApiExample(
+                        "Date Created Descending",
+                        value="created_desc",
+                        description="Returns results ordered by the created date and time in descending order.",
+                    ),
+                    OpenApiExample(
+                        "Date Modified Descending",
+                        value="modified_desc",
+                        description="Returns results ordered by the last modified date and time in descending order.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -297,6 +338,9 @@ class BaseSearchViewSet(
         has_image = self.request.GET.get("hasImage", False)
         has_image = get_valid_boolean(has_image)
 
+        sort = self.request.GET.get("sort", "")
+        valid_sort, descending = get_valid_sort(sort)
+
         search_params = {
             "q": input_q,
             "user": user,
@@ -311,6 +355,8 @@ class BaseSearchViewSet(
             "has_audio": has_audio,
             "has_video": has_video,
             "has_image": has_image,
+            "sort": valid_sort,
+            "descending": descending,
         }
 
         return search_params
@@ -379,10 +425,40 @@ class BaseSearchViewSet(
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
 
-        # Sort by score, then by custom sort order
-        search_query = search_query.sort(
-            "_score", {"custom_order": {"unmapped_type": "keyword"}}, "title.raw"
-        )
+        sort_direction = "desc" if search_params["descending"] else "asc"
+        custom_order_sort = {
+            "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
+        }
+        title_order_sort = {"title.raw": {"order": sort_direction}}
+
+        match search_params["sort"]:
+            case "created":
+                # Sort by created, then by custom sort order, and finally title. Allows descending order.
+                search_query = search_query.sort(
+                    {"created": {"order": sort_direction}},
+                    custom_order_sort,
+                    title_order_sort,
+                )
+            case "modified":
+                # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
+                search_query = search_query.sort(
+                    {"last_modified": {"order": sort_direction}},
+                    custom_order_sort,
+                    title_order_sort,
+                )
+            case "title":
+                # Sort by custom sort order, and finally title. Allows descending order.
+                search_query = search_query.sort(
+                    custom_order_sort,
+                    title_order_sort,
+                )
+            case _:
+                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
+                search_query = search_query.sort(
+                    "_score",
+                    custom_order_sort,
+                    title_order_sort,
+                )
 
         # Get search results
         try:

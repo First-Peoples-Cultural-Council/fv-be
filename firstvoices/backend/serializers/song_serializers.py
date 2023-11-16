@@ -121,12 +121,14 @@ class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeria
         model = Song
         fields = (
             "id",
+            "created",
+            "last_modified",
+            "visibility",
             "title",
             "title_translation",
             "hide_overlay",
             "site",
             "related_images",
             "related_videos",
-            "visibility",
         )
         read_only_fields = ("id", "title", "title_translation", "hide_overlay")

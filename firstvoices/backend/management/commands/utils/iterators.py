@@ -30,6 +30,8 @@ def media_doc_generator(instance, media_type):
         type=media_type,
         filename=instance.original.content.name,
         description=instance.description,
+        created=instance.created,
+        last_modified=instance.last_modified,
     )
 
 
@@ -108,6 +110,8 @@ def dictionary_entry_iterator():
             has_audio=entry.related_audio.exists(),
             has_video=entry.related_videos.exists(),
             has_image=entry.related_images.exists(),
+            created=entry.created,
+            last_modified=entry.last_modified,
         )
         yield index_entry.to_dict(True)
 

@@ -278,6 +278,8 @@ class AudioMinimalSerializer(serializers.ModelSerializer):
         model = media.Audio
         fields = (
             "id",
+            "created",
+            "last_modified",
             "title",
             "description",
             "acknowledgement",
@@ -305,7 +307,14 @@ class RelatedVideoMinimalSerializer(RelatedImageMinimalSerializer):
 
 class MediaMinimalSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ("id", "original", "title", "description")
+        fields = (
+            "id",
+            "created",
+            "last_modified",
+            "original",
+            "title",
+            "description",
+        )
         read_only_fields = ("id", "original", "title", "description")
 
 

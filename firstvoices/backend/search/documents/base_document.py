@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Boolean, Document, Integer, Keyword, Text
+from elasticsearch_dsl import Boolean, Date, Document, Integer, Keyword, Text
 
 
 class BaseDocument(Document):
@@ -9,6 +9,8 @@ class BaseDocument(Document):
     visibility = Integer()
     exclude_from_games = Boolean()
     exclude_from_kids = Boolean()
+    created = Date()
+    last_modified = Date()
 
     # combined text search fields
     # for boost values for following fields refer search/utils/search_term_query.py
