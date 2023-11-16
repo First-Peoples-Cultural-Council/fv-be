@@ -10,7 +10,7 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .dictionary_admin import CategoryInline, WordOfTheDayInline
+from .dictionary_admin import WordOfTheDayInline
 from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 # Main Site admin settings. For related sites models, see .sites_admin
@@ -31,7 +31,6 @@ class SiteAdmin(DynamicArrayMixin, BaseAdmin):
         IgnoredCharacterInline,
         SiteFeatureInline,
         SiteMenuInline,
-        CategoryInline,
         WordOfTheDayInline,
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_emails")

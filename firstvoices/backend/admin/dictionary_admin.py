@@ -59,17 +59,6 @@ class PronunciationInline(RelatedDictionaryEntryAdminMixin, BaseDictionaryInline
     model = Pronunciation
 
 
-class CategoryInline(BaseDictionaryInlineAdmin):
-    model = Category
-    fields = ("title", "parent") + BaseInlineAdmin.fields
-    readonly_fields = ("parent",) + BaseDictionaryInlineAdmin.readonly_fields
-    ordering = ["title"]
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("parent")
-
-
 class DictionaryEntryCharacterInline(RelatedDictionaryEntryAdminMixin, BaseInlineAdmin):
     model = DictionaryEntryRelatedCharacter
     fields = ("character",) + BaseInlineAdmin.fields
