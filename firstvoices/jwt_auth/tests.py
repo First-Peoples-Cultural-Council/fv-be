@@ -2,11 +2,13 @@ from datetime import datetime
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import factory
+import jwt
 import pytest
 from factory.django import DjangoModelFactory
 from rest_framework.exceptions import AuthenticationFailed
 
 from . import authentication
+from .authentication import JwtAuthentication
 from .models import User
 
 
@@ -28,6 +30,13 @@ def mock_userinfo_response(user_email, first_name="Firsty", last_name="Lasty"):
         "given_name": first_name,
         "family_name": last_name,
     }
+    return response
+
+
+def mock_misconfigured_userinfo_response(value):
+    response = MagicMock()
+    type(response).status_code = PropertyMock(return_value=200)
+    response.json.return_value = value
     return response
 
 
@@ -177,6 +186,79 @@ class TestGetOrCreateUserForToken:
                 authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
+    def test_userinfo_misconfigured_missing_email_fail(self):
+        with patch(
+            request,
+            return_value=mock_misconfigured_userinfo_response({}),
+        ):
+            token = {"sub": "123_new_user"}
+            with pytest.raises(AuthenticationFailed):
+                authentication.get_or_create_user_for_token(token, None)
+
+    @pytest.mark.django_db
+    def test_userinfo_misconfigured_missing_names_ignore_claimed_user(self):
+        sub = "123_new_user"
+        email = f"{datetime.timestamp(datetime.now())}@email.email"
+        expected_first_name = "Firstianna"
+        expected_last_name = "Lastovich"
+        # existing user has no names in db
+        UserFactory.create(sub=sub, email=email, first_name="", last_name="")
+        with patch(
+            request,
+            return_value=mock_misconfigured_userinfo_response(
+                {"email": email, "name": f"{expected_first_name} {expected_last_name}"}
+            ),
+        ):
+            token = {"sub": "123_new_user"}
+            found_user = authentication.get_or_create_user_for_token(token, None)
+            assert found_user.email == email
+            assert found_user.sub == sub
+            assert found_user.first_name == ""
+            assert found_user.last_name == ""
+
+    @pytest.mark.django_db
+    def test_userinfo_misconfigured_missing_names_ignore_unclaimed_user(self):
+        sub = "123_new_user"
+        email = f"{datetime.timestamp(datetime.now())}@email.email"
+        expected_first_name = "Firstianna"
+        expected_last_name = "Lastovich"
+        # existing user has no names in db
+        UserFactory.create(sub=None, email=email, first_name="", last_name="")
+
+        with patch(
+            request,
+            return_value=mock_misconfigured_userinfo_response(
+                {"email": email, "name": f"{expected_first_name} {expected_last_name}"}
+            ),
+        ):
+            token = {"sub": "123_new_user"}
+            found_user = authentication.get_or_create_user_for_token(token, None)
+            assert found_user.email == email
+            assert found_user.sub == sub
+            assert found_user.first_name == ""
+            assert found_user.last_name == ""
+
+    @pytest.mark.django_db
+    def test_userinfo_misconfigured_missing_names_ignore_new_user(self):
+        sub = "123_new_user"
+        email = f"{datetime.timestamp(datetime.now())}@email.email"
+        expected_first_name = "Firstianna"
+        expected_last_name = "Lastovich"
+
+        with patch(
+            request,
+            return_value=mock_misconfigured_userinfo_response(
+                {"email": email, "name": f"{expected_first_name} {expected_last_name}"}
+            ),
+        ):
+            token = {"sub": "123_new_user"}
+            found_user = authentication.get_or_create_user_for_token(token, None)
+            assert found_user.email == email
+            assert found_user.sub == sub
+            assert found_user.first_name == ""
+            assert found_user.last_name == ""
+
+    @pytest.mark.django_db
     def test_claimed_user_with_no_names(self):
         sub = "123_new_user"
         email = f"{datetime.timestamp(datetime.now())}@email.email"
@@ -234,12 +316,42 @@ class TestGetOrCreateUserForToken:
 
 
 class TestAuthenticate:
-    """Implement as part of fw-4800"""
+    def test_no_auth_header_means_anonymous(self):
+        mock_request = MagicMock()
+        type(mock_request).META = {}
+        auth = JwtAuthentication()
+        user, _ = auth.authenticate(mock_request)
+        assert user.is_anonymous
+        assert not user.is_authenticated
 
-    pass
-    # no auth header
-    # no bearer scheme
-    # no bearer token
-    # expired token
-    # invalid token
-    # other problems?
+    @pytest.mark.parametrize(
+        "token", ["Bearer ", "NotBearer 12345", "12345", "Bearer 12345 and then some"]
+    )
+    def test_malformed_auth_tokens_fail(self, token):
+        mock_request = MagicMock()
+        type(mock_request).META = {"HTTP_AUTHORIZATION": token}
+        auth = JwtAuthentication()
+        with pytest.raises(AuthenticationFailed):
+            auth.authenticate(mock_request)
+
+    def test_expired_token_fails(self):
+        with patch(
+            "jwt.PyJWKClient.get_signing_key_from_jwt",
+            side_effect=jwt.ExpiredSignatureError(),
+        ):
+            mock_request = MagicMock()
+            type(mock_request).META = {"HTTP_AUTHORIZATION": "Bearer valid123"}
+            auth = JwtAuthentication()
+            with pytest.raises(AuthenticationFailed):
+                auth.authenticate(mock_request)
+
+    @pytest.mark.parametrize("exception_type", [jwt.InvalidTokenError, jwt.DecodeError])
+    def test_invalid_token_fails(self, exception_type):
+        with patch("jwt.decode", side_effect=exception_type()), patch(
+            "jwt.PyJWKClient" ".get_signing_key_from_jwt", return_value=MagicMock()
+        ):
+            mock_request = MagicMock()
+            type(mock_request).META = {"HTTP_AUTHORIZATION": "Bearer valid123"}
+            auth = JwtAuthentication()
+            with pytest.raises(AuthenticationFailed):
+                auth.authenticate(mock_request)
