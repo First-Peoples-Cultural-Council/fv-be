@@ -348,7 +348,7 @@ class TestAuthenticate:
     @pytest.mark.parametrize("exception_type", [jwt.InvalidTokenError, jwt.DecodeError])
     def test_invalid_token_fails(self, exception_type):
         with patch("jwt.decode", side_effect=exception_type()), patch(
-            "jwt.PyJWKClient" ".get_signing_key_from_jwt", return_value=MagicMock()
+            "jwt.PyJWKClient.get_signing_key_from_jwt", return_value=MagicMock()
         ):
             mock_request = MagicMock()
             type(mock_request).META = {"HTTP_AUTHORIZATION": "Bearer valid123"}
