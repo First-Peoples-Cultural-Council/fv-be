@@ -1,3 +1,5 @@
+from celery.result import AsyncResult
+from django.urls import reverse
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
 
@@ -33,6 +35,10 @@ from backend.views.exceptions import CeleryError
         description="Queues a custom order recalculation task for the specified site.",
         responses={
             202: OpenApiResponse(description="Recalculation has been queued."),
+            303: OpenApiResponse(
+                description="Recalculation is already running. Refer to the redirect-url(location)"
+                " in the response headers to get the current status."
+            ),
             403: OpenApiResponse(
                 description="Todo: Action not authorized for this User"
             ),
@@ -67,21 +73,25 @@ class CustomOrderRecalculateView(
 
         # Call the recalculation task
         try:
-            recalculation_results = recalculate_custom_order.apply_async((site_slug,))
-
-            # Delete any previous results
-            CustomOrderRecalculationResult.objects.filter(
+            # Check if preview task for the same site is ongoing
+            previous_tasks = CustomOrderRecalculationResult.objects.filter(
                 site=site[0], is_preview=False
-            ).delete()
-
-            # Save the result to the database
-            CustomOrderRecalculationResult.objects.create(
-                site=site[0],
-                latest_recalculation_result=recalculation_results.get(timeout=360),
-                task_id=recalculation_results.task_id,
-                is_preview=False,
             )
+            running_tasks = 0
+            if len(previous_tasks) > 0:
+                for task in previous_tasks:
+                    status = AsyncResult(task.task_id).status
+                    if status == "PENDING":
+                        running_tasks += 1
 
+            if running_tasks > 0:
+                response = Response(status=303)
+                response["Location"] = reverse(
+                    "api:dictionary-cleanup-list", kwargs=kwargs
+                )
+                return response
+
+            recalculate_custom_order.apply_async((site_slug,))
             return Response({"message": "Recalculation has been queued."}, status=202)
 
         except recalculate_custom_order_preview.OperationalError:
@@ -103,6 +113,11 @@ class CustomOrderRecalculateView(
         description="Queues a custom order recalculation preview task for the specified site. ",
         responses={
             202: OpenApiResponse(description="Recalculation preview has been queued."),
+            303: OpenApiResponse(
+                description="Recalculation preview is already running. Refer to the "
+                "redirect-url(location) in the response headers to get the "
+                "current status."
+            ),
             403: OpenApiResponse(
                 description="Todo: Action not authorized for this User"
             ),
@@ -139,23 +154,25 @@ class CustomOrderRecalculatePreviewView(
 
         # Call the recalculation preview task
         try:
-            recalculation_results = recalculate_custom_order_preview.apply_async(
-                (site_slug,)
-            )
-
-            # Delete any previous preview results
-            CustomOrderRecalculationResult.objects.filter(
+            # Check if preview task for the same site is ongoing
+            previous_tasks = CustomOrderRecalculationResult.objects.filter(
                 site=site[0], is_preview=True
-            ).delete()
-
-            # Save the result to the database
-            CustomOrderRecalculationResult.objects.create(
-                site=site[0],
-                latest_recalculation_result=recalculation_results.get(timeout=360),
-                task_id=recalculation_results.task_id,
-                is_preview=True,
             )
+            running_tasks = 0
+            if len(previous_tasks) > 0:
+                for task in previous_tasks:
+                    status = AsyncResult(task.task_id).status
+                    if status == "PENDING":
+                        running_tasks += 1
 
+            if running_tasks > 0:
+                response = Response(status=303)
+                response["Location"] = reverse(
+                    "api:dictionary-cleanup-preview-list", kwargs=kwargs
+                )
+                return response
+
+            recalculate_custom_order_preview.apply_async((site_slug,))
             return Response(
                 {"message": "Recalculation preview has been queued."}, status=202
             )
