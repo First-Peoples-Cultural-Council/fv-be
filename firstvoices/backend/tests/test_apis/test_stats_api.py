@@ -71,6 +71,15 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             "temporal": temporal_data,
         }
 
+    @staticmethod
+    def assert_temporal_stats(response_data, model, time_deltas):
+        for time in time_deltas:
+            assert response_data["temporal"][model][time]["created"] == 3
+            assert response_data["temporal"][model][time]["lastModified"] == 3
+            assert response_data["temporal"][model][time]["public"] == 1
+            assert response_data["temporal"][model][time]["members"] == 1
+            assert response_data["temporal"][model][time]["team"] == 1
+
     @pytest.fixture
     def time_deltas(self):
         return [
@@ -121,6 +130,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
     @pytest.mark.skip(reason="Stats API does not create an instance")
     def test_list_minimal(self):
+        # Stats API does not create a model instance
         pass
 
     @pytest.mark.django_db
@@ -216,12 +226,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        for time in time_deltas:
-            assert response_data["temporal"][key][time]["created"] == 3
-            assert response_data["temporal"][key][time]["lastModified"] == 3
-            assert response_data["temporal"][key][time]["public"] == 1
-            assert response_data["temporal"][key][time]["members"] == 1
-            assert response_data["temporal"][key][time]["team"] == 1
+        self.assert_temporal_stats(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -239,12 +244,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        for time in time_deltas:
-            assert response_data["temporal"][key][time]["created"] == 3
-            assert response_data["temporal"][key][time]["lastModified"] == 3
-            assert response_data["temporal"][key][time]["public"] == 1
-            assert response_data["temporal"][key][time]["members"] == 1
-            assert response_data["temporal"][key][time]["team"] == 1
+        self.assert_temporal_stats(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
