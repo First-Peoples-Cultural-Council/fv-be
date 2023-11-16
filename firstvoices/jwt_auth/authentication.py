@@ -53,72 +53,85 @@ def get_user_token(bearer_token, signing_key):
 
 
 def get_or_create_user_for_token(user_token, auth):
-    logger = logging.getLogger(__name__)
     user_model = get_user_model()
     sub = user_token["sub"]
+    user_info = retrieve_user_info_for_token(auth)
 
     try:
-        # try to find existing account for this sub
-        user = user_model.objects.get(sub=sub)
-
-        if user.first_name or user.last_name:
-            return user
-
-        # fill in new name fields if empty
-        try:
-            user_info = retrieve_user_info_for_token(auth)
-            user.first_name = user_info["given_name"]
-            user.last_name = user_info["family_name"]
-            user.save()
-        except KeyError as e:
-            # Configuration problem: name values not available
-            logger.error(
-                f"Identity Token does not contain required name fields. Error:  [{e}] "
-                + f"Available fields: [{user_info.keys()}]"
-            )
-
-        return user
+        """Find user by sub"""
+        return find_existing_user(sub, user_info)
 
     except user_model.DoesNotExist:
-        # try to find existing account for this email, with a blank sub (migrated or added manually)
-        try:
-            user_info = retrieve_user_info_for_token(auth)
-            user = user_model.objects.get(sub=None, email=user_info["email"])
-            user.sub = sub
-            user.save()
+        """Find user by email"""
 
-            user.first_name = user_info["given_name"]
-            user.last_name = user_info["family_name"]
-            user.save()
-            return user
+        if "email" not in user_info:
+            logger = logging.getLogger(__name__)
+            logger.error("Identity Token does not contain required email field.")
+            raise exceptions.AuthenticationFailed(
+                "Authentication is currently unavailable."
+            )
+
+        try:
+            return claim_unclaimed_user(sub, user_info)
 
         except user_model.DoesNotExist:
-            # try to add new user
             try:
-                first_name = (
-                    user_info["given_name"] if "given_name" in user_info else ""
-                )
-                last_name = (
-                    user_info["family_name"] if "family_name" in user_info else ""
-                )
-                return user_model.objects.create(
-                    sub=sub,
-                    email=user_info["email"],
-                    first_name=first_name,
-                    last_name=last_name,
-                )
+                return add_new_user(sub, user_info)
 
             except IntegrityError:
                 raise exceptions.AuthenticationFailed(
                     "Can't add user account because that email is already in use."
                 )
 
-            except KeyError as e:
-                # Configuration problem: name values not available
-                logger.error(
-                    f"Identity Token does not contain required name fields. Error:  [{e}] "
-                    + f"Available fields: [{user_info.keys()}]"
-                )
+
+def find_existing_user(sub, user_info):
+    """Look up user by sub value. Add any missing user info in our db."""
+
+    logger = logging.getLogger(__name__)
+    user_model = get_user_model()
+    user = user_model.objects.get(sub=sub)
+
+    if user.first_name or user.last_name:
+        return user
+
+    # fill in new name fields if empty
+    try:
+        user.first_name = user_info["given_name"]
+        user.last_name = user_info["family_name"]
+        user.save()
+    except KeyError as e:
+        # Configuration problem: name values not available
+        logger.error(
+            f"Identity Token does not contain required name fields. Error:  {e}"
+        )
+
+    return user
+
+
+def claim_unclaimed_user(sub, user_info):
+    """Look up user by email address and link it to this token by adding the sub value. Update user info in our db."""
+    user_model = get_user_model()
+
+    user = user_model.objects.get(sub=None, email=user_info["email"])
+    user.sub = sub
+    user.first_name = user_info["given_name"]
+    user.last_name = user_info["family_name"]
+    user.save()
+
+    return user
+
+
+def add_new_user(sub, user_info):
+    user_model = get_user_model()
+    first_name = user_info["given_name"] if "given_name" in user_info else ""
+    last_name = user_info["family_name"] if "family_name" in user_info else ""
+
+    return user_model.objects.create(
+        sub=sub,
+        email=user_info["email"],
+        first_name=first_name,
+        last_name=last_name,
+    )
 
 
 def retrieve_user_info_for_token(auth):

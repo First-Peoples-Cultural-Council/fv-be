@@ -111,11 +111,14 @@ class TestGetOrCreateUserForToken:
     def test_existing_user(self):
         sub = "123-existing-user"
         existing_user = UserFactory.create(sub=sub)
-
         token = {"sub": sub}
-        found_user = authentication.get_or_create_user_for_token(token, None)
 
-        assert found_user == existing_user
+        with patch(
+            request,
+            return_value=mock_userinfo_response(user_email=existing_user.email),
+        ):
+            found_user = authentication.get_or_create_user_for_token(token, None)
+            assert found_user == existing_user
 
     @pytest.mark.django_db
     def test_new_user(self):
