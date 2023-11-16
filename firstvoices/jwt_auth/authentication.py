@@ -102,7 +102,7 @@ def find_existing_user(sub, user_info):
     except KeyError as e:
         # Configuration problem: name values not available
         logger.error(
-            f"Identity Token does not contain required name fields. Error:  {e}"
+            f"Identity Token does not contain required name fields. Error: [{e}] Available fields: [{user_info.keys()}]"
         )
 
     return user
@@ -114,8 +114,13 @@ def claim_unclaimed_user(sub, user_info):
 
     user = user_model.objects.get(sub=None, email=user_info["email"])
     user.sub = sub
-    user.first_name = user_info["given_name"]
-    user.last_name = user_info["family_name"]
+
+    if "given_name" in user_info:
+        user.first_name = user_info["given_name"]
+
+    if "family_name" in user_info:
+        user.last_name = user_info["family_name"]
+
     user.save()
 
     return user
