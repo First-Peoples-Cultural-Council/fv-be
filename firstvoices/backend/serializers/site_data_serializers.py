@@ -97,7 +97,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     definition = serializers.SerializerMethodField()
     audio = serializers.SerializerMethodField()
     img = serializers.SerializerMethodField()
-    theme = CategoriesDataSerializer(source="categories", many=True)
+    theme = serializers.SerializerMethodField()
     secondary_theme = serializers.SerializerMethodField()
     optional = serializers.SerializerMethodField()
     compare_form = serializers.CharField(source="title")
@@ -124,8 +124,20 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         return ImageDataSerializer(dictionaryentry.related_images, many=True).data
 
     @staticmethod
+    def get_theme(dictionaryentry):
+        return [
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is None
+        ]
+
+    @staticmethod
     def get_secondary_theme(dictionaryentry):
-        return None
+        return [
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is not None
+        ]
 
     @staticmethod
     def get_optional(dictionaryentry):
