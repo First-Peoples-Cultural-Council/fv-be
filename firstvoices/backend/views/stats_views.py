@@ -34,46 +34,74 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         return Response(site_stats)
 
     @staticmethod
-    def calculate_aggregate_stats(queryset):
+    def calculate_aggregate_stats(queryset_list, has_visibility=False):
         """Calculate aggregate statistics for a given queryset of objects"""
         aggregate_stats = {
-            "total": queryset.count(),
-            "available_in_childrens_archive": queryset.filter(
-                exclude_from_kids=False
-            ).count(),
+            "total": len(queryset_list),
+            "available_in_childrens_archive": len(
+                [obj for obj in queryset_list if obj.exclude_from_kids is False]
+            ),
         }
 
         # check if visibility field is present on queryset model
-        if hasattr(queryset.model, "visibility"):
-            aggregate_stats["public"] = queryset.filter(
-                visibility=Visibility.PUBLIC
-            ).count()
-
+        if has_visibility:
+            aggregate_stats["public"] = len(
+                [obj for obj in queryset_list if obj.visibility == Visibility.PUBLIC]
+            )
         return aggregate_stats
 
     @staticmethod
-    def calculate_individual_temporal_stats(queryset, time_range):
+    def calculate_individual_temporal_stats(
+        queryset_list, time_range, has_visibility=False
+    ):
         """Calculate temporal statistics for a given queryset of objects from a specified time range"""
 
         individual_temporal_stats = {
-            "created": queryset.filter(created__range=time_range).count(),
-            "last_modified": queryset.filter(last_modified__range=time_range).count(),
+            "created": len(
+                [
+                    obj
+                    for obj in queryset_list
+                    if time_range[0] <= obj.created <= time_range[1]
+                ]
+            ),
+            "last_modified": len(
+                [
+                    obj
+                    for obj in queryset_list
+                    if time_range[0] <= obj.last_modified <= time_range[1]
+                ]
+            ),
         }
 
-        if hasattr(queryset.model, "visibility"):
-            individual_temporal_stats["public"] = queryset.filter(
-                visibility=Visibility.PUBLIC, created__range=time_range
-            ).count()
-            individual_temporal_stats["members"] = queryset.filter(
-                visibility=Visibility.MEMBERS, created__range=time_range
-            ).count()
-            individual_temporal_stats["team"] = queryset.filter(
-                visibility=Visibility.TEAM, created__range=time_range
-            ).count()
+        if has_visibility:
+            individual_temporal_stats["public"] = len(
+                [
+                    obj
+                    for obj in queryset_list
+                    if time_range[0] <= obj.last_modified <= time_range[1]
+                    and obj.visibility == Visibility.PUBLIC
+                ]
+            )
+            individual_temporal_stats["members"] = len(
+                [
+                    obj
+                    for obj in queryset_list
+                    if time_range[0] <= obj.last_modified <= time_range[1]
+                    and obj.visibility == Visibility.MEMBERS
+                ]
+            )
+            individual_temporal_stats["team"] = len(
+                [
+                    obj
+                    for obj in queryset_list
+                    if time_range[0] <= obj.last_modified <= time_range[1]
+                    and obj.visibility == Visibility.TEAM
+                ]
+            )
 
         return individual_temporal_stats
 
-    def calculate_temporal_stats(self, queryset):
+    def calculate_temporal_stats(self, queryset, has_visibility=False):
         """Calculate temporal statistics for a given queryset of objects"""
         # Calculate time deltas
         now = timezone.now()
@@ -87,24 +115,26 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
 
         temporal_stats = {
             "last_year": self.calculate_individual_temporal_stats(
-                queryset, (last_year, now)
+                queryset, (last_year, now), has_visibility
             ),
             "last_6_months": self.calculate_individual_temporal_stats(
-                queryset, (last_6_months, now)
+                queryset, (last_6_months, now), has_visibility
             ),
             "last_3_months": self.calculate_individual_temporal_stats(
-                queryset, (last_3_months, now)
+                queryset, (last_3_months, now), has_visibility
             ),
             "last_month": self.calculate_individual_temporal_stats(
-                queryset, (last_month, now)
+                queryset, (last_month, now), has_visibility
             ),
             "last_week": self.calculate_individual_temporal_stats(
-                queryset, (last_week, now)
+                queryset, (last_week, now), has_visibility
             ),
             "last_3_days": self.calculate_individual_temporal_stats(
-                queryset, (last_3_days, now)
+                queryset, (last_3_days, now), has_visibility
             ),
-            "today": self.calculate_individual_temporal_stats(queryset, (today, now)),
+            "today": self.calculate_individual_temporal_stats(
+                queryset, (today, now), has_visibility
+            ),
         }
 
         return temporal_stats
@@ -115,24 +145,28 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         site_slug = site[0].slug
 
         # Model query sets
-        words_qs = DictionaryEntry.objects.filter(
-            site__slug=site_slug, type=TypeOfDictionaryEntry.WORD
+        words_qs = list(
+            DictionaryEntry.objects.filter(
+                site__slug=site_slug, type=TypeOfDictionaryEntry.WORD
+            )
         )
-        phrases_qs = DictionaryEntry.objects.filter(
-            site__slug=site_slug, type=TypeOfDictionaryEntry.PHRASE
+        phrases_qs = list(
+            DictionaryEntry.objects.filter(
+                site__slug=site_slug, type=TypeOfDictionaryEntry.PHRASE
+            )
         )
-        songs_qs = Song.objects.filter(site__slug=site_slug)
-        stories_qs = Story.objects.filter(site__slug=site_slug)
-        images_qs = Image.objects.filter(site__slug=site_slug)
-        audio_qs = Audio.objects.filter(site__slug=site_slug)
-        video_qs = Video.objects.filter(site__slug=site_slug)
+        songs_qs = list(Song.objects.filter(site__slug=site_slug))
+        stories_qs = list(Story.objects.filter(site__slug=site_slug))
+        images_qs = list(Image.objects.filter(site__slug=site_slug))
+        audio_qs = list(Audio.objects.filter(site__slug=site_slug))
+        video_qs = list(Video.objects.filter(site__slug=site_slug))
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {
-            "words": self.calculate_aggregate_stats(words_qs),
-            "phrases": self.calculate_aggregate_stats(phrases_qs),
-            "songs": self.calculate_aggregate_stats(songs_qs),
-            "stories": self.calculate_aggregate_stats(stories_qs),
+            "words": self.calculate_aggregate_stats(words_qs, has_visibility=True),
+            "phrases": self.calculate_aggregate_stats(phrases_qs, has_visibility=True),
+            "songs": self.calculate_aggregate_stats(songs_qs, has_visibility=True),
+            "stories": self.calculate_aggregate_stats(stories_qs, has_visibility=True),
             "images": self.calculate_aggregate_stats(images_qs),
             "audio": self.calculate_aggregate_stats(audio_qs),
             "video": self.calculate_aggregate_stats(video_qs),
@@ -140,10 +174,10 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
 
         # Calculate temporal stats from site models
         site_temporal_stats = {
-            "words": self.calculate_temporal_stats(words_qs),
-            "phrases": self.calculate_temporal_stats(phrases_qs),
-            "songs": self.calculate_temporal_stats(songs_qs),
-            "stories": self.calculate_temporal_stats(stories_qs),
+            "words": self.calculate_temporal_stats(words_qs, has_visibility=True),
+            "phrases": self.calculate_temporal_stats(phrases_qs, has_visibility=True),
+            "songs": self.calculate_temporal_stats(songs_qs, has_visibility=True),
+            "stories": self.calculate_temporal_stats(stories_qs, has_visibility=True),
             "images": self.calculate_temporal_stats(images_qs),
             "audio": self.calculate_temporal_stats(audio_qs),
             "video": self.calculate_temporal_stats(video_qs),
