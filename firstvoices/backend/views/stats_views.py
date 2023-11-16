@@ -9,6 +9,7 @@ from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.media import Audio, Image, Video
+from backend.serializers.stats_serializers import SiteStatsSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -18,7 +19,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     list=extend_schema(
         description="A list of statistics about a given site.",
         responses={
-            200: Response,
+            200: SiteStatsSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
