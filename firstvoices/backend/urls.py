@@ -20,6 +20,7 @@ from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
+from backend.views.stats_views import StatsViewSet
 from backend.views.story_views import StoryViewSet
 from backend.views.storypage_views import StoryPageViewSet
 from backend.views.video_views import VideoViewSet
@@ -65,6 +66,7 @@ sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
+sites_router.register(r"stats", StatsViewSet, basename="stats")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")
