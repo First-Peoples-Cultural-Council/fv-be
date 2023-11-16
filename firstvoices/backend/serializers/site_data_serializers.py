@@ -36,7 +36,6 @@ class CategoriesDataSerializer(serializers.ModelSerializer):
 class SiteDataSerializer(SiteContentLinkedTitleSerializer):
     config = serializers.SerializerMethodField()
     categories = CategoriesDataSerializer(source="category_set", many=True)
-    data = serializers.SerializerMethodField()
 
     def get_config(self, site):
         request = self.context.get("request")
@@ -57,33 +56,11 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
         }
         return config
 
-    def get_data(self, site):
-        dict_set = site.dictionaryentry_set
-        queryset = dict_set if site is not None and dict_set is not None else None
-        request = self.context.get("request")
-        serializer = DictionaryEntryDataSerializer(
-            queryset, many=True, context={"request": request}
-        )
-        paginator = DictionaryEntryPaginator()
-        paginated_data = paginator.paginate_queryset(
-            queryset=serializer.data, request=request
-        )
-        dictionary_entries = paginator.get_paginated_response(paginated_data)
-        return dictionary_entries
-
-    def to_representation(self, instance):
-        output = super().to_representation(instance)
-        data = output.pop("data", None)
-        for key, value in data.items():
-            output[key] = value
-        return output
-
     class Meta:
         model = Site
         fields = (
             "config",
             "categories",
-            "data",
         )
 
 
@@ -216,7 +193,7 @@ class DictionaryEntryPaginator(pagination.PageNumberPagination):
     django_paginator_class = Paginator
     page_size = 50
 
-    def get_paginated_response(self, data):
+    def get_paginated_data(self, data):
         return OrderedDict(
             [
                 ("count", self.page.paginator.count),
