@@ -7,7 +7,7 @@ from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models import Alphabet, Site
+from backend.models import Alphabet
 from backend.models.dictionary import DictionaryEntry
 from backend.models.media import Audio, Image
 from backend.permissions import utils
@@ -25,16 +25,6 @@ class SnakeCaseJSONRenderer(JSONRenderer):
         # convert data keys to snake_case
         data = json.loads(json.dumps(data, separators=(",", ":")))
         return super().render(data, renderer_context=renderer_context)
-
-
-def dict_entry_type_mtd_conversion(type):
-    match type:
-        case DictionaryEntry.TypeOfDictionaryEntry.WORD:
-            return "words"
-        case DictionaryEntry.TypeOfDictionaryEntry.PHRASE:
-            return "phrases"
-        case _:
-            return None
 
 
 @extend_schema_view(
@@ -68,39 +58,36 @@ class SitesDataViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return (
-                DictionaryEntry.objects.filter(site__id__in=site)
-                .select_related(
-                    "part_of_speech",
-                )
-                .prefetch_related(
-                    Prefetch(
-                        "related_audio",
-                        queryset=Audio.objects.all()
-                        .select_related(
-                            "original",
-                        )
-                        .prefetch_related(
-                            "speakers",
-                        ),
-                    ),
-                    Prefetch(
-                        "related_images",
-                        queryset=Image.objects.all().select_related(
-                            "original",
-                        ),
-                    ),
-                    Prefetch("site__alphabet_set", queryset=Alphabet.objects.all()),
-                    "translation_set",
-                    "categories",
-                    "categories__parent",
-                    "acknowledgement_set",
-                    "note_set",
-                )
+        return (
+            DictionaryEntry.objects.filter(site__id__in=site)
+            .select_related(
+                "part_of_speech",
             )
-        else:
-            return DictionaryEntry.objects.none()
+            .prefetch_related(
+                Prefetch(
+                    "related_audio",
+                    queryset=Audio.objects.all()
+                    .select_related(
+                        "original",
+                    )
+                    .prefetch_related(
+                        "speakers",
+                    ),
+                ),
+                Prefetch(
+                    "related_images",
+                    queryset=Image.objects.all().select_related(
+                        "original",
+                    ),
+                ),
+                Prefetch("site__alphabet_set", queryset=Alphabet.objects.all()),
+                "translation_set",
+                "categories",
+                "categories__parent",
+                "acknowledgement_set",
+                "note_set",
+            )
+        )
 
     def list(self, request, *args, **kwargs):
         queryset = utils.filter_by_viewable(request.user, self.get_queryset())
@@ -117,14 +104,10 @@ class SitesDataViewSet(
                 "category_set__parent",
             )
         )
-        if site.count() > 0:
-            site_config_and_categories_json = SiteDataSerializer(
-                site[0], context={"request": request}
-            ).data
-        else:
-            site_config_and_categories_json = SiteDataSerializer(
-                Site.objects.none(), context={"request": request}
-            ).data
+
+        site_config_and_categories_json = SiteDataSerializer(
+            site[0], context={"request": request}
+        ).data
 
         for key, value in site_config_and_categories_json.items():
             data[key] = value
