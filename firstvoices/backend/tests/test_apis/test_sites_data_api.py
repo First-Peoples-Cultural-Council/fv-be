@@ -31,6 +31,12 @@ class TestSitesDataEndpoint:
 
     client = None
 
+    optional_constants = {
+        "PART_OF_SPEECH": "Part of Speech",
+        "REFERENCE": "Reference",
+        "NOTE": "Note",
+    }
+
     def get_list_endpoint(self, site_slug):
         return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
 
@@ -220,7 +226,13 @@ class TestSitesDataEndpoint:
             ],
             "theme": [parent_category.title],
             "secondary_theme": [child_category.title],
-            "optional": [{"Part of Speech": entry_one.part_of_speech.title}],
+            "optional": [
+                {
+                    self.optional_constants[
+                        "PART_OF_SPEECH"
+                    ]: entry_one.part_of_speech.title
+                }
+            ],
             "compare_form": entry_one.title,
             "sort_form": entry_one.title,
             "sorting_form": [
@@ -246,7 +258,13 @@ class TestSitesDataEndpoint:
             "img": [],
             "theme": [],
             "secondary_theme": [],
-            "optional": [{"Part of Speech": entry_two.part_of_speech.title}],
+            "optional": [
+                {
+                    self.optional_constants[
+                        "PART_OF_SPEECH"
+                    ]: entry_two.part_of_speech.title
+                }
+            ],
             "compare_form": entry_two.title,
             "sort_form": entry_two.title,
             "sorting_form": [
@@ -363,9 +381,11 @@ class TestSitesDataEndpoint:
 
         assert dictionary_entries[0]["optional"] == [
             {
-                "Reference": acknowledgement.text,
-                "Part of Speech": entry_one.part_of_speech.title,
-                "Note": note.text,
+                self.optional_constants["REFERENCE"]: acknowledgement.text,
+                self.optional_constants[
+                    "PART_OF_SPEECH"
+                ]: entry_one.part_of_speech.title,
+                self.optional_constants["NOTE"]: note.text,
             }
         ]
         assert len(dictionary_entries[0]["optional"][0]) == 3
