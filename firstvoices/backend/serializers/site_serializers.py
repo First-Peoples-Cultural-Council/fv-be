@@ -85,6 +85,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
+    stats = SiteViewLinkField(view_name="api:stats-list")
     stories = SiteViewLinkField(view_name="api:story-list")
     videos = SiteViewLinkField(view_name="api:video-list")
     widgets = SiteViewLinkField(view_name="api:sitewidget-list")
@@ -118,6 +119,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "pages",
             "people",
             "songs",
+            "stats",
             "stories",
             "videos",
             "widgets",
