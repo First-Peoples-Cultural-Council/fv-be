@@ -67,9 +67,9 @@ class TestSitesDataEndpoint:
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        config = response_data["siteDataExport"]["config"]
+        config = response_data["config"]
         assert config["L1"] == {
             "name": site.title,
             "lettersInLanguage": [],
@@ -85,12 +85,14 @@ class TestSitesDataEndpoint:
         char_b = CharacterFactory(site=site, title="b")
         char_c = CharacterFactory(site=site, title="c")
 
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug), format="json"
+        )
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        config = response_data["siteDataExport"]["config"]
+        config = response_data["config"]
         assert config["L1"] == {
             "name": site.title,
             "lettersInLanguage": [char_a.title, char_b.title, char_c.title],
@@ -100,26 +102,91 @@ class TestSitesDataEndpoint:
         assert self.is_time_format(config["build"])
 
     @pytest.mark.django_db
+    def test_empty_categories(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        site.category_set.all().delete()
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        categories = response_data["categories"]
+        assert len(categories) == 0
+
+    @pytest.mark.django_db
+    def test_full_categories(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        site.category_set.all().delete()
+
+        parent_category = factories.CategoryFactory.create(
+            site=site, title="A category"
+        )
+        child_category = factories.CategoryFactory.create(
+            site=site, title="B category", parent=parent_category
+        )
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        categories = response_data["categories"]
+        assert len(categories) == 2
+
+        assert categories[0] == {
+            "category": parent_category.title,
+            "parent_category": None,
+        }
+        assert categories[1] == {
+            "category": child_category.title,
+            "parent_category": parent_category.title,
+        }
+
+    @pytest.mark.django_db
     def test_dictionary_empty(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 0
 
     @pytest.mark.django_db
     def test_dictionary_entries(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        speaker = factories.PersonFactory.create(site=site)
+        audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
+
+        image = factories.ImageFactory.create(site=site)
+
+        parent_category = factories.CategoryFactory.create(site=site)
+        child_category = factories.CategoryFactory.create(
+            site=site, parent=parent_category
+        )
+
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title="title_one",
+            related_audio=[audio],
+            related_images=[image],
         )
+        factories.DictionaryEntryCategoryFactory.create(
+            category=parent_category, dictionary_entry=entry_one
+        )
+        factories.DictionaryEntryCategoryFactory.create(
+            category=child_category, dictionary_entry=entry_one
+        )
+
         entry_two = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
@@ -130,9 +197,9 @@ class TestSitesDataEndpoint:
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 2
 
         assert dictionary_entries[0] == {
@@ -142,16 +209,18 @@ class TestSitesDataEndpoint:
             "definition": None,
             "audio": [
                 {
-                    "speaker": None,
-                    "filename": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/136e1a0a-a707-41a9-9ec8"
-                    "-1a4f05b55454/file:content/TestMP3.mp3",
+                    "speaker": speaker.name,
+                    "filename": audio.original.content.url,
                 }
             ],
-            "img": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/5c9eef16-4665-40b9-89ce-debc0301f93b/file"
-            ":content/pexels-stijn-dijkstra-2583852.jpg",
-            "theme": [],
-            "secondary_theme": None,
-            "optional": [{'Part of Speech': entry_one.part_of_speech.title}],
+            "img": [
+                {
+                    "filename": image.original.content.url,
+                }
+            ],
+            "theme": [parent_category.title],
+            "secondary_theme": [child_category.title],
+            "optional": [{"Part of Speech": entry_one.part_of_speech.title}],
             "compare_form": entry_one.title,
             "sort_form": entry_one.title,
             "sorting_form": [
@@ -173,18 +242,11 @@ class TestSitesDataEndpoint:
             "entryID": str(entry_two.id),
             "word": entry_two.title,
             "definition": None,
-            "audio": [
-                {
-                    "speaker": None,
-                    "filename": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/136e1a0a-a707-41a9-9ec8"
-                    "-1a4f05b55454/file:content/TestMP3.mp3",
-                }
-            ],
-            "img": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/5c9eef16-4665-40b9-89ce-debc0301f93b/file"
-            ":content/pexels-stijn-dijkstra-2583852.jpg",
+            "audio": [],
+            "img": [],
             "theme": [],
-            "secondary_theme": None,
-            "optional": [{'Part of Speech': entry_two.part_of_speech.title}],
+            "secondary_theme": [],
+            "optional": [{"Part of Speech": entry_two.part_of_speech.title}],
             "compare_form": entry_two.title,
             "sort_form": entry_two.title,
             "sorting_form": [
@@ -217,9 +279,9 @@ class TestSitesDataEndpoint:
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 1
 
         assert dictionary_entries[0]["definition"] == translation.text
@@ -246,25 +308,24 @@ class TestSitesDataEndpoint:
         category3 = CategoryFactory(
             site=site, title="test category C", parent=category2
         )
+        DictionaryEntryCategoryFactory(category=category2, dictionary_entry=entry_two)
         DictionaryEntryCategoryFactory(category=category3, dictionary_entry=entry_two)
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 2
 
-        assert dictionary_entries[0]["theme"] == [
-            {"category": category1.title, "parent_category": None}
-        ]
+        assert dictionary_entries[0]["theme"] == [category1.title]
         assert len(dictionary_entries[0]["theme"]) == 1
 
-        assert dictionary_entries[1]["theme"] == [
-            {"category": category3.title, "parent_category": category2.title}
-        ]
+        assert dictionary_entries[1]["theme"] == [category2.title]
         assert len(dictionary_entries[1]["theme"]) == 1
+        assert dictionary_entries[1]["secondary_theme"] == [category3.title]
+        assert len(dictionary_entries[1]["secondary_theme"]) == 1
 
     @pytest.mark.django_db
     def test_dictionary_entries_optional(self):
@@ -295,9 +356,9 @@ class TestSitesDataEndpoint:
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 1
 
         assert dictionary_entries[0]["optional"] == [
@@ -328,9 +389,9 @@ class TestSitesDataEndpoint:
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)[0]
+        response_data = json.loads(response.content)
 
-        dictionary_entries = response_data["siteDataExport"]["data"]
+        dictionary_entries = response_data["data"]
         assert len(dictionary_entries) == 1
 
         assert dictionary_entries[0]["compare_form"] == entry_one.title

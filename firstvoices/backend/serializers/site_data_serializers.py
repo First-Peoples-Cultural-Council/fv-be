@@ -1,12 +1,12 @@
 from collections import OrderedDict
 from datetime import datetime
 
-from django.core.paginator import Paginator
 from rest_framework import pagination, serializers
 
 from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.media import Audio, Image
+from backend.pagination import FasterCountPagination
 from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
@@ -202,8 +202,8 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
 
 class DictionaryEntryPaginator(pagination.PageNumberPagination):
-    django_paginator_class = Paginator
-    page_size = 50
+    django_paginator_class = FasterCountPagination
+    page_size = 20
 
     def get_paginated_data(self, data):
         return OrderedDict(
@@ -215,14 +215,14 @@ class DictionaryEntryPaginator(pagination.PageNumberPagination):
                     "next",
                     self.page.next_page_number() if self.page.has_next() else None,
                 ),
-                ("next_url", self.get_next_link()),
+                ("nextUrl", self.get_next_link()),
                 (
                     "previous",
                     self.page.previous_page_number()
                     if self.page.has_previous()
                     else None,
                 ),
-                ("previous_url", self.get_previous_link()),
+                ("previousUrl", self.get_previous_link()),
                 ("data", data),
             ]
         )

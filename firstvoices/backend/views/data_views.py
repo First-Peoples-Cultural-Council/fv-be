@@ -20,10 +20,7 @@ from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
 
 
-class SnakeCaseJSONRenderer(BrowsableAPIRenderer):
-    def get_default_renderer(self, view):
-        return JSONRenderer()
-
+class SnakeCaseJSONRenderer(JSONRenderer):
     def render(self, data, media_type=None, renderer_context=None):
         # convert data keys to snake_case
         data = json.loads(json.dumps(data, separators=(",", ":")))
@@ -67,7 +64,7 @@ class SitesDataViewSet(
     http_method_names = ["get"]
     serializer_class = DictionaryEntryDataSerializer
     pagination_class = DictionaryEntryPaginator
-    renderer_classes = [SnakeCaseJSONRenderer]
+    renderer_classes = [SnakeCaseJSONRenderer, BrowsableAPIRenderer]
 
     def get_queryset(self):
         site = self.get_validated_site()
