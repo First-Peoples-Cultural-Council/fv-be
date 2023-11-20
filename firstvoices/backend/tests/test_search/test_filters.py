@@ -270,8 +270,18 @@ class TestHasMediaParams:
 
     @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
     def test_has_media_false(self, has_media):
-        expected_true_filter = f"{{'term': {{'{has_media}': False}}}}"
+        expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
         search_query = get_search_query(**{has_media: False})
         search_query = search_query.to_dict()
 
+        assert expected_false_filter in str(search_query)
+
+    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    def test_has_media_default(self, has_media):
+        expected_true_filter = f"{{'term': {{'{has_media}': True}}}}"
+        expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
         assert expected_true_filter not in str(search_query)
+        assert expected_false_filter not in str(search_query)

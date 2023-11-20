@@ -329,13 +329,13 @@ class BaseSearchViewSet(
         visibility = self.request.GET.get("visibility", "")
         valid_visibility = get_valid_visibility(visibility)
 
-        has_audio = self.request.GET.get("hasAudio", False)
+        has_audio = self.request.GET.get("hasAudio", None)
         has_audio = get_valid_boolean(has_audio)
 
-        has_video = self.request.GET.get("hasVideo", False)
+        has_video = self.request.GET.get("hasVideo", None)
         has_video = get_valid_boolean(has_video)
 
-        has_image = self.request.GET.get("hasImage", False)
+        has_image = self.request.GET.get("hasImage", None)
         has_image = get_valid_boolean(has_image)
 
         sort = self.request.GET.get("sort", "")
