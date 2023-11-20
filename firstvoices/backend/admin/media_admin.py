@@ -151,7 +151,8 @@ class AudioSpeakerAdmin(BaseAdmin):
 
 
 @admin.register(Person)
-class PersonAdmin(BaseSiteContentAdmin):
+class PersonAdmin(BaseSiteContentAdmin, HiddenBaseAdmin):
+    # read-only form to support auto-complete in audio form
     fields = (
         "site",
         "name",
@@ -159,3 +160,8 @@ class PersonAdmin(BaseSiteContentAdmin):
     )
     list_display = ("name",) + BaseSiteContentAdmin.list_display
     search_fields = ("name", "bio")
+    readonly_fields = (
+        "name",
+        "bio",
+        "site",
+    ) + BaseSiteContentAdmin.readonly_fields
