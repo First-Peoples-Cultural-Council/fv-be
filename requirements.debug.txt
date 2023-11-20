@@ -13,6 +13,6 @@ pylint-django==2.5.5  # https://github.com/PyCQA/pylint-django
 pre-commit==3.5.0  # https://github.com/pre-commit/pre-commit
 
 # Pytest --------------------------
-pytest-xdist==3.3.1  # https://github.com/pytest-dev/pytest-xdist
+pytest-xdist==3.4.0  # https://github.com/pytest-dev/pytest-xdist
 pytest-split==0.8.1  # https://github.com/jerry-git/pytest-split
 pytest-cov==4.1.0  # https://github.com/pytest-dev/pytest-cov
