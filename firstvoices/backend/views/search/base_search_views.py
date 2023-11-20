@@ -259,6 +259,78 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasAudio",
+                description="Filter documents that have related audio.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Searches for documents that have related audio.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No hasAudio filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="hasImage",
+                description="Filter documents that have related images.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Searches for documents that have related images.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No hasImage filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="hasVideo",
+                description="Filter documents that have related videos.",
+                required=False,
+                default=False,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Searches for documents that have related videos.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="No hasVideo filter applied.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=False,
+                        description="Invalid input, defaults to false.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
