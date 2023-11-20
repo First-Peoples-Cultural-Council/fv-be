@@ -58,35 +58,31 @@ class SitesDataViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return (
-            DictionaryEntry.objects.filter(site__id__in=site)
-            .select_related(
-                "part_of_speech",
-            )
-            .prefetch_related(
-                Prefetch(
-                    "related_audio",
-                    queryset=Audio.objects.all()
-                    .select_related(
-                        "original",
-                    )
-                    .prefetch_related(
-                        "speakers",
-                    ),
+        return DictionaryEntry.objects.filter(site__id__in=site).prefetch_related(
+            "part_of_speech",
+            "site",
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.all()
+                .select_related(
+                    "original",
+                )
+                .prefetch_related(
+                    "speakers",
                 ),
-                Prefetch(
-                    "related_images",
-                    queryset=Image.objects.all().select_related(
-                        "original",
-                    ),
+            ),
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.all().select_related(
+                    "original",
                 ),
-                Prefetch("site__alphabet_set", queryset=Alphabet.objects.all()),
-                "translation_set",
-                "categories",
-                "categories__parent",
-                "acknowledgement_set",
-                "note_set",
-            )
+            ),
+            Prefetch("site__alphabet_set", queryset=Alphabet.objects.all()),
+            "translation_set",
+            "categories",
+            "categories__parent",
+            "acknowledgement_set",
+            "note_set",
         )
 
     def list(self, request, *args, **kwargs):
