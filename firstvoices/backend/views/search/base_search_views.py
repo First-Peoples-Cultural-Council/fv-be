@@ -126,9 +126,10 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="kids",
-                description="Return only kids-friendly entries if true",
+                description="Return kids-friendly entries if true, not kids-friendly entries if false, "
+                "and all entries if left empty or provided an invalid value.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
@@ -139,20 +140,21 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No kids filter applied.",
+                        description="Return not kids-friendly entries only.",
                     ),
                     OpenApiExample(
                         "Apples",
-                        value=False,
-                        description="Invalid input, defaults to false.",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="games",
-                description="Return entries which are not excluded from games.",
+                description="Return entries which are not excluded from games if true, entries which are excluded from "
+                "games if false, and all entries if left empty or provided with an invalid value.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
@@ -163,12 +165,12 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No games filter applied.",
+                        description="Return entries which are excluded from games.",
                     ),
                     OpenApiExample(
                         "Oranges",
                         value=False,
-                        description="Invalid input, defaults to false.",
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
