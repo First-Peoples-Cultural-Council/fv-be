@@ -253,10 +253,14 @@ def get_valid_category_id(site, input_category):
 
 def get_valid_boolean(input_val):
     # Python treats bool("False") as true, thus manual verification
-    if str(input_val).strip().lower() in ["true"]:
+    cleaned_input = str(input_val).strip().lower()
+
+    if cleaned_input == "true":
         return True
-    else:
+    elif cleaned_input == "false":
         return False
+    else:
+        return None
 
 
 def get_valid_visibility(input_visibility_str):

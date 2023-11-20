@@ -320,10 +320,10 @@ class BaseSearchViewSet(
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)
 
-        kids_flag = self.request.GET.get("kids", False)
+        kids_flag = self.request.GET.get("kids", None)
         kids_flag = get_valid_boolean(kids_flag)
 
-        games_flag = self.request.GET.get("games", False)
+        games_flag = self.request.GET.get("games", None)
         games_flag = get_valid_boolean(games_flag)
 
         visibility = self.request.GET.get("visibility", "")

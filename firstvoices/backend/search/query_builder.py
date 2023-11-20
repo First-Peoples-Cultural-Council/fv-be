@@ -33,8 +33,8 @@ def get_search_query(
     domain="both",
     starts_with_char="",
     category_id="",
-    kids=False,
-    games=False,
+    kids=None,
+    games=None,
     visibility="",
     has_audio="",
     has_video="",
@@ -77,10 +77,10 @@ def get_search_query(
     if category_id:
         search_query = search_query.query(get_category_query(category_id))
 
-    if kids:
+    if kids is not None:
         search_query = search_query.query(get_kids_query(kids))
 
-    if games:
+    if games is not None:
         search_query = search_query.query(get_games_query(games))
 
     if visibility != "":

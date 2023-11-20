@@ -87,48 +87,56 @@ class TestTypesFilter:
 
 @pytest.mark.django_db
 class TestKids:
-    expected_kids_filter = "{'term': {'exclude_from_kids': False}}"
+    # The following boolean flags in the query are opposite of input parameter as
+    # the model attribute represent an exclusion criteria
+    expected_kids_true_filter = "{'term': {'exclude_from_kids': False}}"
+    expected_kids_false_filter = "{'term': {'exclude_from_kids': True}}"
 
     def test_kids_true(self):
         search_query = get_search_query(kids=True)
         search_query = search_query.to_dict()
 
-        assert self.expected_kids_filter in str(search_query)
+        assert self.expected_kids_true_filter in str(search_query)
 
     def test_kids_false(self):
         search_query = get_search_query(kids=False)
         search_query = search_query.to_dict()
 
-        assert self.expected_kids_filter not in search_query
+        assert self.expected_kids_false_filter in str(search_query)
 
     def test_default(self):
         search_query = get_search_query()
         search_query = search_query.to_dict()
 
-        assert self.expected_kids_filter not in search_query
+        assert self.expected_kids_true_filter not in str(search_query)
+        assert self.expected_kids_false_filter not in str(search_query)
 
 
 @pytest.mark.django_db
 class TestGames:
-    expected_games_filter = "{'term': {'exclude_from_games': False}}"
+    # The following boolean flags in the query are opposite of input parameter as
+    # the model attribute represent an exclusion criteria
+    expected_games_true_filter = "{'term': {'exclude_from_games': False}}"
+    expected_games_false_filter = "{'term': {'exclude_from_games': True}}"
 
     def test_games_true(self):
         search_query = get_search_query(games=True)
         search_query = search_query.to_dict()
 
-        assert self.expected_games_filter in str(search_query)
+        assert self.expected_games_true_filter in str(search_query)
 
     def test_games_false(self):
         search_query = get_search_query(games=False)
         search_query = search_query.to_dict()
 
-        assert self.expected_games_filter not in search_query
+        assert self.expected_games_false_filter in str(search_query)
 
     def test_default(self):
         search_query = get_search_query()
         search_query = search_query.to_dict()
 
-        assert self.expected_games_filter not in search_query
+        assert self.expected_games_true_filter not in str(search_query)
+        assert self.expected_games_false_filter not in str(search_query)
 
 
 class TestSearchPermissions:
