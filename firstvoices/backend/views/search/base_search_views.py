@@ -126,9 +126,10 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="kids",
-                description="Return only kids-friendly entries if true",
+                description="Return kids-friendly entries if true, not kids-friendly entries if false, "
+                "and all entries if left empty or provided an invalid value.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
@@ -139,20 +140,21 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No kids filter applied.",
+                        description="Return only entries that are not kid-friendly.",
                     ),
                     OpenApiExample(
                         "Apples",
-                        value=False,
-                        description="Invalid input, defaults to false.",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="games",
-                description="Return entries which are not excluded from games.",
+                description="Return entries which are not excluded from games if true, entries which are excluded from "
+                "games if false, and all entries if left empty or provided with an invalid value.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
@@ -163,12 +165,12 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No games filter applied.",
+                        description="Return entries which are excluded from games.",
                     ),
                     OpenApiExample(
                         "Oranges",
                         value=False,
-                        description="Invalid input, defaults to false.",
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
@@ -260,23 +262,23 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 name="hasAudio",
                 description="Filter documents that have related audio.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Searches for documents that have related audio.",
+                        description="Returns documents that have related audio.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No hasAudio filter applied.",
+                        description="Returns documents that do not have related audio.",
                     ),
                     OpenApiExample(
                         "Oranges",
-                        value=False,
-                        description="Invalid input, defaults to false.",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
@@ -284,23 +286,23 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 name="hasImage",
                 description="Filter documents that have related images.",
                 required=False,
-                default=False,
+                default=None,
                 type=bool,
                 examples=[
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Searches for documents that have related images.",
+                        description="Returns documents that have related images.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No hasImage filter applied.",
+                        description="Returns documents that do not have related images.",
                     ),
                     OpenApiExample(
                         "Oranges",
-                        value=False,
-                        description="Invalid input, defaults to false.",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
@@ -314,17 +316,17 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Searches for documents that have related videos.",
+                        description="Returns documents that have related videos.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="No hasVideo filter applied.",
+                        description="Returns documents that do not have related videos.",
                     ),
                     OpenApiExample(
                         "Oranges",
                         value=False,
-                        description="Invalid input, defaults to false.",
+                        description="Invalid input, defaults to all entries.",
                     ),
                 ],
             ),
@@ -392,22 +394,22 @@ class BaseSearchViewSet(
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)
 
-        kids_flag = self.request.GET.get("kids", False)
+        kids_flag = self.request.GET.get("kids", None)
         kids_flag = get_valid_boolean(kids_flag)
 
-        games_flag = self.request.GET.get("games", False)
+        games_flag = self.request.GET.get("games", None)
         games_flag = get_valid_boolean(games_flag)
 
         visibility = self.request.GET.get("visibility", "")
         valid_visibility = get_valid_visibility(visibility)
 
-        has_audio = self.request.GET.get("hasAudio", False)
+        has_audio = self.request.GET.get("hasAudio", None)
         has_audio = get_valid_boolean(has_audio)
 
-        has_video = self.request.GET.get("hasVideo", False)
+        has_video = self.request.GET.get("hasVideo", None)
         has_video = get_valid_boolean(has_video)
 
-        has_image = self.request.GET.get("hasImage", False)
+        has_image = self.request.GET.get("hasImage", None)
         has_image = get_valid_boolean(has_image)
 
         sort = self.request.GET.get("sort", "")

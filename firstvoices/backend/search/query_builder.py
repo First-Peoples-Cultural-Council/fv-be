@@ -33,12 +33,12 @@ def get_search_query(
     domain="both",
     starts_with_char="",
     category_id="",
-    kids=False,
-    games=False,
+    kids=None,
+    games=None,
     visibility="",
-    has_audio="",
-    has_video="",
-    has_image="",
+    has_audio=None,
+    has_video=None,
+    has_image=None,
 ):
     # Building initial query
     indices = get_indices(types)
@@ -77,22 +77,22 @@ def get_search_query(
     if category_id:
         search_query = search_query.query(get_category_query(category_id))
 
-    if kids:
+    if kids is not None:
         search_query = search_query.query(get_kids_query(kids))
 
-    if games:
+    if games is not None:
         search_query = search_query.query(get_games_query(games))
 
     if visibility != "":
         search_query = search_query.query(get_visibility_query(visibility))
 
-    if has_audio:
+    if has_audio is not None:
         search_query = search_query.query(get_has_audio_query(has_audio))
 
-    if has_video:
+    if has_video is not None:
         search_query = search_query.query(get_has_video_query(has_video))
 
-    if has_image:
+    if has_image is not None:
         search_query = search_query.query(get_has_image_query(has_image))
 
     return search_query
