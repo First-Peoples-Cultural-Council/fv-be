@@ -283,6 +283,9 @@ sentry_sdk.init(
     traces_sample_rate=os.getenv(
         "SENTRY_TRACES_SAMPLE_RATE", 1.0
     ),  # The percentage of traces to send to sentry (min 0.0, max 1.0)
+    sample_rate=os.getenv(
+        "SENTRY_ERROR_SAMPLE_RATE", 1.0
+    ),  # The percentage of errors to send to sentry (min 0.0, max 1.0)
     send_default_pii=False,  # Disables the sending of personally identifiable information (see
     # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
     request_bodies="never",  # Disables the sending of request bodies
