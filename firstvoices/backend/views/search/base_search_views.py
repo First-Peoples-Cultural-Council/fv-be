@@ -140,7 +140,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Return not kids-friendly entries only.",
+                        description="Return only entries that are not kid-friendly.",
                     ),
                     OpenApiExample(
                         "Apples",
