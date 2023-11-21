@@ -735,3 +735,52 @@ class TestJoinRequestEndpoints(
         assert response_data["results"][0]["id"] == str(join_request_three.id)
         assert response_data["results"][1]["id"] == str(join_request_two.id)
         assert response_data["results"][2]["id"] == str(join_request_one.id)
+
+    @pytest.mark.django_db
+    def test_create_multiple_requests_not_possible(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [{"reason": "other"}],
+            "reason_note": self.REASON_NOTE,
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+        assert JoinRequest.objects.count() == 1
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+        assert JoinRequest.objects.count() == 1
+
+    @pytest.mark.parametrize(
+        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+    )
+    @pytest.mark.django_db
+    def test_create_not_possible_if_already_member(self, role):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.UserFactory.create()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "reasons": [{"reason": "other"}],
+            "reason_note": self.REASON_NOTE,
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+        assert JoinRequest.objects.count() == 0

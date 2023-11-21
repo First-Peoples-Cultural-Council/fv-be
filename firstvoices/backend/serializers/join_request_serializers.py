@@ -76,6 +76,9 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
                 "A join request for this site and user already exists."
             )
 
+        if site.membership_set.filter(user=user).exists():
+            raise serializers.ValidationError("User is already a member of this site.")
+
         if not attrs["reasons_set"]:
             raise serializers.ValidationError(
                 "A join request must have at least one reason."
