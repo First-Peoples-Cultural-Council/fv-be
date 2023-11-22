@@ -13,7 +13,6 @@ class User(AbstractUser):
         * email is a required, unique field, so it can be treated like a username
         * sub is a non-required field that holds the unique JWT "sub" (subject) field for token authentication
         * password is not required
-        * name fields are not stored, so we can depend on jwt id tokens instead
 
     Notes:
         * is_staff and is_superuser are included, only because they are used by the admin site

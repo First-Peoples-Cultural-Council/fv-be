@@ -15,11 +15,11 @@ def extract_bearer_token(auth):
     try:
         scheme, token = auth.split()
     except ValueError:
-        raise exceptions.AuthenticationFailed("Invalid format for authorization header")
+        raise exceptions.NotAuthenticated("Invalid format for authorization header")
     if scheme != "Bearer":
-        raise exceptions.AuthenticationFailed("Authorization header invalid")
+        raise exceptions.NotAuthenticated("Authorization header invalid")
     if not token:
-        raise exceptions.AuthenticationFailed("No token found")
+        raise exceptions.NotAuthenticated("No token found")
     return token
 
 
@@ -29,7 +29,7 @@ def get_signing_key(token):
     try:
         return jwks_client.get_signing_key_from_jwt(token)
     except Exception as exc:
-        raise exceptions.AuthenticationFailed(str(exc))
+        raise exceptions.NotAuthenticated(str(exc))
 
 
 def get_user_token(bearer_token, signing_key):
@@ -42,12 +42,10 @@ def get_user_token(bearer_token, signing_key):
             options={"verify_exp": True},
         )
     except jwt.InvalidTokenError as exc:
-        raise exceptions.AuthenticationFailed(exc)
+        raise exceptions.NotAuthenticated(exc)
 
     if not user_token:
-        raise exceptions.AuthenticationFailed(
-            "Failed to decode user authorization token"
-        )
+        raise exceptions.NotAuthenticated("Failed to decode user authorization token")
 
     return user_token
 
@@ -67,7 +65,7 @@ def get_or_create_user_for_token(user_token, auth):
         if "email" not in user_info:
             logger = logging.getLogger(__name__)
             logger.error("Identity Token does not contain required email field.")
-            raise exceptions.AuthenticationFailed(
+            raise exceptions.NotAuthenticated(
                 "Authentication is currently unavailable."
             )
 
@@ -79,7 +77,7 @@ def get_or_create_user_for_token(user_token, auth):
                 return add_new_user(sub, user_info)
 
             except IntegrityError:
-                raise exceptions.AuthenticationFailed(
+                raise exceptions.NotAuthenticated(
                     "Can't add user account because that email is already in use."
                 )
 
@@ -148,7 +146,7 @@ def retrieve_user_info_for_token(auth):
         return userinfo_response.json()
 
     else:
-        raise exceptions.AuthenticationFailed("Failed to resolve user information")
+        raise exceptions.NotAuthenticated("Failed to resolve user information")
 
 
 class JwtAuthentication(authentication.BaseAuthentication):
