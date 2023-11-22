@@ -4,8 +4,9 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import factory
 import jwt
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import NotAuthenticated
 
 from . import authentication
 from .authentication import JwtAuthentication
@@ -174,7 +175,7 @@ class TestGetOrCreateUserForToken:
         with patch(request, return_value=mock_userinfo_response(email)):
             token = {"sub": "new-id-xyz"}
 
-            with pytest.raises(AuthenticationFailed):
+            with pytest.raises(NotAuthenticated):
                 authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
@@ -182,7 +183,7 @@ class TestGetOrCreateUserForToken:
         with patch(request, return_value=mock_failed_userinfo_response()):
             token = {"sub": "new-id-xyz"}
 
-            with pytest.raises(AuthenticationFailed):
+            with pytest.raises(NotAuthenticated):
                 authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
@@ -192,7 +193,7 @@ class TestGetOrCreateUserForToken:
             return_value=mock_misconfigured_userinfo_response({}),
         ):
             token = {"sub": "123_new_user"}
-            with pytest.raises(AuthenticationFailed):
+            with pytest.raises(NotAuthenticated):
                 authentication.get_or_create_user_for_token(token, None)
 
     @pytest.mark.django_db
@@ -315,6 +316,11 @@ class TestGetOrCreateUserForToken:
             assert found_user.last_name == expected_last_name
 
 
+get_signing_key_from_jwt = "jwt.PyJWKClient.get_signing_key_from_jwt"
+jwt_decode = "jwt.decode"
+valid_token = "Bearer valid123"
+
+
 class TestAuthenticate:
     def test_no_auth_header_means_anonymous(self):
         mock_request = MagicMock()
@@ -331,27 +337,51 @@ class TestAuthenticate:
         mock_request = MagicMock()
         type(mock_request).META = {"HTTP_AUTHORIZATION": token}
         auth = JwtAuthentication()
-        with pytest.raises(AuthenticationFailed):
+        with pytest.raises(NotAuthenticated):
             auth.authenticate(mock_request)
 
     def test_expired_token_fails(self):
         with patch(
-            "jwt.PyJWKClient.get_signing_key_from_jwt",
+            get_signing_key_from_jwt,
             side_effect=jwt.ExpiredSignatureError(),
         ):
             mock_request = MagicMock()
-            type(mock_request).META = {"HTTP_AUTHORIZATION": "Bearer valid123"}
+            type(mock_request).META = {"HTTP_AUTHORIZATION": valid_token}
             auth = JwtAuthentication()
-            with pytest.raises(AuthenticationFailed):
+            with pytest.raises(NotAuthenticated):
                 auth.authenticate(mock_request)
 
     @pytest.mark.parametrize("exception_type", [jwt.InvalidTokenError, jwt.DecodeError])
     def test_invalid_token_fails(self, exception_type):
-        with patch("jwt.decode", side_effect=exception_type()), patch(
-            "jwt.PyJWKClient.get_signing_key_from_jwt", return_value=MagicMock()
+        with patch(jwt_decode, side_effect=exception_type()), patch(
+            get_signing_key_from_jwt, return_value=MagicMock()
         ):
             mock_request = MagicMock()
-            type(mock_request).META = {"HTTP_AUTHORIZATION": "Bearer valid123"}
+            type(mock_request).META = {"HTTP_AUTHORIZATION": valid_token}
             auth = JwtAuthentication()
-            with pytest.raises(AuthenticationFailed):
+            with pytest.raises(NotAuthenticated):
                 auth.authenticate(mock_request)
+
+    @pytest.mark.parametrize("exception_type", [jwt.InvalidTokenError, jwt.DecodeError])
+    def test_decoding_token_fails(self, exception_type):
+        with patch(jwt_decode, return_value=None), patch(
+            get_signing_key_from_jwt, return_value=MagicMock()
+        ):
+            mock_request = MagicMock()
+            type(mock_request).META = {"HTTP_AUTHORIZATION": valid_token}
+            auth = JwtAuthentication()
+            with pytest.raises(NotAuthenticated):
+                auth.authenticate(mock_request)
+
+    def test_authenticate_success(self):
+        with patch(jwt_decode, return_value="token123"), patch(
+            get_signing_key_from_jwt, return_value=MagicMock()
+        ), patch(
+            "jwt_auth.authentication.get_or_create_user_for_token",
+            return_value=AnonymousUser(),
+        ):
+            mock_request = MagicMock()
+            type(mock_request).META = {"HTTP_AUTHORIZATION": valid_token}
+            auth = JwtAuthentication()
+            user, _ = auth.authenticate(mock_request)
+            assert user.is_anonymous
