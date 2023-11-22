@@ -742,8 +742,6 @@ class TestJoinRequestEndpoints(
         user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
-        self.client.force_authenticate(user=user)
-
         data = {
             "reasons": [{"reason": "other"}],
             "reason_note": self.REASON_NOTE,
@@ -770,8 +768,6 @@ class TestJoinRequestEndpoints(
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.UserFactory.create()
         factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
         self.client.force_authenticate(user=user)
 
         data = {
