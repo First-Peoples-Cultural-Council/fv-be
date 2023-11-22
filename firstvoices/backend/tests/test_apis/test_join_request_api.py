@@ -706,3 +706,32 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 201
         assert JoinRequest.objects.count() == 1
+
+    @pytest.mark.django_db
+    def test_list_order(self):
+        # Test that the list endpoint returns join request results ordered by reverse creation date
+
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        join_request_one = factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.PENDING
+        )
+        join_request_two = factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.PENDING
+        )
+        join_request_three = factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.PENDING
+        )
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 3
+
+        assert response_data["results"][0]["id"] == str(join_request_three.id)
+        assert response_data["results"][1]["id"] == str(join_request_two.id)
+        assert response_data["results"][2]["id"] == str(join_request_one.id)

@@ -143,10 +143,14 @@ class JoinRequestViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return JoinRequest.objects.filter(
-            site__slug=site[0].slug, status=JoinRequestStatus.PENDING
-        ).select_related(
-            "site", "site__language", "created_by", "last_modified_by", "user"
+        return (
+            JoinRequest.objects.filter(
+                site__slug=site[0].slug, status=JoinRequestStatus.PENDING
+            )
+            .order_by("-created")
+            .select_related(
+                "site", "site__language", "created_by", "last_modified_by", "user"
+            )
         )
 
     def get_validated_site(self):
