@@ -18,8 +18,7 @@ def extract_bearer_token(auth):
         raise exceptions.NotAuthenticated("Invalid format for authorization header")
     if scheme != "Bearer":
         raise exceptions.NotAuthenticated("Authorization header invalid")
-    if not token:
-        raise exceptions.NotAuthenticated("No token found")
+
     return token
 
 
