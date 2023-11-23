@@ -331,6 +331,30 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasTranslation",
+                description="Filter documents that have a related translation or title translation.",
+                required=False,
+                default=None,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Returns documents that have a related translation or title translation.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="Returns documents that do not have a related translation or title translation.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
@@ -412,6 +436,9 @@ class BaseSearchViewSet(
         has_image = self.request.GET.get("hasImage", None)
         has_image = get_valid_boolean(has_image)
 
+        has_translation = self.request.GET.get("hasTranslation", None)
+        has_translation = get_valid_boolean(has_translation)
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -429,6 +456,7 @@ class BaseSearchViewSet(
             "has_audio": has_audio,
             "has_video": has_video,
             "has_image": has_image,
+            "has_translation": has_translation,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -492,6 +520,7 @@ class BaseSearchViewSet(
             has_audio=search_params["has_audio"],
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
+            has_translation=search_params["has_translation"],
         )
 
         # Pagination

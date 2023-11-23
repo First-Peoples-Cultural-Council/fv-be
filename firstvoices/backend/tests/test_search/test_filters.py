@@ -285,3 +285,36 @@ class TestHasMediaParams:
 
         assert expected_true_filter not in str(search_query)
         assert expected_false_filter not in str(search_query)
+
+
+class TestHasTranslationParams:
+    def test_default(self):
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or "has_translation" not in str(search_query["query"]["bool"]["filter"])
+
+    def test_has_translation_true(self):
+        expected_true_filter = "{'term': {'has_translation': True}}"
+        search_query = get_search_query(has_translation=True)
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)
+
+    def test_has_translation_false(self):
+        expected_false_filter = "{'term': {'has_translation': False}}"
+        search_query = get_search_query(has_translation=False)
+        search_query = search_query.to_dict()
+
+        assert expected_false_filter in str(search_query)
+
+    def test_has_translation_default(self):
+        expected_true_filter = "{'term': {'has_translation': True}}"
+        expected_false_filter = "{'term': {'has_translation': False}}"
+        search_query = get_search_query()
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter not in str(search_query)
+        assert expected_false_filter not in str(search_query)
