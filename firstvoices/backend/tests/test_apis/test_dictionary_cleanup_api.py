@@ -1,18 +1,32 @@
 import json
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 
 import pytest
 from django.urls import reverse
 
 from backend.models import DictionaryEntry
 from backend.models.constants import AppRole, Visibility
+from backend.serializers.async_results_serializers import (
+    CustomOrderRecalculationResultSerializer,
+)
+from backend.tasks.alphabet_tasks import (
+    recalculate_custom_order,
+    recalculate_custom_order_preview,
+)
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseApiTest
 
 
-class TestDictionaryCleanupPreview(BaseApiTest):
+class TestDictionaryCleanupPreviewAPI(BaseApiTest):
     API_DETAIL_VIEW = "api:dictionary-cleanup-preview-list"
     SUCCESS_MESSAGE = {"message": "Recalculation preview has been queued."}
+
+    @pytest.fixture
+    def mock_celery_task_status(self, mocker):
+        with patch.object(
+            CustomOrderRecalculationResultSerializer, "get_current_task_status"
+        ) as mock_method:
+            yield mock_method
 
     def get_detail_endpoint(self, site_slug):
         return reverse(
@@ -87,12 +101,11 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         assert response.status_code == 200
         assert response_data["results"] == []
 
-    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
-    def test_recalculate_post(
+    @pytest.mark.django_db
+    def test_recalculate_post_success(
         self,
         celery_session_worker,
         celery_session_app,
-        django_db_serialized_rollback,
     ):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
@@ -108,16 +121,8 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         assert response.status_code == 202
         assert response_data == self.SUCCESS_MESSAGE
 
-    @pytest.mark.skip(
-        reason="This test now checks async code which can be done in a separate integration test suite."
-    )
-    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
-    def test_recalculate_e2e(
-        self,
-        celery_session_worker,
-        celery_session_app,
-        django_db_serialized_rollback,
-    ):
+    @pytest.mark.django_db
+    def test_recalculate_result_display(self, mock_celery_task_status):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         alphabet = factories.AlphabetFactory.create(site=site)
 
@@ -136,25 +141,16 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         ]
         alphabet.save()
 
-        response_post = self.client.post(self.get_detail_endpoint(site.slug))
+        recalculate_custom_order_preview(site_slug=site.slug)
+        mock_celery_task_status.return_value = "SUCCESS"
 
-        response_post_data = json.loads(response_post.content)
-        assert response_post.status_code == 202
-        assert response_post_data == self.SUCCESS_MESSAGE
+        response = self.client.get(self.get_detail_endpoint(site.slug))
+        response_data = json.loads(response.content)
+        assert response.status_code == 200
+        assert response_data["results"] == self.get_expected_response(site=site)
 
-        response_get = self.client.get(self.get_detail_endpoint(site.slug))
-
-        response_get_data = json.loads(response_get.content)
-        assert response_get.status_code == 200
-        assert response_get_data["results"] == self.get_expected_response(site=site)
-
-    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
-    def test_recalculate_permissions(
-        self,
-        celery_session_worker,
-        celery_session_app,
-        django_db_serialized_rollback,
-    ):
+    @pytest.mark.django_db
+    def test_recalculate_permissions(self, celery_session_worker, celery_session_app):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
@@ -179,7 +175,7 @@ class TestDictionaryCleanupPreview(BaseApiTest):
         assert response_get_data["results"] == []
 
 
-class TestDictionaryCleanup(TestDictionaryCleanupPreview):
+class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
     API_DETAIL_VIEW = "api:dictionary-cleanup-list"
     SUCCESS_MESSAGE = {"message": "Recalculation has been queued."}
 
@@ -194,22 +190,37 @@ class TestDictionaryCleanup(TestDictionaryCleanupPreview):
         )
         return response
 
-    @pytest.mark.skip(
-        reason="This test now checks async code which can be done in a separate integration test suite."
-    )
-    @pytest.mark.django_db(transaction=True, serialized_rollback=True)
-    def test_recalculate_e2e(
-        self,
-        celery_session_worker,
-        celery_session_app,
-        django_db_serialized_rollback,
-    ):
-        super().test_recalculate_e2e(
-            celery_session_worker, celery_session_app, django_db_serialized_rollback
-        )
-        entry = DictionaryEntry.objects.get(title="test")
-        entry2 = DictionaryEntry.objects.get(title="AAA")
-        assert DictionaryEntry.objects.get(id=entry.id).title == "test"
-        assert DictionaryEntry.objects.get(id=entry.id).custom_order == "!#$!"
-        assert DictionaryEntry.objects.get(id=entry2.id).title == "AAA"
-        assert DictionaryEntry.objects.get(id=entry2.id).custom_order == "%%%"
+    @pytest.mark.django_db
+    def test_recalculate_result_display(self, mock_celery_task_status):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
+        alphabet = factories.AlphabetFactory.create(site=site)
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        entry1 = factories.DictionaryEntryFactory.create(site=site, title="tèst")
+        entry2 = factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
+        factories.CharacterFactory.create(site=site, title="t")
+        factories.CharacterFactory.create(site=site, title="e")
+        factories.CharacterFactory.create(site=site, title="s")
+        factories.CharacterFactory.create(site=site, title="A")
+        alphabet.input_to_canonical_map = [
+            {"in": "è", "out": "e"},
+            {"in": "ᐱ", "out": "A"},
+        ]
+        alphabet.save()
+
+        recalculate_custom_order(site_slug=site.slug)
+        mock_celery_task_status.return_value = "SUCCESS"
+
+        response = self.client.get(self.get_detail_endpoint(site.slug))
+        response_data = json.loads(response.content)
+        assert response.status_code == 200
+        assert response_data["results"] == self.get_expected_response(site=site)
+
+        updated_entry1 = DictionaryEntry.objects.get(id=entry1.id)
+        updated_entry2 = DictionaryEntry.objects.get(id=entry2.id)
+        assert updated_entry1.title == "test"
+        assert updated_entry1.custom_order == "!#$!"
+        assert updated_entry2.title == "AAA"
+        assert updated_entry2.custom_order == "%%%"
