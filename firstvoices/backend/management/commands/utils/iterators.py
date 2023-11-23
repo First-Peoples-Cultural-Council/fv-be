@@ -112,6 +112,7 @@ def dictionary_entry_iterator():
             has_image=entry.related_images.exists(),
             created=entry.created,
             last_modified=entry.last_modified,
+            has_translation=entry.translation_set.count() > 0,
         )
         yield index_entry.to_dict(True)
 

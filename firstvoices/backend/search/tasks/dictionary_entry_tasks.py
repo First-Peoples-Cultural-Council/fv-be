@@ -58,6 +58,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 has_image=instance.related_images.exists(),
                 created=instance.created,
                 last_modified=instance.last_modified,
+                has_translation=instance.translation_set.count() > 0,
             )
         else:
             # Create new entry if it doesn't exist
@@ -80,6 +81,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 has_image=instance.related_images.exists(),
                 created=instance.created,
                 last_modified=instance.last_modified,
+                has_translation=instance.translation_set.count() > 0,
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals
@@ -165,7 +167,9 @@ def update_translation(instance_id, dictionary_entry_id, **kwargs):
 
         dictionary_entry_doc = DictionaryEntryDocument.get(id=existing_entry["_id"])
         dictionary_entry_doc.update(
-            translation=translations_text, retry_on_conflict=RETRY_ON_CONFLICT
+            translation=translations_text,
+            retry_on_conflict=RETRY_ON_CONFLICT,
+            has_translation=dictionary_entry.translation_set.count() > 0,
         )
     except ConnectionError:
         logger.error(
