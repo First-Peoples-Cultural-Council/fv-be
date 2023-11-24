@@ -94,7 +94,7 @@ class CustomOrderRecalculateView(
             recalculate_custom_order.apply_async((site_slug,))
             return Response({"message": "Recalculation has been queued."}, status=202)
 
-        except recalculate_custom_order_preview.OperationalError:
+        except recalculate_custom_order.OperationalError:
             raise CeleryError()
 
 

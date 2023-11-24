@@ -28,6 +28,13 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         ) as mock_method:
             yield mock_method
 
+    @pytest.fixture
+    def mock_celery_task_response_preview(self, mocker):
+        with patch(
+            "backend.views.custom_order_recalculate_views.recalculate_custom_order_preview"
+        ) as mock_method:
+            yield mock_method
+
     def get_detail_endpoint(self, site_slug):
         return reverse(
             self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[site_slug]
@@ -101,13 +108,8 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         assert response.status_code == 200
         assert response_data["results"] == []
 
-    @pytest.mark.skip(reason="TODO: Fix this test")
     @pytest.mark.django_db
-    def test_recalculate_post_success(
-        self,
-        celery_session_worker,
-        celery_session_app,
-    ):
+    def test_recalculate_post_success(self, mock_celery_task_response_preview):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
@@ -115,6 +117,8 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         self.client.force_authenticate(user=user)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
+
+        mock_celery_task_response_preview.return_value = None
 
         response = self.client.post(self.get_detail_endpoint(site.slug))
 
@@ -150,9 +154,8 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         assert response.status_code == 200
         assert response_data["results"] == self.get_expected_response(site=site)
 
-    @pytest.mark.skip(reason="TODO: Fix this test")
     @pytest.mark.django_db
-    def test_recalculate_permissions(self, celery_session_worker, celery_session_app):
+    def test_recalculate_permissions(self, mock_celery_task_response_preview):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
 
@@ -160,6 +163,8 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         self.client.force_authenticate(user=user)
 
         factories.DictionaryEntryFactory.create(site=site, title="test")
+
+        mock_celery_task_response_preview.return_value = None
 
         response_post = self.client.post(self.get_detail_endpoint(site.slug))
         response_post_data = json.loads(response_post.content)
@@ -180,6 +185,13 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
 class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
     API_DETAIL_VIEW = "api:dictionary-cleanup-list"
     SUCCESS_MESSAGE = {"message": "Recalculation has been queued."}
+
+    @pytest.fixture
+    def mock_celery_task_response(self, mocker):
+        with patch(
+            "backend.views.custom_order_recalculate_views.recalculate_custom_order"
+        ) as mock_method:
+            yield mock_method
 
     def get_expected_response(self, site):
         response = super().get_expected_response(site=site)
@@ -226,3 +238,11 @@ class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
         assert updated_entry1.custom_order == "!#$!"
         assert updated_entry2.title == "AAA"
         assert updated_entry2.custom_order == "%%%"
+
+    @pytest.mark.django_db
+    def test_recalculate_post_success(self, mock_celery_task_response):
+        super().test_recalculate_post_success(mock_celery_task_response)
+
+    @pytest.mark.django_db
+    def test_recalculate_permissions(self, mock_celery_task_response):
+        super().test_recalculate_permissions(mock_celery_task_response)

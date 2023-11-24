@@ -5,7 +5,7 @@ Settings for automated testing only.
 from .settings import *  # noqa
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
-TEST_RUNNER = "djcelery.contrib.test_runner.CeleryTestSuiteRunner"
+TEST_RUNNER = "django.test.runner.DiscoverRunner"
 
 REST_FRAMEWORK.update(  # noqa F405
     {
