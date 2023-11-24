@@ -105,8 +105,7 @@ class SitesDataViewSet(
             site[0], context={"request": request}
         ).data
 
-        for key, value in site_config_and_categories_json.items():
-            data[key] = value
+        data = {**site_config_and_categories_json}
 
         if page is not None:
             paginated_data = paginator.get_paginated_data(serializer.data)
