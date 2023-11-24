@@ -263,7 +263,7 @@ class Alphabet(BaseSiteContentModel):
         """
         return IgnoredCharacter.objects.filter(site=self.site)
 
-    @property
+    @cached_property
     def default_g2p_config(self):
         """
         Returns default G2P configurations for required mappers, customized with site name and slug.

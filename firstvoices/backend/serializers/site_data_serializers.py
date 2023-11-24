@@ -1,9 +1,12 @@
+from collections import OrderedDict
 from datetime import datetime
 
-from rest_framework import serializers
+from rest_framework import pagination, serializers
 
 from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.media import Audio, Image
+from backend.pagination import FasterCountPagination
 from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
@@ -18,10 +21,23 @@ def dict_entry_type_mtd_conversion(type):
             return None
 
 
-class SiteDataSerializer(SiteContentLinkedTitleSerializer):
-    site_data_export = serializers.SerializerMethodField()
+class CategoriesDataSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(source="title")
+    parent_category = serializers.CharField(source="parent")
 
-    def get_site_data_export(self, site):
+    class Meta:
+        model = Category
+        fields = (
+            "category",
+            "parent_category",
+        )
+
+
+class SiteDataSerializer(SiteContentLinkedTitleSerializer):
+    config = serializers.SerializerMethodField()
+    categories = CategoriesDataSerializer(source="category_set", many=True)
+
+    def get_config(self, site):
         request = self.context.get("request")
         characters_list = [
             character
@@ -38,33 +54,40 @@ class SiteDataSerializer(SiteContentLinkedTitleSerializer):
             "L2": {"name": "English"},
             "build": datetime.now().strftime("%Y%m%d%H%M"),
         }
-        queryset = (
-            site.dictionaryentry_set
-            if site is not None and site.dictionaryentry_set is not None
-            else None
-        )
-        request = self.context.get("request")
-        dictionary_entries = DictionaryEntryDataSerializer(
-            queryset, many=True, context={"request": request}
-        ).data
-
-        return {"config": config, "data": dictionary_entries}
+        return config
 
     class Meta:
         model = Site
-        fields = ("site_data_export",)
+        fields = (
+            "config",
+            "categories",
+        )
 
 
-class CategoriesDataSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(source="title")
-    parent_category = serializers.CharField(source="parent")
+class AudioDataSerializer(serializers.ModelSerializer):
+    speaker = serializers.SerializerMethodField()
+    filename = serializers.FileField(source="original.content")
+
+    @staticmethod
+    def get_speaker(audio):
+        speakers = audio.speakers.all()
+        name = speakers[0].name if speakers.count() > 0 else None
+        return name
 
     class Meta:
-        model = Category
+        model = Audio
         fields = (
-            "category",
-            "parent_category",
+            "speaker",
+            "filename",
         )
+
+
+class ImageDataSerializer(serializers.ModelSerializer):
+    filename = serializers.FileField(source="original.content")
+
+    class Meta:
+        model = Image
+        fields = ("filename",)
 
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
@@ -74,50 +97,57 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     definition = serializers.SerializerMethodField()
     audio = serializers.SerializerMethodField()
     img = serializers.SerializerMethodField()
-    theme = CategoriesDataSerializer(source="categories", many=True)
+    theme = serializers.SerializerMethodField()
     secondary_theme = serializers.SerializerMethodField()
     optional = serializers.SerializerMethodField()
     compare_form = serializers.CharField(source="title")
     sort_form = serializers.SerializerMethodField()
     sorting_form = serializers.SerializerMethodField()
 
-    def get_source(self, dictionaryentry):
+    @staticmethod
+    def get_source(dictionaryentry):
         return dict_entry_type_mtd_conversion(dictionaryentry.type)
 
-    def get_definition(self, dictionaryentry):
-        if dictionaryentry.translation_set.first() is not None:
-            return dictionaryentry.translation_set.first().text
+    @staticmethod
+    def get_definition(dictionaryentry):
+        if dictionaryentry.translation_set.count() > 0:
+            return dictionaryentry.translation_set.all()[0].text
         else:
             return None
 
-    # These are placeholder values and need to be updated when the audio models have been implemented.
-    def get_audio(self, dictionaryentry):
+    @staticmethod
+    def get_audio(dictionaryentry):
+        return AudioDataSerializer(dictionaryentry.related_audio, many=True).data
+
+    @staticmethod
+    def get_img(dictionaryentry):
+        return ImageDataSerializer(dictionaryentry.related_images, many=True).data
+
+    @staticmethod
+    def get_theme(dictionaryentry):
         return [
-            {
-                "speaker": None,
-                "filename": "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/136e1a0a-a707-41a9-9ec8-1a4f05b55454"
-                "/file:content/TestMP3.mp3",
-            }
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is None
         ]
 
-    # These are placeholder values and need to be updated when the image models have been implemented.
-    def get_img(self, dictionaryentry):
-        return (
-            "https://v2.dev.firstvoices.com/nuxeo/nxfile/default/5c9eef16-4665-40b9-89ce-debc0301f93b/file:content"
-            "/pexels-stijn-dijkstra-2583852.jpg"
-        )
+    @staticmethod
+    def get_secondary_theme(dictionaryentry):
+        return [
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is not None
+        ]
 
-    def get_secondary_theme(self, dictionaryentry):
-        return None
-
-    def get_optional(self, dictionaryentry):
+    @staticmethod
+    def get_optional(dictionaryentry):
         return (
             {
                 **(
                     {
-                        "Reference": dictionaryentry.acknowledgement_set.first().text,
+                        "Reference": dictionaryentry.acknowledgement_set.all()[0].text,
                     }
-                    if dictionaryentry.acknowledgement_set.first() is not None
+                    if dictionaryentry.acknowledgement_set.count() > 0
                     else {}
                 ),
                 **(
@@ -129,23 +159,25 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
                 ),
                 **(
                     {
-                        "Note": dictionaryentry.note_set.first().text,
+                        "Note": dictionaryentry.note_set.all()[0].text,
                     }
-                    if dictionaryentry.note_set.first() is not None
+                    if dictionaryentry.note_set.count() > 0
                     else {}
                 ),
             },
         )
 
-    def get_sort_form(self, dictionaryentry):
-        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
+    @staticmethod
+    def get_sort_form(dictionaryentry):
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all()[0]
         if alphabet_mapper is not None:
             return alphabet_mapper.get_base_form(dictionaryentry.title)
         else:
             return dictionaryentry.title
 
-    def get_sorting_form(self, dictionaryentry):
-        alphabet_mapper = dictionaryentry.site.alphabet_set.all().first()
+    @staticmethod
+    def get_sorting_form(dictionaryentry):
+        alphabet_mapper = dictionaryentry.site.alphabet_set.all()[0]
         if alphabet_mapper is not None:
             return alphabet_mapper.get_numerical_sort_form(dictionaryentry.title)
         else:
@@ -166,4 +198,31 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             "compare_form",
             "sort_form",
             "sorting_form",
+        )
+
+
+class DictionaryEntryPaginator(pagination.PageNumberPagination):
+    django_paginator_class = FasterCountPagination
+    page_size = 20
+
+    def get_paginated_data(self, data):
+        return OrderedDict(
+            [
+                ("count", self.page.paginator.count),
+                ("pages", self.page.paginator.num_pages),
+                ("pageSize", self.get_page_size(self.request)),
+                (
+                    "next",
+                    self.page.next_page_number() if self.page.has_next() else None,
+                ),
+                ("nextUrl", self.get_next_link()),
+                (
+                    "previous",
+                    self.page.previous_page_number()
+                    if self.page.has_previous()
+                    else None,
+                ),
+                ("previousUrl", self.get_previous_link()),
+                ("data", data),
+            ]
         )
