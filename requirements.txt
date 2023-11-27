@@ -29,7 +29,7 @@ drf-spectacular==0.26.5
 editdistance==0.6.2
 elastic-transport==8.10.0
 elasticsearch==7.13.4
-elasticsearch-dsl==7.4.1
+elasticsearch-dsl==8.11.0
 et-xmlfile==1.1.0
 eventlet==0.33.3
 factory-boy==3.3.0
