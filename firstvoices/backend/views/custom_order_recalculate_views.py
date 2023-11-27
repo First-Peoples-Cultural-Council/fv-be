@@ -1,6 +1,8 @@
 from celery.result import AsyncResult
 from django.urls import reverse
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
@@ -52,8 +54,12 @@ class CustomOrderRecalculateView(
     SiteContentViewSetMixin,
     ListViewOnlyModelViewSet,
 ):
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "post", "delete"]
     serializer_class = CustomOrderRecalculationResultSerializer
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "clear": "delete",
+    }
 
     def get_view_name(self):
         return "Custom Order Recalculation Results"
@@ -97,6 +103,18 @@ class CustomOrderRecalculateView(
         except recalculate_custom_order.OperationalError:
             raise CeleryError()
 
+    @action(methods=["delete"], detail=False)
+    def clear(self, request, *args, **kwargs):
+        site = self.get_validated_site()
+        site_slug = site[0].slug
+
+        qs = CustomOrderRecalculationResult.objects.filter(
+            site__slug=site_slug, is_preview=False
+        )
+        qs.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -131,8 +149,12 @@ class CustomOrderRecalculatePreviewView(
     SiteContentViewSetMixin,
     ListViewOnlyModelViewSet,
 ):
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "post", "delete"]
     serializer_class = CustomOrderRecalculationPreviewResultSerializer
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "clear": "delete",
+    }
 
     def get_view_name(self):
         return "Custom Order Recalculation Preview Results"
@@ -179,3 +201,15 @@ class CustomOrderRecalculatePreviewView(
 
         except recalculate_custom_order_preview.OperationalError:
             raise CeleryError()
+
+    @action(methods=["delete"], detail=False)
+    def clear(self, request, *args, **kwargs):
+        site = self.get_validated_site()
+        site_slug = site[0].slug
+
+        qs = CustomOrderRecalculationResult.objects.filter(
+            site__slug=site_slug, is_preview=True
+        )
+        qs.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

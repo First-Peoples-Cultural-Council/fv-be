@@ -181,6 +181,45 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         assert response_get.status_code == 200
         assert response_get_data["results"] == []
 
+    @pytest.mark.django_db
+    def test_clear(self, is_preview=True):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        factories.CustomOrderRecalculationResultFactory.create(
+            site=site, is_preview=is_preview
+        )
+
+        response_delete = self.client.delete(
+            self.get_detail_endpoint(site.slug) + "/clear"
+        )
+        assert response_delete.status_code == 204
+
+        response_get = self.client.get(self.get_detail_endpoint(site.slug))
+        response_get_data = json.loads(response_get.content)
+        assert response_get.status_code == 200
+        assert response_get_data["results"] == []
+
+    @pytest.mark.django_db
+    def test_clear_403(self, is_preview=True):
+        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
+        factories.AlphabetFactory.create(site=site)
+
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        factories.CustomOrderRecalculationResultFactory.create(
+            site=site, is_preview=is_preview
+        )
+
+        response_delete = self.client.delete(
+            self.get_detail_endpoint(site.slug) + "/clear"
+        )
+        assert response_delete.status_code == 403
+
 
 class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
     API_DETAIL_VIEW = "api:dictionary-cleanup-list"
@@ -246,3 +285,11 @@ class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
     @pytest.mark.django_db
     def test_recalculate_permissions(self, mock_celery_task_response):
         super().test_recalculate_permissions(mock_celery_task_response)
+
+    @pytest.mark.django_db
+    def test_clear(self, is_preview=False):
+        super().test_clear(is_preview=is_preview)
+
+    @pytest.mark.django_db
+    def test_clear_403(self, is_preview=False):
+        super().test_clear_403(is_preview=is_preview)
