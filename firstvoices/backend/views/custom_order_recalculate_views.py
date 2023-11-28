@@ -14,6 +14,7 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,
 )
+from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
@@ -28,8 +29,8 @@ from backend.views.exceptions import CeleryError
         description="Returns the most recent custom order recalculation results for the specified site.",
         responses={
             200: CustomOrderRecalculationResultSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
@@ -41,10 +42,17 @@ from backend.views.exceptions import CeleryError
                 description="Recalculation is already running. Refer to the redirect-url(location)"
                 " in the response headers to get the current status."
             ),
-            403: OpenApiResponse(
-                description="Todo: Action not authorized for this User"
-            ),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[site_slug_parameter],
+    ),
+    clear=extend_schema(
+        description="Deletes all custom order recalculation results for the specified site.",
+        responses={
+            204: OpenApiResponse(description=doc_strings.success_204_deleted),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
@@ -140,6 +148,15 @@ class CustomOrderRecalculateView(
                 description="Todo: Action not authorized for this User"
             ),
             404: OpenApiResponse(description="Todo: Site not found"),
+        },
+        parameters=[site_slug_parameter],
+    ),
+    clear=extend_schema(
+        description="Deletes all custom order recalculation preview results for the specified site.",
+        responses={
+            204: OpenApiResponse(description=doc_strings.success_204_deleted),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
