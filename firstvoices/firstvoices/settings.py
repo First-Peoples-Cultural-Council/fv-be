@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import logging
 import os
+from decimal import Decimal
 from pathlib import Path
 
 import sentry_sdk
@@ -279,10 +280,10 @@ sentry_sdk.init(
         "SENTRY_ENVIRONMENT"
     ),  # Sends information to this environment on the dashboard
     release=os.getenv("SENTRY_RELEASE"),  # Tags information with this release version
-    traces_sample_rate=float(
+    traces_sample_rate=Decimal(
         os.getenv("SENTRY_TRACES_SAMPLE_RATE", 1.0)
     ),  # The percentage of traces to send to sentry (min 0.0, max 1.0)
-    sample_rate=float(
+    sample_rate=Decimal(
         os.getenv("SENTRY_ERROR_SAMPLE_RATE", 1.0)
     ),  # The percentage of errors to send to sentry (min 0.0, max 1.0)
     send_default_pii=False,  # Disables the sending of personally identifiable information (see
