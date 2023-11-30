@@ -34,6 +34,6 @@ class ImmersionLabel(BaseSiteContentModel):
 
     dictionary_entry = models.ForeignKey(
         "DictionaryEntry",
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name="immersion_labels",
     )
