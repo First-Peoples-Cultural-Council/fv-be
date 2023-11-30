@@ -51,6 +51,7 @@ def update_song_index(instance_id, **kwargs):
                 has_image=instance.related_images.exists(),
                 created=instance.created,
                 last_modified=instance.last_modified,
+                has_translation=bool(instance.title_translation),
             )
         else:
             index_entry = create_song_index_document(

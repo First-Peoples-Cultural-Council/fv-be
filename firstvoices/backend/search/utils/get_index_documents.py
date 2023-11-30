@@ -23,6 +23,7 @@ def create_story_index_document(instance, page_text, page_translation):
         has_image=instance.related_images.exists(),
         created=instance.created,
         last_modified=instance.last_modified,
+        has_translation=bool(instance.title_translation),
     )
 
 
@@ -47,4 +48,5 @@ def create_song_index_document(instance, lyrics_text, lyrics_translation_text):
         has_image=instance.related_images.exists(),
         created=instance.created,
         last_modified=instance.last_modified,
+        has_translation=bool(instance.title_translation),
     )

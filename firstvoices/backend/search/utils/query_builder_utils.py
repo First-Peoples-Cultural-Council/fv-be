@@ -195,6 +195,10 @@ def get_has_image_query(has_image):
     return Q("bool", filter=[Q("term", has_image=has_image)])
 
 
+def get_has_translation_query(has_translation):
+    return Q("bool", filter=[Q("term", has_translation=has_translation)])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:

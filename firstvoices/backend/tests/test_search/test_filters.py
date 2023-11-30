@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth.models import AnonymousUser
 
 import backend.tests.factories as factories
 from backend.models.constants import AppRole, Role, Visibility
@@ -8,7 +9,7 @@ from backend.search.query_builder import get_search_query
 @pytest.mark.django_db
 class TestSearchFilters:
     def test_empty_site_id_allowed(self):
-        search_query = get_search_query(q="something", site_id="")
+        search_query = get_search_query(q="something", site_id="", user=AnonymousUser())
         search_query = search_query.to_dict()
 
         expected_site_filter = "'filter': [{'term': {'site_id': ''}}]"
@@ -16,7 +17,9 @@ class TestSearchFilters:
 
     def test_valid_dialect(self):
         valid_site = factories.SiteFactory.create()
-        search_query = get_search_query(site_id=str(valid_site.id))
+        search_query = get_search_query(
+            site_id=str(valid_site.id), user=AnonymousUser()
+        )
         search_query = search_query.to_dict()
 
         expected_site_filter = (
@@ -70,14 +73,14 @@ class TestTypesFilter:
         ],
     )
     def test_exclusion_cases(self, type_to_exclude, expected_query):
-        search_query = get_search_query(types=type_to_exclude)
+        search_query = get_search_query(types=type_to_exclude, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert expected_query in str(search_query)
 
     def test_all_types_supplied(self):
         search_query = get_search_query(
-            types=["audio", "image", "video", "word", "phrase"]
+            types=["audio", "image", "video", "word", "phrase"], user=AnonymousUser()
         )
         search_query = search_query.to_dict()
 
@@ -93,19 +96,19 @@ class TestKids:
     expected_kids_false_filter = "{'term': {'exclude_from_kids': True}}"
 
     def test_kids_true(self):
-        search_query = get_search_query(kids=True)
+        search_query = get_search_query(kids=True, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_kids_true_filter in str(search_query)
 
     def test_kids_false(self):
-        search_query = get_search_query(kids=False)
+        search_query = get_search_query(kids=False, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_kids_false_filter in str(search_query)
 
     def test_default(self):
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_kids_true_filter not in str(search_query)
@@ -120,19 +123,19 @@ class TestGames:
     expected_games_false_filter = "{'term': {'exclude_from_games': True}}"
 
     def test_games_true(self):
-        search_query = get_search_query(games=True)
+        search_query = get_search_query(games=True, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_games_true_filter in str(search_query)
 
     def test_games_false(self):
-        search_query = get_search_query(games=False)
+        search_query = get_search_query(games=False, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_games_false_filter in str(search_query)
 
     def test_default(self):
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.expected_games_true_filter not in str(search_query)
@@ -151,7 +154,7 @@ class TestSearchPermissions:
 
     @pytest.mark.django_db
     def test_no_user(self):
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert self.public_permissions_filter in str(search_query)
@@ -219,7 +222,7 @@ class TestSearchPermissions:
 
 class TestVisibilityParam:
     def test_default(self):
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert "filter" not in search_query["query"]["bool"] or "visibility" not in str(
@@ -239,7 +242,7 @@ class TestVisibilityParam:
         ],
     )
     def test_team(self, visibility):
-        search_query = get_search_query(visibility=visibility)
+        search_query = get_search_query(visibility=visibility, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
@@ -253,7 +256,7 @@ class TestVisibilityParam:
 class TestHasMediaParams:
     @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
     def test_default(self, has_media):
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert "filter" not in search_query["query"]["bool"] or has_media not in str(
@@ -263,7 +266,7 @@ class TestHasMediaParams:
     @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
     def test_has_media_true(self, has_media):
         expected_true_filter = f"{{'term': {{'{has_media}': True}}}}"
-        search_query = get_search_query(**{has_media: True})
+        search_query = get_search_query(**{has_media: True}, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert expected_true_filter in str(search_query)
@@ -271,7 +274,7 @@ class TestHasMediaParams:
     @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
     def test_has_media_false(self, has_media):
         expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
-        search_query = get_search_query(**{has_media: False})
+        search_query = get_search_query(**{has_media: False}, user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert expected_false_filter in str(search_query)
@@ -280,7 +283,40 @@ class TestHasMediaParams:
     def test_has_media_default(self, has_media):
         expected_true_filter = f"{{'term': {{'{has_media}': True}}}}"
         expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
-        search_query = get_search_query()
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter not in str(search_query)
+        assert expected_false_filter not in str(search_query)
+
+
+class TestHasTranslationParams:
+    def test_default(self):
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or "has_translation" not in str(search_query["query"]["bool"]["filter"])
+
+    def test_has_translation_true(self):
+        expected_true_filter = "{'term': {'has_translation': True}}"
+        search_query = get_search_query(has_translation=True, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)
+
+    def test_has_translation_false(self):
+        expected_false_filter = "{'term': {'has_translation': False}}"
+        search_query = get_search_query(has_translation=False, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_false_filter in str(search_query)
+
+    def test_has_translation_default(self):
+        expected_true_filter = "{'term': {'has_translation': True}}"
+        expected_false_filter = "{'term': {'has_translation': False}}"
+        search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
         assert expected_true_filter not in str(search_query)

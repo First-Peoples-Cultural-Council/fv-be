@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch_dsl import Boolean, Keyword, Text
 
 from backend.search.documents.base_document import (
     BaseDocument,
@@ -18,6 +18,7 @@ class DictionaryEntryDocument(MediaReportingDocumentMixin, BaseDocument):
     type = Keyword()
     custom_order = Keyword()
     categories = Keyword()
+    has_translation = Boolean()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX

@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch_dsl import Boolean, Keyword, Text
 
 from backend.search.documents.base_document import (
     BaseDocument,
@@ -18,6 +18,9 @@ class StoryDocument(MediaReportingDocumentMixin, BaseDocument):
     acknowledgement = Text(copy_to="other_translation_search_fields")
     note = Text(copy_to="other_translation_search_fields")
     author = Text(copy_to="other_translation_search_fields")
+
+    # filter and sorting
+    has_translation = Boolean()
 
     class Index:
         name = ELASTICSEARCH_STORY_INDEX

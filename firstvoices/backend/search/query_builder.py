@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AnonymousUser
 from elasticsearch_dsl import Search
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
@@ -8,6 +7,7 @@ from backend.search.utils.query_builder_utils import (
     get_games_query,
     get_has_audio_query,
     get_has_image_query,
+    get_has_translation_query,
     get_has_video_query,
     get_indices,
     get_kids_query,
@@ -39,15 +39,12 @@ def get_search_query(
     has_audio=None,
     has_video=None,
     has_image=None,
+    has_translation=None,
 ):
     # Building initial query
     indices = get_indices(types)
     search_object = get_search_object(indices)
     search_query = search_object.query()
-
-    # View permissions
-    if user is None:
-        user = AnonymousUser()
 
     permissions_filter = get_view_permissions_filter(user)
     if permissions_filter:
@@ -94,5 +91,8 @@ def get_search_query(
 
     if has_image is not None:
         search_query = search_query.query(get_has_image_query(has_image))
+
+    if has_translation is not None:
+        search_query = search_query.query(get_has_translation_query(has_translation))
 
     return search_query
