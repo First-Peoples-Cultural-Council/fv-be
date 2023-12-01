@@ -355,6 +355,32 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasUnrecognizedChars",
+                description="Filter dictionary entries that have a unrecognized character present in their title.",
+                required=False,
+                default=None,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Returns dictionary entries that have a unrecognized character"
+                        " present in their title.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="Returns dictionary entries that do not have a unrecognized character"
+                        " present in their title.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
