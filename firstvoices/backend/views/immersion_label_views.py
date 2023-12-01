@@ -94,12 +94,13 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
     ),
 )
 class ImmersionLabelViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, ModelViewSet
+    SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
 ):
     """
     API endpoint that allows immersion labels to be viewed and edited.
     """
 
+    lookup_field = "key"
     serializer_class = ImmersionLabelDetailSerializer
 
     def get_queryset(self):
