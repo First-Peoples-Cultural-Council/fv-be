@@ -208,7 +208,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
             site=site, dictionary_entry=entry, key=self.TEST_KEY
         )
         factories.ImmersionLabelFactory.create(
-            site=site, dictionary_entry=entry, key="test_key2"
+            site=site, dictionary_entry=entry2, key="test_key2"
         )
 
         self.client.force_authenticate(user=user)

@@ -15,6 +15,9 @@ site_slug_parameter = OpenApiParameter(
 id_parameter = OpenApiParameter(
     name="id", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
 )
+key_parameter = OpenApiParameter(
+    name="key", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+)
 site_page_slug_parameter = OpenApiParameter(
     name="slug",
     type=OpenApiTypes.STR,

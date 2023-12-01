@@ -1,4 +1,10 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+)
+from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -8,7 +14,7 @@ from backend.serializers.immersion_label_serializers import (
     ImmersionLabelDetailSerializer,
 )
 from backend.views import doc_strings
-from backend.views.api_doc_variables import id_parameter, site_slug_parameter
+from backend.views.api_doc_variables import key_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 
@@ -37,7 +43,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         },
         parameters=[
             site_slug_parameter,
-            id_parameter,
+            key_parameter,
         ],
     ),
     create=extend_schema(
@@ -66,7 +72,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         },
         parameters=[
             site_slug_parameter,
-            id_parameter,
+            key_parameter,
         ],
     ),
     partial_update=extend_schema(
@@ -82,7 +88,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         },
         parameters=[
             site_slug_parameter,
-            id_parameter,
+            key_parameter,
         ],
     ),
     destroy=extend_schema(
@@ -92,7 +98,22 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
-        parameters=[site_slug_parameter, id_parameter],
+        parameters=[site_slug_parameter, key_parameter],
+    ),
+    all=extend_schema(
+        description="Returns a mapping of immersion label keys to their corresponding dictionary entry titles.",
+        responses={
+            200: inline_serializer(
+                name="ImmersionLabelMap",
+                fields={
+                    "key": serializers.CharField(),
+                    "dictionary_entry_title": serializers.CharField(),
+                },
+            ),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[site_slug_parameter],
     ),
 )
 class ImmersionLabelViewSet(
