@@ -468,7 +468,6 @@ class Alphabet(BaseSiteContentModel):
             else self.ignorable_characters
         )
 
-        # split, check for ignored, then convert title to base characters
         char_list = (
             []
             if self == []
