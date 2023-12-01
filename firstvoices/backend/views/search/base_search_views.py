@@ -364,14 +364,14 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns dictionary entries that have a unrecognized character"
-                        " present in their title.",
+                        description="Returns dictionary entries that have a unrecognized character "
+                        "present in their title.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns dictionary entries that do not have a unrecognized character"
-                        " present in their title.",
+                        description="Returns dictionary entries that do not have a unrecognized character "
+                        "present in their title.",
                     ),
                     OpenApiExample(
                         "Oranges",
