@@ -454,6 +454,9 @@ class Alphabet(BaseSiteContentModel):
         character_variants=None,
         ignorable_characters=None,
     ) -> list[str]:
+        ignored_characters = IgnoredCharacter.objects.filter(
+            site=self.site
+        ).values_list("title", flat=True)
         base_characters = (
             base_characters if base_characters is not None else self.base_characters
         )
@@ -467,24 +470,29 @@ class Alphabet(BaseSiteContentModel):
             if ignorable_characters is not None
             else self.ignorable_characters
         )
-
-        char_list = (
-            []
-            if self == []
-            else self.get_character_list(
-                entry.title,
-                base_characters,
-                character_variants,
-                ignorable_characters,
+        if "⚑" in entry.custom_order:
+            return []
+        else:
+            char_list = (
+                []
+                if self == []
+                else self.get_character_list(
+                    entry.title,
+                    base_characters,
+                    character_variants,
+                    ignorable_characters,
+                )
             )
-        )
-
-        base_chars = [
-            self.get_base_form(
-                c,
-                base_characters,
-                character_variants,
-            )
-            for c in char_list
-        ]
-        return base_chars
+            has_ignored_char = set(char_list).intersection(set(ignored_characters))
+            if has_ignored_char:
+                return []
+            else:
+                base_chars = [
+                    self.get_base_form(
+                        c,
+                        base_characters,
+                        character_variants,
+                    )
+                    for c in char_list
+                ]
+                return base_chars
