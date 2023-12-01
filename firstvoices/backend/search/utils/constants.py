@@ -57,6 +57,8 @@ ES_RETRY_POLICY = {
     "interval_step": 1,
 }
 
+UNKNOWN_CHARACTER_FLAG = "⚑"
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")

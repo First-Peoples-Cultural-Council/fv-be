@@ -11,6 +11,7 @@ from backend.search.utils.constants import (
     ES_CONNECTION_ERROR,
     ES_NOT_FOUND_ERROR,
     RETRY_ON_CONFLICT,
+    UNKNOWN_CHARACTER_FLAG,
     SearchIndexEntryTypes,
 )
 from backend.search.utils.object_utils import (
@@ -59,6 +60,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 created=instance.created,
                 last_modified=instance.last_modified,
                 has_translation=instance.translation_set.count() > 0,
+                has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in instance.custom_order,
             )
         else:
             # Create new entry if it doesn't exist
@@ -82,6 +84,7 @@ def update_dictionary_entry_index(instance_id, **kwargs):
                 created=instance.created,
                 last_modified=instance.last_modified,
                 has_translation=instance.translation_set.count() > 0,
+                has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in instance.custom_order,
             )
             index_entry.save()
         # Refresh the index to ensure the index is up-to-date for related field signals

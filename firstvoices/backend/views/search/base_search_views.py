@@ -444,6 +444,9 @@ class BaseSearchViewSet(
         has_translation = self.request.GET.get("hasTranslation", None)
         has_translation = get_valid_boolean(has_translation)
 
+        has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
+        has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -462,6 +465,7 @@ class BaseSearchViewSet(
             "has_video": has_video,
             "has_image": has_image,
             "has_translation": has_translation,
+            "has_unrecognized_chars": has_unrecognized_chars,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -526,6 +530,7 @@ class BaseSearchViewSet(
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
+            has_unrecognized_chars=search_params["has_unrecognized_chars"],
             random_sort=search_params["sort"] == "random",
         )
 
