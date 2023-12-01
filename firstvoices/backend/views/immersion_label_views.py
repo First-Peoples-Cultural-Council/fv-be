@@ -1,4 +1,6 @@
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.immersion_labels import ImmersionLabel
@@ -102,6 +104,10 @@ class ImmersionLabelViewSet(
 
     lookup_field = "key"
     serializer_class = ImmersionLabelDetailSerializer
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "all": None,
+    }
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -112,3 +118,17 @@ class ImmersionLabelViewSet(
             "last_modified_by",
             "dictionary_entry",
         )
+
+    @action(detail=False, methods=["get"])
+    def all(self, request, *args, **kwargs):
+        """
+        Returns a mapping of immersion label keys to their corresponding dictionary entry titles.
+        """
+        site = self.get_validated_site()
+        immersion_labels = ImmersionLabel.objects.filter(site__slug=site[0].slug)
+
+        immersion_labels_map = {
+            label.key: label.dictionary_entry.title for label in immersion_labels
+        }
+
+        return Response(immersion_labels_map)

@@ -27,11 +27,10 @@ class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
         site = self.context["site"]
         dictionary_entry = attrs.get("dictionary_entry")
 
-        if dictionary_entry:
-            if dictionary_entry.site != site:
-                raise serializers.ValidationError(
-                    "Dictionary entry must belong to the same site as the immersion label."
-                )
+        if dictionary_entry and dictionary_entry.site != site:
+            raise serializers.ValidationError(
+                "Dictionary entry must belong to the same site as the immersion label."
+            )
 
         return attrs
 
