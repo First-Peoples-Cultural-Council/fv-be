@@ -230,10 +230,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
 class BaseMediaApiTest(
     MediaTestMixin,
     FormDataMixin,
-    base_api_test.WriteApiTestMixin,
-    base_api_test.SiteContentCreateApiTestMixin,
-    base_api_test.SiteContentDestroyApiTestMixin,
-    base_api_test.BaseReadOnlyUncontrolledSiteContentApiTest,
+    base_api_test.BaseUncontrolledSiteContentApiTest,
 ):
     """
     Tests for the list, detail, create, and delete APIs for media endpoints.
@@ -273,6 +270,17 @@ class BaseMediaApiTest(
             "isShared": False,
             "excludeFromGames": False,
             "excludeFromKids": False,
+        }
+
+    def get_invalid_patch_data(self):
+        """Add some actually invalid data-- empty data doesn't work for multipart encoder"""
+        return {
+            "excludeFromKids": "not a boolean value",
+        }
+
+    def get_valid_patch_data(self, site):
+        return {
+            "title": "A new title",
         }
 
     def assert_created_instance(self, pk, data):
