@@ -521,6 +521,7 @@ class BaseSearchViewSet(
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
+            random_sort=search_params["sort"] == "random",
         )
 
         # Pagination

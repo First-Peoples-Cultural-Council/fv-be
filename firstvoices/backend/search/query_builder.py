@@ -1,3 +1,5 @@
+import random
+
 from elasticsearch_dsl import Search
 
 from backend.search.utils.constants import VALID_DOCUMENT_TYPES
@@ -40,11 +42,26 @@ def get_search_query(
     has_video=None,
     has_image=None,
     has_translation=None,
+    random_sort=False,
 ):
     # Building initial query
     indices = get_indices(types)
     search_object = get_search_object(indices)
-    search_query = search_object.query()
+
+    if random_sort:
+        search_query = search_object.query(
+            "function_score",
+            functions=(
+                {
+                    "random_score": {
+                        "seed": random.randint(1000, 9999),
+                        "field": "_seq_no",
+                    },
+                }
+            ),
+        )
+    else:
+        search_query = search_object.query()
 
     permissions_filter = get_view_permissions_filter(user)
     if permissions_filter:

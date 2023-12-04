@@ -115,6 +115,9 @@ class TestValidSort:
             ("crEaTed_desC", ("created", True)),
             ("MODIFIED_DeSc", ("modified", True)),
             ("TiTlE_DESC", ("title", True)),
+            ("random", ("random", False)),
+            ("RANDOM", ("random", False)),
+            ("RaNdOm", ("random", False)),
         ],
     )
     def test_valid_inputs(self, input_sort, expected_sort):
