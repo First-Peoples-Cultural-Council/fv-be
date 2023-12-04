@@ -392,6 +392,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value="modified_desc",
                         description="Returns results ordered by the last modified date and time in descending order.",
                     ),
+                    OpenApiExample(
+                        "Random",
+                        value="random",
+                        description="Returns results in random order.",
+                    ),
                 ],
             ),
         ],
