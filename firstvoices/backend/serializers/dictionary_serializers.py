@@ -379,6 +379,13 @@ class DictionaryEntryMinimalSerializer(
         many=True, required=False, read_only=True
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Remove the split_chars_base field from the serializer if the games_flag is not set to True
+        if not self.context.get("games_flag"):
+            self.fields.pop("split_chars_base")
+
     class Meta:
         model = dictionary.DictionaryEntry
         fields = (
@@ -392,5 +399,6 @@ class DictionaryEntryMinimalSerializer(
             "translations",
             "related_audio",
             "related_images",
+            "split_chars_base",
         )
         read_only_fields = ("id", "title", "type")
