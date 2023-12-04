@@ -2,10 +2,12 @@ import factory
 from factory.django import DjangoModelFactory
 
 from backend.models.sites import SiteFeature, SiteMenu
-from backend.tests.factories.access import SiteFactory
+from backend.tests.factories import SiteFactory, UserFactory
 
 
 class SiteFeatureFactory(DjangoModelFactory):
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
     site = factory.SubFactory(SiteFactory)
 
     class Meta:

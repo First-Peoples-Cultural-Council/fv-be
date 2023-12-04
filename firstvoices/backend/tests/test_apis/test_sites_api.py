@@ -91,7 +91,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
-            "features": [],
         }
 
     def generate_test_sites(self):
@@ -240,7 +239,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "url": site_url,
             "menu": menu.json,
-            "features": [],
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
@@ -252,6 +250,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "dictionary": f"{site_url}/dictionary",
             "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "features": f"{site_url}/features",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
             "joinRequests": f"{site_url}/join-requests",
@@ -278,29 +277,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["menu"] == menu.json
-
-    @pytest.mark.django_db
-    def test_detail_enabled_features(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        enabled_feature = factories.SiteFeatureFactory.create(
-            site=site, key="key1", is_enabled=True
-        )
-        factories.SiteFeatureFactory.create(site=site, key="key2", is_enabled=False)
-
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["features"] == [
-            {
-                "id": str(enabled_feature.id),
-                "key": enabled_feature.key,
-                "isEnabled": True,
-            }
-        ]
 
     @pytest.mark.django_db
     def test_detail_logo_from_other_site(self):
