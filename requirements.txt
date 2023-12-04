@@ -11,7 +11,7 @@ cffi==1.16.0
 charset-normalizer==3.3.2
 coloredlogs==14.0
 cron-descriptor==1.4.0
-cryptography==41.0.5
+cryptography==41.0.7
 Django==4.2.7
 django-admin-env-notice==1.0
 django-celery-beat==2.5.0
