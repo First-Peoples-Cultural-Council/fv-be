@@ -17,12 +17,6 @@ from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
 
-class FeatureFlagSerializer(serializers.Serializer):
-    id = serializers.CharField()
-    key = serializers.CharField()
-    is_enabled = serializers.BooleanField()
-
-
 class SiteSummarySerializer(LinkedSiteSerializer):
     """
     Serializes public, non-access-controlled information about a site object. This includes the type of info
@@ -30,12 +24,9 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     """
 
     logo = ImageSerializer()
-    features = FeatureFlagSerializer(
-        read_only=True, source="sitefeature_set", many=True
-    )
 
     class Meta(LinkedSiteSerializer.Meta):
-        fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
+        fields = LinkedSiteSerializer.Meta.fields + ("logo",)
 
 
 @extend_schema_serializer(
@@ -47,8 +38,10 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary",
         "dictionary_cleanup",
         "dictionary_cleanup_preview",
+        "features",
         "ignored_characters",
         "images",
+        "join_requests",
         "pages",
         "people",
         "songs",
@@ -79,6 +72,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     dictionary_cleanup_preview = SiteViewLinkField(
         view_name="api:dictionary-cleanup-preview-list"
     )
+    features = SiteViewLinkField(view_name="api:sitefeature-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
@@ -113,6 +107,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
+            "features",
             "ignored_characters",
             "images",
             "join_requests",
