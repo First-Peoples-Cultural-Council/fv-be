@@ -11,7 +11,7 @@ from backend.permissions.managers import PermissionsManager
 
 from . import Image
 from .base import BaseModel, BaseSiteContentModel
-from .constants import MAX_EMAIL_LENGTH, Role, Visibility
+from .constants import DEFAULT_TITLE_LENGTH, MAX_EMAIL_LENGTH, Role, Visibility
 from .media import Video
 from .utils import load_default_categories, load_default_widgets
 from .widget import SiteWidgetList
@@ -43,9 +43,9 @@ class LanguageFamily(BaseModel):
             "delete": predicates.is_superadmin,
         }
 
-    title = models.CharField(max_length=200, unique=True)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, unique=True)
 
-    alternate_names = models.TextField(max_length=200, blank=True)
+    alternate_names = models.TextField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
 
     def natural_key(self):
         return (self.title,)
@@ -69,9 +69,11 @@ class Language(BaseModel):
             "delete": predicates.is_superadmin,
         }
 
-    title = models.CharField(max_length=200, unique=True)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, unique=True)
 
-    alternate_names = models.CharField(max_length=200, blank=True)
+    alternate_names = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
+
+    community_keywords = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
 
     language_family = models.ForeignKey(
         LanguageFamily, on_delete=models.PROTECT, related_name="languages"
@@ -110,11 +112,11 @@ class Site(BaseModel):
         ]
 
     # from dc:title
-    title = models.CharField(max_length=200, unique=True)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, unique=True)
 
     # from fvdialect:short_url
     slug = models.SlugField(
-        max_length=200,
+        max_length=DEFAULT_TITLE_LENGTH,
         blank=False,
         validators=[validate_slug],
         db_index=True,
