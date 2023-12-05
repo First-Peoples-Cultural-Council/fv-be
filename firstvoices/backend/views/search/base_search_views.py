@@ -392,6 +392,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value="modified_desc",
                         description="Returns results ordered by the last modified date and time in descending order.",
                     ),
+                    OpenApiExample(
+                        "Random",
+                        value="random",
+                        description="Returns results in random order.",
+                    ),
                 ],
             ),
         ],
@@ -521,6 +526,7 @@ class BaseSearchViewSet(
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
+            random_sort=search_params["sort"] == "random",
         )
 
         # Pagination

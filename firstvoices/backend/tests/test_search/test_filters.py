@@ -321,3 +321,26 @@ class TestHasTranslationParams:
 
         assert expected_true_filter not in str(search_query)
         assert expected_false_filter not in str(search_query)
+
+
+class TestRandomSortParams:
+    def test_default(self):
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert (
+            "must" not in search_query["query"]["bool"]
+            or "function_score" not in search_query["query"]["bool"]["must"][0]
+        )
+
+    def test_random_sort_true(self):
+        search_query = get_search_query(random_sort=True, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "function_score" in search_query["query"]["bool"]["must"][0]
+        search_query = search_query["query"]["bool"]["must"][0]["function_score"]
+        assert "random_score" in search_query["functions"][0]
+        assert "seed" in search_query["functions"][0]["random_score"]
+        assert "field" in search_query["functions"][0]["random_score"]
+        assert search_query["functions"][0]["random_score"]["field"] == "_seq_no"
+        assert 1000 <= search_query["functions"][0]["random_score"]["seed"] <= 9999
