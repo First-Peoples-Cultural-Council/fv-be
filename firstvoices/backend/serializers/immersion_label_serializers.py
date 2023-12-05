@@ -22,6 +22,13 @@ class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
     )
     key = serializers.CharField(allow_blank=False, allow_null=False)
 
+    def update(self, instance, validated_data):
+        """
+        Override update to make key read only after creation.
+        """
+        validated_data.pop("key", None)
+        return super().update(instance, validated_data)
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         site = self.context["site"]

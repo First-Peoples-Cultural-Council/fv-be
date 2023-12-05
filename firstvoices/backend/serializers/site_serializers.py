@@ -49,6 +49,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary_cleanup_preview",
         "ignored_characters",
         "images",
+        "immersion_labels",
         "pages",
         "people",
         "songs",

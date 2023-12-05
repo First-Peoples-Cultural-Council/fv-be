@@ -74,22 +74,21 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         return self.get_valid_data(site=site)
 
     def get_valid_patch_data(self, site=None):
+        entry = factories.DictionaryEntryFactory(site=site)
         return {
-            "key": self.TEST_KEY,
+            "dictionary_entry": str(entry.id),
         }
 
     def add_expected_defaults(self, data):
         return data
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert str(actual_instance.key) == expected_data["key"]
         assert (
             str(actual_instance.dictionary_entry.id)
             == expected_data["dictionary_entry"]
         )
 
     def assert_update_response(self, expected_data, actual_response):
-        assert actual_response["key"] == expected_data["key"]
         assert (
             actual_response["dictionaryEntry"]["id"]
             == expected_data["dictionary_entry"]
@@ -101,7 +100,11 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert str(instance.dictionary_entry.id) == data["dictionary_entry"]
 
     def assert_created_response(self, expected_data, actual_response):
-        self.assert_update_response(expected_data, actual_response)
+        assert actual_response["key"] == expected_data["key"]
+        assert (
+            actual_response["dictionaryEntry"]["id"]
+            == expected_data["dictionary_entry"]
+        )
 
     def create_original_instance_for_patch(self, site):
         return self.create_minimal_instance(site, Visibility.PUBLIC)
@@ -117,16 +120,14 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance
     ):
-        assert original_instance.dictionary_entry == updated_instance.dictionary_entry
+        assert original_instance.key == updated_instance.key
 
     def assert_patch_instance_updated_fields(self, data, updated_instance):
-        assert str(updated_instance.key) == data["key"]
+        assert str(updated_instance.dictionary_entry.id) == data["dictionary_entry"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
-        assert actual_response["key"] == data["key"]
-        assert actual_response["dictionaryEntry"]["id"] == str(
-            original_instance.dictionary_entry.id
-        )
+        assert original_instance.key == actual_response["key"]
+        assert actual_response["dictionaryEntry"]["id"] == data["dictionary_entry"]
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):
@@ -217,3 +218,30 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 200
         assert response.data[self.TEST_KEY] == str(entry.title)
         assert response.data["test_key2"] == str(entry2.title)
+
+    @pytest.mark.django_db
+    def test_label_key_read_only(self):
+        """
+        Test that the immersion label key is read only after creation.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(site=site)
+        label = factories.ImmersionLabelFactory.create(site=site)
+
+        data = {
+            "key": "new_key",
+            "dictionary_entry": str(entry.id),
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=label.key, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert response_data["key"] == label.key
