@@ -107,10 +107,9 @@ def recalculate_custom_order(site_slug: str):
         new_order = alphabet.get_custom_order(cleaned_title)
 
         # Save the entry to recalculate custom order and clean title
-        DictionaryEntry.objects.filter(id=entry.id).update(
-            title=cleaned_title,
-            custom_order=new_order,
-        )
+        entry.title = cleaned_title
+        entry.custom_order = new_order
+        entry.save()
 
         append_updated_entry(
             updated_entries,
