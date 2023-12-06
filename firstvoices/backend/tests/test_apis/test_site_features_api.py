@@ -157,7 +157,3 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         )
 
         assert response.status_code == 400
-        response_data = response.json()
-        assert response_data["key"] == [
-            "A feature flag with this key already exists for this site."
-        ]

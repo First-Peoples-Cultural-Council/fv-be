@@ -6,13 +6,18 @@ from backend.serializers.base_serializers import (
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.validators import UniqueForSite
 
 
 class SiteFeatureDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
         view_name="api:sitefeature-detail", read_only=True, lookup_field="key"
     )
-    key = serializers.CharField(required=True, allow_blank=False)
+    key = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        validators=[UniqueForSite(queryset=SiteFeature.objects.all())],
+    )
     is_enabled = serializers.BooleanField(required=True, allow_null=False)
 
     def update(self, instance, validated_data):
@@ -21,23 +26,6 @@ class SiteFeatureDetailSerializer(WritableSiteContentSerializer):
         """
         validated_data.pop("key", None)
         return super().update(instance, validated_data)
-
-    def validate(self, attrs):
-        """
-        Validate that duplicate keys are not allowed.
-        """
-        attrs = super().validate(attrs)
-        site = self.context["site"]
-        key = attrs.get("key")
-
-        if (
-            SiteFeature.objects.filter(site=site, key=key).exists()
-            and not self.instance
-        ):
-            raise serializers.ValidationError(
-                {"key": "A feature flag with this key already exists for this site."}
-            )
-        return attrs
 
     class Meta:
         model = SiteFeature
