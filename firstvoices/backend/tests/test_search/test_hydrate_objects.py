@@ -5,6 +5,7 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.search.utils.hydration_utils import hydrate_objects
+from backend.tests import factories
 from backend.tests.factories import (
     AudioFactory,
     AudioSpeakerFactory,
@@ -192,6 +193,69 @@ class TestHydrateObjects:
         assert_translations(hydrated_object_entry, translation)
         assert_related_audio(hydrated_object_entry, audio, speaker)
         assert_related_images(hydrated_object_entry, image)
+
+    @pytest.mark.parametrize(
+        "entry_type",
+        [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE],
+    )
+    @pytest.mark.parametrize(
+        "games_flag, should_have_split_chars_base",
+        [
+            (True, True),
+            (False, False),
+            (None, False),
+        ],
+    )
+    def test_dictionary_entry_games_hydration(
+        self, entry_type, games_flag, should_have_split_chars_base
+    ):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        factories.CharacterFactory.create(title="üü", site=site)
+        factories.CharacterFactory.create(title="a", site=site)
+        entry = DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC, type=entry_type, title="aüüa"
+        )
+
+        # Only adding the fields required for hydarate_objects method to work,
+        # the rest should be fetched from the db
+        minimal_dictionary_search_result = {
+            "_index": "dictionary_entries_2023_11_01_21_32_51",
+            "_id": "searchId123",
+            "_score": 1.0,
+            "_source": {
+                "document_id": entry.id,
+                "site_id": site.id,
+            },
+        }
+
+        # Verifying the structure for only one word with all fields present
+        actual_hydrated_object = hydrate_objects(
+            [minimal_dictionary_search_result], games_flag=games_flag
+        )[0]
+        hydrated_object_entry = actual_hydrated_object["entry"]
+
+        assert (
+            actual_hydrated_object["searchResultId"]
+            == minimal_dictionary_search_result["_id"]
+        )
+        assert actual_hydrated_object["type"] == entry_type.label.lower()
+
+        # entry
+        assert hydrated_object_entry["id"] == str(entry.id)
+        assert hydrated_object_entry["title"] == entry.title
+        assert hydrated_object_entry["type"] == entry.type
+        assert (
+            hydrated_object_entry["visibility"]
+            == entry.get_visibility_display().lower()
+        )
+
+        assert_site_object(hydrated_object_entry, site)
+
+        if should_have_split_chars_base:
+            assert "split_chars_base" in hydrated_object_entry
+            assert hydrated_object_entry["split_chars_base"] == ["a", "üü", "a"]
+        else:
+            assert "split_chars_base" not in hydrated_object_entry
 
     def test_song_hydration(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)

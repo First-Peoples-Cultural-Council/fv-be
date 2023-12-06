@@ -392,6 +392,11 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value="modified_desc",
                         description="Returns results ordered by the last modified date and time in descending order.",
                     ),
+                    OpenApiExample(
+                        "Random",
+                        value="random",
+                        description="Returns results in random order.",
+                    ),
                 ],
             ),
         ],
@@ -521,6 +526,7 @@ class BaseSearchViewSet(
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
+            random_sort=search_params["sort"] == "random",
         )
 
         # Pagination
@@ -572,7 +578,9 @@ class BaseSearchViewSet(
         search_results = response["hits"]["hits"]
 
         # Adding data to objects
-        hydrated_objects = hydrate_objects(search_results)
+        hydrated_objects = hydrate_objects(
+            search_results, games_flag=search_params["games"]
+        )
 
         page = self.paginator.apply_search_pagination(
             request=request,

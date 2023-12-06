@@ -42,6 +42,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "ignored_characters",
         "images",
         "join_requests",
+        "immersion_labels",
         "pages",
         "people",
         "songs",
@@ -75,6 +76,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     features = SiteViewLinkField(view_name="api:sitefeature-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
+    immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
@@ -110,6 +112,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "features",
             "ignored_characters",
             "images",
+            "immersion_labels",
             "join_requests",
             "pages",
             "people",

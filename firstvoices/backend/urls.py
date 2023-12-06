@@ -12,6 +12,7 @@ from backend.views.custom_order_recalculate_views import (
 from backend.views.data_views import SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.image_views import ImageViewSet
+from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
@@ -60,6 +61,9 @@ sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
 sites_router.register(r"images", ImageViewSet, basename="image")
+sites_router.register(
+    r"immersion-labels", ImmersionLabelViewSet, basename="immersionlabel"
+)
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")

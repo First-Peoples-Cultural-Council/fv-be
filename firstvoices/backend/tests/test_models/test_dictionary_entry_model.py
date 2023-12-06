@@ -5,6 +5,7 @@ from django.db.utils import DataError
 from backend.models.characters import Alphabet
 from backend.models.constants import DEFAULT_TITLE_LENGTH
 from backend.models.dictionary import DictionaryEntry
+from backend.tests import factories
 from backend.tests.factories import (
     AlphabetFactory,
     ControlledSiteContentFactory,
@@ -101,6 +102,17 @@ class TestDictionaryEntryModel:
         # Thus, we test again with the expected_title
         fetched_entry = DictionaryEntry.objects.get(title=expected_title)
         assert fetched_entry.title == expected_title
+
+    @pytest.mark.django_db
+    def test_split_chars_base(self):
+        site = SiteFactory.create()
+        factories.CharacterFactory.create(title="üü", site=site)
+        factories.CharacterFactory.create(title="a", site=site)
+        entry = DictionaryEntry(title="aüüa", type="WORD", site=site)
+        entry.save()
+
+        fetched_entry = DictionaryEntry.objects.get(id=entry.id)
+        assert fetched_entry.split_chars_base == ["a", "üü", "a"]
 
 
 class TestDictionarySortProcessing:

@@ -297,6 +297,7 @@ def get_valid_sort(input_sort_by_str):
         input_string[0] == "created"
         or input_string[0] == "modified"
         or input_string[0] == "title"
+        or input_string[0] == "random"
     ):
         return input_string[0], descending
     else:  # if invalid string is passed

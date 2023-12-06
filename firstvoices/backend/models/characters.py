@@ -446,3 +446,53 @@ class Alphabet(BaseSiteContentModel):
         return self.sorter(base_characters, ignorable_characters).word_as_values(
             self.get_base_form(text, base_characters, character_variants)
         )
+
+    def get_split_chars_base(
+        self,
+        entry,
+        base_characters=None,
+        character_variants=None,
+        ignorable_characters=None,
+    ) -> list[str]:
+        ignored_characters = IgnoredCharacter.objects.filter(
+            site=self.site
+        ).values_list("title", flat=True)
+        base_characters = (
+            base_characters if base_characters is not None else self.base_characters
+        )
+        character_variants = (
+            character_variants
+            if character_variants is not None
+            else self.variant_characters
+        )
+        ignorable_characters = (
+            ignorable_characters
+            if ignorable_characters is not None
+            else self.ignorable_characters
+        )
+        if "⚑" in entry.custom_order:
+            return []
+        else:
+            char_list = (
+                []
+                if self == []
+                else self.get_character_list(
+                    entry.title,
+                    base_characters,
+                    character_variants,
+                    ignorable_characters,
+                )
+            )
+            has_ignored_char = set(char_list).intersection(set(ignored_characters))
+            if has_ignored_char:
+                return []
+            else:
+                base_chars = [
+                    self.get_base_form(
+                        c,
+                        base_characters,
+                        character_variants,
+                    )
+                    for c in char_list
+                ]
+                return base_chars

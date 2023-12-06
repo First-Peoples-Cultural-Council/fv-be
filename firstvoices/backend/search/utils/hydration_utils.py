@@ -71,7 +71,7 @@ def fetch_objects_from_database(
     return objects
 
 
-def hydrate_objects(search_results):
+def hydrate_objects(search_results, games_flag=None):
     """
     To enhance the raw objects returned from ElasticSearch, we add the necessary properties.
     First, we segregate all the IDs from the search results into separate lists based on their respective models.
@@ -148,7 +148,7 @@ def hydrate_objects(search_results):
                     "type"
                 ] = dictionary_entry.type.lower()  # 'word' or 'phrase'
                 complete_object["entry"] = DictionaryEntryMinimalSerializer(
-                    dictionary_entry
+                    dictionary_entry, context={"games_flag": games_flag}
                 ).data
 
             elif ELASTICSEARCH_SONG_INDEX in obj["_index"]:

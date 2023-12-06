@@ -1,8 +1,13 @@
 import rules
 from django.db import models
 from django.utils.translation import gettext as _
+from django_better_admin_arrayfield.models.fields import ArrayField
 
-from backend.models.constants import DEFAULT_TITLE_LENGTH, MAX_NOTE_LENGTH
+from backend.models.constants import (
+    DEFAULT_TITLE_LENGTH,
+    MAX_CHARACTER_LENGTH,
+    MAX_NOTE_LENGTH,
+)
 from backend.permissions import predicates
 from backend.utils.character_utils import clean_input
 
@@ -208,6 +213,10 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         related_name="dictionary_entries",
     )
 
+    split_chars_base = ArrayField(
+        models.CharField(max_length=MAX_CHARACTER_LENGTH), blank=True, default=list
+    )
+
     # exclude_from_games from fv-word:available_in_games, fvaudience:games
     # exclude_from_kids from fvaudience:children fv:available_in_childrens_archive
     # related_audio from fv:related_audio
@@ -240,6 +249,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
 
         self.clean_title(alphabet)
         self.set_custom_order(alphabet)
+        self.set_split_chars_base(alphabet)
         super().save(*args, **kwargs)
 
     def clean_title(self, alphabet):
@@ -250,6 +260,9 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     def set_custom_order(self, alphabet):
         self.custom_order = alphabet.get_custom_order(self.title)
+
+    def set_split_chars_base(self, alphabet):
+        self.split_chars_base = alphabet.get_split_chars_base(self)
 
 
 class DictionaryEntryLink(BaseModel):

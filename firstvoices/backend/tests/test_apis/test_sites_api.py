@@ -253,6 +253,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "features": f"{site_url}/features",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
+            "immersionLabels": f"{site_url}/immersion-labels",
             "joinRequests": f"{site_url}/join-requests",
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
