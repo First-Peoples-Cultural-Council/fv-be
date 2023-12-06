@@ -10,6 +10,7 @@ from backend.serializers.dictionary_serializers import (
     WritableRelatedDictionaryEntrySerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.validators import SameSite
 
 
 class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
@@ -19,6 +20,7 @@ class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
     dictionary_entry = WritableRelatedDictionaryEntrySerializer(
         required=True,
         queryset=DictionaryEntry.objects.all(),
+        validators=[SameSite()],
     )
     key = serializers.CharField(allow_blank=False, allow_null=False)
 
@@ -28,18 +30,6 @@ class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
         """
         validated_data.pop("key", None)
         return super().update(instance, validated_data)
-
-    def validate(self, attrs):
-        attrs = super().validate(attrs)
-        site = self.context["site"]
-        dictionary_entry = attrs.get("dictionary_entry")
-
-        if dictionary_entry and dictionary_entry.site != site:
-            raise serializers.ValidationError(
-                "Dictionary entry must belong to the same site as the immersion label."
-            )
-
-        return attrs
 
     class Meta:
         model = ImmersionLabel

@@ -149,10 +149,6 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
             self.get_list_endpoint(site_slug=site.slug), format="json", data=data
         )
         assert response.status_code == 400
-        assert (
-            response.data["non_field_errors"][0]
-            == "Dictionary entry must belong to the same site as the immersion label."
-        )
 
     @pytest.mark.django_db
     def test_immersion_map_permissions(self):
@@ -181,7 +177,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 403
 
     @pytest.mark.django_db
-    def test_immersion_list_empty(self):
+    def test_immersion_map_empty(self):
         """
         Tests that the immersion map endpoint returns an empty object if there are no labels.
         """
@@ -196,7 +192,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.data == {}
 
     @pytest.mark.django_db
-    def test_immersion_list(self):
+    def test_immersion_map(self):
         """
         Tests that the immersion map endpoint returns a map with the correct data.
         """

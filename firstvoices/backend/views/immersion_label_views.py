@@ -145,8 +145,7 @@ class ImmersionLabelViewSet(
         """
         Returns a mapping of immersion label keys to their corresponding dictionary entry titles.
         """
-        site = self.get_validated_site()
-        immersion_labels = ImmersionLabel.objects.filter(site__slug=site[0].slug)
+        immersion_labels = ImmersionLabel.objects.visible(request.user)
 
         immersion_labels_map = {
             label.key: label.dictionary_entry.title for label in immersion_labels
