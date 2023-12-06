@@ -254,6 +254,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
+            "immersionLabels": f"{site_url}/immersion-labels",
             "joinRequests": f"{site_url}/join-requests",
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
