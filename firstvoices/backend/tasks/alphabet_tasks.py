@@ -16,7 +16,7 @@ def recalculate_custom_order_preview(site_slug: str):
     """
 
     site = Site.objects.get(slug=site_slug)
-    alphabet = Alphabet.objects.get_or_create(site=site)
+    alphabet = Alphabet.objects.get_or_create(site=site)[0]
     preview = {}
     task_id = current_task.request.id
 
@@ -83,7 +83,7 @@ def recalculate_custom_order(site_slug: str):
     """
 
     site = Site.objects.get(slug=site_slug)
-    alphabet = Alphabet.objects.get_or_create(site=site)
+    alphabet = Alphabet.objects.get_or_create(site=site)[0]
     results = {}
     task_id = current_task.request.id
 
