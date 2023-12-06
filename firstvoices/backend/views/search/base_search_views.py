@@ -355,6 +355,32 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasUnrecognizedChars",
+                description="Filter dictionary entries that have an unrecognized character present in their title.",
+                required=False,
+                default=None,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Returns dictionary entries that have an unrecognized character "
+                        "present in their title.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="Returns dictionary entries that do not have an unrecognized character "
+                        "present in their title.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
@@ -444,6 +470,9 @@ class BaseSearchViewSet(
         has_translation = self.request.GET.get("hasTranslation", None)
         has_translation = get_valid_boolean(has_translation)
 
+        has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
+        has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -462,6 +491,7 @@ class BaseSearchViewSet(
             "has_video": has_video,
             "has_image": has_image,
             "has_translation": has_translation,
+            "has_unrecognized_chars": has_unrecognized_chars,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -526,6 +556,7 @@ class BaseSearchViewSet(
             has_video=search_params["has_video"],
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
+            has_unrecognized_chars=search_params["has_unrecognized_chars"],
             random_sort=search_params["sort"] == "random",
         )
 

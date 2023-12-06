@@ -19,6 +19,7 @@ class DictionaryEntryDocument(MediaReportingDocumentMixin, BaseDocument):
     custom_order = Keyword()
     categories = Keyword()
     has_translation = Boolean()
+    has_unrecognized_chars = Boolean()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
