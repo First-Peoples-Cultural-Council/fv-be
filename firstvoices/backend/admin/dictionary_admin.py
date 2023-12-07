@@ -45,6 +45,13 @@ class WordOfTheDayInline(BaseInlineSiteContentAdmin):
         return qs.select_related("dictionary_entry")
 
 
+@admin.register(WordOfTheDay)
+class WordOfTheDayAdmin(FilterAutocompleteBySiteMixin, HiddenBaseAdmin):
+    model = WordOfTheDay
+    readonly_fields = ("site",) + HiddenBaseAdmin.readonly_fields
+    autocomplete_fields = ("dictionary_entry",)
+
+
 @admin.register(DictionaryEntry)
 class DictionaryEntryAdmin(
     FilterAutocompleteBySiteMixin, BaseControlledSiteContentAdmin, HiddenBaseAdmin
@@ -74,7 +81,16 @@ class DictionaryEntryAdmin(
         "batch_id",
         "exclude_from_wotd",
         "part_of_speech",
+        "split_chars_base",
     ]
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term, ["wordoftheday", "site", "character"]
+        )
+        return queryset, use_distinct
 
 
 @admin.register(PartOfSpeech)
@@ -99,4 +115,3 @@ admin.site.register(DictionaryEntryRelatedCharacter, HiddenBaseAdmin)
 admin.site.register(Translation, HiddenBaseAdmin)
 admin.site.register(AlternateSpelling, HiddenBaseAdmin)
 admin.site.register(Pronunciation, HiddenBaseAdmin)
-admin.site.register(WordOfTheDay, HiddenBaseAdmin)

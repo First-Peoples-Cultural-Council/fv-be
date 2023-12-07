@@ -1,16 +1,18 @@
 from secrets import choice
 
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.utils.timezone import datetime, timedelta
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
+from backend.models import Image
 from backend.models.dictionary import (
     DictionaryEntry,
     TypeOfDictionaryEntry,
     WordOfTheDay,
 )
+from backend.models.media import Audio, Video
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
 from backend.views.api_doc_variables import site_slug_parameter
@@ -19,6 +21,7 @@ from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
 )
+from backend.views.utils import get_media_prefetch_list, get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -62,7 +65,7 @@ class WordOfTheDayView(
             exclude_from_wotd=False,
             visibility=F("site__visibility"),
         ).exclude(id__in=list(words_used))
-        if dictionary_entry_queryset.count() > 0:
+        if len(dictionary_entry_queryset) > 0:
             selected_word = dictionary_entry_queryset.first()
             wotd_entry = WordOfTheDay(
                 date=today, dictionary_entry=selected_word, site=selected_word.site
@@ -128,15 +131,15 @@ class WordOfTheDayView(
         # Case 1. Check if there is a word assigned word-of-the-day date of today
         today = datetime.today()
         selected_word = WordOfTheDay.objects.filter(site__slug=site_slug, date=today)
-        if selected_word.count() == 0:
+        if len(selected_word) == 0:
             # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
             selected_word = self.get_unassigned_word(site_slug, today)
-        if selected_word.count() == 0:
+        if len(selected_word) == 0:
             # Case 3. If no words found satisfying any of the above condition, try to find wotd which has not
             # been assigned a date in the last year
             last_year_date = today - timedelta(weeks=52)
             selected_word = self.get_wotd_before_date(site_slug, today, last_year_date)
-        if selected_word.count() == 0:
+        if len(selected_word) == 0:
             # Case 4. If there is no word that passes any of the above conditions, choose a word at random
             random_word = self.get_random_word_as_wotd(site_slug, today)
             return random_word
@@ -159,6 +162,48 @@ class WordOfTheDayView(
             )
             if filtered_queryset:
                 queryset = selected_word
+
+        queryset = queryset.select_related(
+            "dictionary_entry",
+            "dictionary_entry__site",
+            "dictionary_entry__site__language",
+            "dictionary_entry__created_by",
+            "dictionary_entry__last_modified_by",
+            "dictionary_entry__part_of_speech",
+        ).prefetch_related(
+            "dictionary_entry__acknowledgement_set",
+            "dictionary_entry__alternatespelling_set",
+            "dictionary_entry__note_set",
+            "dictionary_entry__pronunciation_set",
+            "dictionary_entry__translation_set",
+            "dictionary_entry__categories",
+            Prefetch(
+                "dictionary_entry__related_dictionary_entries",
+                queryset=DictionaryEntry.objects.visible(self.request.user)
+                .select_related("site")
+                .prefetch_related(
+                    "translation_set", *get_media_prefetch_list(self.request.user)
+                ),
+            ),
+            Prefetch(
+                "dictionary_entry__related_audio",
+                queryset=Audio.objects.visible(self.request.user)
+                .select_related("original", "site")
+                .prefetch_related("speakers"),
+            ),
+            Prefetch(
+                "dictionary_entry__related_images",
+                queryset=Image.objects.visible(self.request.user).select_related(
+                    *get_select_related_media_fields(None)
+                ),
+            ),
+            Prefetch(
+                "dictionary_entry__related_videos",
+                queryset=Video.objects.visible(self.request.user).select_related(
+                    *get_select_related_media_fields(None)
+                ),
+            ),
+        )
 
         # serialize and return the data, with context to support hyperlinking
         serializer = self.serializer_class(
