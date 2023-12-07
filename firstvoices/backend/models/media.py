@@ -482,16 +482,23 @@ class Image(ThumbnailMixin, MediaBase):
         output_img = BytesIO()
         img.thumbnail(output_size)
         # Remove transparency values if they exist so that the image can be converted to JPEG.
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        if (
-            output_size[0] == img.width
-            and output_size[1] == img.height
-            and img.format == "JPEG"
-        ):
-            img.save(output_img, format="JPEG", quality="keep")
-        else:
-            img.save(output_img, format="JPEG", quality=80)
+        try:
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+
+            if (
+                output_size[0] == img.width
+                and output_size[1] == img.height
+                and img.format == "JPEG"
+            ):
+                img.save(output_img, format="JPEG", quality="keep")
+            else:
+                img.save(output_img, format="JPEG", quality=80)
+        except OSError as e:
+            self.logger.warning(
+                f"Failed to generate thumbnail for image file [{self.original.content.name}].\n"
+                f"Error: {e}\n"
+            )
         return output_img
 
 
