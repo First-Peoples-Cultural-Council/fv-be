@@ -1,3 +1,4 @@
+from django.core.validators import validate_slug
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -30,7 +31,13 @@ class ImmersionLabel(BaseSiteContentModel):
             models.Index(fields=["site", "key"], name="immersion_label_key_idx"),
         ]
 
-    key = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
+    key = models.SlugField(
+        max_length=DEFAULT_TITLE_LENGTH,
+        blank=False,
+        validators=[validate_slug],
+        db_index=True,
+        unique=True,
+    )
 
     dictionary_entry = models.ForeignKey(
         "DictionaryEntry",
