@@ -46,8 +46,8 @@ class GalleryItem(BaseModel):
     """
 
     class Meta:
-        verbose_name = _("gallery image")
-        verbose_name_plural = _("gallery images")
+        verbose_name = _("gallery item")
+        verbose_name_plural = _("gallery items")
         constraints = [
             models.UniqueConstraint(
                 fields=["gallery", "image"],
@@ -55,7 +55,7 @@ class GalleryItem(BaseModel):
             ),
             models.UniqueConstraint(
                 fields=["gallery", "order"],
-                name="unique_gallery_image_order",
+                name="unique_gallery_item_order",
             ),
         ]
         rules_permissions = {
@@ -65,7 +65,7 @@ class GalleryItem(BaseModel):
             "delete": predicates.is_superadmin,
         }
         indexes = [
-            models.Index(fields=["gallery", "order"], name="gallery_image_order_idx"),
+            models.Index(fields=["gallery", "order"], name="gallery_item_order_idx"),
         ]
 
     gallery = models.ForeignKey(
