@@ -16,6 +16,7 @@ from .dictionary import (  # noqa F401
     Pronunciation,
     Translation,
 )
+from .galleries import Gallery, GalleryItem  # noqa F401
 from .immersion_labels import ImmersionLabel  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
