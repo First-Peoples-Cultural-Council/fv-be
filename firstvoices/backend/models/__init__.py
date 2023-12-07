@@ -16,7 +16,6 @@ from .dictionary import (  # noqa F401
     Pronunciation,
     Translation,
 )
-from .galleries import Gallery, GalleryItem  # noqa F401
 from .immersion_labels import ImmersionLabel  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
@@ -25,3 +24,5 @@ from .part_of_speech import PartOfSpeech  # noqa F401
 from .sites import Membership, Site  # noqa F401
 from .song import Lyric, Song  # noqa F401
 from .story import Story, StoryPage  # noqa F401
+
+from .galleries import Gallery, GalleryItem  # noqa F401 # isort:skip
