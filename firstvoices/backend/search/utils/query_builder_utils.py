@@ -199,6 +199,10 @@ def get_has_translation_query(has_translation):
     return Q("bool", filter=[Q("term", has_translation=has_translation)])
 
 
+def get_has_unrecognized_chars_query(has_unrecognized_chars):
+    return Q("bool", filter=[Q("term", has_unrecognized_chars=has_unrecognized_chars)])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:

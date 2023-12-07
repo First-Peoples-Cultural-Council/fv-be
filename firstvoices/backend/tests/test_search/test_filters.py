@@ -323,6 +323,41 @@ class TestHasTranslationParams:
         assert expected_false_filter not in str(search_query)
 
 
+class TestHasUnrecognizedCharsParam:
+    def test_has_unrecognized_chars_true(self):
+        expected_true_filter = "{'term': {'has_unrecognized_chars': True}}"
+        search_query = get_search_query(
+            has_unrecognized_chars=True, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)
+
+    def test_has_unrecognized_chars_false(self):
+        expected_false_filter = "{'term': {'has_unrecognized_chars': False}}"
+        search_query = get_search_query(
+            has_unrecognized_chars=False, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        assert expected_false_filter in str(search_query)
+
+    def test_has_unrecognized_chars_default(self):
+        expected_true_filter = "{'term': {'has_unrecognized_chars': True}}"
+        expected_false_filter = "{'term': {'has_unrecognized_chars': False}}"
+
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter not in str(search_query)
+        assert expected_false_filter not in str(search_query)
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or "has_unrecognized_chars" not in str(
+            search_query["query"]["bool"]["filter"]
+        )
+
+
 class TestRandomSortParams:
     def test_default(self):
         search_query = get_search_query(user=AnonymousUser())

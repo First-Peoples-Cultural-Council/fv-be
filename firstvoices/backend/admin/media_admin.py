@@ -3,7 +3,8 @@ from django.utils.html import format_html
 from embed_video.admin import AdminVideoMixin
 
 from backend.admin import BaseAdmin, BaseSiteContentAdmin, HiddenBaseAdmin
-from backend.admin.base_admin import FilterAutocompleteBySiteMixin
+from backend.admin.base_admin import BaseInlineAdmin, FilterAutocompleteBySiteMixin
+from backend.models.galleries import Gallery, GalleryItem
 from backend.models.media import (
     Audio,
     AudioSpeaker,
@@ -165,3 +166,77 @@ class PersonAdmin(BaseSiteContentAdmin, HiddenBaseAdmin):
         "bio",
         "site",
     ) + BaseSiteContentAdmin.readonly_fields
+
+
+class GalleryItemInline(BaseInlineAdmin):
+    model = GalleryItem
+    fields = ("image", "order") + BaseInlineAdmin.fields
+    autocomplete_fields = ("image",)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("gallery", "image", "created_by", "last_modified_by")
+
+
+@admin.register(Gallery)
+class GalleryAdmin(BaseSiteContentAdmin):
+    fields = (
+        "site",
+        "title",
+        "title_translation",
+        "introduction",
+        "introduction_translation",
+        "cover_image",
+    )
+    list_display = ("title",) + BaseSiteContentAdmin.list_display
+    search_fields = ("title", "introduction")
+    autocomplete_fields = ("cover_image",)
+    inlines = (GalleryItemInline,)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+        )
+        return queryset, use_distinct
+
+
+@admin.register(GalleryItem)
+class GalleryItemAdmin(BaseAdmin):
+    fields = (
+        "gallery",
+        "image",
+        "order",
+    )
+    list_display = ("image", "gallery", "order") + BaseAdmin.list_display
+    search_fields = ("gallery", "image")
+    autocomplete_fields = ("gallery", "image")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("gallery", "image", "created_by", "last_modified_by")
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+        )
+        return queryset, use_distinct

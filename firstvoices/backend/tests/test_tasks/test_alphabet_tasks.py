@@ -1,6 +1,6 @@
 import pytest
 
-from backend.models import DictionaryEntry
+from backend.models import Alphabet, DictionaryEntry
 from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,
@@ -341,3 +341,23 @@ class TestAlphabetTasks:
             ],
         }
         assert entry.last_modified == entry_last_modified
+
+    @pytest.mark.django_db
+    def test_recalculate_preview_alphabet_missing(self, site):
+        assert Alphabet.objects.count() == 0
+        result = recalculate_custom_order_preview(site_slug=site.slug)
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [],
+        }
+        assert Alphabet.objects.count() == 1
+
+    @pytest.mark.django_db
+    def test_recalculate_alphabet_missing(self, site):
+        assert Alphabet.objects.count() == 0
+        result = recalculate_custom_order(site_slug=site.slug)
+        assert result == {
+            "unknown_character_count": {},
+            "updated_entries": [],
+        }
+        assert Alphabet.objects.count() == 1

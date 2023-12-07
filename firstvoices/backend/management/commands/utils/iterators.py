@@ -4,6 +4,7 @@ from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.search.documents import DictionaryEntryDocument, MediaDocument
+from backend.search.utils.constants import UNKNOWN_CHARACTER_FLAG
 from backend.search.utils.get_index_documents import (
     create_song_index_document,
     create_story_index_document,
@@ -113,6 +114,7 @@ def dictionary_entry_iterator():
             created=entry.created,
             last_modified=entry.last_modified,
             has_translation=entry.translation_set.count() > 0,
+            has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in entry.custom_order,
         )
         yield index_entry.to_dict(True)
 
