@@ -1,3 +1,4 @@
+import rules
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext as _
@@ -58,10 +59,10 @@ class GalleryItem(BaseModel):
             ),
         ]
         rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
         }
         indexes = [
             models.Index(fields=["gallery", "order"], name="gallery_image_order_idx"),
@@ -82,6 +83,11 @@ class GalleryItem(BaseModel):
     order = models.SmallIntegerField(
         validators=[MinValueValidator(0)], null=False, default=0
     )
+
+    @property
+    def site(self):
+        """Get the site associated with this gallery item."""
+        return self.gallery.site
 
     def __str__(self):
         return self.image.title
