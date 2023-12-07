@@ -70,9 +70,6 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
             "key": self.TEST_KEY,
         }
 
-    def get_valid_data_with_nulls(self, site=None):
-        return self.get_valid_data(site=site)
-
     def get_valid_patch_data(self, site=None):
         entry = factories.DictionaryEntryFactory(site=site)
         return {
@@ -128,6 +125,16 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert original_instance.key == actual_response["key"]
         assert actual_response["dictionaryEntry"]["id"] == data["dictionary_entry"]
+
+    @pytest.mark.skip(reason="Immersion label API does not have eligible null fields.")
+    def test_create_with_nulls_success_201(self):
+        # Immersion label API does not have eligible null fields.
+        pass
+
+    @pytest.mark.skip(reason="Immersion label API does not have eligible null fields.")
+    def test_update_with_nulls_success_200(self):
+        # Immersion label API does not have eligible null fields.
+        pass
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):

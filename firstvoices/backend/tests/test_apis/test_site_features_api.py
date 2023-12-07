@@ -53,9 +53,6 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
             "isEnabled": True,
         }
 
-    def get_valid_data_with_nulls(self, site=None):
-        return self.get_valid_data(site=site)
-
     def get_valid_patch_data(self, site=None):
         return {
             "isEnabled": False,
@@ -109,6 +106,16 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["key"] == original_instance.key
         assert actual_response["isEnabled"] == data["isEnabled"]
+
+    @pytest.mark.skip(reason="SiteFeature API does not have eligible null fields.")
+    def test_create_with_nulls_success_201(self):
+        # SiteFeature API does not have eligible null fields.
+        pass
+
+    @pytest.mark.skip(reason="SiteFeature API does not have eligible null fields.")
+    def test_update_with_nulls_success_200(self):
+        # SiteFeature API does not have eligible null fields.
+        pass
 
     @pytest.mark.django_db
     def test_feature_key_read_only(self):
