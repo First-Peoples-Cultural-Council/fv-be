@@ -39,7 +39,7 @@ class Gallery(TranslatedTitleMixin, TranslatedIntroMixin, BaseSiteContentModel):
         return self.title
 
 
-class GalleryImage(BaseModel):
+class GalleryItem(BaseModel):
     """
     Represents an image in a gallery.
     """
