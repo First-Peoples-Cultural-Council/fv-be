@@ -12,7 +12,7 @@ import uuid
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("backend", "0084_language_community_keywords_and_more"),
+        ("backend", "0085_gallery_galleryitem_galleryitem_unique_gallery_image_and_more"),
     ]
 
     operations = [
