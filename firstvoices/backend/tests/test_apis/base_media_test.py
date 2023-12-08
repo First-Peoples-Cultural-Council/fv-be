@@ -26,18 +26,18 @@ class MediaTestMixin:
     Utilities for testing media APIs
     """
 
-    def get_sample_file(self, filename, mimetype):
+    def get_sample_file(self, filename, mimetype, title=None):
         path = (
             os.path.dirname(os.path.realpath(__file__))
             + f"/../factories/resources/{filename}"
         )
-        image_file = open(path, "rb")
+        file = open(path, "rb")
         return InMemoryUploadedFile(
-            image_file,
+            file,
             "FileField",
-            filename,
+            title if title is not None else filename,
             mimetype,
-            sys.getsizeof(image_file),
+            sys.getsizeof(file),
             None,
         )
 
@@ -281,6 +281,15 @@ class BaseMediaApiTest(
     def get_valid_patch_data(self, site):
         return {
             "title": "A new title",
+        }
+
+    def get_valid_patch_file_data(self, site):
+        return {
+            "original": self.get_sample_file(
+                self.sample_filename,
+                self.sample_filetype,
+                f"patch-{self.sample_filename}",
+            ),
         }
 
     def assert_created_instance(self, pk, data):
