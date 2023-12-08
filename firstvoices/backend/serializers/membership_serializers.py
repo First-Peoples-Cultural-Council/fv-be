@@ -3,7 +3,10 @@ from rest_framework.reverse import reverse
 
 from backend.models import Membership
 from backend.serializers.media_serializers import ImageSerializer
-from backend.serializers.site_serializers import SiteSummarySerializer
+from backend.serializers.site_serializers import (
+    FeatureFlagSerializer,
+    SiteSummarySerializer,
+)
 
 
 class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -19,6 +22,9 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     language = serializers.StringRelatedField(source="site.language")
     visibility = serializers.CharField(source="site.get_visibility_display")
     logo = ImageSerializer(source="site.logo")
+    enabled_features = FeatureFlagSerializer(
+        read_only=True, source="site.sitefeature_set", many=True
+    )
 
     def get_url(self, instance):
         # the lookup_field of the HyperlinkedIdentityField doesn't handle related fields,

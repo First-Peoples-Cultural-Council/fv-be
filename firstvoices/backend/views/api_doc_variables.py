@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiParameter, inline_serializer
 from rest_framework import serializers
 
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
+from backend.serializers.site_serializers import FeatureFlagSerializer
 from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 
 site_slug_parameter = OpenApiParameter(
@@ -34,6 +35,7 @@ inline_site_doc_detail_serializer = inline_serializer(
         "visibility": serializers.CharField(),
         "language": serializers.CharField(),
         "logo": ImageSerializer(),
+        "enabled_features": FeatureFlagSerializer(many=True),
         "menu": serializers.CharField(),
         "banner_image": ImageSerializer(),
         "banner_video": VideoSerializer(),

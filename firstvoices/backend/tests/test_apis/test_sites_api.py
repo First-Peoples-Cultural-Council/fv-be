@@ -91,6 +91,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
+            "enabledFeatures": [],
         }
 
     def generate_test_sites(self):
@@ -239,6 +240,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "url": site_url,
             "menu": menu.json,
+            "enabledFeatures": [],
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
@@ -278,6 +280,29 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["menu"] == menu.json
+
+    @pytest.mark.django_db
+    def test_detail_enabled_features(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        enabled_feature = factories.SiteFeatureFactory.create(
+            site=site, key="key1", is_enabled=True
+        )
+        factories.SiteFeatureFactory.create(site=site, key="key2", is_enabled=False)
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["enabledFeatures"] == [
+            {
+                "id": str(enabled_feature.id),
+                "key": enabled_feature.key,
+                "isEnabled": True,
+            }
+        ]
 
     @pytest.mark.django_db
     def test_detail_logo_from_other_site(self):

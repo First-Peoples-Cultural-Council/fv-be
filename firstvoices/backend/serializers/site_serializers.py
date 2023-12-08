@@ -17,6 +17,12 @@ from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
 
+class FeatureFlagSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    key = serializers.CharField()
+    is_enabled = serializers.BooleanField()
+
+
 class SiteSummarySerializer(LinkedSiteSerializer):
     """
     Serializes public, non-access-controlled information about a site object. This includes the type of info
@@ -24,9 +30,12 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     """
 
     logo = ImageSerializer()
+    enabled_features = FeatureFlagSerializer(
+        read_only=True, source="sitefeature_set", many=True
+    )
 
     class Meta(LinkedSiteSerializer.Meta):
-        fields = LinkedSiteSerializer.Meta.fields + ("logo",)
+        fields = LinkedSiteSerializer.Meta.fields + ("logo", "enabled_features")
 
 
 @extend_schema_serializer(

@@ -33,6 +33,7 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
             "visibility": instance.site.get_visibility_display().lower(),
             "logo": None,
             "url": f"http://testserver/api/1.0/my-sites/{instance.site.slug}",
+            "enabledFeatures": [],
             "role": instance.get_role_display(),
         }
 
