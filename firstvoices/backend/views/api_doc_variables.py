@@ -35,7 +35,7 @@ inline_site_doc_detail_serializer = inline_serializer(
         "visibility": serializers.CharField(),
         "language": serializers.CharField(),
         "logo": ImageSerializer(),
-        "features": FeatureFlagSerializer(),
+        "enabled_features": FeatureFlagSerializer(many=True),
         "menu": serializers.CharField(),
         "banner_image": ImageSerializer(),
         "banner_video": VideoSerializer(),

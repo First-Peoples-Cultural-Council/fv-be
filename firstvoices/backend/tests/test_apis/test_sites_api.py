@@ -91,7 +91,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
-            "features": [],
+            "enabledFeatures": [],
         }
 
     def generate_test_sites(self):
@@ -240,7 +240,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "visibility": "public",
             "url": site_url,
             "menu": menu.json,
-            "features": [],
+            "enabledFeatures": [],
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
@@ -252,6 +252,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "dictionary": f"{site_url}/dictionary",
             "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "features": f"{site_url}/features",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
             "immersionLabels": f"{site_url}/immersion-labels",
@@ -295,7 +296,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["features"] == [
+        assert response_data["enabledFeatures"] == [
             {
                 "id": str(enabled_feature.id),
                 "key": enabled_feature.key,

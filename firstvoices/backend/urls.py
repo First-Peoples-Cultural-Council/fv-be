@@ -19,6 +19,7 @@ from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search.base_search_views import BaseSearchViewSet
 from backend.views.search.site_search_views import SiteSearchViewsSet
+from backend.views.site_feature_views import SiteFeatureViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
 from backend.views.stats_views import StatsViewSet
@@ -55,6 +56,7 @@ sites_router.register(
     CustomOrderRecalculateView,
     basename="dictionary-cleanup",
 )
+sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )

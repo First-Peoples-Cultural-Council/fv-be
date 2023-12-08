@@ -30,12 +30,12 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     """
 
     logo = ImageSerializer()
-    features = FeatureFlagSerializer(
+    enabled_features = FeatureFlagSerializer(
         read_only=True, source="sitefeature_set", many=True
     )
 
     class Meta(LinkedSiteSerializer.Meta):
-        fields = LinkedSiteSerializer.Meta.fields + ("logo", "features")
+        fields = LinkedSiteSerializer.Meta.fields + ("logo", "enabled_features")
 
 
 @extend_schema_serializer(
@@ -47,8 +47,10 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary",
         "dictionary_cleanup",
         "dictionary_cleanup_preview",
+        "features",
         "ignored_characters",
         "images",
+        "join_requests",
         "immersion_labels",
         "pages",
         "people",
@@ -80,6 +82,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     dictionary_cleanup_preview = SiteViewLinkField(
         view_name="api:dictionary-cleanup-preview-list"
     )
+    features = SiteViewLinkField(view_name="api:sitefeature-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
@@ -115,6 +118,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
+            "features",
             "ignored_characters",
             "images",
             "immersion_labels",
