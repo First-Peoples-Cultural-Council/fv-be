@@ -39,7 +39,7 @@ g2p==1.1.20230822 # https://github.com/roedoejet/g2p
 greenlet==3.0.1
 gunicorn==21.2.0
 humanfriendly==10.0
-idna==3.4
+idna==3.6
 inflection==0.5.1
 iniconfig==2.0.0
 itsdangerous==2.1.2
