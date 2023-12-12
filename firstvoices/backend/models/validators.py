@@ -26,3 +26,11 @@ def reserved_site_page_slug_validator(slug):
             raise ValidationError(
                 f"{slug} is a reserved slug or contains a reserved string."
             )
+
+
+def validate_no_duplicate_urls(urls):
+    """
+    This validator ensures that a list of urls does not contain any duplicates.
+    """
+    if len(urls) != len(set(urls)):
+        raise ValidationError("Duplicate urls found in list.")

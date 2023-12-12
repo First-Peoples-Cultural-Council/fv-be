@@ -11,15 +11,21 @@ from backend.tests.factories import (
     ControlledSiteContentFactory,
     SiteFactory,
 )
+from backend.tests.test_models.test_media_models import RelatedVideoLinksValidationMixin
 from backend.tests.utils import generate_string
 
 
-class TestDictionaryEntryModel:
+class TestDictionaryEntryModel(RelatedVideoLinksValidationMixin):
     """Test for dictionary entry model.
     Note related to tests related to custom_order field: if the title is made up of unknown characters, as in the case
     of all the following tests, the custom_order field contains all the unknown characters and a flag for each unknown
     character, i.e. length of custom order field should be double that of title field.
     """
+
+    def create_instance_with_related_video_links(self, site, related_video_links):
+        return factories.DictionaryEntryFactory.create(
+            site=site, related_video_links=related_video_links
+        )
 
     def test_max_length_success(self, db):
         site = SiteFactory.create()

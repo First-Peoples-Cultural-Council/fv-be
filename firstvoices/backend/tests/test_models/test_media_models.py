@@ -3,6 +3,13 @@ from unittest.mock import patch
 
 import pytest
 from django.db import NotSupportedError
+from embed_video.backends import (
+    UnknownBackendException,
+    VimeoBackend,
+    YoutubeBackend,
+    detect_backend,
+)
+from embed_video.fields import EmbedVideoField
 
 from backend.models.media import (
     File,
@@ -333,3 +340,49 @@ class TestImageModel(ThumbnailTestMixin):
 
     def create_original_file(self, size="thumbnail"):
         return self.file_factory.create()
+
+
+class RelatedVideoLinksValidationMixin:
+    """
+    A mixin to test the validation of related video links.
+    """
+
+    def create_instance_with_related_video_links(self, site, related_video_links):
+        raise NotImplementedError
+
+    @pytest.mark.parametrize(
+        "url",
+        ["", "not valid", "https://www.invalid-url.com/", "https://soundcloud.com/"],
+    )
+    @pytest.mark.django_db
+    def test_related_video_links_invalid_base_site(self, url):
+        site = factories.SiteFactory.create()
+        try:
+            related_video_links = [EmbedVideoField(url)]
+            instance = self.create_instance_with_related_video_links(
+                site=site, related_video_links=related_video_links
+            )
+            detect_backend(instance.related_video_links[0].verbose_name)
+            assert False
+        except UnknownBackendException:
+            assert True
+
+    @pytest.mark.parametrize(
+        "url, backend_class",
+        [
+            ("https://www.youtube.com/", YoutubeBackend),
+            ("https://vimeo.com/", VimeoBackend),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_related_video_links_valid_base_site(self, url, backend_class):
+        site = factories.SiteFactory.create()
+        try:
+            related_video_links = [EmbedVideoField(url)]
+            instance = self.create_instance_with_related_video_links(
+                site=site, related_video_links=related_video_links
+            )
+            backend = detect_backend(instance.related_video_links[0].verbose_name)
+            assert isinstance(backend, backend_class)
+        except UnknownBackendException:
+            assert False

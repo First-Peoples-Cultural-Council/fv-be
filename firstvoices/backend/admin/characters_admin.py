@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import NoReverseMatch, reverse
 from django.utils.html import format_html
+from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
 from backend.models.characters import (
     Alphabet,
@@ -68,7 +69,7 @@ class CharacterRelatedDictionaryEntryInline(BaseInlineAdmin):
 
 
 @admin.register(Character)
-class CharacterAdmin(BaseSiteContentAdmin):
+class CharacterAdmin(DynamicArrayMixin, BaseSiteContentAdmin):
     list_display = (
         "title",
         "sort_order",

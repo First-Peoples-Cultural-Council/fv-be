@@ -13,6 +13,8 @@ from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import NotSupportedError, models
 from django.utils.translation import gettext as _
+from django_better_admin_arrayfield.models.fields import ArrayField
+from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
 
 from backend.permissions import predicates
@@ -21,6 +23,7 @@ from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 from .constants import MAX_FILEFIELD_LENGTH
+from .validators import validate_no_duplicate_urls
 
 
 class Person(BaseSiteContentModel):
@@ -599,3 +602,9 @@ class RelatedMediaMixin(models.Model):
     related_audio = models.ManyToManyField(Audio, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
+    related_video_links = ArrayField(
+        EmbedVideoField(),
+        blank=True,
+        default=list,
+        validators=[validate_no_duplicate_urls],
+    )
