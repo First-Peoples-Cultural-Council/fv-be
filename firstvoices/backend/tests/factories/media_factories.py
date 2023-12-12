@@ -3,13 +3,11 @@ import sys
 
 import factory
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from embed_video.fields import EmbedVideoField
 from factory.django import DjangoModelFactory
 
 from backend.models.media import (
     Audio,
     AudioSpeaker,
-    EmbeddedVideo,
     File,
     Image,
     ImageFile,
@@ -75,15 +73,6 @@ class VideoFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Video-%03d" % n)
     original = factory.SubFactory(VideoFileFactory)
-
-
-class EmbeddedVideoFactory(DjangoModelFactory):
-    class Meta:
-        model = EmbeddedVideo
-
-    site = factory.SubFactory(SiteFactory)
-    title = factory.Sequence(lambda n: "Embedded-Video-%03d" % n)
-    content = EmbedVideoField("https://www.youtube.com/")
 
 
 class PersonFactory(DjangoModelFactory):
