@@ -3,7 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import Visibility
-from backend.models.media import Audio
+from backend.models.media import Audio, File
 from backend.tests import factories
 
 from .base_media_test import BaseMediaApiTest
@@ -139,7 +139,12 @@ class TestAudioEndpoint(BaseMediaApiTest):
             if hasattr(expected_data["original"], "content")
             else expected_data["original"].name
         )
-        assert expected_file_path in actual_response["original"]["path"]
+        expected_filename = expected_file_path.split(".")[0]
+        expected_file_extension = expected_file_path.split(".")[1]
+        actual_filename = actual_response["original"]["path"].split(".")[0]
+        actual_file_extension = actual_response["original"]["path"].split(".")[1]
+        assert expected_filename in actual_filename
+        assert expected_file_extension in actual_file_extension
 
         expected_speaker_ids = []
 
@@ -171,6 +176,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
         instance = self.create_original_instance_for_patch(site=site)
         data = self.get_valid_patch_file_data(site)
 
+        old_file_id = instance.original.id
+        assert File.objects.count() == 1
+        assert File.objects.filter(id=old_file_id).exists()
+
         response = self.client.patch(
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
@@ -190,6 +199,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
             data, self.get_updated_patch_instance(instance)
         )
         self.assert_update_patch_file_response(instance, data, response_data)
+
+        # Check that the old file was deleted
+        assert File.objects.count() == 1
+        assert not File.objects.filter(id=old_file_id).exists()
 
     def assert_patch_file_original_fields(self, original_instance, updated_instance):
         self.assert_original_secondary_fields(original_instance, updated_instance)

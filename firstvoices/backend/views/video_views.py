@@ -70,7 +70,6 @@ class VideoViewSet(
     Video information.
     """
 
-    http_method_names = ["get", "post", "delete"]
     serializer_class = VideoSerializer
     parser_classes = [
         parsers.FormParser,

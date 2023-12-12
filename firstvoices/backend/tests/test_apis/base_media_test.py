@@ -296,7 +296,16 @@ class BaseMediaApiTest(
         instance = self.model.objects.get(pk=pk)
         assert instance.title == data["title"]
         assert instance.description == data["description"]
-        assert data["original"].name in instance.original.content.name
+
+        # Split the filename and extension from the file paths and check for each to avoid async tests appending
+        # characters to the end of the filename when file path already exists.
+        data_filename = data["original"].name.split(".")[0]
+        data_file_extension = data["original"].name.split(".")[1]
+        instance_filename = instance.original.content.name.split(".")[0]
+        instance_file_extension = instance.original.content.name.split(".")[1]
+        assert data_filename in instance_filename
+        assert data_file_extension in instance_file_extension
+
         assert instance.acknowledgement == data["acknowledgement"]
         assert instance.is_shared == data["isShared"]
         assert instance.exclude_from_games == data["excludeFromGames"]
