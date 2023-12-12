@@ -52,7 +52,7 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
 
     @pytest.mark.disable_thumbnail_mocks
     @pytest.mark.django_db
-    def test_patch_old_thumbnail_deleted(self, disable_celery):
+    def test_patch_old_file_deleted(self, disable_celery):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = factories.ImageFactory.create(site=site)
         instance = Image.objects.get(pk=instance.id)
@@ -60,14 +60,8 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
 
         assert ImageFile.objects.count() == 4
         old_original_file_id = instance.original.id
-        old_thumbnail_id = instance.thumbnail.id
-        old_medium_id = instance.medium.id
-        old_small_id = instance.small.id
 
         assert ImageFile.objects.filter(id=old_original_file_id).exists()
-        assert ImageFile.objects.filter(id=old_thumbnail_id).exists()
-        assert ImageFile.objects.filter(id=old_medium_id).exists()
-        assert ImageFile.objects.filter(id=old_small_id).exists()
 
         response = self.client.patch(
             self.get_detail_endpoint(
@@ -84,6 +78,3 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
         # Check that old files have been deleted
         assert ImageFile.objects.count() == 4
         assert not ImageFile.objects.filter(id=old_original_file_id).exists()
-        assert not ImageFile.objects.filter(id=old_thumbnail_id).exists()
-        assert not ImageFile.objects.filter(id=old_medium_id).exists()
-        assert not ImageFile.objects.filter(id=old_small_id).exists()

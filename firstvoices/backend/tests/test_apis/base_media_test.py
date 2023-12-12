@@ -8,6 +8,7 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
+from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
@@ -492,3 +493,38 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         self.assert_original_secondary_fields(original_instance, updated_instance)
         assert updated_instance.title == original_instance.title
         assert updated_instance.original.id == original_instance.original.id
+
+    @pytest.mark.disable_thumbnail_mocks
+    @pytest.mark.django_db
+    def test_patch_old_thumbnails_deleted(self, disable_celery):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site, Visibility.PUBLIC)
+        instance = self.model.objects.get(pk=instance.id)
+        data = self.get_valid_patch_file_data(site)
+
+        assert ImageFile.objects.count() <= 4
+        old_thumbnail_id = instance.thumbnail.id
+        old_medium_id = instance.medium.id
+        old_small_id = instance.small.id
+
+        assert ImageFile.objects.filter(id=old_thumbnail_id).exists()
+        assert ImageFile.objects.filter(id=old_medium_id).exists()
+        assert ImageFile.objects.filter(id=old_small_id).exists()
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        # Check that old files have been deleted
+        assert ImageFile.objects.count() <= 4
+        assert not ImageFile.objects.filter(id=old_thumbnail_id).exists()
+        assert not ImageFile.objects.filter(id=old_medium_id).exists()
+        assert not ImageFile.objects.filter(id=old_small_id).exists()
