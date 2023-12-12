@@ -100,16 +100,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
             updated_instance=updated_instance,
         )
 
-    def assert_secondary_fields(self, expected_data, updated_instance):
-        assert updated_instance.description == expected_data["description"]
-        assert updated_instance.acknowledgement == expected_data["acknowledgement"]
-        assert updated_instance.exclude_from_kids == expected_data["excludeFromKids"]
-        assert updated_instance.exclude_from_games == expected_data["excludeFromGames"]
-        assert updated_instance.is_shared == expected_data["isShared"]
-
-    def assert_patch_instance_updated_fields(self, data, updated_instance):
-        assert updated_instance.title == data["title"]
-
     def assert_update_patch_response(self, original_instance, data, actual_response):
         self.assert_response(
             actual_response=actual_response,
@@ -125,39 +115,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "speakers": original_instance.speakers,
             },
         )
-
-    def assert_response(self, expected_data, actual_response):
-        assert actual_response["title"] == expected_data["title"]
-        assert actual_response["description"] == expected_data["description"]
-        assert actual_response["acknowledgement"] == expected_data["acknowledgement"]
-        assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
-        assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
-        assert actual_response["isShared"] == expected_data["isShared"]
-
-        expected_file_path = (
-            expected_data["original"].content.url
-            if hasattr(expected_data["original"], "content")
-            else expected_data["original"].name
-        )
-        expected_filename = expected_file_path.split(".")[0]
-        expected_file_extension = expected_file_path.split(".")[1]
-        actual_filename = actual_response["original"]["path"].split(".")[0]
-        actual_file_extension = actual_response["original"]["path"].split(".")[1]
-        assert expected_filename in actual_filename
-        assert expected_file_extension in actual_file_extension
-
-        expected_speaker_ids = []
-
-        if "speakers" in expected_data:
-            expected_speaker_ids = (
-                [str(x[0]) for x in expected_data["speakers"].all().values_list("id")]
-                if hasattr(expected_data["speakers"], "all")
-                else expected_data["speakers"]
-            )
-
-        assert len(expected_speaker_ids) == len(actual_response["speakers"])
-        for i, s in enumerate(expected_speaker_ids):
-            assert actual_response["speakers"][i]["id"] == s
 
     def assert_updated_instance(self, expected_data, actual_instance):
         self.assert_secondary_fields(expected_data, actual_instance)
@@ -211,24 +168,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
 
     def assert_patch_file_updated_fields(self, data, updated_instance):
         assert data["original"].name in updated_instance.original.content.path
-
-    def assert_update_patch_file_response(
-        self, original_instance, data, actual_response
-    ):
-        self.assert_response(
-            actual_response=actual_response,
-            expected_data={
-                "id": str(original_instance.id),
-                "title": original_instance.title,
-                "description": original_instance.description,
-                "acknowledgement": original_instance.acknowledgement,
-                "excludeFromKids": original_instance.exclude_from_kids,
-                "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
-                "original": data["original"],
-                "speakers": original_instance.speakers,
-            },
-        )
 
     @pytest.mark.django_db
     def test_patch_speakers_success_200(self):

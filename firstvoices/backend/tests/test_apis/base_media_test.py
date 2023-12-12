@@ -322,6 +322,77 @@ class BaseMediaApiTest(
         self.assert_instance_deleted(instance.small)
         self.assert_instance_deleted(instance.thumbnail)
 
+    def assert_secondary_fields(self, expected_data, updated_instance):
+        assert updated_instance.description == expected_data["description"]
+        assert updated_instance.acknowledgement == expected_data["acknowledgement"]
+        assert updated_instance.exclude_from_kids == expected_data["excludeFromKids"]
+        assert updated_instance.exclude_from_games == expected_data["excludeFromGames"]
+        assert updated_instance.is_shared == expected_data["isShared"]
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance):
+        assert updated_instance.title == data["title"]
+
+    def assert_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["description"] == expected_data["description"]
+        assert actual_response["acknowledgement"] == expected_data["acknowledgement"]
+        assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
+        assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
+        assert actual_response["isShared"] == expected_data["isShared"]
+
+        expected_file_path = (
+            expected_data["original"].content.url
+            if hasattr(expected_data["original"], "content")
+            else expected_data["original"].name
+        )
+        expected_filename = expected_file_path.split(".")[0]
+        expected_file_extension = expected_file_path.split(".")[1]
+        actual_filename = actual_response["original"]["path"].split(".")[0]
+        actual_file_extension = actual_response["original"]["path"].split(".")[1]
+        assert expected_filename in actual_filename
+        assert expected_file_extension in actual_file_extension
+
+        if self.__class__.__name__ == "TestAudioEndpoint":
+            expected_speaker_ids = []
+
+            if "speakers" in expected_data:
+                expected_speaker_ids = (
+                    [
+                        str(x[0])
+                        for x in expected_data["speakers"].all().values_list("id")
+                    ]
+                    if hasattr(expected_data["speakers"], "all")
+                    else expected_data["speakers"]
+                )
+
+            assert len(expected_speaker_ids) == len(actual_response["speakers"])
+            for i, s in enumerate(expected_speaker_ids):
+                assert actual_response["speakers"][i]["id"] == s
+
+    def assert_patch_file_updated_fields(self, data, updated_instance):
+        assert data["original"].name in updated_instance.original.content.path
+
+    def assert_update_patch_file_response(
+        self, original_instance, data, actual_response
+    ):
+        expected_data = {
+            "id": str(original_instance.id),
+            "title": original_instance.title,
+            "description": original_instance.description,
+            "acknowledgement": original_instance.acknowledgement,
+            "excludeFromKids": original_instance.exclude_from_kids,
+            "excludeFromGames": original_instance.exclude_from_games,
+            "isShared": original_instance.is_shared,
+            "original": data["original"],
+        }
+        if self.__class__.__name__ == "TestAudioEndpoint":
+            expected_data["speakers"] = original_instance.speakers
+
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data=expected_data,
+        )
+
     @pytest.mark.django_db
     def test_create_400_invalid_filetype(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -335,3 +406,89 @@ class BaseMediaApiTest(
         )
 
         assert response.status_code == 400
+
+
+class BaseVisualMediaAPITest(BaseMediaApiTest):
+    @pytest.fixture()
+    def disable_celery(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance
+    ):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.original.id == original_instance.original.id
+
+    def assert_original_secondary_fields(self, original_instance, updated_instance):
+        # everything but title
+        self.assert_secondary_fields(
+            expected_data={
+                "description": original_instance.description,
+                "acknowledgement": original_instance.acknowledgement,
+                "excludeFromKids": original_instance.exclude_from_kids,
+                "excludeFromGames": original_instance.exclude_from_games,
+                "isShared": original_instance.is_shared,
+            },
+            updated_instance=updated_instance,
+        )
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data={
+                "id": str(original_instance.id),
+                "title": data["title"],
+                "description": original_instance.description,
+                "acknowledgement": original_instance.acknowledgement,
+                "excludeFromKids": original_instance.exclude_from_kids,
+                "excludeFromGames": original_instance.exclude_from_games,
+                "isShared": original_instance.is_shared,
+                "original": original_instance.original,
+            },
+        )
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        self.assert_secondary_fields(expected_data, actual_instance)
+        assert actual_instance.title == expected_data["title"]
+
+    def assert_update_response(self, expected_data, actual_response):
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data={**expected_data},
+        )
+
+    @pytest.mark.django_db
+    def test_patch_file_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_original_instance_for_patch(site=site)
+        data = self.get_valid_patch_file_data(site)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_patch_file_original_fields(
+            instance, self.get_updated_patch_instance(instance)
+        )
+        self.assert_patch_file_updated_fields(
+            data, self.get_updated_patch_instance(instance)
+        )
+        self.assert_update_patch_file_response(instance, data, response_data)
+
+    def assert_patch_file_original_fields(self, original_instance, updated_instance):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.title == original_instance.title
+
+    def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.title == original_instance.title
+        assert updated_instance.original.id == original_instance.original.id
