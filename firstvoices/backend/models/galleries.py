@@ -71,7 +71,7 @@ class GalleryItem(BaseModel):
     gallery = models.ForeignKey(
         Gallery,
         on_delete=models.CASCADE,
-        related_name="images",
+        related_name="galleryitem_set",
     )
 
     image = models.ForeignKey(

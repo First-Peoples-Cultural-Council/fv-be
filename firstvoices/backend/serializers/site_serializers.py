@@ -48,6 +48,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary_cleanup",
         "dictionary_cleanup_preview",
         "features",
+        "galleries",
         "ignored_characters",
         "images",
         "join_requests",
@@ -83,6 +84,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
         view_name="api:dictionary-cleanup-preview-list"
     )
     features = SiteViewLinkField(view_name="api:sitefeature-list")
+    galleries = SiteViewLinkField(view_name="api:gallery-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
@@ -119,6 +121,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
             "features",
+            "galleries",
             "ignored_characters",
             "images",
             "immersion_labels",
