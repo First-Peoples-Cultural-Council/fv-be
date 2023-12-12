@@ -7,8 +7,10 @@ from backend.search.documents.dictionary_entry_document import DictionaryEntryDo
 from backend.search.documents.media_document import MediaDocument
 from backend.search.documents.song_document import SongDocument
 from backend.search.documents.story_document import StoryDocument
+from backend.search.indexing import LanguageIndexManager
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
+    ELASTICSEARCH_LANGUAGE_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
@@ -39,12 +41,17 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        # If an index name is supplied, only rebuild that, else rebuild all
-        index_name = get_valid_index_name(self.index_mappings, options["index_name"])
-
         # Setting logger level to get all logs
         logger = logging.getLogger("rebuild_index")
         logger.setLevel(logging.INFO)
+
+        # special case for now, as a first step to refactoring
+        if options["index_name"] == ELASTICSEARCH_LANGUAGE_INDEX:
+            logger.info("Building language index")
+            LanguageIndexManager.rebuild()
+
+        # If an index name is supplied, only rebuild that, else rebuild all
+        index_name = get_valid_index_name(self.index_mappings, options["index_name"])
 
         if index_name:
             index_document = self.index_mappings[index_name]["document"]
@@ -55,5 +62,9 @@ class Command(BaseCommand):
                 index_name = mapping["index_name"]
                 index_document = mapping["document"]
                 rebuild_index(index_name, index_document)
+
+            # additional special case
+            logger.info("Building language index")
+            LanguageIndexManager.rebuild()
 
         logger.info("Index rebuild complete.")
