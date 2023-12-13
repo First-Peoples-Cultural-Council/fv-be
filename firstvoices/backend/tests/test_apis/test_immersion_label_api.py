@@ -160,28 +160,46 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     @pytest.mark.django_db
     def test_immersion_map_permissions(self):
         """
-        Tests that the immersion map endpoint is only accessible to users with access to the site.
+        Tests that the immersion map endpoint only shows viewable labels.
         """
-        site, user = factories.access.get_site_with_member(
-            Visibility.MEMBERS, Role.MEMBER
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        entry1 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
         )
-        user2 = factories.access.get_non_member_user()
-        entry = factories.DictionaryEntryFactory.create(site=site)
-        label = factories.ImmersionLabelFactory.create(
-            site=site, dictionary_entry=entry, key=self.TEST_KEY
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.MEMBERS
         )
+        entry3 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.TEAM
+        )
+        factories.ImmersionLabelFactory.create(site=site, dictionary_entry=entry1)
+        factories.ImmersionLabelFactory.create(site=site, dictionary_entry=entry2)
+        factories.ImmersionLabelFactory.create(site=site, dictionary_entry=entry3)
 
+        user = factories.UserFactory.create()
+        factories.MembershipFactory.create(
+            site=site, user=user, role=Role.LANGUAGE_ADMIN
+        )
         self.client.force_authenticate(user=user)
         response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
 
         assert response.status_code == 200
-        assert response.data[self.TEST_KEY]
+        assert len(response.data) == 3
 
-        self.client.force_authenticate(user=user2)
-        response = self.client.get(
-            self.get_detail_endpoint(label.key, site.slug) + "all/"
-        )
-        assert response.status_code == 403
+        user = factories.UserFactory.create()
+        factories.MembershipFactory.create(site=site, user=user, role=Role.MEMBER)
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
+
+        assert response.status_code == 200
+        assert len(response.data) == 2
+
+        user = factories.access.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
 
     @pytest.mark.django_db
     def test_immersion_map_empty(self):
@@ -204,7 +222,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         Tests that the immersion map endpoint returns a map with the correct data.
         """
         site, user = factories.access.get_site_with_member(
-            Visibility.MEMBERS, Role.MEMBER
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
         entry = factories.DictionaryEntryFactory.create(site=site)
         entry2 = factories.DictionaryEntryFactory.create(site=site)
@@ -221,6 +239,39 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 200
         assert response.data[self.TEST_KEY] == str(entry.title)
         assert response.data["test_key2"] == str(entry2.title)
+
+    @pytest.mark.django_db
+    def test_immersion_map_only_one_site(self):
+        """
+        Tests that the immersion map endpoint only returns labels from the correct site.
+        """
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        site2 = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.MembershipFactory.create(
+            site=site2, user=user, role=Role.LANGUAGE_ADMIN
+        )
+
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=site2, visibility=Visibility.PUBLIC
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry, key=self.TEST_KEY
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site2, dictionary_entry=entry2, key="test_key2"
+        )
+
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
+
+        assert response.status_code == 200
+        assert response.data[self.TEST_KEY] == str(entry.title)
+        assert "test_key2" not in response.data
 
     @pytest.mark.django_db
     def test_label_key_read_only(self):
