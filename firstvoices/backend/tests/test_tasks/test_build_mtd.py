@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from backend.models import MTDExportFormat
@@ -6,8 +8,12 @@ from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tasks.build_mtd_export_format import build_index_and_calculate_scores
 from backend.tests import factories
 
+LOGGER = logging.getLogger(__name__)
+
 
 class TestMTDIndexAndScoreTask:
+    sample_entry_title = "title_one word"
+
     @pytest.fixture
     def site(self):
         return factories.SiteFactory.create(slug="test")
@@ -19,6 +25,52 @@ class TestMTDIndexAndScoreTask:
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
         assert len(result["l2_index"]) == 0
+
+    @pytest.mark.django_db
+    def test_validation_error(self, site, caplog):
+        """If a validation error happens with a DictionaryEntry
+           The entry should be skipped, but logged as a warning.
+
+        Args:
+            site (Union[str, Site])): site or site slug
+        """
+        entry_one = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=TypeOfDictionaryEntry.WORD,
+            title=self.sample_entry_title,
+        )
+        build_index_and_calculate_scores(site.slug)
+        # Logs entry id
+        assert str(entry_one.id) in caplog.text
+        # Logs the type of error, in this case, Definition (str, required) is None
+        assert "type=string_type, input_value=None" in caplog.text
+
+    @pytest.mark.django_db
+    def test_entry_not_public(self, site):
+        """Only public entries should be included in MTD exports.
+
+        Args:
+            site (Union[str, Site])): site or site slug
+        """
+        entry_one = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.TEAM,
+            type=TypeOfDictionaryEntry.WORD,
+            title=self.sample_entry_title,
+        )
+        entry_one_translations = [factories.TranslationFactory.create()]
+        entry_one.translation_set.set(entry_one_translations)
+        entry_two = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=TypeOfDictionaryEntry.WORD,
+            title=self.sample_entry_title,
+        )
+        entry_two_translations = [factories.TranslationFactory.create()]
+        entry_two.translation_set.set(entry_two_translations)
+        result = build_index_and_calculate_scores(site.slug)
+        assert len(result["data"]) == 1
 
     @pytest.mark.django_db
     def test_export_is_saved(self, site):
@@ -47,7 +99,7 @@ class TestMTDIndexAndScoreTask:
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
-            title="title_one word",
+            title=self.sample_entry_title,
             related_audio=[audio],
             related_images=[image],
         )
@@ -78,7 +130,7 @@ class TestMTDIndexAndScoreTask:
         # Build and index
         result = build_index_and_calculate_scores(site.slug)
         assert len(result["data"]) == 3
-        assert result["data"][1]["word"] == "title_one word"
+        assert result["data"][1]["word"] == self.sample_entry_title
         # punctuation is removed by default so it is titleone in the index
         assert result["data"][1]["entryID"] in result["l1_index"]["titleone"]
         # assert location of 'third' as the third word
@@ -93,7 +145,7 @@ class TestMTDIndexAndScoreTask:
         ]
         # the word 'word' occurs in two entries
         assert len(result["l1_index"]["word"].keys()) == 2
-        # result for title_one word should be higher with default search settings because
+        # result for entry_one word should be higher with default search settings because
         # it has fewer overall words
         assert (
             result["l1_index"]["word"][str(entry_one.id)]["score"]["total"]

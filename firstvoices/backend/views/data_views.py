@@ -42,7 +42,7 @@ class SnakeCaseJSONRenderer(JSONRenderer):
         "alphabet and site info, as well as data containing an export of site dictionary entries and "
         "categories. Additional information on the MTD format can be found on the Mother Tongues "
         "documentation: https://docs.mothertongues.org/docs/mtd-guides-prepare",
-        # TODO: The documentation responses here are not correct.
+        # NOTE: The documentation responses here are not correct, but the endpoint is destined to be removed anyways.
         responses={
             200: inline_serializer(
                 name="InlineUserSerializer",
