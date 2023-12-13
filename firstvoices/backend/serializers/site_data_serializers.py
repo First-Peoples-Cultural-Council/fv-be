@@ -115,14 +115,14 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_img(dictionaryentry):
-        # TODO: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
+        # NOTE: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
         return ImageDataSerializer(dictionaryentry.related_images.first()).data[
             "filename"
         ]
 
     @staticmethod
     def get_theme(dictionaryentry):
-        # TODO: MTD currently only allows one theme and one secondary theme
+        # NOTE: MTD currently only allows one theme and one secondary theme
         #       As a heuristic, I'm selecting the first theme with both a main
         #       and secondary theme. If that doesn't exist, I just select the first theme.
         first_theme = (
@@ -148,7 +148,7 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_secondary_theme(dictionaryentry):
-        # TODO: MTD currently only allows one theme and one secondary theme
+        # NOTE: MTD currently only allows one theme and one secondary theme
         #       As a heuristic, I'm selecting the first theme with both a main
         #       and secondary theme. If that doesn't exist, I just select the first theme.
         first_theme = (

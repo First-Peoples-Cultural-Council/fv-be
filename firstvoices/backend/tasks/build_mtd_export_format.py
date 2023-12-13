@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from celery import current_task, shared_task
@@ -12,8 +13,10 @@ from mothertongues.config.models import (
 )
 from mothertongues.dictionary import MTDictionary
 
-from backend.models import DictionaryEntry, MTDExportFormat, Site
+from backend.models import DictionaryEntry, MTDExportFormat, Site, constants
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
+
+LOGGER = logging.getLogger(__name__)
 
 
 def parse_queryset_for_mtd(
@@ -36,8 +39,10 @@ def parse_queryset_for_mtd(
                 ),
                 optional=DictionaryEntryDataSerializer.get_optional(entry),
             )
-        except ValueError:
-            # TODO: How should we handle validation errors on entries?
+        except ValueError as e:
+            LOGGER.warning(
+                f"Entry with ID {entry.id} did not pass Validation. Instead raised: {e}"
+            )
             continue
         entries.append(parsed_entry)
     return entries
@@ -61,7 +66,9 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         )
     characters_list = site.character_set.all().order_by("sort_order")
     dictionary_entries = parse_queryset_for_mtd(
-        DictionaryEntry.objects.filter(site=site)
+        DictionaryEntry.objects.filter(
+            site=site, visibility=constants.Visibility.PUBLIC
+        )
     )
     preview = {}
     task_id = current_task.request.id
