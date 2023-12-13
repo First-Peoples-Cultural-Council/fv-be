@@ -265,7 +265,7 @@ class BaseIndexManagerTest:
     @pytest.mark.django_db
     def test_iterator(self):
         with patch(self.paths["create_index_document"]) as mock_create_index_doc:
-            for i in self.manager._iterator():
+            for _ in self.manager._iterator():
                 continue
 
             # adds all models as documents
