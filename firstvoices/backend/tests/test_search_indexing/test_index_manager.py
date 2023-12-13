@@ -175,6 +175,21 @@ class BaseIndexManagerTest:
 
     @pytest.mark.parametrize(
         "method",
+        ["add_to_index", "update_in_index", "remove_from_index"],
+    )
+    @pytest.mark.django_db
+    def test_failure_surprise_exception(self, method):
+        instance = self.factory.create()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["create_index_document"], side_effect=Exception("Kaboom!")
+        ), patch(self.paths["log_error"], return_value=None) as mock_log_error:
+            m = getattr(self.manager, method)
+            m(instance=instance)
+            mock_log_error.assert_called()
+
+    @pytest.mark.parametrize(
+        "method",
         ["update_in_index", "remove_from_index"],
     )
     @pytest.mark.django_db

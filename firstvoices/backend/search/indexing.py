@@ -36,8 +36,6 @@ class IndexManager:
             cls.refresh()
         except ConnectionError as e:
             log_connection_error(e, instance)
-        except NotFoundError as e:
-            log_not_found_error(e, instance)
         except Exception as e:
             log_fallback_exception(e, instance)
 
@@ -142,12 +140,6 @@ class IndexManager:
         new_index.create()
 
         return new_index
-
-    @classmethod
-    def _add_write_alias(cls, index, index_name):
-        alias = {index_name: {"is_write_index": True}}
-        index.aliases(**alias)
-        return index
 
     @classmethod
     def _remove_write_alias(cls, es, index):
