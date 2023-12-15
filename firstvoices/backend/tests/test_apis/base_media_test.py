@@ -353,23 +353,6 @@ class BaseMediaApiTest(
         assert expected_filename in actual_filename
         assert expected_file_extension in actual_file_extension
 
-        if self.__class__.__name__ == "TestAudioEndpoint":
-            expected_speaker_ids = []
-
-            if "speakers" in expected_data:
-                expected_speaker_ids = (
-                    [
-                        str(x[0])
-                        for x in expected_data["speakers"].all().values_list("id")
-                    ]
-                    if hasattr(expected_data["speakers"], "all")
-                    else expected_data["speakers"]
-                )
-
-            assert len(expected_speaker_ids) == len(actual_response["speakers"])
-            for i, s in enumerate(expected_speaker_ids):
-                assert actual_response["speakers"][i]["id"] == s
-
     def assert_patch_file_updated_fields(self, data, updated_instance):
         assert data["original"].name in updated_instance.original.content.path
 
@@ -386,8 +369,6 @@ class BaseMediaApiTest(
             "isShared": original_instance.is_shared,
             "original": data["original"],
         }
-        if self.__class__.__name__ == "TestAudioEndpoint":
-            expected_data["speakers"] = original_instance.speakers
 
         self.assert_response(
             actual_response=actual_response,

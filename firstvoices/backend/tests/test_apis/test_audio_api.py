@@ -100,6 +100,21 @@ class TestAudioEndpoint(BaseMediaApiTest):
             updated_instance=updated_instance,
         )
 
+    def assert_response(self, expected_data, actual_response):
+        super().assert_response(expected_data, actual_response)
+        expected_speaker_ids = []
+
+        if "speakers" in expected_data:
+            expected_speaker_ids = (
+                [str(x[0]) for x in expected_data["speakers"].all().values_list("id")]
+                if hasattr(expected_data["speakers"], "all")
+                else expected_data["speakers"]
+            )
+
+        assert len(expected_speaker_ids) == len(actual_response["speakers"])
+        for i, s in enumerate(expected_speaker_ids):
+            assert actual_response["speakers"][i]["id"] == s
+
     def assert_update_patch_response(self, original_instance, data, actual_response):
         self.assert_response(
             actual_response=actual_response,
@@ -125,6 +140,25 @@ class TestAudioEndpoint(BaseMediaApiTest):
         self.assert_response(
             actual_response=actual_response,
             expected_data={**expected_data},
+        )
+
+    def assert_update_patch_file_response(
+        self, original_instance, data, actual_response
+    ):
+        expected_data = {
+            "id": str(original_instance.id),
+            "title": original_instance.title,
+            "description": original_instance.description,
+            "acknowledgement": original_instance.acknowledgement,
+            "excludeFromKids": original_instance.exclude_from_kids,
+            "excludeFromGames": original_instance.exclude_from_games,
+            "isShared": original_instance.is_shared,
+            "original": data["original"],
+            "speakers": original_instance.speakers,
+        }
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data=expected_data,
         )
 
     @pytest.mark.django_db
