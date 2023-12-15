@@ -56,7 +56,10 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
+        if related_video_links is None:
+            related_video_links = []
         story = factories.StoryFactory(site=site, visibility=visibility)
         return factories.StoryPageFactory.create(
             site=site,
@@ -64,6 +67,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             related_images=related_images,
             related_audio=related_audio,
             related_videos=related_videos,
+            related_video_links=related_video_links,
         )
 
     def get_valid_data(self, site=None):
@@ -71,9 +75,14 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "relatedAudio": [str(factories.AudioFactory.create(site=site).id)],
             "relatedImages": [str(factories.ImageFactory.create(site=site).id)],
             "relatedVideos": [str(factories.VideoFactory.create(site=site).id)],
+            "relatedVideoLinks": [],
             "text": "Title",
             "translation": "A translation of the title",
-            "notes": [{ "text": "Test Note One"}, { "text": "Test Note Two"}, { "text": "Test Note Three"}],
+            "notes": [
+                {"text": "Test Note One"},
+                {"text": "Test Note Two"},
+                {"text": "Test Note Three"},
+            ],
             "ordering": 99,
         }
 
@@ -89,10 +98,10 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
             "translation": "",
             "notes": [],
         }
-
 
     def create_original_instance_for_patch(self, site):
         audio = factories.AudioFactory.create(site=site)
@@ -109,6 +118,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
+            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
         )
 
     def get_valid_patch_data(self, site=None):
@@ -125,6 +135,10 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             original_instance, updated_instance
         )
         assert updated_instance.story == original_instance.story
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: StoryPage):
         assert updated_instance.text == data["text"]
@@ -138,6 +152,18 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert actual_response["notes"][0]["text"] == original_instance.notes[0]
         assert actual_response["ordering"] == original_instance.ordering
         assert actual_response["story"]["id"] == str(original_instance.story.id)
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+        ]
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
@@ -377,17 +403,25 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         for i, n in enumerate(expected_data["notes"]):
             assert actual_instance.notes[i] == n["text"]
 
-        assert len(actual_instance.related_audio.all()) == len(expected_data["relatedAudio"])
+        assert len(actual_instance.related_audio.all()) == len(
+            expected_data["relatedAudio"]
+        )
         for i, item in enumerate(expected_data["relatedAudio"]):
             assert str(actual_instance.related_audio.all()[i].id) == item
 
-        assert len(actual_instance.related_images.all()) == len(expected_data["relatedImages"])
+        assert len(actual_instance.related_images.all()) == len(
+            expected_data["relatedImages"]
+        )
         for i, item in enumerate(expected_data["relatedImages"]):
             assert str(actual_instance.related_images.all()[i].id) == item
 
-        assert len(actual_instance.related_videos.all()) == len(expected_data["relatedVideos"])
+        assert len(actual_instance.related_videos.all()) == len(
+            expected_data["relatedVideos"]
+        )
         for i, item in enumerate(expected_data["relatedVideos"]):
             assert str(actual_instance.related_videos.all()[i].id) == item
+
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["text"] == expected_data["text"]
@@ -396,17 +430,27 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         for i, note in enumerate(expected_data["notes"]):
             assert actual_response["notes"][i]["text"] == note["text"]
 
-        assert len(actual_response["relatedAudio"]) == len(expected_data["relatedAudio"])
+        assert len(actual_response["relatedAudio"]) == len(
+            expected_data["relatedAudio"]
+        )
         for i, a in enumerate(expected_data["relatedAudio"]):
             assert actual_response["relatedAudio"][i]["id"] == a
 
-        assert len(actual_response["relatedVideos"]) == len(expected_data["relatedVideos"])
+        assert len(actual_response["relatedVideos"]) == len(
+            expected_data["relatedVideos"]
+        )
         for i, v in enumerate(expected_data["relatedVideos"]):
             assert actual_response["relatedVideos"][i]["id"] == v
 
-        assert len(actual_response["relatedImages"]) == len(expected_data["relatedImages"])
+        assert len(actual_response["relatedImages"]) == len(
+            expected_data["relatedImages"]
+        )
         for i, img in enumerate(expected_data["relatedImages"]):
             assert actual_response["relatedImages"][i]["id"] == img
+
+        assert (
+            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
+        )
 
     def add_related_objects(self, instance):
         # nothing to add
@@ -450,6 +494,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     @pytest.mark.django_db

@@ -40,6 +40,7 @@ class TestStoryEndpoint(
             "relatedAudio": [str(x.id) for x in audio],
             "relatedImages": [str(x.id) for x in images],
             "relatedVideos": [str(x.id) for x in videos],
+            "relatedVideoLinks": [],
             "visibility": "Public",
             "title": "Title",
             "titleTranslation": "A translation of the title",
@@ -83,14 +84,17 @@ class TestStoryEndpoint(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
-
 
     def assert_updated_instance(self, expected_data, actual_instance: Story):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.title_translation == expected_data["titleTranslation"]
         assert actual_instance.introduction == expected_data["introduction"]
-        assert actual_instance.introduction_translation == expected_data["introductionTranslation"]
+        assert (
+            actual_instance.introduction_translation
+            == expected_data["introductionTranslation"]
+        )
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
@@ -98,11 +102,13 @@ class TestStoryEndpoint(
         for i, n in enumerate(expected_data["notes"]):
             assert actual_instance.notes[i] == n["text"]
 
-        assert len(expected_data["acknowledgements"]) == len(actual_instance.acknowledgements)
+        assert len(expected_data["acknowledgements"]) == len(
+            actual_instance.acknowledgements
+        )
         for i, ack in enumerate(expected_data["acknowledgements"]):
-            assert (
-                actual_instance.acknowledgements[i] == ack["text"]
-            )
+            assert actual_instance.acknowledgements[i] == ack["text"]
+
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
@@ -122,6 +128,10 @@ class TestStoryEndpoint(
         )
 
         assert actual_response["pages"] == []  # unchanged
+
+        assert (
+            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
+        )
 
     def assert_created_instance(self, pk, data):
         instance = Story.objects.get(pk=pk)
@@ -144,13 +154,17 @@ class TestStoryEndpoint(
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
+        if related_video_links is None:
+            related_video_links = []
         return factories.StoryFactory.create(
             site=site,
             visibility=visibility,
             related_images=related_images,
             related_audio=related_audio,
             related_videos=related_videos,
+            related_video_links=related_video_links,
         )
 
     def get_expected_list_response_item(self, instance, site):
@@ -184,6 +198,7 @@ class TestStoryEndpoint(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def create_original_instance_for_patch(self, site):
@@ -205,6 +220,7 @@ class TestStoryEndpoint(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
+            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
         )
         factories.StoryPageFactory.create(site=site, story=story)
         return story
@@ -233,6 +249,11 @@ class TestStoryEndpoint(
             original_instance, updated_instance
         )
         assert updated_instance.pages.first() == original_instance.pages.first()
+
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Story):
         assert updated_instance.title == data["title"]
@@ -268,6 +289,18 @@ class TestStoryEndpoint(
             actual_response["excludeFromGames"] == original_instance.exclude_from_games
         )
         assert actual_response["excludeFromKids"] == original_instance.exclude_from_kids
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+        ]
 
     @pytest.mark.django_db
     def test_pages_order(self):
@@ -327,6 +360,7 @@ class TestStoryEndpoint(
             "related_audio": [],
             "related_images": [],
             "related_videos": [],
+            "related_video_links": [],
         }
 
         response = self.client.put(

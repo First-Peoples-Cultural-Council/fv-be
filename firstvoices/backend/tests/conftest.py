@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from backend.models.media import Image, ImageFile, Video, VideoFile
+from backend.serializers.media_serializers import RelatedVideoLinksSerializer
 
 MOCK_MEDIA_DIMENSIONS = {"width": 100, "height": 100}
 
@@ -112,3 +113,19 @@ def mock_search_indexing():
         mocked_update_media_index.return_value = None
         mocked_delete_media_index.return_value = None
         yield
+
+
+@pytest.fixture(autouse=True)
+def related_video_links_embed_and_thumbnail_does_nothing(request, mocker):
+    if "disable_related_video_link_mocks" not in request.keywords:
+        mocker.patch.object(
+            RelatedVideoLinksSerializer,
+            "get_embed_link",
+            return_value="https://mock_embed_link.com/",
+        )
+        mocker.patch.object(
+            RelatedVideoLinksSerializer,
+            "get_thumbnail",
+            return_value="https://mock_thumbnail_link.com/",
+        )
+    yield

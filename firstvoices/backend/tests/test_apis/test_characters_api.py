@@ -42,12 +42,16 @@ class TestCharactersEndpoints(
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
+        if related_video_links is None:
+            related_video_links = []
         return factories.CharacterFactory.create(
             site=site,
             related_images=related_images,
             related_audio=related_audio,
             related_videos=related_videos,
+            related_video_links=related_video_links,
         )
 
     def get_expected_response(self, instance, site):
@@ -62,6 +66,7 @@ class TestCharactersEndpoints(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def create_original_instance_for_patch(self, site):
@@ -77,6 +82,7 @@ class TestCharactersEndpoints(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
+            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
         )
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
         factories.DictionaryEntryRelatedCharacterFactory.create(
@@ -98,6 +104,10 @@ class TestCharactersEndpoints(
         self.assert_patch_instance_original_fields_related_media(
             original_instance, updated_instance
         )
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Character):
         assert updated_instance.note == data["note"]
@@ -114,6 +124,18 @@ class TestCharactersEndpoints(
         assert actual_response["relatedDictionaryEntries"][0]["id"] == str(
             original_instance.related_dictionary_entries.first().id
         )
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": "https://mock_embed_link.com/",
+                "thumbnail": "https://mock_thumbnail_link.com/",
+            },
+        ]
 
     @pytest.mark.django_db
     def test_detail_variants(self):
@@ -199,6 +221,7 @@ class TestCharactersEndpoints(
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],
+                "relatedVideoLinks": [],
                 "type": entry1.type,
             }
         ]
@@ -329,6 +352,38 @@ class TestCharactersEndpoints(
             == new_video.id
         )
 
+    @pytest.mark.django_db
+    def test_update_related_video_links(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_video_links=["https://www.youtube.com/"],
+        )
+
+        req_body = {"related_video_links": ["https://vimeo.com/"]}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert len(response_data["relatedVideoLinks"]) == 1
+
+        assert response_data["relatedVideoLinks"][0] == {
+            "videoLink": "https://vimeo.com/",
+            "embedLink": "https://mock_embed_link.com/",
+            "thumbnail": "https://mock_thumbnail_link.com/",
+        }
+
     # \------------------------------------------------------------------/
 
     @pytest.mark.django_db
@@ -390,8 +445,20 @@ class TestCharactersEndpoints(
 
         assert response.status_code == 400
 
+    @pytest.mark.parametrize(
+        "invalid_data_key, invalid_data_value",
+        [
+            ("related_audio", [1234]),
+            ("related_images", [1234]),
+            ("related_videos", [1234]),
+            (
+                "related_video_links",
+                ["https://www.soundcloud.com/", "https://invalid.com/"],
+            ),
+        ],
+    )
     @pytest.mark.django_db
-    def test_update_character_invalid_media(self):
+    def test_update_character_invalid_media(self, invalid_data_key, invalid_data_value):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
         )
@@ -401,9 +468,7 @@ class TestCharactersEndpoints(
         req_body = {
             "note": self.CHARACTER_NOTE,
             "related_dictionary_entries": [str(dictionary_entry.id)],
-            "related_audio": ["123"],
-            "related_images": ["123"],
-            "related_videos": ["123"],
+            invalid_data_key: invalid_data_value,
         }
 
         self.client.force_authenticate(user=user)

@@ -54,6 +54,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],
+                "relatedVideoLinks": [],
             },
             "key": str(instance.key),
         }

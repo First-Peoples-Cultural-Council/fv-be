@@ -7,8 +7,8 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
-from backend.models.constants import Visibility
 from backend.models.media import ImageFile
+from backend.models.constants import Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
@@ -136,7 +136,10 @@ class RelatedMediaTestMixin(MediaTestMixin):
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_media_links=None,
     ):
+        if related_media_links is None:
+            related_media_links = []
         raise NotImplementedError
 
     def assert_patch_instance_original_fields_related_media(
@@ -226,6 +229,50 @@ class RelatedMediaTestMixin(MediaTestMixin):
                 expected.pop(ignored_field)
 
         assert response_data["relatedVideos"][0] == expected
+
+    @pytest.mark.parametrize(
+        "related_video_links, expected_response_code",
+        [
+            (["https://www.youtube.com/", "https://vimeo.com/"], 200 or 201),
+            (
+                ["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"],
+                200 or 201,
+            ),
+            (
+                [
+                    "https://www.youtube.com/",
+                    "https://vimeo.com/",
+                    "https://vimeo.com/",
+                ],
+                400,
+            ),
+            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], 400),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_update_duplicate_related_video_links(
+        self, related_video_links, expected_response_code
+    ):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_video_links=[],
+        )
+
+        req_body = {"related_video_links": related_video_links}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code == expected_response_code
 
 
 class BaseMediaApiTest(
