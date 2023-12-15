@@ -1,11 +1,13 @@
 from collections import OrderedDict
+from datetime import datetime
 
 from rest_framework import pagination, serializers
 
-from backend.models import Category, MTDExportFormat, Site
+from backend.models import Category, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.media import Audio, Image
 from backend.pagination import FasterCountPagination
+from backend.permissions import utils
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
 
@@ -33,39 +35,41 @@ class CategoriesDataSerializer(serializers.ModelSerializer):
 
 class SiteDataSerializer(SiteContentLinkedTitleSerializer):
     config = serializers.SerializerMethodField()
+    categories = CategoriesDataSerializer(source="category_set", many=True)
 
     def get_config(self, site):
-        mtd_exports_for_site = MTDExportFormat.objects.filter(site=site)
-        if mtd_exports_for_site:
-            latest_export = mtd_exports_for_site.latest().latest_export_result
-            if "config" in latest_export:
-                return latest_export["config"]
-        return {}
+        request = self.context.get("request")
+        characters_list = [
+            character
+            for character in utils.filter_by_viewable(
+                request.user, site.character_set.all()
+            ).order_by("sort_order")
+        ]
+        config = {
+            "L1": {
+                "name": None if site is None else site.title,
+                "lettersInLanguage": [character.title for character in characters_list],
+                "transducers": {},
+            },
+            "L2": {"name": "English"},
+            "build": datetime.now().strftime("%Y%m%d%H%M"),
+        }
+        return config
 
     class Meta:
         model = Site
-        fields = ("config",)
-
-
-class MTDSiteDataSerializer(SiteContentLinkedTitleSerializer):
-    mtd_export_format = serializers.SerializerMethodField()
-
-    def get_mtd_export_format(self, site):
-        return serializers.JSONField(
-            MTDExportFormat.objects.filter(site=site).latest().latest_export_result
+        fields = (
+            "config",
+            "categories",
         )
-
-    class Meta:
-        model = Site
-        fields = ("mtd_export_format",)
 
 
 class AudioDataSerializer(serializers.ModelSerializer):
-    description = serializers.SerializerMethodField()
+    speaker = serializers.SerializerMethodField()
     filename = serializers.FileField(source="original.content")
 
     @staticmethod
-    def get_description(audio):
+    def get_speaker(audio):
         speakers = audio.speakers.all()
         name = speakers[0].name if speakers.count() > 0 else None
         return name
@@ -73,7 +77,7 @@ class AudioDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Audio
         fields = (
-            "description",
+            "speaker",
             "filename",
         )
 
@@ -96,6 +100,8 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     theme = serializers.SerializerMethodField()
     secondary_theme = serializers.SerializerMethodField()
     optional = serializers.SerializerMethodField()
+    compare_form = serializers.CharField(source="title")
+    sort_form = serializers.SerializerMethodField()
     sorting_form = serializers.SerializerMethodField()
 
     @staticmethod
@@ -115,28 +121,51 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_img(dictionaryentry):
-        # NOTE: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
-        return ImageDataSerializer(dictionaryentry.related_images.first()).data[
-            "filename"
-        ]
+        return ImageDataSerializer(dictionaryentry.related_images, many=True).data
 
     @staticmethod
     def get_theme(dictionaryentry):
-        # NOTE: MTD currently only allows one theme and one secondary theme
-        #       As a heuristic, I'm selecting the first theme with both a main
-        #       and secondary theme. If that doesn't exist, I just select the first theme.
-        first_theme = (
-            dictionaryentry.categories.filter(parent__isnull=False).first()
-            or dictionaryentry.categories.first()
+        return [
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is None
+        ]
+
+    @staticmethod
+    def get_secondary_theme(dictionaryentry):
+        return [
+            entry.title
+            for entry in dictionaryentry.categories.all()
+            if entry.parent is not None
+        ]
+
+    @staticmethod
+    def get_optional(dictionaryentry):
+        return (
+            {
+                **(
+                    {
+                        "Reference": dictionaryentry.acknowledgement_set.all()[0].text,
+                    }
+                    if dictionaryentry.acknowledgement_set.count() > 0
+                    else {}
+                ),
+                **(
+                    {
+                        "Part of Speech": dictionaryentry.part_of_speech.title,
+                    }
+                    if dictionaryentry.part_of_speech is not None
+                    else {}
+                ),
+                **(
+                    {
+                        "Note": dictionaryentry.note_set.all()[0].text,
+                    }
+                    if dictionaryentry.note_set.count() > 0
+                    else {}
+                ),
+            },
         )
-        # Return None if no theme available
-        if first_theme is None:
-            return None
-        # The theme is equal to the parent theme if it exists
-        if first_theme.parent is not None:
-            return first_theme.parent.title
-        # Otherwise just return the theme title
-        return first_theme.title
 
     @staticmethod
     def get_sort_form(dictionaryentry):
@@ -145,36 +174,6 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             return alphabet_mapper.get_base_form(dictionaryentry.title)
         else:
             return dictionaryentry.title
-
-    @staticmethod
-    def get_secondary_theme(dictionaryentry):
-        # NOTE: MTD currently only allows one theme and one secondary theme
-        #       As a heuristic, I'm selecting the first theme with both a main
-        #       and secondary theme. If that doesn't exist, I just select the first theme.
-        first_theme = (
-            dictionaryentry.categories.filter(parent__isnull=False).first()
-            or dictionaryentry.categories.first()
-        )
-        return (
-            first_theme.title
-            if first_theme and first_theme.parent is not None
-            else None
-        )
-
-    @staticmethod
-    def get_optional(dictionaryentry):
-        optional_information = {}
-        first_acknowledgement = dictionaryentry.acknowledgement_set.first()
-        if first_acknowledgement is not None:
-            optional_information["Reference"] = first_acknowledgement.text
-        if dictionaryentry.part_of_speech is not None:
-            optional_information[
-                "Part of Speech"
-            ] = dictionaryentry.part_of_speech.title
-        first_note = dictionaryentry.note_set.first()
-        if first_note is not None:
-            optional_information["Note"] = first_note.text
-        return optional_information
 
     @staticmethod
     def get_sorting_form(dictionaryentry):
@@ -196,6 +195,8 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
             "theme",
             "secondary_theme",
             "optional",
+            "compare_form",
+            "sort_form",
             "sorting_form",
         )
 
