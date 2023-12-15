@@ -68,7 +68,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django.middleware.gzip.GZipMiddleware",  # compress dictionary json
     "django.contrib.sessions.middleware.SessionMiddleware",  # ugh. sessions. required by admin.
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
