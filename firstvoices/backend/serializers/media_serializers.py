@@ -1,7 +1,10 @@
+from drf_spectacular.utils import extend_schema_field
+from embed_video.backends import UnknownBackendException, detect_backend
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from backend.models import media
+from backend.models.validators import validate_no_duplicate_urls
 
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
@@ -246,6 +249,29 @@ class WriteableRelatedImageSerializer(serializers.PrimaryKeyRelatedField):
         return ImageSerializer(context=self.context).to_representation(value)
 
 
+class RelatedVideoLinksSerializer(serializers.Serializer):
+    video_link = serializers.SerializerMethodField()
+    embed_link = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_video_link(obj):
+        return obj
+
+    @staticmethod
+    def get_embed_link(obj):
+        backend = detect_backend(obj)
+        return backend.get_url()
+
+    @staticmethod
+    def get_thumbnail(obj):
+        backend = detect_backend(obj)
+        return backend.get_thumbnail_url()
+
+    class Meta:
+        fields = ("video_link", "embed_link", "thumbnail")
+
+
 class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     """Mixin that provides standard related media fields"""
 
@@ -267,9 +293,59 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
         queryset=media.Video.objects.all(),
         validators=[UniqueValidator(queryset=media.Video.objects.all())],
     )
+    related_video_links = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        field={
+            "type": "array",
+            "items": {"type": "string"},
+            "example": [
+                {
+                    "videoLink": "https://www.youtube.com/watch?v=abcdefghijk",
+                    "embedLink": "https://www.youtube.com/embed/abcdefghijk",
+                    "thumbnail": "https://img.youtube.com/vi/abcdefghijk/hqdefault.jpg",
+                }
+            ],
+        }
+    )
+    def get_related_video_links(self, instance):
+        if self.context.get("request").method in ["GET"]:
+            return RelatedVideoLinksSerializer(
+                instance.related_video_links, many=True
+            ).data
+        else:
+            return instance.related_video_links
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["related_video_links"] = RelatedVideoLinksSerializer(
+            instance.related_video_links, many=True
+        ).data
+        return representation
+
+    def validate(self, attrs):
+        related_video_links = self.context.get("request").data.get(
+            "related_video_links"
+        )
+        if related_video_links:
+            validate_no_duplicate_urls(related_video_links)
+            for link in related_video_links:
+                try:
+                    detect_backend(link)
+                except UnknownBackendException:
+                    raise serializers.ValidationError(
+                        "The related video link is not supported. Please use a YouTube or Vimeo link."
+                    )
+            attrs["related_video_links"] = related_video_links
+        return super().validate(attrs)
 
     class Meta:
-        fields = ("related_audio", "related_images", "related_videos")
+        fields = (
+            "related_audio",
+            "related_images",
+            "related_videos",
+            "related_video_links",
+        )
 
 
 class PersonMinimalSerializer(serializers.ModelSerializer):

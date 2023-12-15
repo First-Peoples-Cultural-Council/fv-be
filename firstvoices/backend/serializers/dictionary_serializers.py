@@ -364,6 +364,7 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "related_audio",
             "related_images",
             "related_videos",
+            "related_video_links",
         ) + audience_fields
 
 
