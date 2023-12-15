@@ -16,7 +16,13 @@ from backend.models.dictionary import (
 from backend.tests import factories
 
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import RelatedMediaTestMixin
+from .base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 
 
 class TestDictionaryEndpoint(
@@ -267,7 +273,7 @@ class TestDictionaryEndpoint(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
-            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         )
 
         factories.AcknowledgementFactory.create(dictionary_entry=dictionary_entry)
@@ -374,13 +380,13 @@ class TestDictionaryEndpoint(
         assert actual_response["relatedVideoLinks"] == [
             {
                 "videoLink": original_instance.related_video_links[0],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
                 "videoLink": original_instance.related_video_links[1],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -883,7 +889,7 @@ class TestDictionaryEndpoint(
             "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Huh-lo"}],
             "related_dictionary_entries": [str(related_entry.id)],
-            "related_video_links": ["https://www.youtube.com/", "https://vimeo.com/"],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.post(
@@ -914,14 +920,14 @@ class TestDictionaryEndpoint(
         )
         assert response_data["relatedVideoLinks"] == [
             {
-                "videoLink": "https://www.youtube.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
-                "videoLink": "https://vimeo.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -935,8 +941,8 @@ class TestDictionaryEndpoint(
         assert entry_in_db.exclude_from_kids is False
         assert entry_in_db.part_of_speech.id == part_of_speech.id
         assert entry_in_db.related_video_links == [
-            "https://www.youtube.com/",
-            "https://vimeo.com/",
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
         ]
 
         acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
@@ -1003,7 +1009,7 @@ class TestDictionaryEndpoint(
             "related_audio": [str(audio.id)],
             "related_images": [str(image.id)],
             "related_videos": [str(video.id)],
-            "related_video_links": ["https://www.youtube.com/", "https://vimeo.com/"],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.post(
@@ -1019,14 +1025,14 @@ class TestDictionaryEndpoint(
         assert response_data["relatedVideos"][0]["id"] == str(video.id)
         assert response_data["relatedVideoLinks"] == [
             {
-                "videoLink": "https://www.youtube.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
-                "videoLink": "https://vimeo.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -1036,8 +1042,8 @@ class TestDictionaryEndpoint(
         assert entry_in_db.related_images.first().id == image.id
         assert entry_in_db.related_videos.first().id == video.id
         assert entry_in_db.related_video_links == [
-            "https://www.youtube.com/",
-            "https://vimeo.com/",
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
         ]
 
     @pytest.mark.parametrize(
@@ -1079,13 +1085,13 @@ class TestDictionaryEndpoint(
     @pytest.mark.parametrize(
         "related_video_links, expected_response_code",
         [
-            (["https://www.youtube.com/", "https://vimeo.com/"], 201),
+            ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], 201),
             (["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"], 201),
             (
                 [
-                    "https://www.youtube.com/",
-                    "https://vimeo.com/",
-                    "https://vimeo.com/",
+                    YOUTUBE_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
                 ],
                 400,
             ),
@@ -1153,7 +1159,7 @@ class TestDictionaryEndpoint(
             "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Good-bye"}],
             "related_dictionary_entries": [str(related_entry.id)],
-            "related_video_links": ["https://www.youtube.com/", "https://vimeo.com/"],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.put(
@@ -1183,14 +1189,14 @@ class TestDictionaryEndpoint(
         )
         assert response_data["relatedVideoLinks"] == [
             {
-                "videoLink": "https://www.youtube.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
-                "videoLink": "https://vimeo.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -1229,8 +1235,8 @@ class TestDictionaryEndpoint(
         assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
 
         assert entry_in_db.related_video_links == [
-            "https://www.youtube.com/",
-            "https://vimeo.com/",
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
         ]
 
     @pytest.mark.django_db
@@ -1306,7 +1312,7 @@ class TestDictionaryEndpoint(
             "related_audio": [str(audio.id)],
             "related_images": [str(image.id)],
             "related_videos": [str(video.id)],
-            "related_video_links": ["https://www.youtube.com/", "https://vimeo.com/"],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.put(
@@ -1323,14 +1329,14 @@ class TestDictionaryEndpoint(
         assert response_data["relatedVideos"][0]["id"] == str(video.id)
         assert response_data["relatedVideoLinks"] == [
             {
-                "videoLink": "https://www.youtube.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
-                "videoLink": "https://vimeo.com/",
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -1339,8 +1345,8 @@ class TestDictionaryEndpoint(
         assert entry_in_db.related_images.first().id == image.id
         assert entry_in_db.related_videos.first().id == video.id
         assert entry_in_db.related_video_links == [
-            "https://www.youtube.com/",
-            "https://vimeo.com/",
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
         ]
 
     @pytest.mark.parametrize(

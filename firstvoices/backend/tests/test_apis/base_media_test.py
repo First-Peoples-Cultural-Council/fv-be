@@ -12,6 +12,11 @@ from backend.models.constants import Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
+VIMEO_VIDEO_LINK = "https://vimeo.com/"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/"
+MOCK_EMBED_LINK = "https://mock_embed_link.com/"
+MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
+
 
 class FormDataMixin:
     content_type = "multipart/form-data; boundary=TestBoundaryString"
@@ -136,10 +141,8 @@ class RelatedMediaTestMixin(MediaTestMixin):
         related_images=None,
         related_audio=None,
         related_videos=None,
-        related_media_links=None,
+        related_video_links=None,
     ):
-        if related_media_links is None:
-            related_media_links = []
         raise NotImplementedError
 
     def assert_patch_instance_original_fields_related_media(
@@ -231,27 +234,27 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert response_data["relatedVideos"][0] == expected
 
     @pytest.mark.parametrize(
-        "related_video_links, expected_response_code",
+        "related_video_links, expected_response_codes",
         [
-            (["https://www.youtube.com/", "https://vimeo.com/"], 200 or 201),
+            ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], [200, 201]),
             (
                 ["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"],
-                200 or 201,
+                [200, 201],
             ),
             (
                 [
-                    "https://www.youtube.com/",
-                    "https://vimeo.com/",
-                    "https://vimeo.com/",
+                    YOUTUBE_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
                 ],
-                400,
+                [400],
             ),
-            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], 400),
+            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], [400]),
         ],
     )
     @pytest.mark.django_db
     def test_update_duplicate_related_video_links(
-        self, related_video_links, expected_response_code
+        self, related_video_links, expected_response_codes
     ):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
@@ -272,7 +275,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
             format="json",
             data=req_body,
         )
-        assert response.status_code == expected_response_code
+        assert response.status_code in expected_response_codes
 
 
 class BaseMediaApiTest(

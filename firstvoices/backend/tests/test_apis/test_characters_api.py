@@ -11,7 +11,13 @@ from .base_api_test import (
     SiteContentPatchApiTestMixin,
     WriteApiTestMixin,
 )
-from .base_media_test import RelatedMediaTestMixin
+from .base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 
 
 class TestCharactersEndpoints(
@@ -82,7 +88,7 @@ class TestCharactersEndpoints(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
-            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         )
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
         factories.DictionaryEntryRelatedCharacterFactory.create(
@@ -127,13 +133,13 @@ class TestCharactersEndpoints(
         assert actual_response["relatedVideoLinks"] == [
             {
                 "videoLink": original_instance.related_video_links[0],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
                 "videoLink": original_instance.related_video_links[1],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
@@ -361,10 +367,10 @@ class TestCharactersEndpoints(
         instance = self.create_instance_with_media(
             site=site,
             visibility=Visibility.TEAM,
-            related_video_links=["https://www.youtube.com/"],
+            related_video_links=[YOUTUBE_VIDEO_LINK],
         )
 
-        req_body = {"related_video_links": ["https://vimeo.com/"]}
+        req_body = {"related_video_links": [VIMEO_VIDEO_LINK]}
 
         self.client.force_authenticate(user=user)
 
@@ -379,9 +385,9 @@ class TestCharactersEndpoints(
         assert len(response_data["relatedVideoLinks"]) == 1
 
         assert response_data["relatedVideoLinks"][0] == {
-            "videoLink": "https://vimeo.com/",
-            "embedLink": "https://mock_embed_link.com/",
-            "thumbnail": "https://mock_thumbnail_link.com/",
+            "videoLink": VIMEO_VIDEO_LINK,
+            "embedLink": MOCK_EMBED_LINK,
+            "thumbnail": MOCK_THUMBNAIL_LINK,
         }
 
     # \------------------------------------------------------------------/

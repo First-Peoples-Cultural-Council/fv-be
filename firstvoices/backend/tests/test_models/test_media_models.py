@@ -21,6 +21,7 @@ from backend.models.media import (
 )
 from backend.tests import factories
 from backend.tests.factories.media_factories import get_video_content
+from backend.tests.test_apis.base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -370,8 +371,8 @@ class RelatedVideoLinksValidationMixin:
     @pytest.mark.parametrize(
         "url, backend_class",
         [
-            ("https://www.youtube.com/", YoutubeBackend),
-            ("https://vimeo.com/", VimeoBackend),
+            (YOUTUBE_VIDEO_LINK, YoutubeBackend),
+            (VIMEO_VIDEO_LINK, VimeoBackend),
         ],
     )
     @pytest.mark.django_db

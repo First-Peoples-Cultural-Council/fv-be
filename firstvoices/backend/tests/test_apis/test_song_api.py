@@ -7,7 +7,13 @@ from backend.models.song import Lyric, Song
 from backend.tests import factories
 
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import RelatedMediaTestMixin
+from .base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 
 
 class TestSongEndpoint(
@@ -257,7 +263,7 @@ class TestSongEndpoint(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
-            related_video_links=["https://www.youtube.com/", "https://vimeo.com/"],
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         )
         factories.LyricsFactory.create(song=song)
         return song
@@ -329,13 +335,13 @@ class TestSongEndpoint(
         assert actual_response["relatedVideoLinks"] == [
             {
                 "videoLink": original_instance.related_video_links[0],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
             {
                 "videoLink": original_instance.related_video_links[1],
-                "embedLink": "https://mock_embed_link.com/",
-                "thumbnail": "https://mock_thumbnail_link.com/",
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
             },
         ]
 
