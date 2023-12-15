@@ -12,7 +12,7 @@ import uuid
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("backend", "0086_alter_immersionlabel_key_alter_sitefeature_key"),
+        ("backend", "0087_immersionlabel_visibility"),
     ]
 
     operations = [
