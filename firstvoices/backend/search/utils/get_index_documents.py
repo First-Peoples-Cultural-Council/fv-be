@@ -50,3 +50,16 @@ def create_song_index_document(instance, lyrics_text, lyrics_translation_text):
         last_modified=instance.last_modified,
         has_translation=bool(instance.title_translation),
     )
+
+
+def _text_as_list(comma_delimited_text):
+    if comma_delimited_text is None:
+        return comma_delimited_text
+
+    items = comma_delimited_text.split(",")
+    return [item.strip() for item in items]
+
+
+def _fields_as_list(queryset, field):
+    values = queryset.values_list(field)
+    return [x[0] for x in values]
