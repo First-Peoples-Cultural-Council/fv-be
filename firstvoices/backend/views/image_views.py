@@ -70,7 +70,6 @@ class ImageViewSet(
     Image information.
     """
 
-    http_method_names = ["get", "post", "delete"]
     serializer_class = ImageSerializer
     parser_classes = [
         parsers.FormParser,

@@ -83,6 +83,19 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
     )
     isShared = serializers.BooleanField(source="is_shared", default=False)
 
+    def create_file(self, validated_data, filetype):
+        file_data = validated_data.pop("original")
+        user = self.context["request"].user
+        site = get_site_from_context(self)
+        file = filetype(
+            content=file_data,
+            site=site,
+            created_by=user,
+            last_modified_by=user,
+        )
+        file.save()
+        return file
+
     class Meta:
         fields = base_id_fields + (
             "description",
@@ -94,7 +107,9 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
         )
 
 
-class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
+class AudioSerializer(
+    UpdateSerializerMixin, CreateSiteContentSerializerMixin, MediaSerializer
+):
     """Serializer for Audio objects. Supports audio objects shared between different sites."""
 
     speakers = WriteableRelatedPersonSerializer(
@@ -128,20 +143,14 @@ class AudioSerializer(CreateSiteContentSerializerMixin, MediaSerializer):
         fields = MediaSerializer.Meta.fields + ("speakers",)
 
     def create(self, validated_data):
-        file_data = validated_data.pop("original")
-        user = self.context["request"].user
-        site = get_site_from_context(self)
-        file = media.File(
-            content=file_data,
-            site=site,
-            created_by=user,
-            last_modified_by=user,
-        )
-        file.save()
+        validated_data["original"] = self.create_file(validated_data, media.File)
+        return super().create(validated_data)
 
-        validated_data["original"] = file
-        created = super().create(validated_data)
-        return created
+    def update(self, instance, validated_data):
+        if "original" in validated_data:
+            validated_data["original"] = self.create_file(validated_data, media.File)
+
+        return super().update(instance, validated_data)
 
 
 class MediaWithThumbnailsSerializer(MediaSerializer):
@@ -154,6 +163,7 @@ class MediaWithThumbnailsSerializer(MediaSerializer):
 
 
 class ImageSerializer(
+    UpdateSerializerMixin,
     CreateSiteContentSerializerMixin,
     MediaWithThumbnailsSerializer,
 ):
@@ -168,26 +178,27 @@ class ImageSerializer(
     )
 
     def create(self, validated_data):
-        file_data = validated_data.pop("original")
-        user = self.context["request"].user
-        site = get_site_from_context(self)
-        file = media.ImageFile(
-            content=file_data,
-            site=site,
-            created_by=user,
-            last_modified_by=user,
-        )
-        file.save()
-
-        validated_data["original"] = file
+        validated_data["original"] = self.create_file(validated_data, media.ImageFile)
         created = super().create(validated_data)
         return created
+
+    def update(self, instance, validated_data):
+        if "original" in validated_data:
+            validated_data["original"] = self.create_file(
+                validated_data, media.ImageFile
+            )
+
+        return super().update(instance, validated_data)
 
     class Meta(MediaWithThumbnailsSerializer.Meta):
         model = media.Image
 
 
-class VideoSerializer(CreateSiteContentSerializerMixin, MediaWithThumbnailsSerializer):
+class VideoSerializer(
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
+    MediaWithThumbnailsSerializer,
+):
     """Serializer for Video objects. Supports video objects shared between different sites."""
 
     original = VideoUploadSerializer(
@@ -198,20 +209,17 @@ class VideoSerializer(CreateSiteContentSerializerMixin, MediaWithThumbnailsSeria
         model = media.Video
 
     def create(self, validated_data):
-        file_data = validated_data.pop("original")
-        user = self.context["request"].user
-        site = get_site_from_context(self)
-        file = media.VideoFile(
-            content=file_data,
-            site=site,
-            created_by=user,
-            last_modified_by=user,
-        )
-        file.save()
-
-        validated_data["original"] = file
+        validated_data["original"] = self.create_file(validated_data, media.VideoFile)
         created = super().create(validated_data)
         return created
+
+    def update(self, instance, validated_data):
+        if "original" in validated_data:
+            validated_data["original"] = self.create_file(
+                validated_data, media.VideoFile
+            )
+
+        return super().update(instance, validated_data)
 
 
 class WriteableRelatedAudioSerializer(serializers.PrimaryKeyRelatedField):
