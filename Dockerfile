@@ -10,6 +10,7 @@ RUN apk add --no-cache libffi-dev
 RUN apk add --no-cache libmagic
 RUN apk add --no-cache openblas-dev
 RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache git
 RUN pip3 install gunicorn
 
 COPY requirements.txt /app
