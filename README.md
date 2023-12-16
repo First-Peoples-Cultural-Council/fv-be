@@ -53,7 +53,7 @@ License: Apache Software License 2.0
    - `DB_DATABASE`: `<db name>` when you created the database
    - `DB_USERNAME`: the database admin username (usually `postgres`)
    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
-   - `DB_HOST`: the host address your database is running on (ususally `127.0.0.1` if running locally)
+   - `DB_HOST`: the host address your database is running on (usually `127.0.0.1` if running locally)
    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
 1. Configure required environment variables for media file storage:
    - `AWS_ACCESS_KEY_ID`
