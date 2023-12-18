@@ -7,8 +7,8 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
-from backend.models.media import ImageFile
 from backend.models.constants import Role, Visibility
+from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
@@ -163,6 +163,29 @@ class RelatedMediaTestMixin(MediaTestMixin):
         )
         assert actual_response["relatedVideos"][0]["id"] == str(
             original_instance.related_videos.first().id
+        )
+
+    def assert_update_response_related_media(self, expected_data, actual_response):
+        assert len(actual_response["relatedAudio"]) == len(
+            expected_data["relatedAudio"]
+        )
+        for i, a in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == a
+
+        assert len(actual_response["relatedVideos"]) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, v in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == v
+
+        assert len(actual_response["relatedImages"]) == len(
+            expected_data["relatedImages"]
+        )
+        for i, img in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == img
+
+        assert (
+            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
         )
 
     @pytest.mark.django_db

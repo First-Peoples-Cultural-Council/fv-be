@@ -436,27 +436,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         for i, note in enumerate(expected_data["notes"]):
             assert actual_response["notes"][i]["text"] == note["text"]
 
-        assert len(actual_response["relatedAudio"]) == len(
-            expected_data["relatedAudio"]
-        )
-        for i, a in enumerate(expected_data["relatedAudio"]):
-            assert actual_response["relatedAudio"][i]["id"] == a
-
-        assert len(actual_response["relatedVideos"]) == len(
-            expected_data["relatedVideos"]
-        )
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
-
-        assert len(actual_response["relatedImages"]) == len(
-            expected_data["relatedImages"]
-        )
-        for i, img in enumerate(expected_data["relatedImages"]):
-            assert actual_response["relatedImages"][i]["id"] == img
-
-        assert (
-            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
-        )
+        self.assert_update_response_related_media(expected_data, actual_response)
 
     def add_related_objects(self, instance):
         # nothing to add

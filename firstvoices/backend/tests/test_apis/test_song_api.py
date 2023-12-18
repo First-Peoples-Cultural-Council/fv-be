@@ -152,27 +152,7 @@ class TestSongEndpoint(
             assert actual_response["lyrics"][i]["text"] == l["text"]
             assert actual_response["lyrics"][i]["translation"] == l["translation"]
 
-        assert len(actual_response["relatedAudio"]) == len(
-            expected_data["relatedAudio"]
-        )
-        for i, a in enumerate(expected_data["relatedAudio"]):
-            assert actual_response["relatedAudio"][i]["id"] == a
-
-        assert len(actual_response["relatedVideos"]) == len(
-            expected_data["relatedVideos"]
-        )
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
-
-        assert len(actual_response["relatedImages"]) == len(
-            expected_data["relatedImages"]
-        )
-        for i, img in enumerate(expected_data["relatedImages"]):
-            assert actual_response["relatedImages"][i]["id"] == img
-
-        assert (
-            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
-        )
+        self.assert_update_response_related_media(expected_data, actual_response)
 
     def assert_created_instance(self, pk, data):
         instance = Song.objects.get(pk=pk)

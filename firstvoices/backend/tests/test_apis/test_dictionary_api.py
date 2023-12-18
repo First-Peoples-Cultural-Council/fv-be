@@ -988,6 +988,35 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 400
 
+    def test_related_media_response_and_data(self, response, audio, image, video):
+        # Test API response
+        response_data = json.loads(response.content)
+        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
+        assert response_data["relatedImages"][0]["id"] == str(image.id)
+        assert response_data["relatedVideos"][0]["id"] == str(video.id)
+        assert response_data["relatedVideoLinks"] == [
+            {
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
+
+        # Test DB changes
+        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
+        assert entry_in_db.related_audio.first().id == audio.id
+        assert entry_in_db.related_images.first().id == image.id
+        assert entry_in_db.related_videos.first().id == video.id
+        assert entry_in_db.related_video_links == [
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
+        ]
+
     @pytest.mark.django_db
     def test_dictionary_entry_create_related_media(self):
         site, user = factories.get_site_with_member(
@@ -1018,33 +1047,7 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 201
 
-        # Test API response
-        response_data = json.loads(response.content)
-        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
-        assert response_data["relatedImages"][0]["id"] == str(image.id)
-        assert response_data["relatedVideos"][0]["id"] == str(video.id)
-        assert response_data["relatedVideoLinks"] == [
-            {
-                "videoLink": YOUTUBE_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": VIMEO_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
-
-        # Test DB changes
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.related_audio.first().id == audio.id
-        assert entry_in_db.related_images.first().id == image.id
-        assert entry_in_db.related_videos.first().id == video.id
-        assert entry_in_db.related_video_links == [
-            YOUTUBE_VIDEO_LINK,
-            VIMEO_VIDEO_LINK,
-        ]
+        self.test_related_media_response_and_data(response, audio, image, video)
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
@@ -1323,31 +1326,7 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 200
 
-        response_data = response.json()
-        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
-        assert response_data["relatedImages"][0]["id"] == str(image.id)
-        assert response_data["relatedVideos"][0]["id"] == str(video.id)
-        assert response_data["relatedVideoLinks"] == [
-            {
-                "videoLink": YOUTUBE_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": VIMEO_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
-
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.related_audio.first().id == audio.id
-        assert entry_in_db.related_images.first().id == image.id
-        assert entry_in_db.related_videos.first().id == video.id
-        assert entry_in_db.related_video_links == [
-            YOUTUBE_VIDEO_LINK,
-            VIMEO_VIDEO_LINK,
-        ]
+        self.test_related_media_response_and_data(response, audio, image, video)
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
