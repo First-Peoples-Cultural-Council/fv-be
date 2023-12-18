@@ -988,7 +988,8 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 400
 
-    def test_related_media_response_and_data(self, response, audio, image, video):
+    @staticmethod
+    def assert_related_media_response_and_data(response, audio, image, video):
         # Test API response
         response_data = json.loads(response.content)
         assert response_data["relatedAudio"][0]["id"] == str(audio.id)
@@ -1047,7 +1048,7 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 201
 
-        self.test_related_media_response_and_data(response, audio, image, video)
+        self.assert_related_media_response_and_data(response, audio, image, video)
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
@@ -1326,7 +1327,7 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 200
 
-        self.test_related_media_response_and_data(response, audio, image, video)
+        self.assert_related_media_response_and_data(response, audio, image, video)
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
