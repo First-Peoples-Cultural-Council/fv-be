@@ -69,7 +69,6 @@ class AudioViewSet(
     Audio information.
     """
 
-    http_method_names = ["get", "post", "delete"]
     serializer_class = AudioSerializer
     parser_classes = [
         parsers.FormParser,

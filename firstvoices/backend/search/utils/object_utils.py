@@ -10,11 +10,7 @@ from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 def get_object_from_index(index, document_type, document_id):
     try:
-        s = Search(index=index).params(request_timeout=10)
-        response = s.query("match", document_id=document_id).execute()
-        hits = response["hits"]["hits"]
-
-        return hits[0] if hits else None
+        return search_by_id(document_id, index)
     except ConnectionError as e:
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(ES_CONNECTION_ERROR, document_type, index, document_id)
@@ -31,6 +27,13 @@ def get_object_from_index(index, document_type, document_id):
         logger.warning(e)
 
     return None
+
+
+def search_by_id(document_id, index):
+    s = Search(index=index).params(request_timeout=10)
+    response = s.query("match", document_id=document_id).execute()
+    hits = response["hits"]["hits"]
+    return hits[0] if hits else None
 
 
 def get_object_by_id(objects, object_id):

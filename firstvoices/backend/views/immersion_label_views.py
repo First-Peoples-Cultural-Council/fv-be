@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.immersion_labels import ImmersionLabel
+from backend.permissions.utils import filter_by_viewable
 from backend.serializers.immersion_label_serializers import (
     ImmersionLabelDetailSerializer,
 )
@@ -145,7 +146,7 @@ class ImmersionLabelViewSet(
         """
         Returns a mapping of immersion label keys to their corresponding dictionary entry titles.
         """
-        immersion_labels = ImmersionLabel.objects.visible(request.user)
+        immersion_labels = filter_by_viewable(request.user, self.get_queryset())
 
         immersion_labels_map = {
             label.key: label.dictionary_entry.title for label in immersion_labels

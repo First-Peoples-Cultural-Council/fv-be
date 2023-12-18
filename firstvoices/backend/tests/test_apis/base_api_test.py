@@ -830,6 +830,10 @@ class SiteContentPatchApiTestMixin:
 
     model = None
 
+    def get_valid_patch_data(self, site):
+        """Returns valid data object suitable for patch requests"""
+        raise NotImplementedError()
+
     def get_invalid_patch_data(self):
         """Returns an invalid data object suitable for failing patch requests"""
         return None

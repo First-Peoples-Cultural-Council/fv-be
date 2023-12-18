@@ -9,7 +9,7 @@ from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewView,
     CustomOrderRecalculateView,
 )
-from backend.views.data_views import SitesDataViewSet
+from backend.views.data_views import MTDSitesDataViewSet, SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.image_views import ImageViewSet
@@ -46,6 +46,7 @@ sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
 sites_router.register(r"data", SitesDataViewSet, basename="data")
+sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",

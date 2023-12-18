@@ -8,11 +8,14 @@ RETRY_ON_CONFLICT = 10
 # search term crosses this threshold
 FUZZY_SEARCH_CUTOFF = 50
 
-# Index names
+# Index names - /search endpoint
 ELASTICSEARCH_DICTIONARY_ENTRY_INDEX = "dictionary_entries"
 ELASTICSEARCH_SONG_INDEX = "songs"
 ELASTICSEARCH_STORY_INDEX = "stories"
 ELASTICSEARCH_MEDIA_INDEX = "media"
+
+# Index name - /sites endpoint
+ELASTICSEARCH_LANGUAGE_INDEX = "language"
 
 # Document types
 TYPE_WORD = "word"

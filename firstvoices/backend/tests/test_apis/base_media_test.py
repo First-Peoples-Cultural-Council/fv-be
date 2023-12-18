@@ -8,6 +8,7 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Visibility
+from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
@@ -26,18 +27,18 @@ class MediaTestMixin:
     Utilities for testing media APIs
     """
 
-    def get_sample_file(self, filename, mimetype):
+    def get_sample_file(self, filename, mimetype, title=None):
         path = (
             os.path.dirname(os.path.realpath(__file__))
             + f"/../factories/resources/{filename}"
         )
-        image_file = open(path, "rb")
+        file = open(path, "rb")
         return InMemoryUploadedFile(
-            image_file,
+            file,
             "FileField",
-            filename,
+            title if title is not None else filename,
             mimetype,
-            sys.getsizeof(image_file),
+            sys.getsizeof(file),
             None,
         )
 
@@ -230,10 +231,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
 class BaseMediaApiTest(
     MediaTestMixin,
     FormDataMixin,
-    base_api_test.WriteApiTestMixin,
-    base_api_test.SiteContentCreateApiTestMixin,
-    base_api_test.SiteContentDestroyApiTestMixin,
-    base_api_test.BaseReadOnlyUncontrolledSiteContentApiTest,
+    base_api_test.BaseUncontrolledSiteContentApiTest,
 ):
     """
     Tests for the list, detail, create, and delete APIs for media endpoints.
@@ -275,11 +273,40 @@ class BaseMediaApiTest(
             "excludeFromKids": False,
         }
 
+    def get_invalid_patch_data(self):
+        """Add some actually invalid data-- empty data doesn't work for multipart encoder"""
+        return {
+            "excludeFromKids": "not a boolean value",
+        }
+
+    def get_valid_patch_data(self, site):
+        return {
+            "title": "A new title",
+        }
+
+    def get_valid_patch_file_data(self, site):
+        return {
+            "original": self.get_sample_file(
+                self.sample_filename,
+                self.sample_filetype,
+                f"patch-{self.sample_filename}",
+            ),
+        }
+
     def assert_created_instance(self, pk, data):
         instance = self.model.objects.get(pk=pk)
         assert instance.title == data["title"]
         assert instance.description == data["description"]
-        assert data["original"].name in instance.original.content.name
+
+        # Split the filename and extension from the file paths and check for each to avoid async tests appending
+        # characters to the end of the filename when file path already exists.
+        data_filename = data["original"].name.split(".")[0]
+        data_file_extension = data["original"].name.split(".")[1]
+        instance_filename = instance.original.content.name.split(".")[0]
+        instance_file_extension = instance.original.content.name.split(".")[1]
+        assert data_filename in instance_filename
+        assert data_file_extension in instance_file_extension
+
         assert instance.acknowledgement == data["acknowledgement"]
         assert instance.is_shared == data["isShared"]
         assert instance.exclude_from_games == data["excludeFromGames"]
@@ -296,6 +323,58 @@ class BaseMediaApiTest(
         self.assert_instance_deleted(instance.small)
         self.assert_instance_deleted(instance.thumbnail)
 
+    def assert_secondary_fields(self, expected_data, updated_instance):
+        assert updated_instance.description == expected_data["description"]
+        assert updated_instance.acknowledgement == expected_data["acknowledgement"]
+        assert updated_instance.exclude_from_kids == expected_data["excludeFromKids"]
+        assert updated_instance.exclude_from_games == expected_data["excludeFromGames"]
+        assert updated_instance.is_shared == expected_data["isShared"]
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance):
+        assert updated_instance.title == data["title"]
+
+    def assert_response(self, expected_data, actual_response):
+        assert actual_response["title"] == expected_data["title"]
+        assert actual_response["description"] == expected_data["description"]
+        assert actual_response["acknowledgement"] == expected_data["acknowledgement"]
+        assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
+        assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
+        assert actual_response["isShared"] == expected_data["isShared"]
+
+        expected_file_path = (
+            expected_data["original"].content.url
+            if hasattr(expected_data["original"], "content")
+            else expected_data["original"].name
+        )
+        expected_filename = expected_file_path.split(".")[0]
+        expected_file_extension = expected_file_path.split(".")[1]
+        actual_filename = actual_response["original"]["path"].split(".")[0]
+        actual_file_extension = actual_response["original"]["path"].split(".")[1]
+        assert expected_filename in actual_filename
+        assert expected_file_extension in actual_file_extension
+
+    def assert_patch_file_updated_fields(self, data, updated_instance):
+        assert data["original"].name in updated_instance.original.content.path
+
+    def assert_update_patch_file_response(
+        self, original_instance, data, actual_response
+    ):
+        expected_data = {
+            "id": str(original_instance.id),
+            "title": original_instance.title,
+            "description": original_instance.description,
+            "acknowledgement": original_instance.acknowledgement,
+            "excludeFromKids": original_instance.exclude_from_kids,
+            "excludeFromGames": original_instance.exclude_from_games,
+            "isShared": original_instance.is_shared,
+            "original": data["original"],
+        }
+
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data=expected_data,
+        )
+
     @pytest.mark.django_db
     def test_create_400_invalid_filetype(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -309,3 +388,124 @@ class BaseMediaApiTest(
         )
 
         assert response.status_code == 400
+
+
+class BaseVisualMediaAPITest(BaseMediaApiTest):
+    @pytest.fixture()
+    def disable_celery(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance
+    ):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.original.id == original_instance.original.id
+
+    def assert_original_secondary_fields(self, original_instance, updated_instance):
+        # everything but title
+        self.assert_secondary_fields(
+            expected_data={
+                "description": original_instance.description,
+                "acknowledgement": original_instance.acknowledgement,
+                "excludeFromKids": original_instance.exclude_from_kids,
+                "excludeFromGames": original_instance.exclude_from_games,
+                "isShared": original_instance.is_shared,
+            },
+            updated_instance=updated_instance,
+        )
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data={
+                "id": str(original_instance.id),
+                "title": data["title"],
+                "description": original_instance.description,
+                "acknowledgement": original_instance.acknowledgement,
+                "excludeFromKids": original_instance.exclude_from_kids,
+                "excludeFromGames": original_instance.exclude_from_games,
+                "isShared": original_instance.is_shared,
+                "original": original_instance.original,
+            },
+        )
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        self.assert_secondary_fields(expected_data, actual_instance)
+        assert actual_instance.title == expected_data["title"]
+
+    def assert_update_response(self, expected_data, actual_response):
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data={**expected_data},
+        )
+
+    @pytest.mark.django_db
+    def test_patch_file_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_original_instance_for_patch(site=site)
+        data = self.get_valid_patch_file_data(site)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_patch_file_original_fields(
+            instance, self.get_updated_patch_instance(instance)
+        )
+        self.assert_patch_file_updated_fields(
+            data, self.get_updated_patch_instance(instance)
+        )
+        self.assert_update_patch_file_response(instance, data, response_data)
+
+    def assert_patch_file_original_fields(self, original_instance, updated_instance):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.title == original_instance.title
+
+    def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
+        self.assert_original_secondary_fields(original_instance, updated_instance)
+        assert updated_instance.title == original_instance.title
+        assert updated_instance.original.id == original_instance.original.id
+
+    @pytest.mark.disable_thumbnail_mocks
+    @pytest.mark.django_db
+    def test_patch_old_thumbnails_deleted(self, disable_celery):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site, Visibility.PUBLIC)
+        instance = self.model.objects.get(pk=instance.id)
+        data = self.get_valid_patch_file_data(site)
+
+        assert ImageFile.objects.count() <= 4
+        old_thumbnail_id = instance.thumbnail.id
+        old_medium_id = instance.medium.id
+        old_small_id = instance.small.id
+
+        assert ImageFile.objects.filter(id=old_thumbnail_id).exists()
+        assert ImageFile.objects.filter(id=old_medium_id).exists()
+        assert ImageFile.objects.filter(id=old_small_id).exists()
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        # Check that old files have been deleted
+        assert ImageFile.objects.count() <= 4
+        assert not ImageFile.objects.filter(id=old_thumbnail_id).exists()
+        assert not ImageFile.objects.filter(id=old_medium_id).exists()
+        assert not ImageFile.objects.filter(id=old_small_id).exists()
