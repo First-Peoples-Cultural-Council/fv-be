@@ -17,6 +17,7 @@ class GalleryFactory(DjangoModelFactory):
 
 
 class GalleryItemFactory(DjangoModelFactory):
+    gallery = factory.SubFactory(GalleryFactory)
     image = factory.SubFactory(ImageFactory)
     order = factory.Sequence(int)
 
