@@ -24,7 +24,7 @@ class GalleryItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GalleryItem
-        fields = base_timestamp_fields + ("id", "image", "order")
+        fields = ("image", "order")
 
 
 class GalleryDetailSerializer(WritableSiteContentSerializer):
@@ -33,6 +33,7 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
     """
 
     cover_image = WriteableRelatedImageSerializer(
+        required=False,
         queryset=Image.objects.all(),
         allow_null=True,
         validators=[SameSite()],
@@ -65,6 +66,7 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
             base_timestamp_fields
             + base_id_fields
             + (
+                "site",
                 "title_translation",
                 "introduction",
                 "introduction_translation",
