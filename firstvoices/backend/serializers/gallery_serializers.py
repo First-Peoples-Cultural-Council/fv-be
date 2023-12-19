@@ -32,7 +32,7 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
     Serializer for Gallery model.
     """
 
-    cover_image = serializers.PrimaryKeyRelatedField(
+    cover_image = WriteableRelatedImageSerializer(
         queryset=Image.objects.all(),
         allow_null=True,
         validators=[SameSite()],
