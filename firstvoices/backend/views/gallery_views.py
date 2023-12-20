@@ -1,11 +1,13 @@
+from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.galleries import Gallery
+from backend.models.galleries import Gallery, GalleryItem
 from backend.serializers.gallery_serializers import GalleryDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -108,9 +110,18 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
             .prefetch_related(
                 "site",
                 "site__language",
+                Prefetch(
+                    "galleryitem_set",
+                    queryset=GalleryItem.objects.visible(
+                        self.request.user
+                    ).select_related(
+                        *get_select_related_media_fields("image"),
+                    ),
+                ),
+            )
+            .select_related(
                 "created_by",
                 "last_modified_by",
-                "galleryitem_set",
+                *get_select_related_media_fields("cover_image"),
             )
-            .select_related("cover_image")
         )
