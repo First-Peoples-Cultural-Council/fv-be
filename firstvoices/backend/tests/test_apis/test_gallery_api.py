@@ -1,4 +1,6 @@
-from backend.models.constants import Visibility
+import pytest
+
+from backend.models.constants import Role, Visibility
 from backend.models.galleries import Gallery, GalleryItem
 from backend.tests import factories
 
@@ -151,3 +153,28 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
         return {
             "title": "Test Gallery",
         }
+
+    @pytest.mark.django_db
+    def test_gallery_cover_image_not_unique(self):
+        """Galleries can be created using the same image as their cover image"""
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        image = factories.ImageFactory.create(site=site)
+        data = self.get_valid_data(site=site)
+        data["coverImage"] = str(image.id)
+
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+
+        data["title"] = "Test Gallery 2"
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+        assert Gallery.objects.filter(cover_image=image).count() == 2

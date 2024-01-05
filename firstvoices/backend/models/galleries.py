@@ -28,7 +28,7 @@ class Gallery(TranslatedTitleMixin, TranslatedIntroMixin, BaseSiteContentModel):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-    cover_image = models.OneToOneField(
+    cover_image = models.ForeignKey(
         Image,
         null=True,
         blank=True,
