@@ -49,6 +49,15 @@ class TestCharacterModel:
             CharacterFactory(site=ichar.site, title=ichar.title)
 
     @pytest.mark.django_db
+    def test_characters_onsave(self):
+        """Character metadata is set on save"""
+        char = CharacterFactory.create(title="a")
+        char = Character.objects.get(id=char.id)
+        char.title = char.title.upper()
+        char.save()
+        assert char.created != char.last_modified
+
+    @pytest.mark.django_db
     def test_variant_ignorable_same_name(self):
         """Ignorable can't be created with the same name as a character variant"""
         char = CharacterFactory.create()

@@ -63,9 +63,9 @@ class BaseModel(PermissionFilterMixin, RulesModel):
 
     logger = logging.getLogger(__name__)
 
-    def save(self, *args, **kwargs):
+    def save(self, set_modified_date=True, *args, **kwargs):
         """Update last_modified time if updating the model."""
-        if not self._state.adding:
+        if (not self._state.adding) and set_modified_date:
             self.last_modified = timezone.now()
         return super().save(*args, **kwargs)
 
