@@ -325,7 +325,7 @@ class TestVideoModel(ThumbnailTestMixin):
             "backend.models.media.VideoFile.get_video_info"
         ) as mock_get_video_info:
             mock_get_video_info.return_value = None
-            video.save(update_metadata_command=True)
+            video.save(update_file_metadata=True)
             assert (
                 f"Failed to get video info for [{video.content.name}]. \n"
                 in caplog.text

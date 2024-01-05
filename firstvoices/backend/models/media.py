@@ -64,8 +64,8 @@ class FileBase(BaseSiteContentModel):
     def __str__(self):
         return f"{self.content.name} ({self.site})"
 
-    def save(self, update_metadata_command=False, **kwargs):
-        if not self._state.adding and not update_metadata_command:
+    def save(self, update_file_metadata=False, **kwargs):
+        if not self._state.adding and not update_file_metadata:
             raise NotSupportedError(
                 "Editing existing files is not supported at this time. Please create a new file if you would like to "
                 "update a media file."
@@ -140,7 +140,7 @@ class ImageFile(VisualFileBase):
             "height": self.content.file.image.height,
         }
 
-    def save(self, update_metadata_command=False, **kwargs):
+    def save(self, update_file_metadata=False, **kwargs):
         try:
             image_dimensions = get_image_dimensions(self.content)
             self.width = image_dimensions[0]
@@ -152,7 +152,7 @@ class ImageFile(VisualFileBase):
                 f"Error: {e}\n"
             )
 
-        super().save(update_metadata_command, **kwargs)
+        super().save(update_file_metadata, **kwargs)
 
 
 def get_local_video_file(original):
@@ -175,7 +175,7 @@ class VideoFile(VisualFileBase):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-    def save(self, update_metadata_command=False, **kwargs):
+    def save(self, update_file_metadata=False, **kwargs):
         try:
             with get_local_video_file(self.content) as temp_file:
                 video_info = self.get_video_info(temp_file)
@@ -195,7 +195,7 @@ class VideoFile(VisualFileBase):
                 f"{e.stderr.decode('utf8')}\n"
             )
 
-        super().save(update_metadata_command, **kwargs)
+        super().save(update_file_metadata, **kwargs)
 
     def get_video_info(self, temp_file):
         probe = ffmpeg.probe(temp_file.name)
