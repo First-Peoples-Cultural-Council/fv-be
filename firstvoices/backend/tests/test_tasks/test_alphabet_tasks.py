@@ -340,6 +340,7 @@ class TestAlphabetTasks:
                 }
             ],
         }
+        entry = DictionaryEntry.objects.get(site=site, title="abc")
         assert entry.last_modified == entry_last_modified
 
     @pytest.mark.django_db

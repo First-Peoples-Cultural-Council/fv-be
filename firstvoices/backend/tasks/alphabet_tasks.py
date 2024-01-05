@@ -107,9 +107,7 @@ def recalculate_custom_order(site_slug: str):
         new_order = alphabet.get_custom_order(cleaned_title)
 
         # Save the entry to recalculate custom order and clean title
-        entry.title = cleaned_title
-        entry.custom_order = new_order
-        entry.save()
+        entry.save(set_modified_date=False)
 
         append_updated_entry(
             updated_entries,
