@@ -107,8 +107,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             200: inline_serializer(
                 name="ImmersionLabelMap",
                 fields={
-                    "key": serializers.CharField(),
-                    "dictionary_entry_title": serializers.CharField(),
+                    "key": serializers.CharField(default="Dictionary Entry Title"),
                 },
             ),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -133,12 +132,16 @@ class ImmersionLabelViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImmersionLabel.objects.filter(site__slug=site[0].slug).select_related(
-            "site",
-            "site__language",
-            "created_by",
-            "last_modified_by",
-            "dictionary_entry",
+        return (
+            ImmersionLabel.objects.filter(site__slug=site[0].slug)
+            .select_related(
+                "site",
+                "site__language",
+                "created_by",
+                "last_modified_by",
+                "dictionary_entry",
+            )
+            .order_by("key")
         )
 
     @action(detail=False, methods=["get"])
@@ -152,4 +155,6 @@ class ImmersionLabelViewSet(
             label.key: label.dictionary_entry.title for label in immersion_labels
         }
 
-        return Response(immersion_labels_map)
+        sorted_immersion_labels_map = dict(sorted(immersion_labels_map.items()))
+
+        return Response(sorted_immersion_labels_map)
