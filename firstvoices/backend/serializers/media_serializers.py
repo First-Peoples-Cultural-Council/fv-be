@@ -1,3 +1,5 @@
+import functools
+
 from drf_spectacular.utils import extend_schema_field
 from embed_video.backends import UnknownBackendException, detect_backend
 from rest_framework import serializers
@@ -255,15 +257,18 @@ class RelatedVideoLinksSerializer(serializers.Serializer):
     thumbnail = serializers.SerializerMethodField()
 
     @staticmethod
+    @functools.cache
     def get_video_link(obj):
         return obj
 
     @staticmethod
+    @functools.cache
     def get_embed_link(obj):
         backend = detect_backend(obj)
         return backend.get_url()
 
     @staticmethod
+    @functools.cache
     def get_thumbnail(obj):
         backend = detect_backend(obj)
         return backend.get_thumbnail_url()
