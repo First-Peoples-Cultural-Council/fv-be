@@ -200,6 +200,10 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "throttle",
     },
+    "wordsy": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "wordsy",
+    },
 }
 
 DATABASES = {"default": database.config()}
