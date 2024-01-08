@@ -158,6 +158,27 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 400
 
     @pytest.mark.django_db
+    def test_labels_ordered_by_key(self):
+        """
+        Tests that the labels are ordered alphabetically by key.
+        """
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        factories.ImmersionLabelFactory.create(site=site, key="b")
+        factories.ImmersionLabelFactory.create(site=site, key="c")
+        factories.ImmersionLabelFactory.create(site=site, key="a")
+
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 3
+        assert response.data["results"][0]["key"] == "a"
+        assert response.data["results"][1]["key"] == "b"
+        assert response.data["results"][2]["key"] == "c"
+
+    @pytest.mark.django_db
     def test_immersion_map_permissions(self):
         """
         Tests that the immersion map endpoint only shows viewable labels.
@@ -272,6 +293,24 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 200
         assert response.data[self.TEST_KEY] == str(entry.title)
         assert "test_key2" not in response.data
+
+    @pytest.mark.django_db
+    def test_immersion_map_ordered_by_key(self):
+        """
+        Tests that the immersion map endpoint is ordered alphabetically by key.
+        """
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        factories.ImmersionLabelFactory.create(site=site, key="c")
+        factories.ImmersionLabelFactory.create(site=site, key="a")
+        factories.ImmersionLabelFactory.create(site=site, key="b")
+
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
+
+        assert response.status_code == 200
+        assert list(response.data.keys()) == ["a", "b", "c"]
 
     @pytest.mark.django_db
     def test_label_key_read_only(self):
