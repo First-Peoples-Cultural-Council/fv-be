@@ -114,6 +114,18 @@ class TestDictionaryEntryModel:
         fetched_entry = DictionaryEntry.objects.get(id=entry.id)
         assert fetched_entry.split_chars_base == ["a", "üü", "a"]
 
+    @pytest.mark.django_db
+    def test_metadata_onsave(self):
+        site = SiteFactory.create()
+        entry = DictionaryEntry(title="1", type="WORD", site=site)
+        entry.save()
+
+        entry.title = "2"
+        entry.save()
+
+        fetched_entry = DictionaryEntry.objects.get(id=entry.id)
+        assert fetched_entry.created != fetched_entry.last_modified
+
 
 class TestDictionarySortProcessing:
     @pytest.mark.django_db

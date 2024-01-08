@@ -67,3 +67,20 @@ class TestSiteModel:
 
         with pytest.raises(IntegrityError):
             site.save()
+
+    @pytest.mark.django_db
+    def test_metadata_onsave(self):
+        admin_user = get_app_admin(AppRole.STAFF)
+        site = Site(
+            title=self.TEST_SITE_TITLE,
+            slug=self.TEST_SITE_SLUG,
+            created_by=admin_user,
+            last_modified_by=admin_user,
+        )
+        site.save()
+
+        site.title = self.TEST_SITE_TITLE * 2
+        site.save()
+
+        fetched_site = Site.objects.get(id=site.id)
+        assert fetched_site.created != fetched_site.last_modified

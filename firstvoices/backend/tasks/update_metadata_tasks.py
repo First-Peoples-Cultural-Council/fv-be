@@ -15,7 +15,7 @@ def update_missing_media_metadata(missing_media_files):
     )
     for file in missing_media_files:
         try:
-            file.save(update_metadata_command=True)
+            file.save(update_file_metadata=True)
         except FileNotFoundError as e:
             logger.warning(
                 f"File not found for {file.__class__.__name__} - {file.id}. Error: {e}"
