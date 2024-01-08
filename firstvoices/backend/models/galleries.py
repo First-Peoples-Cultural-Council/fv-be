@@ -28,7 +28,7 @@ class Gallery(TranslatedTitleMixin, TranslatedIntroMixin, BaseSiteContentModel):
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
-    cover_image = models.OneToOneField(
+    cover_image = models.ForeignKey(
         Image,
         null=True,
         blank=True,
@@ -71,7 +71,7 @@ class GalleryItem(BaseModel):
     gallery = models.ForeignKey(
         Gallery,
         on_delete=models.CASCADE,
-        related_name="images",
+        related_name="galleryitem_set",
     )
 
     image = models.ForeignKey(

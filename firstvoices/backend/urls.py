@@ -11,6 +11,7 @@ from backend.views.custom_order_recalculate_views import (
 )
 from backend.views.data_views import MTDSitesDataViewSet, SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
+from backend.views.gallery_views import GalleryViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
@@ -58,6 +59,7 @@ sites_router.register(
     basename="dictionary-cleanup",
 )
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
+sites_router.register(r"galleries", GalleryViewSet, basename="gallery")
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
