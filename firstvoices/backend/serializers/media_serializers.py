@@ -300,6 +300,15 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     )
     related_video_links = serializers.SerializerMethodField()
 
+    def update(self, instance, validated_data):
+        if (
+            "related_video_links" in self.context.get("request").data
+            and self.context.get("request").data["related_video_links"] == []
+        ):
+            instance.related_video_links = []
+
+        return super().update(instance, validated_data)
+
     @extend_schema_field(
         field={
             "type": "array",
