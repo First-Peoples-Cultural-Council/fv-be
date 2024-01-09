@@ -300,6 +300,32 @@ class RelatedMediaTestMixin(MediaTestMixin):
         )
         assert response.status_code in expected_response_codes
 
+    @pytest.mark.django_db
+    def test_update_remove_related_video_links(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        )
+
+        req_body = {"related_video_links": []}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code in [200, 201]
+        assert response_data["relatedVideoLinks"] == []
+
 
 class BaseMediaApiTest(
     MediaTestMixin,
