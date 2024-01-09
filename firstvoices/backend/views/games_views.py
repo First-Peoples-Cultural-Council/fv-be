@@ -57,9 +57,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
             # Filtering words based on their length excluding spaces
             words_qs = list(
                 DictionaryEntry.objects.annotate(
-                    chars_length=RawSQL(
-                        "ARRAY_LENGTH(ARRAY_REMOVE(split_chars_base, ' '), 1)", ()
-                    )
+                    chars_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
                 )
                 .filter(
                     site=site,
@@ -76,12 +74,14 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
         if len(words_qs):
             seed = get_wordsy_solution_seed(len(words_qs))
             solution = words_qs[seed]
+        else:
+            solution = ""
 
         return Response(
             data={
                 "orthography": orthography_qs,
                 "words": words_qs,
                 "valid_guesses": words_qs,  # to be expanded later with phrases that satisfy criteria
-                "solution": solution if solution else "",
+                "solution": solution,
             }
         )
