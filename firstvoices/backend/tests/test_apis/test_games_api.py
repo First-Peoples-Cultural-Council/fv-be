@@ -11,6 +11,7 @@ from backend.tests.factories import (
     get_site_with_member,
 )
 from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.views.games_views import CACHE_KEY_WORDSY
 
 
 class TestWordsyEndpoint(BaseSiteContentApiTest):
@@ -128,7 +129,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         )
 
         # Manually clearing the cache
-        caches["wordsy"].clear()
+        caches[CACHE_KEY_WORDSY].clear()
 
         # Fetching response again, the new entry should be now present in the words list
         # since cache is cleared, so the db should be accessed again

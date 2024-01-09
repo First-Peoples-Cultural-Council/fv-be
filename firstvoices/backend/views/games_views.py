@@ -9,11 +9,12 @@ from rest_framework.viewsets import GenericViewSet
 from backend.models import Character, DictionaryEntry
 from backend.views.base_views import SiteContentViewSetMixin
 
+CACHE_KEY_WORDSY = "wordsy"
 SOLUTION_LENGTH = 5
 
 
 def get_wordsy_solution_seed(num_words):
-    # inspired from previous fv-wordsy game with slight modification
+    # inspired from previous fv-wordsy game
     epoch = datetime(2024, 1, 1, 0, 0, 0).timestamp()  # wordsy game epoch
     now = datetime.now().timestamp()
     seconds_in_day = 86400000
@@ -42,17 +43,19 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
         cache_key_words = f"{site.title}-words"
 
         # orthography
-        orthography_qs = caches["wordsy"].get(cache_key_orthography)
+        orthography_qs = caches[CACHE_KEY_WORDSY].get(cache_key_orthography)
         if orthography_qs is None:
             orthography_qs = list(
                 Character.objects.filter(site=site)
                 .order_by("sort_order")
                 .values_list("title", flat=True)
             )
-            caches["wordsy"].set(cache_key_orthography, orthography_qs, cache_expiry)
+            caches[CACHE_KEY_WORDSY].set(
+                cache_key_orthography, orthography_qs, cache_expiry
+            )
 
         # words
-        words_qs = caches["wordsy"].get(cache_key_words)
+        words_qs = caches[CACHE_KEY_WORDSY].get(cache_key_words)
         if words_qs is None:
             # Filtering words based on their length excluding spaces
             words_qs = list(
@@ -70,7 +73,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
                 .order_by("custom_order")
                 .values_list("title", flat=True)
             )
-            caches["wordsy"].set(cache_key_words, words_qs, cache_expiry)
+            caches[CACHE_KEY_WORDSY].set(cache_key_words, words_qs, cache_expiry)
 
         if len(words_qs):
             seed = get_wordsy_solution_seed(len(words_qs))
