@@ -14,7 +14,7 @@ from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
 
 class TestWordsyEndpoint(BaseSiteContentApiTest):
     """
-    Tests for games/wordsy API
+    Tests for wordsy endpoint
     """
 
     API_LIST_VIEW = "api:wordsy-list"
@@ -44,7 +44,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     def test_all_invalid_words(self):
-        invalid_words_list = ["abc ab", "abcabc", "xyzav"]
+        invalid_words_list = ["abc ab", "abcabc", "xyzav", "ab ab"]
         # adding multiple dictionary entries
         for title in invalid_words_list:
             DictionaryEntryFactory(
@@ -64,7 +64,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
     @pytest.mark.django_db
     def test_mixed_words(self):
         # test to verify only valid words show up
-        invalid_words_list = ["abc ab", "abcabc", "xyzav"]
+        invalid_words_list = ["ab ab", "abc ab", "abcabc", "xyzav"]
         valid_words_list = ["ababa", "abcab", "bcbca", "cabca"]
 
         # adding multiple dictionary entries

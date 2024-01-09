@@ -77,7 +77,7 @@ sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
 sites_router.register(r"stats", StatsViewSet, basename="stats")
-sites_router.register(r"games/wordsy", WordsyViewSet, basename="wordsy")
+sites_router.register(r"wordsy", WordsyViewSet, basename="wordsy")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")

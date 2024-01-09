@@ -66,6 +66,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
                     exclude_from_kids=False,
                     chars_length__exact=SOLUTION_LENGTH,
                 )
+                .exclude(title__contains=" ")
                 .order_by("custom_order")
                 .values_list("title", flat=True)
             )
