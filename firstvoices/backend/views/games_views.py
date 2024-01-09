@@ -3,10 +3,18 @@ import math
 from django.core.cache import caches
 from django.db.models.expressions import RawSQL
 from django.utils.timezone import datetime
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+)
+from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from backend.models import Character, DictionaryEntry
+from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 
 CACHE_KEY_WORDSY = "wordsy"
@@ -22,6 +30,25 @@ def get_wordsy_solution_seed(num_words):
     return index % num_words
 
 
+@extend_schema_view(
+    list=extend_schema(
+        description="Returns the wordsy config for the day.",
+        responses={
+            200: inline_serializer(
+                name="wordsy_response",
+                fields={
+                    "orthography": serializers.ListField(),
+                    "words": serializers.ListField(),
+                    "validGuesses": serializers.ListField(),
+                    "solution": serializers.CharField(),
+                },
+            ),
+            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
+            404: OpenApiResponse(description="Todo: Site not found"),
+        },
+        parameters=[site_slug_parameter],
+    ),
+)
 class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
     http_method_names = ["get"]
     pagination_class = None
