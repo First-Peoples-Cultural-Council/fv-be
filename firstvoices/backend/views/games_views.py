@@ -82,10 +82,10 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
             )
 
         # words
-        words_qs = caches[CACHE_KEY_WORDSY].get(cache_key_words)
-        if words_qs is None:
+        words = caches[CACHE_KEY_WORDSY].get(cache_key_words)
+        if words is None:
             # Filtering words based on their length excluding spaces
-            words_qs = list(
+            words_qs = (
                 DictionaryEntry.objects.annotate(
                     chars_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
                 )
@@ -97,22 +97,26 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
                     chars_length__exact=SOLUTION_LENGTH,
                 )
                 .exclude(title__contains=" ")
-                .order_by("custom_order")
-                .values_list("title", flat=True)
+                .order_by("title", "custom_order")
+                .distinct("title")
+                .values_list("split_chars_base", flat=True)
             )
-            caches[CACHE_KEY_WORDSY].set(cache_key_words, words_qs, cache_expiry)
+            words = []
+            for split_chars in words_qs.iterator():
+                words.append("".join(split_chars))
+            caches[CACHE_KEY_WORDSY].set(cache_key_words, words, cache_expiry)
 
-        if len(words_qs):
-            seed = get_wordsy_solution_seed(len(words_qs))
-            solution = words_qs[seed]
+        if len(words):
+            seed = get_wordsy_solution_seed(len(words))
+            solution = words[seed]
         else:
             solution = ""
 
         return Response(
             data={
                 "orthography": orthography_qs,
-                "words": words_qs,
-                "valid_guesses": words_qs,  # to be expanded later with phrases that satisfy criteria
+                "words": words,
+                "valid_guesses": words,  # to be expanded later with phrases that satisfy criteria
                 "solution": solution,
             }
         )
