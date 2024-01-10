@@ -12,6 +12,7 @@ from backend.views.custom_order_recalculate_views import (
 from backend.views.data_views import MTDSitesDataViewSet, SitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
+from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
@@ -76,6 +77,7 @@ sites_router.register(r"songs", SongViewSet, basename="song")
 sites_router.register(r"videos", VideoViewSet, basename="video")
 sites_router.register(r"widgets", SiteWidgetViewSet, basename="sitewidget")
 sites_router.register(r"stats", StatsViewSet, basename="stats")
+sites_router.register(r"wordsy", WordsyViewSet, basename="wordsy")
 
 # stories and pages
 sites_router.register(r"stories", StoryViewSet, basename="story")

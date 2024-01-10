@@ -93,3 +93,8 @@ def update_widget_list_order(widgets, widget_list_two):
 
 def find_object_by_id(results_list, obj_id):
     return next((obj for obj in results_list if obj["id"] == str(obj_id)), None)
+
+
+def equate_list_content_without_order(actual, expected):
+    difference = set(actual) ^ set(expected)
+    return not difference

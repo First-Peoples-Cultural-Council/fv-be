@@ -188,17 +188,23 @@ STATIC_ROOT = "static"
 
 WSGI_APPLICATION = "firstvoices.wsgi.application"
 
+LOCMEM_CACHE_BACKEND = "django.core.cache.backends.locmem.LocMemCache"
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.dummy.DummyCache",
     },
     "auth": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "BACKEND": LOCMEM_CACHE_BACKEND,
         "LOCATION": "auth",
     },
     "throttle": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "BACKEND": LOCMEM_CACHE_BACKEND,
         "LOCATION": "throttle",
+    },
+    "wordsy": {
+        "BACKEND": LOCMEM_CACHE_BACKEND,
+        "LOCATION": "wordsy",
     },
 }
 
