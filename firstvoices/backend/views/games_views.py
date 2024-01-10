@@ -103,7 +103,9 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
             )
             words = []
             for split_chars in words_qs.iterator():
-                words.append("".join(split_chars))
+                title_from_base_chars = "".join(split_chars)
+                if title_from_base_chars not in words:
+                    words.append(title_from_base_chars)
             caches[CACHE_KEY_WORDSY].set(cache_key_words, words, cache_expiry)
 
         if len(words):
