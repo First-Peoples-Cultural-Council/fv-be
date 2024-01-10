@@ -12,6 +12,7 @@ from backend.tests.factories import (
     get_site_with_member,
 )
 from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.utils import equate_list_content_without_order
 from backend.views.games_views import CACHE_KEY_WORDSY
 
 
@@ -30,9 +31,9 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
         self.client.force_authenticate(user=self.member_user)
-        char_a = CharacterFactory.create(site=self.site, title="a")
-        char_b = CharacterFactory.create(site=self.site, title="b")
-        char_c = CharacterFactory.create(site=self.site, title="c")
+        char_a = CharacterFactory.create(site=self.site, title="a", sort_order=1)
+        char_b = CharacterFactory.create(site=self.site, title="b", sort_order=2)
+        char_c = CharacterFactory.create(site=self.site, title="c", sort_order=3)
         CharacterVariantFactory.create(title="A", base_character=char_a)
         CharacterVariantFactory.create(title="B", base_character=char_b)
         CharacterVariantFactory.create(title="C", base_character=char_c)
@@ -74,7 +75,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         # test to verify only valid words show up
         invalid_words_list = ["ab Ab", "abC ab", "abCabc", "Xyzav"]
         valid_words_list = ["ABabA", "BcbCa", "aBcAb", "caBcA"]
-        expected_response = ["ababa", "bcbca", "abcab", "cabca"]  # base character form
+        expected_words = ["ababa", "abcab", "bcbca", "cabca"]  # base character form
 
         # adding multiple dictionary entries
         for title in invalid_words_list + valid_words_list:
@@ -87,9 +88,12 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        assert response_data["words"] == expected_response
-        assert response_data["validGuesses"] == expected_response
-        assert response_data["solution"] in expected_response
+        actual_words = response_data["words"]
+        actual_valid_guesses = response_data["validGuesses"]
+
+        assert equate_list_content_without_order(actual_words, expected_words)
+        assert equate_list_content_without_order(actual_valid_guesses, expected_words)
+        assert response_data["solution"] in expected_words
 
     @pytest.mark.django_db
     def test_no_duplicate_words(self):
@@ -111,7 +115,9 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
 
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
-        assert response_data["words"] == expected_words
+        actual_words = response_data["words"]
+
+        assert equate_list_content_without_order(actual_words, expected_words)
 
     @pytest.mark.django_db
     def test_cache_used_word_deleted(self):
