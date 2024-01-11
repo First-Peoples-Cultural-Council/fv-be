@@ -7,6 +7,7 @@ from backend.tests.factories import (
     CharacterVariantFactory,
     IgnoredCharacterFactory,
 )
+from backend.utils.character_utils import clean_input
 
 
 class TestAlphabetModel:
@@ -177,3 +178,18 @@ class TestAlphabetModel:
         s = "ABC-.-&"
         base = alphabet.get_base_form(s)
         assert base == "abc-.-&"
+
+    @pytest.mark.django_db
+    def test_cleaned_form_is_normalized(self):
+        """Clean confusables can't produce a non-normalized string"""
+        alphabet = AlphabetFactory.create(
+            input_to_canonical_map=[{"in": "ẕ", "out": "z̲"}],
+        )
+        CharacterFactory(site=alphabet.site, title="z̲")
+
+        s = "ẕ́"
+        new_form = alphabet.clean_confusables(s)
+        assert new_form == clean_input(new_form)
+        order = alphabet.get_custom_order(new_form)
+        # custom order is successful and reflects nfc ordering issue
+        assert order == "⚑ź⚑̲"
