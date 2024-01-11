@@ -9,7 +9,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
 
 from backend.permissions import predicates
-from backend.utils.character_utils import CustomSorter
+from backend.utils.character_utils import CustomSorter, nfc
 
 from .app import AppJson
 from .base import BaseSiteContentModel
@@ -388,7 +388,8 @@ class Alphabet(BaseSiteContentModel):
         variant characters.
         """
         if self.preprocess_transducer:
-            return self.preprocess_transducer(text).output_string
+            new_text = self.preprocess_transducer(text).output_string
+            return nfc(new_text)
         else:
             return text
 
