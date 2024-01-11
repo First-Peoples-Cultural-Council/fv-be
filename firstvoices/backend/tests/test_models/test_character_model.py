@@ -8,10 +8,16 @@ from backend.tests.factories import (
     CharacterVariantFactory,
     IgnoredCharacterFactory,
 )
+from backend.tests.test_models.test_media_models import RelatedVideoLinksValidationMixin
 from backend.utils.character_utils import CustomSorter
 
 
-class TestCharacterModel:
+class TestCharacterModel(RelatedVideoLinksValidationMixin):
+    def create_instance_with_related_video_links(self, site, related_video_links):
+        return CharacterFactory.create(
+            site=site, related_video_links=related_video_links
+        )
+
     @pytest.mark.django_db
     def test_characters_same_name(self):
         """Character can't be created with the same name as another"""

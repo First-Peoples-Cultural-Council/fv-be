@@ -1,4 +1,3 @@
-import copy
 import json
 
 import pytest
@@ -17,7 +16,13 @@ from backend.models.dictionary import (
 from backend.tests import factories
 
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import RelatedMediaTestMixin
+from .base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 
 
 class TestDictionaryEndpoint(
@@ -37,7 +42,9 @@ class TestDictionaryEndpoint(
     model = DictionaryEntry
 
     def create_minimal_instance(self, site, visibility):
-        entry = factories.DictionaryEntryFactory.create(site=site, visibility=visibility)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=visibility
+        )
         factories.AcknowledgementFactory.create(dictionary_entry=entry)
         factories.AlternateSpellingFactory.create(dictionary_entry=entry)
         factories.NoteFactory.create(dictionary_entry=entry)
@@ -76,6 +83,7 @@ class TestDictionaryEndpoint(
             "relatedAudio": list(map(lambda x: str(x.id), related_audio)),
             "relatedImages": list(map(lambda x: str(x.id), related_images)),
             "relatedVideos": list(map(lambda x: str(x.id), related_videos)),
+            "relatedVideoLinks": [],
         }
 
     def get_valid_data_with_nulls(self, site=None):
@@ -103,6 +111,7 @@ class TestDictionaryEndpoint(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def add_related_objects(self, instance):
@@ -129,10 +138,14 @@ class TestDictionaryEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
-        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=actual_instance)
+        acknowledgements = Acknowledgement.objects.filter(
+            dictionary_entry=actual_instance
+        )
         assert len(acknowledgements) == len(expected_data["acknowledgements"])
 
-        alternate_spellings = AlternateSpelling.objects.filter(dictionary_entry=actual_instance)
+        alternate_spellings = AlternateSpelling.objects.filter(
+            dictionary_entry=actual_instance
+        )
         assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
 
         notes = Note.objects.filter(dictionary_entry=actual_instance)
@@ -143,6 +156,8 @@ class TestDictionaryEndpoint(
 
         pronunciations = Pronunciation.objects.filter(dictionary_entry=actual_instance)
         assert len(pronunciations) == len(expected_data["pronunciations"])
+
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
@@ -167,6 +182,10 @@ class TestDictionaryEndpoint(
         pronunciations = actual_response["pronunciations"]
         assert len(pronunciations) == len(expected_data["pronunciations"])
 
+        assert (
+            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
+        )
+
     def assert_created_instance(self, pk, data):
         instance = self.model.objects.get(pk=pk)
         return self.get_expected_response(instance, instance.site)
@@ -184,13 +203,17 @@ class TestDictionaryEndpoint(
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
+        if related_video_links is None:
+            related_video_links = []
         return factories.DictionaryEntryFactory.create(
             site=site,
             visibility=visibility,
             related_images=related_images,
             related_audio=related_audio,
             related_videos=related_videos,
+            related_video_links=related_video_links,
         )
 
     def get_expected_response(self, instance, site):
@@ -204,35 +227,37 @@ class TestDictionaryEndpoint(
             "categories": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "acknowledgements": [{
-                "id": str(x.id),
-                "text": x.text
-            } for x in instance.acknowledgement_set.all()],
-            "alternateSpellings": [{
-                "id": str(x.id),
-                "text": x.text
-            } for x in instance.alternatespelling_set.all()],
-            "notes": [{
-                "id": str(x.id),
-                "text": x.text
-            } for x in instance.note_set.all()],
-            "translations": [{
-                "id": str(x.id),
-                "text": x.text
-            } for x in instance.translation_set.all()],
+            "acknowledgements": [
+                {"id": str(x.id), "text": x.text}
+                for x in instance.acknowledgement_set.all()
+            ],
+            "alternateSpellings": [
+                {"id": str(x.id), "text": x.text}
+                for x in instance.alternatespelling_set.all()
+            ],
+            "notes": [
+                {"id": str(x.id), "text": x.text} for x in instance.note_set.all()
+            ],
+            "translations": [
+                {"id": str(x.id), "text": x.text}
+                for x in instance.translation_set.all()
+            ],
             "partOfSpeech": {
                 "id": str(instance.part_of_speech.id),
                 "title": instance.part_of_speech.title,
-                "parent": None
-            } if instance.part_of_speech else None,
-            "pronunciations": [{
-                "id": str(x.id),
-                "text": x.text
-            } for x in instance.pronunciation_set.all()],
+                "parent": None,
+            }
+            if instance.part_of_speech
+            else None,
+            "pronunciations": [
+                {"id": str(x.id), "text": x.text}
+                for x in instance.pronunciation_set.all()
+            ],
             "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def create_original_instance_for_patch(self, site):
@@ -248,6 +273,7 @@ class TestDictionaryEndpoint(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         )
 
         factories.AcknowledgementFactory.create(dictionary_entry=dictionary_entry)
@@ -303,11 +329,17 @@ class TestDictionaryEndpoint(
             original_instance, updated_instance
         )
 
-        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=updated_instance)
+        acknowledgements = Acknowledgement.objects.filter(
+            dictionary_entry=updated_instance
+        )
         assert len(acknowledgements) == len(original_instance.acknowledgement_set.all())
 
-        alternate_spellings = AlternateSpelling.objects.filter(dictionary_entry=updated_instance)
-        assert len(alternate_spellings) == len(original_instance.alternatespelling_set.all())
+        alternate_spellings = AlternateSpelling.objects.filter(
+            dictionary_entry=updated_instance
+        )
+        assert len(alternate_spellings) == len(
+            original_instance.alternatespelling_set.all()
+        )
 
         notes = Note.objects.filter(dictionary_entry=updated_instance)
         assert len(notes) == len(original_instance.note_set.all())
@@ -317,6 +349,11 @@ class TestDictionaryEndpoint(
 
         pronunciations = Pronunciation.objects.filter(dictionary_entry=updated_instance)
         assert len(pronunciations) == len(original_instance.pronunciation_set.all())
+
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_patch_instance_updated_fields(
         self, data, updated_instance: DictionaryEntry
@@ -340,6 +377,18 @@ class TestDictionaryEndpoint(
         self.assert_update_patch_response_related_media(
             original_instance, actual_response
         )
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
     @pytest.mark.django_db
     def test_list_permissions(self):
@@ -503,6 +552,7 @@ class TestDictionaryEndpoint(
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],
+                "relatedVideoLinks": [],
                 "type": entry2.type,
             }
         ]
@@ -820,7 +870,9 @@ class TestDictionaryEndpoint(
 
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
-        part_of_speech = backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
+        part_of_speech = (
+            backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
+        )
         related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         data = {
@@ -837,6 +889,7 @@ class TestDictionaryEndpoint(
             "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Huh-lo"}],
             "related_dictionary_entries": [str(related_entry.id)],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.post(
@@ -865,6 +918,18 @@ class TestDictionaryEndpoint(
         assert response_data["relatedDictionaryEntries"][0]["id"] == str(
             related_entry.id
         )
+        assert response_data["relatedVideoLinks"] == [
+            {
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
         # Test DB changes
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
@@ -875,6 +940,10 @@ class TestDictionaryEndpoint(
         assert entry_in_db.exclude_from_games is False
         assert entry_in_db.exclude_from_kids is False
         assert entry_in_db.part_of_speech.id == part_of_speech.id
+        assert entry_in_db.related_video_links == [
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
+        ]
 
         acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
         assert acknowledgements.count() == 2
@@ -919,6 +988,36 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 400
 
+    @staticmethod
+    def assert_related_media_response_and_data(response, audio, image, video):
+        # Test API response
+        response_data = json.loads(response.content)
+        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
+        assert response_data["relatedImages"][0]["id"] == str(image.id)
+        assert response_data["relatedVideos"][0]["id"] == str(video.id)
+        assert response_data["relatedVideoLinks"] == [
+            {
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
+
+        # Test DB changes
+        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
+        assert entry_in_db.related_audio.first().id == audio.id
+        assert entry_in_db.related_images.first().id == image.id
+        assert entry_in_db.related_videos.first().id == video.id
+        assert entry_in_db.related_video_links == [
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
+        ]
+
     @pytest.mark.django_db
     def test_dictionary_entry_create_related_media(self):
         site, user = factories.get_site_with_member(
@@ -940,6 +1039,7 @@ class TestDictionaryEndpoint(
             "related_audio": [str(audio.id)],
             "related_images": [str(image.id)],
             "related_videos": [str(video.id)],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.post(
@@ -948,20 +1048,24 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 201
 
-        # Test API response
-        response_data = json.loads(response.content)
-        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
-        assert response_data["relatedImages"][0]["id"] == str(image.id)
-        assert response_data["relatedVideos"][0]["id"] == str(video.id)
+        self.assert_related_media_response_and_data(response, audio, image, video)
 
-        # Test DB changes
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.related_audio.first().id == audio.id
-        assert entry_in_db.related_images.first().id == image.id
-        assert entry_in_db.related_videos.first().id == video.id
-
+    @pytest.mark.parametrize(
+        "invalid_data_key, invalid_data_value",
+        [
+            ("related_audio", [1234]),
+            ("related_images", [1234]),
+            ("related_videos", [1234]),
+            (
+                "related_video_links",
+                ["https://www.soundcloud.com/", "https://invalid.com/"],
+            ),
+        ],
+    )
     @pytest.mark.django_db
-    def test_dictionary_entry_create_invalid_related_media(self):
+    def test_dictionary_entry_create_invalid_related_media(
+        self, invalid_data_key, invalid_data_value
+    ):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
         )
@@ -973,9 +1077,7 @@ class TestDictionaryEndpoint(
             "visibility": "public",
             "exclude_from_games": False,
             "exclude_from_kids": False,
-            "related_audio": [1234],
-            "related_images": [1234],
-            "related_videos": [1234],
+            invalid_data_key: invalid_data_value,
         }
 
         response = self.client.post(
@@ -983,6 +1085,46 @@ class TestDictionaryEndpoint(
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.parametrize(
+        "related_video_links, expected_response_code",
+        [
+            ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], 201),
+            (["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"], 201),
+            (
+                [
+                    YOUTUBE_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                ],
+                400,
+            ),
+            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], 400),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_dictionary_entry_create_duplicate_related_video_links(
+        self, related_video_links, expected_response_code
+    ):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "title": "Test Word One",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "public",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "related_video_links": related_video_links,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == expected_response_code
 
     @pytest.mark.django_db
     def test_dictionary_entry_update(self):
@@ -993,7 +1135,9 @@ class TestDictionaryEndpoint(
 
         factories.AlphabetFactory.create(site=site)
         category = factories.CategoryFactory.create(site=site)
-        part_of_speech = backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
+        part_of_speech = (
+            backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
+        )
         related_entry = factories.DictionaryEntryFactory.create(site=site)
 
         entry = factories.DictionaryEntryFactory.create(
@@ -1019,6 +1163,7 @@ class TestDictionaryEndpoint(
             "part_of_speech": str(part_of_speech.id),
             "pronunciations": [{"text": "Good-bye"}],
             "related_dictionary_entries": [str(related_entry.id)],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.put(
@@ -1046,6 +1191,18 @@ class TestDictionaryEndpoint(
         assert response_data["relatedDictionaryEntries"][0]["id"] == str(
             related_entry.id
         )
+        assert response_data["relatedVideoLinks"] == [
+            {
+                "videoLink": YOUTUBE_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": VIMEO_VIDEO_LINK,
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
         # Test DB changes
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
@@ -1080,6 +1237,11 @@ class TestDictionaryEndpoint(
         assert pronunciations.first().text == "Good-bye"
 
         assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
+
+        assert entry_in_db.related_video_links == [
+            YOUTUBE_VIDEO_LINK,
+            VIMEO_VIDEO_LINK,
+        ]
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_invalid_related_entries(self):
@@ -1154,6 +1316,7 @@ class TestDictionaryEndpoint(
             "related_audio": [str(audio.id)],
             "related_images": [str(image.id)],
             "related_videos": [str(video.id)],
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         }
 
         response = self.client.put(
@@ -1164,18 +1327,24 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 200
 
-        response_data = response.json()
-        assert response_data["relatedAudio"][0]["id"] == str(audio.id)
-        assert response_data["relatedImages"][0]["id"] == str(image.id)
-        assert response_data["relatedVideos"][0]["id"] == str(video.id)
+        self.assert_related_media_response_and_data(response, audio, image, video)
 
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.related_audio.first().id == audio.id
-        assert entry_in_db.related_images.first().id == image.id
-        assert entry_in_db.related_videos.first().id == video.id
-
+    @pytest.mark.parametrize(
+        "invalid_data_key, invalid_data_value",
+        [
+            ("related_audio", ["1234"]),
+            ("related_images", ["1234"]),
+            ("related_videos", ["1234"]),
+            (
+                "related_video_links",
+                ["https://www.soundcloud.com/", "https://invalid.com/"],
+            ),
+        ],
+    )
     @pytest.mark.django_db
-    def test_dictionary_entry_update_invalid_related_media(self):
+    def test_dictionary_entry_update_invalid_related_media(
+        self, invalid_data_key, invalid_data_value
+    ):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
         )
@@ -1189,9 +1358,7 @@ class TestDictionaryEndpoint(
             "visibility": "team",
             "exclude_from_games": True,
             "exclude_from_kids": True,
-            "related_audio": ["1234"],
-            "related_images": ["1234"],
-            "related_videos": ["1234"],
+            invalid_data_key: invalid_data_value,
         }
 
         response = self.client.put(

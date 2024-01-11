@@ -7,10 +7,15 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
-from backend.models.constants import Visibility
+from backend.models.constants import Role, Visibility
 from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
+
+VIMEO_VIDEO_LINK = "https://vimeo.com/"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/"
+MOCK_EMBED_LINK = "https://mock_embed_link.com/"
+MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
 
 
 class FormDataMixin:
@@ -136,6 +141,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
         raise NotImplementedError
 
@@ -157,6 +163,29 @@ class RelatedMediaTestMixin(MediaTestMixin):
         )
         assert actual_response["relatedVideos"][0]["id"] == str(
             original_instance.related_videos.first().id
+        )
+
+    def assert_update_response_related_media(self, expected_data, actual_response):
+        assert len(actual_response["relatedAudio"]) == len(
+            expected_data["relatedAudio"]
+        )
+        for i, a in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == a
+
+        assert len(actual_response["relatedVideos"]) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, v in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == v
+
+        assert len(actual_response["relatedImages"]) == len(
+            expected_data["relatedImages"]
+        )
+        for i, img in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == img
+
+        assert (
+            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
         )
 
     @pytest.mark.django_db
@@ -226,6 +255,76 @@ class RelatedMediaTestMixin(MediaTestMixin):
                 expected.pop(ignored_field)
 
         assert response_data["relatedVideos"][0] == expected
+
+    @pytest.mark.parametrize(
+        "related_video_links, expected_response_codes",
+        [
+            ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], [200, 201]),
+            (
+                ["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"],
+                [200, 201],
+            ),
+            (
+                [
+                    YOUTUBE_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                    VIMEO_VIDEO_LINK,
+                ],
+                [400],
+            ),
+            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], [400]),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_update_duplicate_related_video_links(
+        self, related_video_links, expected_response_codes
+    ):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_video_links=[],
+        )
+
+        req_body = {"related_video_links": related_video_links}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        assert response.status_code in expected_response_codes
+
+    @pytest.mark.django_db
+    def test_update_remove_related_video_links(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        instance = self.create_instance_with_media(
+            site=site,
+            visibility=Visibility.TEAM,
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        )
+
+        req_body = {"related_video_links": []}
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug),
+            format="json",
+            data=req_body,
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code in [200, 201]
+        assert response_data["relatedVideoLinks"] == []
 
 
 class BaseMediaApiTest(

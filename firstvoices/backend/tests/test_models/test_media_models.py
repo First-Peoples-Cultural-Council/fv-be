@@ -21,6 +21,7 @@ from backend.models.media import (
 )
 from backend.tests import factories
 from backend.tests.factories.media_factories import get_video_content
+from backend.tests.test_apis.base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -342,21 +343,27 @@ class TestImageModel(ThumbnailTestMixin):
         return self.file_factory.create()
 
 
-class TestEmbeddedVideoModel:
+class RelatedVideoLinksValidationMixin:
+    """
+    A mixin to test the validation of related video links.
+    """
+
+    def create_instance_with_related_video_links(self, site, related_video_links):
+        raise NotImplementedError
+
     @pytest.mark.parametrize(
         "url",
         ["", "not valid", "https://www.invalid-url.com/", "https://soundcloud.com/"],
     )
     @pytest.mark.django_db
-    def test_embeded_invalid_base_site(self, url):
+    def test_related_video_links_invalid_base_site(self, url):
         site = factories.SiteFactory.create()
-
         try:
-            content_field = EmbedVideoField(url)
-            embedded_video = factories.EmbeddedVideoFactory.create(
-                site=site, content=content_field
+            related_video_links = [EmbedVideoField(url)]
+            instance = self.create_instance_with_related_video_links(
+                site=site, related_video_links=related_video_links
             )
-            detect_backend(embedded_video.content.verbose_name)
+            detect_backend(instance.related_video_links[0].verbose_name)
             assert False
         except UnknownBackendException:
             assert True
@@ -364,20 +371,19 @@ class TestEmbeddedVideoModel:
     @pytest.mark.parametrize(
         "url, backend_class",
         [
-            ("https://www.youtube.com/", YoutubeBackend),
-            ("https://vimeo.com/", VimeoBackend),
+            (YOUTUBE_VIDEO_LINK, YoutubeBackend),
+            (VIMEO_VIDEO_LINK, VimeoBackend),
         ],
     )
     @pytest.mark.django_db
-    def test_embeded_valid_base_site(self, url, backend_class):
+    def test_related_video_links_valid_base_site(self, url, backend_class):
         site = factories.SiteFactory.create()
-
         try:
-            content_field = EmbedVideoField(url)
-            embedded_video = factories.EmbeddedVideoFactory.create(
-                site=site, content=content_field
+            related_video_links = [EmbedVideoField(url)]
+            instance = self.create_instance_with_related_video_links(
+                site=site, related_video_links=related_video_links
             )
-            backend = detect_backend(embedded_video.content.verbose_name)
+            backend = detect_backend(instance.related_video_links[0].verbose_name)
             assert isinstance(backend, backend_class)
         except UnknownBackendException:
             assert False

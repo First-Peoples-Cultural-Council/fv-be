@@ -1,13 +1,10 @@
 from django.contrib import admin
-from django.utils.html import format_html
-from embed_video.admin import AdminVideoMixin
 
 from backend.admin import BaseAdmin, BaseSiteContentAdmin, HiddenBaseAdmin
 from backend.admin.base_admin import FilterAutocompleteBySiteMixin
 from backend.models.media import (
     Audio,
     AudioSpeaker,
-    EmbeddedVideo,
     File,
     Image,
     ImageFile,
@@ -113,26 +110,6 @@ class VisualMediaAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
             ],
         )
         return queryset, use_distinct
-
-
-@admin.register(EmbeddedVideo)
-class EmbeddedVideoAdmin(BaseSiteContentAdmin, AdminVideoMixin):
-    fields = (
-        "site",
-        "title",
-        "content",
-    )
-    list_display = (
-        "title",
-        "content_url",
-    ) + BaseSiteContentAdmin.list_display
-    search_fields = (
-        "title",
-        "content",
-    )
-
-    def content_url(self, obj):
-        return format_html("<a href='{url}'>{url}</a>", url=obj.content)
 
 
 @admin.register(AudioSpeaker)

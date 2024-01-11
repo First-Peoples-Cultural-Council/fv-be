@@ -3,11 +3,17 @@ import json
 import pytest
 
 from backend.models.constants import Role, Visibility
+from backend.models.song import Lyric, Song
 from backend.tests import factories
 
-from backend.models.song import Lyric, Song
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import RelatedMediaTestMixin
+from .base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 
 
 class TestSongEndpoint(
@@ -35,14 +41,22 @@ class TestSongEndpoint(
             "relatedAudio": [str(related_audio.id)],
             "relatedImages": [str(related_image.id)],
             "relatedVideos": [str(related_video.id)],
+            "relatedVideoLinks": [],
             "hideOverlay": False,
             "title": "Title",
             "visibility": "Public",
             "titleTranslation": "A translation of the title",
             "introduction": "introduction",
             "introductionTranslation": "A translation of the introduction",
-            "notes": [{"id": 1, "text": "Test Note One"}, {"id": "5", "text": "Test Note Two"}, {"id": "2", "text": "Test Note Three"}],
-            "acknowledgements": [{"id": "5", "text": "Test Author"}, {"id": "51", "text": "Another Acknowledgement"}],
+            "notes": [
+                {"id": 1, "text": "Test Note One"},
+                {"id": "5", "text": "Test Note Two"},
+                {"id": "2", "text": "Test Note Three"},
+            ],
+            "acknowledgements": [
+                {"id": "5", "text": "Test Author"},
+                {"id": "51", "text": "Another Acknowledgement"},
+            ],
             "lyrics": [
                 {
                     "text": "First lyrics page",
@@ -95,6 +109,7 @@ class TestSongEndpoint(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def assert_updated_instance(self, expected_data, actual_instance: Song):
@@ -113,11 +128,11 @@ class TestSongEndpoint(
         for i, n in enumerate(expected_data["notes"]):
             assert actual_instance.notes[i] == n["text"]
 
-        assert len(expected_data["acknowledgements"]) == len(actual_instance.acknowledgements)
+        assert len(expected_data["acknowledgements"]) == len(
+            actual_instance.acknowledgements
+        )
         for i, ack in enumerate(expected_data["acknowledgements"]):
-            assert (
-                actual_instance.acknowledgements[i] == ack["text"]
-            )
+            assert actual_instance.acknowledgements[i] == ack["text"]
 
         actual_lyrics = Lyric.objects.filter(song__id=actual_instance.id)
 
@@ -127,25 +142,17 @@ class TestSongEndpoint(
             assert lyric["text"] == actual_lyrics[index].text
             assert lyric["translation"] == actual_lyrics[index].translation
 
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
+
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
 
         assert len(actual_response["lyrics"]) == len(expected_data["lyrics"])
         for i, l in enumerate(expected_data["lyrics"]):
-            assert actual_response["lyrics"][i]["text"] ==l["text"]
+            assert actual_response["lyrics"][i]["text"] == l["text"]
             assert actual_response["lyrics"][i]["translation"] == l["translation"]
 
-        assert len(actual_response["relatedAudio"]) == len(expected_data["relatedAudio"])
-        for i, a in enumerate(expected_data["relatedAudio"]):
-            assert actual_response["relatedAudio"][i]["id"] == a
-
-        assert len(actual_response["relatedVideos"]) == len(expected_data["relatedVideos"])
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
-
-        assert len(actual_response["relatedImages"]) == len(expected_data["relatedImages"])
-        for i, img in enumerate(expected_data["relatedImages"]):
-            assert actual_response["relatedImages"][i]["id"] == img
+        self.assert_update_response_related_media(expected_data, actual_response)
 
     def assert_created_instance(self, pk, data):
         instance = Song.objects.get(pk=pk)
@@ -169,13 +176,17 @@ class TestSongEndpoint(
         related_images=None,
         related_audio=None,
         related_videos=None,
+        related_video_links=None,
     ):
+        if related_video_links is None:
+            related_video_links = []
         return factories.SongFactory.create(
             site=site,
             visibility=visibility,
             related_images=related_images,
             related_audio=related_audio,
             related_videos=related_videos,
+            related_video_links=related_video_links,
         )
 
     def get_expected_list_response_item_summary(self, song, site):
@@ -211,6 +222,7 @@ class TestSongEndpoint(
             "relatedAudio": [],
             "relatedImages": [],
             "relatedVideos": [],
+            "relatedVideoLinks": [],
         }
 
     def create_original_instance_for_patch(self, site):
@@ -231,6 +243,7 @@ class TestSongEndpoint(
             related_audio=(audio,),
             related_images=(image,),
             related_videos=(video,),
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
         )
         factories.LyricsFactory.create(song=song)
         return song
@@ -259,6 +272,10 @@ class TestSongEndpoint(
             == original_instance.introduction_translation
         )
         assert updated_instance.lyrics.first() == original_instance.lyrics.first()
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Song):
         assert updated_instance.title == data["title"]
@@ -295,6 +312,18 @@ class TestSongEndpoint(
             actual_response["acknowledgements"][0]["text"]
             == original_instance.acknowledgements[0]
         )
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
     @pytest.mark.django_db
     def test_lyrics_order(self):

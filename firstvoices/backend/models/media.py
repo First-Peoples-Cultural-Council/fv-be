@@ -13,6 +13,7 @@ from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import NotSupportedError, models
 from django.utils.translation import gettext as _
+from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
 
@@ -22,6 +23,7 @@ from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 from .constants import MAX_FILEFIELD_LENGTH
+from .validators import validate_no_duplicate_urls
 
 
 class Person(BaseSiteContentModel):
@@ -589,23 +591,6 @@ class Video(ThumbnailMixin, MediaBase):
             setattr(self, attribute_name, image_file_model)
 
 
-class EmbeddedVideo(MediaBase):
-    class Meta:
-        verbose_name = _("Embedded Video")
-        verbose_name_plural = _("Embedded Videos")
-        rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    content = EmbedVideoField()
-
-    def __str__(self):
-        return f"{self.title} / {self.site} (Embedded Video)"
-
-
 class RelatedMediaMixin(models.Model):
     """
     Related media fields with standard names.
@@ -617,3 +602,9 @@ class RelatedMediaMixin(models.Model):
     related_audio = models.ManyToManyField(Audio, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
+    related_video_links = ArrayField(
+        EmbedVideoField(),
+        blank=True,
+        default=list,
+        validators=[validate_no_duplicate_urls],
+    )
