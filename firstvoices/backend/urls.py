@@ -16,6 +16,7 @@ from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
+from backend.views.language_views import LanguageViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
@@ -34,6 +35,7 @@ from backend.views.word_of_the_day_views import WordOfTheDayView
 # app-level APIs
 
 ROUTER = CustomRouter()
+ROUTER.register(r"languages", LanguageViewSet, basename="language")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"search", BaseSearchViewSet, basename="search")
