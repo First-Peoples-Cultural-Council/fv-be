@@ -146,7 +146,7 @@ class DictionaryEntryDetailSerializer(
         many=True, required=False, source="pronunciation_set", default=[]
     )
 
-    is_immersion_label = serializers.SerializerMethodField()
+    is_immersion_label = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
 
