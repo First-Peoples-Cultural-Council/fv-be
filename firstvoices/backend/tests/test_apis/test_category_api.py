@@ -1,4 +1,3 @@
-import copy
 import json
 
 import pytest
@@ -64,11 +63,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         }
 
     def add_expected_defaults(self, data):
-        return {
-            **data,
-            "parent": None,
-            "description": ""
-        }
+        return {**data, "parent": None, "description": ""}
 
     def assert_updated_instance(self, expected_data, actual_instance):
         assert actual_instance.title == expected_data["title"]
@@ -604,3 +599,35 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response_parent_category_one["children"][0]["id"] == str(
             child_category_one.id
         )
+
+    @pytest.mark.django_db
+    def test_nested_lists_with_contains_parameter_returns_distinct_categories(self):
+        Category.objects.filter(site=self.site).delete()
+
+        parent_category = ParentCategoryFactory.create(site=self.site, title="Parent")
+        child_category = ChildCategoryFactory.create(
+            site=self.site, parent=parent_category, title="Child"
+        )
+
+        word_entry_1 = DictionaryEntryFactory(site=self.site)
+        word_entry_2 = DictionaryEntryFactory(site=self.site)
+
+        parent_category.dictionary_entries.add(word_entry_1)
+        child_category.dictionary_entries.add(word_entry_1)
+        child_category.dictionary_entries.add(word_entry_2)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"contains": TypeOfDictionaryEntry.WORD},
+            )
+        )
+        response_data = json.loads(response.content)
+        results = response_data["results"]
+
+        assert response.status_code == 200
+        assert len(results) == 1
+        assert results[0]["id"] == str(parent_category.id)
+
+        assert len(results[0]["children"]) == 1
+        assert results[0]["children"][0]["id"] == str(child_category.id)
