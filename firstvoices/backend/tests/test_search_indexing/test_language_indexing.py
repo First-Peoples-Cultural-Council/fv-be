@@ -1,5 +1,8 @@
+from unittest.mock import patch
+
 import pytest
 
+from backend.models.sites import Language
 from backend.search.indexing import LanguageIndexManager
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.tests import factories
@@ -10,6 +13,21 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
     manager = LanguageIndexManager
     factory = factories.LanguageFactory
     expected_index_name = ELASTICSEARCH_LANGUAGE_INDEX
+
+    @pytest.mark.django_db
+    def test_iterator(self):
+        """Override to test that only languages containing sites are indexed"""
+        with patch(self.paths["create_index_document"]) as mock_create_index_doc:
+            for _ in self.manager._iterator():
+                continue
+
+            # assert adds all languages with sites
+            languages_with_sites = Language.objects.all().exclude(sites=None)
+            for instance in languages_with_sites:
+                mock_create_index_doc.assert_any_call(instance)
+
+            # assert does not add empty languages
+            assert mock_create_index_doc.call_count == languages_with_sites.count()
 
     @pytest.mark.django_db
     def test_create_document_with_language_fields(self):

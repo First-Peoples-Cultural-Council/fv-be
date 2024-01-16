@@ -172,6 +172,7 @@ class LanguageIndexManager(IndexManager):
     @classmethod
     def create_index_document(cls, instance: Language):
         return cls.document(
+            language_id=str(instance.id),
             language_name=instance.title,
             language_code=instance.language_code,
             language_alternate_names=_text_as_list(instance.alternate_names),
@@ -183,3 +184,15 @@ class LanguageIndexManager(IndexManager):
                 instance.language_family.alternate_names
             ),
         )
+
+    @classmethod
+    def _iterator(cls):
+        """
+        Returns: iterator of all language models that have sites
+        """
+        for model in cls.models:
+            instances = model.objects.all()
+            for instance in instances:
+                if instance.sites.all().exists():
+                    index_document = cls.create_index_document(instance)
+                    yield index_document.to_dict(True)
