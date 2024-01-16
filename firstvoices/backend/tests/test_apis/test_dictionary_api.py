@@ -258,6 +258,7 @@ class TestDictionaryEndpoint(
             "relatedImages": [],
             "relatedVideos": [],
             "relatedVideoLinks": [],
+            "isImmersionLabel": False,
         }
 
     def create_original_instance_for_patch(self, site):
@@ -1458,3 +1459,30 @@ class TestDictionaryEndpoint(
         assert response.status_code == 204
         assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
         assert DictionaryEntry.objects.filter(id=related_entry.id).exists() is True
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_immersion_label_flag(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["isImmersionLabel"] is False
+
+        factories.ImmersionLabelFactory.create(dictionary_entry=entry)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["isImmersionLabel"] is True

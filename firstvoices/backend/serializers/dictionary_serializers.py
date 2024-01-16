@@ -4,7 +4,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models import category, dictionary, part_of_speech
+from backend.models import ImmersionLabel, category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
     LinkedSiteMinimalSerializer,
     ReadOnlyVisibilityFieldMixin,
@@ -145,6 +145,8 @@ class DictionaryEntryDetailSerializer(
     pronunciations = PronunciationSerializer(
         many=True, required=False, source="pronunciation_set", default=[]
     )
+
+    is_immersion_label = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
 
@@ -322,6 +324,10 @@ class DictionaryEntryDetailSerializer(
         word_list = base_title.split(" ")
         return word_list
 
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_is_immersion_label(self, entry):
+        return ImmersionLabel.objects.filter(dictionary_entry=entry).exists()
+
     class Meta:
         model = dictionary.DictionaryEntry
         fields = (
@@ -337,6 +343,7 @@ class DictionaryEntryDetailSerializer(
                 "translations",
                 "part_of_speech",
                 "pronunciations",
+                "is_immersion_label",
             )
             + RelatedMediaSerializerMixin.Meta.fields
             + RelatedDictionaryEntrySerializerMixin.Meta.fields
