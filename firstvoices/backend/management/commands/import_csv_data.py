@@ -160,7 +160,7 @@ def run_import():
 
             # raise errors to halt the import if an issue occurs
             try:
-                result = resource.import_data(dataset=table, raise_errors=True)
+                result = resource.import_data(dataset=table, raise_errors=False)
                 logger.info(
                     " ".join(
                         [f"{type}: {total}" for type, total in result.totals.items()]
