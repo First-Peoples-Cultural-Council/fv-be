@@ -14,6 +14,7 @@ from backend.tests.factories import (
 )
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAppMembershipImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -65,6 +66,7 @@ class TestAppMembershipImport:
         assert old_membership.role == AppRole.SUPERADMIN
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestSiteMembershipImport:
     @staticmethod
     def build_table(data: list[str]):

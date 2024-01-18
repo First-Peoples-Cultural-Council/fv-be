@@ -213,6 +213,7 @@ class TestIgnoredCharacterImport:
         assert table["site"][0] == str(new_char.site.id)
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestAlphabetConfusablesImport:
     @staticmethod
     def build_table(data: list[str]):

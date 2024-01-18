@@ -15,6 +15,7 @@ def build_table(data: list[str]):
     return table
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestUserImport:
     @pytest.mark.django_db
     def test_import_base_data(self):

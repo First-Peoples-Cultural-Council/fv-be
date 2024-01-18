@@ -8,6 +8,7 @@ from backend.resources.join_requests import JoinRequestResource
 from backend.tests import factories
 
 
+@pytest.mark.skip("Tests are for initial migration only")
 class TestJoinRequestImport:
     @staticmethod
     def build_table(data: list[str]):
