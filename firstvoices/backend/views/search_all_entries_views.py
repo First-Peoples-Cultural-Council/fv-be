@@ -7,7 +7,7 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from elasticsearch.exceptions import ConnectionError
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 
 from backend.pagination import SearchPageNumberPagination
@@ -428,9 +428,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
         ],
     ),
 )
-class BaseSearchViewSet(
-    ThrottlingMixin, mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
     pagination_class = SearchPageNumberPagination

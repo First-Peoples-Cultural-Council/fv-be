@@ -6,11 +6,13 @@ from backend.search.utils.query_builder_utils import (
 )
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
-from backend.views.search.base_search_views import BaseSearchViewSet
+from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 
 
 @extend_schema_view(list=extend_schema(parameters=[site_slug_parameter]))
-class SiteSearchViewsSet(BaseSearchViewSet, SiteContentViewSetMixin):
+class SearchSiteEntriesAllEntriesViewSet(
+    SiteContentViewSetMixin, SearchAllEntriesViewSet
+):
     def get_search_params(self):
         """
         Add site_slug to search params

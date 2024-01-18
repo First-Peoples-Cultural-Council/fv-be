@@ -16,12 +16,12 @@ from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
-from backend.views.language_views import LanguageViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
-from backend.views.search.base_search_views import BaseSearchViewSet
-from backend.views.search.site_search_views import SiteSearchViewsSet
+from backend.views.search_all_entries_views import SearchAllEntriesViewSet
+from backend.views.search_languages_views import LanguageViewSet
+from backend.views.search_site_entries_views import SearchSiteEntriesAllEntriesViewSet
 from backend.views.site_feature_views import SiteFeatureViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
@@ -38,7 +38,7 @@ ROUTER = CustomRouter()
 ROUTER.register(r"languages", LanguageViewSet, basename="language")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
-ROUTER.register(r"search", BaseSearchViewSet, basename="search")
+ROUTER.register(r"search", SearchAllEntriesViewSet, basename="search")
 
 ROUTER.register(r"sites", SiteViewSet, basename="site")
 
@@ -72,7 +72,9 @@ sites_router.register(
 )
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
-sites_router.register(r"search", SiteSearchViewsSet, basename="site-search")
+sites_router.register(
+    r"search", SearchSiteEntriesAllEntriesViewSet, basename="site-search"
+)
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
