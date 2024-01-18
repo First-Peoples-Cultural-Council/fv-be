@@ -22,7 +22,7 @@ from .media import Image  # noqa F401
 from .mtd import MTDExportFormat  # noqa F401
 from .page import SitePage  # noqa F401
 from .part_of_speech import PartOfSpeech  # noqa F401
-from .sites import Membership, Site  # noqa F401
+from .sites import Language, Membership, Site  # noqa F401
 from .song import Lyric, Song  # noqa F401
 from .story import Story, StoryPage  # noqa F401
 

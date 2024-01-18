@@ -1,10 +1,12 @@
+from django.db.models import Prefetch
+from django.db.models.functions import Upper
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from rest_framework import serializers
 
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
-from backend.models.sites import Language
+from backend.models.sites import Language, SiteFeature
 from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import (
     LinkedSiteSerializer,
@@ -15,6 +17,7 @@ from backend.serializers.media_serializers import ImageSerializer, VideoSerializ
 from backend.serializers.utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
+from backend.views.utils import get_select_related_media_fields
 
 
 class FeatureFlagSerializer(serializers.Serializer):
@@ -203,3 +206,19 @@ class LanguageSerializer(serializers.Serializer):
     class Meta:
         model = Language
         fields = ("language", "language_code", "sites")
+
+    @classmethod
+    def make_queryset_eager(cls, queryset, visible_sites):
+        """Add prefetching as required by this serializer"""
+        return queryset.order_by(Upper("title")).prefetch_related(
+            Prefetch(
+                "sites",
+                queryset=visible_sites.order_by(Upper("title")).select_related(
+                    *get_select_related_media_fields("logo")
+                ),
+            ),
+            Prefetch(
+                "sites__sitefeature_set",
+                queryset=SiteFeature.objects.filter(is_enabled=True),
+            ),
+        )
