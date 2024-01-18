@@ -19,7 +19,7 @@ sample_draftjs_text = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'Histo
 sample_draftjs_transl = "\"{'entityMap': {}, 'blocks': [{'key': '', 'text': 'History of the Three Bears', 'type': 'unstyled', 'depth': 0, 'inlineStyleRanges': [], 'entityRanges': [], 'data': {}}]}\""  # noqa E501
 
 
-@pytest.mark.skip("Tests are for initial migration only")
+# @pytest.mark.skip("Tests are for initial migration only")
 class TestStoryImport:
     @staticmethod
     def build_table(data: list[str]):
@@ -28,7 +28,7 @@ class TestStoryImport:
             "id,created,created_by,last_modified,last_modified_by,visibility"
             ",title,title_translation,introduction,introduction_translation"
             ",for_games,for_kids_1,for_kids_2,hide_overlay,site,exclude_from_kids,exclude_from_games"
-            ",author,notes,acknowledgements,related_audio,related_images,related_videos"
+            ",author,notes,acknowledgements,related_audio,related_images,related_videos,related_video_links"
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
@@ -41,11 +41,11 @@ class TestStoryImport:
             f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
             f",Testytest,Test story,{sample_draftjs_text},{sample_draftjs_transl}"
             f",,,True,,{site.id},False,False"
-            ",By: The Author,,,,,",
+            ",By: The Author,,,,,,",
             f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
             f",Testytest2,Test story two,{sample_draftjs_text},{sample_draftjs_transl}"
             f",,,True,true,{site.id},False,False"
-            ",,,,,,",
+            ",,,,,,,",
         ]
         table = self.build_table(data)
 
@@ -125,7 +125,8 @@ class TestStoryImport:
             f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
             f",Testytest,Test story,,"
             f",,,True,,{site.id},False,False"
-            f',Authorname,,,{audio.id},"{img_1.id},{img_2.id}",{video.id}'
+            f',Authorname,,,{audio.id},"{img_1.id},{img_2.id}",{video.id},'
+            "https://www.youtube.com/watch?v=A1bcde23f5g"
         ]
         table = self.build_table(data)
 
@@ -146,6 +147,9 @@ class TestStoryImport:
         assert img_1 in new_story.related_images.all()
         assert img_2 in new_story.related_images.all()
         assert new_story.related_images.all().count() == 2
+        assert new_story.related_video_links == table["related_video_links"][0].split(
+            ","
+        )
 
     @pytest.mark.django_db
     def test_import_related_media_skip_nonexistent(self):
@@ -159,7 +163,7 @@ class TestStoryImport:
             f"{uuid.uuid4()},2022-04-06 14:08:27.693,one@test.com,2022-04-06 14:45:52.750,one@test.com,Members"
             f",Testytest,Test story,,"
             f",,,True,,{site.id},False,False"
-            f',Authorname,,,{no_audio_here},"{img_1.id},{no_img_here}",{no_video_here}'
+            f',Authorname,,,{no_audio_here},"{img_1.id},{no_img_here}",{no_video_here},'
         ]
         table = self.build_table(data)
 
