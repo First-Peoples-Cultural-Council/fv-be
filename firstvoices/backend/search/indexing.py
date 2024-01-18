@@ -6,6 +6,7 @@ from elasticsearch.helpers import actions
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
+from backend.models.constants import Visibility
 from backend.models.sites import Language
 from backend.search.documents.language_document import LanguageDocument
 from backend.search.logging import (
@@ -171,6 +172,8 @@ class LanguageIndexManager(IndexManager):
 
     @classmethod
     def create_index_document(cls, instance: Language):
+        visible_sites = instance.sites.all().filter(visibility__gte=Visibility.MEMBERS)
+
         return cls.document(
             document_id=str(instance.id),
             document_type=instance.__class__.__name__,
@@ -178,8 +181,8 @@ class LanguageIndexManager(IndexManager):
             language_code=instance.language_code,
             language_alternate_names=_text_as_list(instance.alternate_names),
             language_community_keywords=_text_as_list(instance.community_keywords),
-            site_names=_fields_as_list(instance.sites.all(), "title"),
-            site_slugs=_fields_as_list(instance.sites.all(), "slug"),
+            site_names=_fields_as_list(visible_sites, "title"),
+            site_slugs=_fields_as_list(visible_sites, "slug"),
             language_family_name=instance.language_family.title,
             language_family_alternate_names=_text_as_list(
                 instance.language_family.alternate_names

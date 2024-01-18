@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
+from backend.models.constants import Visibility
 from backend.models.sites import Language
 from backend.search.indexing import LanguageIndexManager
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
@@ -51,16 +52,18 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
     @pytest.mark.django_db
     def test_create_document_with_site_fields(self):
         language = factories.LanguageFactory.create()
-        site1 = factories.SiteFactory.create(language=language)
-        site2 = factories.SiteFactory.create(language=language)
-        site3 = factories.SiteFactory.create(language=language)
+        site1 = factories.SiteFactory.create(
+            language=language, visibility=Visibility.PUBLIC
+        )
+        site2 = factories.SiteFactory.create(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        factories.SiteFactory.create(language=language, visibility=Visibility.TEAM)
 
         language_doc = LanguageIndexManager.create_index_document(language)
 
-        self.assert_list(
-            [site1.title, site2.title, site3.title], language_doc.site_names
-        )
-        self.assert_list([site1.slug, site2.slug, site3.slug], language_doc.site_slugs)
+        self.assert_list([site1.title, site2.title], language_doc.site_names)
+        self.assert_list([site1.slug, site2.slug], language_doc.site_slugs)
 
     @pytest.mark.django_db
     def test_create_document_with_language_family_fields(self):
