@@ -159,6 +159,28 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 400
 
     @pytest.mark.django_db
+    def test_dictionary_entry_visibility_validation(self):
+        """
+        Tests that a validation error is raised if the dictionary entry's visibility is less than the site's.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.TEAM
+        )
+
+        data = {
+            "dictionary_entry": str(entry.id),
+            "key": self.TEST_KEY,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
     def test_labels_ordered_by_key(self):
         """
         Tests that the labels are ordered alphabetically by key.

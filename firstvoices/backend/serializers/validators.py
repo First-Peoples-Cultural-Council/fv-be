@@ -23,6 +23,23 @@ class SameSite:
             raise serializers.ValidationError(self.message)
 
 
+class SameVisibilityAsSite:
+    """
+    Validates that the value has the same visibility or greater than that value's site.
+    """
+
+    message = _("Object must have the same or greater visibility than the site.")
+    requires_context = True
+
+    def __init__(self, message=None):
+        self.message = message or self.message
+
+    def __call__(self, value, serializer):
+        expected_site = get_site_from_context(serializer)
+        if value.visibility <= expected_site.visibility:
+            raise serializers.ValidationError(self.message)
+
+
 class HasNoParent:
     """
     Validates that the value does not have a parent.
