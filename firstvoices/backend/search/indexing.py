@@ -172,7 +172,8 @@ class LanguageIndexManager(IndexManager):
     @classmethod
     def create_index_document(cls, instance: Language):
         return cls.document(
-            language_id=str(instance.id),
+            document_id=str(instance.id),
+            document_type=instance.__class__.__name__,
             language_name=instance.title,
             language_code=instance.language_code,
             language_alternate_names=_text_as_list(instance.alternate_names),

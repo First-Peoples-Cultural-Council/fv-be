@@ -1,14 +1,14 @@
-from elasticsearch_dsl import Document, Keyword, Text
+from elasticsearch_dsl import Keyword, Text
 
+from backend.search.documents.base_document import BaseDocument
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 
 
-class LanguageDocument(Document):
+class LanguageDocument(BaseDocument):
     primary_search_fields = Text()  # canonical names and identifiers
     secondary_search_fields = Text()  # alternate names and keywords
 
     # language
-    language_id = Keyword()
     language_code = Keyword()  # no fuzzy matching on the language_code
     language_name = Text(fields={"raw": Keyword()}, copy_to="primary_search_fields")
     language_alternate_names = Text(

@@ -2,8 +2,14 @@ from elasticsearch_dsl import Boolean, Date, Document, Integer, Keyword, Text
 
 
 class BaseDocument(Document):
+    """Basic fields used for generic hydration utils"""
+
+    document_id = Keyword()  # model id
+    document_type = Keyword()  # model class name
+
+
+class BaseSiteEntryDocument(BaseDocument):
     # generic fields, present in all models required to be indexed
-    document_id = Keyword()
     site_id = Keyword()
     site_visibility = Integer()
     visibility = Integer()
