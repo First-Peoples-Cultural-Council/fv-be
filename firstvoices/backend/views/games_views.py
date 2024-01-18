@@ -25,7 +25,7 @@ def get_wordsy_solution_seed(num_words):
     # inspired from previous fv-wordsy game
     epoch = datetime(2024, 1, 1, 0, 0, 0).timestamp()  # wordsy game epoch
     now = datetime.now().timestamp()
-    seconds_in_day = 86400000
+    seconds_in_day = 86400
     index = math.floor((now - epoch) / seconds_in_day)
     return index % num_words
 
