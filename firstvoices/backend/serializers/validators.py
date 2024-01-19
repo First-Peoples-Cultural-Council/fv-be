@@ -23,7 +23,7 @@ class SameSite:
             raise serializers.ValidationError(self.message)
 
 
-class SameVisibilityAsSite:
+class MeetsSiteVisibility:
     """
     Validates that the value has the same visibility or greater than that value's site.
     """

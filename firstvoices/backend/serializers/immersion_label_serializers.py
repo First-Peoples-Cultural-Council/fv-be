@@ -10,7 +10,7 @@ from backend.serializers.dictionary_serializers import (
     WritableRelatedDictionaryEntrySerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.validators import SameSite, SameVisibilityAsSite
+from backend.serializers.validators import MeetsSiteVisibility, SameSite
 
 
 class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
@@ -20,7 +20,7 @@ class ImmersionLabelDetailSerializer(WritableSiteContentSerializer):
     dictionary_entry = WritableRelatedDictionaryEntrySerializer(
         required=True,
         queryset=DictionaryEntry.objects.all(),
-        validators=[SameSite(), SameVisibilityAsSite()],
+        validators=[SameSite(), MeetsSiteVisibility()],
     )
     key = serializers.CharField(allow_blank=False, allow_null=False)
 
