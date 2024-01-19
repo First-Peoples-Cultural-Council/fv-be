@@ -21,7 +21,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def get_lookup_key(self, instance):
         return instance.key
 
-    def create_minimal_instance(self, site, visibility):
+    def create_minimal_instance(self, site, visibility=Visibility.PUBLIC):
         return factories.ImmersionLabelFactory(
             site=site,
             dictionary_entry=factories.DictionaryEntryFactory(
@@ -72,7 +72,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         }
 
     def get_valid_patch_data(self, site=None):
-        entry = factories.DictionaryEntryFactory(site=site)
+        entry = factories.DictionaryEntryFactory(
+            site=site, visibility=Visibility.PUBLIC
+        )
         return {
             "dictionary_entry": str(entry.id),
         }
@@ -147,6 +149,28 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         site = factories.SiteFactory.create()
         site2 = factories.SiteFactory.create()
         entry = factories.DictionaryEntryFactory.create(site=site2)
+
+        data = {
+            "dictionary_entry": str(entry.id),
+            "key": self.TEST_KEY,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_visibility_validation(self):
+        """
+        Tests that a validation error is raised if the dictionary entry's visibility is less than the site's.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.TEAM
+        )
 
         data = {
             "dictionary_entry": str(entry.id),
@@ -322,7 +346,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(site=site)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
         label = factories.ImmersionLabelFactory.create(site=site)
 
         data = {
