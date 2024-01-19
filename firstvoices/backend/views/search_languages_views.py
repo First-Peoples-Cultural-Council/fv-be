@@ -4,7 +4,10 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from elasticsearch_dsl import Search
 
 from backend.models.sites import Language, Site, SiteFeature
-from backend.serializers.site_serializers import LanguageSerializer
+from backend.serializers.site_serializers import (
+    LanguageSerializer,
+    SiteSummarySerializer,
+)
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import ThrottlingMixin
@@ -38,7 +41,10 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     """
 
     http_method_names = ["get"]
-    serializer_class = LanguageSerializer
+    serializer_classes = {
+        "Language": LanguageSerializer,
+        "Site": SiteSummarySerializer,
+    }
     model = Language
 
     def build_query(self, **kwargs):
@@ -50,23 +56,13 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
 
     def make_queryset_eager(self, model_name, queryset):
         """Subclasses can implement this to add prefetching, etc"""
-        # prefetch via the serializer
-        visible_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
-        return LanguageSerializer.make_queryset_eager(
-            queryset, visible_sites=visible_sites
-        )
+        if model_name == "Language":
+            visible_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
+            return LanguageSerializer.make_queryset_eager(
+                queryset, visible_sites=visible_sites
+            )
 
-    def serialize_search_results(self, search_results, data):
-        languages = {str(d.id): d for d in data["Language"]}
-        return [
-            LanguageSerializer(
-                languages[result["_source"]["document_id"]],
-                context={"request": self.request},
-            ).data
-            for result in search_results
-        ]
-
-        # todo: "other sites"
+        return super().make_queryset_eager(model_name, queryset)
 
     def get_detail_queryset(self):
         return (

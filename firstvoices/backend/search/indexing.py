@@ -7,7 +7,7 @@ from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
 from backend.models.constants import Visibility
-from backend.models.sites import Language
+from backend.models.sites import Language, Site
 from backend.search.documents.language_document import LanguageDocument
 from backend.search.logging import (
     log_connection_error,
@@ -190,9 +190,26 @@ class LanguageIndexManager(IndexManager):
         )
 
     @classmethod
+    def create_site_index_document(cls, instance: Site):
+        return cls.document(
+            document_id=str(instance.id),
+            document_type=instance.__class__.__name__,
+            language_name=None,
+            language_code=None,
+            language_alternate_names=None,
+            language_community_keywords=None,
+            site_names=instance.title,
+            site_slugs=instance.slug,
+            language_family_name=None,
+            language_family_alternate_names=None,
+        )
+
+    @classmethod
     def _iterator(cls):
         """
-        Returns: iterator of all language models that have sites
+        Returns: iterator of all documents to index, including:
+            - all Languages that have Sites
+            - any visible Sites that are not linked to a Language
         """
         for model in cls.models:
             instances = model.objects.all()
@@ -200,3 +217,7 @@ class LanguageIndexManager(IndexManager):
                 if instance.sites.all().exists():
                     index_document = cls.create_index_document(instance)
                     yield index_document.to_dict(True)
+
+        for instance in Site.objects.all().filter(visibility__gte=Visibility.MEMBERS):
+            index_document = cls.create_site_index_document(instance)
+            yield index_document.to_dict(True)

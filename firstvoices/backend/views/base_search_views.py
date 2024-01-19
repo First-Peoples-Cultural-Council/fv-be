@@ -7,6 +7,10 @@ from backend.pagination import SearchPageNumberPagination
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
+def queryset_as_map(queryset):
+    return {str(x.id): x for x in queryset}
+
+
 class BaseSearchViewSet(viewsets.GenericViewSet):
     http_method_names = ["get"]
     queryset = ""
@@ -81,25 +85,30 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         raise NotImplementedError()
 
     def hydrate(self, search_results):
-        """Constructs querysets for each type of model in the search results. If a serializer is defined for the type,
-        we attempt to use the serializer to add eager fetching (prefetch, etc).
+        """Retrieves data for each item in the search results, grouped by type. If a serializer is defined for the type,
+        attempts to use the serializer to add eager fetching (prefetch, etc). Returns actual data not lazy querysets.
 
-            Returns: a dictionary where the keys are model names and the values are querysets
+            Returns: a dictionary where the keys are model names and the values are maps of { model_id: model_instance}
+                for that type.
         """
         ids = self.get_ids_by_type(search_results)
-        querysets = {}
+        data = {}
 
         for model_name, model_ids in ids.items():
             queryset = getattr(models, model_name).objects.filter(id__in=model_ids)
             queryset = self.make_queryset_eager(model_name, queryset)
 
-            querysets[model_name] = queryset
+            data[model_name] = queryset_as_map(queryset)
 
-        return querysets
+        return data
 
     def make_queryset_eager(self, model_name, queryset):
-        """Subclasses can implement this to add prefetching, etc"""
-        return queryset
+        """Subclasses can implement this to add custom prefetching, etc"""
+        serializer = self.get_serializer_class(model_name)
+        if hasattr(serializer, "make_queryset_eager"):
+            return serializer.make_queryset_eager(queryset)
+        else:
+            return queryset
 
     def get_ids_by_type(self, search_results):
         """Organizes model IDs of the search results by data type.
@@ -118,12 +127,31 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         return data
 
     def serialize_search_results(self, search_results, data):
-        """Subclasses should implement.
+        """
+        Serializes the given search results, using the provided data and the configured serializer classes.
 
         Params:
             search_results: a list of ElasticSearch hits
             data: a dictionary of data objects keyed by model, as returned by the hydrate method
 
-        Returns: a list of serializer data.
+        Returns: a list of serializer data in the order of the given search_results.
         """
-        raise NotImplementedError()
+        return [self.serialize_result(result, data) for result in search_results]
+
+    def serialize_result(self, result, data):
+        """Serializes a single search_result, using the provided hydration data and the configured serializer classes.
+
+        Params:
+            search_result: an ElasticSearch hit
+            data: a dictionary of data objects keyed by model, as returned by the hydrate method
+
+        Returns: serializer data
+        """
+
+        result_type = result["_source"]["document_type"]
+        result_id = result["_source"]["document_id"]
+        document = data[result_type][result_id]
+        serializer = self.get_serializer_class(result_type)
+        context = self.get_serializer_context()
+
+        return serializer(document, context=context).data
