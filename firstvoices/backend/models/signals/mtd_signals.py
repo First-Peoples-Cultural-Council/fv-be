@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.db.models import Count
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -30,13 +29,13 @@ def request_update_mtd_index(sender, instance, **kwargs):
 def request_update_mtd_index_category_ops(sender, instance, **kwargs):
     # Check if there are any relevant dictionary entries affected
     # relevant dictionary entries are public and have at-least one translation
-    relevant_dictionary_entries = DictionaryEntry.objects.filter(
-        categories=instance, visibility=Visibility.PUBLIC
-    )
     relevant_dictionary_entries_count = (
-        relevant_dictionary_entries.annotate(translation_count=Count("translation_set"))
-        .filter(translation_count__gt=0)
+        DictionaryEntry.objects.filter(
+            categories=instance, visibility=Visibility.PUBLIC
+        )
+        .exclude(translation_set=None)
         .count()
     )
+
     if relevant_dictionary_entries_count:
         rebuild_mtd_index(instance.site.slug)
