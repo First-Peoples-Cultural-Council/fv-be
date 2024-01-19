@@ -90,6 +90,7 @@ class TestMTDIndexAndScoreTask:
         audio = factories.AudioFactory.create(site=site)
         factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
         image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
         parent_category = factories.CategoryFactory.create(site=site)
         child_category = factories.CategoryFactory.create(
             site=site, parent=parent_category
@@ -102,6 +103,7 @@ class TestMTDIndexAndScoreTask:
             title=self.sample_entry_title,
             related_audio=[audio],
             related_images=[image],
+            related_videos=[video],
         )
         factories.DictionaryEntryCategoryFactory.create(
             category=parent_category, dictionary_entry=entry_one
@@ -151,3 +153,7 @@ class TestMTDIndexAndScoreTask:
             result["l1_index"]["word"][str(entry_one.id)]["score"]["total"]
             > result["l1_index"]["word"][str(entry_three.id)]["score"]["total"]
         )
+
+        assert len(result["data"][1]["audio"]) == 1
+        assert result["data"][1]["img"] is not None
+        assert len(result["data"][1]["video"]) == 1

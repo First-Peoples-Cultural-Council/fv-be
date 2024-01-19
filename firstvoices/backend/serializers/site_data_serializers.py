@@ -4,7 +4,7 @@ from rest_framework import pagination, serializers
 
 from backend.models import Category, MTDExportFormat, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
-from backend.models.media import Audio, Image
+from backend.models.media import Audio, Image, Video
 from backend.pagination import FasterCountPagination
 from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
@@ -60,9 +60,15 @@ class MTDSiteDataSerializer(SiteContentLinkedTitleSerializer):
         fields = ("mtd_export_format",)
 
 
-class AudioDataSerializer(serializers.ModelSerializer):
-    description = serializers.SerializerMethodField()
+class MediaDataSerializer(serializers.ModelSerializer):
     filename = serializers.FileField(source="original.content")
+
+    class Meta:
+        fields = ("filename",)
+
+
+class AudioDataSerializer(MediaDataSerializer):
+    description = serializers.SerializerMethodField()
 
     @staticmethod
     def get_description(audio):
@@ -72,18 +78,29 @@ class AudioDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Audio
-        fields = (
-            "description",
-            "filename",
+        fields = MediaDataSerializer.Meta.fields + ("description",)
+
+
+class VideoDataSerializer(MediaDataSerializer):
+    description = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_description(video):
+        return (
+            video.description
+            if video.description and len(video.description) > 0
+            else None
         )
 
+    class Meta:
+        model = Video
+        fields = MediaDataSerializer.Meta.fields + ("description",)
 
-class ImageDataSerializer(serializers.ModelSerializer):
-    filename = serializers.FileField(source="original.content")
 
+class ImageDataSerializer(MediaDataSerializer):
     class Meta:
         model = Image
-        fields = ("filename",)
+        fields = MediaDataSerializer.Meta.fields
 
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
@@ -112,6 +129,10 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_audio(dictionaryentry):
         return AudioDataSerializer(dictionaryentry.related_audio, many=True).data
+
+    @staticmethod
+    def get_video(dictionaryentry):
+        return VideoDataSerializer(dictionaryentry.related_videos, many=True).data
 
     @staticmethod
     def get_img(dictionaryentry):
