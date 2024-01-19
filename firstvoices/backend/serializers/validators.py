@@ -36,7 +36,7 @@ class SameVisibilityAsSite:
 
     def __call__(self, value, serializer):
         expected_site = get_site_from_context(serializer)
-        if value.visibility <= expected_site.visibility:
+        if value.visibility < expected_site.visibility:
             raise serializers.ValidationError(self.message)
 
 

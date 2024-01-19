@@ -21,7 +21,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def get_lookup_key(self, instance):
         return instance.key
 
-    def create_minimal_instance(self, site, visibility):
+    def create_minimal_instance(self, site, visibility=Visibility.PUBLIC):
         return factories.ImmersionLabelFactory(
             site=site,
             dictionary_entry=factories.DictionaryEntryFactory(
@@ -72,7 +72,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         }
 
     def get_valid_patch_data(self, site=None):
-        entry = factories.DictionaryEntryFactory(site=site)
+        entry = factories.DictionaryEntryFactory(
+            site=site, visibility=Visibility.PUBLIC
+        )
         return {
             "dictionary_entry": str(entry.id),
         }
@@ -344,7 +346,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(site=site)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
         label = factories.ImmersionLabelFactory.create(site=site)
 
         data = {
