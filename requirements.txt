@@ -47,7 +47,7 @@ Jinja2==3.1.2
 jsonschema==4.20.0
 kombu==5.3.4
 MarkupSafe==2.1.3
-mothertongues @ git+https://github.com/MotherTongues/mothertongues@8552316
+mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
 networkx==2.8.4
 numpy==1.26.2
