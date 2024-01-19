@@ -66,6 +66,32 @@ class TestMtdIndexRebuild:
         entry.delete()
         assert self.mocked_func.call_count == 0
 
+    @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    def test_non_public_to_public_visibility_change(self, visibility):
+        entry = DictionaryEntry(site=self.site, visibility=visibility)
+        entry.save()
+
+        assert self.mocked_func.call_count == 0
+
+        entry.visibility = Visibility.PUBLIC
+        entry.save()
+
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_with(self.site.slug)
+
+    @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    def test_public_to_non_public_visibility_change(self, visibility):
+        entry = DictionaryEntry(site=self.site, visibility=Visibility.PUBLIC)
+        entry.save()
+
+        assert self.mocked_func.call_count == 1
+
+        entry.visibility = visibility
+        entry.save()
+
+        assert self.mocked_func.call_count == 2
+        self.mocked_func.assert_called_with(self.site.slug)
+
     def test_category_updated_public_entry(self):
         category = Category(
             title="test_category",

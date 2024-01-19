@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from backend.models import Category, DictionaryEntry
@@ -17,10 +17,24 @@ def rebuild_mtd_index(site_slug):
     )
 
 
+@receiver(pre_save, sender=DictionaryEntry)
+def store_current_visibility(sender, instance, **kwargs):
+    # Adding old visibility to check later in post_save signal, if entry exists in the db
+    dictionary_entry = DictionaryEntry.objects.filter(id=instance.id)
+    if len(dictionary_entry):
+        old_visibility = dictionary_entry[0].visibility
+        instance.old_visibility = old_visibility
+
+
 @receiver(post_save, sender=DictionaryEntry)
 @receiver(post_delete, sender=DictionaryEntry)
 def request_update_mtd_index(sender, instance, **kwargs):
-    if instance.visibility == Visibility.PUBLIC:
+    # Checking for both previous and current visibility
+    # this covers the case when a word is changed from public to members/team
+    if (
+        hasattr(instance, "old_visibility")
+        and instance.old_visibility == Visibility.PUBLIC
+    ) or instance.visibility == Visibility.PUBLIC:
         rebuild_mtd_index(instance.site.slug)
 
 
