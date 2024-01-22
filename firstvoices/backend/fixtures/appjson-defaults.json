@@ -7,71 +7,71 @@
 				"id": "kids",
 				"href": "/kids",
 				"title": "Kids",
-				"transKey": "general.kids",
+				"transKey": "navigation-kids",
 				"itemsData": []
 			},
 			"about": {
 				"id": "about",
 				"title": "About",
-				"transKey": "general.about",
+				"transKey": "navigation-about",
 				"itemsData": [{
 					"href": "/our-language",
 					"title": "Our Language",
-					"transKey": "general.our_language"
+					"transKey": "navigation-our-language"
 				}, {
 					"href": "/our-people",
 					"title": "Our People",
-					"transKey": "general.our_people"
+					"transKey": "navigation-our-people"
 				}]
 			},
 			"learn": {
 				"id": "learn",
 				"title": "Learn",
-				"transKey": "general.learn",
+				"transKey": "navigation-learn",
 				"itemsData": [{
 					"href": "/songs",
 					"title": "Songs",
-					"transKey": "general.songs"
+					"transKey": "navigation-songs"
 				}, {
 					"href": "/stories",
 					"title": "Stories",
-					"transKey": "general.stories"
+					"transKey": "navigation-stories"
 				}, {
 					"href": "/games",
 					"title": "Games",
-					"transKey": "general.games"
+					"transKey": "navigation-games"
 				}]
 			},
 			"resources": {
 				"id": "resources",
 				"title": "Resources",
-				"transKey": "general.resources",
+				"transKey": "navigation-resources",
 				"itemsData": [{
 					"href": "/keyboards",
 					"title": "Keyboards",
-					"transKey": "general.keyboards"
+					"transKey": "navigation-keyboards"
 				}]
 			},
 			"dictionary": {
 				"id": "dictionary",
 				"title": "Dictionary",
-				"transKey": "general.dictionary",
+				"transKey": "navigation-dictionary",
 				"itemsData": [{
 					"href": "/words",
 					"title": "Words",
-					"transKey": "general.words"
+					"transKey": "navigation-words"
 				}, {
 					"href": "/phrases",
 					"title": "Phrases",
-					"transKey": "general.phrases"
+					"transKey": "navigation-phrases"
 				}, {
 					"href": "/alphabet",
 					"title": "Alphabet",
-					"transKey": "general.alphabet"
+					"transKey": "navigation-alphabet"
 				}, {
 					"href": "/categories",
 					"title": "Categories",
-					"transKey": "general.categories"
+					"transKey": "navigation-categories"
 				}]
 			}
 		}
