@@ -1,7 +1,11 @@
 import functools
 
 from drf_spectacular.utils import extend_schema_field
-from embed_video.backends import UnknownBackendException, detect_backend
+from embed_video.backends import (
+    UnknownBackendException,
+    VideoDoesntExistException,
+    detect_backend,
+)
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
@@ -345,11 +349,18 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
             validate_no_duplicate_urls(related_video_links)
             for link in related_video_links:
                 try:
-                    detect_backend(link)
+                    backend = detect_backend(link)
+                    backend.get_url()
+                    backend.get_thumbnail_url()
                 except UnknownBackendException:
                     raise serializers.ValidationError(
-                        "The related video link is not supported. Please use a YouTube or Vimeo link."
+                        f"The related video link {link} is not supported. Please use a YouTube or Vimeo link."
                     )
+                except VideoDoesntExistException:
+                    raise serializers.ValidationError(
+                        f"The related video link {link} is not valid. Please check the link and try again."
+                    )
+
             attrs["related_video_links"] = related_video_links
         return super().validate(attrs)
 

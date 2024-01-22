@@ -12,8 +12,8 @@ from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
-VIMEO_VIDEO_LINK = "https://vimeo.com/"
-YOUTUBE_VIDEO_LINK = "https://www.youtube.com/"
+VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=abc123"
 MOCK_EMBED_LINK = "https://mock_embed_link.com/"
 MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
 
@@ -261,7 +261,10 @@ class RelatedMediaTestMixin(MediaTestMixin):
         [
             ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], [200, 201]),
             (
-                ["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"],
+                [
+                    "https://www.youtube.com/watch?v=abc1",
+                    "https://www.youtube.com/watch?v=abc2",
+                ],
                 [200, 201],
             ),
             (
@@ -272,7 +275,13 @@ class RelatedMediaTestMixin(MediaTestMixin):
                 ],
                 [400],
             ),
-            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], [400]),
+            (
+                [
+                    "https://www.youtube.com/watch?v=abc",
+                    "https://www.youtube.com/watch?v=abc",
+                ],
+                [400],
+            ),
         ],
     )
     @pytest.mark.django_db
