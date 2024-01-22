@@ -75,6 +75,20 @@ class TestStoryEndpoint(
             "pages": [],
         }
 
+    def get_valid_page_data(self, site, story, page):
+        return {
+            "id": str(page.id),
+            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}/pages/{page.id}",
+            "text": page.text,
+            "translation": page.translation,
+            "notes": page.notes,
+            "ordering": page.ordering,
+            "relatedAudio": list(page.related_audio.all()),
+            "relatedImages": list(page.related_images.all()),
+            "relatedVideos": list(page.related_videos.all()),
+            "relatedVideoLinks": page.related_video_links,
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,
@@ -538,3 +552,33 @@ class TestStoryEndpoint(
         assert StoryPage.objects.filter(story=story_one).count() == 1
         assert StoryPage.objects.get(id=page1.id).ordering == 0
         assert StoryPage.objects.get(id=page1.id).story == story_one
+
+    @pytest.mark.django_db
+    def test_detail_parameter(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        story = factories.StoryFactory.create(visibility=Visibility.PUBLIC, site=site)
+        page = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=0
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug, query_kwargs={"detail": "True"})
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        result = response_data["results"][0]
+
+        assert result["id"] == str(story.id)
+        assert len(result["pages"]) == 1
+        assert result["pages"][0] == self.get_valid_page_data(site, story, page)
