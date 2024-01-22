@@ -1,6 +1,12 @@
 from django.db.models import Prefetch
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Story, StoryPage
@@ -19,7 +25,16 @@ from .utils import get_media_prefetch_list
 @extend_schema_view(
     list=extend_schema(
         description=_("A list of stories associated with the specified site."),
-        parameters=[site_slug_parameter],
+        parameters=[
+            site_slug_parameter,
+            OpenApiParameter(
+                "detail",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                default="false",
+                description="return all page data associated with a story.",
+            ),
+        ],
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
@@ -136,6 +151,8 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
 
     def get_serializer_class(self):
         if self.action in ("list",):
+            if self.request.query_params.get("detail", "false").lower() in ("true",):
+                return StorySerializer
             return StoryListSerializer
         elif self.action in ("update", "partial_update"):
             return StoryDetailUpdateSerializer

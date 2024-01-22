@@ -538,3 +538,35 @@ class TestStoryEndpoint(
         assert StoryPage.objects.filter(story=story_one).count() == 1
         assert StoryPage.objects.get(id=page1.id).ordering == 0
         assert StoryPage.objects.get(id=page1.id).story == story_one
+
+    @pytest.mark.django_db
+    def test_detail_parameter(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        story_one = factories.StoryFactory.create(
+            visibility=Visibility.PUBLIC, site=site
+        )
+        page_1 = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story_one, ordering=0
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug, query_kwargs={"detail": "True"})
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        result = response_data["results"][0]
+
+        assert len(result["pages"]) == 1
+        assert result["pages"][0]["id"] == str(page_1.id)
+        assert result["pages"][0]["text"] == page_1.text
