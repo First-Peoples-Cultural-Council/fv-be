@@ -75,6 +75,20 @@ class TestStoryEndpoint(
             "pages": [],
         }
 
+    def get_valid_page_data(self, site, story, page):
+        return {
+            "id": str(page.id),
+            "url": f"http://testserver{self.get_detail_endpoint(key=story.id, site_slug=site.slug)}/pages/{page.id}",
+            "text": page.text,
+            "translation": page.translation,
+            "notes": page.notes,
+            "ordering": page.ordering,
+            "relatedAudio": list(page.related_audio.all()),
+            "relatedImages": list(page.related_images.all()),
+            "relatedVideos": list(page.related_videos.all()),
+            "relatedVideoLinks": page.related_video_links,
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,
@@ -548,11 +562,9 @@ class TestStoryEndpoint(
         )
         self.client.force_authenticate(user=user)
 
-        story_one = factories.StoryFactory.create(
-            visibility=Visibility.PUBLIC, site=site
-        )
-        page_1 = factories.StoryPageFactory.create(
-            visibility=Visibility.PUBLIC, story=story_one, ordering=0
+        story = factories.StoryFactory.create(visibility=Visibility.PUBLIC, site=site)
+        page = factories.StoryPageFactory.create(
+            visibility=Visibility.PUBLIC, story=story, ordering=0
         )
 
         response = self.client.get(
@@ -567,6 +579,6 @@ class TestStoryEndpoint(
 
         result = response_data["results"][0]
 
+        assert result["id"] == str(story.id)
         assert len(result["pages"]) == 1
-        assert result["pages"][0]["id"] == str(page_1.id)
-        assert result["pages"][0]["text"] == page_1.text
+        assert result["pages"][0] == self.get_valid_page_data(site, story, page)
