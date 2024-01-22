@@ -1061,6 +1061,14 @@ class TestDictionaryEndpoint(
                 "related_video_links",
                 ["https://www.soundcloud.com/", "https://invalid.com/"],
             ),
+            (
+                "related_video_links",
+                ["https://www.vimeo.com/abc"],
+            ),
+            (
+                "related_video_links",
+                ["https://www.youtube.com/abc"],
+            ),
         ],
     )
     @pytest.mark.django_db
@@ -1091,7 +1099,13 @@ class TestDictionaryEndpoint(
         "related_video_links, expected_response_code",
         [
             ([YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK], 201),
-            (["https://www.youtube.com/abc1", "https://www.youtube.com/abc2"], 201),
+            (
+                [
+                    "https://www.youtube.com/watch?v=abc1",
+                    "https://www.youtube.com/watch?v=abc2",
+                ],
+                201,
+            ),
             (
                 [
                     YOUTUBE_VIDEO_LINK,
@@ -1100,7 +1114,13 @@ class TestDictionaryEndpoint(
                 ],
                 400,
             ),
-            (["https://www.youtube.com/abc", "https://www.youtube.com/abc"], 400),
+            (
+                [
+                    "https://www.youtube.com/watch?v=abc",
+                    "https://www.youtube.com/watch?v=abc",
+                ],
+                400,
+            ),
         ],
     )
     @pytest.mark.django_db
@@ -1339,6 +1359,14 @@ class TestDictionaryEndpoint(
             (
                 "related_video_links",
                 ["https://www.soundcloud.com/", "https://invalid.com/"],
+            ),
+            (
+                "related_video_links",
+                ["https://www.vimeo.com/abc"],
+            ),
+            (
+                "related_video_links",
+                ["https://www.youtube.com/abc"],
             ),
         ],
     )
