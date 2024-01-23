@@ -4,6 +4,7 @@ from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
 from backend.resources.utils.import_export_widgets import (
+    ArrayOfStringsWidget,
     ChoicesWidget,
     UserForeignKeyWidget,
 )
@@ -65,6 +66,11 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         attribute="related_videos",
         m2m_add=True,
         widget=widgets.ManyToManyWidget(Video, separator=",", field="id"),
+    )
+    related_video_links = fields.Field(
+        column_name="related_video_links",
+        attribute="related_video_links",
+        widget=ArrayOfStringsWidget(),
     )
 
     class Meta:

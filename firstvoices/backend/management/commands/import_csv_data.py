@@ -61,7 +61,6 @@ def run_import():
     Locally downloads import files from AWS, then matches them with the right
     backend model resource to import with. Deletes the database, then imports
     model-by-model in a specified order into the clean space.
-    Halts the process when encountering any data/validation error.
 
     Run with:
         python manage.py import_csv_data
@@ -160,7 +159,7 @@ def run_import():
 
             # raise errors to halt the import if an issue occurs
             try:
-                result = resource.import_data(dataset=table, raise_errors=True)
+                result = resource.import_data(dataset=table, raise_errors=False)
                 logger.info(
                     " ".join(
                         [f"{type}: {total}" for type, total in result.totals.items()]

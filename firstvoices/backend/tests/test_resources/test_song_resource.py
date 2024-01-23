@@ -8,14 +8,14 @@ from backend.resources.songs import LyricResource, SongResource
 from backend.tests import factories
 
 
-@pytest.mark.skip("Tests are for initial migration only")
+# @pytest.mark.skip("Tests are for initial migration only")
 class TestSongsImport:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
             "id,created,created_by,last_modified,last_modified_by,visibility,title,introduction,exclude_from_games,"
             "site,title_translation,acknowledgements,notes,introduction_translation,exclude_from_kids,hide_overlay,"
-            "related_audio,related_images,related_videos"
+            "related_audio,related_images,related_videos,related_video_links"
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
         return table
@@ -33,7 +33,8 @@ class TestSongsImport:
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
             f"Public,Sample Song,Sample introduction,False,{site.id},Sample title translation,"
             f'"Sample acknowledgement one, with comma|Sample acknowledgement two",,'
-            f'Sample intro translation,False,False,"{audio_one.id},{audio_two.id}",{image.id},{video.id}'
+            f'Sample intro translation,False,False,"{audio_one.id},{audio_two.id}",{image.id},{video.id},'
+            "https://www.youtube.com/watch?v=A1bcde23f5g"
         ]
         table = self.build_table(data)
 
@@ -64,6 +65,9 @@ class TestSongsImport:
         assert table["related_audio"][0].split(",")[1] in related_audio_string_list
         assert str(new_song.related_images.first().id) == table["related_images"][0]
         assert str(new_song.related_videos.first().id) == table["related_videos"][0]
+        assert new_song.related_video_links == table["related_video_links"][0].split(
+            ","
+        )
         assert new_song.get_visibility_display() == table["visibility"][0]
         assert str(new_song.site.id) == table["site"][0]
 
