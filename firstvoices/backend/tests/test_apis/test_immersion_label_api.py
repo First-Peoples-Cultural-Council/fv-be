@@ -365,3 +365,46 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 200
         response_data = response.json()
         assert response_data["key"] == label.key
+
+    @pytest.mark.django_db
+    def test_label_keys_only_unique_per_site(self):
+        """
+        Test that the immersion label keys are unique per site, but the same key can be used in multiple sites.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site2 = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=site2, visibility=Visibility.PUBLIC
+        )
+
+        data = {
+            "key": self.TEST_KEY,
+            "dictionary_entry": str(entry.id),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 201
+
+        data = {
+            "key": self.TEST_KEY,
+            "dictionary_entry": str(entry2.id),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site2.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 201
