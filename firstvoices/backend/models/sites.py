@@ -241,8 +241,6 @@ class SiteFeature(BaseSiteContentModel):
         max_length=DEFAULT_TITLE_LENGTH,
         blank=False,
         validators=[validate_slug],
-        db_index=True,
-        unique=True,
     )
     is_enabled = models.BooleanField(default=True)
 

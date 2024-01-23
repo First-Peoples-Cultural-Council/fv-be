@@ -164,3 +164,40 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_site_feature_keys_only_unique_per_site(self):
+        """
+        Test that the site feature keys are unique per site, but the same key can be used in multiple sites.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site2 = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        data = {
+            "key": self.TEST_KEY,
+            "is_enabled": True,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 201
+
+        data = {
+            "key": self.TEST_KEY,
+            "is_enabled": True,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site2.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 201
