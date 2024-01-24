@@ -1,7 +1,7 @@
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Q, Search
 
 from backend.models.sites import Language, Site, SiteFeature
 from backend.serializers.site_serializers import (
@@ -20,8 +20,8 @@ from .utils import get_select_related_media_fields
 
 @extend_schema_view(
     list=extend_schema(
-        description="A public list of available language sites, grouped by language. "
-        "Public and member sites are included, as well as any team sites the user has access to. If there "
+        description="A list of available language sites, grouped by language. "
+        "Public and member sites are included. If there "
         "are no accessible sites the list will be empty. Sites with no specified language will be grouped "
         "under 'More FirstVoices Sites'.",
         responses={200: LanguageSerializer},
@@ -47,12 +47,24 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     }
     model = Language
 
-    def build_query(self, **kwargs):
+    def build_query(self, q, **kwargs):
         """Subclasses should implement.
 
         Returns: elasticsearch_dsl.search.Search object specifying the query to execute
         """
-        return Search(index=ELASTICSEARCH_LANGUAGE_INDEX)
+        if q:
+            return self.build_search_term_query(q)
+
+        else:
+            return self.build_list_query()
+
+    def build_list_query(self):
+        search_query = (
+            Search(index=ELASTICSEARCH_LANGUAGE_INDEX)
+            .query(Q("bool", filter=[Q("term", document_type="Language")]))
+            .sort({"sort_title": {"order": "asc"}})
+        )
+        return search_query
 
     def make_queryset_eager(self, model_name, queryset):
         """Subclasses can implement this to add prefetching, etc"""
@@ -63,6 +75,47 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
             )
 
         return super().make_queryset_eager(model_name, queryset)
+
+    def serialize_search_results(self, search_results, data, **kwargs):
+        serialized_data = super().serialize_search_results(
+            search_results, data, **kwargs
+        )
+
+        if not kwargs["q"]:
+            # add "More FirstVoices Sites" section at the end of list results
+            other_sites_json = self.get_other_sites_data()
+            if other_sites_json:
+                serialized_data.append(other_sites_json)
+
+        return serialized_data
+
+    def get_other_sites_data(self):
+        other_sites = (
+            Site.objects.filter(visibility__gte=Visibility.MEMBERS)
+            .filter(language=None)
+            .order_by(Upper("title"))
+            .select_related(*get_select_related_media_fields("logo"))
+            .prefetch_related(
+                Prefetch(
+                    "sitefeature_set",
+                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                ),
+            )
+        )
+
+        if other_sites:
+            return {
+                "language": "More FirstVoices Sites",
+                "languageCode": "",
+                "sites": [
+                    SiteSummarySerializer(
+                        site, context=self.get_serializer_context()
+                    ).data
+                    for site in other_sites
+                ],
+            }
+
+        return None
 
     def get_detail_queryset(self):
         return (
@@ -124,29 +177,29 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     #         for language in languages
     #     ]
     #
-    #     # add "other" sites
-    #     other_sites = (
-    #         sites.filter(language=None)
-    #         .order_by(Upper("title"))
-    #         .select_related(*get_select_related_media_fields("logo"))
-    #         .prefetch_related(
-    #             Prefetch(
-    #                 "sitefeature_set",
-    #                 queryset=SiteFeature.objects.filter(is_enabled=True),
-    #             ),
-    #         )
+    # # add "other" sites
+    # other_sites = (
+    #     sites.filter(language=None)
+    #     .order_by(Upper("title"))
+    #     .select_related(*get_select_related_media_fields("logo"))
+    #     .prefetch_related(
+    #         Prefetch(
+    #             "sitefeature_set",
+    #             queryset=SiteFeature.objects.filter(is_enabled=True),
+    #         ),
     #     )
+    # )
     #
-    #     if other_sites:
-    #         other_site_json = {
-    #             "language": "More FirstVoices Sites",
-    #             "languageCode": "",
-    #             "sites": [
-    #                 SiteSummarySerializer(site, context={"request": request}).data
-    #                 for site in other_sites
-    #             ],
-    #         }
+    # if other_sites:
+    #     other_site_json = {
+    #         "language": "More FirstVoices Sites",
+    #         "languageCode": "",
+    #         "sites": [
+    #             SiteSummarySerializer(site, context={"request": request}).data
+    #             for site in other_sites
+    #         ],
+    #     }
     #
-    #         data.append(other_site_json)
+    #     data.append(other_site_json)
     #
     #     return Response(data)

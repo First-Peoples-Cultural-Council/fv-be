@@ -165,6 +165,9 @@ class IndexManager:
                 yield index_document.to_dict(True)
 
 
+EMPTY_LANGUAGE_GROUP = "EmptyLanguage"
+
+
 class LanguageIndexManager(IndexManager):
     index = ELASTICSEARCH_LANGUAGE_INDEX
     document = LanguageDocument
@@ -178,6 +181,7 @@ class LanguageIndexManager(IndexManager):
             document_id=str(instance.id),
             document_type=instance.__class__.__name__,
             language_name=instance.title,
+            sort_title=instance.title.upper(),
             language_code=instance.language_code,
             language_alternate_names=_text_as_list(instance.alternate_names),
             language_community_keywords=_text_as_list(instance.community_keywords),
@@ -194,6 +198,7 @@ class LanguageIndexManager(IndexManager):
         return cls.document(
             document_id=str(instance.id),
             document_type=instance.__class__.__name__,
+            sort_title=instance.title.upper(),
             language_name=None,
             language_code=None,
             language_alternate_names=None,
@@ -208,13 +213,17 @@ class LanguageIndexManager(IndexManager):
     def _iterator(cls):
         """
         Returns: iterator of all documents to index, including:
-            - all Languages that have Sites
+            - all Languages that have visible Sites (Members or Public visibility)
             - any visible Sites that are not linked to a Language
         """
         for model in cls.models:
             instances = model.objects.all()
             for instance in instances:
-                if instance.sites.all().exists():
+                if (
+                    instance.sites.all()
+                    .filter(visibility__gte=Visibility.MEMBERS)
+                    .exists()
+                ):
                     index_document = cls.create_index_document(instance)
                     yield index_document.to_dict(True)
 

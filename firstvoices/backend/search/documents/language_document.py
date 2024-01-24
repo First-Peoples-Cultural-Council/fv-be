@@ -8,6 +8,8 @@ class LanguageDocument(BaseDocument):
     primary_search_fields = Text()  # canonical names and identifiers
     secondary_search_fields = Text()  # alternate names and keywords
 
+    sort_title = Keyword()
+
     # language
     language_code = Keyword()  # no fuzzy matching on the language_code
     language_name = Text(fields={"raw": Keyword()}, copy_to="primary_search_fields")

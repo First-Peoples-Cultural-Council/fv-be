@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
+from backend.utils.character_utils import clean_input
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -22,7 +23,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         Returns validated search parameters based on request inputs.
         """
         return {
-            "q": self.request.GET.get("q", ""),  # todo: validate and clean,
+            "q": clean_input(self.request.GET.get("q", "")),
             "user": self.request.user,
         }
 
@@ -56,7 +57,8 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         search_params = self.get_search_params()
         pagination_params = self.get_pagination_params()
 
-        search_query = self.build_query(**search_params, **pagination_params)
+        search_query = self.build_query(**search_params)
+        search_query = self.paginate_query(search_query, **pagination_params)
 
         try:
             response = search_query.execute()
@@ -65,7 +67,9 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
         search_results = response["hits"]["hits"]
         data = self.hydrate(search_results)
-        serialized_data = self.serialize_search_results(search_results, data)
+        serialized_data = self.serialize_search_results(
+            search_results, data, **search_params, **pagination_params
+        )
         page = self.paginator.apply_search_pagination(
             request=request,
             object_list=serialized_data,
@@ -83,6 +87,9 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         Returns: elasticsearch_dsl.search.Search object specifying the query to execute
         """
         raise NotImplementedError()
+
+    def paginate_query(self, search_query, **kwargs):
+        return search_query.extra(from_=kwargs["start"], size=kwargs["page_size"])
 
     def hydrate(self, search_results):
         """Retrieves data for each item in the search results, grouped by type. If a serializer is defined for the type,
@@ -103,7 +110,13 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         return data
 
     def make_queryset_eager(self, model_name, queryset):
-        """Subclasses can implement this to add custom prefetching, etc"""
+        """Attempts to add eager fetching (select related, prefetch, etc) to the provided queryset, based on the
+        configured serializer class for the provided type.
+
+        Subclasses can override this to add custom prefetching.
+
+        Returns: updated queryset
+        """
         serializer = self.get_serializer_class(model_name)
         if hasattr(serializer, "make_queryset_eager"):
             return serializer.make_queryset_eager(queryset)
@@ -126,7 +139,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
             data[model_name].append(model_id)
         return data
 
-    def serialize_search_results(self, search_results, data):
+    def serialize_search_results(self, search_results, data, **kwargs):
         """
         Serializes the given search results, using the provided data and the configured serializer classes.
 
