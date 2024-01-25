@@ -178,3 +178,29 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
 
         assert response.status_code == 201
         assert Gallery.objects.filter(cover_image=image).count() == 2
+
+    @pytest.mark.django_db
+    def test_gallery_duplicate_image_400_error(self):
+        """Galleries cannot be created using the same image multiple times"""
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        image = factories.ImageFactory.create(site=site)
+        data = self.get_valid_data(site=site)
+        data["galleryItems"] = [
+            {
+                "image": str(image.id),
+                "order": 0,
+            },
+            {
+                "image": str(image.id),
+                "order": 1,
+            },
+        ]
+
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
