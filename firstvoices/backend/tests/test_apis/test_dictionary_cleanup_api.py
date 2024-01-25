@@ -20,6 +20,7 @@ from backend.tests.test_apis.base_api_test import BaseApiTest
 class TestDictionaryCleanupPreviewAPI(BaseApiTest):
     API_DETAIL_VIEW = "api:dictionary-cleanup-preview-list"
     SUCCESS_MESSAGE = {"message": "Recalculation preview has been queued."}
+    CLEAR = "/clear"
 
     @pytest.fixture
     def mock_celery_task_status(self, mocker):
@@ -182,7 +183,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
 
         assert response.status_code == 403
 
-        response = self.client.delete(self.get_detail_endpoint(site.slug) + "/clear")
+        response = self.client.delete(self.get_detail_endpoint(site.slug) + self.CLEAR)
 
         assert response.status_code == 403
 
@@ -204,7 +205,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
 
         assert response.status_code == 403
 
-        response = self.client.delete(self.get_detail_endpoint(site.slug) + "/clear")
+        response = self.client.delete(self.get_detail_endpoint(site.slug) + self.CLEAR)
 
         assert response.status_code == 403
 
@@ -228,7 +229,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
 
         assert response.status_code == 202
 
-        response = self.client.delete(self.get_detail_endpoint(site.slug) + "/clear")
+        response = self.client.delete(self.get_detail_endpoint(site.slug) + self.CLEAR)
 
         assert response.status_code == 204
 
@@ -245,7 +246,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         )
 
         response_delete = self.client.delete(
-            self.get_detail_endpoint(site.slug) + "/clear"
+            self.get_detail_endpoint(site.slug) + self.CLEAR
         )
         assert response_delete.status_code == 204
 
@@ -267,7 +268,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         )
 
         response_delete = self.client.delete(
-            self.get_detail_endpoint(site.slug) + "/clear"
+            self.get_detail_endpoint(site.slug) + self.CLEAR
         )
         assert response_delete.status_code == 403
 
