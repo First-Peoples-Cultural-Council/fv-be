@@ -15,7 +15,7 @@ ELASTICSEARCH_STORY_INDEX = "stories"
 ELASTICSEARCH_MEDIA_INDEX = "media"
 
 # Index name - /sites endpoint
-ELASTICSEARCH_LANGUAGE_INDEX = "language"
+ELASTICSEARCH_LANGUAGE_INDEX = "languages"
 
 # Document types
 TYPE_WORD = "word"

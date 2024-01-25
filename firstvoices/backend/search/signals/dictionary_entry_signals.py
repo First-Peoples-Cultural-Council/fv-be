@@ -26,6 +26,9 @@ from firstvoices.celery import link_error_handler
 @receiver(post_save, sender=DictionaryEntry)
 def request_update_dictionary_entry_index(sender, instance, **kwargs):
     if DictionaryEntry.objects.filter(id=instance.id).exists():
+        # The exists check was added when there was a possibility that the task
+        # could run before the entry was stored in db. Not an issue after adding
+        # transaction with the retries. Can be removed safely after some testing.
         transaction.on_commit(
             lambda: update_dictionary_entry_index.apply_async(
                 (instance.id,),
