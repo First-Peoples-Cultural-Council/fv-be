@@ -1,4 +1,5 @@
 from celery.result import AsyncResult
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import status
@@ -6,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
+from backend.permissions.predicates import is_superadmin
 from backend.serializers.async_results_serializers import (
     CustomOrderRecalculationPreviewResultSerializer,
     CustomOrderRecalculationResultSerializer,
@@ -58,8 +60,8 @@ from backend.views.exceptions import CeleryError
     ),
 )
 class CustomOrderRecalculateView(
-    FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
+    FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
 ):
     http_method_names = ["get", "post", "delete"]
@@ -68,6 +70,11 @@ class CustomOrderRecalculateView(
         **FVPermissionViewSetMixin.permission_type_map,
         "clear": "delete",
     }
+
+    def initial(self, *args, **kwargs):
+        if not is_superadmin(self.request.user, None):
+            raise PermissionDenied
+        super().initial(*args, **kwargs)
 
     def get_view_name(self):
         return "Custom Order Recalculation Results"
@@ -162,8 +169,8 @@ class CustomOrderRecalculateView(
     ),
 )
 class CustomOrderRecalculatePreviewView(
-    FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
+    FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
 ):
     http_method_names = ["get", "post", "delete"]
@@ -172,6 +179,11 @@ class CustomOrderRecalculatePreviewView(
         **FVPermissionViewSetMixin.permission_type_map,
         "clear": "delete",
     }
+
+    def initial(self, *args, **kwargs):
+        if not is_superadmin(self.request.user, None):
+            raise PermissionDenied
+        super().initial(*args, **kwargs)
 
     def get_view_name(self):
         return "Custom Order Recalculation Preview Results"
