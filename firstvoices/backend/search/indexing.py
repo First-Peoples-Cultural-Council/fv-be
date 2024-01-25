@@ -182,7 +182,7 @@ class LanguageIndexManager(IndexManager):
             document_type=instance.__class__.__name__,
             language_name=instance.title,
             sort_title=instance.title.upper(),
-            language_code=instance.language_code,
+            language_code=_text_as_list(instance.language_code),
             language_alternate_names=_text_as_list(instance.alternate_names),
             language_community_keywords=_text_as_list(instance.community_keywords),
             site_names=_fields_as_list(visible_sites, "title"),
@@ -227,6 +227,10 @@ class LanguageIndexManager(IndexManager):
                     index_document = cls.create_index_document(instance)
                     yield index_document.to_dict(True)
 
-        for instance in Site.objects.all().filter(visibility__gte=Visibility.MEMBERS):
+        for instance in (
+            Site.objects.all()
+            .filter(visibility__gte=Visibility.MEMBERS)
+            .filter(language=None)
+        ):
             index_document = cls.create_site_index_document(instance)
             yield index_document.to_dict(True)

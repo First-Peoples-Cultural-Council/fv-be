@@ -8,11 +8,11 @@ from backend.models.sites import Language
 from backend.tests import factories
 from backend.tests.factories.access import get_anonymous_user, get_non_member_user
 
-from .base_api_test import BaseApiTest, ReadOnlyApiTests
+from .base_api_test import BaseApiTest, ListApiTestMixin
 from .base_media_test import MediaTestMixin
 
 
-class TestLanguagesEndpoints(MediaTestMixin, ReadOnlyApiTests, BaseApiTest):
+class TestLanguagesEndpoints(MediaTestMixin, ListApiTestMixin, BaseApiTest):
     """
     End-to-end tests that the languages endpoints have the expected behaviour.
     """

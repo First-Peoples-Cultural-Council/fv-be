@@ -5,7 +5,7 @@ from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 
 
 class LanguageDocument(BaseDocument):
-    primary_search_fields = Text()  # canonical names and identifiers
+    primary_search_fields = Text()  # canonical/visible names and identifiers
     secondary_search_fields = Text()  # alternate names and keywords
 
     sort_title = Keyword()

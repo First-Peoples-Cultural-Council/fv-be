@@ -13,9 +13,13 @@ from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import ThrottlingMixin
 
 from ..models.constants import Visibility
+from ..search.queries.text_matching import exact_match, fuzzy_match
 from ..search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from .base_search_views import BaseSearchViewSet
 from .utils import get_select_related_media_fields
+
+PRIMARY_BOOST = 5
+SECONDARY_BOOST = 3
 
 
 @extend_schema_view(
@@ -58,16 +62,42 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         else:
             return self.build_list_query()
 
+    def build_search_term_query(self, q):
+        """
+        Search results are ranked as follows:
+        * exact match on a canonical or visible value (language code, language title, site title, language family title)
+        * exact match on an alternate or hidden value (alternate spellings, alternate names, community names)
+        * fuzzy match on any search field except language code
+
+        Args:
+            q: search term
+
+        Returns: ElasticSearch query object
+
+        """
+        subqueries = [
+            exact_match(q, field="language_code", boost=PRIMARY_BOOST),
+            exact_match(q, field="primary_search_fields", boost=PRIMARY_BOOST),
+            exact_match(q, field="secondary_search_fields", boost=SECONDARY_BOOST),
+            fuzzy_match(q, field="primary_search_fields"),
+            fuzzy_match(q, field="secondary_search_fields"),
+        ]
+        return Search(index=ELASTICSEARCH_LANGUAGE_INDEX).query(
+            Q(
+                "bool",
+                should=subqueries,
+                minimum_should_match=1,
+            )
+        )
+
     def build_list_query(self):
-        search_query = (
+        return (
             Search(index=ELASTICSEARCH_LANGUAGE_INDEX)
             .query(Q("bool", filter=[Q("term", document_type="Language")]))
             .sort({"sort_title": {"order": "asc"}})
         )
-        return search_query
 
     def make_queryset_eager(self, model_name, queryset):
-        """Subclasses can implement this to add prefetching, etc"""
         if model_name == "Language":
             visible_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
             return LanguageSerializer.make_queryset_eager(
@@ -134,72 +164,3 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
                 ),
             )
         )
-
-    #
-    # def list(self, request, *args, **kwargs):
-    #     """
-    #     Return a list of sites grouped by language.
-    #     """
-    #     # create the search query
-    #
-    #     # execute the search
-    #
-    #     # hydrate the data
-    #
-    #     # serialize the results
-
-    #
-    #     # retrieve visible sites in order to filter out empty languages
-    #     sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
-    #     ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
-    #
-    #     # then retrieve the desired data as a Language queryset
-    #     # sorting note: titles are converted to uppercase and then sorted which will put custom characters at the end
-    #     languages = (
-    #         Language.objects.filter(id__in=ids_of_languages_with_sites)
-    #         .order_by(Upper("title"))
-    #         .prefetch_related(
-    #             Prefetch(
-    #                 "sites",
-    #                 queryset=sites.order_by(Upper("title")).select_related(
-    #                     *get_select_related_media_fields("logo")
-    #                 ),
-    #             ),
-    #             Prefetch(
-    #                 "sites__sitefeature_set",
-    #                 queryset=SiteFeature.objects.filter(is_enabled=True),
-    #             ),
-    #         )
-    #     )
-    # #
-    #     data = [
-    #         LanguageSerializer(language, context={"request": request}).data
-    #         for language in languages
-    #     ]
-    #
-    # # add "other" sites
-    # other_sites = (
-    #     sites.filter(language=None)
-    #     .order_by(Upper("title"))
-    #     .select_related(*get_select_related_media_fields("logo"))
-    #     .prefetch_related(
-    #         Prefetch(
-    #             "sitefeature_set",
-    #             queryset=SiteFeature.objects.filter(is_enabled=True),
-    #         ),
-    #     )
-    # )
-    #
-    # if other_sites:
-    #     other_site_json = {
-    #         "language": "More FirstVoices Sites",
-    #         "languageCode": "",
-    #         "sites": [
-    #             SiteSummarySerializer(site, context={"request": request}).data
-    #             for site in other_sites
-    #         ],
-    #     }
-    #
-    #     data.append(other_site_json)
-    #
-    #     return Response(data)
