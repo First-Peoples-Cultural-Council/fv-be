@@ -49,7 +49,7 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
         gallery_items = attrs.get("galleryitem_set", [])
         if len(gallery_items) != len({x["image"] for x in gallery_items}):
             raise serializers.ValidationError("Gallery items must be unique.")
-        return attrs
+        return super().validate(attrs)
 
     def create(self, validated_data):
         gallery_items = validated_data.pop("galleryitem_set", [])
