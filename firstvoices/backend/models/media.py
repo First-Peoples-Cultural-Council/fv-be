@@ -245,6 +245,9 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
             return False
 
         old_instance = self._get_saved_instance()
+        if not old_instance.original:
+            return True
+
         is_content_updated = self.original.pk != old_instance.original.pk
         return is_content_updated
 
@@ -438,7 +441,7 @@ class ThumbnailMixin(models.Model):
         return model
 
 
-class Image(ThumbnailMixin, MediaBase):
+class Image(MediaBase, ThumbnailMixin):
     # from fvpicture
 
     class Meta:
@@ -504,7 +507,7 @@ class Image(ThumbnailMixin, MediaBase):
         return output_img
 
 
-class Video(ThumbnailMixin, MediaBase):
+class Video(MediaBase, ThumbnailMixin):
     # from fvvideo
 
     class Meta:
