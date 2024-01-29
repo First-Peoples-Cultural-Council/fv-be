@@ -92,6 +92,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "enabledFeatures": [],
+            "isHidden": False,
         }
 
     def generate_test_sites(self):
@@ -241,6 +242,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "url": site_url,
             "menu": menu.json,
             "enabledFeatures": [],
+            "isHidden": False,
             "logo": None,
             "bannerImage": None,
             "bannerVideo": None,
