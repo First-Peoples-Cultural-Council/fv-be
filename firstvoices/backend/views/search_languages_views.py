@@ -1,6 +1,12 @@
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from elasticsearch_dsl import Q, Search
 
 from backend.models.sites import Language, Site, SiteFeature
@@ -29,6 +35,22 @@ SECONDARY_BOOST = 3
         "are no accessible sites the list will be empty. Sites with no specified language will be grouped "
         "under 'More FirstVoices Sites'.",
         responses={200: LanguageSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="q",
+                description="Search term. May be an language code (BCP-47 / ISO), name or alternate name of a "
+                "language or language family, community keyword, or site title.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample("language code", value="en"),
+                    OpenApiExample("language name", value="Esperanto"),
+                    OpenApiExample("community keyword", value="Example First Nation"),
+                    OpenApiExample("site title", value="public demo site"),
+                ],
+            )
+        ],
     ),
     retrieve=extend_schema(
         description="Basic information about a language.",

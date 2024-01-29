@@ -72,12 +72,16 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
         language = factories.LanguageFactory.create(
             alternate_names="alt name 1 , alt name 2,altname 3",
             community_keywords="keyword 1, keyword 2",
+            language_code="abc,def, efg",
         )
         language_doc = LanguageIndexManager.create_index_document(language)
 
         assert language_doc.language_name == language.title
-        assert language_doc.language_code == language.language_code
 
+        self.assert_list(
+            ["abc", "def", "efg"],
+            language_doc.language_code,
+        )
         self.assert_list(
             ["alt name 1", "alt name 2", "altname 3"],
             language_doc.language_alternate_names,
