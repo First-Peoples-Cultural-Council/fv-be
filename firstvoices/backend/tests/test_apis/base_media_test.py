@@ -8,7 +8,6 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Role, Visibility
-from backend.models.media import ImageFile
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 
@@ -473,17 +472,18 @@ class BaseMediaApiTest(
     def assert_patch_instance_updated_fields(self, data, updated_instance):
         assert updated_instance.title == data["title"]
 
-    def assert_response(self, expected_data, actual_response):
+    def assert_response(self, original_instance, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
         assert actual_response["description"] == expected_data["description"]
         assert actual_response["acknowledgement"] == expected_data["acknowledgement"]
         assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
         assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
 
+        # The original file should not be updated, as it's a read-only field
         expected_file_path = (
-            expected_data["original"].content.url
-            if hasattr(expected_data["original"], "content")
-            else expected_data["original"].name
+            original_instance.original.content.url
+            if hasattr(original_instance.original, "content")
+            else original_instance.original.name
         )
         expected_filename = expected_file_path.split(".")[0]
         expected_file_extension = expected_file_path.split(".")[1]
@@ -491,9 +491,6 @@ class BaseMediaApiTest(
         actual_file_extension = actual_response["original"]["path"].split(".")[1]
         assert expected_filename in actual_filename
         assert expected_file_extension in actual_file_extension
-
-    def assert_patch_file_updated_fields(self, data, updated_instance):
-        assert data["original"].name in updated_instance.original.content.path
 
     def assert_update_patch_file_response(
         self, original_instance, data, actual_response
@@ -512,6 +509,51 @@ class BaseMediaApiTest(
             actual_response=actual_response,
             expected_data=expected_data,
         )
+
+    @pytest.mark.django_db
+    def test_update_with_nulls_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
+        self.assert_update_response(instance, expected_data, response_data)
+
+    @pytest.mark.django_db
+    def test_update_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_updated_instance(data, self.get_updated_instance(instance))
+        self.assert_update_response(instance, data, response_data)
 
     @pytest.mark.django_db
     def test_create_400_invalid_filetype(self):
@@ -624,6 +666,7 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
         self.assert_response(
+            original_instance=original_instance,
             actual_response=actual_response,
             expected_data={
                 "id": str(original_instance.id),
@@ -640,14 +683,17 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         self.assert_secondary_fields(expected_data, actual_instance)
         assert actual_instance.title == expected_data["title"]
 
-    def assert_update_response(self, expected_data, actual_response):
+    def assert_update_response(self, original_instance, expected_data, actual_response):
         self.assert_response(
+            original_instance=original_instance,
             actual_response=actual_response,
             expected_data={**expected_data},
         )
 
     @pytest.mark.django_db
-    def test_patch_file_success_200(self):
+    def test_patch_file_is_ignored(self):
+        # PUT/PATCH requests updating the original file should be ignored,
+        # i.e. there will be no validation error but the file will also not be updated.
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
         data = self.get_valid_patch_file_data(site)
@@ -664,54 +710,11 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         response_data = json.loads(response.content)
         assert response_data["id"] == str(instance.id)
 
-        self.assert_patch_file_original_fields(
-            instance, self.get_updated_patch_instance(instance)
-        )
-        self.assert_patch_file_updated_fields(
-            data, self.get_updated_patch_instance(instance)
-        )
-        self.assert_update_patch_file_response(instance, data, response_data)
+        # Verifying the file does not change
+        assert instance.original.content.name in response_data["original"]["path"]
 
-    def assert_patch_file_original_fields(self, original_instance, updated_instance):
-        self.assert_original_secondary_fields(original_instance, updated_instance)
-        assert updated_instance.title == original_instance.title
 
-    def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
-        self.assert_original_secondary_fields(original_instance, updated_instance)
-        assert updated_instance.title == original_instance.title
-        assert updated_instance.original.id == original_instance.original.id
-
-    @pytest.mark.disable_thumbnail_mocks
-    @pytest.mark.django_db
-    def test_patch_old_thumbnails_deleted(self, disable_celery):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
-        instance = self.create_minimal_instance(site, Visibility.PUBLIC)
-        instance = self.model.objects.get(pk=instance.id)
-        data = self.get_valid_patch_file_data(site)
-
-        assert ImageFile.objects.count() <= 4
-        old_thumbnail_id = instance.thumbnail.id
-        old_medium_id = instance.medium.id
-        old_small_id = instance.small.id
-
-        assert ImageFile.objects.filter(id=old_thumbnail_id).exists()
-        assert ImageFile.objects.filter(id=old_medium_id).exists()
-        assert ImageFile.objects.filter(id=old_small_id).exists()
-
-        response = self.client.patch(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            ),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["id"] == str(instance.id)
-
-        # Check that old files have been deleted
-        assert ImageFile.objects.count() <= 4
-        assert not ImageFile.objects.filter(id=old_thumbnail_id).exists()
-        assert not ImageFile.objects.filter(id=old_medium_id).exists()
-        assert not ImageFile.objects.filter(id=old_small_id).exists()
+def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
+    self.assert_original_secondary_fields(original_instance, updated_instance)
+    assert updated_instance.title == original_instance.title
+    assert updated_instance.original.id == original_instance.original.id
