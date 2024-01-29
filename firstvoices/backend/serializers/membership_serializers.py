@@ -25,6 +25,7 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     enabled_features = FeatureFlagSerializer(
         read_only=True, source="site.sitefeature_set", many=True
     )
+    is_hidden = serializers.BooleanField(source="site.is_hidden")
 
     def get_url(self, instance):
         # the lookup_field of the HyperlinkedIdentityField doesn't handle related fields,
