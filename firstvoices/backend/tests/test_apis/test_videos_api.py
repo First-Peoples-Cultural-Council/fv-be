@@ -31,7 +31,6 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
             acknowledgement="Original ack",
             exclude_from_kids=True,
             exclude_from_games=True,
-            is_shared=True,
         )
         video.save()
         return video

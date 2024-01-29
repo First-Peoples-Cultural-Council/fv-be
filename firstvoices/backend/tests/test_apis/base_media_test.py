@@ -60,7 +60,6 @@ class MediaTestMixin:
             "acknowledgement": instance.acknowledgement,
             "excludeFromGames": instance.exclude_from_games,
             "excludeFromKids": instance.exclude_from_kids,
-            "isShared": instance.is_shared,
         }
 
     def get_file_data(self, file):
@@ -355,7 +354,6 @@ class BaseMediaApiTest(
             "title": "A title for the media",
             "description": "Description of the media",
             "acknowledgement": "An acknowledgement of the media",
-            "isShared": True,
             "excludeFromGames": True,
             "excludeFromKids": True,
             "original": self.get_sample_file(
@@ -376,7 +374,6 @@ class BaseMediaApiTest(
             **data,
             "description": "",
             "acknowledgement": "",
-            "isShared": False,
             "excludeFromGames": False,
             "excludeFromKids": False,
         }
@@ -416,7 +413,6 @@ class BaseMediaApiTest(
         assert data_file_extension in instance_file_extension
 
         assert instance.acknowledgement == data["acknowledgement"]
-        assert instance.is_shared == data["isShared"]
         assert instance.exclude_from_games == data["excludeFromGames"]
         assert instance.exclude_from_kids == data["excludeFromKids"]
 
@@ -436,7 +432,6 @@ class BaseMediaApiTest(
         assert updated_instance.acknowledgement == expected_data["acknowledgement"]
         assert updated_instance.exclude_from_kids == expected_data["excludeFromKids"]
         assert updated_instance.exclude_from_games == expected_data["excludeFromGames"]
-        assert updated_instance.is_shared == expected_data["isShared"]
 
     def assert_patch_instance_updated_fields(self, data, updated_instance):
         assert updated_instance.title == data["title"]
@@ -447,7 +442,6 @@ class BaseMediaApiTest(
         assert actual_response["acknowledgement"] == expected_data["acknowledgement"]
         assert actual_response["excludeFromKids"] == expected_data["excludeFromKids"]
         assert actual_response["excludeFromGames"] == expected_data["excludeFromGames"]
-        assert actual_response["isShared"] == expected_data["isShared"]
 
         expected_file_path = (
             expected_data["original"].content.url
@@ -474,7 +468,6 @@ class BaseMediaApiTest(
             "acknowledgement": original_instance.acknowledgement,
             "excludeFromKids": original_instance.exclude_from_kids,
             "excludeFromGames": original_instance.exclude_from_games,
-            "isShared": original_instance.is_shared,
             "original": data["original"],
         }
 
@@ -518,7 +511,6 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
             },
             updated_instance=updated_instance,
         )
@@ -533,7 +525,6 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
                 "original": original_instance.original,
             },
         )
