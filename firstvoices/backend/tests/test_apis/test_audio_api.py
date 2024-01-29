@@ -173,7 +173,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
     def assert_patch_file_updated_fields(self, data, updated_instance):
         assert data["original"].name in updated_instance.original.content.path
 
-    def get_valid_patch_speaker_data(self, site):
+    def get_valid_patch_speaker_data(self, site, emtpy_list=False):
+        if emtpy_list:
+            return {"speakers": []}
+
         person1 = factories.PersonFactory.create(site=site)
         person2 = factories.PersonFactory.create(site=site)
 
@@ -204,17 +207,18 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
                 "original": original_instance.original,
                 "speakers": data["speakers"],
             },
         )
 
+    # Also checking for empty list to clear present speakers
+    @pytest.mark.parametrize("empty_list", [True, False])
     @pytest.mark.django_db
-    def test_patch_speakers_success_200(self):
+    def test_patch_speakers_success_200(self, empty_list):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
-        data = self.get_valid_patch_speaker_data(site)
+        data = self.get_valid_patch_speaker_data(site, empty_list)
 
         response = self.client.patch(
             self.get_detail_endpoint(
@@ -236,23 +240,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
         )
         self.assert_update_patch_speaker_response(instance, data, response_data)
 
-    def get_valid_patch_speaker_data(self, site):
-        person1 = factories.PersonFactory.create(site=site)
-        person2 = factories.PersonFactory.create(site=site)
-
-        return {"speakers": [str(person1.id), str(person2.id)]}
-
     def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
         self.assert_original_secondary_fields(original_instance, updated_instance)
         assert updated_instance.title == original_instance.title
         assert updated_instance.original.id == original_instance.original.id
-
-    def assert_patch_speaker_updated_fields(self, data, updated_instance: Audio):
-        actual_speaker_ids = [
-            str(x[0]) for x in updated_instance.speakers.all().values_list("id")
-        ]
-        for speaker_id in data["speakers"]:
-            assert speaker_id in actual_speaker_ids
 
     def assert_update_patch_speaker_response(
         self, original_instance, data, actual_response
