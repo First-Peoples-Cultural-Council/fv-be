@@ -90,7 +90,6 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
     excludeFromGames = serializers.BooleanField(
         source="exclude_from_games", default=False
     )
-    isShared = serializers.BooleanField(source="is_shared", default=False)
 
     def create_file(self, validated_data, filetype):
         file_data = validated_data.pop("original")
@@ -111,7 +110,6 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
             "acknowledgement",
             "excludeFromKids",
             "excludeFromGames",
-            "isShared",
             "original",
         )
 

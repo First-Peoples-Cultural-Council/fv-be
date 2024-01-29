@@ -32,7 +32,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
             acknowledgement="Original ack",
             exclude_from_kids=True,
             exclude_from_games=True,
-            is_shared=True,
         )
         audio.speakers.add(speaker)
         audio.save()
@@ -94,7 +93,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
                 "speakers": original_instance.speakers,
             },
             updated_instance=updated_instance,
@@ -125,7 +123,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
                 "original": original_instance.original,
                 "speakers": original_instance.speakers,
             },
@@ -152,7 +149,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
             "acknowledgement": original_instance.acknowledgement,
             "excludeFromKids": original_instance.exclude_from_kids,
             "excludeFromGames": original_instance.exclude_from_games,
-            "isShared": original_instance.is_shared,
             "original": data["original"],
             "speakers": original_instance.speakers,
         }
@@ -259,7 +255,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "acknowledgement": original_instance.acknowledgement,
                 "excludeFromKids": original_instance.exclude_from_kids,
                 "excludeFromGames": original_instance.exclude_from_games,
-                "isShared": original_instance.is_shared,
                 "original": original_instance.original,
                 "speakers": data["speakers"],
             },

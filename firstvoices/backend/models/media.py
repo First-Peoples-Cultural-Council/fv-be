@@ -228,9 +228,6 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
 
     # exclude_from_kids from fvaudience:children fvm:child_focused
 
-    # from fvm:shared
-    is_shared = models.BooleanField(default=False)
-
     def save(self, generate_thumbnails=True, **kwargs):
         if self._state.adding:
             self._add_media()
