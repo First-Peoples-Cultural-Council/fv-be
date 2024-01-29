@@ -34,6 +34,7 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
             "logo": None,
             "url": f"http://testserver/api/1.0/my-sites/{instance.site.slug}",
             "enabledFeatures": [],
+            "isHidden": False,
             "role": instance.get_role_display(),
         }
 
