@@ -674,7 +674,11 @@ class SiteContentUpdateApiTestMixin:
         assert response_data["id"] == str(instance.id)
 
         self.assert_updated_instance(data, self.get_updated_instance(instance))
-        self.assert_update_response(data, response_data)
+
+        if self.model in [Audio, Image, Video]:
+            self.assert_update_response(instance, data, response_data)
+        else:
+            self.assert_update_response(data, response_data)
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):

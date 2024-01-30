@@ -93,3 +93,14 @@ class AudioViewSet(
         if self.action == "retrieve":
             return AudioDetailSerializer
         return AudioSerializer
+
+    def update(self, request, *args, **kwargs):
+        # To handle empty list in multipart form-data
+        request.data._mutable = True
+        speakers = request.data.getlist("speakers", None)
+        if len(speakers) == 1 and speakers[0] == "[]":
+            speakers = []
+        request.data.setlist("speakers", speakers)
+        request.data._mutable = False
+
+        return super().update(request, *args, **kwargs)
