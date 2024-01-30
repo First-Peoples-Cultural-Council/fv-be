@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from elasticsearch.exceptions import ConnectionError
@@ -10,28 +10,15 @@ from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.views.exceptions import ElasticSearchConnectionError
 
-from ...pagination import SearchPageNumberPagination
 from .base_api_test import BaseApiTest, BaseSiteContentApiTest
+from .base_search_test import SearchMocksMixin
 
 
-class TestSearchAPI(BaseApiTest):
+class TestSearchAPI(SearchMocksMixin, BaseApiTest):
     """Tests for base search views."""
 
     API_LIST_VIEW = "api:search-list"
     API_DETAIL_VIEW = "api:search-detail"
-
-    @pytest.fixture
-    def mock_get_page_size(self, mocker):
-        mock_page_size = mocker.patch.object(
-            SearchPageNumberPagination, "get_page_size", new_callable=MagicMock
-        )
-        return mock_page_size
-
-    @pytest.fixture
-    def mock_search_query_execute(self, mocker):
-        mock_execute = mocker.patch.object(Search, "execute", new_callable=MagicMock)
-
-        return mock_execute
 
     @pytest.mark.django_db
     def test_search_pagination(self, db, mock_search_query_execute, mock_get_page_size):

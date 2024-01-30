@@ -74,8 +74,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     model = Language
 
     def build_query(self, q, **kwargs):
-        """Subclasses should implement.
-
+        """
         Returns: elasticsearch_dsl.search.Search object specifying the query to execute
         """
         if q:

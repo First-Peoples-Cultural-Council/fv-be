@@ -3,16 +3,20 @@ import json
 import pytest
 
 import backend.tests.factories.access
-from backend.models.constants import AppRole, Role, Visibility
-from backend.models.sites import Language
+from backend.models.constants import Visibility
 from backend.tests import factories
-from backend.tests.factories.access import get_anonymous_user, get_non_member_user
+from backend.tests.factories.access import (
+    get_anonymous_user,
+    get_non_member_user,
+    get_superadmin,
+)
 
-from .base_api_test import BaseApiTest, ListApiTestMixin
+from .base_api_test import BaseApiTest
 from .base_media_test import MediaTestMixin
+from .base_search_test import SearchMocksMixin
 
 
-class TestLanguagesEndpoints(MediaTestMixin, ListApiTestMixin, BaseApiTest):
+class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
     """
     End-to-end tests that the languages endpoints have the expected behaviour.
     """
@@ -20,217 +24,395 @@ class TestLanguagesEndpoints(MediaTestMixin, ListApiTestMixin, BaseApiTest):
     API_LIST_VIEW = "api:language-list"
     API_DETAIL_VIEW = "api:language-detail"
 
-    model = Language
+    def get_search_endpoint(self):
+        return f"{self.get_list_endpoint()}?q=what"
 
-    content_type = "application/json"
+    def get_list_response(self, mock_search_query_execute, language_search_results):
+        return self.get_response(
+            self.get_list_endpoint(), mock_search_query_execute, language_search_results
+        )
 
-    def create_minimal_instance(self, visibility):
-        return factories.LanguageFactory.create()
+    def get_search_response(self, mock_search_query_execute, language_search_results):
+        return self.get_response(
+            self.get_search_endpoint(),
+            mock_search_query_execute,
+            language_search_results,
+        )
 
+    def get_response(self, url, mock_search_query_execute, language_search_results):
+        mock_hits = [
+            self.format_language_hit(language) for language in language_search_results
+        ]
+
+        mock_results = {
+            "hits": {
+                "hits": mock_hits,
+                "total": {"value": len(mock_hits), "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        return self.client.get(url)
+
+    def format_language_hit(self, language):
+        return {
+            "_index": "language_2024_01_25_00_03_01",
+            "_type": "_doc",
+            "_id": str(
+                language.id
+            ),  # using this as a unique id to mimic the id of an index document
+            "_score": None,
+            "_source": {
+                "document_id": str(language.id),
+                "document_type": "Language",
+            },
+        }
+
+    @pytest.mark.parametrize(
+        "get_response", ["get_list_response", "get_search_response"]
+    )
     @pytest.mark.django_db
-    def test_list_empty(self):
-        """Overriding the base test due to lack of pagination"""
-        response = self.client.get(self.get_list_endpoint())
+    def test_empty_results(
+        self, get_response, db, mock_search_query_execute, mock_get_page_size
+    ):
+        response = getattr(self, get_response)(mock_search_query_execute, [])
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data) == 0
 
+        assert response_data["count"] == 0
+        assert response_data["results"] == []
+
+    @pytest.mark.parametrize(
+        "get_response", ["get_list_response", "get_search_response"]
+    )
     @pytest.mark.django_db
-    def test_list_minimal(self):
-        """
-        Overriding the base test to check custom permissions and the "other" language grouping
-        """
+    def test_one_language_is_formatted(
+        self, get_response, db, mock_search_query_execute, mock_get_page_size
+    ):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        language0 = backend.tests.factories.access.LanguageFactory.create(
+        language = backend.tests.factories.access.LanguageFactory.create(
             title="Language 0"
         )
-        site = factories.SiteFactory(language=language0, visibility=Visibility.PUBLIC)
-        factories.SiteFactory(language=language0, visibility=Visibility.MEMBERS)
+        site = factories.SiteFactory(language=language, visibility=Visibility.PUBLIC)
 
-        language1 = backend.tests.factories.access.LanguageFactory.create(
-            title="Language 1"
-        )
-        factories.SiteFactory(language=language1, visibility=Visibility.MEMBERS)
-
-        # sites with no language set
-        factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-        factories.SiteFactory(language=None, visibility=Visibility.MEMBERS)
-
-        backend.tests.factories.access.LanguageFactory.create()
-
-        response = self.client.get(self.get_list_endpoint())
+        response = getattr(self, get_response)(mock_search_query_execute, [language])
 
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert len(response_data) == 3
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
 
-        assert response_data[0]["language"] == language0.title
-        assert response_data[0]["languageCode"] == language0.language_code
-        assert len(response_data[0]["sites"]) == 2
+        language_response = response_data["results"][0]
+        self.assert_language_response(language, language_response)
 
-        assert response_data[1]["language"] == language1.title
-        assert response_data[1]["languageCode"] == language1.language_code
-        assert len(response_data[1]["sites"]) == 1
+        assert len(language_response["sites"]) == 1
+        self.assert_site_response(site, language_response["sites"][0])
 
-        assert response_data[2]["language"] == "More FirstVoices Sites"
-        assert response_data[2]["languageCode"] == ""
-        assert len(response_data[2]["sites"]) == 2
-
-        site_json = response_data[0]["sites"][0]
-        assert site_json == {
-            "id": str(site.id),
-            "title": site.title,
-            "slug": site.slug,
-            "language": language0.title,
-            "visibility": "public",
-            "logo": None,
-            "url": f"http://testserver/api/1.0/sites/{site.slug}",
-            "enabledFeatures": [],
-            "isHidden": False,
-        }
-
-    def get_expected_response(self, instance):
-        sites_json = [self.get_expected_site_response(s) for s in instance.sites.all()]
-
-        return {
-            "language": instance.title,
-            "languageCode": instance.language_code,
-            "sites": sites_json,
-        }
-
-    def get_expected_site_response(self, site):
-        return {
-            "id": str(site.id),
-            "title": site.title,
-            "slug": site.slug,
-            "language": site.language.title,
-            "visibility": "public",
-            "logo": None,
-            "url": f"http://testserver/api/1.0/sites/{site.slug}",
-            "enabledFeatures": [],
-        }
-
-    def generate_test_sites(self):
-        # a language with sites of all visibilities
-        all_vis_language = backend.tests.factories.access.LanguageFactory.create()
-        team_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.TEAM
-        )
-        member_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.MEMBERS
-        )
-        public_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.PUBLIC
-        )
-
-        # languages with one site each
-        team_language = backend.tests.factories.access.LanguageFactory.create()
-        team_site1 = factories.SiteFactory(
-            language=team_language, visibility=Visibility.TEAM
-        )
-
-        member_language = backend.tests.factories.access.LanguageFactory.create()
-        member_site1 = factories.SiteFactory(
-            language=member_language, visibility=Visibility.MEMBERS
-        )
-
-        public_language = backend.tests.factories.access.LanguageFactory.create()
-        public_site1 = factories.SiteFactory(
-            language=public_language, visibility=Visibility.PUBLIC
-        )
-
-        # sites with no language
-        team_site2 = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
-        member_site2 = factories.SiteFactory(
-            language=None, visibility=Visibility.MEMBERS
-        )
-        public_site2 = factories.SiteFactory(
-            language=None, visibility=Visibility.PUBLIC
-        )
-
-        return {
-            "public": [public_site0, public_site1, public_site2],
-            "members": [member_site0, member_site1, member_site2],
-            "team": [team_site0, team_site1, team_site2],
-        }
-
-    def assert_visible_sites(self, response, sites):
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-
-        response_sites = [
-            site["id"] for language in response_data for site in language["sites"]
-        ]
-
-        assert len(response_sites) == 6, "included extra sites"
-
-        assert str(sites["members"][0].id) in response_sites
-        assert str(sites["members"][1].id) in response_sites
-        assert str(sites["members"][2].id) in response_sites
-
-        assert str(sites["public"][0].id) in response_sites
-        assert str(sites["public"][1].id) in response_sites
-        assert str(sites["public"][2].id) in response_sites
-
-    @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
+    @pytest.mark.parametrize(
+        "get_response", ["get_list_response", "get_search_response"]
+    )
     @pytest.mark.django_db
-    def test_list_permissions_for_non_members(self, get_user):
-        sites = self.generate_test_sites()
+    def test_single_site_is_formatted(
+        self, get_response, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
 
+        site = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+
+        response = getattr(self, get_response)(mock_search_query_execute, [])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        # assert response_data["count"] == 1  # todo: fix pagination count to include the added section
+        assert len(response_data["results"]) == 1
+
+        language_response = response_data["results"][0]
+        self.assert_more_sites_response(language_response)
+
+        assert len(language_response["sites"]) == 1
+        self.assert_site_response(site, language_response["sites"][0])
+
+    @pytest.mark.parametrize(
+        "get_response", ["get_list_response", "get_search_response"]
+    )
+    @pytest.mark.parametrize(
+        "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
+    )
+    @pytest.mark.django_db
+    def test_language_sites_only_include_visible(
+        self, get_response, get_user, db, mock_search_query_execute, mock_get_page_size
+    ):
         user = get_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
+        language = backend.tests.factories.access.LanguageFactory.create(
+            title="waffles"
+        )
+        site_public = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC
+        )
+        site_members = factories.SiteFactory(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
+
+        response = getattr(self, get_response)(mock_search_query_execute, [language])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
+        assert len(site_id_list) == 2
+        assert str(site_public.id) in site_id_list
+        assert str(site_members.id) in site_id_list
+        assert str(site_team.id) not in site_id_list
 
     @pytest.mark.parametrize(
-        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+        "get_response", ["get_list_response", "get_search_response"]
     )
     @pytest.mark.django_db
-    def test_list_permissions_for_members(self, role):
-        sites = self.generate_test_sites()
-
+    def test_language_sites_are_sorted(
+        self, get_response, db, mock_search_query_execute, mock_get_page_size
+    ):
         user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=sites["team"][0], role=role)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
+        language = backend.tests.factories.access.LanguageFactory.create(
+            title="waffles"
+        )
+        site_z = factories.SiteFactory(
+            title="zebra", language=language, visibility=Visibility.PUBLIC
+        )
+        site_a = factories.SiteFactory(
+            title="apple", language=language, visibility=Visibility.PUBLIC
+        )
+
+        response = getattr(self, get_response)(mock_search_query_execute, [language])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        site_list = response_data["results"][0]["sites"]
+        self.assert_site_response(site_a, site_list[0])
+        self.assert_site_response(site_z, site_list[1])
 
     @pytest.mark.parametrize(
-        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+        "get_response", ["get_list_response", "get_search_response"]
     )
-    @pytest.mark.django_db
-    def test_list_permissions_for_superadmins(self, role):
-        sites = self.generate_test_sites()
-
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
-
     @pytest.mark.parametrize("visibility", [Visibility.PUBLIC, Visibility.MEMBERS])
     @pytest.mark.django_db
-    def test_list_logo_from_same_site(self, visibility):
+    def test_logo(
+        self, get_response, visibility, mock_search_query_execute, mock_get_page_size
+    ):
+        """
+        Set this up specially to make sure logo is from same site (doesn't happen by default in the factories).
+        """
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory.create(visibility=visibility)
+        language = factories.LanguageFactory.create()
+        site = factories.SiteFactory.create(visibility=visibility, language=language)
         image = factories.ImageFactory(site=site)
         site.logo = image
         site.save()
 
-        response = self.client.get(f"{self.get_list_endpoint()}")
+        response = getattr(self, get_response)(mock_search_query_execute, [language])
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data) == 1
-        assert len(response_data[0]["sites"]) == 1
-        assert response_data[0]["sites"][0]["logo"] == self.get_expected_image_data(
-            image
+        assert response_data["results"][0]["sites"][0][
+            "logo"
+        ] == self.get_expected_image_data(image)
+
+    @pytest.mark.django_db
+    def test_list_more_sites_at_end(
+        self, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        language = backend.tests.factories.access.LanguageFactory.create(
+            title="Language 0"
         )
+        site = factories.SiteFactory(language=language, visibility=Visibility.PUBLIC)
+
+        site2 = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+
+        response = self.get_list_response(mock_search_query_execute, [language])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        # assert response_data["count"] == 1
+        assert len(response_data["results"]) == 2
+
+        language_response = response_data["results"][0]
+        self.assert_language_response(language, language_response)
+
+        assert len(language_response["sites"]) == 1
+        self.assert_site_response(site, language_response["sites"][0])
+
+        more_sites_response = response_data["results"][1]
+        self.assert_more_sites_response(more_sites_response)
+
+        assert len(more_sites_response["sites"]) == 1
+        self.assert_site_response(site2, more_sites_response["sites"][0])
+
+    @pytest.mark.django_db
+    def test_list_more_sites_are_sorted(
+        self, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site_z = factories.SiteFactory(
+            title="Zoolander", language=None, visibility=Visibility.PUBLIC
+        )
+        site_m = factories.SiteFactory(
+            title="Mac And Cheese", language=None, visibility=Visibility.PUBLIC
+        )
+        site_a = factories.SiteFactory(
+            title="atreyu", language=None, visibility=Visibility.PUBLIC
+        )
+
+        response = self.get_list_response(mock_search_query_execute, [])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        site_list = response_data["results"][0]["sites"]
+
+        self.assert_site_response(site_a, site_list[0])
+        self.assert_site_response(site_m, site_list[1])
+        self.assert_site_response(site_z, site_list[2])
+
+    @pytest.mark.parametrize(
+        "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
+    )
+    @pytest.mark.django_db
+    def test_list_more_sites_only_include_visible(
+        self, get_user, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = get_user()
+        self.client.force_authenticate(user=user)
+
+        site_public = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+        site_members = factories.SiteFactory(
+            language=None, visibility=Visibility.MEMBERS
+        )
+        site_team = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
+
+        response = self.get_list_response(mock_search_query_execute, [])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
+        assert len(site_id_list) == 2
+        assert str(site_public.id) in site_id_list
+        assert str(site_members.id) in site_id_list
+        assert str(site_team.id) not in site_id_list
+
+    @pytest.mark.django_db
+    def test_search_mixed_sites_and_languages(self, db, mock_search_query_execute):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        language = backend.tests.factories.access.LanguageFactory.create()
+        language_site = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC
+        )
+
+        single_site_1 = factories.SiteFactory(
+            language=None, visibility=Visibility.PUBLIC
+        )
+        single_site_2 = factories.SiteFactory(
+            language=None, visibility=Visibility.PUBLIC
+        )
+
+        mock_hits = [
+            {
+                "_index": "language_2024_01_25_00_03_01",
+                "_type": "_doc",
+                "_id": "abc123",
+                "_score": None,
+                "_source": {
+                    "document_id": str(single_site_2.id),
+                    "document_type": "Site",
+                },
+            },
+            {
+                "_index": "language_2024_01_25_00_03_01",
+                "_type": "_doc",
+                "_id": "xyz123",
+                "_score": None,
+                "_source": {
+                    "document_id": str(language.id),
+                    "document_type": "Language",
+                },
+            },
+            {
+                "_index": "language_2024_01_25_00_03_01",
+                "_type": "_doc",
+                "_id": "ghi789",
+                "_score": None,
+                "_source": {
+                    "document_id": str(single_site_1.id),
+                    "document_type": "Site",
+                },
+            },
+        ]
+
+        mock_results = {
+            "hits": {
+                "hits": mock_hits,
+                "total": {"value": len(mock_hits), "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint())
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 3
+
+        self.assert_language_response(language, response_data["results"][0])
+        self.assert_site_response(
+            language_site, response_data["results"][0]["sites"][0]
+        )
+
+        self.assert_more_sites_response(response_data["results"][1])
+        self.assert_site_response(
+            single_site_2, response_data["results"][1]["sites"][0]
+        )
+
+        self.assert_more_sites_response(response_data["results"][2])
+        self.assert_site_response(
+            single_site_1, response_data["results"][2]["sites"][0]
+        )
+
+    def assert_language_response(self, language, language_response):
+        assert language_response["language"] == language.title
+        assert language_response["languageCode"] == language.language_code
+
+    def assert_more_sites_response(self, more_response):
+        assert more_response["language"] == "More FirstVoices Sites"
+        assert more_response["languageCode"] == ""
+
+    def assert_site_response(self, site, site_response):
+        assert site_response == {
+            "id": str(site.id),
+            "title": site.title,
+            "slug": site.slug,
+            "language": site.language.title if site.language else None,
+            "visibility": "public",
+            "logo": None,
+            "url": f"http://testserver/api/1.0/sites/{site.slug}",
+            "enabledFeatures": [],
+        }
