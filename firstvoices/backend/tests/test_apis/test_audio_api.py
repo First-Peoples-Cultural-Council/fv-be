@@ -140,7 +140,9 @@ class TestAudioEndpoint(BaseMediaApiTest):
         assert actual_instance.title == expected_data["title"]
         assert actual_instance.speakers.count() == 0
 
-    def assert_update_response(self, original_instance, expected_data, actual_response):
+    def assert_update_response_audio(
+        self, original_instance, expected_data, actual_response
+    ):
         self.assert_response(
             original_instance=original_instance,
             actual_response=actual_response,

@@ -510,6 +510,15 @@ class BaseMediaApiTest(
             expected_data=expected_data,
         )
 
+    def assert_update_response_media(
+        self, original_instance, expected_data, actual_response
+    ):
+        self.assert_response(
+            original_instance=original_instance,
+            actual_response=actual_response,
+            expected_data={**expected_data},
+        )
+
     @pytest.mark.django_db
     def test_create_400_invalid_filetype(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -638,9 +647,8 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         self.assert_secondary_fields(expected_data, actual_instance)
         assert actual_instance.title == expected_data["title"]
 
-    def assert_update_response(self, original_instance, expected_data, actual_response):
+    def assert_update_response(self, expected_data, actual_response):
         self.assert_response(
-            original_instance=original_instance,
             actual_response=actual_response,
             expected_data={**expected_data},
         )

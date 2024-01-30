@@ -676,7 +676,7 @@ class SiteContentUpdateApiTestMixin:
         self.assert_updated_instance(data, self.get_updated_instance(instance))
 
         if self.model in [Audio, Image, Video]:
-            self.assert_update_response(instance, data, response_data)
+            self.assert_update_response_media(instance, data, response_data)
         else:
             self.assert_update_response(data, response_data)
 
@@ -705,7 +705,7 @@ class SiteContentUpdateApiTestMixin:
         # We need to pass instance to verify that the original is not modified
         # in case of media files
         if self.model in [Audio, Image, Video]:
-            self.assert_update_response(instance, expected_data, response_data)
+            self.assert_update_response_media(instance, expected_data, response_data)
         else:
             self.assert_update_response(expected_data, response_data)
 
