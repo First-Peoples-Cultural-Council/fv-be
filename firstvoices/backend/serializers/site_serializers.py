@@ -33,9 +33,14 @@ class SiteSummarySerializer(LinkedSiteSerializer):
     enabled_features = FeatureFlagSerializer(
         read_only=True, source="sitefeature_set", many=True
     )
+    is_hidden = serializers.BooleanField(read_only=True)
 
     class Meta(LinkedSiteSerializer.Meta):
-        fields = LinkedSiteSerializer.Meta.fields + ("logo", "enabled_features")
+        fields = LinkedSiteSerializer.Meta.fields + (
+            "logo",
+            "enabled_features",
+            "is_hidden",
+        )
 
 
 @extend_schema_serializer(

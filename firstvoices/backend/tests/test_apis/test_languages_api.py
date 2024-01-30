@@ -90,6 +90,7 @@ class TestLanguagesEndpoints(MediaTestMixin, ReadOnlyApiTests, BaseApiTest):
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "enabledFeatures": [],
+            "isHidden": False,
         }
 
     def get_expected_response(self, instance):

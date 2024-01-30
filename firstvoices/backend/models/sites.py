@@ -177,6 +177,8 @@ class Site(BaseModel):
         related_name="site_banner_of",
     )
 
+    is_hidden = models.BooleanField(default=False)
+
     @property
     def language_family(self):
         if self.language is not None:
