@@ -412,4 +412,5 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "enabledFeatures": [],
+            "isHidden": False,
         }
