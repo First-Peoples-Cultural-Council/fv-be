@@ -114,32 +114,6 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
     @pytest.mark.parametrize(
         "get_response", ["get_list_response", "get_search_response"]
     )
-    @pytest.mark.django_db
-    def test_single_site_is_formatted(
-        self, get_response, db, mock_search_query_execute, mock_get_page_size
-    ):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-
-        response = getattr(self, get_response)(mock_search_query_execute, [])
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        # assert response_data["count"] == 1  # todo: fix pagination count to include the added section
-        assert len(response_data["results"]) == 1
-
-        language_response = response_data["results"][0]
-        self.assert_more_sites_response(language_response)
-
-        assert len(language_response["sites"]) == 1
-        self.assert_site_response(site, language_response["sites"][0])
-
-    @pytest.mark.parametrize(
-        "get_response", ["get_list_response", "get_search_response"]
-    )
     @pytest.mark.parametrize(
         "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
     )
@@ -228,6 +202,29 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         assert response_data["results"][0]["sites"][0][
             "logo"
         ] == self.get_expected_image_data(image)
+
+    @pytest.mark.django_db
+    def test_list_more_sites_are_formatted(
+        self, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
+
+        response = self.get_list_response(mock_search_query_execute, [])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        # assert response_data["count"] == 1  # todo: fix pagination count to include the added section
+        assert len(response_data["results"]) == 1
+
+        language_response = response_data["results"][0]
+        self.assert_more_sites_response(language_response)
+
+        assert len(language_response["sites"]) == 1
+        self.assert_site_response(site, language_response["sites"][0])
 
     @pytest.mark.django_db
     def test_list_more_sites_at_end(
@@ -382,14 +379,14 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         response_data = json.loads(response.content)
         assert len(response_data["results"]) == 3
 
-        self.assert_language_response(language, response_data["results"][0])
+        self.assert_more_sites_response(response_data["results"][0])
         self.assert_site_response(
-            language_site, response_data["results"][0]["sites"][0]
+            single_site_2, response_data["results"][0]["sites"][0]
         )
 
-        self.assert_more_sites_response(response_data["results"][1])
+        self.assert_language_response(language, response_data["results"][1])
         self.assert_site_response(
-            single_site_2, response_data["results"][1]["sites"][0]
+            language_site, response_data["results"][1]["sites"][0]
         )
 
         self.assert_more_sites_response(response_data["results"][2])

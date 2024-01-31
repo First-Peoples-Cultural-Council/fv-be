@@ -10,7 +10,6 @@ from backend.models.sites import Language, Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
-    LanguageSerializer,
     SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )
@@ -18,6 +17,7 @@ from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
+from ..serializers.language_serializers import LanguageSerializer
 from .utils import get_select_related_media_fields
 
 

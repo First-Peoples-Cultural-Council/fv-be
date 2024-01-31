@@ -9,18 +9,19 @@ from drf_spectacular.utils import (
 )
 from elasticsearch_dsl import Q, Search
 
+from backend.models.constants import Visibility
 from backend.models.sites import Language, Site, SiteFeature
-from backend.serializers.site_serializers import (
+from backend.search.queries.text_matching import exact_match, fuzzy_match
+from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
+from backend.serializers.language_serializers import (
     LanguageSerializer,
-    SiteSummarySerializer,
+    MoreSitesSerializer,
 )
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import ThrottlingMixin
 
-from ..models.constants import Visibility
-from ..search.queries.text_matching import exact_match, fuzzy_match
-from ..search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
+from ..serializers.site_serializers import SiteSummarySerializer
 from .base_search_views import BaseSearchViewSet
 from .utils import get_select_related_media_fields
 
@@ -69,7 +70,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     http_method_names = ["get"]
     serializer_classes = {
         "Language": LanguageSerializer,
-        "Site": SiteSummarySerializer,
+        "Site": MoreSitesSerializer,
     }
     model = Language
 
@@ -125,6 +126,9 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
                 queryset, visible_sites=visible_sites
             )
 
+        if model_name == "Site":
+            return MoreSitesSerializer.make_queryset_eager(queryset)
+
         return super().make_queryset_eager(model_name, queryset)
 
     def serialize_search_results(self, search_results, data, **kwargs):
@@ -155,16 +159,13 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         )
 
         if other_sites:
-            return {
-                "language": "More FirstVoices Sites",
-                "languageCode": "",
-                "sites": [
-                    SiteSummarySerializer(
-                        site, context=self.get_serializer_context()
-                    ).data
-                    for site in other_sites
-                ],
-            }
+            other_sites_json = MoreSitesSerializer(
+                other_sites.first(), context=self.get_serializer_context()
+            ).data
+            other_sites_json["sites"] = SiteSummarySerializer(
+                other_sites, many=True, context=self.get_serializer_context()
+            ).data
+            return other_sites_json
 
         return None
 

@@ -163,8 +163,8 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
         result_type = result["_source"]["document_type"]
         result_id = result["_source"]["document_id"]
-        document = data[result_type][result_id]
+        model = data[result_type][result_id]
         serializer = self.get_serializer_class(result_type)
         context = self.get_serializer_context()
 
-        return serializer(document, context=context).data
+        return serializer(model, context=context).data
