@@ -1,5 +1,3 @@
-from django.db.models import Prefetch
-from django.db.models.functions import Upper
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -10,7 +8,7 @@ from drf_spectacular.utils import (
 from elasticsearch_dsl import Q, Search
 
 from backend.models.constants import Visibility
-from backend.models.sites import Language, Site, SiteFeature
+from backend.models.sites import Language, Site
 from backend.search.queries.text_matching import (
     exact_match,
     fuzzy_match,
@@ -27,7 +25,6 @@ from backend.views.base_views import ThrottlingMixin
 
 from ..serializers.site_serializers import SiteSummarySerializer
 from .base_search_views import BaseSearchViewSet
-from .utils import get_select_related_media_fields
 
 PRIMARY_BOOST = 5
 SECONDARY_BOOST = 3
@@ -43,7 +40,7 @@ SECONDARY_BOOST = 3
         parameters=[
             OpenApiParameter(
                 name="q",
-                description="Search term. May be an language code (BCP-47 / ISO), name or alternate name of a "
+                description="Search term. May be a language code (BCP-47 / ISO), name or alternate name of a "
                 "language or language family, community keyword, or site title.",
                 required=False,
                 default="",
@@ -167,21 +164,3 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
             return other_sites_json
 
         return None
-
-    def get_detail_queryset(self):
-        return (
-            Language.objects.all()
-            .order_by(Upper("title"))
-            .prefetch_related(
-                Prefetch(
-                    "sites",
-                    queryset=Site.objects.visible(user=self.request.user)
-                    .order_by(Upper("title"))
-                    .select_related(*get_select_related_media_fields("logo")),
-                ),
-                Prefetch(
-                    "sites__sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
-                ),
-            )
-        )

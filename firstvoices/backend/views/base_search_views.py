@@ -130,7 +130,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         """
         data = {}
         for result in search_results:
-            model_name = result["_source"]["document_type"]  # todo get name not class
+            model_name = result["_source"]["document_type"]
             model_id = result["_source"]["document_id"]
 
             if model_name not in data:

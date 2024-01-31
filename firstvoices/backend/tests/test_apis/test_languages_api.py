@@ -217,8 +217,9 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        # assert response_data["count"] == 1  # todo: fix pagination count to include the added section
-        assert len(response_data["results"]) == 1
+        assert (
+            len(response_data["results"]) == 1
+        )  # checking results not count until fw-5519 fixes pagination
 
         language_response = response_data["results"][0]
         self.assert_more_sites_response(language_response)
@@ -245,7 +246,6 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        # assert response_data["count"] == 1
         assert len(response_data["results"]) == 2
 
         language_response = response_data["results"][0]

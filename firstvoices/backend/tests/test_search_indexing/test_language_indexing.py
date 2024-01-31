@@ -14,7 +14,7 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
     factory = factories.LanguageFactory
     expected_index_name = ELASTICSEARCH_LANGUAGE_INDEX
 
-    @pytest.mark.skip
+    @pytest.mark.skip("Replaced with several tests for custom iteration")
     def test_iterator(self):
         """See other more specific tests instead:
         - test_iterator_skips_languages_without_sites
