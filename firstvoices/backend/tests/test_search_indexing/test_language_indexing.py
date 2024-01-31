@@ -16,7 +16,10 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
 
     @pytest.mark.skip
     def test_iterator(self):
-        """Override to test that only languages containing sites are indexed"""
+        """See other more specific tests instead:
+        - test_iterator_skips_languages_without_sites
+        - test_iterator_skips_languages_with_only_team_sites
+        """
         pass
 
     @pytest.mark.django_db
@@ -63,6 +66,29 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
             # assert adds all languages with visible sites
             mock_create_index_doc.assert_any_call(language2)
             mock_create_index_doc.assert_any_call(language3)
+
+            # assert does not add other (empty) languages
+            assert mock_create_index_doc.call_count == 2
+
+    @pytest.mark.django_db
+    def test_iterator_includes_visible_sites_with_no_language(self):
+        with patch(
+            "backend.search.indexing.LanguageIndexManager.create_site_index_document"
+        ) as mock_create_index_doc:
+            factories.SiteFactory.create(language=None, visibility=Visibility.TEAM)
+            member_site = factories.SiteFactory.create(
+                language=None, visibility=Visibility.MEMBERS
+            )
+            public_site = factories.SiteFactory.create(
+                language=None, visibility=Visibility.PUBLIC
+            )
+
+            for _ in self.manager._iterator():
+                continue
+
+            # assert adds all languages with visible sites
+            mock_create_index_doc.assert_any_call(member_site)
+            mock_create_index_doc.assert_any_call(public_site)
 
             # assert does not add other (empty) languages
             assert mock_create_index_doc.call_count == 2

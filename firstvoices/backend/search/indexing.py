@@ -165,9 +165,6 @@ class IndexManager:
                 yield index_document.to_dict(True)
 
 
-EMPTY_LANGUAGE_GROUP = "EmptyLanguage"
-
-
 class LanguageIndexManager(IndexManager):
     index = ELASTICSEARCH_LANGUAGE_INDEX
     document = LanguageDocument
@@ -175,6 +172,7 @@ class LanguageIndexManager(IndexManager):
 
     @classmethod
     def create_index_document(cls, instance: Language):
+        """Returns a LanguageDocument populated for the given Language instance."""
         visible_sites = instance.sites.all().filter(visibility__gte=Visibility.MEMBERS)
 
         return cls.document(
@@ -195,6 +193,8 @@ class LanguageIndexManager(IndexManager):
 
     @classmethod
     def create_site_index_document(cls, instance: Site):
+        """Returns a LanguageDocument populated for the given Site instance, with the assumption that the Site has
+        no associated Language."""
         return cls.document(
             document_id=str(instance.id),
             document_type=instance.__class__.__name__,

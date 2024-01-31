@@ -10,7 +10,7 @@ from backend.views.utils import get_select_related_media_fields
 
 class LanguageSerializer(serializers.Serializer):
     """
-    Serializes basic details about a language, including a list of language sites.
+    Serializes basic details about a Language, including a list of visible (Public or Members) Sites for that Language.
     """
 
     language = serializers.CharField(source="title", read_only=True)
@@ -38,9 +38,9 @@ class LanguageSerializer(serializers.Serializer):
         )
 
 
-class MoreSitesSerializer(serializers.Serializer):
+class MoreSiteSerializer(serializers.Serializer):
     """
-    Serializes sites that don't have a language.
+    Serializes a single site that doesn't have a language.
     """
 
     class Meta:

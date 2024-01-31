@@ -19,7 +19,7 @@ from backend.search.queries.text_matching import (
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.serializers.language_serializers import (
     LanguageSerializer,
-    MoreSitesSerializer,
+    MoreSiteSerializer,
 )
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
@@ -74,7 +74,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     http_method_names = ["get"]
     serializer_classes = {
         "Language": LanguageSerializer,
-        "Site": MoreSitesSerializer,
+        "Site": MoreSiteSerializer,
     }
     model = Language
 
@@ -133,7 +133,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
             )
 
         if model_name == "Site":
-            return MoreSitesSerializer.make_queryset_eager(queryset)
+            return MoreSiteSerializer.make_queryset_eager(queryset)
 
         return super().make_queryset_eager(model_name, queryset)
 
@@ -151,25 +151,18 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         return serialized_data
 
     def get_other_sites_data(self):
-        other_sites = (
-            Site.objects.filter(visibility__gte=Visibility.MEMBERS)
-            .filter(language=None)
-            .order_by(Upper("title"))
-            .select_related(*get_select_related_media_fields("logo"))
-            .prefetch_related(
-                Prefetch(
-                    "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
-                ),
-            )
+        other_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS).filter(
+            language=None
         )
 
         if other_sites:
-            other_sites_json = MoreSitesSerializer(
-                other_sites.first(), context=self.get_serializer_context()
+            queryset = MoreSiteSerializer.make_queryset_eager(other_sites)
+
+            other_sites_json = MoreSiteSerializer(
+                queryset.first(), context=self.get_serializer_context()
             ).data
             other_sites_json["sites"] = SiteSummarySerializer(
-                other_sites, many=True, context=self.get_serializer_context()
+                queryset, many=True, context=self.get_serializer_context()
             ).data
             return other_sites_json
 
