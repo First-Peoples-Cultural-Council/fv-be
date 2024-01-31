@@ -25,6 +25,8 @@ class TestLanguageSearchQuery:
         query = test_view.build_query("duck").to_dict()
         subqueries = query["query"]["bool"]["should"]
 
+        assert len(subqueries) == 7
+
         assert {"term": {"language_code": {"value": "duck", "boost": 5}}} in subqueries
         assert {
             "term": {"primary_search_fields": {"value": "duck", "boost": 5}}
@@ -47,6 +49,22 @@ class TestLanguageSearchQuery:
                     "query": "duck",
                     "boost": 1.0,
                     "fuzziness": "AUTO",
+                }
+            }
+        } in subqueries
+        assert {
+            "wildcard": {
+                "primary_search_fields": {
+                    "value": "*duck*",
+                    "boost": 1.0,
+                }
+            }
+        } in subqueries
+        assert {
+            "wildcard": {
+                "secondary_search_fields": {
+                    "value": "*duck*",
+                    "boost": 1.0,
                 }
             }
         } in subqueries

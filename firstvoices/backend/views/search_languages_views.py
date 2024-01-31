@@ -11,7 +11,11 @@ from elasticsearch_dsl import Q, Search
 
 from backend.models.constants import Visibility
 from backend.models.sites import Language, Site, SiteFeature
-from backend.search.queries.text_matching import exact_match, fuzzy_match
+from backend.search.queries.text_matching import (
+    exact_match,
+    fuzzy_match,
+    substring_match,
+)
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.serializers.language_serializers import (
     LanguageSerializer,
@@ -103,6 +107,8 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
             exact_match(q, field="secondary_search_fields", boost=SECONDARY_BOOST),
             fuzzy_match(q, field="primary_search_fields"),
             fuzzy_match(q, field="secondary_search_fields"),
+            substring_match(q, field="primary_search_fields"),
+            substring_match(q, field="secondary_search_fields"),
         ]
         return Search(index=ELASTICSEARCH_LANGUAGE_INDEX).query(
             Q(
