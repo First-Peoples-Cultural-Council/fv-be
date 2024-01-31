@@ -506,6 +506,7 @@ class BaseMediaApiTest(
         }
 
         self.assert_response(
+            original_instance=original_instance,
             actual_response=actual_response,
             expected_data=expected_data,
         )
