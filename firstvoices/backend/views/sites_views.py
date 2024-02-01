@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
@@ -18,6 +19,7 @@ from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
+from ..permissions.predicates import can_view_hidden_site
 from .utils import get_select_related_media_fields
 
 
@@ -72,6 +74,13 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     pagination_class = None
     serializer_class = SiteDetailWriteSerializer
 
+    def initial(self, *args, **kwargs):
+        if self.action == "retrieve":
+            obj = self.get_object()
+            if obj.is_hidden and not can_view_hidden_site(self.request.user, obj):
+                raise PermissionDenied
+        super().initial(*args, **kwargs)
+
     def get_detail_queryset(self):
         sites = (
             Site.objects.all()
@@ -117,7 +126,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
         Return a list of sites grouped by language.
         """
         # retrieve visible sites in order to filter out empty languages
-        sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
+        sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS, is_hidden=False)
         ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
 
         # then retrieve the desired data as a Language queryset
