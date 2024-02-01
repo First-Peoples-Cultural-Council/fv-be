@@ -2,7 +2,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from backend.management.commands._helper import get_valid_index_name, rebuild_index
+from backend.management.commands._helper import rebuild_index
 from backend.search.documents.dictionary_entry_document import DictionaryEntryDocument
 from backend.search.documents.media_document import MediaDocument
 from backend.search.documents.song_document import SongDocument
@@ -47,14 +47,20 @@ class Command(BaseCommand):
 
         # special case for now, as a first step to refactoring
         if options["index_name"] == ELASTICSEARCH_LANGUAGE_INDEX:
-            logger.info("Building language index")
-            LanguageIndexManager.rebuild()
+            return LanguageIndexManager.rebuild()
 
-        # If an index name is supplied, only rebuild that, else rebuild all
-        index_name = get_valid_index_name(self.index_mappings, options["index_name"])
+        # If an index name is supplied, only rebuild that
+        index_name = options["index_name"]
 
         if index_name:
-            index_document = self.index_mappings[index_name]["document"]
+            try:
+                index_document = self.index_mappings[index_name]["document"]
+            except KeyError:
+                logger.warning(
+                    "Can't rebuild index for unrecognized alias: [%s]", index_name
+                )
+                return
+
             rebuild_index(index_name, index_document)
         else:
             logger.info("Invalid or no index name provided. Building all indices.")

@@ -80,6 +80,9 @@ class IndexManager:
 
     @classmethod
     def rebuild(cls):
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.info("Building language index")
+
         es = connections.get_connection()
         current_index = cls._get_current_index(es)
         new_index = cls._create_new_write_index()
@@ -89,7 +92,6 @@ class IndexManager:
 
         except Exception as e:
             # If we are not able to complete the new index, delete it and leave the current one as read + write alias
-            logger = logging.getLogger(ELASTICSEARCH_LOGGER)
             logger.error(
                 "The following error occurred while adding documents to index [%s]. \
                 Deleting new index, making current index default. "
@@ -104,6 +106,7 @@ class IndexManager:
             current_index.delete(ignore=404)
 
         cls._remove_write_alias(es, new_index)
+        logger.info("Finished building language index")
 
     @classmethod
     def _get_current_index(cls, es_connection):
