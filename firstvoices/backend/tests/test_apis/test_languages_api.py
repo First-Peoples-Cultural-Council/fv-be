@@ -397,10 +397,13 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
     def assert_language_response(self, language, language_response):
         assert language_response["language"] == language.title
         assert language_response["languageCode"] == language.language_code
+        assert language_response["id"] == str(language.id)
 
     def assert_more_sites_response(self, more_response):
-        assert more_response["language"] == "More FirstVoices Sites"
+        assert more_response["language"] == ""
         assert more_response["languageCode"] == ""
+        assert "-placeholder" in more_response["id"]
+        assert more_response["noLanguageAssigned"]
 
     def assert_site_response(self, site, site_response):
         assert site_response == {

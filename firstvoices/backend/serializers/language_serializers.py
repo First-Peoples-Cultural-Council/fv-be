@@ -13,13 +13,14 @@ class LanguageSerializer(serializers.Serializer):
     Serializes basic details about a Language, including a list of visible (Public or Members) Sites for that Language.
     """
 
+    id = serializers.UUIDField(read_only=True)
     language = serializers.CharField(source="title", read_only=True)
     language_code = serializers.CharField(read_only=True)
     sites = SiteSummarySerializer(many=True, read_only=True)
 
     class Meta:
         model = Language
-        fields = ("language", "language_code", "sites")
+        fields = ("id", "language", "language_code", "sites")
 
     @classmethod
     def make_queryset_eager(cls, queryset, visible_sites):
@@ -48,8 +49,10 @@ class LanguagePlaceholderSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         return {
-            "language": "More FirstVoices Sites",
+            "language": "",
             "languageCode": "",
+            "no_language_assigned": True,
+            "id": f"{str(instance.id)}-placeholder",
             "sites": [SiteSummarySerializer(instance, context=self.context).data],
         }
 
