@@ -155,13 +155,6 @@ def add_write_alias(index, index_name):
     return index
 
 
-def get_valid_index_name(mappings, index_name):
-    if index_name in mappings:
-        return index_name
-    else:
-        return None
-
-
 def disconnect_signals():
     # Disconnect signals temporarily
     # Verify the list with signals present in all index documents present in
