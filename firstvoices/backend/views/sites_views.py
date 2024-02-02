@@ -8,9 +8,9 @@ from rest_framework.viewsets import ModelViewSet
 from backend.models.constants import Visibility
 from backend.models.sites import Language, Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget, WidgetSettings
+from backend.serializers.language_serializers import LanguageSerializer
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
 from backend.serializers.site_serializers import (
-    LanguageSerializer,
     SiteDetailWriteSerializer,
     SiteSummarySerializer,
 )

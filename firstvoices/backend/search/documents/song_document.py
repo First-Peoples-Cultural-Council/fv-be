@@ -1,13 +1,13 @@
 from elasticsearch_dsl import Boolean, Keyword, Text
 
 from backend.search.documents.base_document import (
-    BaseDocument,
+    BaseSiteEntryDocument,
     MediaReportingDocumentMixin,
 )
 from backend.search.utils.constants import ELASTICSEARCH_SONG_INDEX
 
 
-class SongDocument(MediaReportingDocumentMixin, BaseDocument):
+class SongDocument(MediaReportingDocumentMixin, BaseSiteEntryDocument):
     # text search fields
     title = Text(fields={"raw": Keyword()}, copy_to="primary_language_search_fields")
     title_translation = Text(copy_to="primary_translation_search_fields")

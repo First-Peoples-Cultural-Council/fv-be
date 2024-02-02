@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from factory.django import DjangoModelFactory
 
 from backend.models.app import AppMembership
+from backend.models.constants import AppRole
 from backend.models.sites import Language, LanguageFamily, Membership, Site
 
 
@@ -87,3 +88,7 @@ def get_app_admin(role):
     user = UserFactory.create()
     AppMembershipFactory.create(user=user, role=role)
     return user
+
+
+def get_superadmin():
+    return get_app_admin(AppRole.SUPERADMIN)

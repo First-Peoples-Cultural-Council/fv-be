@@ -4,7 +4,6 @@ from rest_framework import serializers
 
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
-from backend.models.sites import Language
 from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import (
     LinkedSiteSerializer,
@@ -189,17 +188,3 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
             validated_data["homepage"] = homepage
             instance.homepage = homepage
         return super().update(instance, validated_data)
-
-
-class LanguageSerializer(serializers.Serializer):
-    """
-    Serializes basic details about a language, including a list of language sites.
-    """
-
-    language = serializers.CharField(source="title")
-    language_code = serializers.CharField()
-    sites = SiteSummarySerializer(many=True)
-
-    class Meta:
-        model = Language
-        fields = ("language", "language_code", "sites")

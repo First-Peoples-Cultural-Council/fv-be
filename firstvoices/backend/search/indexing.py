@@ -6,7 +6,8 @@ from elasticsearch.helpers import actions
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
-from backend.models.sites import Language
+from backend.models.constants import Visibility
+from backend.models.sites import Language, Site
 from backend.search.documents.language_document import LanguageDocument
 from backend.search.logging import (
     log_connection_error,
@@ -174,15 +175,65 @@ class LanguageIndexManager(IndexManager):
 
     @classmethod
     def create_index_document(cls, instance: Language):
+        """Returns a LanguageDocument populated for the given Language instance."""
+        visible_sites = instance.sites.all().filter(visibility__gte=Visibility.MEMBERS)
+
         return cls.document(
+            document_id=str(instance.id),
+            document_type=instance.__class__.__name__,
             language_name=instance.title,
-            language_code=instance.language_code,
+            sort_title=instance.title.upper(),
+            language_code=_text_as_list(instance.language_code),
             language_alternate_names=_text_as_list(instance.alternate_names),
             language_community_keywords=_text_as_list(instance.community_keywords),
-            site_names=_fields_as_list(instance.sites.all(), "title"),
-            site_slugs=_fields_as_list(instance.sites.all(), "slug"),
+            site_names=_fields_as_list(visible_sites, "title"),
+            site_slugs=_fields_as_list(visible_sites, "slug"),
             language_family_name=instance.language_family.title,
             language_family_alternate_names=_text_as_list(
                 instance.language_family.alternate_names
             ),
         )
+
+    @classmethod
+    def create_site_index_document(cls, instance: Site):
+        """Returns a LanguageDocument populated for the given Site instance, with the assumption that the Site has
+        no associated Language."""
+        return cls.document(
+            document_id=str(instance.id),
+            document_type=instance.__class__.__name__,
+            sort_title=instance.title.upper(),
+            language_name=None,
+            language_code=None,
+            language_alternate_names=None,
+            language_community_keywords=None,
+            site_names=instance.title,
+            site_slugs=instance.slug,
+            language_family_name=None,
+            language_family_alternate_names=None,
+        )
+
+    @classmethod
+    def _iterator(cls):
+        """
+        Returns: iterator of all documents to index, including:
+            - all Languages that have visible Sites (Members or Public visibility)
+            - any visible Sites that are not linked to a Language
+        """
+        for model in cls.models:
+            instances = model.objects.all()
+            for instance in instances:
+                if (
+                    instance.sites.all()
+                    .filter(visibility__gte=Visibility.MEMBERS)
+                    .exists()
+                ):
+                    index_document = cls.create_index_document(instance)
+                    yield index_document.to_dict(True)
+
+        for instance in (
+            Site.objects.all()
+            .filter(visibility__gte=Visibility.MEMBERS)
+            .filter(language=None)
+        ):
+            index_document = cls.create_site_index_document(instance)
+            yield index_document.to_dict(True)
