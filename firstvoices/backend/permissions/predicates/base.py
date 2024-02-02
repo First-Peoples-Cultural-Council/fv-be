@@ -1,4 +1,4 @@
-from rules import predicate, Predicate
+from rules import Predicate, predicate
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.permissions.utils import get_app_role, get_site_role
@@ -98,10 +98,16 @@ def is_superadmin(user, obj):
     return get_app_role(user) == AppRole.SUPERADMIN
 
 
+@predicate
+def is_hidden_obj(user, obj):
+    return obj.is_hidden
+
+
 #
 # site and app role combos
 is_at_least_language_admin = Predicate(
-    has_language_admin_membership | is_at_least_staff_admin, name="is_at_least_language_admin"
+    has_language_admin_membership | is_at_least_staff_admin,
+    name="is_at_least_language_admin",
 )
 
 #

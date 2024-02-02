@@ -1,4 +1,3 @@
-from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
@@ -19,7 +18,6 @@ from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
-from ..permissions.predicates import can_view_hidden_site
 from .utils import get_select_related_media_fields
 
 
@@ -73,13 +71,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     lookup_field = "slug"
     pagination_class = None
     serializer_class = SiteDetailWriteSerializer
-
-    def initial(self, *args, **kwargs):
-        if self.action == "retrieve":
-            obj = self.get_object()
-            if obj.is_hidden and not can_view_hidden_site(self.request.user, obj):
-                raise PermissionDenied
-        super().initial(*args, **kwargs)
 
     def get_detail_queryset(self):
         sites = (
