@@ -10,9 +10,7 @@ from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 
 
 @extend_schema_view(list=extend_schema(parameters=[site_slug_parameter]))
-class SearchSiteEntriesAllEntriesViewSet(
-    SiteContentViewSetMixin, SearchAllEntriesViewSet
-):
+class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet):
     def get_search_params(self):
         """
         Add site_slug to search params

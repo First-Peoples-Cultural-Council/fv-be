@@ -21,7 +21,7 @@ from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
 from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 from backend.views.search_languages_views import LanguageViewSet
-from backend.views.search_site_entries_views import SearchSiteEntriesAllEntriesViewSet
+from backend.views.search_site_entries_views import SearchSiteEntriesViewSet
 from backend.views.site_feature_views import SiteFeatureViewSet
 from backend.views.sites_views import MySitesViewSet, SiteViewSet
 from backend.views.song_views import SongViewSet
@@ -72,9 +72,7 @@ sites_router.register(
 )
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
-sites_router.register(
-    r"search", SearchSiteEntriesAllEntriesViewSet, basename="site-search"
-)
+sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")
 sites_router.register(r"pages", SitePageViewSet, basename="sitepage")
 sites_router.register(r"songs", SongViewSet, basename="song")
