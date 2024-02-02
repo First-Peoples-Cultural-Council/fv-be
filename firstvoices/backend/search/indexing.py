@@ -1,5 +1,3 @@
-import logging
-
 from django.utils import timezone
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch.helpers import actions
@@ -8,16 +6,12 @@ from elasticsearch_dsl.index import Index
 
 from backend.models.constants import Visibility
 from backend.models.sites import Language, Site
+from backend.search import logging
 from backend.search.documents.language_document import LanguageDocument
-from backend.search.logging import (
-    log_connection_error,
-    log_fallback_exception,
-    log_not_found_error,
-)
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.search.utils.get_index_documents import _fields_as_list, _text_as_list
 from backend.search.utils.object_utils import search_by_id
-from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG, ELASTICSEARCH_LOGGER
+from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
 
 class IndexManager:
@@ -36,9 +30,9 @@ class IndexManager:
             new_index_document.save()
             cls.refresh()
         except ConnectionError as e:
-            log_connection_error(e, instance)
+            logging.log_connection_error(e, instance)
         except Exception as e:
-            log_fallback_exception(e, instance)
+            logging.log_fallback_exception(e, instance)
 
     @classmethod
     def update_in_index(cls, instance):
@@ -54,11 +48,11 @@ class IndexManager:
             cls.refresh()
 
         except ConnectionError as e:
-            log_connection_error(e, instance)
+            logging.log_connection_error(e, instance)
         except NotFoundError as e:
-            log_not_found_error(e, instance)
+            logging.log_not_found_warning(e, instance)
         except Exception as e:
-            log_fallback_exception(e, instance)
+            logging.log_fallback_exception(e, instance)
 
     @classmethod
     def remove_from_index(cls, instance):
@@ -68,11 +62,33 @@ class IndexManager:
             existing_index_document.delete()
             cls.refresh()
         except ConnectionError as e:
-            log_connection_error(e, instance)
+            logging.log_connection_error(e, instance)
         except NotFoundError as e:
-            log_not_found_error(e, instance)
+            logging.log_not_found_info(e, instance)
         except Exception as e:
-            log_fallback_exception(e, instance)
+            logging.log_fallback_exception(e, instance)
+
+    @classmethod
+    def should_be_indexed(cls, instance):
+        """Subclasses can override for custom indexing conditions, such as visibility."""
+        return True
+
+    @classmethod
+    def sync_in_index(cls, instance):
+        """
+        Add, update, ignore, or remove indexing for the given instance, based on the conditions in should_be_indexed.
+        When a model is deleted, use remove_from_index instead.
+        """
+        if cls.should_be_indexed(instance):
+            try:
+                cls.update_in_index(instance)
+            except NotFoundError:
+                cls.add_to_index(instance)
+        else:
+            try:
+                cls.remove_from_index(instance)
+            except NotFoundError:
+                pass
 
     @classmethod
     def refresh(cls):
@@ -81,7 +97,7 @@ class IndexManager:
 
     @classmethod
     def rebuild(cls):
-        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger = logging.logger
         logger.info("Building language index")
 
         es = connections.get_connection()
@@ -93,6 +109,7 @@ class IndexManager:
 
         except Exception as e:
             # If we are not able to complete the new index, delete it and leave the current one as read + write alias
+            logger = logging.logger
             logger.error(
                 "The following error occurred while adding documents to index [%s]. \
                 Deleting new index, making current index default. "
@@ -237,3 +254,15 @@ class LanguageIndexManager(IndexManager):
         ):
             index_document = cls.create_site_index_document(instance)
             yield index_document.to_dict(True)
+
+    def should_be_indexed(cls, instance):
+        """
+        Conditions for indexing a Language:
+         * has at least one non-hidden Site with visibility of Members or Public
+
+        """
+        visible_sites = instance.sites.filter(visibility_gte=Visibility.MEMBERS).filter(
+            is_hidden=False
+        )
+        return visible_sites.count() > 0
+
