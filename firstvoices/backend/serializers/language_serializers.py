@@ -38,7 +38,7 @@ class LanguageSerializer(serializers.Serializer):
         )
 
 
-class MoreSiteSerializer(serializers.Serializer):
+class LanguagePlaceholderSerializer(serializers.Serializer):
     """
     Serializes a single site that doesn't have a language.
     """

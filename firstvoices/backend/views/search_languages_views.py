@@ -16,8 +16,8 @@ from backend.search.queries.text_matching import (
 )
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.serializers.language_serializers import (
+    LanguagePlaceholderSerializer,
     LanguageSerializer,
-    MoreSiteSerializer,
 )
 from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
@@ -71,7 +71,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     http_method_names = ["get"]
     serializer_classes = {
         "Language": LanguageSerializer,
-        "Site": MoreSiteSerializer,
+        "Site": LanguagePlaceholderSerializer,
     }
     model = Language
 
@@ -130,7 +130,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
             )
 
         if model_name == "Site":
-            return MoreSiteSerializer.make_queryset_eager(queryset)
+            return LanguagePlaceholderSerializer.make_queryset_eager(queryset)
 
         return super().make_queryset_eager(model_name, queryset)
 
@@ -153,9 +153,9 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         )
 
         if other_sites:
-            queryset = MoreSiteSerializer.make_queryset_eager(other_sites)
+            queryset = LanguagePlaceholderSerializer.make_queryset_eager(other_sites)
 
-            other_sites_json = MoreSiteSerializer(
+            other_sites_json = LanguagePlaceholderSerializer(
                 queryset.first(), context=self.get_serializer_context()
             ).data
             other_sites_json["sites"] = SiteSummarySerializer(
