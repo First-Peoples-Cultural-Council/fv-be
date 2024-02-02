@@ -25,7 +25,3 @@ has_visible_site = Predicate(
     ),
     name="has_visible_site",
 )
-
-has_hidden_site = Predicate(
-    base.is_at_least_staff_admin | base.has_team_access, name="has_hidden_site"
-)

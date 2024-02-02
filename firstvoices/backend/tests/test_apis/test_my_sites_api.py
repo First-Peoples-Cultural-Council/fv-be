@@ -125,3 +125,22 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["count"] == 3
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+    )
+    def test_hidden_sites_visible(self, role):
+        user = factories.UserFactory.create()
+        hidden_site = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user, site=hidden_site, role=role)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert response_data["results"][0]["id"] == str(hidden_site.id)

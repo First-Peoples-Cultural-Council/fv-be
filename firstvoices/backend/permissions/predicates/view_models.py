@@ -18,7 +18,7 @@ can_view_user_info = Predicate(
     (
         base.is_at_least_staff_admin
         | base.has_language_admin_membership
-        | (base.is_own_obj & view.has_visible_site & ~view.has_hidden_site)
+        | (base.is_own_obj & view.has_visible_site)
     ),
     name="can_view_membership_model",
 )
