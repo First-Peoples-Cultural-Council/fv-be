@@ -10,7 +10,7 @@ from backend.tests import factories
 def mock_add_to_index():
     with (
         patch(
-            "backend.search.indexing.LanguageIndexManager.add_to_index"
+            "backend.search.indexing.language_index.LanguageDocumentManager.add_to_index"
         ) as mock_add_to_index,
     ):
         mock_add_to_index.return_value = None
@@ -21,7 +21,7 @@ def mock_add_to_index():
 def mock_update_in_index():
     with (
         patch(
-            "backend.search.indexing.LanguageIndexManager.update_in_index"
+            "backend.search.indexing.language_index.LanguageDocumentManager.update_in_index"
         ) as mock_update_in_index,
     ):
         mock_update_in_index.return_value = None
@@ -32,7 +32,7 @@ def mock_update_in_index():
 def mock_remove_from_index():
     with (
         patch(
-            "backend.search.indexing.LanguageIndexManager.remove_from_index"
+            "backend.search.indexing.language_index.LanguageDocumentManager.remove_from_index"
         ) as mock_remove_from_index,
     ):
         mock_remove_from_index.return_value = None
