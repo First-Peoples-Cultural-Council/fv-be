@@ -7,7 +7,7 @@ from backend.search.documents.dictionary_entry_document import DictionaryEntryDo
 from backend.search.documents.media_document import MediaDocument
 from backend.search.documents.song_document import SongDocument
 from backend.search.documents.story_document import StoryDocument
-from backend.search.indexing import LanguageIndexManager
+from backend.search.indexing import LanguageIndexManager, SiteLanguageIndexManager
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_LANGUAGE_INDEX,
@@ -47,7 +47,9 @@ class Command(BaseCommand):
 
         # special case for now, as a first step to refactoring
         if options["index_name"] == ELASTICSEARCH_LANGUAGE_INDEX:
-            return LanguageIndexManager.rebuild()
+            LanguageIndexManager.rebuild()
+            SiteLanguageIndexManager.rebuild()
+            return
 
         # If an index name is supplied, only rebuild that
         index_name = options["index_name"]
@@ -72,5 +74,6 @@ class Command(BaseCommand):
             # additional special case
             logger.info("Building language index")
             LanguageIndexManager.rebuild()
+            SiteLanguageIndexManager.rebuild()
 
         logger.info("Index rebuild complete.")

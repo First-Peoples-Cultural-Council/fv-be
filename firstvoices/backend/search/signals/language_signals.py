@@ -14,8 +14,15 @@ def sync_language_in_index(sender, instance, **kwargs):
     )
 
 
+@receiver(post_delete, sender=Language)
+def remove_language_from_index(sender, instance, **kwargs):
+    LanguageIndexManager.remove_from_index(instance)
+
+
 @receiver(pre_save, sender=Site)
 def sync_site_language_in_index(sender, instance, **kwargs):
+    LanguageIndexManager.sync_site_in_index(instance)  # todo
+
     languages = []
 
     if instance.language:
@@ -37,6 +44,9 @@ def sync_site_language_in_index(sender, instance, **kwargs):
         )
 
 
-@receiver(post_delete, sender=Language)
-def remove_language_from_index(sender, instance, **kwargs):
-    LanguageIndexManager.remove_from_index(instance)
+@receiver(post_delete, sender=Site)
+def remove_site_from_language_index(sender, instance, **kwargs):
+    if instance.language:
+        LanguageIndexManager.sync_in_index.apply_async(
+            (instance.language,), link_error=link_error_handler.s()
+        )

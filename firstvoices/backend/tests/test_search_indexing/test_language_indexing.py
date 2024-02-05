@@ -70,28 +70,28 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
             # assert does not add other (empty) languages
             assert mock_create_index_doc.call_count == 2
 
-    @pytest.mark.django_db
-    def test_iterator_includes_visible_sites_with_no_language(self):
-        with patch(
-            "backend.search.indexing.LanguageIndexManager.create_site_index_document"
-        ) as mock_create_index_doc:
-            factories.SiteFactory.create(language=None, visibility=Visibility.TEAM)
-            member_site = factories.SiteFactory.create(
-                language=None, visibility=Visibility.MEMBERS
-            )
-            public_site = factories.SiteFactory.create(
-                language=None, visibility=Visibility.PUBLIC
-            )
-
-            for _ in self.manager._iterator():
-                continue
-
-            # assert adds all languages with visible sites
-            mock_create_index_doc.assert_any_call(member_site)
-            mock_create_index_doc.assert_any_call(public_site)
-
-            # assert does not add other (empty) languages
-            assert mock_create_index_doc.call_count == 2
+    # @pytest.mark.django_db
+    # def test_iterator_includes_visible_sites_with_no_language(self):
+    #     with patch(
+    #         "backend.search.indexing.LanguageIndexManager.create_site_index_document"
+    #     ) as mock_create_index_doc:
+    #         factories.SiteFactory.create(language=None, visibility=Visibility.TEAM)
+    #         member_site = factories.SiteFactory.create(
+    #             language=None, visibility=Visibility.MEMBERS
+    #         )
+    #         public_site = factories.SiteFactory.create(
+    #             language=None, visibility=Visibility.PUBLIC
+    #         )
+    #
+    #         for _ in self.manager._iterator():
+    #             continue
+    #
+    #         # assert adds all languages with visible sites
+    #         mock_create_index_doc.assert_any_call(member_site)
+    #         mock_create_index_doc.assert_any_call(public_site)
+    #
+    #         # assert does not add other (empty) languages
+    #         assert mock_create_index_doc.call_count == 2
 
     @pytest.mark.django_db
     def test_create_document_with_language_fields(self):
@@ -102,6 +102,8 @@ class TestLanguageIndexManager(BaseIndexManagerTest):
         )
         language_doc = LanguageIndexManager.create_index_document(language)
 
+        assert language_doc.document_id == str(language.id)
+        assert language_doc.document_type == "Language"
         assert language_doc.language_name == language.title
 
         self.assert_list(

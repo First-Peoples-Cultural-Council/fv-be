@@ -4,7 +4,7 @@ from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERR
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 ES_NOT_FOUND_INFO = (
-    "Tried to remove a document that doesn't exist in the index. [%s] id [%s]"
+    "Tried to find a document that doesn't exist in the index. [%s] id [%s]"
 )
 
 logger = logging.getLogger(ELASTICSEARCH_LOGGER)

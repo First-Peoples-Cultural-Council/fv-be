@@ -17,7 +17,7 @@ from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 class IndexManager:
     index = ""
     document = None
-    models = None
+    model = None
 
     @classmethod
     def create_index_document(cls, instance):
@@ -49,8 +49,8 @@ class IndexManager:
 
         except ConnectionError as e:
             logging.log_connection_error(e, instance)
-        except NotFoundError as e:
-            logging.log_not_found_warning(e, instance)
+        except NotFoundError:
+            logging.log_not_found_info(instance)
         except Exception as e:
             logging.log_fallback_exception(e, instance)
 
@@ -63,8 +63,8 @@ class IndexManager:
             cls.refresh()
         except ConnectionError as e:
             logging.log_connection_error(e, instance)
-        except NotFoundError as e:
-            logging.log_not_found_info(e, instance)
+        except NotFoundError:
+            logging.log_not_found_info(instance)
         except Exception as e:
             logging.log_fallback_exception(e, instance)
 
@@ -98,7 +98,7 @@ class IndexManager:
     @classmethod
     def rebuild(cls):
         logger = logging.logger
-        logger.info("Building language index")
+        logger.info(f"Building index: {cls.index}")
 
         es = connections.get_connection()
         current_index = cls._get_current_index(es)
@@ -178,9 +178,10 @@ class IndexManager:
 
     @classmethod
     def _iterator(cls):
-        for model in cls.models:
-            instances = model.objects.all()
-            for instance in instances:
+        instances = cls.model.objects.all()
+
+        for instance in instances:
+            if cls.should_be_indexed(instance):
                 index_document = cls.create_index_document(instance)
                 yield index_document.to_dict(True)
 
@@ -188,7 +189,7 @@ class IndexManager:
 class LanguageIndexManager(IndexManager):
     index = ELASTICSEARCH_LANGUAGE_INDEX
     document = LanguageDocument
-    models = [Language]
+    model = Language
 
     @classmethod
     def create_index_document(cls, instance: Language):
@@ -212,7 +213,22 @@ class LanguageIndexManager(IndexManager):
         )
 
     @classmethod
-    def create_site_index_document(cls, instance: Site):
+    def should_be_indexed(cls, instance):
+        """
+        Conditions for indexing a Language:
+         * has at least one non-hidden Site with visibility of Members or Public
+        """
+        visible_sites = instance.sites.filter(
+            visibility__gte=Visibility.MEMBERS
+        ).filter(is_hidden=False)
+        return visible_sites.exists()
+
+
+class SiteLanguageIndexManager(LanguageIndexManager):
+    model = Site
+
+    @classmethod
+    def create_index_document(cls, instance: Site):
         """Returns a LanguageDocument populated for the given Site instance, with the assumption that the Site has
         no associated Language."""
         return cls.document(
@@ -230,39 +246,16 @@ class LanguageIndexManager(IndexManager):
         )
 
     @classmethod
-    def _iterator(cls):
+    def should_be_indexed(cls, instance: Site):
         """
-        Returns: iterator of all documents to index, including:
-            - all Languages that have visible Sites (Members or Public visibility)
-            - any visible Sites that are not linked to a Language
+        Conditions for indexing a Site:
+         * has no Language assigned
+         * has visibility of Members or Public
+         * is not hidden
         """
-        for model in cls.models:
-            instances = model.objects.all()
-            for instance in instances:
-                if (
-                    instance.sites.all()
-                    .filter(visibility__gte=Visibility.MEMBERS)
-                    .exists()
-                ):
-                    index_document = cls.create_index_document(instance)
-                    yield index_document.to_dict(True)
 
-        for instance in (
-            Site.objects.all()
-            .filter(visibility__gte=Visibility.MEMBERS)
-            .filter(language=None)
-        ):
-            index_document = cls.create_site_index_document(instance)
-            yield index_document.to_dict(True)
-
-    def should_be_indexed(cls, instance):
-        """
-        Conditions for indexing a Language:
-         * has at least one non-hidden Site with visibility of Members or Public
-
-        """
-        visible_sites = instance.sites.filter(visibility_gte=Visibility.MEMBERS).filter(
-            is_hidden=False
+        return (
+            instance.language is None
+            and instance.visibility >= Visibility.MEMBERS
+            and not instance.is_hidden
         )
-        return visible_sites.count() > 0
-

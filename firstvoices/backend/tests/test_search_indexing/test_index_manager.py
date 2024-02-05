@@ -32,6 +32,7 @@ class BaseIndexManagerTest:
         "es_search_params": "elasticsearch_dsl.search.Search.params",
         "log_error": "logging.Logger.error",
         "log_warning": "logging.Logger.warning",
+        "log_info": "logging.Logger.info",
     }
 
     def setup_method(self):
@@ -40,9 +41,11 @@ class BaseIndexManagerTest:
             self.manager.document.__module__ + "." + self.manager.document.__name__
         )
 
+        # paths for document methods
         self.paths["document_get"] = document_full_module + ".get"
         self.paths["document_update"] = document_full_module + ".update"
 
+        # paths for internal manager methods
         self.paths["create_index_document"] = (
             manager_full_module + ".create_index_document"
         )
@@ -50,6 +53,7 @@ class BaseIndexManagerTest:
         self.paths["_create_new_write_index"] = (
             manager_full_module + "._create_new_write_index"
         )
+        self.paths["should_be_indexed"] = manager_full_module + ".should_be_indexed"
 
     @pytest.mark.django_db
     def test_add_to_index_success(self):
@@ -201,11 +205,11 @@ class BaseIndexManagerTest:
 
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
-        ), patch(self.paths["log_warning"], return_value=None) as mock_log_warning:
+        ), patch(self.paths["log_info"], return_value=None) as mock_log_info:
             m = getattr(self.manager, method)
             m(instance=instance)
 
-            mock_log_warning.assert_called()
+            mock_log_info.assert_called()
 
     @pytest.mark.parametrize(
         "method",
@@ -222,12 +226,12 @@ class BaseIndexManagerTest:
         ), patch(
             self.paths["document_get"], side_effect=NotFoundError("Nice try!")
         ), patch(
-            self.paths["log_warning"], return_value=None
-        ) as mock_log_warning:
+            self.paths["log_info"], return_value=None
+        ) as mock_log_info:
             m = getattr(self.manager, method)
             m(instance=instance)
 
-            mock_log_warning.assert_called()
+            mock_log_info.assert_called()
 
     def test_get_current_index_success(self):
         mock_es_connection = MagicMock()
@@ -337,6 +341,22 @@ class BaseIndexManagerTest:
                 self.manager.rebuild()
 
                 mock_new_index.delete.assert_called_once()
+
+    @pytest.mark.django_db
+    def test_sync_in_index_new_document_is_added(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+        mock_query.execute.side_effect = NotFoundError(
+            "Oopsie!"
+        )  # new document is not yet in the index
+
+        instance = self.factory.create()
+
+        with patch(self.paths["should_be_indexed"], return_value=True), patch(
+            self.paths["es_search_init"], return_value=None
+        ), patch(self.paths["es_search_params"], return_value=mock_search_obj), patch(
+            self.paths["log_warning"], return_value=None
+        ):
+            self.manager.sync_in_index(instance=instance)
 
     def create_search_mocks(self):
         mock_query = MagicMock()
