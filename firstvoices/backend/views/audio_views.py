@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import parsers, viewsets
 
 from backend.models.media import Audio
+from backend.serializers.media_detail_serializers import get_media_detail_serializer
 from backend.serializers.media_serializers import AudioSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -87,3 +88,8 @@ class AudioViewSet(
                 "last_modified",
             )
         )
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return get_media_detail_serializer(AudioSerializer)
+        return AudioSerializer
