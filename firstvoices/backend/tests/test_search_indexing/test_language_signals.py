@@ -24,11 +24,6 @@ def mock_index_methods(mocker):
 
 
 class TestLanguageIndexingSignals:
-    @pytest.fixture(autouse=True)
-    def configure_settings(self, settings):
-        # Sets the celery tasks to run synchronously for testing
-        settings.CELERY_TASK_ALWAYS_EAGER = True
-
     @pytest.mark.django_db
     @pytest.mark.disable_language_index_signal_mocks
     def test_new_language_is_synced(self, mock_index_methods):
@@ -75,11 +70,6 @@ class TestLanguageIndexingSignals:
 
 
 class TestSiteIndexingSignals:
-    @pytest.fixture(autouse=True)
-    def configure_settings(self, settings):
-        # Sets the celery tasks to run synchronously for testing
-        settings.CELERY_TASK_ALWAYS_EAGER = True
-
     @pytest.mark.django_db
     @pytest.mark.disable_language_index_signal_mocks
     def test_new_site_is_synced(self, mock_index_methods):
