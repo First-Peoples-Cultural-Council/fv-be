@@ -32,16 +32,16 @@ def sync_site_in_language_index(sender, instance, **kwargs):
     )
 
     # sync related languages
-    languages = []
+    languages = set()
 
     if instance.language:
-        languages.append(instance.language)
+        languages.add(instance.language)
 
     if instance.id:
         try:
             original_site = Site.objects.get(id=instance.id)
             if original_site.language:
-                languages.append(original_site.language)
+                languages.add(original_site.language)
 
         except ObjectDoesNotExist:
             # New site, no previous language
