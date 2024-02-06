@@ -472,7 +472,7 @@ class BaseDocumentManagerTest:
 
     @pytest.mark.django_db
     def test_sync_in_index_edited_good_document_is_updated(self):
-        mock_query, mock_search_obj = self.create_search_mocks()
+        _, mock_search_obj = self.create_search_mocks()
 
         instance = self.create_indexable_document()
 
@@ -493,7 +493,7 @@ class BaseDocumentManagerTest:
 
     @pytest.mark.django_db
     def test_sync_in_index_edited_bad_document_is_skipped(self):
-        mock_query, mock_search_obj = self.create_search_mocks()
+        _, mock_search_obj = self.create_search_mocks()
 
         instance = self.create_non_indexable_document()
 
@@ -514,7 +514,7 @@ class BaseDocumentManagerTest:
 
     @pytest.mark.django_db
     def test_sync_in_index_edited_good_to_bad_document_is_removed(self):
-        mock_query, mock_search_obj = self.create_search_mocks()
+        _, mock_search_obj = self.create_search_mocks()
 
         instance = self.create_non_indexable_document()
 
@@ -536,7 +536,7 @@ class BaseDocumentManagerTest:
 
     @pytest.mark.django_db
     def test_sync_in_index_edited_bad_to_good_document_is_added(self):
-        mock_query, mock_search_obj = self.create_search_mocks()
+        _, mock_search_obj = self.create_search_mocks()
 
         instance = self.create_indexable_document()
 
@@ -559,7 +559,7 @@ class BaseDocumentManagerTest:
 
     @pytest.mark.django_db
     def test_sync_missing_instance_is_removed(self):
-        mock_query, mock_search_obj = self.create_search_mocks()
+        _, mock_search_obj = self.create_search_mocks()
 
         instance = self.create_indexable_document()
         instance_id = instance.id

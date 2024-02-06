@@ -39,6 +39,7 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
 
     @pytest.mark.skip("Replaced with several tests for custom iteration")
     def test_iterator(self):
+        """Replaced with several tests for custom iteration"""
         pass
 
     @pytest.mark.django_db
@@ -167,13 +168,12 @@ class TestSiteDocumentManager(BaseDocumentManagerTest):
 
     @pytest.mark.skip("Replaced with several tests for custom iteration")
     def test_iterator(self):
+        """Replaced with several tests for custom iteration"""
         pass
 
     @pytest.mark.django_db
     def test_iterator_only_includes_sites_with_no_language(self):
-        with patch(
-            "backend.search.indexing.language_index.SiteDocumentManager.create_index_document"
-        ) as mock_create_index_doc:
+        with patch(self.paths["create_index_document"]) as mock_create_index_doc:
             language = factories.LanguageFactory.create()
             self.factory.create(language=language, visibility=Visibility.PUBLIC)
 
@@ -189,9 +189,7 @@ class TestSiteDocumentManager(BaseDocumentManagerTest):
 
     @pytest.mark.django_db
     def test_iterator_skips_team_sites(self):
-        with patch(
-            "backend.search.indexing.language_index.SiteDocumentManager.create_index_document"
-        ) as mock_create_index_doc:
+        with patch(self.paths["create_index_document"]) as mock_create_index_doc:
             site_public = self.factory.create(
                 language=None, visibility=Visibility.PUBLIC
             )
@@ -209,9 +207,7 @@ class TestSiteDocumentManager(BaseDocumentManagerTest):
 
     @pytest.mark.django_db
     def test_iterator_skips_hidden_sites(self):
-        with patch(
-            "backend.search.indexing.language_index.SiteDocumentManager.create_index_document"
-        ) as mock_create_index_doc:
+        with patch(self.paths["create_index_document"]) as mock_create_index_doc:
             site_public = self.factory.create(
                 language=None, visibility=Visibility.PUBLIC, is_hidden=False
             )
