@@ -35,12 +35,12 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
         image.save()
         return image
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_image_data(instance)
+    def get_expected_response(self, instance, site, detail_view=False):
+        return self.get_expected_image_data(instance, detail_view)
 
-    def assert_created_response(self, expected_data, actual_response):
+    def assert_created_response(self, expected_data, actual_response, detail_view):
         instance = Image.objects.get(pk=actual_response["id"])
-        expected = self.get_expected_image_data(instance)
+        expected = self.get_expected_image_data(instance, detail_view=detail_view)
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in actual_response:
                 actual_response.pop(ignored_field)

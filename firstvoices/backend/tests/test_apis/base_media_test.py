@@ -47,12 +47,12 @@ class MediaTestMixin:
             None,
         )
 
-    def get_basic_media_data(self, instance, view_name):
+    def get_basic_media_data(self, instance, view_name, detail_view):
         url = reverse(
             view_name, current_app=self.APP_NAME, args=[instance.site.slug, instance.id]
         )
 
-        return {
+        data = {
             "id": str(instance.id),
             "url": f"http://testserver{url}",
             "title": instance.title,
@@ -61,6 +61,19 @@ class MediaTestMixin:
             "excludeFromGames": instance.exclude_from_games,
             "excludeFromKids": instance.exclude_from_kids,
         }
+        if detail_view:
+            data["usage"] = {
+                "characters": [],
+                "dictionaryEntries": [],
+                "songs": [],
+                "stories": [],
+                "customPages": [],
+                "gallery": [],
+                "siteBanner": {},
+                "siteLogo": {},
+                "total": 0,
+            }
+        return data
 
     def get_file_data(self, file):
         return {
@@ -86,8 +99,10 @@ class MediaTestMixin:
             "medium": self.get_visual_file_data(instance.medium),
         }
 
-    def get_visual_media_data(self, instance, view_name):
-        data = self.get_basic_media_data(instance, view_name=view_name)
+    def get_visual_media_data(self, instance, view_name, detail_view):
+        data = self.get_basic_media_data(
+            instance, view_name=view_name, detail_view=detail_view
+        )
         thumbnail_data = self.get_media_thumbnail_data(instance)
         return {
             **data,
@@ -95,11 +110,15 @@ class MediaTestMixin:
             "original": self.get_visual_file_data(instance.original),
         }
 
-    def get_expected_image_data(self, instance):
-        return self.get_visual_media_data(instance, view_name="api:image-detail")
+    def get_expected_image_data(self, instance, detail_view):
+        return self.get_visual_media_data(
+            instance, view_name="api:image-detail", detail_view=detail_view
+        )
 
-    def get_expected_video_data(self, instance):
-        return self.get_visual_media_data(instance, view_name="api:video-detail")
+    def get_expected_video_data(self, instance, detail_view):
+        return self.get_visual_media_data(
+            instance, view_name="api:video-detail", detail_view=detail_view
+        )
 
     def get_expected_audio_data(self, instance, speaker):
         data = self.get_basic_media_data(instance, view_name="api:audio-detail")

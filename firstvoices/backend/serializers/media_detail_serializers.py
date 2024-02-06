@@ -27,7 +27,8 @@ def get_usages_total(usages_dict):
             usage, list
         ):  # adding a check as some keys contain objects and not arrays
             total += len(usage)
-        else:
+        elif hasattr(usage, "id"):
+            # If there is a site the image is a banner/logo of
             total += 1
     return total
 
@@ -92,9 +93,7 @@ class BaseUsageFieldMixin(serializers.ModelSerializer):
 
 class VisualMediaUsageFieldMixin(BaseUsageFieldMixin):
     def get_usage(self, obj):
-        response_dict = BaseUsageFieldMixin.get_usage(
-            self, obj
-        )  # Can we do super() here ?
+        response_dict = BaseUsageFieldMixin.get_usage(self, obj)
 
         site_pages = SitePageUsageSerializer(
             obj.sitepage_set.all(), context=self.context, many=True
@@ -129,10 +128,18 @@ class ImageDetailSerializer(VisualMediaUsageFieldMixin, ImageSerializer):
         gallery_cover_image_of = usage_related_set(
             self, Gallery, obj.gallery_cover_image.all()
         )
-        site_banner_of = LinkedSiteSerializer(
-            obj.site_banner_of, context=self.context
-        ).data
-        site_logo_of = LinkedSiteSerializer(obj.site_logo_of, context=self.context).data
+
+        site_banner_of = {}
+        if hasattr(obj, "site_banner_of"):
+            site_banner_of = LinkedSiteSerializer(
+                obj.site_banner_of, context=self.context
+            ).data
+
+        site_logo_of = {}
+        if hasattr(obj, "site_logo_of"):
+            site_logo_of = LinkedSiteSerializer(
+                obj.site_logo_of, context=self.context
+            ).data
 
         gallery_images = []
         for gallery_item in obj.gallery_images.all():

@@ -156,7 +156,7 @@ class SiteContentListApiTestMixin:
     """
 
     def get_expected_list_response_item(self, instance, site):
-        return self.get_expected_response(instance, site)
+        return self.get_expected_response(instance, site, detail_view=False)
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
@@ -243,7 +243,7 @@ class SiteContentDetailApiTestMixin:
     """
 
     def get_expected_detail_response(self, instance, site):
-        return self.get_expected_response(instance, site)
+        return self.get_expected_response(instance, site, detail_view=True)
 
     def get_expected_standard_fields(self, instance, site):
         return {
@@ -506,7 +506,7 @@ class SiteContentCreateApiTestMixin:
         pk = response_data["id"]
 
         self.assert_created_instance(pk, data)
-        self.assert_created_response(data, response_data)
+        self.assert_created_response(data, response_data, detail_view=False)
 
     @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
@@ -527,7 +527,7 @@ class SiteContentCreateApiTestMixin:
 
         expected_data = self.add_expected_defaults(data)
         self.assert_created_instance(pk, expected_data)
-        self.assert_created_response(expected_data, response_data)
+        self.assert_created_response(expected_data, response_data, detail_view=False)
 
     def assert_created_instance(self, pk, data):
         raise NotImplementedError()
