@@ -182,7 +182,7 @@ class DocumentManager:
     def sync_in_index(cls, instance_id):
         """
         Add, update, ignore, or remove indexing for the given instance, based on the conditions in should_be_indexed.
-        When a model is deleted, use remove_from_index instead.
+        When you know a model has been deleted, use remove_from_index for efficiency.
         """
         try:
             instance = cls.model.objects.get(pk=instance_id)
@@ -207,7 +207,17 @@ class DocumentManager:
         Adds all documents to the index, via the provided ElasticSearch Connection.
         """
         # the bulk function is imported this way to allow mocking it in tests
+        logging.logger.info(
+            "Adding all indexable [%s] instances to [%s] index",
+            cls.model.__name__,
+            cls.index,
+        )
         actions.bulk(es, cls._iterator())
+        logging.logger.info(
+            "Finished adding all indexable [%s] instances to [%s] index",
+            cls.model.__name__,
+            cls.index,
+        )
 
     @classmethod
     def _iterator(cls):

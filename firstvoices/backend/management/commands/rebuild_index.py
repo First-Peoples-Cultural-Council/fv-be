@@ -47,8 +47,7 @@ class Command(BaseCommand):
 
         # special case for now, as a first step to refactoring
         if options["index_name"] == ELASTICSEARCH_LANGUAGE_INDEX:
-            LanguageIndexManager.rebuild()
-            return
+            return LanguageIndexManager.rebuild()
 
         # If an index name is supplied, only rebuild that
         index_name = options["index_name"]
