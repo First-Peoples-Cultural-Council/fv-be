@@ -1,3 +1,6 @@
+from logging import getLogger
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch.helpers import actions
@@ -106,6 +109,7 @@ class DocumentManager:
     index = ""
     document = None
     model = None
+    logger = getLogger(__name__)
 
     @classmethod
     def refresh(cls):
@@ -130,16 +134,7 @@ class DocumentManager:
     @classmethod
     def update_in_index(cls, instance):
         try:
-            search_result = search_by_id(instance.id, cls.index)
-            existing_index_document = cls.document.get(id=search_result["_id"])
-
-            new_index_document = cls.create_index_document(instance)
-            new_values = new_index_document.to_dict(False, False)
-
-            existing_index_document.update(**new_values)
-
-            cls.refresh()
-
+            cls._update_in_index(instance)
         except ConnectionError as e:
             logging.log_connection_error(e, instance)
         except NotFoundError:
@@ -148,18 +143,35 @@ class DocumentManager:
             logging.log_fallback_exception(e, instance)
 
     @classmethod
-    def remove_from_index(cls, instance):
+    def _update_in_index(cls, instance):
+        existing_index_document = cls._find_in_index(instance.id)
+        new_index_document = cls.create_index_document(instance)
+        new_values = new_index_document.to_dict(False, False)
+        existing_index_document.update(**new_values)
+        cls.refresh()
+
+    @classmethod
+    def _find_in_index(cls, instance_id):
+        search_result = search_by_id(instance_id, cls.index)
+        existing_index_document = cls.document.get(id=search_result["_id"])
+        return existing_index_document
+
+    @classmethod
+    def remove_from_index(cls, instance_id):
         try:
-            search_result = search_by_id(instance.id, cls.index)
-            existing_index_document = cls.document.get(id=search_result["_id"])
+            existing_index_document = cls._find_in_index(instance_id)
             existing_index_document.delete()
             cls.refresh()
         except ConnectionError as e:
-            logging.log_connection_error(e, instance)
+            logging.log_connection_error_details(
+                e, type(cls.model).__name__, instance_id
+            )
         except NotFoundError:
-            logging.log_not_found_info(instance)
+            logging.log_not_found_info_details(type(cls.model).__name__, instance_id)
         except Exception as e:
-            logging.log_fallback_exception(e, instance)
+            logging.log_fallback_exception_details(
+                e, type(cls.model).__name__, instance_id
+            )
 
     @classmethod
     def should_be_indexed(cls, instance):
@@ -167,21 +179,27 @@ class DocumentManager:
         return True
 
     @classmethod
-    def sync_in_index(cls, instance):
+    def sync_in_index(cls, instance_id):
         """
         Add, update, ignore, or remove indexing for the given instance, based on the conditions in should_be_indexed.
         When a model is deleted, use remove_from_index instead.
         """
+        try:
+            instance = cls.model.objects.get(pk=instance_id)
+        except ObjectDoesNotExist:
+            return cls.remove_from_index(instance_id)
+
         if cls.should_be_indexed(instance):
             try:
-                cls.update_in_index(instance)
+                cls._update_in_index(instance)
+            except ConnectionError as e:
+                logging.log_connection_error(e, instance)
             except NotFoundError:
                 cls.add_to_index(instance)
+            except Exception as e:
+                logging.log_fallback_exception(e, instance)
         else:
-            try:
-                cls.remove_from_index(instance)
-            except NotFoundError:
-                pass
+            cls.remove_from_index(instance_id)
 
     @classmethod
     def add_all(cls, es):

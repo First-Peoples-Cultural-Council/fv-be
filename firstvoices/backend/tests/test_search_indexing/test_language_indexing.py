@@ -27,6 +27,16 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
     factory = factories.LanguageFactory
     expected_index_name = ELASTICSEARCH_LANGUAGE_INDEX
 
+    def create_indexable_document(self):
+        """Language must have a visible Site"""
+        language = self.factory.create()
+        factories.SiteFactory.create(language=language, visibility=Visibility.PUBLIC)
+        return language
+
+    def create_non_indexable_document(self):
+        """Subclasses should override if not all documents are indexed"""
+        return self.factory.create()
+
     @pytest.mark.skip("Replaced with several tests for custom iteration")
     def test_iterator(self):
         pass
@@ -146,6 +156,14 @@ class TestSiteDocumentManager(BaseDocumentManagerTest):
     manager = SiteDocumentManager
     factory = factories.SiteFactory
     expected_index_name = ELASTICSEARCH_LANGUAGE_INDEX
+
+    def create_indexable_document(self):
+        """Visible site with no Language"""
+        return self.factory.create(language=None, visibility=Visibility.PUBLIC)
+
+    def create_non_indexable_document(self):
+        """Hidden site"""
+        return self.factory.create(is_hidden=True)
 
     @pytest.mark.skip("Replaced with several tests for custom iteration")
     def test_iterator(self):

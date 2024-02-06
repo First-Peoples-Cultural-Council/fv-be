@@ -130,3 +130,25 @@ def related_video_links_embed_and_thumbnail_does_nothing(request, mocker):
             return_value=MOCK_THUMBNAIL_LINK,
         )
     yield
+
+
+@pytest.fixture(autouse=True)
+def language_index_signals_do_nothing(request, mocker):
+    if "disable_language_index_signal_mocks" not in request.keywords:
+        mocker.patch(
+            "backend.search.signals.language_signals.sync_language_in_index",
+            return_value=None,
+        )
+        mocker.patch(
+            "backend.search.signals.language_signals.remove_language_from_index",
+            return_value=None,
+        )
+        mocker.patch(
+            "backend.search.signals.language_signals.sync_site_in_language_index",
+            return_value=None,
+        )
+        mocker.patch(
+            "backend.search.signals.language_signals.remove_site_from_language_index",
+            return_value=None,
+        )
+    yield

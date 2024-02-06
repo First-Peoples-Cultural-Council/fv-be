@@ -11,10 +11,11 @@ logger = logging.getLogger(ELASTICSEARCH_LOGGER)
 
 
 def log_connection_error(e, instance):
-    logger.error(
-        ES_CONNECTION_ERROR
-        % (type(instance).__name__, type(instance).__name__, instance.id)
-    )
+    log_connection_error_details(e, type(instance).__name__, instance.id)
+
+
+def log_connection_error_details(e, type_name, instance_id):
+    logger.error(ES_CONNECTION_ERROR, type_name, type_name, instance_id)
     logger.error(e)
 
 
@@ -29,13 +30,19 @@ def log_not_found_warning(e, instance):
 
 
 def log_not_found_info(instance):
-    logger.info(
-        ES_NOT_FOUND_INFO,
-        type(instance).__name__,
-        instance.id,
-    )
+    log_not_found_info_details(type(instance).__name__, instance.id)
+
+
+def log_not_found_info_details(type_name, instance_id):
+    logger.info(ES_NOT_FOUND_INFO, type_name, instance_id)
 
 
 def log_fallback_exception(e, instance):
-    logger.error(type(e).__name__, type(instance).__name__, instance.id)
+    log_fallback_exception_details(e, type(instance).__name__, instance.id)
+
+
+def log_fallback_exception_details(e, type_name, instance_id):
+    logger.error(
+        "Unhandled elasticsearch error, with [%s] id [%s]", type_name, instance_id
+    )
     logger.error(e)

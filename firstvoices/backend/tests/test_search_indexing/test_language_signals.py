@@ -1,113 +1,137 @@
-from unittest.mock import patch
-
 import pytest
 
-from backend.models.sites import Language, LanguageFamily
+from backend.search.indexing.language_index import (
+    LanguageDocumentManager,
+    SiteDocumentManager,
+)
 from backend.tests import factories
 
 
 @pytest.fixture
-def mock_add_to_index():
-    with (
-        patch(
-            "backend.search.indexing.language_index.LanguageDocumentManager.add_to_index"
-        ) as mock_add_to_index,
-    ):
-        mock_add_to_index.return_value = None
-        yield mock_add_to_index
-
-
-@pytest.fixture
-def mock_update_in_index():
-    with (
-        patch(
-            "backend.search.indexing.language_index.LanguageDocumentManager.update_in_index"
-        ) as mock_update_in_index,
-    ):
-        mock_update_in_index.return_value = None
-        yield mock_update_in_index
-
-
-@pytest.fixture
-def mock_remove_from_index():
-    with (
-        patch(
-            "backend.search.indexing.language_index.LanguageDocumentManager.remove_from_index"
-        ) as mock_remove_from_index,
-    ):
-        mock_remove_from_index.return_value = None
-        yield mock_remove_from_index
+def mock_index_methods(mocker):
+    return {
+        "mock_sync_language": mocker.patch.object(
+            LanguageDocumentManager, "sync_in_index"
+        ),
+        "mock_remove_language": mocker.patch.object(
+            LanguageDocumentManager, "remove_from_index"
+        ),
+        "mock_sync_site": mocker.patch.object(SiteDocumentManager, "sync_in_index"),
+        "mock_remove_site": mocker.patch.object(
+            SiteDocumentManager, "remove_from_index"
+        ),
+    }
 
 
 class TestLanguageIndexingSignals:
-    @pytest.fixture()
-    def disable_celery(self, settings):
+    @pytest.fixture(autouse=True)
+    def configure_settings(self, settings):
         # Sets the celery tasks to run synchronously for testing
         settings.CELERY_TASK_ALWAYS_EAGER = True
 
     @pytest.mark.django_db
-    def test_new_language_is_added(self, mock_add_to_index):
-        family = LanguageFamily.objects.all().first()
-        language = Language.objects.create(title="New Language", language_family=family)
-        language.save()
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_new_language_is_synced(self, mock_index_methods):
+        language = factories.LanguageFactory.create()
 
-        mock_add_to_index.assert_called_with(language)
+        mock_index_methods["mock_sync_language"].assert_called_once_with(language.id)
+        mock_index_methods["mock_remove_language"].assert_not_called()
+        mock_index_methods["mock_sync_site"].assert_not_called()
+        mock_index_methods["mock_remove_site"].assert_not_called()
 
     @pytest.mark.django_db
-    def test_deleted_language_is_removed(
-        self, mock_add_to_index, mock_remove_from_index
-    ):
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_edited_language_is_synced(self, mock_index_methods):
         language = factories.LanguageFactory.create()
-        mock_add_to_index.assert_called_with(language)
-        mock_remove_from_index.assert_not_called()
+        mock_index_methods["mock_sync_language"].reset_mock()
+
+        language.title = "New title"
+        language.save()
+        mock_index_methods["mock_sync_language"].assert_called_once_with(language.id)
+        mock_index_methods["mock_remove_language"].assert_not_called()
+        mock_index_methods["mock_sync_site"].assert_not_called()
+        mock_index_methods["mock_remove_site"].assert_not_called()
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_deleted_language_is_removed(self, mock_index_methods):
+        language = factories.LanguageFactory.create()
+        language_id = language.id
+        language.delete()
+        mock_index_methods["mock_remove_language"].assert_called_once_with(language_id)
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_deleted_language_related_sites_are_synced(self, mock_index_methods):
+        language = factories.LanguageFactory.create()
+        factories.SiteFactory.create(language=language)
+        factories.SiteFactory.create(language=language)
+        factories.SiteFactory.create(language=None)
+        mock_index_methods["mock_sync_language"].reset_mock()
+        mock_index_methods["mock_sync_site"].reset_mock()
 
         language.delete()
-        mock_remove_from_index.assert_called_with(language)
+        assert mock_index_methods["mock_sync_site"].call_count == 2
 
-    def test_updated_language_is_updated(self, mock_add_to_index, mock_update_in_index):
+
+class TestSiteIndexingSignals:
+    @pytest.fixture(autouse=True)
+    def configure_settings(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_new_site_is_synced(self, mock_index_methods):
+        site = factories.SiteFactory.create()
+        mock_index_methods["mock_sync_site"].assert_called_once_with(site.id)
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_new_site_related_language_is_synced(self, mock_index_methods):
         language = factories.LanguageFactory.create()
-        mock_add_to_index.assert_called_with(language)
-        mock_update_in_index.assert_not_called()
+        mock_index_methods["mock_sync_language"].reset_mock()
 
-        language.language_code = "test"
-        language.save()
-        mock_update_in_index.assert_called_with(language)
+        factories.SiteFactory.create(language=language)
+        mock_index_methods["mock_sync_language"].assert_called_once_with(language.id)
 
-    def test_add_first_public_site_adds_language(self):
-        pass
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_edited_site_is_synced(self, mock_index_methods):
+        site = factories.SiteFactory.create()
+        mock_index_methods["mock_sync_site"].reset_mock()
 
-    def test_add_second_public_site_updates_language(self):
-        pass
+        site.title = "New Title"
+        site.save()
+        mock_index_methods["mock_sync_site"].assert_called_once_with(site.id)
 
-    def test_remove_last_public_site_removes_language(self):
-        pass
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_edited_site_related_languages_are_synced(self, mock_index_methods):
+        language1 = factories.LanguageFactory.create()
+        language2 = factories.LanguageFactory.create()
+        site = factories.SiteFactory.create(language=language1)
+        mock_index_methods["mock_sync_language"].reset_mock()
+        mock_index_methods["mock_sync_site"].reset_mock()
 
-    def test_remove_one_public_site_updates_language(self):
-        pass
+        site.language = language2
+        site.save()
+        assert mock_index_methods["mock_sync_language"].call_count == 2
 
-    def test_update_first_site_to_public_adds_language(self):
-        pass
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_deleted_site_is_removed(self, mock_index_methods):
+        site = factories.SiteFactory.create()
+        site_id = site.id
+        site.delete()
+        mock_index_methods["mock_remove_site"].assert_called_once_with(site_id)
 
-    def test_update_second_site_to_public_updates_language(self):
-        pass
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_deleted_site_related_language_is_synced(self, mock_index_methods):
+        language = factories.LanguageFactory.create()
+        site = factories.SiteFactory.create(language=language)
+        mock_index_methods["mock_sync_language"].reset_mock()
 
-    def test_update_last_site_to_team_removes_language(self):
-        pass
-
-    def test_update_one_site_to_team_updates_language(self):
-        pass
-
-    def test_add_site_with_no_language(self):
-        pass
-
-    def test_update_site_with_no_language(self):
-        pass
-
-    def test_update_site_to_add_language(self):
-        pass
-
-    def test_update_site_to_remove_language(self):
-        pass
-
-    def test_delete_site_with_no_language(self):
-        pass
+        site.delete()
+        mock_index_methods["mock_sync_language"].assert_called_once_with(language.id)

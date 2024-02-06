@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from elasticsearch import ConnectionError, NotFoundError
@@ -46,7 +47,6 @@ class BaseIndexManagerTest:
         self.paths["_create_new_write_index"] = (
             manager_full_module + "._create_new_write_index"
         )
-        self.paths["should_be_indexed"] = manager_full_module + ".should_be_indexed"
 
     def test_get_current_index_success(self):
         mock_es_connection = MagicMock()
@@ -203,11 +203,9 @@ class BaseDocumentManagerTest:
         self.paths["create_index_document"] = (
             manager_full_module + ".create_index_document"
         )
-        self.paths["_get_current_index"] = manager_full_module + "._get_current_index"
-        self.paths["_create_new_write_index"] = (
-            manager_full_module + "._create_new_write_index"
-        )
-        self.paths["should_be_indexed"] = manager_full_module + ".should_be_indexed"
+        self.paths["add_to_index"] = manager_full_module + ".add_to_index"
+        self.paths["update_in_index"] = manager_full_module + "._update_in_index"
+        self.paths["remove_from_index"] = manager_full_module + ".remove_from_index"
 
     @pytest.mark.django_db
     def test_add_to_index_success(self):
@@ -221,7 +219,7 @@ class BaseDocumentManagerTest:
         ) as mock_refresh, patch(
             self.paths["log_error"], return_value=None
         ) as mock_log_error:
-            self.manager.add_to_index(instance=instance)
+            self.manager.add_to_index(instance)
 
             mock_create_index_document.assert_called_once_with(instance)
             mock_document.save.assert_called_once()
@@ -237,7 +235,7 @@ class BaseDocumentManagerTest:
         with patch(
             self.paths["create_index_document"], return_value=mock_document
         ), patch(self.paths["log_error"], return_value=None) as mock_log_error:
-            self.manager.add_to_index(instance=instance)
+            self.manager.add_to_index(instance)
             mock_log_error.assert_called()
 
     @pytest.mark.django_db
@@ -262,7 +260,7 @@ class BaseDocumentManagerTest:
         ) as mock_refresh, patch(
             self.paths["log_error"], return_value=None
         ) as mock_log_error:
-            self.manager.update_in_index(instance=instance)
+            self.manager.update_in_index(instance)
 
             # assert searched the right index for the right id
             mock_search_init.assert_called_once_with(index=self.expected_index_name)
@@ -298,7 +296,7 @@ class BaseDocumentManagerTest:
         ) as mock_refresh, patch(
             self.paths["log_error"], return_value=None
         ) as mock_log_error:
-            self.manager.remove_from_index(instance=instance)
+            self.manager.remove_from_index(instance.id)
 
             # assert searched the right index for the right id
             mock_search_init.assert_called_once_with(index=self.expected_index_name)
@@ -316,24 +314,35 @@ class BaseDocumentManagerTest:
 
             mock_log_error.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "method",
-        ["update_in_index", "remove_from_index"],
-    )
     @pytest.mark.django_db
-    def test_failure_es_error(self, method):
+    def test_update_failure_es_error(self):
         instance = self.factory.create()
 
         with patch(
             self.paths["es_search_init"], side_effect=ConnectionError("Oh dear!")
         ), patch(self.paths["log_error"], return_value=None) as mock_log_error:
-            m = getattr(self.manager, method)
-            m(instance=instance)
+            self.manager.update_in_index(instance)
             mock_log_error.assert_called()
+
+    @pytest.mark.django_db
+    def test_remove_failure_es_error(self):
+        instance = self.factory.create()
+
+        with patch(
+            self.paths["es_search_init"], side_effect=ConnectionError("Oh dear!")
+        ), patch(self.paths["log_error"], return_value=None) as mock_log_error:
+            self.manager.remove_from_index(instance.id)
+            mock_log_error.assert_called()
+
+    @pytest.mark.django_db
+    def test_remove_failure_missing_instance(self):
+        with patch(self.paths["log_info"], return_value=None) as mock_log_info:
+            self.manager.remove_from_index(uuid4())
+            mock_log_info.assert_called()
 
     @pytest.mark.parametrize(
         "method",
-        ["add_to_index", "update_in_index", "remove_from_index"],
+        ["add_to_index", "update_in_index"],
     )
     @pytest.mark.django_db
     def test_failure_surprise_exception(self, method):
@@ -343,15 +352,11 @@ class BaseDocumentManagerTest:
             self.paths["create_index_document"], side_effect=Exception("Kaboom!")
         ), patch(self.paths["log_error"], return_value=None) as mock_log_error:
             m = getattr(self.manager, method)
-            m(instance=instance)
+            m(instance)
             mock_log_error.assert_called()
 
-    @pytest.mark.parametrize(
-        "method",
-        ["update_in_index", "remove_from_index"],
-    )
     @pytest.mark.django_db
-    def test_failure_search_result_not_found(self, method):
+    def test_update_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
         mock_query.execute.side_effect = NotFoundError("Oopsie!")
 
@@ -360,17 +365,26 @@ class BaseDocumentManagerTest:
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
         ), patch(self.paths["log_info"], return_value=None) as mock_log_info:
-            m = getattr(self.manager, method)
-            m(instance=instance)
+            self.manager.update_in_index(instance)
 
             mock_log_info.assert_called()
 
-    @pytest.mark.parametrize(
-        "method",
-        ["update_in_index", "remove_from_index"],
-    )
     @pytest.mark.django_db
-    def test_failure_index_doc_not_found(self, method):
+    def test_remove_failure_search_result_not_found(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+        mock_query.execute.side_effect = NotFoundError("Oopsie!")
+
+        instance = self.factory.create()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_info"], return_value=None) as mock_log_info:
+            self.manager.remove_from_index(instance.id)
+
+            mock_log_info.assert_called()
+
+    @pytest.mark.django_db
+    def test_update_failure_index_doc_not_found(self):
         _, mock_search_obj = self.create_search_mocks()
 
         instance = self.factory.create()
@@ -382,8 +396,24 @@ class BaseDocumentManagerTest:
         ), patch(
             self.paths["log_info"], return_value=None
         ) as mock_log_info:
-            m = getattr(self.manager, method)
-            m(instance=instance)
+            self.manager.update_in_index(instance)
+
+            mock_log_info.assert_called()
+
+    @pytest.mark.django_db
+    def test_remove_failure_index_doc_not_found(self):
+        _, mock_search_obj = self.create_search_mocks()
+
+        instance = self.factory.create()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(
+            self.paths["document_get"], side_effect=NotFoundError("Nice try!")
+        ), patch(
+            self.paths["log_info"], return_value=None
+        ) as mock_log_info:
+            self.manager.remove_from_index(instance.id)
 
             mock_log_info.assert_called()
 
@@ -398,21 +428,154 @@ class BaseDocumentManagerTest:
                 for instance in model.objects.all():
                     mock_create_index_doc.assert_any_call(instance)
 
+    def create_indexable_document(self):
+        """Subclasses should override if not all documents are indexed"""
+        return self.factory.create()
+
+    def create_non_indexable_document(self):
+        """Subclasses should override if not all documents are indexed"""
+        return self.factory.create()
+
     @pytest.mark.django_db
-    def test_sync_in_index_new_document_is_added(self):
+    def test_sync_in_index_new_good_document_is_added(self):
         mock_query, mock_search_obj = self.create_search_mocks()
         mock_query.execute.side_effect = NotFoundError(
             "Oopsie!"
         )  # new document is not yet in the index
 
-        instance = self.factory.create()
+        instance = self.create_indexable_document()
 
-        with patch(self.paths["should_be_indexed"], return_value=True), patch(
-            self.paths["es_search_init"], return_value=None
-        ), patch(self.paths["es_search_params"], return_value=mock_search_obj), patch(
-            self.paths["log_warning"], return_value=None
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index:
+            self.manager.sync_in_index(instance.id)
+            mock_add_to_index.assert_called_once_with(instance)
+
+    @pytest.mark.django_db
+    def test_sync_in_index_new_bad_document_is_skipped(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+        mock_query.execute.side_effect = NotFoundError(
+            "Oopsie!"
+        )  # new document is not yet in the index
+
+        instance = self.create_non_indexable_document()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index, patch(
+            self.paths["update_in_index"], return_value=None
+        ) as mock_update_in_index, patch(
+            self.paths["remove_from_index"], return_value=None
         ):
-            self.manager.sync_in_index(instance=instance)
+            self.manager.sync_in_index(instance.id)
+            mock_add_to_index.assert_not_called()
+            mock_update_in_index.assert_not_called()
+            # may be skipped or removed
+
+    @pytest.mark.django_db
+    def test_sync_in_index_edited_good_document_is_updated(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+
+        instance = self.create_indexable_document()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index, patch(
+            self.paths["update_in_index"], return_value=None
+        ) as mock_update_in_index, patch(
+            self.paths["remove_from_index"], return_value=None
+        ) as remove_from_index:
+            self.manager.sync_in_index(instance.id)
+
+            mock_update_in_index.assert_called_once_with(instance)
+            mock_add_to_index.assert_not_called()
+            remove_from_index.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_sync_in_index_edited_bad_document_is_skipped(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+
+        instance = self.create_non_indexable_document()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index, patch(
+            self.paths["update_in_index"], return_value=None
+        ) as mock_update_in_index, patch(
+            self.paths["remove_from_index"], return_value=None
+        ):
+            self.manager.sync_in_index(instance.id)
+
+            mock_update_in_index.assert_not_called()
+            mock_add_to_index.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_sync_in_index_edited_good_to_bad_document_is_removed(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+
+        instance = self.create_non_indexable_document()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index, patch(
+            self.paths["update_in_index"], return_value=None
+        ) as mock_update_in_index, patch(
+            self.paths["remove_from_index"], return_value=None
+        ) as remove_from_index:
+            self.manager.sync_in_index(instance.id)
+
+            remove_from_index.assert_called_once_with(instance.id)
+            mock_update_in_index.assert_not_called()
+            mock_add_to_index.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_sync_in_index_edited_bad_to_good_document_is_added(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+
+        instance = self.create_indexable_document()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["add_to_index"], return_value=None
+        ) as mock_add_to_index, patch(
+            self.paths["update_in_index"], return_value=None
+        ) as mock_update_in_index, patch(
+            self.paths["remove_from_index"], return_value=None
+        ) as remove_from_index:
+            mock_update_in_index.side_effect = NotFoundError(
+                "Oopsie!"
+            )  # document is not yet in the index
+
+            self.manager.sync_in_index(instance.id)
+            mock_add_to_index.assert_called_once_with(instance)
+            remove_from_index.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_sync_missing_instance_is_removed(self):
+        mock_query, mock_search_obj = self.create_search_mocks()
+
+        instance = self.create_indexable_document()
+        instance_id = instance.id
+        instance.delete()
+
+        with patch(self.paths["es_search_init"], return_value=None), patch(
+            self.paths["es_search_params"], return_value=mock_search_obj
+        ), patch(self.paths["log_warning"], return_value=None), patch(
+            self.paths["remove_from_index"], return_value=None
+        ) as mock_remove_from_index:
+            self.manager.sync_in_index(instance_id)
+            mock_remove_from_index.assert_called_once_with(instance_id)
 
     def create_search_mocks(self):
         mock_query = MagicMock()
