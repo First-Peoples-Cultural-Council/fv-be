@@ -24,6 +24,9 @@ def media_doc_generator(instance, media_type):
         document_id=str(instance.id),
         site_id=str(instance.site.id),
         site_visibility=instance.site.visibility,
+        site_features=list(
+            instance.site.sitefeature_set.all().values_list("key", flat=True)
+        ),
         exclude_from_games=instance.exclude_from_games,
         exclude_from_kids=instance.exclude_from_kids,
         visibility=Visibility.PUBLIC,

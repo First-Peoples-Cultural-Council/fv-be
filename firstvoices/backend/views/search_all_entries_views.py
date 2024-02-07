@@ -471,6 +471,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
         has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
 
+        has_site_feature = self.request.GET.get("hasSiteFeature", "")
+        # has_site_feature = get_valid?
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -490,6 +493,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "has_image": has_image,
             "has_translation": has_translation,
             "has_unrecognized_chars": has_unrecognized_chars,
+            "has_site_feature": has_site_feature,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -555,6 +559,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
             has_unrecognized_chars=search_params["has_unrecognized_chars"],
+            has_site_feature=search_params["has_site_feature"],
             random_sort=search_params["sort"] == "random",
         )
 

@@ -203,6 +203,10 @@ def get_has_unrecognized_chars_query(has_unrecognized_chars):
     return Q("bool", filter=[Q("term", has_unrecognized_chars=has_unrecognized_chars)])
 
 
+def get_has_site_feature_query(site_feature):
+    return Q("bool", filter=[Q("terms", site_features=[site_feature])])
+
+
 # Search params validation
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
