@@ -265,3 +265,39 @@ class TestAudioEndpoint(BaseMediaApiTest):
                 "speakers": data["speakers"],
             },
         )
+
+    @pytest.mark.django_db
+    def test_usages_field_base(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
+
+        character = factories.CharacterFactory(site=site, title="a", sort_order=1)
+        character.related_audio.add(instance)
+
+        dict_entry = factories.DictionaryEntryFactory(site=site)
+        dict_entry.related_audio.add(instance)
+
+        song = factories.SongFactory(site=site)
+        song.related_audio.add(instance)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # usage in characters
+        character_usage = response_data["usage"]["characters"]
+        assert len(character_usage) == 1
+        assert character_usage[0]["id"] == str(character.id)
+
+        # usage in dictionary entries
+        dict_entry_usage = response_data["usage"]["dictionaryEntries"]
+        assert len(dict_entry_usage) == 1
+        assert dict_entry_usage[0]["id"] == str(dict_entry.id)
+
+        # usage in songs
+        song_usage = response_data["usage"]["songs"]
+        assert len(song_usage) == 1
+        assert song_usage[0]["id"] == str(song.id)
