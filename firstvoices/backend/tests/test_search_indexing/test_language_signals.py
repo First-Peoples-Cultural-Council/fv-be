@@ -26,6 +26,35 @@ def mock_index_methods(mocker):
 class TestLanguageIndexingSignals:
     @pytest.mark.django_db
     @pytest.mark.disable_language_index_signal_mocks
+    def test_new_language_family_is_skipped(self, mock_index_methods):
+        factories.LanguageFamilyFactory.create()
+
+        mock_index_methods["mock_sync_language"].assert_not_called()
+        mock_index_methods["mock_remove_language"].assert_not_called()
+        mock_index_methods["mock_sync_site"].assert_not_called()
+        mock_index_methods["mock_remove_site"].assert_not_called()
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
+    def test_edited_language_family_related_languages_are_synced(
+        self, mock_index_methods
+    ):
+        family = factories.LanguageFamilyFactory.create()
+        factories.LanguageFactory.create(language_family=family)
+        factories.LanguageFactory.create(language_family=family)
+        factories.LanguageFactory.create()
+        mock_index_methods["mock_sync_language"].reset_mock()
+
+        family.title = "New Family Title"
+        family.save()
+
+        assert mock_index_methods["mock_sync_language"].call_count == 2
+        mock_index_methods["mock_remove_language"].assert_not_called()
+        mock_index_methods["mock_sync_site"].assert_not_called()
+        mock_index_methods["mock_remove_site"].assert_not_called()
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_language_index_signal_mocks
     def test_new_language_is_synced(self, mock_index_methods):
         language = factories.LanguageFactory.create()
 

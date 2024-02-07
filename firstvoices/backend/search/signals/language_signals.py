@@ -2,9 +2,21 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
-from backend.models.sites import Language, Site
+from backend.models.sites import Language, LanguageFamily, Site
 from backend.search.tasks import language_index_tasks
 from firstvoices.celery import link_error_handler
+
+
+@receiver(post_save, sender=LanguageFamily)
+def sync_language_family_in_index(sender, instance, **kwargs):
+    for language in instance.languages.all():
+        language_index_tasks.sync_language_in_index.apply_async(
+            (language.id,), link_error=link_error_handler.s()
+        )
+
+
+# note: no signal needed for deleting a LanguageFamily, because the model can only be deleted once it has
+# no Languages associated
 
 
 @receiver(post_save, sender=Language)
