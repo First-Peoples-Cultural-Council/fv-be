@@ -22,8 +22,10 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         """
         Returns validated search parameters based on request inputs.
         """
+        cleaned_q = clean_input(self.request.GET.get("q", ""))
+
         return {
-            "q": clean_input(self.request.GET.get("q", "")),
+            "q": cleaned_q.lower(),
             "user": self.request.user,
         }
 
