@@ -35,7 +35,7 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
         image.save()
         return image
 
-    def get_expected_response(self, instance, site, detail_view=False):
+    def get_expected_response(self, instance, site, detail_view):
         return self.get_expected_image_data(instance, detail_view)
 
     def assert_created_response(self, expected_data, actual_response, detail_view):

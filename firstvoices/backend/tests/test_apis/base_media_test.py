@@ -67,10 +67,6 @@ class MediaTestMixin:
                 "dictionaryEntries": [],
                 "songs": [],
                 "stories": [],
-                "customPages": [],
-                "gallery": [],
-                "siteBanner": {},
-                "siteLogo": {},
                 "total": 0,
             }
         return data
@@ -104,24 +100,39 @@ class MediaTestMixin:
             instance, view_name=view_name, detail_view=detail_view
         )
         thumbnail_data = self.get_media_thumbnail_data(instance)
-        return {
+
+        data = {
             **data,
             **thumbnail_data,
             "original": self.get_visual_file_data(instance.original),
         }
 
-    def get_expected_image_data(self, instance, detail_view):
-        return self.get_visual_media_data(
+        if detail_view:
+            data["usage"]["customPages"] = []
+
+        return data
+
+    def get_expected_image_data(self, instance, detail_view=False):
+        data = self.get_visual_media_data(
             instance, view_name="api:image-detail", detail_view=detail_view
         )
 
-    def get_expected_video_data(self, instance, detail_view):
+        if detail_view:
+            data["usage"]["gallery"] = []
+            data["usage"]["siteBanner"] = {}
+            data["usage"]["siteLogo"] = {}
+
+        return data
+
+    def get_expected_video_data(self, instance, detail_view=False):
         return self.get_visual_media_data(
             instance, view_name="api:video-detail", detail_view=detail_view
         )
 
-    def get_expected_audio_data(self, instance, speaker):
-        data = self.get_basic_media_data(instance, view_name="api:audio-detail")
+    def get_expected_audio_data(self, instance, speaker, detail_view=False):
+        data = self.get_basic_media_data(
+            instance, view_name="api:audio-detail", detail_view=detail_view
+        )
         data["original"] = self.get_file_data(instance.original)
 
         if speaker:
@@ -225,7 +236,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedAudio"]) == 1
         assert response_data["relatedAudio"][0] == self.get_expected_audio_data(
-            audio, speaker
+            audio, speaker, detail_view=False
         )
 
     @pytest.mark.django_db
@@ -242,7 +253,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedImages"]) == 1
 
-        expected = self.get_expected_image_data(image)
+        expected = self.get_expected_image_data(image, detail_view=False)
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in response_data["relatedImages"][0]:
                 response_data["relatedImages"][0].pop(ignored_field)
@@ -265,7 +276,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedVideos"]) == 1
 
-        expected = self.get_expected_video_data(video)
+        expected = self.get_expected_video_data(video, detail_view=False)
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in response_data["relatedVideos"][0]:
                 response_data["relatedVideos"][0].pop(ignored_field)
@@ -366,6 +377,54 @@ class BaseMediaApiTest(
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpeg"
     model = None
+
+    # Overriding methods to add in the detail_view parameter as that affects the response in case of media APIs
+    def get_expected_detail_response(self, instance, site):
+        return self.get_expected_response(instance, site, detail_view=True)
+
+    def get_expected_list_response_item(self, instance, site):
+        return self.get_expected_response(instance, site, detail_view=False)
+
+    @pytest.mark.django_db
+    def test_create_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        self.assert_created_instance(pk, data)
+        self.assert_created_response(data, response_data, detail_view=False)
+
+    @pytest.mark.django_db
+    def test_create_with_nulls_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_created_instance(pk, expected_data)
+        self.assert_created_response(expected_data, response_data, detail_view=False)
 
     def get_valid_data(self, site=None):
         """Returns a valid data object suitable for create/update requests"""

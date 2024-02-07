@@ -37,8 +37,10 @@ class TestAudioEndpoint(BaseMediaApiTest):
         audio.save()
         return audio
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_audio_data(instance, speaker=None)
+    def get_expected_response(self, instance, site, detail_view):
+        return self.get_expected_audio_data(
+            instance, speaker=None, detail_view=detail_view
+        )
 
     @pytest.mark.django_db
     def test_detail_with_speakers(self):
@@ -53,14 +55,18 @@ class TestAudioEndpoint(BaseMediaApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data == self.get_expected_audio_data(instance, speaker)
+        assert response_data == self.get_expected_audio_data(
+            instance, speaker, detail_view=True
+        )
 
     def assert_related_objects_deleted(self, instance):
         self.assert_instance_deleted(instance.original)
 
-    def assert_created_response(self, expected_data, actual_response):
+    def assert_created_response(self, expected_data, actual_response, detail_view):
         instance = Audio.objects.get(pk=actual_response["id"])
-        assert actual_response == self.get_expected_audio_data(instance, None)
+        assert actual_response == self.get_expected_audio_data(
+            instance, None, detail_view=detail_view
+        )
 
     @pytest.mark.django_db
     def test_create_with_speakers(self):

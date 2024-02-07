@@ -35,12 +35,12 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
         video.save()
         return video
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_video_data(instance)
+    def get_expected_response(self, instance, site, detail_view):
+        return self.get_expected_video_data(instance, detail_view)
 
-    def assert_created_response(self, expected_data, actual_response):
+    def assert_created_response(self, expected_data, actual_response, detail_view):
         instance = Video.objects.get(pk=actual_response["id"])
-        expected = self.get_expected_video_data(instance)
+        expected = self.get_expected_video_data(instance, detail_view=detail_view)
 
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in actual_response:
