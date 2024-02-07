@@ -1,36 +1,18 @@
 from rest_framework import serializers
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
-from backend.models import Character, DictionaryEntry, Gallery, SitePage, Song, Story
+from backend.models import Character, DictionaryEntry, Gallery, Song, Story
 from backend.serializers.base_serializers import (
     LinkedSiteSerializer,
     SiteContentLinkedTitleSerializer,
 )
-from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import (
     AudioSerializer,
     ImageSerializer,
     VideoSerializer,
 )
-
-
-def usage_related_set(self, model, related_set, many=True):
-    GenericUsageSerializer.Meta.model = model
-    return GenericUsageSerializer(related_set, many=many, context=self.context).data
-
-
-def get_usages_total(usages_dict):
-    # Get total count of all objects a media file is used in
-    total = 0
-    for usage in usages_dict.values():
-        if isinstance(
-            usage, list
-        ):  # adding a check as some keys contain objects and not arrays
-            total += len(usage)
-        elif hasattr(usage, "id"):
-            # If there is a site the image is a banner/logo of
-            total += 1
-    return total
+from backend.serializers.page_serializers import SitePageUsageSerializer
+from backend.serializers.utils import get_usages_total
 
 
 class GenericUsageSerializer(
@@ -40,21 +22,12 @@ class GenericUsageSerializer(
         model = None
 
 
-class SitePageUsageSerializer(serializers.ModelSerializer):
-    url = SiteHyperlinkedIdentityField(
-        view_name="api:sitepage-detail", lookup_field="slug", read_only=True
-    )
-
-    class Meta:
-        model = SitePage
-        fields = (
-            "id",
-            "url",
-            "title",
-        )
+def usage_related_set(self, model, related_set, many=True):
+    GenericUsageSerializer.Meta.model = model
+    return GenericUsageSerializer(related_set, many=many, context=self.context).data
 
 
-class BaseUsageFieldMixin(serializers.ModelSerializer):
+class BaseUsageFieldSerializer(serializers.ModelSerializer):
     usage = serializers.SerializerMethodField()
 
     class Meta:
@@ -91,9 +64,9 @@ class BaseUsageFieldMixin(serializers.ModelSerializer):
         return response_dict
 
 
-class VisualMediaUsageFieldMixin(BaseUsageFieldMixin):
+class VisualMediaUsageFieldSerializer(BaseUsageFieldSerializer):
     def get_usage(self, obj):
-        response_dict = BaseUsageFieldMixin.get_usage(self, obj)
+        response_dict = BaseUsageFieldSerializer.get_usage(self, obj)
 
         site_pages = SitePageUsageSerializer(
             obj.sitepage_set.all(), context=self.context, many=True
@@ -104,27 +77,30 @@ class VisualMediaUsageFieldMixin(BaseUsageFieldMixin):
             "custom_pages": site_pages,
         }
 
-        del response_dict["total"]
         response_dict["total"] = get_usages_total(response_dict)
         return response_dict
 
 
-class AudioDetailSerializer(BaseUsageFieldMixin, AudioSerializer):
+class AudioDetailSerializer(BaseUsageFieldSerializer, AudioSerializer):
     class Meta(AudioSerializer.Meta):
-        fields = AudioSerializer.Meta.fields + BaseUsageFieldMixin.Meta.fields
+        fields = AudioSerializer.Meta.fields + BaseUsageFieldSerializer.Meta.fields
 
 
-class VideoDetailSerializer(VisualMediaUsageFieldMixin, VideoSerializer):
+class VideoDetailSerializer(VisualMediaUsageFieldSerializer, VideoSerializer):
     class Meta(VideoSerializer.Meta):
-        fields = VideoSerializer.Meta.fields + VisualMediaUsageFieldMixin.Meta.fields
+        fields = (
+            VideoSerializer.Meta.fields + VisualMediaUsageFieldSerializer.Meta.fields
+        )
 
 
-class ImageDetailSerializer(VisualMediaUsageFieldMixin, ImageSerializer):
+class ImageDetailSerializer(VisualMediaUsageFieldSerializer, ImageSerializer):
     class Meta(ImageSerializer.Meta):
-        fields = ImageSerializer.Meta.fields + VisualMediaUsageFieldMixin.Meta.fields
+        fields = (
+            ImageSerializer.Meta.fields + VisualMediaUsageFieldSerializer.Meta.fields
+        )
 
     def get_usage(self, obj):
-        response_dict = VisualMediaUsageFieldMixin.get_usage(self, obj)
+        response_dict = VisualMediaUsageFieldSerializer.get_usage(self, obj)
         gallery_cover_image_of = usage_related_set(
             self, Gallery, obj.gallery_cover_image.all()
         )
@@ -162,6 +138,5 @@ class ImageDetailSerializer(VisualMediaUsageFieldMixin, ImageSerializer):
             "site_logo": site_logo_of,
         }
 
-        del response_dict["total"]
         response_dict["total"] = get_usages_total(response_dict)
         return response_dict

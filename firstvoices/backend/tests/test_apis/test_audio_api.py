@@ -55,9 +55,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data == self.get_expected_audio_data(
-            instance, speaker, detail_view=True
-        )
+        assert response_data == self.get_expected_audio_data(instance, speaker, True)
 
     def assert_related_objects_deleted(self, instance):
         self.assert_instance_deleted(instance.original)

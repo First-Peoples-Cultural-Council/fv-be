@@ -120,3 +120,18 @@ class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
             "banner_image",
             "banner_video",
         )
+
+
+class SitePageUsageSerializer(serializers.ModelSerializer):
+    # Minimal serializer to fetch details about media usages on any custom page
+    url = SiteHyperlinkedIdentityField(
+        view_name="api:sitepage-detail", lookup_field="slug", read_only=True
+    )
+
+    class Meta:
+        model = SitePage
+        fields = (
+            "id",
+            "url",
+            "title",
+        )
