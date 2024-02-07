@@ -416,10 +416,8 @@ class BaseDocumentManagerTest:
             for _ in self.manager._iterator():
                 continue
 
-            # adds all models as documents
-            for model in self.manager.models:
-                for instance in model.objects.all():
-                    mock_create_index_doc.assert_any_call(instance)
+            for instance in self.manager.model.objects.all():
+                mock_create_index_doc.assert_any_call(instance)
 
     def create_indexable_document(self):
         """Subclasses should override if not all documents are indexed"""

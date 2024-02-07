@@ -33,3 +33,10 @@ class MediaReportingDocumentMixin:
     has_audio = Boolean()
     has_video = Boolean()
     has_image = Boolean()
+
+
+class BaseSiteEntryWithMediaDocument(BaseSiteEntryDocument):
+    # fields for media filtering/reporting
+    has_audio = Boolean()
+    has_video = Boolean()
+    has_image = Boolean()

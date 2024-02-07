@@ -6,6 +6,13 @@ from backend.models.widget import SiteWidgetListOrder
 from backend.tests import factories
 
 
+def assert_list(expected_list, actual_list):
+    assert len(expected_list) == len(actual_list)
+
+    for i, item in enumerate(expected_list):
+        assert item in actual_list
+
+
 def generate_string(length):
     """Function to generate string of ascii characters (both upper and lower case) for the given length."""
     letters = string.ascii_letters
