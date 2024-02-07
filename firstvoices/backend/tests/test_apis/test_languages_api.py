@@ -19,6 +19,8 @@ from .base_search_test import SearchMocksMixin
 class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
     """
     End-to-end tests that the languages endpoints have the expected behaviour.
+
+    See also test_search_querying package.
     """
 
     API_LIST_VIEW = "api:language-list"
