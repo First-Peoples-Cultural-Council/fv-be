@@ -62,10 +62,12 @@ class TestAudioEndpoint(BaseMediaApiTest):
     def assert_related_objects_deleted(self, instance):
         self.assert_instance_deleted(instance.original)
 
-    def assert_created_response(self, expected_data, actual_response, detail_view):
+    def assert_created_response(
+        self, expected_data, actual_response, detail_view=False
+    ):
         instance = Audio.objects.get(pk=actual_response["id"])
         assert actual_response == self.get_expected_audio_data(
-            instance, None, detail_view=detail_view
+            instance, None, detail_view
         )
 
     @pytest.mark.django_db
