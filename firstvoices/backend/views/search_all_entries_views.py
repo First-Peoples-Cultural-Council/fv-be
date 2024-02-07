@@ -473,6 +473,8 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
 
         has_site_feature = self.request.GET.get("hasSiteFeature", "")
         # has_site_feature = get_valid?
+        # TODO: Implement get_valid_site_feature? some sort of validation for site features
+        # TODO: ensure site feature params are lowercased
 
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)

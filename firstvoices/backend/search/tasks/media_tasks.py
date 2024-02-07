@@ -46,6 +46,7 @@ def update_media_index(instance_id, media_type, **kwargs):
                 site_features=list(
                     instance.site.sitefeature_set.all().values_list("key", flat=True)
                 ),
+                # TODO: in each instance of the above list filter by enabled=True
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=Visibility.PUBLIC,
