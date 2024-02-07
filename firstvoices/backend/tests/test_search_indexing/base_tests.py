@@ -440,9 +440,7 @@ class BaseDocumentManagerTest:
 
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
-        ), patch(self.paths["log_warning"], return_value=None), patch(
-            self.paths["add_to_index"], return_value=None
-        ) as mock_add_to_index:
+        ), patch(self.paths["add_to_index"], return_value=None) as mock_add_to_index:
             self.manager.sync_in_index(instance.id)
             mock_add_to_index.assert_called_once_with(instance)
 
@@ -458,17 +456,14 @@ class BaseDocumentManagerTest:
         if instance:
             with patch(self.paths["es_search_init"], return_value=None), patch(
                 self.paths["es_search_params"], return_value=mock_search_obj
-            ), patch(self.paths["log_warning"], return_value=None), patch(
+            ), patch(
                 self.paths["add_to_index"], return_value=None
             ) as mock_add_to_index, patch(
                 self.paths["update_in_index"], return_value=None
-            ) as mock_update_in_index, patch(
-                self.paths["remove_from_index"], return_value=None
-            ):
+            ) as mock_update_in_index:
                 self.manager.sync_in_index(instance.id)
                 mock_add_to_index.assert_not_called()
                 mock_update_in_index.assert_not_called()
-                # may be skipped or removed
 
     @pytest.mark.django_db
     def test_sync_in_index_edited_good_document_is_updated(self):
@@ -478,7 +473,7 @@ class BaseDocumentManagerTest:
 
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
-        ), patch(self.paths["log_warning"], return_value=None), patch(
+        ), patch(
             self.paths["add_to_index"], return_value=None
         ) as mock_add_to_index, patch(
             self.paths["update_in_index"], return_value=None
@@ -500,13 +495,11 @@ class BaseDocumentManagerTest:
         if instance:
             with patch(self.paths["es_search_init"], return_value=None), patch(
                 self.paths["es_search_params"], return_value=mock_search_obj
-            ), patch(self.paths["log_warning"], return_value=None), patch(
+            ), patch(
                 self.paths["add_to_index"], return_value=None
             ) as mock_add_to_index, patch(
                 self.paths["update_in_index"], return_value=None
-            ) as mock_update_in_index, patch(
-                self.paths["remove_from_index"], return_value=None
-            ):
+            ) as mock_update_in_index:
                 self.manager.sync_in_index(instance.id)
 
                 mock_update_in_index.assert_not_called()
@@ -515,13 +508,12 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_sync_in_index_edited_good_to_bad_document_is_removed(self):
         _, mock_search_obj = self.create_search_mocks()
-
         instance = self.create_non_indexable_document()
 
         if instance:
             with patch(self.paths["es_search_init"], return_value=None), patch(
                 self.paths["es_search_params"], return_value=mock_search_obj
-            ), patch(self.paths["log_warning"], return_value=None), patch(
+            ), patch(
                 self.paths["add_to_index"], return_value=None
             ) as mock_add_to_index, patch(
                 self.paths["update_in_index"], return_value=None
@@ -542,7 +534,7 @@ class BaseDocumentManagerTest:
 
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
-        ), patch(self.paths["log_warning"], return_value=None), patch(
+        ), patch(
             self.paths["add_to_index"], return_value=None
         ) as mock_add_to_index, patch(
             self.paths["update_in_index"], return_value=None
