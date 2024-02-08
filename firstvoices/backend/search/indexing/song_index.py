@@ -13,7 +13,7 @@ class SongDocumentManager(DocumentManager):
     @classmethod
     def create_index_document(cls, instance: Song):
         """Returns a SongDocument populated for the given Song instance."""
-        return SongDocument(
+        return cls.document(
             document_id=str(instance.id),
             document_type=type(instance).__name__,
             site_id=str(instance.site.id),
