@@ -5,9 +5,9 @@ from django.core.management.base import BaseCommand
 from backend.management.commands._helper import rebuild_index
 from backend.search.documents.dictionary_entry_document import DictionaryEntryDocument
 from backend.search.documents.media_document import MediaDocument
-from backend.search.documents.story_document import StoryDocument
 from backend.search.indexing.language_index import LanguageIndexManager
 from backend.search.indexing.song_index import SongIndexManager
+from backend.search.indexing.story_index import StoryIndexManager
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_LANGUAGE_INDEX,
@@ -24,12 +24,12 @@ class Command(BaseCommand):
             "index_name": ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
             "document": DictionaryEntryDocument,
         },
-        "stories": {"index_name": ELASTICSEARCH_STORY_INDEX, "document": StoryDocument},
         "media": {"index_name": ELASTICSEARCH_MEDIA_INDEX, "document": MediaDocument},
     }
     index_managers = {
         ELASTICSEARCH_LANGUAGE_INDEX: LanguageIndexManager,
         ELASTICSEARCH_SONG_INDEX: SongIndexManager,
+        ELASTICSEARCH_STORY_INDEX: StoryIndexManager,
     }
 
     def add_arguments(self, parser):
