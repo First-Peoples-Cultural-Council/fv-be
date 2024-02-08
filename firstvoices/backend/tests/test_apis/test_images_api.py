@@ -124,7 +124,7 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
 
     @pytest.mark.django_db
     def test_usages_field_extra_fields(self):
-        expected_data = self.add_related_media_to_objects()
+        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
 
         custom_page = factories.SitePageFactory(
             site=expected_data["site"], banner_image=expected_data["media_instance"]

@@ -527,14 +527,14 @@ class BaseMediaApiTest(
 
         assert response.status_code == 400
 
-    def add_related_media_to_objects(self, site):
+    def add_related_media_to_objects(self, visibility):
         # Add media file as related media to objects to verify that they show up correctly
         # in usage field when a media item is requested via detail view
         raise NotImplementedError
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
-        expected_data = self.add_related_media_to_objects()
+        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
 
         response = self.client.get(
             self.get_detail_endpoint(
