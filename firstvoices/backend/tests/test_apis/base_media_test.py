@@ -570,6 +570,28 @@ class BaseMediaApiTest(
 
         assert response_data["usage"]["total"] == expected_data["total"]
 
+    @pytest.mark.django_db
+    def test_usages_field_permissions(self):
+        expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=expected_data["media_instance"].id,
+                site_slug=expected_data["site"].slug,
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # Characters visibility depends on the site's visibility, PUBLIC in this case
+        assert len(response_data["usage"]["characters"]) == 1
+
+        # controlled content should be available
+        assert len(response_data["usage"]["dictionaryEntries"]) == 0
+        assert len(response_data["usage"]["songs"]) == 0
+        assert len(response_data["usage"]["stories"]) == 0
+
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):
     @pytest.fixture()

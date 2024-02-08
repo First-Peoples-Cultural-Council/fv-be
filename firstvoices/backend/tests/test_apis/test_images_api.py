@@ -80,27 +80,34 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
         assert ImageFile.objects.count() == 4
         assert not ImageFile.objects.filter(id=old_original_file_id).exists()
 
-    def add_related_media_to_objects(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+    def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
+        if visibility == Visibility.TEAM:
+            site = self.create_site_with_non_member(Visibility.PUBLIC)
+        else:
+            site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
 
         character = factories.CharacterFactory(site=site, title="a", sort_order=1)
         character.related_images.add(instance)
 
-        dict_entry = factories.DictionaryEntryFactory(site=site)
+        dict_entry = factories.DictionaryEntryFactory(site=site, visibility=visibility)
         dict_entry.related_images.add(instance)
 
-        song = factories.SongFactory(site=site)
+        song = factories.SongFactory(site=site, visibility=visibility)
         song.related_images.add(instance)
 
-        story_1 = factories.StoryFactory(site=site)
+        story_1 = factories.StoryFactory(site=site, visibility=visibility)
         story_1.related_images.add(instance)
 
-        story_page_1 = factories.StoryPageFactory(site=site, story=story_1)
+        story_page_1 = factories.StoryPageFactory(
+            site=site, story=story_1, visibility=visibility
+        )
         story_page_1.related_images.add(instance)
 
-        story_2 = factories.StoryFactory(site=site)
-        story_page_2 = factories.StoryPageFactory(site=site, story=story_2)
+        story_2 = factories.StoryFactory(site=site, visibility=visibility)
+        story_page_2 = factories.StoryPageFactory(
+            site=site, story=story_2, visibility=visibility
+        )
         story_page_2.related_images.add(instance)
 
         total = 5

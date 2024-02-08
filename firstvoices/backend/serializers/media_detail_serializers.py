@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
 from backend.models import Character, DictionaryEntry, Gallery, Song, Story
+from backend.permissions.utils import filter_by_viewable
 from backend.serializers.base_serializers import (
     LinkedSiteSerializer,
     SiteContentLinkedTitleSerializer,
@@ -24,6 +25,9 @@ class GenericUsageSerializer(
 
 def usage_related_set(self, model, related_set, many=True):
     GenericUsageSerializer.Meta.model = model
+    if self.context["request"].user:
+        user = self.context["request"].user
+        related_set = filter_by_viewable(user, related_set)
     return GenericUsageSerializer(related_set, many=many, context=self.context).data
 
 
@@ -41,11 +45,10 @@ class BaseUsageFieldSerializer(serializers.ModelSerializer):
         songs = usage_related_set(self, Song, obj.song_set.all())
 
         # Returning only stories and not pages, whether the media is on the cover or in any page
-        parent_stories = []
-        for story_page in obj.storypage_set.all():
-            parent_stories.append(
-                usage_related_set(self, Story, story_page.story, many=False)
-            )
+        parent_stories_ids = obj.storypage_set.values_list("story", flat=True)
+        parent_stories_qs = Story.objects.filter(id__in=parent_stories_ids)
+        parent_stories = usage_related_set(self, Story, parent_stories_qs)
+
         story_covers = usage_related_set(self, Story, obj.story_set.all())
         # Returning only unique values
         stories = list(
@@ -68,8 +71,14 @@ class VisualMediaUsageFieldSerializer(BaseUsageFieldSerializer):
     def get_usage(self, obj):
         response_dict = BaseUsageFieldSerializer.get_usage(self, obj)
 
+        site_page_qs = obj.sitepage_set.all()
+
+        if self.context["request"].user:
+            user = self.context["request"].user
+            site_page_qs = filter_by_viewable(user, site_page_qs)
+
         site_pages = SitePageUsageSerializer(
-            obj.sitepage_set.all(), context=self.context, many=True
+            site_page_qs, context=self.context, many=True
         ).data
 
         response_dict = {
