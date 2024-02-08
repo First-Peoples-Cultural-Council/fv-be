@@ -7,7 +7,7 @@ from backend.search.documents.dictionary_entry_document import DictionaryEntryDo
 from backend.search.documents.media_document import MediaDocument
 from backend.search.documents.song_document import SongDocument
 from backend.search.documents.story_document import StoryDocument
-from backend.search.indexing import LanguageIndexManager
+from backend.search.indexing.language_index import LanguageIndexManager
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_LANGUAGE_INDEX,
@@ -63,14 +63,13 @@ class Command(BaseCommand):
 
             rebuild_index(index_name, index_document)
         else:
-            logger.info("Invalid or no index name provided. Building all indices.")
+            logger.info("No index name provided. Building all indices.")
             for mapping in self.index_mappings.values():
                 index_name = mapping["index_name"]
                 index_document = mapping["document"]
                 rebuild_index(index_name, index_document)
 
             # additional special case
-            logger.info("Building language index")
             LanguageIndexManager.rebuild()
 
         logger.info("Index rebuild complete.")

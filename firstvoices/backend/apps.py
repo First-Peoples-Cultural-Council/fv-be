@@ -7,5 +7,4 @@ class BackendConfig(AppConfig):
 
     def ready(self):
         import backend.models.signals  # noqa F401
-
-        # Search signals to be added later
+        import backend.search.signals  # noqa F401
