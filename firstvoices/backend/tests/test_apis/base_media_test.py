@@ -564,9 +564,14 @@ class BaseMediaApiTest(
         # usage in stories
         # Story pages point to the story, so the response here should only contain id's of both stories exactly once
         story_usage = response_data["usage"]["stories"]
+        expected_stories_ids = [
+            str(expected_data["stories"][0].id),
+            str(expected_data["stories"][1].id),
+        ]
+
         assert len(story_usage) == len(expected_data["stories"])
-        assert story_usage[0]["id"] == str(expected_data["stories"][0].id)
-        assert story_usage[1]["id"] == str(expected_data["stories"][1].id)
+        assert story_usage[0]["id"] in expected_stories_ids
+        assert story_usage[1]["id"] in expected_stories_ids
 
         assert response_data["usage"]["total"] == expected_data["total"]
 

@@ -23,9 +23,9 @@ class GenericUsageSerializer(
         model = None
 
 
-def usage_related_set(self, model, related_set, many=True):
+def usage_related_set(self, model, related_set, many=True, filter_on_permissions=True):
     GenericUsageSerializer.Meta.model = model
-    if self.context["request"].user:
+    if self.context["request"].user and filter_on_permissions:
         user = self.context["request"].user
         related_set = filter_by_viewable(user, related_set)
     return GenericUsageSerializer(related_set, many=many, context=self.context).data
@@ -110,8 +110,15 @@ class ImageDetailSerializer(VisualMediaUsageFieldSerializer, ImageSerializer):
 
     def get_usage(self, obj):
         response_dict = VisualMediaUsageFieldSerializer.get_usage(self, obj)
+
+        # gallery is not a controlled model, so not filtering on permissions
         gallery_cover_image_of = usage_related_set(
-            self, Gallery, obj.gallery_cover_image.all()
+            self, Gallery, obj.gallery_cover_image.all(), filter_on_permissions=False
+        )
+        parent_gallery_ids = obj.gallery_images.values_list("gallery", flat=True)
+        parent_gallery_qs = Gallery.objects.filter(id__in=parent_gallery_ids)
+        gallery_images = usage_related_set(
+            self, Gallery, parent_gallery_qs, filter_on_permissions=False
         )
 
         site_banner_of = {}
@@ -125,12 +132,6 @@ class ImageDetailSerializer(VisualMediaUsageFieldSerializer, ImageSerializer):
             site_logo_of = LinkedSiteSerializer(
                 obj.site_logo_of, context=self.context
             ).data
-
-        gallery_images = []
-        for gallery_item in obj.gallery_images.all():
-            gallery_images.append(
-                usage_related_set(self, Gallery, gallery_item.gallery, many=False)
-            )
 
         # returning only unique values
         gallery = list(
