@@ -2,7 +2,7 @@ from backend.models import Song
 from backend.search.documents import SongDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
 from backend.search.utils.constants import ELASTICSEARCH_SONG_INDEX
-from backend.search.utils.get_index_documents import _fields_as_list
+from backend.search.utils.get_index_documents import fields_as_list
 
 
 class SongDocumentManager(DocumentManager):
@@ -24,8 +24,8 @@ class SongDocumentManager(DocumentManager):
             has_translation=bool(instance.title_translation),
             intro_title=instance.introduction,
             intro_translation=instance.introduction_translation,
-            lyrics_text=_fields_as_list(instance.lyrics, "text"),
-            lyrics_translation=_fields_as_list(instance.lyrics, "translation"),
+            lyrics_text=fields_as_list(instance.lyrics, "text"),
+            lyrics_translation=fields_as_list(instance.lyrics, "translation"),
             note=instance.notes,
             acknowledgement=instance.acknowledgements,
             has_audio=instance.related_audio.exists(),

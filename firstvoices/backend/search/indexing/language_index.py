@@ -3,7 +3,7 @@ from backend.models.sites import Language, Site
 from backend.search.documents.language_document import LanguageDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
-from backend.search.utils.get_index_documents import _fields_as_list, _text_as_list
+from backend.search.utils.get_index_documents import fields_as_list, text_as_list
 
 
 class LanguageDocumentManager(DocumentManager):
@@ -21,13 +21,13 @@ class LanguageDocumentManager(DocumentManager):
             document_type=instance.__class__.__name__,
             language_name=instance.title,
             sort_title=instance.title.upper(),
-            language_code=_text_as_list(instance.language_code),
-            language_alternate_names=_text_as_list(instance.alternate_names),
-            language_community_keywords=_text_as_list(instance.community_keywords),
-            site_names=_fields_as_list(visible_sites, "title"),
-            site_slugs=_fields_as_list(visible_sites, "slug"),
+            language_code=text_as_list(instance.language_code),
+            language_alternate_names=text_as_list(instance.alternate_names),
+            language_community_keywords=text_as_list(instance.community_keywords),
+            site_names=fields_as_list(visible_sites, "title"),
+            site_slugs=fields_as_list(visible_sites, "slug"),
             language_family_name=instance.language_family.title,
-            language_family_alternate_names=_text_as_list(
+            language_family_alternate_names=text_as_list(
                 instance.language_family.alternate_names
             ),
         )

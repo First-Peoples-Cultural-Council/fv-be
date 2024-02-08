@@ -76,15 +76,6 @@ def get_categories_ids(dictionary_entry_instance):
     ]
 
 
-def get_lyrics(song_instance):
-    lyrics = list(song_instance.lyrics.values_list("text", flat=True))
-    lyrics_translation = list(
-        song_instance.lyrics.values_list("translation", flat=True)
-    )
-
-    return lyrics, lyrics_translation
-
-
 def get_page_info(story_instance):
     pages = StoryPage.objects.filter(story=story_instance)
     page_text = list(pages.values_list("text", flat=True))

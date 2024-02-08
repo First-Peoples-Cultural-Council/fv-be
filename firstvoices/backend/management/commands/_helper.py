@@ -9,7 +9,6 @@ from backend.management.commands.utils.iterators import (
     audio_iterator,
     dictionary_entry_iterator,
     image_iterator,
-    song_iterator,
     story_iterator,
     video_iterator,
 )
@@ -86,9 +85,7 @@ def rebuild_index(index_name, index_document):
 
     # Add all documents to the new index
     try:
-        if index_name == ELASTICSEARCH_SONG_INDEX:
-            bulk(es, song_iterator())
-        elif index_name == ELASTICSEARCH_STORY_INDEX:
+        if index_name == ELASTICSEARCH_STORY_INDEX:
             bulk(es, story_iterator())
         elif index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())

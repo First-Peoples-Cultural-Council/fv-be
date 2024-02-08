@@ -1,18 +1,14 @@
 import logging
 
-from backend.models import DictionaryEntry, Song, Story
+from backend.models import DictionaryEntry, Story
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.search.documents import DictionaryEntryDocument, MediaDocument
 from backend.search.utils.constants import UNKNOWN_CHARACTER_FLAG
-from backend.search.utils.get_index_documents import (
-    create_song_index_document,
-    create_story_index_document,
-)
+from backend.search.utils.get_index_documents import create_story_index_document
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
     get_categories_ids,
-    get_lyrics,
     get_notes_text,
     get_page_info,
     get_translation_text,
@@ -117,13 +113,3 @@ def dictionary_entry_iterator():
             has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in entry.custom_order,
         )
         yield index_entry.to_dict(True)
-
-
-def song_iterator():
-    queryset = Song.objects.all()
-    for instance in queryset:
-        lyrics_text, lyrics_translation_text = get_lyrics(instance)
-        song_doc = create_song_index_document(
-            instance, lyrics_text, lyrics_translation_text
-        )
-        yield song_doc.to_dict(True)
