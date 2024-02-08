@@ -1,13 +1,12 @@
 import logging
 
 from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
-from firstvoices.settings import ELASTICSEARCH_LOGGER
 
 ES_NOT_FOUND_INFO = (
     "Tried to find a document that doesn't exist in the index. [%s] id [%s]"
 )
 
-logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+logger = logging.getLogger(__name__)
 
 
 def log_connection_error(e, instance):

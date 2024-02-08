@@ -1,5 +1,3 @@
-from logging import getLogger
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from elasticsearch.exceptions import ConnectionError, NotFoundError
@@ -7,7 +5,7 @@ from elasticsearch.helpers import actions
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
-from backend.search import logging
+from backend.search import es_logging
 from backend.search.utils.object_utils import search_by_id
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -18,8 +16,7 @@ class IndexManager:
 
     @classmethod
     def rebuild(cls):
-        logger = logging.logger
-        logger.info(f"Building index: {cls.index}")
+        es_logging.logger.info(f"Building index: {cls.index}")
 
         es = connections.get_connection()
         current_index = cls._get_current_index(es)
@@ -30,13 +27,12 @@ class IndexManager:
 
         except Exception as e:
             # If we are not able to complete the new index, delete it and leave the current one as read + write alias
-            logger = logging.logger
-            logger.error(
+            es_logging.logger.error(
                 "The following error occurred while adding documents to index [%s]. \
                 Deleting new index, making current index default. "
                 % cls.index
             )
-            logger.error(e)
+            es_logging.logger.error(e)
             new_index.delete(ignore=404)
             raise e
 
@@ -45,7 +41,7 @@ class IndexManager:
             current_index.delete(ignore=404)
 
         cls._remove_write_alias(es, new_index)
-        logger.info(f"Finished building index: {cls.index}")
+        es_logging.logger.info(f"Finished building index: {cls.index}")
 
     @classmethod
     def _get_current_index(cls, es_connection):
@@ -109,7 +105,6 @@ class DocumentManager:
     index = ""
     document = None
     model = None
-    logger = getLogger(__name__)
 
     @classmethod
     def refresh(cls):
@@ -127,20 +122,20 @@ class DocumentManager:
             new_index_document.save()
             cls.refresh()
         except ConnectionError as e:
-            logging.log_connection_error(e, instance)
+            es_logging.log_connection_error(e, instance)
         except Exception as e:
-            logging.log_fallback_exception(e, instance)
+            es_logging.log_fallback_exception(e, instance)
 
     @classmethod
     def update_in_index(cls, instance):
         try:
             cls._update_in_index(instance)
         except ConnectionError as e:
-            logging.log_connection_error(e, instance)
+            es_logging.log_connection_error(e, instance)
         except NotFoundError:
-            logging.log_not_found_info(instance)
+            es_logging.log_not_found_info(instance)
         except Exception as e:
-            logging.log_fallback_exception(e, instance)
+            es_logging.log_fallback_exception(e, instance)
 
     @classmethod
     def _update_in_index(cls, instance):
@@ -163,13 +158,13 @@ class DocumentManager:
             existing_index_document.delete()
             cls.refresh()
         except ConnectionError as e:
-            logging.log_connection_error_details(
+            es_logging.log_connection_error_details(
                 e, type(cls.model).__name__, instance_id
             )
         except NotFoundError:
-            logging.log_not_found_info_details(type(cls.model).__name__, instance_id)
+            es_logging.log_not_found_info_details(type(cls.model).__name__, instance_id)
         except Exception as e:
-            logging.log_fallback_exception_details(
+            es_logging.log_fallback_exception_details(
                 e, type(cls.model).__name__, instance_id
             )
 
@@ -193,11 +188,11 @@ class DocumentManager:
             try:
                 cls._update_in_index(instance)
             except ConnectionError as e:
-                logging.log_connection_error(e, instance)
+                es_logging.log_connection_error(e, instance)
             except NotFoundError:
                 cls.add_to_index(instance)
             except Exception as e:
-                logging.log_fallback_exception(e, instance)
+                es_logging.log_fallback_exception(e, instance)
         else:
             cls.remove_from_index(instance_id)
 
@@ -207,13 +202,13 @@ class DocumentManager:
         Adds all documents to the index, via the provided ElasticSearch Connection.
         """
         # the bulk function is imported this way to allow mocking it in tests
-        logging.logger.info(
+        es_logging.logger.info(
             "Adding all indexable [%s] instances to [%s] index",
             cls.model.__name__,
             cls.index,
         )
         actions.bulk(es, cls._iterator())
-        logging.logger.info(
+        es_logging.logger.info(
             "Finished adding all indexable [%s] instances to [%s] index",
             cls.model.__name__,
             cls.index,

@@ -222,7 +222,7 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         )  # checking results not count until fw-5519 fixes pagination
 
         language_response = response_data["results"][0]
-        self.assert_more_sites_response(language_response)
+        self.assert_language_placeholder_response(language_response)
 
         assert len(language_response["sites"]) == 1
         self.assert_site_response(site, language_response["sites"][0])
@@ -255,7 +255,7 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         self.assert_site_response(site, language_response["sites"][0])
 
         more_sites_response = response_data["results"][1]
-        self.assert_more_sites_response(more_sites_response)
+        self.assert_language_placeholder_response(more_sites_response)
 
         assert len(more_sites_response["sites"]) == 1
         self.assert_site_response(site2, more_sites_response["sites"][0])
@@ -379,7 +379,7 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         response_data = json.loads(response.content)
         assert len(response_data["results"]) == 3
 
-        self.assert_more_sites_response(response_data["results"][0])
+        self.assert_language_placeholder_response(response_data["results"][0])
         self.assert_site_response(
             single_site_2, response_data["results"][0]["sites"][0]
         )
@@ -389,7 +389,7 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
             language_site, response_data["results"][1]["sites"][0]
         )
 
-        self.assert_more_sites_response(response_data["results"][2])
+        self.assert_language_placeholder_response(response_data["results"][2])
         self.assert_site_response(
             single_site_1, response_data["results"][2]["sites"][0]
         )
@@ -399,11 +399,11 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         assert language_response["languageCode"] == language.language_code
         assert language_response["id"] == str(language.id)
 
-    def assert_more_sites_response(self, more_response):
-        assert more_response["language"] == ""
-        assert more_response["languageCode"] == ""
-        assert "-placeholder" in more_response["id"]
-        assert more_response["noLanguageAssigned"]
+    def assert_language_placeholder_response(self, language_placeholder_response):
+        assert language_placeholder_response["language"] == ""
+        assert language_placeholder_response["languageCode"] == ""
+        assert "-placeholder" in language_placeholder_response["id"]
+        assert language_placeholder_response["noLanguageAssigned"]
 
     def assert_site_response(self, site, site_response):
         assert site_response == {
