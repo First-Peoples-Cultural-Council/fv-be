@@ -1,16 +1,14 @@
 import logging
 
-from backend.models import DictionaryEntry, Story
+from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.search.documents import DictionaryEntryDocument, MediaDocument
 from backend.search.utils.constants import UNKNOWN_CHARACTER_FLAG
-from backend.search.utils.get_index_documents import create_story_index_document
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
     get_categories_ids,
     get_notes_text,
-    get_page_info,
     get_translation_text,
 )
 
@@ -72,14 +70,6 @@ def video_iterator():
                 f"Skipping document due to missing properties. object: video, id: {instance.id}."
             )
             continue
-
-
-def story_iterator():
-    queryset = Story.objects.all()
-    for instance in queryset:
-        page_text, page_translation = get_page_info(instance)
-        story_doc = create_story_index_document(instance, page_text, page_translation)
-        yield story_doc.to_dict(True)
 
 
 def dictionary_entry_iterator():

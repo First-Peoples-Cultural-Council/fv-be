@@ -9,20 +9,9 @@ from backend.management.commands.utils.iterators import (
     audio_iterator,
     dictionary_entry_iterator,
     image_iterator,
-    story_iterator,
     video_iterator,
 )
-from backend.models import (
-    Acknowledgement,
-    DictionaryEntry,
-    Lyric,
-    Note,
-    Site,
-    Song,
-    Story,
-    StoryPage,
-    Translation,
-)
+from backend.models import Acknowledgement, DictionaryEntry, Note, Site, Translation
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
 from backend.search.signals.dictionary_entry_signals import (
@@ -42,23 +31,9 @@ from backend.search.signals.site_signals import (
     request_delete_related_docs,
     request_update_document_visibility,
 )
-from backend.search.signals.song_signals import (
-    remove_song_from_index,
-    sync_song_in_index,
-    sync_song_lyrics_in_index,
-)
-from backend.search.signals.story_signals import (
-    request_delete_from_index as request_delete_from_index_story,
-)
-from backend.search.signals.story_signals import (
-    request_update_pages_index,
-    request_update_story_index,
-)
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
-    ELASTICSEARCH_SONG_INDEX,
-    ELASTICSEARCH_STORY_INDEX,
 )
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
@@ -85,9 +60,7 @@ def rebuild_index(index_name, index_document):
 
     # Add all documents to the new index
     try:
-        if index_name == ELASTICSEARCH_STORY_INDEX:
-            bulk(es, story_iterator())
-        elif index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
+        if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
         elif index_name == ELASTICSEARCH_MEDIA_INDEX:
             bulk(es, image_iterator())
@@ -141,10 +114,6 @@ def add_write_alias(index, index_name):
 
     if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
         index.aliases(dictionary_entries=alias_config)
-    elif index_name == ELASTICSEARCH_SONG_INDEX:
-        index.aliases(songs=alias_config)
-    elif index_name == ELASTICSEARCH_STORY_INDEX:
-        index.aliases(stories=alias_config)
     elif index_name == ELASTICSEARCH_MEDIA_INDEX:
         index.aliases(media=alias_config)
     return index
@@ -183,15 +152,7 @@ def disconnect_signals():
     )
 
     # backend.search.signals.song_signals
-    signals.post_save.disconnect(sync_song_in_index, sender=Song)
-    signals.post_delete.disconnect(remove_song_from_index, sender=Song)
-    signals.post_save.disconnect(sync_song_lyrics_in_index, sender=Lyric)
-    signals.post_delete.disconnect(sync_song_lyrics_in_index, sender=Lyric)
-
     # backend.search.signals.story_signals
-    signals.post_save.disconnect(request_update_story_index, sender=Story)
-    signals.post_delete.disconnect(request_delete_from_index_story, sender=Story)
-    signals.post_save.disconnect(request_update_pages_index, sender=StoryPage)
 
     # backend.search.signals.media_signals
     signals.post_save.disconnect(request_update_media_index, sender=Audio)
@@ -239,15 +200,8 @@ def reconnect_signals():
     )
 
     # backend.search.signals.song_signals
-    signals.post_save.connect(sync_song_in_index, sender=Song)
-    signals.post_delete.connect(remove_song_from_index, sender=Song)
-    signals.post_save.connect(sync_song_lyrics_in_index, sender=Lyric)
-    signals.post_delete.connect(sync_song_lyrics_in_index, sender=Lyric)
 
     # backend.search.signals.story_signals
-    signals.post_save.connect(request_update_story_index, sender=Story)
-    signals.post_delete.connect(request_delete_from_index_story, sender=Story)
-    signals.post_save.connect(request_update_pages_index, sender=StoryPage)
 
     # backend.search.signals.media_signals
     signals.post_save.connect(request_update_media_index, sender=Audio)
