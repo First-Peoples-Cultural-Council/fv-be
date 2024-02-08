@@ -5,12 +5,7 @@ from elasticsearch.helpers import bulk, errors
 from elasticsearch_dsl import Index
 from elasticsearch_dsl.connections import connections
 
-from backend.management.commands.utils.iterators import (
-    audio_iterator,
-    dictionary_entry_iterator,
-    image_iterator,
-    video_iterator,
-)
+from backend.management.commands.utils.iterators import dictionary_entry_iterator
 from backend.models import Acknowledgement, DictionaryEntry, Note, Site, Translation
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
@@ -31,10 +26,7 @@ from backend.search.signals.site_signals import (
     request_delete_related_docs,
     request_update_document_visibility,
 )
-from backend.search.utils.constants import (
-    ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
-    ELASTICSEARCH_MEDIA_INDEX,
-)
+from backend.search.utils.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
 
 
@@ -62,10 +54,6 @@ def rebuild_index(index_name, index_document):
     try:
         if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
             bulk(es, dictionary_entry_iterator())
-        elif index_name == ELASTICSEARCH_MEDIA_INDEX:
-            bulk(es, image_iterator())
-            bulk(es, audio_iterator())
-            bulk(es, video_iterator())
     except errors.BulkIndexError as e:
         # Alias configuration error
         if "multiple indices" in str(e):
@@ -114,8 +102,6 @@ def add_write_alias(index, index_name):
 
     if index_name == ELASTICSEARCH_DICTIONARY_ENTRY_INDEX:
         index.aliases(dictionary_entries=alias_config)
-    elif index_name == ELASTICSEARCH_MEDIA_INDEX:
-        index.aliases(media=alias_config)
     return index
 
 

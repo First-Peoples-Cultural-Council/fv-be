@@ -1,9 +1,5 @@
-import logging
-
 from backend.models import DictionaryEntry
-from backend.models.constants import Visibility
-from backend.models.media import Audio, Image, Video
-from backend.search.documents import DictionaryEntryDocument, MediaDocument
+from backend.search.documents import DictionaryEntryDocument
 from backend.search.utils.constants import UNKNOWN_CHARACTER_FLAG
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
@@ -11,65 +7,6 @@ from backend.search.utils.object_utils import (
     get_notes_text,
     get_translation_text,
 )
-
-
-def media_doc_generator(instance, media_type):
-    return MediaDocument(
-        document_id=str(instance.id),
-        site_id=str(instance.site.id),
-        site_visibility=instance.site.visibility,
-        exclude_from_games=instance.exclude_from_games,
-        exclude_from_kids=instance.exclude_from_kids,
-        visibility=Visibility.PUBLIC,
-        title=instance.title,
-        type=media_type,
-        filename=instance.original.content.name,
-        description=instance.description,
-        created=instance.created,
-        last_modified=instance.last_modified,
-    )
-
-
-def audio_iterator():
-    logger = logging.getLogger("rebuild_index")
-
-    queryset = Audio.objects.all()
-    for instance in queryset:
-        try:
-            yield media_doc_generator(instance, "audio").to_dict(True)
-        except AttributeError:
-            logger.warning(
-                f"Skipping document due to missing properties. object: audio, id: {instance.id}."
-            )
-            continue
-
-
-def image_iterator():
-    logger = logging.getLogger("rebuild_index")
-
-    queryset = Image.objects.all()
-    for instance in queryset:
-        try:
-            yield media_doc_generator(instance, "image").to_dict(True)
-        except AttributeError:
-            logger.warning(
-                f"Skipping document due to missing properties. object: image, id: {instance.id}."
-            )
-            continue
-
-
-def video_iterator():
-    logger = logging.getLogger("rebuild_index")
-
-    queryset = Video.objects.all()
-    for instance in queryset:
-        try:
-            yield media_doc_generator(instance, "video").to_dict(True)
-        except AttributeError:
-            logger.warning(
-                f"Skipping document due to missing properties. object: video, id: {instance.id}."
-            )
-            continue
 
 
 def dictionary_entry_iterator():
