@@ -44,11 +44,9 @@ from backend.search.signals.site_signals import (
     request_update_document_visibility,
 )
 from backend.search.signals.song_signals import (
-    request_delete_from_index as request_delete_from_index_song,
-)
-from backend.search.signals.song_signals import (
-    request_update_lyrics_index,
-    request_update_song_index,
+    remove_song_from_index,
+    sync_song_in_index,
+    sync_song_lyrics_in_index,
 )
 from backend.search.signals.story_signals import (
     request_delete_from_index as request_delete_from_index_story,
@@ -188,10 +186,10 @@ def disconnect_signals():
     )
 
     # backend.search.signals.song_signals
-    signals.post_save.disconnect(request_update_song_index, sender=Song)
-    signals.post_delete.disconnect(request_delete_from_index_song, sender=Song)
-    signals.post_save.disconnect(request_update_lyrics_index, sender=Lyric)
-    signals.post_delete.disconnect(request_update_lyrics_index, sender=Lyric)
+    signals.post_save.disconnect(sync_song_in_index, sender=Song)
+    signals.post_delete.disconnect(remove_song_from_index, sender=Song)
+    signals.post_save.disconnect(sync_song_lyrics_in_index, sender=Lyric)
+    signals.post_delete.disconnect(sync_song_lyrics_in_index, sender=Lyric)
 
     # backend.search.signals.story_signals
     signals.post_save.disconnect(request_update_story_index, sender=Story)
@@ -244,10 +242,10 @@ def reconnect_signals():
     )
 
     # backend.search.signals.song_signals
-    signals.post_save.connect(request_update_song_index, sender=Song)
-    signals.post_delete.connect(request_delete_from_index_song, sender=Song)
-    signals.post_save.connect(request_update_lyrics_index, sender=Lyric)
-    signals.post_delete.connect(request_update_lyrics_index, sender=Lyric)
+    signals.post_save.connect(sync_song_in_index, sender=Song)
+    signals.post_delete.connect(remove_song_from_index, sender=Song)
+    signals.post_save.connect(sync_song_lyrics_in_index, sender=Lyric)
+    signals.post_delete.connect(sync_song_lyrics_in_index, sender=Lyric)
 
     # backend.search.signals.story_signals
     signals.post_save.connect(request_update_story_index, sender=Story)
