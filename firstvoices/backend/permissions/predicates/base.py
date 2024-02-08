@@ -99,7 +99,7 @@ def is_superadmin(user, obj):
 
 
 @predicate
-def is_hidden_obj(user, obj):
+def is_hidden_site(user, obj):
     return obj.is_hidden
 
 
