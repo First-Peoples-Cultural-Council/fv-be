@@ -6,10 +6,10 @@ from backend.search.indexing.song_index import SongDocumentManager
 
 
 @shared_task
-def sync_song_in_index(song_id):
-    SongDocumentManager.sync_in_index(song_id)
+def sync_song_in_index(instance_id):
+    SongDocumentManager.sync_in_index(instance_id)
 
 
 @shared_task
-def remove_song_from_index(song_id):
-    SongDocumentManager.remove_from_index(song_id)
+def remove_song_from_index(instance_id):
+    SongDocumentManager.remove_from_index(instance_id)
