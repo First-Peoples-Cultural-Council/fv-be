@@ -298,7 +298,7 @@ on how to start the server locally if required.
 `python3 manage.py rebuild_index`
 4. A success message should be displayed if the process gets completed.
 5. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
-Currently, the following indices are supported: `dictionary_entries, songs, stories, media`
+Currently, the following indices are supported: `dictionary_entries, songs, stories, media, languages`
 
 
 ### Test coverage
