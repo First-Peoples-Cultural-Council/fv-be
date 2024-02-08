@@ -48,7 +48,7 @@ def get_usages_total(usages_dict):
             usage, list
         ):  # adding a check as some keys contain objects and not arrays
             total += len(usage)
-        elif hasattr(usage, "id"):
+        elif isinstance(usage, dict) and "id" in usage:
             # If there is a site the image is a banner/logo of
             total += 1
     return total

@@ -80,3 +80,62 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
         # Check that old files have been deleted
         assert VideoFile.objects.count() == 1
         assert not VideoFile.objects.filter(id=old_original_file_id).exists()
+
+    def add_related_media_to_objects(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
+
+        character = factories.CharacterFactory(site=site, title="a", sort_order=1)
+        character.related_videos.add(instance)
+
+        dict_entry = factories.DictionaryEntryFactory(site=site)
+        dict_entry.related_videos.add(instance)
+
+        song = factories.SongFactory(site=site)
+        song.related_videos.add(instance)
+
+        story_1 = factories.StoryFactory(site=site)
+        story_1.related_videos.add(instance)
+
+        story_page_1 = factories.StoryPageFactory(site=site, story=story_1)
+        story_page_1.related_videos.add(instance)
+
+        story_2 = factories.StoryFactory(site=site)
+        story_page_2 = factories.StoryPageFactory(site=site, story=story_2)
+        story_page_2.related_videos.add(instance)
+
+        total = 5
+
+        return {
+            "site": site,
+            "media_instance": instance,
+            "character": character,
+            "dict_entry": dict_entry,
+            "song": song,
+            "stories": [story_1, story_2],
+            "total": total,
+        }
+
+    @pytest.mark.django_db
+    def test_usages_field_extra_fields(self):
+        expected_data = self.add_related_media_to_objects()
+
+        custom_page = factories.SitePageFactory(
+            site=expected_data["site"], banner_video=expected_data["media_instance"]
+        )
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=expected_data["media_instance"].id,
+                site_slug=expected_data["site"].slug,
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        custom_pages = response_data["usage"]["customPages"]
+        assert len(custom_pages) == 1
+        assert custom_pages[0]["id"] == str(custom_page.id)
+
+        assert response_data["usage"]["total"] == expected_data["total"] + 1

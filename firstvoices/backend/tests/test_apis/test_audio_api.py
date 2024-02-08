@@ -266,8 +266,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
             },
         )
 
-    @pytest.mark.django_db
-    def test_usages_field_base(self):
+    def add_related_media_to_objects(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
 
@@ -280,24 +279,24 @@ class TestAudioEndpoint(BaseMediaApiTest):
         song = factories.SongFactory(site=site)
         song.related_audio.add(instance)
 
-        response = self.client.get(
-            self.get_detail_endpoint(key=instance.id, site_slug=site.slug)
-        )
+        story_1 = factories.StoryFactory(site=site)
+        story_1.related_audio.add(instance)
 
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
+        story_page_1 = factories.StoryPageFactory(site=site, story=story_1)
+        story_page_1.related_audio.add(instance)
 
-        # usage in characters
-        character_usage = response_data["usage"]["characters"]
-        assert len(character_usage) == 1
-        assert character_usage[0]["id"] == str(character.id)
+        story_2 = factories.StoryFactory(site=site)
+        story_page_2 = factories.StoryPageFactory(site=site, story=story_2)
+        story_page_2.related_audio.add(instance)
 
-        # usage in dictionary entries
-        dict_entry_usage = response_data["usage"]["dictionaryEntries"]
-        assert len(dict_entry_usage) == 1
-        assert dict_entry_usage[0]["id"] == str(dict_entry.id)
+        total = 5
 
-        # usage in songs
-        song_usage = response_data["usage"]["songs"]
-        assert len(song_usage) == 1
-        assert song_usage[0]["id"] == str(song.id)
+        return {
+            "site": site,
+            "media_instance": instance,
+            "character": character,
+            "dict_entry": dict_entry,
+            "song": song,
+            "stories": [story_1, story_2],
+            "total": total,
+        }

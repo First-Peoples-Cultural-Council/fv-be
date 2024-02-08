@@ -527,6 +527,49 @@ class BaseMediaApiTest(
 
         assert response.status_code == 400
 
+    def add_related_media_to_objects(self, site):
+        # Add media file as related media to objects to verify that they show up correctly
+        # in usage field when a media item is requested via detail view
+        raise NotImplementedError
+
+    @pytest.mark.django_db
+    def test_usages_field_base(self):
+        expected_data = self.add_related_media_to_objects()
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=expected_data["media_instance"].id,
+                site_slug=expected_data["site"].slug,
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # usage in characters
+        character_usage = response_data["usage"]["characters"]
+        assert len(character_usage) == 1
+        assert character_usage[0]["id"] == str(expected_data["character"].id)
+
+        # usage in dictionary entries
+        dict_entry_usage = response_data["usage"]["dictionaryEntries"]
+        assert len(dict_entry_usage) == 1
+        assert dict_entry_usage[0]["id"] == str(expected_data["dict_entry"].id)
+
+        # usage in songs
+        song_usage = response_data["usage"]["songs"]
+        assert len(song_usage) == 1
+        assert song_usage[0]["id"] == str(expected_data["song"].id)
+
+        # usage in stories
+        # Story pages point to the story, so the response here should only contain id's of both stories exactly once
+        story_usage = response_data["usage"]["stories"]
+        assert len(story_usage) == len(expected_data["stories"])
+        assert story_usage[0]["id"] == str(expected_data["stories"][0].id)
+        assert story_usage[1]["id"] == str(expected_data["stories"][1].id)
+
+        assert response_data["usage"]["total"] == expected_data["total"]
+
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):
     @pytest.fixture()
