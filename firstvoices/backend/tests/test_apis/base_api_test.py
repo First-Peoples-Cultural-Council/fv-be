@@ -7,7 +7,6 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.media import Audio, Image, Video
 from backend.tests import factories
 
 
@@ -674,11 +673,7 @@ class SiteContentUpdateApiTestMixin:
         assert response_data["id"] == str(instance.id)
 
         self.assert_updated_instance(data, self.get_updated_instance(instance))
-
-        if self.model in [Audio, Image, Video]:
-            self.assert_update_response_media(instance, data, response_data)
-        else:
-            self.assert_update_response(data, response_data)
+        self.assert_update_response(data, response_data)
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
@@ -701,13 +696,7 @@ class SiteContentUpdateApiTestMixin:
 
         expected_data = self.add_expected_defaults(data)
         self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
-
-        # We need to pass instance to verify that the original is not modified
-        # in case of media files
-        if self.model in [Audio, Image, Video]:
-            self.assert_update_response_media(instance, expected_data, response_data)
-        else:
-            self.assert_update_response(expected_data, response_data)
+        self.assert_update_response(expected_data, response_data)
 
 
 class ControlledSiteContentUpdateApiTestMixin:

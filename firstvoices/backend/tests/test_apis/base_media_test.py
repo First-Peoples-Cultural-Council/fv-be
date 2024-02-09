@@ -492,6 +492,27 @@ class BaseMediaApiTest(
         assert expected_filename in actual_filename
         assert expected_file_extension in actual_file_extension
 
+    def assert_update_response(self, expected_data, actual_response, instance):
+        self.assert_response(
+            actual_response=actual_response,
+            expected_data={**expected_data},
+            original_instance=instance,
+        )
+
+    @pytest.mark.django_db
+    def test_update_success_200(self):
+        instance, expected_data, response_data = self.perform_success_request()
+        self.assert_update_response(expected_data, response_data, instance)
+
+    @pytest.mark.django_db
+    def test_update_with_nulls_success_200(self):
+        instance, expected_data, response_data = self.perform_success_request(
+            data_with_nulls=True
+        )
+        expected_data = self.add_expected_defaults(expected_data)
+        self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
+        self.assert_update_response(expected_data, response_data, instance)
+
     def assert_update_patch_file_response(
         self, original_instance, data, actual_response
     ):
@@ -509,15 +530,6 @@ class BaseMediaApiTest(
             original_instance=original_instance,
             actual_response=actual_response,
             expected_data=expected_data,
-        )
-
-    def assert_update_response_media(
-        self, original_instance, expected_data, actual_response
-    ):
-        self.assert_response(
-            original_instance=original_instance,
-            actual_response=actual_response,
-            expected_data={**expected_data},
         )
 
     @pytest.mark.django_db
@@ -603,6 +615,11 @@ class BaseMediaApiTest(
         assert len(response_data["usage"]["dictionaryEntries"]) == 0
         assert len(response_data["usage"]["songs"]) == 0
         assert len(response_data["usage"]["stories"]) == 0
+        assert response_data["id"] == str(instance.id)
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
+        self.assert_update_response(expected_data, response_data, instance)
 
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):
@@ -647,12 +664,6 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
     def assert_updated_instance(self, expected_data, actual_instance):
         self.assert_secondary_fields(expected_data, actual_instance)
         assert actual_instance.title == expected_data["title"]
-
-    def assert_update_response(self, expected_data, actual_response):
-        self.assert_response(
-            actual_response=actual_response,
-            expected_data={**expected_data},
-        )
 
     @pytest.mark.django_db
     def test_patch_file_is_ignored(self):
