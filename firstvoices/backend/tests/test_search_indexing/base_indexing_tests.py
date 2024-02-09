@@ -15,7 +15,6 @@ class BaseIndexManagerTest:
     """
 
     manager = None
-    factory = None
     expected_index_name = ""
 
     paths = {
@@ -582,13 +581,10 @@ class BaseSignalTest:
     """
     Tests for basic indexing signal cases:
     * all instances are indexed (no criteria)
-    * only one-to-many related models are included with the indexed content
-      (e.g., Songs and Lyrics, but not DictionaryEntries and Categories)
     """
 
     manager = None
     factory = None
-    related_factory = None
 
     @pytest.fixture
     def mock_index_methods(self, mocker):
@@ -596,13 +592,6 @@ class BaseSignalTest:
             "mock_sync": mocker.patch.object(self.manager, "sync_in_index"),
             "mock_remove": mocker.patch.object(self.manager, "remove_from_index"),
         }
-
-    def create_related_instance(self, instance):
-        raise NotImplementedError()
-
-    def edit_related_instance(self, related_instance):
-        related_instance.text = "New text"
-        related_instance.save()
 
     @pytest.mark.django_db
     def test_new_instance_is_synced(self, mock_index_methods):
@@ -632,6 +621,23 @@ class BaseSignalTest:
 
         mock_index_methods["mock_remove"].assert_called_once_with(instance_id)
         mock_index_methods["mock_sync"].assert_not_called()
+
+
+class BaseRelatedInstanceSignalTest(BaseSignalTest):
+    """
+    Tests for basic indexing signal cases and:
+    * one-to-many related models are included with the indexed content
+      (e.g., Songs and Lyrics, but not DictionaryEntries and Categories)
+    """
+
+    related_factory = None
+
+    def create_related_instance(self, instance):
+        raise NotImplementedError()
+
+    def edit_related_instance(self, related_instance):
+        related_instance.text = "New text"
+        related_instance.save()
 
     @pytest.mark.django_db
     def test_deleted_instance_with_related_instance_is_removed(

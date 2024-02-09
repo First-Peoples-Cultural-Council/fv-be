@@ -1,9 +1,11 @@
 from backend.search.indexing.song_index import SongDocumentManager
 from backend.tests import factories
-from backend.tests.test_search_indexing.base_tests import BaseSignalTest
+from backend.tests.test_search_indexing.base_indexing_tests import (
+    BaseRelatedInstanceSignalTest,
+)
 
 
-class TestSongIndexingSignals(BaseSignalTest):
+class TestSongIndexingSignals(BaseRelatedInstanceSignalTest):
     manager = SongDocumentManager
     factory = factories.SongFactory
     related_factory = factories.LyricsFactory
