@@ -44,9 +44,10 @@ def update_media_index(instance_id, media_type, **kwargs):
                 site_id=str(instance.site.id),
                 site_visibility=instance.site.visibility,
                 site_features=list(
-                    instance.site.sitefeature_set.all().values_list("key", flat=True)
+                    instance.site.sitefeature_set.filter(is_enabled=True).values_list(
+                        "key", flat=True
+                    )
                 ),
-                # TODO: in each instance of the above list filter by enabled=True
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
                 visibility=Visibility.PUBLIC,
@@ -64,7 +65,9 @@ def update_media_index(instance_id, media_type, **kwargs):
                 site_id=str(instance.site.id),
                 site_visibility=instance.site.visibility,
                 site_features=list(
-                    instance.site.sitefeature_set.all().values_list("key", flat=True)
+                    instance.site.sitefeature_set.filter(is_enabled=True).values_list(
+                        "key", flat=True
+                    )
                 ),
                 exclude_from_games=instance.exclude_from_games,
                 exclude_from_kids=instance.exclude_from_kids,
