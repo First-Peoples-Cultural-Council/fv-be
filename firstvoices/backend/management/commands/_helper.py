@@ -12,8 +12,8 @@ from backend.search.signals.dictionary_entry_signals import (
     sync_related_dictionary_entry_in_index,
 )
 from backend.search.signals.site_signals import (
+    change_site_visibility,
     request_delete_related_docs,
-    request_update_document_visibility,
 )
 
 
@@ -57,7 +57,7 @@ def disconnect_signals():
     # backend.search.signals.media_signals
 
     # backend.search.utils.site_signals
-    signals.pre_save.disconnect(request_update_document_visibility, sender=Site)
+    signals.pre_save.disconnect(change_site_visibility, sender=Site)
     signals.post_delete.disconnect(request_delete_related_docs, sender=Site)
 
 
@@ -102,5 +102,5 @@ def reconnect_signals():
     # backend.search.signals.media_signals
 
     # backend.search.utils.site_signals
-    signals.pre_save.connect(request_update_document_visibility, sender=Site)
+    signals.pre_save.connect(change_site_visibility, sender=Site)
     signals.post_delete.connect(request_delete_related_docs, sender=Site)
