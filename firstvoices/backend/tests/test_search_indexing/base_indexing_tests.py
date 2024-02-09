@@ -630,7 +630,11 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
       (e.g., Songs and Lyrics, but not DictionaryEntries and Categories)
     """
 
-    related_factory = None
+    related_factories = []
+
+    def create_all_related_instances(self, instance):
+        for related_factory in self.related_factories:
+            self.create_related_instance(related_factory, instance)
 
     def create_related_instance(self, instance):
         raise NotImplementedError()
@@ -645,7 +649,7 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
     ):
         instance = self.factory.create()
         instance_id = instance.id
-        self.create_related_instance(instance)
+        self.create_all_related_instances(instance)
         mock_index_methods["mock_sync"].reset_mock()
 
         instance.delete()
@@ -654,32 +658,35 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
 
     @pytest.mark.django_db
     def test_new_related_instance_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        mock_index_methods["mock_sync"].reset_mock()
-        self.create_related_instance(instance)
+        for related_factory in self.related_factories:
+            instance = self.factory.create()
+            mock_index_methods["mock_sync"].reset_mock()
+            self.create_related_instance(related_factory, instance)
 
-        mock_index_methods["mock_sync"].assert_called_with(instance.id)
-        mock_index_methods["mock_remove"].assert_not_called()
+            mock_index_methods["mock_sync"].assert_called_with(instance.id)
+            mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_edited_related_instance_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        related_instance = self.create_related_instance(instance)
-        mock_index_methods["mock_sync"].reset_mock()
+        for related_factory in self.related_factories:
+            instance = self.factory.create()
+            related_instance = self.create_related_instance(related_factory, instance)
+            mock_index_methods["mock_sync"].reset_mock()
 
-        self.edit_related_instance(related_instance)
+            self.edit_related_instance(related_instance)
 
-        mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
-        mock_index_methods["mock_remove"].assert_not_called()
+            mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
+            mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_deleted_related_instance_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        instance_id = instance.id
-        related_instance = self.create_related_instance(instance)
-        mock_index_methods["mock_sync"].reset_mock()
+        for related_factory in self.related_factories:
+            instance = self.factory.create()
+            instance_id = instance.id
+            related_instance = self.create_related_instance(related_factory, instance)
+            mock_index_methods["mock_sync"].reset_mock()
 
-        related_instance.delete()
+            related_instance.delete()
 
-        mock_index_methods["mock_sync"].assert_called_once_with(instance_id)
-        mock_index_methods["mock_remove"].assert_not_called()
+            mock_index_methods["mock_sync"].assert_called_once_with(instance_id)
+            mock_index_methods["mock_remove"].assert_not_called()

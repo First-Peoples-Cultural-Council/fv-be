@@ -37,4 +37,4 @@ def text_as_list(comma_delimited_text):
 
 def fields_as_list(queryset, field):
     values = queryset.values_list(field)
-    return [x[0] for x in values]
+    return [str(x[0]) for x in values]

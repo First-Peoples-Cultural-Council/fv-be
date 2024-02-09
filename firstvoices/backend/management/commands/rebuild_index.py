@@ -2,8 +2,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from backend.management.commands._helper import rebuild_index
-from backend.search.documents.dictionary_entry_document import DictionaryEntryDocument
+from backend.search.indexing.dictionary_index import DictionaryIndexManager
 from backend.search.indexing.language_index import LanguageIndexManager
 from backend.search.indexing.media_index import MediaIndexManager
 from backend.search.indexing.song_index import SongIndexManager
@@ -19,17 +18,12 @@ from backend.search.utils.constants import (
 
 class Command(BaseCommand):
     help = "Rebuild search index with the current objects present in the database."
-    index_mappings = {
-        "dictionary_entries": {
-            "index_name": ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
-            "document": DictionaryEntryDocument,
-        },
-    }
     index_managers = {
         ELASTICSEARCH_LANGUAGE_INDEX: LanguageIndexManager,
         ELASTICSEARCH_SONG_INDEX: SongIndexManager,
         ELASTICSEARCH_STORY_INDEX: StoryIndexManager,
         ELASTICSEARCH_MEDIA_INDEX: MediaIndexManager,
+        ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: DictionaryIndexManager,
     }
 
     def add_arguments(self, parser):
@@ -45,7 +39,6 @@ class Command(BaseCommand):
         logger = logging.getLogger("rebuild_index")
         logger.setLevel(logging.INFO)
 
-        # If an index name is supplied, only rebuild that
         index_name = options["index_name"]
 
         if index_name:
@@ -57,26 +50,9 @@ class Command(BaseCommand):
                     "Can't rebuild index for unrecognized alias: [%s]", index_name
                 )
                 return
-
-            try:
-                index_document = self.index_mappings[index_name]["document"]
-            except KeyError:
-                logger.warning(
-                    "Can't rebuild index for unrecognized alias: [%s]", index_name
-                )
-                return
-
-            rebuild_index(index_name, index_document)
         else:
             logger.info("No index name provided. Building all indices.")
-            for mapping in self.index_mappings.values():
-                index_name = mapping["index_name"]
-                index_document = mapping["document"]
-                logger.info("Rebuilding %s", index_name)
-                rebuild_index(index_name, index_document)
-                logger.info("Finished rebuilding %s", index_name)
 
-            # new index managers
             for manager in self.index_managers.values():
                 manager.rebuild()
 
