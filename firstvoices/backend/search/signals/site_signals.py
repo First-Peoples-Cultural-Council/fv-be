@@ -37,5 +37,5 @@ def change_site_visibility(sender, instance, **kwargs):
 
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
-def request_delete_related_docs(sender, instance, **kwargs):
+def remove_all_site_content(sender, instance, **kwargs):
     remove_all_site_content_from_indexes(instance)
