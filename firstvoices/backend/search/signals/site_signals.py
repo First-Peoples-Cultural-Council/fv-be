@@ -17,6 +17,18 @@ from backend.search.tasks.site_content_indexing_tasks import (
 @receiver(pre_save, sender=Site)
 def change_site_visibility(sender, instance, **kwargs):
     """When a Site's visibility changes, update all entry indexes"""
+    if not instance.id:
+        # new site, no changes needed
+        return
+
+    original_site = Site.objects.filter(id=instance.id)
+
+    if (not original_site.exists()) or (
+        original_site.first().visibility == instance.visibility
+    ):
+        # no changes needed
+        return
+
     request_rebuild_for_site(SongIndexManager, instance)
     request_rebuild_for_site(StoryIndexManager, instance)
     request_rebuild_for_site(DictionaryIndexManager, instance)
