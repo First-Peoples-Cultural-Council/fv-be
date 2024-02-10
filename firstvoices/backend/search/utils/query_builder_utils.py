@@ -204,7 +204,7 @@ def get_has_unrecognized_chars_query(has_unrecognized_chars):
 
 
 def get_has_site_feature_query(site_feature):
-    return Q("bool", filter=[Q("terms", site_features=[site_feature])])
+    return Q("bool", filter=Q("terms", site_features=site_feature))
 
 
 # Search params validation
@@ -310,3 +310,20 @@ def get_valid_sort(input_sort_by_str):
         return input_string[0], descending
     else:  # if invalid string is passed
         return None, None
+
+
+def get_valid_site_feature(input_site_feature_str):
+    if not input_site_feature_str:
+        return None
+
+    input_site_feature = input_site_feature_str.split(",")
+    selected_values = []
+
+    for value in input_site_feature:
+        cleaned_value = value.strip().lower()
+        if cleaned_value not in selected_values:
+            selected_values.append(cleaned_value)
+
+    if len(selected_values) == 0:
+        return None
+    return selected_values

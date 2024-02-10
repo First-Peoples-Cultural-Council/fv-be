@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_site_feature,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -472,9 +473,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
 
         has_site_feature = self.request.GET.get("hasSiteFeature", "")
-        # has_site_feature = get_valid?
-        # TODO: Implement get_valid_site_feature? some sort of validation for site features
-        # TODO: ensure site feature params are lowercased
+        has_site_feature = get_valid_site_feature(has_site_feature)
 
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
