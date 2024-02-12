@@ -14,7 +14,11 @@ class LanguageDocumentManager(DocumentManager):
     @classmethod
     def create_index_document(cls, instance: Language):
         """Returns a LanguageDocument populated for the given Language instance."""
-        visible_sites = instance.sites.all().filter(visibility__gte=Visibility.MEMBERS)
+        visible_sites = (
+            instance.sites.all()
+            .filter(visibility__gte=Visibility.MEMBERS)
+            .filter(is_hidden=False)
+        )
 
         return cls.document(
             document_id=str(instance.id),

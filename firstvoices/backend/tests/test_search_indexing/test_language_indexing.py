@@ -91,6 +91,39 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
             assert mock_create_index_doc.call_count == 2
 
     @pytest.mark.django_db
+    def test_iterator_skips_languages_with_only_hidden_sites(self):
+        with patch(self.paths["create_index_document"]) as mock_create_index_doc:
+            language1 = (
+                factories.LanguageFactory.create()
+            )  # language with only hidden sites
+            factories.SiteFactory.create(
+                language=language1, visibility=Visibility.PUBLIC, is_hidden=True
+            )
+
+            language2 = factories.LanguageFactory.create()
+            factories.SiteFactory.create(
+                language=language2, visibility=Visibility.PUBLIC, is_hidden=True
+            )
+            factories.SiteFactory.create(
+                language=language2, visibility=Visibility.PUBLIC
+            )
+
+            language3 = factories.LanguageFactory.create()
+            factories.SiteFactory.create(
+                language=language3, visibility=Visibility.MEMBERS
+            )
+
+            for _ in self.manager._iterator():
+                continue
+
+            # assert adds all languages with visible sites
+            mock_create_index_doc.assert_any_call(language2)
+            mock_create_index_doc.assert_any_call(language3)
+
+            # assert does not add other (empty) languages
+            assert mock_create_index_doc.call_count == 2
+
+    @pytest.mark.django_db
     def test_create_document_with_language_fields(self):
         language = factories.LanguageFactory.create(
             alternate_names="alt name 1 , alt name 2,altname 3",
@@ -130,6 +163,21 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
 
         self.assert_list([site1.title, site2.title], language_doc.site_names)
         self.assert_list([site1.slug, site2.slug], language_doc.site_slugs)
+
+    @pytest.mark.django_db
+    def test_create_document_skips_hidden_sites(self):
+        language = factories.LanguageFactory.create()
+        factories.SiteFactory.create(
+            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        site2 = factories.SiteFactory.create(
+            language=language, visibility=Visibility.PUBLIC
+        )
+
+        language_doc = self.manager.create_index_document(language)
+
+        self.assert_list([site2.title], language_doc.site_names)
+        self.assert_list([site2.slug], language_doc.site_slugs)
 
     @pytest.mark.django_db
     def test_create_document_with_language_family_fields(self):
