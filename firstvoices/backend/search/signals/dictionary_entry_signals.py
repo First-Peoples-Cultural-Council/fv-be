@@ -37,8 +37,12 @@ def remove_dictionary_entry_from_index(sender, instance, **kwargs):
 @receiver(
     post_delete, sender=DictionaryEntryCategory
 )  # Category update when called through the admin site
+def sync_related_dictionary_entry_in_index(sender, instance, **kwargs):
+    request_sync_in_index(DictionaryEntryDocumentManager, instance.dictionary_entry)
+
+
 @receiver(
     m2m_changed, sender=DictionaryEntryCategory
 )  # Category update when called through the APIs
-def sync_related_dictionary_entry_in_index(sender, instance, **kwargs):
-    request_sync_in_index(DictionaryEntryDocumentManager, instance.dictionary_entry)
+def sync_dictionary_entry_by_category_in_index(sender, instance, **kwargs):
+    request_sync_in_index(DictionaryEntryDocumentManager, sender.dictionary_entry_id)
