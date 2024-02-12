@@ -1,5 +1,8 @@
 import random
 import string
+from contextlib import contextmanager
+
+import pytest
 
 from backend.models.constants import Visibility
 from backend.models.widget import SiteWidgetListOrder
@@ -105,3 +108,11 @@ def find_object_by_id(results_list, obj_id):
 def equate_list_content_without_order(actual, expected):
     difference = set(actual) ^ set(expected)
     return not difference
+
+
+@contextmanager
+def not_raises(exception):
+    try:
+        yield
+    except exception:
+        raise pytest.fail(f"Did raise {exception}")

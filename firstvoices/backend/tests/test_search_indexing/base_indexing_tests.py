@@ -350,7 +350,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_update_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError("Oopsie!")
+        mock_query.execute.side_effect = NotFoundError()
 
         instance = self.factory.create()
 
@@ -364,7 +364,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_remove_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError("Oopsie!")
+        mock_query.execute.side_effect = NotFoundError()
 
         instance = self.factory.create()
 
@@ -429,8 +429,8 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_sync_in_index_new_good_document_is_added(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError(
-            "Oopsie!"
+        mock_query.execute.side_effect = (
+            NotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_indexable_document()
@@ -444,8 +444,8 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_sync_in_index_new_bad_document_is_skipped(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError(
-            "Oopsie!"
+        mock_query.execute.side_effect = (
+            NotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_non_indexable_document()
@@ -538,8 +538,8 @@ class BaseDocumentManagerTest:
         ) as mock_update_in_index, patch(
             self.paths["remove_from_index"], return_value=None
         ) as remove_from_index:
-            mock_update_in_index.side_effect = NotFoundError(
-                "Oopsie!"
+            mock_update_in_index.side_effect = (
+                NotFoundError()
             )  # document is not yet in the index
 
             self.manager.sync_in_index(instance.id)
@@ -636,7 +636,7 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
         for related_factory in self.related_factories:
             self.create_related_instance(related_factory, instance)
 
-    def create_related_instance(self, instance):
+    def create_related_instance(self, related_factory, instance):
         raise NotImplementedError()
 
     def edit_related_instance(self, related_instance):
