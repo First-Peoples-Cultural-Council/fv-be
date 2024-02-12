@@ -7,7 +7,6 @@ from drf_spectacular.utils import (
 )
 from elasticsearch_dsl import Q, Search
 
-from backend.models.constants import Visibility
 from backend.models.sites import Language, Site
 from backend.search.queries.text_matching import (
     exact_match,
@@ -124,7 +123,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
 
     def make_queryset_eager(self, model_name, queryset):
         if model_name == "Language":
-            visible_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS)
+            visible_sites = Site.objects.explorable()
             return LanguageSerializer.make_queryset_eager(
                 queryset, visible_sites=visible_sites
             )
@@ -148,9 +147,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         return serialized_data
 
     def get_other_sites_data(self):
-        other_sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS).filter(
-            language=None
-        )
+        other_sites = Site.objects.explorable().filter(language=None)
 
         if other_sites:
             queryset = LanguagePlaceholderSerializer.make_queryset_eager(other_sites)
