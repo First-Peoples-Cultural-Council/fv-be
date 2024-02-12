@@ -176,8 +176,8 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
 
         language_doc = self.manager.create_index_document(language)
 
-        self.assert_list([site2.title], language_doc.site_names)
-        self.assert_list([site2.slug], language_doc.site_slugs)
+        assert_list([site2.title], language_doc.site_names)
+        assert_list([site2.slug], language_doc.site_slugs)
 
     @pytest.mark.django_db
     def test_create_document_with_language_family_fields(self):
