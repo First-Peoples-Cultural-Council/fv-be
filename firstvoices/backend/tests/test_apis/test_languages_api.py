@@ -136,6 +136,9 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
             language=language, visibility=Visibility.MEMBERS
         )
         site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
+        site_hidden = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        )
 
         response = getattr(self, get_response)(mock_search_query_execute, [language])
 
@@ -147,6 +150,7 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         assert str(site_public.id) in site_id_list
         assert str(site_members.id) in site_id_list
         assert str(site_team.id) not in site_id_list
+        assert str(site_hidden.id) not in site_id_list
 
     @pytest.mark.parametrize(
         "get_response", ["get_list_response", "get_search_response"]
@@ -252,13 +256,11 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
 
         language_response = response_data["results"][0]
         self.assert_language_response(language, language_response)
-
         assert len(language_response["sites"]) == 1
         self.assert_site_response(site, language_response["sites"][0])
 
         more_sites_response = response_data["results"][1]
         self.assert_language_placeholder_response(more_sites_response)
-
         assert len(more_sites_response["sites"]) == 1
         self.assert_site_response(site2, more_sites_response["sites"][0])
 
@@ -305,6 +307,9 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
             language=None, visibility=Visibility.MEMBERS
         )
         site_team = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
+        site_hidden = factories.SiteFactory(
+            language=None, visibility=Visibility.PUBLIC, is_hidden=True
+        )
 
         response = self.get_list_response(mock_search_query_execute, [])
 
@@ -313,9 +318,12 @@ class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
         response_data = json.loads(response.content)
         site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
         assert len(site_id_list) == 2
+
         assert str(site_public.id) in site_id_list
         assert str(site_members.id) in site_id_list
+
         assert str(site_team.id) not in site_id_list
+        assert str(site_hidden.id) not in site_id_list
 
     @pytest.mark.django_db
     def test_search_mixed_sites_and_languages(self, db, mock_search_query_execute):
