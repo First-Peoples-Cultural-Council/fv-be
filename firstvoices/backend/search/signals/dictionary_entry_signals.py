@@ -1,4 +1,4 @@
-from django.db.models.signals import m2m_changed, post_delete, post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from backend.models.dictionary import (
@@ -39,10 +39,3 @@ def remove_dictionary_entry_from_index(sender, instance, **kwargs):
 )  # Category update when called through the admin site
 def sync_related_dictionary_entry_in_index(sender, instance, **kwargs):
     request_sync_in_index(DictionaryEntryDocumentManager, instance.dictionary_entry)
-
-
-@receiver(
-    m2m_changed, sender=DictionaryEntryCategory
-)  # Category update when called through the APIs
-def sync_dictionary_entry_by_category_in_index(sender, instance, **kwargs):
-    request_sync_in_index(DictionaryEntryDocumentManager, instance)
