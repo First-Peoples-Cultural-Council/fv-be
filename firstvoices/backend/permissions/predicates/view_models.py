@@ -8,11 +8,9 @@ from . import base, view
 
 # Rule for who can see detailed site info including homepage, content APIs, etc
 can_view_site = Predicate(
-    (
-        base.is_public_obj
-        | base.is_at_least_staff_admin
-        | base.has_member_access_to_site_obj
-        | base.has_team_access
+    (base.is_at_least_staff_admin | base.has_team_access)
+    | (
+        (base.has_member_access_to_site_obj | base.is_public_obj) & ~base.is_hidden_site
     ),
     name="can_view_site",
 )

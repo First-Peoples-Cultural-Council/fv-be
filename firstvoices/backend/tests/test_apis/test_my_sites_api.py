@@ -125,3 +125,66 @@ class TestMySitesEndpoint(ReadOnlyApiTests):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["count"] == 3
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_hidden_sites_visible_team_members(self, role):
+        user = factories.UserFactory.create()
+        hidden_site = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user, site=hidden_site, role=role)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert response_data["results"][0]["id"] == str(hidden_site.id)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_hidden_sites_visible_team_members_detail(self, role):
+        user = factories.get_non_member_user()
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user, site=instance, role=role)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+    @pytest.mark.django_db
+    def test_hidden_sites_not_visible_to_members(self):
+        user = factories.UserFactory.create()
+        hidden_site = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(
+            user=user, site=hidden_site, role=Role.MEMBER
+        )
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 0
+
+    @pytest.mark.django_db
+    def test_hidden_sites_not_visible_to_members_detail(self):
+        # hidden sites should not be visible to members in list or detail views
+        # due to these memberships being excluded from the my-sites queryset entirely, the detail result is a 404
+        user = factories.get_non_member_user()
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user, site=instance, role=Role.MEMBER)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 404
