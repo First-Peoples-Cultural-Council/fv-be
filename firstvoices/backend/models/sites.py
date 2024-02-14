@@ -26,6 +26,16 @@ class LanguageFamilyManager(PermissionsManager):
         return self.get(title=title)
 
 
+class SiteManager(PermissionsManager):
+    def explorable(self):
+        """Returns instances that are suitable for listing in a directory of Sites."""
+        return (
+            self.get_queryset()
+            .filter(visibility__gte=Visibility.MEMBERS)
+            .filter(is_hidden=False)
+        )
+
+
 class LanguageFamily(BaseModel):
     """
     Represents a Language Family.
@@ -93,6 +103,8 @@ class Site(BaseModel):
     """
 
     # from fvdialect type
+
+    objects = SiteManager()
 
     class Meta:
         verbose_name = _("site")

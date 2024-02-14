@@ -941,3 +941,66 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             data, self.get_updated_patch_instance(instance)
         )
         self.assert_update_patch_response(instance, data, response_data)
+
+    @pytest.mark.django_db
+    def test_hidden_sites_not_visible_in_list_view(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        factories.SiteFactory.create(visibility=Visibility.PUBLIC, is_hidden=True)
+
+        response = self.client.get(self.get_list_endpoint())
+        response_data = json.loads(response.content)
+        assert len(response_data) == 0
+        assert response_data == []
+
+    @pytest.mark.django_db
+    def test_hidden_site_detail_403(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_hidden_site_detail_403_members(self):
+        user = factories.get_non_member_user()
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user, site=instance, role=Role.MEMBER)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("app_role", [AppRole.SUPERADMIN, AppRole.STAFF])
+    def test_hidden_site_detail_staff(self, app_role):
+        user = factories.get_app_admin(app_role)
+        self.client.force_authenticate(user=user)
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_hidden_site_detail_team_member(self, role):
+        instance = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=instance, role=role)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
