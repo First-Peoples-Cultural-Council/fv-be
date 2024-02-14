@@ -382,6 +382,35 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasSiteFeature",
+                description="Filter media documents base on site feature.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add hasSiteFeature filter.",
+                    ),
+                    OpenApiExample(
+                        "valid site feature key",
+                        value="EXAMPLE_KEY",
+                        description="Retrieves media documents from sites with the EXAMPLE_KEY feature enabled.",
+                    ),
+                    OpenApiExample(
+                        "multiple valid site feature keys",
+                        value="KEY, SHARED_MEDIA",
+                        description="Retrieves media docs from sites with KEY, SHARED_MEDIA or both features enabled.",
+                    ),
+                    OpenApiExample(
+                        "invalid site feature key",
+                        value="None",
+                        description="If invalid site feature key is passed, the API returns an empty set of results.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',

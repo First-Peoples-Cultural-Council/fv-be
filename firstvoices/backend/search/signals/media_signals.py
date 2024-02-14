@@ -18,6 +18,7 @@ from firstvoices.celery import link_error_handler
 @receiver(post_save, sender=Image)
 @receiver(post_save, sender=Video)
 @receiver(post_save, sender=SiteFeature)
+@receiver(post_delete, sender=SiteFeature)
 def request_update_media_index(sender, instance, **kwargs):
     media_model_map = {Audio: TYPE_AUDIO, Image: TYPE_IMAGE, Video: TYPE_VIDEO}
     media_type = media_model_map.get(sender, TYPE_IMAGE)  # defaults to "image"
