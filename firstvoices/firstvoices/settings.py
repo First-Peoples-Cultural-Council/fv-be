@@ -264,7 +264,7 @@ else:
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost/0")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Celery tasks are not picked up by autodiscover_tasks() if they are not globally imported. This adds missing tasks.
-CELERY_IMPORTS = ("backend.tasks.update_metadata_tasks",)
+# CELERY_IMPORTS = ("backend.tasks.my_task",)
 
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
