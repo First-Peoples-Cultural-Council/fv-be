@@ -33,62 +33,79 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
 
     @pytest.mark.django_db
     def test_deleted_instance_with_category_is_removed(self, mock_index_methods):
-        instance = self.factory.create()
-        instance_id = instance.id
-        self.assign_new_category(instance)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            instance_id = instance.id
+            self.assign_new_category(instance)
+
         mock_index_methods["mock_sync"].reset_mock()
 
-        instance.delete()
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.delete()
 
         mock_index_methods["mock_remove"].assert_called_once_with(instance_id)
 
     @pytest.mark.django_db
     def test_assign_category_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        mock_index_methods["mock_sync"].reset_mock()
-        self.assign_new_category(instance)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            mock_index_methods["mock_sync"].reset_mock()
+            self.assign_new_category(instance)
 
         mock_index_methods["mock_sync"].assert_called_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_remove_category_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        category_link = self.assign_new_category(instance)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            category_link = self.assign_new_category(instance)
+
         mock_index_methods["mock_sync"].reset_mock()
 
-        category_link.delete()
+        with self.capture_on_commit_callbacks(execute=True):
+            category_link.delete()
 
         mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_assign_category_m2m_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
         mock_index_methods["mock_sync"].reset_mock()
-        self.assign_new_category_via_manager(instance)
+
+        with self.capture_on_commit_callbacks(execute=True):
+            self.assign_new_category_via_manager(instance)
 
         mock_index_methods["mock_sync"].assert_called_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_remove_category_m2m_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        category = self.assign_new_category_via_manager(instance)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            category = self.assign_new_category_via_manager(instance)
+
         mock_index_methods["mock_sync"].reset_mock()
 
-        instance.categories.remove(category)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.categories.remove(category)
 
         mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
     def test_delete_category_m2m_main_instance_is_synced(self, mock_index_methods):
-        instance = self.factory.create()
-        category = self.assign_new_category_via_manager(instance)
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            category = self.assign_new_category_via_manager(instance)
+
         mock_index_methods["mock_sync"].reset_mock()
 
-        category.delete()
+        with self.capture_on_commit_callbacks(execute=True):
+            category.delete()
 
         mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()

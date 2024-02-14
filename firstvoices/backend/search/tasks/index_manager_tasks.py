@@ -43,11 +43,12 @@ def rebuild_for_site(index_manager_name, site_slug):
 
 
 def request_sync_in_index(document_manager, instance):
+    instance_id = instance.id
     transaction.on_commit(
         lambda: sync_in_index.apply_async(
             (
                 document_manager.__name__,
-                instance.id,
+                instance_id,
             ),
             link_error=link_error_handler.s(),
         )
@@ -55,11 +56,12 @@ def request_sync_in_index(document_manager, instance):
 
 
 def request_remove_from_index(document_manager, instance):
+    instance_id = instance.id
     transaction.on_commit(
         lambda: remove_from_index.apply_async(
             (
                 document_manager.__name__,
-                instance.id,
+                instance_id,
             ),
             link_error=link_error_handler.s(),
         )
@@ -67,11 +69,12 @@ def request_remove_from_index(document_manager, instance):
 
 
 def request_rebuild_for_site(index_manager, site):
+    site_slug = site.slug
     transaction.on_commit(
         lambda: rebuild_for_site.apply_async(
             (
                 index_manager.__name__,
-                site.slug,
+                site_slug,
             ),
             link_error=link_error_handler.s(),
         )

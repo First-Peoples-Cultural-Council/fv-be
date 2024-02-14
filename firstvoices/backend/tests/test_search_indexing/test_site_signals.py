@@ -14,9 +14,12 @@ from backend.search.indexing import (
     VideoDocumentManager,
 )
 from backend.tests import factories
+from backend.tests.test_search_indexing.base_indexing_tests import (
+    TransactionOnCommitMixin,
+)
 
 
-class TestSiteSignals:
+class TestSiteSignals(TransactionOnCommitMixin):
     """Tests that site content is properly indexed on major Site changes."""
 
     index_managers = [
@@ -60,12 +63,15 @@ class TestSiteSignals:
     def test_edit_site_title_does_not_affect_index(
         self, index_manager_mocks, document_manager_mocks
     ):
-        site = factories.SiteFactory.create()
+        with self.capture_on_commit_callbacks(execute=True):
+            site = factories.SiteFactory.create()
+
         self.reset_all_mocks(index_manager_mocks)
         self.reset_all_mocks(document_manager_mocks)
 
-        site.title = "New title"
-        site.save()
+        with self.capture_on_commit_callbacks(execute=True):
+            site.title = "New title"
+            site.save()
 
         self.assert_no_mocks_called(index_manager_mocks)
         self.assert_no_mocks_called(document_manager_mocks)
@@ -74,12 +80,15 @@ class TestSiteSignals:
     def test_edit_site_visibility_rebuilds_index(
         self, index_manager_mocks, document_manager_mocks
     ):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        with self.capture_on_commit_callbacks(execute=True):
+            site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
         self.reset_all_mocks(index_manager_mocks)
         self.reset_all_mocks(document_manager_mocks)
 
-        site.visibility = Visibility.MEMBERS
-        site.save()
+        with self.capture_on_commit_callbacks(execute=True):
+            site.visibility = Visibility.MEMBERS
+            site.save()
 
         self.assert_all_called_once_with(index_manager_mocks, {"site_slug": site.slug})
 
@@ -87,17 +96,20 @@ class TestSiteSignals:
     def test_delete_site_removes_all_content_from_index(
         self, index_manager_mocks, document_manager_mocks
     ):
-        site = factories.SiteFactory.create()
-        dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
-        song = factories.SongFactory.create(site=site)
-        story = factories.StoryFactory.create(site=site)
-        audio = factories.AudioFactory.create(site=site)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
+        with self.capture_on_commit_callbacks(execute=True):
+            site = factories.SiteFactory.create()
+            dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+            song = factories.SongFactory.create(site=site)
+            story = factories.StoryFactory.create(site=site)
+            audio = factories.AudioFactory.create(site=site)
+            image = factories.ImageFactory.create(site=site)
+            video = factories.VideoFactory.create(site=site)
+
         self.reset_all_mocks(index_manager_mocks)
         self.reset_all_mocks(document_manager_mocks)
 
-        site.delete()
+        with self.capture_on_commit_callbacks(execute=True):
+            site.delete()
 
         self.assert_document_removed(
             document_manager_mocks, DictionaryEntryDocumentManager, dictionary_entry
