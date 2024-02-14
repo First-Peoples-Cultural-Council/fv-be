@@ -149,8 +149,12 @@ class DocumentManager:
     @classmethod
     def _find_in_index(cls, instance_id):
         search_result = search_by_id(instance_id, cls.index)
-        existing_index_document = cls.document.get(id=search_result["_id"])
-        return existing_index_document
+        if search_result:
+            return cls.document.get(id=search_result["_id"])
+
+        raise NotFoundError(
+            "Document [%s] not found in index [%s]", instance_id, cls.index
+        )
 
     @classmethod
     def remove_from_index(cls, instance_id):
@@ -179,6 +183,9 @@ class DocumentManager:
         """
         Add, update, ignore, or remove indexing for the given instance, based on the conditions in should_be_indexed.
         When you know a model has been deleted, use remove_from_index for efficiency.
+
+        NOTE that this will sync the index with the database state for the given ID, so you must
+        commit your db transaction FIRST.
         """
         try:
             instance = cls.model.objects.get(pk=instance_id)

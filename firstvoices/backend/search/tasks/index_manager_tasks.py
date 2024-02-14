@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.db import transaction
 
 from backend.search import es_logging, indexing
 from firstvoices.celery import link_error_handler
@@ -42,30 +43,36 @@ def rebuild_for_site(index_manager_name, site_slug):
 
 
 def request_sync_in_index(document_manager, instance):
-    sync_in_index.apply_async(
-        (
-            document_manager.__name__,
-            instance.id,
-        ),
-        link_error=link_error_handler.s(),
+    transaction.on_commit(
+        lambda: sync_in_index.apply_async(
+            (
+                document_manager.__name__,
+                instance.id,
+            ),
+            link_error=link_error_handler.s(),
+        )
     )
 
 
 def request_remove_from_index(document_manager, instance):
-    remove_from_index.apply_async(
-        (
-            document_manager.__name__,
-            instance.id,
-        ),
-        link_error=link_error_handler.s(),
+    transaction.on_commit(
+        lambda: remove_from_index.apply_async(
+            (
+                document_manager.__name__,
+                instance.id,
+            ),
+            link_error=link_error_handler.s(),
+        )
     )
 
 
 def request_rebuild_for_site(index_manager, site):
-    rebuild_for_site.apply_async(
-        (
-            index_manager.__name__,
-            site.slug,
-        ),
-        link_error=link_error_handler.s(),
+    transaction.on_commit(
+        lambda: rebuild_for_site.apply_async(
+            (
+                index_manager.__name__,
+                site.slug,
+            ),
+            link_error=link_error_handler.s(),
+        )
     )
