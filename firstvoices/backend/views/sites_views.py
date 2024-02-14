@@ -1,12 +1,11 @@
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.constants import Role, Visibility
-from backend.models.sites import Language, Membership, Site, SiteFeature
+from backend.models.constants import Visibility
+from backend.models.sites import Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.language_serializers import LanguageSerializer
 from backend.serializers.membership_serializers import MembershipSiteSummarySerializer
@@ -69,7 +68,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
 
     http_method_names = ["get", "put", "patch"]
     lookup_field = "slug"
-    pagination_class = None
     serializer_class = SiteDetailWriteSerializer
 
     def get_detail_queryset(self):
@@ -110,43 +108,8 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
         return sites
 
     def get_list_queryset(self):
-        return Site.objects.none()  # not used-- see the list method instead
-
-    def list(self, request, *args, **kwargs):
-        """
-        Return a list of sites grouped by language.
-        """
-        # retrieve visible sites in order to filter out empty languages
-        sites = Site.objects.filter(visibility__gte=Visibility.MEMBERS, is_hidden=False)
-        ids_of_languages_with_sites = sites.values_list("language_id", flat=True)
-
-        # then retrieve the desired data as a Language queryset
-        # sorting note: titles are converted to uppercase and then sorted which will put custom characters at the end
-        languages = (
-            Language.objects.filter(id__in=ids_of_languages_with_sites)
-            .order_by(Upper("title"))
-            .prefetch_related(
-                Prefetch(
-                    "sites",
-                    queryset=sites.order_by(Upper("title")).select_related(
-                        *get_select_related_media_fields("logo")
-                    ),
-                ),
-                Prefetch(
-                    "sites__sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
-                ),
-            )
-        )
-
-        data = [
-            LanguageSerializer(language, context={"request": request}).data
-            for language in languages
-        ]
-
-        # add "other" sites
-        other_sites = (
-            sites.filter(language=None)
+        return (
+            Site.objects.filter(visibility__gte=Visibility.MEMBERS, is_hidden=False)
             .order_by(Upper("title"))
             .select_related(*get_select_related_media_fields("logo"))
             .prefetch_related(
@@ -157,24 +120,17 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             )
         )
 
-        if other_sites:
-            other_site_json = {
-                "language": "Other",
-                "languageCode": "",
-                "sites": [
-                    SiteSummarySerializer(site, context={"request": request}).data
-                    for site in other_sites
-                ],
-            }
-
-            data.append(other_site_json)
-
-        return Response(data)
+    def get_serializer_class(self):
+        if self.action == "list":
+            return SiteSummarySerializer
+        return SiteDetailWriteSerializer
 
     def get_serializer_context(self):
         # Add site to serializer context for field level validation purposes
         context = super().get_serializer_context()
-        context["site"] = self.get_object()
+        # Don't add need to add site to context for list view
+        if self.action != "list":
+            context["site"] = self.get_object()
         return context
 
 
@@ -200,7 +156,7 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
             return Membership.objects.none()
 
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        queryset = (
+        return (
             Membership.objects.filter(user=self.request.user)
             .select_related(
                 "site", "site__language", *get_select_related_media_fields("site__logo")
@@ -213,6 +169,3 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
             )
             .order_by(Upper("site__title"))
         )
-
-        queryset = queryset.exclude(Q(site__is_hidden=True) & Q(role__lte=Role.MEMBER))
-        return queryset
