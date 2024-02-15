@@ -54,7 +54,7 @@ class GalleryItem(BaseModel):
                 name="unique_gallery_image",
             ),
             models.UniqueConstraint(
-                fields=["gallery", "order"],
+                fields=["gallery", "ordering"],
                 name="unique_gallery_item_order",
             ),
         ]
@@ -65,7 +65,9 @@ class GalleryItem(BaseModel):
             "delete": predicates.is_superadmin,
         }
         indexes = [
-            models.Index(fields=["gallery", "order"], name="gallery_item_order_idx"),
+            models.Index(
+                fields=["gallery", "ordering"], name="gallery_item_ordering_idx"
+            ),
         ]
 
     gallery = models.ForeignKey(
@@ -80,7 +82,7 @@ class GalleryItem(BaseModel):
         related_name="gallery_images",
     )
 
-    order = models.SmallIntegerField(
+    ordering = models.SmallIntegerField(
         validators=[MinValueValidator(0)], null=False, default=0
     )
 

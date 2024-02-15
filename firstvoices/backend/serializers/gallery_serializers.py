@@ -7,7 +7,10 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import WriteableRelatedImageSerializer
+from backend.serializers.media_serializers import (
+    ImageSerializer,
+    WriteableRelatedImageSerializer,
+)
 from backend.serializers.validators import SameSite
 
 
@@ -16,20 +19,26 @@ class GalleryItemSerializer(serializers.ModelSerializer):
     Serializer for GalleryItem model.
     """
 
-    image = WriteableRelatedImageSerializer(
-        required=True,
-        queryset=Image.objects.all(),
-        validators=[SameSite()],
-    )
+    def to_representation(self, instance):
+        image_data = ImageSerializer(instance.image, context=self.context).data
+        image_data["ordering"] = instance.ordering
+        return image_data
 
     class Meta:
         model = GalleryItem
-        fields = ("image", "order")
 
 
-class GalleryDetailSerializer(WritableSiteContentSerializer):
+class WriteableGalleryItemSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return GalleryItemSerializer(context=self.context).to_representation(value)
+
+
+class GallerySummarySerializer(WritableSiteContentSerializer):
     """
-    Serializer for Gallery model.
+    List serializer for Gallery model.
     """
 
     cover_image = WriteableRelatedImageSerializer(
@@ -38,16 +47,13 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
         allow_null=True,
         validators=[SameSite()],
     )
-    gallery_items = GalleryItemSerializer(
-        many=True, required=False, source="galleryitem_set"
-    )
 
     def validate(self, attrs):
         """
-        Validate that gallery items are unique.
+        Validate that gallery items are unique. Must be done before create/update.
         """
         gallery_items = attrs.get("galleryitem_set", [])
-        if len(gallery_items) != len({x["image"] for x in gallery_items}):
+        if len(gallery_items) != len({x for x in gallery_items}):
             raise serializers.ValidationError("Gallery items must be unique.")
         return super().validate(attrs)
 
@@ -56,16 +62,20 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
 
         created = super().create(validated_data)
 
-        for gallery_item in gallery_items:
-            GalleryItem.objects.create(gallery=created, **gallery_item)
+        for gallery_item in enumerate(gallery_items):
+            GalleryItem.objects.create(
+                gallery=created, ordering=gallery_item[0], image=gallery_item[1]
+            )
         return created
 
     def update(self, instance, validated_data):
         if "galleryitem_set" in validated_data:
             GalleryItem.objects.filter(gallery=instance).delete()
             gallery_items = validated_data.pop("galleryitem_set", [])
-            for gallery_item in gallery_items:
-                GalleryItem.objects.create(gallery=instance, **gallery_item)
+            for gallery_item in enumerate(gallery_items):
+                GalleryItem.objects.create(
+                    gallery=instance, ordering=gallery_item[0], image=gallery_item[1]
+                )
 
         return super().update(instance, validated_data)
 
@@ -80,6 +90,21 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
                 "introduction",
                 "introduction_translation",
                 "cover_image",
-                "gallery_items",
             )
         )
+
+
+class GalleryDetailSerializer(GallerySummarySerializer):
+    """
+    Detail serializer for Gallery model.
+    """
+
+    gallery_items = WriteableGalleryItemSerializer(
+        many=True,
+        required=False,
+        source="galleryitem_set",
+        queryset=Image.objects.all(),
+    )
+
+    class Meta(GallerySummarySerializer.Meta):
+        fields = GallerySummarySerializer.Meta.fields + ("gallery_items",)
