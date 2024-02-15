@@ -7,7 +7,10 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import WriteableRelatedImageSerializer
+from backend.serializers.media_serializers import (
+    ImageSerializer,
+    WriteableRelatedImageSerializer,
+)
 from backend.serializers.validators import SameSite
 
 
@@ -16,15 +19,13 @@ class GalleryItemSerializer(serializers.ModelSerializer):
     Serializer for GalleryItem model.
     """
 
-    image = WriteableRelatedImageSerializer(
-        required=True,
-        queryset=Image.objects.all(),
-        validators=[SameSite()],
-    )
+    def to_representation(self, instance):
+        image_data = ImageSerializer(instance.image, context=self.context).data
+        image_data["ordering"] = instance.ordering
+        return image_data
 
     class Meta:
         model = GalleryItem
-        fields = ("image", "ordering")
 
 
 class GallerySummarySerializer(WritableSiteContentSerializer):
@@ -86,9 +87,14 @@ class GalleryDetailSerializer(GallerySummarySerializer):
     Detail serializer for Gallery model.
     """
 
-    gallery_items = GalleryItemSerializer(
-        many=True, required=False, source="galleryitem_set"
-    )
+    gallery_items = serializers.SerializerMethodField()
+
+    def get_gallery_items(self, instance):
+        return GalleryItemSerializer(
+            instance.galleryitem_set.all().order_by("ordering"),
+            many=True,
+            context=self.context,
+        ).data
 
     class Meta(GallerySummarySerializer.Meta):
         fields = GallerySummarySerializer.Meta.fields + ("gallery_items",)
