@@ -131,12 +131,3 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
         if self.action == "list":
             return GallerySummarySerializer
         return GalleryDetailSerializer
-
-    def get_serializer_context(self):
-        """
-        Add the gallery instance to the extra context provided to the serializer class.
-        """
-        context = super().get_serializer_context()
-        if self.action != "list":
-            context["gallery_instance"] = self.get_object()
-        return context
