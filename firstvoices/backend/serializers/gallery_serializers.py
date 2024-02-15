@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
 from backend.models import Image
 from backend.models.galleries import Gallery, GalleryItem
@@ -49,6 +48,15 @@ class GallerySummarySerializer(WritableSiteContentSerializer):
         validators=[SameSite()],
     )
 
+    def validate(self, attrs):
+        """
+        Validate that gallery items are unique. Must be done before create/update.
+        """
+        gallery_items = attrs.get("galleryitem_set", [])
+        if len(gallery_items) != len({x for x in gallery_items}):
+            raise serializers.ValidationError("Gallery items must be unique.")
+        return super().validate(attrs)
+
     def create(self, validated_data):
         gallery_items = validated_data.pop("galleryitem_set", [])
 
@@ -96,7 +104,6 @@ class GalleryDetailSerializer(GallerySummarySerializer):
         required=False,
         source="galleryitem_set",
         queryset=Image.objects.all(),
-        validators=[UniqueValidator(queryset=Image.objects.all())],
     )
 
     class Meta(GallerySummarySerializer.Meta):
