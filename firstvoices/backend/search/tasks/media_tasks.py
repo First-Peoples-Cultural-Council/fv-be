@@ -6,6 +6,7 @@ from elasticsearch_dsl import Index
 
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
+from backend.models.sites import SiteFeature
 from backend.search.documents import MediaDocument
 from backend.search.utils.constants import (
     ELASTICSEARCH_MEDIA_INDEX,
@@ -124,4 +125,35 @@ def delete_from_index(instance_id, **kwargs):
         # Fallback exception case
         logger = logging.getLogger(ELASTICSEARCH_LOGGER)
         logger.error(type(e).__name__, SearchIndexEntryTypes.MEDIA, instance_id)
+        logger.error(e)
+
+
+@shared_task
+def update_site_feature(instance_id, **kwargs):
+    # get site from site feature
+    # get all media from site
+    # update all media docs in site with enabled site features
+    logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+
+    try:
+        site = SiteFeature.objects.get(id=instance_id).site
+        for media_type in [TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO]:
+            media_model_map = {
+                TYPE_AUDIO: Audio,
+                TYPE_IMAGE: Image,
+                TYPE_VIDEO: Video,
+            }
+            model_class = media_model_map[media_type]
+            media_objects = model_class.objects.filter(site=site)
+            for media in media_objects:
+                update_media_index(media.id, media_type)
+    except ConnectionError:
+        logger.error(
+            ES_CONNECTION_ERROR
+            % ("sitefeature", SearchIndexEntryTypes.SITE_FEATURE, instance_id)
+        )
+    except Exception as e:
+        # Fallback exception case
+        logger = logging.getLogger(ELASTICSEARCH_LOGGER)
+        logger.error(type(e).__name__, SearchIndexEntryTypes.SITE_FEATURE, instance_id)
         logger.error(e)
