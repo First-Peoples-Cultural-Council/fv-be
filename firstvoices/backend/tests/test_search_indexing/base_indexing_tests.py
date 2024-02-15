@@ -609,7 +609,7 @@ class TransactionOnCommitMixin:
                 callback()
             except Exception as e:
                 logging.error(
-                    f"Error calling {callback.__qualname__} in " f"on_commit() (%s).",
+                    f"Error calling {callback.__qualname__} in on_commit() (%s).",
                     e,
                     exc_info=True,
                 )
