@@ -22,7 +22,7 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
         gallery = factories.GalleryFactory(site=site, cover_image=None)
         return gallery
 
-    def get_expected_detail_response(self, instance, site):
+    def get_expected_response(self, instance, site):
         standard_fields = self.get_expected_standard_fields(instance, site)
         return {
             **standard_fields,
@@ -30,29 +30,31 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
             "introduction": instance.introduction,
             "introductionTranslation": instance.introduction_translation,
             "coverImage": None,
-            "galleryItems": [
-                {"image": self.get_expected_image_data(x.image), "order": x.order}
-                for x in instance.galleryitem_set.all()
-            ],
         }
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_detail_response(instance, site)
+    def get_expected_gallery_item_data(self, item):
+        data = self.get_expected_image_data(item.image)
+        data["ordering"] = item.ordering
+        return data
+
+    def get_expected_detail_response(self, instance, site):
+        expected_response = self.get_expected_response(instance, site)
+        expected_response["galleryItems"] = [
+            self.get_expected_gallery_item_data(item)
+            for item in instance.galleryitem_set.all()
+        ]
+        return expected_response
 
     def get_valid_data(self, site=None):
         image = factories.ImageFactory.create(site=site)
+        image2 = factories.ImageFactory.create(site=site)
         return {
             "title": "Test Gallery",
             "titleTranslation": "Test Gallery Translation",
             "introduction": "Test Gallery Introduction",
             "introductionTranslation": "Test Gallery Introduction Translation",
             "coverImage": None,
-            "galleryItems": [
-                {
-                    "image": str(image.id),
-                    "order": 0,
-                }
-            ],
+            "galleryItems": [str(image.id), str(image2.id)],
         }
 
     def get_valid_patch_data(self, site=None):
@@ -187,16 +189,7 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
         )
         image = factories.ImageFactory.create(site=site)
         data = self.get_valid_data(site=site)
-        data["galleryItems"] = [
-            {
-                "image": str(image.id),
-                "order": 0,
-            },
-            {
-                "image": str(image.id),
-                "order": 1,
-            },
-        ]
+        data["galleryItems"] = [str(image.id), str(image.id)]
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
@@ -204,3 +197,34 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_gallery_always_ordered_by_input(self):
+        """Galleries are always ordered in the same order as the ids in the request"""
+        site, user = factories.access.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        image = factories.ImageFactory.create(site=site)
+        image2 = factories.ImageFactory.create(site=site)
+        image3 = factories.ImageFactory.create(site=site)
+        data = self.get_valid_data(site=site)
+        data["galleryItems"] = [str(image2.id), str(image.id), str(image3.id)]
+
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        response_data = response.json()
+
+        assert response.status_code == 201
+        assert response_data["galleryItems"][0]["id"] == str(image2.id)
+        assert response_data["galleryItems"][0]["ordering"] == 0
+        assert response_data["galleryItems"][1]["id"] == str(image.id)
+        assert response_data["galleryItems"][1]["ordering"] == 1
+        assert response_data["galleryItems"][2]["id"] == str(image3.id)
+        assert response_data["galleryItems"][2]["ordering"] == 2
+
+        gallery = Gallery.objects.get(id=response_data["id"])
+        assert gallery.galleryitem_set.filter(image=image2).first().ordering == 0
+        assert gallery.galleryitem_set.filter(image=image).first().ordering == 1
+        assert gallery.galleryitem_set.filter(image=image3).first().ordering == 2
