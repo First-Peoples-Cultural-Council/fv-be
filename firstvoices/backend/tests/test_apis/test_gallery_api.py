@@ -22,7 +22,7 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
         gallery = factories.GalleryFactory(site=site, cover_image=None)
         return gallery
 
-    def get_expected_detail_response(self, instance, site):
+    def get_expected_response(self, instance, site):
         standard_fields = self.get_expected_standard_fields(instance, site)
         return {
             **standard_fields,
@@ -30,14 +30,15 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
             "introduction": instance.introduction,
             "introductionTranslation": instance.introduction_translation,
             "coverImage": None,
-            "galleryItems": [
-                {"image": self.get_expected_image_data(x.image), "order": x.order}
-                for x in instance.galleryitem_set.all()
-            ],
         }
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_detail_response(instance, site)
+    def get_expected_detail_response(self, instance, site):
+        expected_response = self.get_expected_response(instance, site)
+        expected_response["galleryItems"] = [
+            {"image": self.get_expected_image_data(x.image), "ordering": x.ordering}
+            for x in instance.galleryitem_set.all()
+        ]
+        return expected_response
 
     def get_valid_data(self, site=None):
         image = factories.ImageFactory.create(site=site)
@@ -50,7 +51,7 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
             "galleryItems": [
                 {
                     "image": str(image.id),
-                    "order": 0,
+                    "ordering": 0,
                 }
             ],
         }
@@ -194,7 +195,7 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
             },
             {
                 "image": str(image.id),
-                "order": 1,
+                "ordering": 1,
             },
         ]
 

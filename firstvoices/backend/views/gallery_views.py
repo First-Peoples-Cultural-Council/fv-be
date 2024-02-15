@@ -3,7 +3,10 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.galleries import Gallery, GalleryItem
-from backend.serializers.gallery_serializers import GalleryDetailSerializer
+from backend.serializers.gallery_serializers import (
+    GalleryDetailSerializer,
+    GallerySummarySerializer,
+)
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -16,7 +19,7 @@ from backend.views.utils import get_select_related_media_fields
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
-                response=GalleryDetailSerializer,
+                response=GallerySummarySerializer,
             ),
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
@@ -101,8 +104,6 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
     API endpoint that allows galleries to be viewed or edited.
     """
 
-    serializer_class = GalleryDetailSerializer
-
     def get_queryset(self):
         site = self.get_validated_site()
         return (
@@ -125,3 +126,8 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
                 *get_select_related_media_fields("cover_image"),
             )
         )
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return GallerySummarySerializer
+        return GalleryDetailSerializer

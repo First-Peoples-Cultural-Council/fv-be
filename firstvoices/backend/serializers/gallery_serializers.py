@@ -24,12 +24,12 @@ class GalleryItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GalleryItem
-        fields = ("image", "order")
+        fields = ("image", "ordering")
 
 
-class GalleryDetailSerializer(WritableSiteContentSerializer):
+class GallerySummarySerializer(WritableSiteContentSerializer):
     """
-    Serializer for Gallery model.
+    List serializer for Gallery model.
     """
 
     cover_image = WriteableRelatedImageSerializer(
@@ -37,9 +37,6 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
         queryset=Image.objects.all(),
         allow_null=True,
         validators=[SameSite()],
-    )
-    gallery_items = GalleryItemSerializer(
-        many=True, required=False, source="galleryitem_set"
     )
 
     def validate(self, attrs):
@@ -80,6 +77,18 @@ class GalleryDetailSerializer(WritableSiteContentSerializer):
                 "introduction",
                 "introduction_translation",
                 "cover_image",
-                "gallery_items",
             )
         )
+
+
+class GalleryDetailSerializer(GallerySummarySerializer):
+    """
+    Detail serializer for Gallery model.
+    """
+
+    gallery_items = GalleryItemSerializer(
+        many=True, required=False, source="galleryitem_set"
+    )
+
+    class Meta(GallerySummarySerializer.Meta):
+        fields = GallerySummarySerializer.Meta.fields + ("gallery_items",)
