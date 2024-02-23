@@ -57,6 +57,10 @@ class TestSiteSignals(TransactionOnCommitMixin):
                 manager, "remove_from_index"
             )
 
+            mocks[prefix + "sync_in_index"] = mocker.patch.object(
+                manager, "sync_in_index"
+            )
+
         return mocks
 
     @pytest.mark.django_db
@@ -77,11 +81,17 @@ class TestSiteSignals(TransactionOnCommitMixin):
         self.assert_no_mocks_called(document_manager_mocks)
 
     @pytest.mark.django_db
-    def test_edit_site_visibility_rebuilds_index(
+    def test_edit_site_visibility_syncs_index(
         self, index_manager_mocks, document_manager_mocks
     ):
         with self.capture_on_commit_callbacks(execute=True):
             site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+            dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
+            song = factories.SongFactory.create(site=site)
+            story = factories.StoryFactory.create(site=site)
+            audio = factories.AudioFactory.create(site=site)
+            image = factories.ImageFactory.create(site=site)
+            video = factories.VideoFactory.create(site=site)
 
         self.reset_all_mocks(index_manager_mocks)
         self.reset_all_mocks(document_manager_mocks)
@@ -90,7 +100,14 @@ class TestSiteSignals(TransactionOnCommitMixin):
             site.visibility = Visibility.MEMBERS
             site.save()
 
-        self.assert_all_called_once_with(index_manager_mocks, {"site_slug": site.slug})
+        self.assert_document_synced(
+            document_manager_mocks, DictionaryEntryDocumentManager, dictionary_entry
+        )
+        self.assert_document_synced(document_manager_mocks, SongDocumentManager, song)
+        self.assert_document_synced(document_manager_mocks, StoryDocumentManager, story)
+        self.assert_document_synced(document_manager_mocks, AudioDocumentManager, audio)
+        self.assert_document_synced(document_manager_mocks, ImageDocumentManager, image)
+        self.assert_document_synced(document_manager_mocks, VideoDocumentManager, video)
 
     @pytest.mark.django_db
     def test_delete_site_removes_all_content_from_index(
@@ -142,5 +159,10 @@ class TestSiteSignals(TransactionOnCommitMixin):
 
     def assert_document_removed(self, mocks, document_manager, instance):
         mocks[document_manager.__name__ + "_remove_from_index"].assert_called_once_with(
+            instance.id
+        )
+
+    def assert_document_synced(self, mocks, document_manager, instance):
+        mocks[document_manager.__name__ + "_sync_in_index"].assert_called_once_with(
             instance.id
         )

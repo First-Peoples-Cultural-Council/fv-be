@@ -33,12 +33,6 @@ class Command(BaseCommand):
             help="Name of the index to be rebuilt (optional)",
             default=None,
         )
-        parser.add_argument(
-            "--site",
-            dest="site_slug",
-            help="Slug of the site to be re-indexed (optional)",
-            default=None,
-        )
 
     def handle(self, *args, **options):
         # Setting logger level to get all logs
@@ -46,12 +40,11 @@ class Command(BaseCommand):
         logger.setLevel(logging.INFO)
 
         index_name = options["index_name"]
-        site_slug = options["site_slug"]
 
         if index_name:
             try:
                 manager = self.index_managers[index_name]
-                return manager.rebuild(site_slug=site_slug)
+                return manager.rebuild()
             except KeyError:
                 logger.warning(
                     "Can't rebuild index for unrecognized alias: [%s]", index_name
@@ -61,6 +54,6 @@ class Command(BaseCommand):
             logger.info("No index name provided. Building all indices.")
 
             for manager in self.index_managers.values():
-                manager.rebuild(site_slug=site_slug)
+                manager.rebuild()
 
         logger.info("Index rebuild complete.")

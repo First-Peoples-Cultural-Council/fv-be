@@ -1,11 +1,11 @@
 from backend.models.constants import Visibility
 from backend.models.media import Audio, Image, Video
 from backend.search.documents import MediaDocument
-from backend.search.indexing.base import IndexManager, SiteContentDocumentManager
+from backend.search.indexing.base import DocumentManager, IndexManager
 from backend.search.utils.constants import ELASTICSEARCH_MEDIA_INDEX
 
 
-class MediaDocumentManager(SiteContentDocumentManager):
+class MediaDocumentManager(DocumentManager):
     index = ELASTICSEARCH_MEDIA_INDEX
     document = MediaDocument
     model = None

@@ -1,6 +1,6 @@
 from backend.models import DictionaryEntry
 from backend.search.documents import DictionaryEntryDocument
-from backend.search.indexing.base import IndexManager, SiteContentDocumentManager
+from backend.search.indexing.base import DocumentManager, IndexManager
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     UNKNOWN_CHARACTER_FLAG,
@@ -8,7 +8,7 @@ from backend.search.utils.constants import (
 from backend.search.utils.get_index_documents import fields_as_list
 
 
-class DictionaryEntryDocumentManager(SiteContentDocumentManager):
+class DictionaryEntryDocumentManager(DocumentManager):
     index = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
     document = DictionaryEntryDocument
     model = DictionaryEntry

@@ -32,13 +32,6 @@ def remove_from_index(document_manager_name, instance_id):
         document_manager.remove_from_index(instance_id)
 
 
-@shared_task
-def rebuild_for_site(index_manager_name, site_slug):
-    index_manager = _get_manager(index_manager_name)
-    if index_manager:
-        index_manager.rebuild(site_slug=site_slug)
-
-
 # convenience methods for calling the async tasks
 
 
@@ -62,19 +55,6 @@ def request_remove_from_index(document_manager, instance):
             (
                 document_manager.__name__,
                 instance_id,
-            ),
-            link_error=link_error_handler.s(),
-        )
-    )
-
-
-def request_rebuild_for_site(index_manager, site):
-    site_slug = site.slug
-    transaction.on_commit(
-        lambda: rebuild_for_site.apply_async(
-            (
-                index_manager.__name__,
-                site_slug,
             ),
             link_error=link_error_handler.s(),
         )

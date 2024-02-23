@@ -5,7 +5,6 @@ from elasticsearch.helpers import actions
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
-from backend.models import Site
 from backend.search import es_logging
 from backend.search.utils.object_utils import search_by_id
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
@@ -16,7 +15,7 @@ class IndexManager:
     document_managers = []
 
     @classmethod
-    def rebuild(cls, **kwargs):
+    def rebuild(cls):
         es_logging.logger.info(f"Building index: {cls.index}")
 
         es = connections.get_connection()
@@ -24,7 +23,7 @@ class IndexManager:
         new_index = cls._create_new_write_index()
 
         try:
-            cls._add_all(es, **kwargs)
+            cls._add_all(es)
 
         except Exception as e:
             # If we are not able to complete the new index, delete it and leave the current one as read + write alias
@@ -97,9 +96,9 @@ class IndexManager:
         index.put_alias(using=es, name=cls.index)
 
     @classmethod
-    def _add_all(cls, es, **kwargs):
+    def _add_all(cls, es):
         for document_manager in cls.document_managers:
-            document_manager.add_all(es, **kwargs)
+            document_manager.add_all(es)
 
 
 class DocumentManager:
@@ -205,7 +204,7 @@ class DocumentManager:
             cls.remove_from_index(instance_id)
 
     @classmethod
-    def add_all(cls, es, **kwargs):
+    def add_all(cls, es):
         """
         Adds all documents to the index, via the provided ElasticSearch Connection.
         """
@@ -215,7 +214,7 @@ class DocumentManager:
             cls.model.__name__,
             cls.index,
         )
-        actions.bulk(es, cls._iterator(**kwargs))
+        actions.bulk(es, cls._iterator())
         es_logging.logger.info(
             "Finished adding all indexable [%s] instances to [%s] index",
             cls.model.__name__,
@@ -223,26 +222,14 @@ class DocumentManager:
         )
 
     @classmethod
-    def _get_all_instances(cls, **kwargs):
+    def _get_all_instances(cls):
         return cls.model.objects.all()
 
     @classmethod
-    def _iterator(cls, **kwargs):
-        instances = cls._get_all_instances(**kwargs)
+    def _iterator(cls):
+        instances = cls._get_all_instances()
 
         for instance in instances:
             if cls.should_be_indexed(instance):
                 index_document = cls.create_index_document(instance)
                 yield index_document.to_dict(True)
-
-
-class SiteContentDocumentManager(DocumentManager):
-    @classmethod
-    def _get_all_instances(cls, site_slug=None, **kwargs):
-        instances = cls.model.objects.all()
-
-        if site_slug:
-            site = Site.objects.get(slug=site_slug)
-            instances = instances.filter(site=site)
-
-        return instances
