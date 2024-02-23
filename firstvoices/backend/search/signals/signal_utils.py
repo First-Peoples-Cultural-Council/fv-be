@@ -79,7 +79,6 @@ signal_details = {
         (remove_image_from_index, Image),
         (remove_video_from_index, Video),
     ],
-    "m2m_changed": [(sync_related_dictionary_entry_in_index, DictionaryEntryCategory)],
 }
 
 
