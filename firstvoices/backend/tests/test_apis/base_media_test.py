@@ -47,12 +47,12 @@ class MediaTestMixin:
             None,
         )
 
-    def get_basic_media_data(self, instance, view_name):
+    def get_basic_media_data(self, instance, view_name, detail_view):
         url = reverse(
             view_name, current_app=self.APP_NAME, args=[instance.site.slug, instance.id]
         )
 
-        return {
+        data = {
             "id": str(instance.id),
             "url": f"http://testserver{url}",
             "title": instance.title,
@@ -61,6 +61,15 @@ class MediaTestMixin:
             "excludeFromGames": instance.exclude_from_games,
             "excludeFromKids": instance.exclude_from_kids,
         }
+        if detail_view:
+            data["usage"] = {
+                "characters": [],
+                "dictionaryEntries": [],
+                "songs": [],
+                "stories": [],
+                "total": 0,
+            }
+        return data
 
     def get_file_data(self, file):
         return {
@@ -86,23 +95,44 @@ class MediaTestMixin:
             "medium": self.get_visual_file_data(instance.medium),
         }
 
-    def get_visual_media_data(self, instance, view_name):
-        data = self.get_basic_media_data(instance, view_name=view_name)
+    def get_visual_media_data(self, instance, view_name, detail_view):
+        data = self.get_basic_media_data(
+            instance, view_name=view_name, detail_view=detail_view
+        )
         thumbnail_data = self.get_media_thumbnail_data(instance)
-        return {
+
+        data = {
             **data,
             **thumbnail_data,
             "original": self.get_visual_file_data(instance.original),
         }
 
-    def get_expected_image_data(self, instance):
-        return self.get_visual_media_data(instance, view_name="api:image-detail")
+        if detail_view:
+            data["usage"]["customPages"] = []
 
-    def get_expected_video_data(self, instance):
-        return self.get_visual_media_data(instance, view_name="api:video-detail")
+        return data
 
-    def get_expected_audio_data(self, instance, speaker):
-        data = self.get_basic_media_data(instance, view_name="api:audio-detail")
+    def get_expected_image_data(self, instance, detail_view=False):
+        data = self.get_visual_media_data(
+            instance, view_name="api:image-detail", detail_view=detail_view
+        )
+
+        if detail_view:
+            data["usage"]["gallery"] = []
+            data["usage"]["siteBanner"] = {}
+            data["usage"]["siteLogo"] = {}
+
+        return data
+
+    def get_expected_video_data(self, instance, detail_view=False):
+        return self.get_visual_media_data(
+            instance, view_name="api:video-detail", detail_view=detail_view
+        )
+
+    def get_expected_audio_data(self, instance, speaker, detail_view=False):
+        data = self.get_basic_media_data(
+            instance, view_name="api:audio-detail", detail_view=detail_view
+        )
         data["original"] = self.get_file_data(instance.original)
 
         if speaker:
@@ -206,7 +236,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedAudio"]) == 1
         assert response_data["relatedAudio"][0] == self.get_expected_audio_data(
-            audio, speaker
+            audio, speaker, detail_view=False
         )
 
     @pytest.mark.django_db
@@ -223,7 +253,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedImages"]) == 1
 
-        expected = self.get_expected_image_data(image)
+        expected = self.get_expected_image_data(image, detail_view=False)
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in response_data["relatedImages"][0]:
                 response_data["relatedImages"][0].pop(ignored_field)
@@ -246,7 +276,7 @@ class RelatedMediaTestMixin(MediaTestMixin):
         response_data = json.loads(response.content)
         assert len(response_data["relatedVideos"]) == 1
 
-        expected = self.get_expected_video_data(video)
+        expected = self.get_expected_video_data(video, detail_view=False)
         for ignored_field in ("thumbnail", "small", "medium"):
             if ignored_field in response_data["relatedVideos"][0]:
                 response_data["relatedVideos"][0].pop(ignored_field)
@@ -347,6 +377,13 @@ class BaseMediaApiTest(
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpeg"
     model = None
+
+    # Overriding methods to add in the detail_view parameter as that affects the response in case of media APIs
+    def get_expected_detail_response(self, instance, site):
+        return self.get_expected_response(instance, site, detail_view=True)
+
+    def get_expected_list_response_item(self, instance, site):
+        return self.get_expected_response(instance, site, detail_view=False)
 
     def get_valid_data(self, site=None):
         """Returns a valid data object suitable for create/update requests"""
@@ -489,6 +526,76 @@ class BaseMediaApiTest(
         )
 
         assert response.status_code == 400
+
+    def add_related_media_to_objects(self, visibility):
+        # Add media file as related media to objects to verify that they show up correctly
+        # in usage field when a media item is requested via detail view
+        raise NotImplementedError
+
+    @pytest.mark.django_db
+    def test_usages_field_base(self):
+        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=expected_data["media_instance"].id,
+                site_slug=expected_data["site"].slug,
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # usage in characters
+        character_usage = response_data["usage"]["characters"]
+        assert len(character_usage) == 1
+        assert character_usage[0]["id"] == str(expected_data["character"].id)
+
+        # usage in dictionary entries
+        dict_entry_usage = response_data["usage"]["dictionaryEntries"]
+        assert len(dict_entry_usage) == 1
+        assert dict_entry_usage[0]["id"] == str(expected_data["dict_entry"].id)
+
+        # usage in songs
+        song_usage = response_data["usage"]["songs"]
+        assert len(song_usage) == 1
+        assert song_usage[0]["id"] == str(expected_data["song"].id)
+
+        # usage in stories
+        # Story pages point to the story, so the response here should only contain id's of both stories exactly once
+        story_usage = response_data["usage"]["stories"]
+        expected_stories_ids = [
+            str(expected_data["stories"][0].id),
+            str(expected_data["stories"][1].id),
+        ]
+
+        assert len(story_usage) == len(expected_data["stories"])
+        assert story_usage[0]["id"] in expected_stories_ids
+        assert story_usage[1]["id"] in expected_stories_ids
+
+        assert response_data["usage"]["total"] == expected_data["total"]
+
+    @pytest.mark.django_db
+    def test_usages_field_permissions(self):
+        expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=expected_data["media_instance"].id,
+                site_slug=expected_data["site"].slug,
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        # Characters visibility depends on the site's visibility, PUBLIC in this case
+        assert len(response_data["usage"]["characters"]) == 1
+
+        # controlled content should be available
+        assert len(response_data["usage"]["dictionaryEntries"]) == 0
+        assert len(response_data["usage"]["songs"]) == 0
+        assert len(response_data["usage"]["stories"]) == 0
 
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):

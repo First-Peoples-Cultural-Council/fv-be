@@ -3,6 +3,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import parsers, viewsets
 
 from backend.models.media import Video
+from backend.serializers.media_detail_serializers import VideoDetailSerializer
 from backend.serializers.media_serializers import VideoSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
@@ -88,3 +89,8 @@ class VideoViewSet(
                 "last_modified",
             )
         )
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return VideoDetailSerializer
+        return VideoSerializer
