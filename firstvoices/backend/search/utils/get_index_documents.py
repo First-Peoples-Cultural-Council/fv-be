@@ -1,4 +1,4 @@
-from backend.search.documents import SongDocument, StoryDocument
+from backend.search.documents import StoryDocument
 
 
 def create_story_index_document(instance, page_text, page_translation):
@@ -27,32 +27,7 @@ def create_story_index_document(instance, page_text, page_translation):
     )
 
 
-def create_song_index_document(instance, lyrics_text, lyrics_translation_text):
-    return SongDocument(
-        document_id=str(instance.id),
-        site_id=str(instance.site.id),
-        site_visibility=instance.site.visibility,
-        exclude_from_games=instance.exclude_from_games,
-        exclude_from_kids=instance.exclude_from_kids,
-        visibility=instance.visibility,
-        title=instance.title,
-        title_translation=instance.title_translation,
-        note=instance.notes,
-        acknowledgement=instance.acknowledgements,
-        intro_title=instance.introduction,
-        intro_translation=instance.introduction_translation,
-        lyrics_text=lyrics_text,
-        lyrics_translation=lyrics_translation_text,
-        has_audio=instance.related_audio.exists(),
-        has_video=instance.related_videos.exists(),
-        has_image=instance.related_images.exists(),
-        created=instance.created,
-        last_modified=instance.last_modified,
-        has_translation=bool(instance.title_translation),
-    )
-
-
-def _text_as_list(comma_delimited_text):
+def text_as_list(comma_delimited_text):
     if comma_delimited_text is None:
         return comma_delimited_text
 
@@ -60,6 +35,6 @@ def _text_as_list(comma_delimited_text):
     return [item.strip() for item in items]
 
 
-def _fields_as_list(queryset, field):
+def fields_as_list(queryset, field):
     values = queryset.values_list(field)
-    return [x[0] for x in values]
+    return [str(x[0]) for x in values]

@@ -3,16 +3,20 @@ from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
 from backend.models.sites import Language, LanguageFamily, Site
-from backend.search.tasks import language_index_tasks
-from firstvoices.celery import link_error_handler
+from backend.search.indexing.language_index import (
+    LanguageDocumentManager,
+    SiteDocumentManager,
+)
+from backend.search.tasks.index_manager_tasks import (
+    request_remove_from_index,
+    request_sync_in_index,
+)
 
 
 @receiver(post_save, sender=LanguageFamily)
 def sync_language_family_in_index(sender, instance, **kwargs):
     for language in instance.languages.all():
-        language_index_tasks.sync_language_in_index.apply_async(
-            (language.id,), link_error=link_error_handler.s()
-        )
+        request_sync_in_index(LanguageDocumentManager, language)
 
 
 # note: no signal needed for deleting a LanguageFamily, because the model can only be deleted once it has
@@ -21,27 +25,21 @@ def sync_language_family_in_index(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Language)
 def sync_language_in_index(sender, instance, **kwargs):
-    language_index_tasks.sync_language_in_index.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
-    )
+    request_sync_in_index(LanguageDocumentManager, instance)
 
 
 @receiver(pre_delete, sender=Language)
 def remove_language_from_index(sender, instance, **kwargs):
-    language_index_tasks.remove_language_from_index.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
-    )
+    request_remove_from_index(LanguageDocumentManager, instance)
 
     # sync any related sites
     for site in instance.sites.all():
-        language_index_tasks.sync_site_in_language_index(site.id)
+        request_sync_in_index(SiteDocumentManager, site)
 
 
 @receiver(pre_save, sender=Site)
 def sync_site_in_language_index(sender, instance, **kwargs):
-    language_index_tasks.sync_site_in_language_index.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
-    )
+    request_sync_in_index(SiteDocumentManager, instance)
 
     # sync related languages
     languages = set()
@@ -60,18 +58,12 @@ def sync_site_in_language_index(sender, instance, **kwargs):
             pass
 
     for language in languages:
-        language_index_tasks.sync_language_in_index.apply_async(
-            (language.id,), link_error=link_error_handler.s()
-        )
+        request_sync_in_index(LanguageDocumentManager, language)
 
 
 @receiver(pre_delete, sender=Site)
 def remove_site_from_language_index(sender, instance, **kwargs):
-    language_index_tasks.remove_site_from_language_index.apply_async(
-        (instance.id,), link_error=link_error_handler.s()
-    )
+    request_remove_from_index(SiteDocumentManager, instance)
 
     if instance.language:
-        language_index_tasks.sync_language_in_index.apply_async(
-            (instance.language.id,), link_error=link_error_handler.s()
-        )
+        request_sync_in_index(LanguageDocumentManager, instance.language)
