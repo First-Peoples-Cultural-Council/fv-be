@@ -10,15 +10,15 @@ from backend.search.indexing.language_index import (
 )
 from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.tests import factories
-from backend.tests.test_search_indexing.base_tests import (
+from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseDocumentManagerTest,
     BaseIndexManagerTest,
 )
+from backend.tests.utils import assert_list
 
 
 class TestLanguageIndexManager(BaseIndexManagerTest):
     manager = LanguageIndexManager
-    factory = factories.LanguageFactory
     expected_index_name = ELASTICSEARCH_LANGUAGE_INDEX
 
 
@@ -136,15 +136,15 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
         assert language_doc.document_type == "Language"
         assert language_doc.language_name == language.title
 
-        self.assert_list(
+        assert_list(
             ["abc", "def", "efg"],
             language_doc.language_code,
         )
-        self.assert_list(
+        assert_list(
             ["alt name 1", "alt name 2", "altname 3"],
             language_doc.language_alternate_names,
         )
-        self.assert_list(
+        assert_list(
             ["keyword 1", "keyword 2"], language_doc.language_community_keywords
         )
 
@@ -161,8 +161,8 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
 
         language_doc = self.manager.create_index_document(language)
 
-        self.assert_list([site1.title, site2.title], language_doc.site_names)
-        self.assert_list([site1.slug, site2.slug], language_doc.site_slugs)
+        assert_list([site1.title, site2.title], language_doc.site_names)
+        assert_list([site1.slug, site2.slug], language_doc.site_slugs)
 
     @pytest.mark.django_db
     def test_create_document_skips_hidden_sites(self):
@@ -176,8 +176,8 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
 
         language_doc = self.manager.create_index_document(language)
 
-        self.assert_list([site2.title], language_doc.site_names)
-        self.assert_list([site2.slug], language_doc.site_slugs)
+        assert_list([site2.title], language_doc.site_names)
+        assert_list([site2.slug], language_doc.site_slugs)
 
     @pytest.mark.django_db
     def test_create_document_with_language_family_fields(self):
@@ -189,16 +189,10 @@ class TestLanguageDocumentManager(BaseDocumentManagerTest):
         language_doc = self.manager.create_index_document(language)
 
         assert language_doc.language_family_name == language_family.title
-        self.assert_list(
+        assert_list(
             ["family 1", "alternate 2", "alt.fam.3"],
             language_doc.language_family_alternate_names,
         )
-
-    def assert_list(self, expected_list, actual_list):
-        assert len(expected_list) == len(actual_list)
-
-        for i, item in enumerate(expected_list):
-            assert item in actual_list
 
 
 class TestSiteDocumentManager(BaseDocumentManagerTest):

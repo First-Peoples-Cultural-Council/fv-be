@@ -1,6 +1,9 @@
+import logging
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.db import DEFAULT_DB_ALIAS, connections
 from elasticsearch import ConnectionError, NotFoundError
 
 TEST_SEARCH_INDEX_ID = "test search index id"
@@ -15,7 +18,6 @@ class BaseIndexManagerTest:
     """
 
     manager = None
-    factory = None
     expected_index_name = ""
 
     paths = {
@@ -351,7 +353,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_update_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError("Oopsie!")
+        mock_query.execute.side_effect = NotFoundError()
 
         instance = self.factory.create()
 
@@ -365,7 +367,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_remove_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError("Oopsie!")
+        mock_query.execute.side_effect = NotFoundError()
 
         instance = self.factory.create()
 
@@ -416,10 +418,8 @@ class BaseDocumentManagerTest:
             for _ in self.manager._iterator():
                 continue
 
-            # adds all models as documents
-            for model in self.manager.models:
-                for instance in model.objects.all():
-                    mock_create_index_doc.assert_any_call(instance)
+            for instance in self.manager.model.objects.all():
+                mock_create_index_doc.assert_any_call(instance)
 
     def create_indexable_document(self):
         """Subclasses should override if not all documents are indexed"""
@@ -432,8 +432,8 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_sync_in_index_new_good_document_is_added(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError(
-            "Oopsie!"
+        mock_query.execute.side_effect = (
+            NotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_indexable_document()
@@ -447,8 +447,8 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_sync_in_index_new_bad_document_is_skipped(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError(
-            "Oopsie!"
+        mock_query.execute.side_effect = (
+            NotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_non_indexable_document()
@@ -541,8 +541,8 @@ class BaseDocumentManagerTest:
         ) as mock_update_in_index, patch(
             self.paths["remove_from_index"], return_value=None
         ) as remove_from_index:
-            mock_update_in_index.side_effect = NotFoundError(
-                "Oopsie!"
+            mock_update_in_index.side_effect = (
+                NotFoundError()
             )  # document is not yet in the index
 
             self.manager.sync_in_index(instance.id)
@@ -578,3 +578,179 @@ class BaseDocumentManagerTest:
         mock_document = MagicMock()
         mock_document.save.side_effect = ConnectionError("Uh oh!")
         return mock_document
+
+
+class TransactionOnCommitMixin:
+    @classmethod
+    @contextmanager
+    def capture_on_commit_callbacks(cls, *, using=DEFAULT_DB_ALIAS, execute=False):
+        """Context manager to capture transaction.on_commit() callbacks."""
+        callbacks = []
+        commit_handlers = connections[using].run_on_commit
+        start_count = len(commit_handlers)
+        try:
+            yield callbacks
+        finally:
+            while True:
+                callback_count = len(commit_handlers)
+                for _, callback, robust in commit_handlers[start_count:]:
+                    callbacks.append(callback)
+                    if execute:
+                        cls._execute_callback(callback, robust)
+
+                if callback_count == len(commit_handlers):
+                    break
+                start_count = callback_count
+
+    @classmethod
+    def _execute_callback(cls, callback, robust):
+        if robust:
+            try:
+                callback()
+            except Exception as e:
+                logging.error(
+                    f"Error calling {callback.__qualname__} in on_commit() (%s).",
+                    e,
+                    exc_info=True,
+                )
+        else:
+            callback()
+
+
+class BaseSignalTest(TransactionOnCommitMixin):
+    """
+    Tests for basic indexing signal cases:
+    * all instances are indexed (no criteria)
+    """
+
+    manager = None
+    factory = None
+
+    @pytest.fixture
+    def mock_index_methods(self, mocker):
+        return {
+            "mock_sync": mocker.patch.object(self.manager, "sync_in_index"),
+            "mock_remove": mocker.patch.object(self.manager, "remove_from_index"),
+        }
+
+    @pytest.mark.django_db
+    def test_new_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].assert_called_with(instance.id)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_edited_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.title = "New Title"
+            instance.save()
+
+        mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_deleted_instance_is_removed(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            instance_id = instance.id
+
+        mock_index_methods["mock_sync"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.delete()
+
+        mock_index_methods["mock_remove"].assert_called_once_with(instance_id)
+        mock_index_methods["mock_sync"].assert_not_called()
+
+
+class BaseRelatedInstanceSignalTest(BaseSignalTest):
+    """
+    Tests for basic indexing signal cases and:
+    * one-to-many related models are included with the indexed content
+      (e.g., Songs and Lyrics, but not DictionaryEntries and Categories)
+    """
+
+    related_factories = []
+
+    def create_all_related_instances(self, instance):
+        for related_factory in self.related_factories:
+            self.create_related_instance(related_factory, instance)
+
+    def create_related_instance(self, related_factory, instance):
+        raise NotImplementedError()
+
+    def edit_related_instance(self, related_instance):
+        related_instance.text = "New text"
+        related_instance.save()
+
+    @pytest.mark.django_db
+    def test_deleted_instance_with_related_instance_is_removed(
+        self, mock_index_methods
+    ):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            instance_id = instance.id
+            self.create_all_related_instances(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.delete()
+
+        mock_index_methods["mock_remove"].assert_called_with(instance_id)
+
+    @pytest.mark.django_db
+    def test_new_related_instance_main_instance_is_synced(self, mock_index_methods):
+        for related_factory in self.related_factories:
+            with self.capture_on_commit_callbacks(execute=True):
+                instance = self.factory.create()
+
+            mock_index_methods["mock_sync"].reset_mock()
+
+            with self.capture_on_commit_callbacks(execute=True):
+                self.create_related_instance(related_factory, instance)
+
+            mock_index_methods["mock_sync"].assert_called_with(instance.id)
+            mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_edited_related_instance_main_instance_is_synced(self, mock_index_methods):
+        for related_factory in self.related_factories:
+            with self.capture_on_commit_callbacks(execute=True):
+                instance = self.factory.create()
+                related_instance = self.create_related_instance(
+                    related_factory, instance
+                )
+
+            mock_index_methods["mock_sync"].reset_mock()
+
+            with self.capture_on_commit_callbacks(execute=True):
+                self.edit_related_instance(related_instance)
+
+            mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
+            mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_deleted_related_instance_main_instance_is_synced(self, mock_index_methods):
+        for related_factory in self.related_factories:
+            with self.capture_on_commit_callbacks(execute=True):
+                instance = self.factory.create()
+                instance_id = instance.id
+                related_instance = self.create_related_instance(
+                    related_factory, instance
+                )
+
+            mock_index_methods["mock_sync"].reset_mock()
+
+            with self.capture_on_commit_callbacks(execute=True):
+                related_instance.delete()
+
+            mock_index_methods["mock_sync"].assert_called_with(instance_id)
+            mock_index_methods["mock_remove"].assert_not_called()

@@ -3,7 +3,6 @@ import logging
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import StoryPage
 from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
 from firstvoices.settings import ELASTICSEARCH_LOGGER
 
@@ -74,20 +73,3 @@ def get_categories_ids(dictionary_entry_instance):
             "id", flat=True
         )
     ]
-
-
-def get_lyrics(song_instance):
-    lyrics = list(song_instance.lyrics.values_list("text", flat=True))
-    lyrics_translation = list(
-        song_instance.lyrics.values_list("translation", flat=True)
-    )
-
-    return lyrics, lyrics_translation
-
-
-def get_page_info(story_instance):
-    pages = StoryPage.objects.filter(story=story_instance)
-    page_text = list(pages.values_list("text", flat=True))
-    page_translation = list(pages.values_list("translation", flat=True))
-
-    return page_text, page_translation

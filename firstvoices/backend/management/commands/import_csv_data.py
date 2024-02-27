@@ -8,7 +8,6 @@ from scripts.utils.aws_download_utils import (
     download_latest_exports,
 )
 
-from backend.management.commands._helper import disconnect_signals, reconnect_signals
 from backend.models.app import AppImportStatus
 from backend.resources.app import AppMembershipResource
 from backend.resources.categories import CategoryMigrationResource
@@ -48,6 +47,7 @@ from backend.resources.songs import LyricResource, SongResource
 from backend.resources.stories import StoryPageResource, StoryResource
 from backend.resources.users import UserResource
 from backend.resources.widgets import SiteWidgetResource, WidgetSettingsResource
+from backend.search.signals.signal_utils import connect_signals, disconnect_signals
 
 
 class Command(BaseCommand):
@@ -169,7 +169,7 @@ def run_import():
             except Exception as e:
                 status.no_warnings = False
                 status.save()
-                reconnect_signals()
+                connect_signals()
                 raise e
 
     unimported_files = [f for f in files_to_import if f not in imported_files]
@@ -186,5 +186,5 @@ def run_import():
     os.rmdir(current_export_dir)
 
     # re-connect signals
-    reconnect_signals()
+    connect_signals()
     logger.info("Re-connected all search index related signals.")
