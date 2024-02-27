@@ -46,48 +46,21 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        language0 = backend.tests.factories.access.LanguageFactory.create(
-            title="Language 0"
-        )
-        site = factories.SiteFactory(language=language0, visibility=Visibility.PUBLIC)
-        factories.SiteFactory(language=language0, visibility=Visibility.MEMBERS)
-
-        language1 = backend.tests.factories.access.LanguageFactory.create(
-            title="Language 1"
-        )
-        factories.SiteFactory(language=language1, visibility=Visibility.MEMBERS)
-
-        # sites with no language set
-        factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-        factories.SiteFactory(language=None, visibility=Visibility.MEMBERS)
-
-        backend.tests.factories.access.LanguageFactory.create()
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
         response = self.client.get(self.get_list_endpoint())
 
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert len(response_data) == 3
+        assert len(response_data["results"]) == 1
 
-        assert response_data[0]["language"] == language0.title
-        assert response_data[0]["languageCode"] == language0.language_code
-        assert len(response_data[0]["sites"]) == 2
-
-        assert response_data[1]["language"] == language1.title
-        assert response_data[1]["languageCode"] == language1.language_code
-        assert len(response_data[1]["sites"]) == 1
-
-        assert response_data[2]["language"] == "Other"
-        assert response_data[2]["languageCode"] == ""
-        assert len(response_data[2]["sites"]) == 2
-
-        site_json = response_data[0]["sites"][0]
+        site_json = response_data["results"][0]
         assert site_json == {
             "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
-            "language": language0.title,
+            "language": str(site.language.title),
             "visibility": "public",
             "logo": None,
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
@@ -143,12 +116,24 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         response_sites = [site["id"] for site in response_data["results"]]
 
-        assert len(response_sites) == 3
+        assert len(response_sites) == 2
+        assert str(sites["public"].id) in response_sites
+        assert str(sites["team"].id) in response_sites
+
+        assert str(sites["members"].id) not in response_sites
+        assert str(sites["hidden"].id) not in response_sites
+
+    def assert_visible_sites_staff(self, response, sites):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        response_sites = [site["id"] for site in response_data["results"]]
+
+        assert len(response_sites) == 4
         assert str(sites["public"].id) in response_sites
         assert str(sites["members"].id) in response_sites
         assert str(sites["team"].id) in response_sites
-
-        assert str(sites["hidden"].id) not in response_sites
+        assert str(sites["hidden"].id) in response_sites
 
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
     @pytest.mark.django_db
@@ -174,26 +159,35 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         response = self.client.get(self.get_list_endpoint())
         self.assert_visible_sites_members(response, sites)
 
-    @pytest.mark.parametrize(
-        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
-    )
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
-    def test_list_permissions_for_superadmins(self, role):
+    def test_list_permissions_for_team(self, role):
         sites = self.generate_test_sites()
 
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=sites["team"], role=role)
         self.client.force_authenticate(user=user)
 
         response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
+        self.assert_visible_sites_team(response, sites)
 
-    @pytest.mark.parametrize("visibility", [Visibility.PUBLIC, Visibility.MEMBERS])
+    @pytest.mark.parametrize("staff_role", [AppRole.STAFF, AppRole.SUPERADMIN])
     @pytest.mark.django_db
-    def test_list_logo_from_same_site(self, visibility):
+    def test_list_permissions_for_staff(self, staff_role):
+        sites = self.generate_test_sites()
+
+        user = factories.get_app_admin(staff_role)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint())
+        self.assert_visible_sites_staff(response, sites)
+
+    @pytest.mark.django_db
+    def test_list_logo_from_same_site(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory.create(visibility=visibility)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         image = factories.ImageFactory(site=site)
         site.logo = image
         site.save()
@@ -202,9 +196,8 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data) == 1
-        assert len(response_data[0]["sites"]) == 1
-        assert response_data[0]["sites"][0]["logo"] == self.get_expected_image_data(
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["logo"] == self.get_expected_image_data(
             image
         )
 
@@ -934,16 +927,31 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
         self.assert_update_patch_response(instance, data, response_data)
 
+    @pytest.mark.parametrize(
+        "team_role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+    )
     @pytest.mark.django_db
-    def test_hidden_sites_not_visible_in_list_view(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
-        self.client.force_authenticate(user=user)
-        factories.SiteFactory.create(visibility=Visibility.PUBLIC, is_hidden=True)
+    def test_hidden_sites_visible_in_list_only_to_team(self, team_role):
+        user1 = factories.get_non_member_user()
+        user2 = factories.get_non_member_user()
+
+        site = factories.SiteFactory.create(
+            visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        factories.MembershipFactory.create(user=user1, site=site, role=team_role)
+        factories.MembershipFactory.create(user=user2, site=site, role=Role.MEMBER)
+
+        self.client.force_authenticate(user=user1)
 
         response = self.client.get(self.get_list_endpoint())
         response_data = json.loads(response.content)
-        assert len(response_data) == 0
-        assert response_data == []
+        assert len(response_data["results"]) == 1
+
+        self.client.force_authenticate(user=user2)
+
+        response = self.client.get(self.get_list_endpoint())
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 0
 
     @pytest.mark.django_db
     def test_hidden_site_detail_403(self):
