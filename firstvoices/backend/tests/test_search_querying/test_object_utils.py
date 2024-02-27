@@ -5,12 +5,11 @@ import pytest
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch_dsl import Search
 
-from backend.models import DictionaryEntry, Song
+from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
 from backend.search.utils.object_utils import (
     get_acknowledgements_text,
     get_categories_ids,
-    get_lyrics,
     get_notes_text,
     get_object_from_index,
     get_translation_text,
@@ -308,54 +307,4 @@ class TestGetCategoryIds:
         assert get_categories_ids(dictionary_entry) == [
             str(category_1.id),
             str(category_2.id),
-        ]
-
-
-@pytest.mark.django_db
-class TestGetLyrics:
-    def test_no_lyrics(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.SongFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        song = Song.objects.get(id=entry.id)
-        actual_lyrics, actual_lyrics_translation = get_lyrics(song)
-        assert actual_lyrics == []
-        assert actual_lyrics_translation == []
-
-    def test_basic_case(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.SongFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        lyrics_text = "mocha"
-        lyrics_translation_text = "coffee"
-        factories.LyricsFactory.create(
-            text=lyrics_text, translation=lyrics_translation_text, song=entry
-        )
-
-        song = Song.objects.get(id=entry.id)
-        actual_lyrics, actual_lyrics_translation = get_lyrics(song)
-        assert actual_lyrics == [lyrics_text]
-        assert actual_lyrics_translation == [lyrics_translation_text]
-
-    def test_multiple_lyrics(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.SongFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        lyrics_text_1 = "mocha"
-        lyrics_translation_text_1 = "coffee"
-        factories.LyricsFactory.create(
-            text=lyrics_text_1, translation=lyrics_translation_text_1, song=entry
-        )
-        lyrics_text_2 = "london fog"
-        lyrics_translation_text_2 = "tea"
-        factories.LyricsFactory.create(
-            text=lyrics_text_2, translation=lyrics_translation_text_2, song=entry
-        )
-
-        song = Song.objects.get(id=entry.id)
-        actual_lyrics, actual_lyrics_translation = get_lyrics(song)
-        assert actual_lyrics == [lyrics_text_1, lyrics_text_2]
-        assert actual_lyrics_translation == [
-            lyrics_translation_text_1,
-            lyrics_translation_text_2,
         ]

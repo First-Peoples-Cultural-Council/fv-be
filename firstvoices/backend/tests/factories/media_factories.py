@@ -110,7 +110,7 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
             # Simple build, do nothing.
             return
         if extracted:
-            # A list of image were passed in, use them
+            # A list of audios were passed in, use them
             for e in extracted:
                 self.related_audio.add(e)
 

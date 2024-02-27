@@ -35,5 +35,5 @@ class TestGalleryImageModel:
         gallery_item = factories.GalleryItemFactory.create()
         with pytest.raises(IntegrityError):
             factories.GalleryItemFactory.create(
-                gallery=gallery_item.gallery, order=gallery_item.order
+                gallery=gallery_item.gallery, ordering=gallery_item.ordering
             )
