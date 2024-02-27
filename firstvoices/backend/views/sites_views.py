@@ -4,7 +4,6 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.constants import Visibility
 from backend.models.sites import Membership, Site, SiteFeature
 from backend.models.widget import SiteWidget, WidgetSettings
 from backend.serializers.language_serializers import LanguageSerializer
@@ -109,7 +108,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
 
     def get_list_queryset(self):
         return (
-            Site.objects.filter(visibility__gte=Visibility.MEMBERS, is_hidden=False)
+            Site.objects.all()
             .order_by(Upper("title"))
             .select_related(*get_select_related_media_fields("logo"))
             .prefetch_related(

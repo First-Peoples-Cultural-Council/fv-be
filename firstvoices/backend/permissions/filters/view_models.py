@@ -8,10 +8,10 @@ from . import base, view
 # Rule for who can see detailed site info including homepage, content APIs, etc
 def can_view_site(user):
     return (
-        base.is_public_obj()
-        | base.is_at_least_staff_admin(user)
-        | base.has_member_access_to_site_obj(user)
+        base.is_at_least_staff_admin(user)
         | base.has_team_access_to_site_obj(user)
+        | base.has_member_access_to_site_obj(user) & ~base.is_hidden_site()
+        | base.is_public_obj() & ~base.is_hidden_site()
     )
 
 

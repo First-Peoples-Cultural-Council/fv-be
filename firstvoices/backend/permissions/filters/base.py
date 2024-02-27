@@ -105,6 +105,13 @@ def has_at_least_language_admin_membership(user):
 
 
 #
+# model attribute-based predicates
+#
+def is_hidden_site():
+    return Q(is_hidden=True)
+
+
+#
 # App Role filters
 #
 def get_app_role_filter(user, app_role):

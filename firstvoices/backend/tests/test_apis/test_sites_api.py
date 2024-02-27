@@ -39,7 +39,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data) == 0
+        assert len(response_data["results"]) == 0
 
     @pytest.mark.django_db
     def test_list_full(self):
@@ -96,66 +96,59 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         }
 
     def generate_test_sites(self):
-        # a language with sites of all visibilities
-        all_vis_language = backend.tests.factories.access.LanguageFactory.create()
-        team_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.TEAM
-        )
-        member_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.MEMBERS
-        )
-        public_site0 = factories.SiteFactory(
-            language=all_vis_language, visibility=Visibility.PUBLIC
-        )
-
-        # languages with one site each
-        team_language = backend.tests.factories.access.LanguageFactory.create()
-        team_site1 = factories.SiteFactory(
-            language=team_language, visibility=Visibility.TEAM
-        )
-
-        member_language = backend.tests.factories.access.LanguageFactory.create()
-        member_site1 = factories.SiteFactory(
-            language=member_language, visibility=Visibility.MEMBERS
-        )
-
-        public_language = backend.tests.factories.access.LanguageFactory.create()
-        public_site1 = factories.SiteFactory(
-            language=public_language, visibility=Visibility.PUBLIC
-        )
-
-        # sites with no language
-        team_site2 = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
-        member_site2 = factories.SiteFactory(
-            language=None, visibility=Visibility.MEMBERS
-        )
-        public_site2 = factories.SiteFactory(
-            language=None, visibility=Visibility.PUBLIC
+        # sites of all visibilities
+        team_site = factories.SiteFactory(visibility=Visibility.TEAM)
+        member_site = factories.SiteFactory(visibility=Visibility.MEMBERS)
+        public_site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        hidden_site = factories.SiteFactory(
+            visibility=Visibility.PUBLIC, is_hidden=True
         )
 
         return {
-            "public": [public_site0, public_site1, public_site2],
-            "members": [member_site0, member_site1, member_site2],
-            "team": [team_site0, team_site1, team_site2],
+            "public": public_site,
+            "members": member_site,
+            "team": team_site,
+            "hidden": hidden_site,
         }
 
-    def assert_visible_sites(self, response, sites):
+    def assert_visible_sites_public(self, response, sites):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        response_sites = [
-            site["id"] for language in response_data for site in language["sites"]
-        ]
+        response_sites = [site["id"] for site in response_data["results"]]
 
-        assert len(response_sites) == 6, "included extra sites"
+        assert len(response_sites) == 1
+        assert str(sites["public"].id) in response_sites
 
-        assert str(sites["members"][0].id) in response_sites
-        assert str(sites["members"][1].id) in response_sites
-        assert str(sites["members"][2].id) in response_sites
+        assert str(sites["members"].id) not in response_sites
+        assert str(sites["team"].id) not in response_sites
+        assert str(sites["hidden"].id) not in response_sites
 
-        assert str(sites["public"][0].id) in response_sites
-        assert str(sites["public"][1].id) in response_sites
-        assert str(sites["public"][2].id) in response_sites
+    def assert_visible_sites_members(self, response, sites):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        response_sites = [site["id"] for site in response_data["results"]]
+
+        assert len(response_sites) == 2
+        assert str(sites["public"].id) in response_sites
+        assert str(sites["members"].id) in response_sites
+
+        assert str(sites["team"].id) not in response_sites
+        assert str(sites["hidden"].id) not in response_sites
+
+    def assert_visible_sites_team(self, response, sites):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        response_sites = [site["id"] for site in response_data["results"]]
+
+        assert len(response_sites) == 3
+        assert str(sites["public"].id) in response_sites
+        assert str(sites["members"].id) in response_sites
+        assert str(sites["team"].id) in response_sites
+
+        assert str(sites["hidden"].id) not in response_sites
 
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
     @pytest.mark.django_db
@@ -166,21 +159,20 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
 
         response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
+        self.assert_visible_sites_public(response, sites)
 
-    @pytest.mark.parametrize(
-        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
-    )
     @pytest.mark.django_db
-    def test_list_permissions_for_members(self, role):
+    def test_list_permissions_for_members(self):
         sites = self.generate_test_sites()
 
         user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=sites["team"][0], role=role)
+        factories.MembershipFactory.create(
+            user=user, site=sites["members"], role=Role.MEMBER
+        )
         self.client.force_authenticate(user=user)
 
         response = self.client.get(self.get_list_endpoint())
-        self.assert_visible_sites(response, sites)
+        self.assert_visible_sites_members(response, sites)
 
     @pytest.mark.parametrize(
         "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
