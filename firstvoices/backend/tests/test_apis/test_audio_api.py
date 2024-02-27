@@ -243,28 +243,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
         )
         self.assert_update_patch_speaker_response(instance, data, response_data)
 
-    def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
-        self.assert_original_secondary_fields(original_instance, updated_instance)
-        assert updated_instance.title == original_instance.title
-        assert updated_instance.original.id == original_instance.original.id
-
-    def assert_update_patch_speaker_response(
-        self, original_instance, data, actual_response
-    ):
-        self.assert_response(
-            actual_response=actual_response,
-            expected_data={
-                "id": str(original_instance.id),
-                "title": original_instance.title,
-                "description": original_instance.description,
-                "acknowledgement": original_instance.acknowledgement,
-                "excludeFromKids": original_instance.exclude_from_kids,
-                "excludeFromGames": original_instance.exclude_from_games,
-                "original": original_instance.original,
-                "speakers": data["speakers"],
-            },
-        )
-
     def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
         if visibility == Visibility.TEAM:
             site = self.create_site_with_non_member(Visibility.PUBLIC)
