@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
@@ -16,6 +16,7 @@ from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
+from ..models.constants import Role
 from .utils import get_select_related_media_fields
 
 
@@ -155,7 +156,7 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
             return Membership.objects.none()
 
         # note that the titles are converted to uppercase and then sorted which will put custom characters at the end
-        return (
+        queryset = (
             Membership.objects.filter(user=self.request.user)
             .select_related(
                 "site", "site__language", *get_select_related_media_fields("site__logo")
@@ -168,3 +169,5 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
             )
             .order_by(Upper("site__title"))
         )
+        queryset = queryset.exclude(Q(site__is_hidden=True) & Q(role__lte=Role.MEMBER))
+        return queryset
