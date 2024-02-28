@@ -1,3 +1,5 @@
+import logging
+
 from elasticsearch.exceptions import ConnectionError
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -151,7 +153,14 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
         Returns: a list of serializer data in the order of the given search_results.
         """
-        return [self.serialize_result(result, data) for result in search_results]
+        serialized_data = []
+
+        for result in search_results:
+            item = self.serialize_result(result, data)
+            if item:
+                serialized_data.append(item)
+
+        return serialized_data
 
     def serialize_result(self, result, data):
         """Serializes a single search_result, using the provided hydration data and the configured serializer classes.
@@ -163,10 +172,28 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         Returns: serializer data
         """
 
+        data_to_serialize = self.get_data_to_serialize(result, data)
+
+        if not data_to_serialize:
+            return None
+
         result_type = result["_source"]["document_type"]
-        result_id = result["_source"]["document_id"]
-        model = data[result_type][result_id]
         serializer = self.get_serializer_class(result_type)
         context = self.get_serializer_context()
 
-        return serializer(model, context=context).data
+        return serializer(data_to_serialize, context=context).data
+
+    def get_data_to_serialize(self, result, data):
+        result_type = result["_source"]["document_type"]
+        result_id = result["_source"]["document_id"]
+        try:
+            return data[str(result_type)][str(result_id)]
+        except KeyError:
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Search result was not found in database. [%s] id [%s]",
+                result_type,
+                result_id,
+            )
+
+        return None
