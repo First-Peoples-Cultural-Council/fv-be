@@ -98,6 +98,11 @@ def is_superadmin(user, obj):
     return get_app_role(user) == AppRole.SUPERADMIN
 
 
+#
+# model attribute-based predicates
+#
+
+
 @predicate
 def is_hidden_site(user, obj):
     return obj.is_hidden
