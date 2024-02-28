@@ -35,6 +35,6 @@ def remove_all_site_content(sender, instance, **kwargs):
 
 @receiver(post_save, sender=SiteFeature)
 @receiver(post_delete, sender=SiteFeature)
-def sync_site_features_in_media_indices(sender, instance, **kwargs):
+def sync_site_features_in_media_indexes(sender, instance, **kwargs):
     site = instance.site
     sync_all_media_site_content_in_indexes(site)
