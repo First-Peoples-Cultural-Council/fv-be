@@ -83,7 +83,7 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         actual_widget_ids = [
             str(x["id"]) for x in actual_instance.widgets.widgets.values("id")
         ]
-        expected_widget_ids = sorted(expected_data["widgets"])
+        expected_widget_ids = expected_data["widgets"]
 
         for id in expected_widget_ids:
             assert id in actual_widget_ids
