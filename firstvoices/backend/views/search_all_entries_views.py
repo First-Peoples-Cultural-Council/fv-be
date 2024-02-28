@@ -18,6 +18,7 @@ from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_site_feature,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -381,6 +382,35 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasSiteFeature",
+                description="Filter media documents base on site feature.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add hasSiteFeature filter.",
+                    ),
+                    OpenApiExample(
+                        "valid site feature key",
+                        value="EXAMPLE_KEY",
+                        description="Retrieves media documents from sites with the EXAMPLE_KEY feature enabled.",
+                    ),
+                    OpenApiExample(
+                        "multiple valid site feature keys",
+                        value="KEY, SHARED_MEDIA",
+                        description="Retrieves media docs from sites with KEY, SHARED_MEDIA or both features enabled.",
+                    ),
+                    OpenApiExample(
+                        "invalid site feature key",
+                        value="None",
+                        description="If invalid site feature key is passed, the API returns an empty set of results.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="sort",
                 description="Sort results by date created, date last modified or title. Results can be optionally "
                 'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
@@ -471,6 +501,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
         has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
 
+        has_site_feature = self.request.GET.get("hasSiteFeature", "")
+        has_site_feature = get_valid_site_feature(has_site_feature)
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -490,6 +523,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "has_image": has_image,
             "has_translation": has_translation,
             "has_unrecognized_chars": has_unrecognized_chars,
+            "has_site_feature": has_site_feature,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -555,6 +589,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
             has_unrecognized_chars=search_params["has_unrecognized_chars"],
+            has_site_feature=search_params["has_site_feature"],
             random_sort=search_params["sort"] == "random",
         )
 

@@ -18,6 +18,11 @@ class MediaDocumentManager(DocumentManager):
             document_type=type(instance).__name__,
             site_id=str(instance.site.id),
             site_visibility=instance.site.visibility,
+            site_features=list(
+                instance.site.sitefeature_set.filter(is_enabled=True).values_list(
+                    "key", flat=True
+                )
+            ),
             visibility=Visibility.PUBLIC,
             title=instance.title,
             filename=instance.original.content.name,

@@ -290,6 +290,39 @@ class TestHasMediaParams:
         assert expected_false_filter not in str(search_query)
 
 
+class TestHasSiteFeatureParams:
+    def test_default(self):
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or "site_features" not in str(search_query["query"]["bool"]["filter"])
+
+    @pytest.mark.parametrize(
+        "site_features",
+        [
+            [
+                "SHARED_MEDIA",
+            ],
+            ["TEST_FEATURE_1", "TEST_FEATURE_2"],
+            ["SHARED_MEDIA", "TEST_FEATURE_1", "TEST_FEATURE_2"],
+        ],
+    )
+    def test_has_site_features(self, site_features):
+        search_query = get_search_query(
+            has_site_feature=site_features, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
+        assert "site_features" in filtered_terms
+        assert len(filtered_terms["site_features"]) == len(site_features)
+
+        for value in site_features:
+            assert value in filtered_terms["site_features"]
+
+
 class TestHasTranslationParams:
     def test_default(self):
         search_query = get_search_query(user=AnonymousUser())

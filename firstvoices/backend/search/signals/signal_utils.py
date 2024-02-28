@@ -14,7 +14,7 @@ from backend.models import (
 )
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
-from backend.models.sites import LanguageFamily
+from backend.models.sites import LanguageFamily, SiteFeature
 from backend.search.signals import (
     change_site_visibility,
     remove_all_site_content,
@@ -32,6 +32,7 @@ from backend.search.signals import (
     sync_language_family_in_index,
     sync_language_in_index,
     sync_related_dictionary_entry_in_index,
+    sync_site_features_in_media_indexes,
     sync_site_in_language_index,
     sync_song_in_index,
     sync_song_lyrics_in_index,
@@ -59,6 +60,7 @@ signal_details = {
         (sync_audio_in_index, Audio),
         (sync_image_in_index, Image),
         (sync_video_in_index, Video),
+        (sync_site_features_in_media_indexes, SiteFeature),
     ],
     "pre_delete": [
         (remove_language_from_index, Language),
@@ -78,6 +80,7 @@ signal_details = {
         (remove_audio_from_index, Audio),
         (remove_image_from_index, Image),
         (remove_video_from_index, Video),
+        (sync_site_features_in_media_indexes, SiteFeature),
     ],
 }
 
