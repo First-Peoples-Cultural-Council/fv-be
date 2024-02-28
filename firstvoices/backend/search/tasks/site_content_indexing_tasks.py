@@ -40,3 +40,10 @@ def sync_all_site_content_in_indexes(site):
     sync_all(AudioDocumentManager, site.audio_set.all())
     sync_all(ImageDocumentManager, site.image_set.all())
     sync_all(VideoDocumentManager, site.video_set.all())
+
+
+@shared_task
+def sync_all_media_site_content_in_indexes(site):
+    sync_all(AudioDocumentManager, site.audio_set.all())
+    sync_all(ImageDocumentManager, site.image_set.all())
+    sync_all(VideoDocumentManager, site.video_set.all())
