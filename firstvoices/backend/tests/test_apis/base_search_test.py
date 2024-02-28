@@ -20,3 +20,10 @@ class SearchMocksMixin:
     @pytest.fixture
     def mock_search_query_execute(self, mocker):
         return mocker.patch.object(Search, "execute", new_callable=MagicMock)
+
+    def create_mock_request(self, user, query_dict):
+        mock_request = MagicMock()
+        mock_request.user = user
+        mock_request.GET = query_dict
+        mock_request.query_params = query_dict
+        return mock_request
