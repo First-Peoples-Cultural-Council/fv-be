@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.test.client import encode_multipart
 
 from backend.models.constants import Visibility
 from backend.models.media import Audio
@@ -19,6 +20,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     sample_filename = "sample-audio.mp3"
     sample_filetype = "audio/mpeg"
     model = Audio
+    content_type_json = "application/json"
 
     def create_minimal_instance(self, site, visibility):
         return factories.AudioFactory.create(site=site)
@@ -41,6 +43,14 @@ class TestAudioEndpoint(BaseMediaApiTest):
         return self.get_expected_audio_data(
             instance, speaker=None, detail_view=detail_view
         )
+
+    def format_upload_data(
+        self, data, content_type="multipart/form-data; boundary=TestBoundaryString"
+    ):
+        if content_type == self.content_type_json:
+            return json.dumps(data)
+        else:
+            return encode_multipart(self.boundary_string, data)
 
     @pytest.mark.django_db
     def test_detail_with_speakers(self):
@@ -176,10 +186,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     def assert_patch_file_updated_fields(self, data, updated_instance):
         assert data["original"].name in updated_instance.original.content.path
 
-    def get_valid_patch_speaker_data(self, site, emtpy_list=False):
-        if emtpy_list:
-            return {"speakers": []}
-
+    def get_valid_patch_speaker_data(self, site):
         person1 = factories.PersonFactory.create(site=site)
         person2 = factories.PersonFactory.create(site=site)
 
@@ -215,20 +222,47 @@ class TestAudioEndpoint(BaseMediaApiTest):
             },
         )
 
-    # Also checking for empty list to clear present speakers
-    @pytest.mark.parametrize("empty_list", [True, False])
+    # Only testing for updating the speakers list.
+    # Setting it to an empty list is tested below using content-type application/json
     @pytest.mark.django_db
-    def test_patch_speakers_success_200(self, empty_list):
+    def test_patch_speakers_success_200(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
-        data = self.get_valid_patch_speaker_data(site, empty_list)
+        data = self.get_valid_patch_speaker_data(site)
 
         response = self.client.patch(
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
             ),
-            data=self.format_upload_data(data),
+            data=self.format_upload_data(data, self.content_type),
             content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(instance.id)
+
+        self.assert_patch_speaker_original_fields(
+            instance, self.get_updated_patch_instance(instance)
+        )
+        self.assert_patch_speaker_updated_fields(
+            data, self.get_updated_patch_instance(instance)
+        )
+        self.assert_update_patch_speaker_response(instance, data, response_data)
+
+    # Setting speakers list to an empty array
+    @pytest.mark.django_db
+    def test_patch_speakers_success_200_empty(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_original_instance_for_patch(site=site)
+        data = {"speakers": []}
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data, self.content_type_json),
+            content_type=self.content_type_json,
         )
 
         assert response.status_code == 200
