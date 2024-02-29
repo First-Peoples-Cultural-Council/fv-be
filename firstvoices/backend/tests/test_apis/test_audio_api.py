@@ -277,6 +277,28 @@ class TestAudioEndpoint(BaseMediaApiTest):
         )
         self.assert_update_patch_speaker_response(instance, data, response_data)
 
+    # Setting speakers list to an empty array
+    @pytest.mark.django_db
+    def test_update_speakers_success_200_empty(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        # Setting speakers to an empty list
+        # removing file, since that is not json serializable
+        del data["original"]
+        data["speakers"] = []
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data, self.content_type_json),
+            content_type=self.content_type_json,
+        )
+        response_data = json.loads(response.content)
+        assert response_data["speakers"] == []
+
     def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
         if visibility == Visibility.TEAM:
             site = self.create_site_with_non_member(Visibility.PUBLIC)
