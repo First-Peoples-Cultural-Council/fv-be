@@ -6,6 +6,7 @@ from backend.search.indexing.song_index import SongDocumentManager
 from backend.search.tasks.index_manager_tasks import (
     request_remove_from_index,
     request_sync_in_index,
+    request_update_in_index,
 )
 
 
@@ -22,4 +23,4 @@ def remove_song_from_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=Lyric)
 @receiver(post_save, sender=Lyric)
 def sync_song_lyrics_in_index(sender, instance, **kwargs):
-    request_sync_in_index(SongDocumentManager, instance.song)
+    request_update_in_index(SongDocumentManager, instance.song)
