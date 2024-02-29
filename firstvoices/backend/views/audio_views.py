@@ -76,7 +76,7 @@ class AudioViewSet(
     parser_classes = [
         parsers.FormParser,
         parsers.MultiPartParser,
-        parsers.JSONParser,
+        parsers.JSONParser,  # To support setting the speaker's list to empty
     ]  # to support file uploads
 
     def get_queryset(self):
