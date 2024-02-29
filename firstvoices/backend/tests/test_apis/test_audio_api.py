@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from django.test.client import encode_multipart
 
 from backend.models.constants import Visibility
 from backend.models.media import Audio
@@ -43,14 +42,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
         return self.get_expected_audio_data(
             instance, speaker=None, detail_view=detail_view
         )
-
-    def format_upload_data(
-        self, data, content_type="multipart/form-data; boundary=TestBoundaryString"
-    ):
-        if content_type == self.content_type_json:
-            return json.dumps(data)
-        else:
-            return encode_multipart(self.boundary_string, data)
 
     @pytest.mark.django_db
     def test_detail_with_speakers(self):
@@ -234,7 +225,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
             ),
-            data=self.format_upload_data(data, self.content_type),
+            data=self.format_upload_data(data),
             content_type=self.content_type,
         )
 
@@ -261,7 +252,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
             ),
-            data=self.format_upload_data(data, self.content_type_json),
+            data=json.dumps(data),
             content_type=self.content_type_json,
         )
 
@@ -293,7 +284,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
             ),
-            data=self.format_upload_data(data, self.content_type_json),
+            data=json.dumps(data),
             content_type=self.content_type_json,
         )
         response_data = json.loads(response.content)

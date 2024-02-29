@@ -501,15 +501,23 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_update_success_200(self):
-        instance, expected_data, response_data = self.perform_success_request()
-        self.assert_update_response(expected_data, response_data, instance)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        response_data = self.perform_detail_request(instance, site, data)
+
+        self.assert_update_response(data, response_data, instance)
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
-        instance, expected_data, response_data = self.perform_success_request(
-            data_with_nulls=True
-        )
-        expected_data = self.add_expected_defaults(expected_data)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data_with_nulls(site)
+        expected_data = self.add_expected_defaults(data)
+
+        response_data = self.perform_detail_request(instance, site, data)
+
         self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
         self.assert_update_response(expected_data, response_data, instance)
 
