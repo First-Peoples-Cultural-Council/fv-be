@@ -75,6 +75,7 @@ class VideoViewSet(
     parser_classes = [
         parsers.FormParser,
         parsers.MultiPartParser,
+        parsers.JSONParser,  # used in audio views, but added here for consistency across media views
     ]  # to support file uploads
 
     def get_queryset(self):

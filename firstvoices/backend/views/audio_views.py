@@ -34,7 +34,9 @@ from .api_doc_variables import id_parameter, site_slug_parameter
         ],
     ),
     create=extend_schema(
-        description=_("Add an audio item."),
+        description=_(
+            "Add an audio item. The 'original' field would not work with the 'application/json' content-type."
+        ),
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201, response=AudioSerializer
@@ -74,6 +76,7 @@ class AudioViewSet(
     parser_classes = [
         parsers.FormParser,
         parsers.MultiPartParser,
+        parsers.JSONParser,  # To support setting the speaker's list to empty
     ]  # to support file uploads
 
     def get_queryset(self):

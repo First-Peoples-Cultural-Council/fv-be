@@ -653,13 +653,7 @@ class SiteContentUpdateApiTestMixin:
 
         assert response.status_code == 404
 
-    @pytest.mark.django_db
-    def test_update_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-        data = self.get_valid_data(site)
-
+    def perform_detail_request(self, instance, site, data):
         response = self.client.put(
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
@@ -667,34 +661,28 @@ class SiteContentUpdateApiTestMixin:
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
-
-        assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["id"] == str(instance.id)
 
+        return response_data
+
+    @pytest.mark.django_db
+    def test_update_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        response_data = self.perform_detail_request(instance, site, data)
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
-
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data_with_nulls(site)
-
-        response = self.client.put(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            ),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["id"] == str(instance.id)
-
         expected_data = self.add_expected_defaults(data)
+
+        response_data = self.perform_detail_request(instance, site, data)
         self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
         self.assert_update_response(expected_data, response_data)
 

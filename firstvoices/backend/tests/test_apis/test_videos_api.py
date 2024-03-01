@@ -2,10 +2,10 @@ import json
 
 import pytest
 
-from backend.models.media import Video, VideoFile
+from backend.models.constants import Visibility
+from backend.models.media import Video
 from backend.tests import factories
 
-from ...models.constants import Visibility
 from .base_media_test import BaseVisualMediaAPITest
 
 
@@ -51,35 +51,6 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
                 expected.pop(ignored_field)
 
         assert actual_response == expected
-
-    @pytest.mark.disable_thumbnail_mocks
-    @pytest.mark.django_db
-    def test_patch_old_file_deleted(self, disable_celery):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
-        instance = factories.VideoFactory.create(site=site)
-        instance = Video.objects.get(pk=instance.id)
-        data = self.get_valid_patch_file_data(site)
-
-        assert VideoFile.objects.count() == 1
-        old_original_file_id = instance.original.id
-
-        assert VideoFile.objects.filter(id=old_original_file_id).exists()
-
-        response = self.client.patch(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            ),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["id"] == str(instance.id)
-
-        # Check that old files have been deleted
-        assert VideoFile.objects.count() == 1
-        assert not VideoFile.objects.filter(id=old_original_file_id).exists()
 
     def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
         if visibility == Visibility.TEAM:

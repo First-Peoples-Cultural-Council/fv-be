@@ -104,6 +104,13 @@ class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
         file.save()
         return file
 
+    def get_fields(self, *args, **kwargs):
+        fields = super().get_fields(*args, **kwargs)
+        request = self.context.get("request", None)
+        if request and getattr(request, "method", None) in ["PUT", "PATCH"]:
+            fields["original"].read_only = True
+        return fields
+
     class Meta:
         fields = base_id_fields + (
             "description",
