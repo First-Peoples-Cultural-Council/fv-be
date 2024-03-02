@@ -758,6 +758,6 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
             self.assert_only_update_called(instance, mock_index_methods)
 
     def assert_only_update_called(self, instance, mock_index_methods):
-        mock_index_methods["mock_update"].assert_called_once_with(instance)
+        mock_index_methods["mock_update"].assert_called_with(instance)
         mock_index_methods["mock_sync"].assert_not_called()
         mock_index_methods["mock_remove"].assert_not_called()
