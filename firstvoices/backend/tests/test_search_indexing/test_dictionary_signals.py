@@ -49,11 +49,14 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
     def test_assign_category_main_instance_is_synced(self, mock_index_methods):
         with self.capture_on_commit_callbacks(execute=True):
             instance = self.factory.create()
-            mock_index_methods["mock_sync"].reset_mock()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
             self.assign_new_category(instance)
 
-        mock_index_methods["mock_sync"].assert_called_with(instance.id)
-        mock_index_methods["mock_remove"].assert_not_called()
+        self.assert_only_update_called(instance, mock_index_methods)
 
     @pytest.mark.django_db
     def test_remove_category_main_instance_is_synced(self, mock_index_methods):
@@ -62,12 +65,12 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
             category_link = self.assign_new_category(instance)
 
         mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
 
         with self.capture_on_commit_callbacks(execute=True):
             category_link.delete()
 
-        mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
-        mock_index_methods["mock_remove"].assert_not_called()
+        self.assert_only_update_called(instance, mock_index_methods)
 
     @pytest.mark.django_db
     def test_assign_category_m2m_main_instance_is_synced(self, mock_index_methods):
@@ -75,11 +78,12 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
             instance = self.factory.create()
 
         mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
 
         with self.capture_on_commit_callbacks(execute=True):
             self.assign_new_category_via_manager(instance)
 
-        mock_index_methods["mock_sync"].assert_called_with(instance.id)
+        mock_index_methods["mock_update"].assert_called_with(instance)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
@@ -89,11 +93,12 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
             category = self.assign_new_category_via_manager(instance)
 
         mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
 
         with self.capture_on_commit_callbacks(execute=True):
             instance.categories.remove(category)
 
-        mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
+        mock_index_methods["mock_update"].assert_called_with(instance)
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
@@ -103,9 +108,9 @@ class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
             category = self.assign_new_category_via_manager(instance)
 
         mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
 
         with self.capture_on_commit_callbacks(execute=True):
             category.delete()
 
-        mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
-        mock_index_methods["mock_remove"].assert_not_called()
+        self.assert_only_update_called(instance, mock_index_methods)

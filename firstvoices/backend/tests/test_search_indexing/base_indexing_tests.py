@@ -630,6 +630,7 @@ class BaseSignalTest(TransactionOnCommitMixin):
     def mock_index_methods(self, mocker):
         return {
             "mock_sync": mocker.patch.object(self.manager, "sync_in_index"),
+            "mock_update": mocker.patch.object(self.manager, "update_in_index"),
             "mock_remove": mocker.patch.object(self.manager, "remove_from_index"),
         }
 
@@ -707,21 +708,21 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
         mock_index_methods["mock_remove"].assert_called_with(instance_id)
 
     @pytest.mark.django_db
-    def test_new_related_instance_main_instance_is_synced(self, mock_index_methods):
+    def test_new_related_instance_main_instance_is_updated(self, mock_index_methods):
         for related_factory in self.related_factories:
             with self.capture_on_commit_callbacks(execute=True):
                 instance = self.factory.create()
 
             mock_index_methods["mock_sync"].reset_mock()
+            mock_index_methods["mock_update"].reset_mock()
 
             with self.capture_on_commit_callbacks(execute=True):
                 self.create_related_instance(related_factory, instance)
 
-            mock_index_methods["mock_sync"].assert_called_with(instance.id)
-            mock_index_methods["mock_remove"].assert_not_called()
+            self.assert_only_update_called(instance, mock_index_methods)
 
     @pytest.mark.django_db
-    def test_edited_related_instance_main_instance_is_synced(self, mock_index_methods):
+    def test_edited_related_instance_main_instance_is_updated(self, mock_index_methods):
         for related_factory in self.related_factories:
             with self.capture_on_commit_callbacks(execute=True):
                 instance = self.factory.create()
@@ -730,27 +731,33 @@ class BaseRelatedInstanceSignalTest(BaseSignalTest):
                 )
 
             mock_index_methods["mock_sync"].reset_mock()
+            mock_index_methods["mock_update"].reset_mock()
 
             with self.capture_on_commit_callbacks(execute=True):
                 self.edit_related_instance(related_instance)
 
-            mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
-            mock_index_methods["mock_remove"].assert_not_called()
+            self.assert_only_update_called(instance, mock_index_methods)
 
     @pytest.mark.django_db
-    def test_deleted_related_instance_main_instance_is_synced(self, mock_index_methods):
+    def test_deleted_related_instance_main_instance_is_updated(
+        self, mock_index_methods
+    ):
         for related_factory in self.related_factories:
             with self.capture_on_commit_callbacks(execute=True):
                 instance = self.factory.create()
-                instance_id = instance.id
                 related_instance = self.create_related_instance(
                     related_factory, instance
                 )
 
             mock_index_methods["mock_sync"].reset_mock()
+            mock_index_methods["mock_update"].reset_mock()
 
             with self.capture_on_commit_callbacks(execute=True):
                 related_instance.delete()
 
-            mock_index_methods["mock_sync"].assert_called_with(instance_id)
-            mock_index_methods["mock_remove"].assert_not_called()
+            self.assert_only_update_called(instance, mock_index_methods)
+
+    def assert_only_update_called(self, instance, mock_index_methods):
+        mock_index_methods["mock_update"].assert_called_with(instance)
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
