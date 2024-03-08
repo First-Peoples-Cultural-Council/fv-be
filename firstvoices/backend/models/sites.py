@@ -11,7 +11,13 @@ from backend.permissions.managers import PermissionsManager
 
 from . import Image
 from .base import BaseModel, BaseSiteContentModel
-from .constants import DEFAULT_TITLE_LENGTH, MAX_EMAIL_LENGTH, Role, Visibility
+from .constants import (
+    DEFAULT_TITLE_LENGTH,
+    EXTENDED_TITLE_LENGTH,
+    MAX_EMAIL_LENGTH,
+    Role,
+    Visibility,
+)
 from .media import Video
 from .utils import load_default_categories, load_default_widgets
 from .widget import SiteWidgetList
@@ -83,7 +89,7 @@ class Language(BaseModel):
 
     alternate_names = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
 
-    community_keywords = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
+    community_keywords = models.CharField(max_length=EXTENDED_TITLE_LENGTH, blank=True)
 
     language_family = models.ForeignKey(
         LanguageFamily, on_delete=models.PROTECT, related_name="languages"
