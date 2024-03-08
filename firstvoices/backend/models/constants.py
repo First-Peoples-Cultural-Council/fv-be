@@ -3,6 +3,7 @@ from django.utils.translation import gettext as _
 
 # Default length values
 DEFAULT_TITLE_LENGTH = 225
+EXTENDED_TITLE_LENGTH = 500
 MAX_CHARACTER_LENGTH = 10
 MAX_CHARACTER_APPROXIMATE_FORM_LENGTH = 20
 CATEGORY_POS_MAX_TITLE_LENGTH = 75  # Title length for parts of speech and categories
