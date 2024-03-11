@@ -219,7 +219,7 @@ AUTH_USER_MODEL = "jwt_auth.User"
 JWT = jwt.config()
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    "http(s)?://localhost:3000",
+    r"http(s)?:\/\/localhost:3000",
 ] + os.getenv(
     "ALLOWED_ORIGIN_REGEXES", ""
 ).split(",")
