@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -16,6 +17,7 @@ from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.hydration_utils import hydrate_objects
 from backend.search.utils.query_builder_utils import (
     get_valid_boolean,
+    get_valid_count,
     get_valid_document_types,
     get_valid_domain,
     get_valid_site_feature,
@@ -504,6 +506,12 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_site_feature = self.request.GET.get("hasSiteFeature", "")
         has_site_feature = get_valid_site_feature(has_site_feature)
 
+        min_words = self.request.GET.get("minWords", None)
+        min_words = get_valid_count(min_words, "minWords")
+
+        max_words = self.request.GET.get("maxWords", None)
+        max_words = get_valid_count(max_words, "maxWords")
+
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
@@ -524,6 +532,8 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "has_translation": has_translation,
             "has_unrecognized_chars": has_unrecognized_chars,
             "has_site_feature": has_site_feature,
+            "min_words": min_words,
+            "max_words": max_words,
             "sort": valid_sort,
             "descending": descending,
         }
@@ -572,6 +582,16 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         if search_params["visibility"] is None:
             return Response(data=[])
 
+        # max cannot be lesser than min num of words
+        if (
+            search_params["min_words"]
+            and search_params["max_words"]
+            and search_params["max_words"] < search_params["min_words"]
+        ):
+            raise ValidationError(
+                {"maxWords": ["maxWords cannot be lower than minWords."]}
+            )
+
         # Get search query
         search_query = get_search_query(
             user=search_params["user"],
@@ -590,6 +610,8 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             has_translation=search_params["has_translation"],
             has_unrecognized_chars=search_params["has_unrecognized_chars"],
             has_site_feature=search_params["has_site_feature"],
+            min_words=search_params["min_words"],
+            max_words=search_params["max_words"],
             random_sort=search_params["sort"] == "random",
         )
 

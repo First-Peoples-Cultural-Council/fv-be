@@ -15,6 +15,8 @@ from backend.search.utils.query_builder_utils import (
     get_has_video_query,
     get_indices,
     get_kids_query,
+    get_max_words_query,
+    get_min_words_query,
     get_site_filter_query,
     get_starts_with_query,
     get_types_query,
@@ -46,6 +48,8 @@ def get_search_query(
     has_translation=None,
     has_unrecognized_chars=None,
     has_site_feature=None,
+    min_words=None,
+    max_words=None,
     random_sort=False,
 ):
     # Building initial query
@@ -123,5 +127,11 @@ def get_search_query(
 
     if has_site_feature is not None:
         search_query = search_query.query(get_has_site_feature_query(has_site_feature))
+
+    if min_words is not None:
+        search_query = search_query.query(get_min_words_query(min_words))
+
+    if max_words is not None:
+        search_query = search_query.query(get_max_words_query(max_words))
 
     return search_query

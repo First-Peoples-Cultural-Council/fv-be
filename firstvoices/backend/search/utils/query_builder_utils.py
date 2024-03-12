@@ -6,7 +6,7 @@ from elasticsearch_dsl import Q
 from backend.models import Membership
 from backend.models.category import Category
 from backend.models.characters import Alphabet
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import DEFAULT_TITLE_LENGTH, AppRole, Role, Visibility
 from backend.permissions.utils import get_app_role
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
@@ -61,7 +61,9 @@ def get_cleaned_search_term(q):
     return clean_input(q)
 
 
-# sub-queries utils
+# SUB-QUERY GENERATORS
+
+
 def get_types_query(types):
     # Adding type filters using a negation list
     exclude_list = [
@@ -207,7 +209,17 @@ def get_has_site_feature_query(site_feature):
     return Q("bool", filter=Q("terms", site_features=site_feature))
 
 
-# Search params validation
+def get_min_words_query(min_words):
+    return Q("bool", filter=Q("range", title__token_count={"gte": min_words}))
+
+
+def get_max_words_query(max_words):
+    return Q("bool", filter=Q("range", title__token_count={"lte": max_words}))
+
+
+# SEARCH PARAMS VALIDATORS
+
+
 def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
     if not input_types:
         return allowed_values
@@ -327,3 +339,27 @@ def get_valid_site_feature(input_site_feature_str):
     if len(selected_values) == 0:
         return None
     return selected_values
+
+
+def get_valid_count(count, property_name):
+    exception_message = "Value must be a non-negative integer."
+    max_value = DEFAULT_TITLE_LENGTH
+
+    # If empty, return
+    if count is None:
+        return count
+
+    try:
+        count = int(count)
+    except ValueError:
+        # If anything is supplied other than a 0, raise Exception
+        raise ValidationError({property_name: [exception_message]})
+
+    if count < 0:
+        raise ValidationError({property_name: [exception_message]})
+
+    # If a number is supplied greater than the max value, consider max value
+    if count > max_value:
+        count = max_value
+
+    return count
