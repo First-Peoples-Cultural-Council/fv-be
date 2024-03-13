@@ -1,7 +1,9 @@
 from enum import Enum
 
-from django.core.exceptions import ValidationError
+from django.core import exceptions
+from django.utils.translation import gettext as _
 from elasticsearch_dsl import Q
+from rest_framework import serializers
 
 from backend.models import Membership
 from backend.models.category import Category
@@ -270,7 +272,7 @@ def get_valid_category_id(site, input_category):
             valid_category = site.category_set.filter(id=input_category)
             if len(valid_category):
                 return valid_category[0].id
-        except ValidationError:
+        except exceptions.ValidationError:
             return None
 
     return None
@@ -343,7 +345,7 @@ def get_valid_site_feature(input_site_feature_str):
 
 
 def get_valid_count(count, property_name):
-    exception_message = "Value must be a non-negative integer."
+    exception_message = _("Value must be a non-negative integer.")
     max_value = LENGTH_FILTER_MAX
 
     # If empty, return
@@ -354,10 +356,10 @@ def get_valid_count(count, property_name):
         count = int(count)
     except ValueError:
         # If anything is supplied other than a 0, raise Exception
-        raise ValidationError({property_name: [exception_message]})
+        raise serializers.ValidationError({property_name: [exception_message]})
 
     if count < 0:
-        raise ValidationError({property_name: [exception_message]})
+        raise serializers.ValidationError({property_name: [exception_message]})
 
     # If a number is supplied greater than the max value, consider max value
     if count > max_value:

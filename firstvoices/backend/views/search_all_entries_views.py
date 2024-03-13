@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -588,8 +588,8 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             and search_params["max_words"]
             and search_params["max_words"] < search_params["min_words"]
         ):
-            raise ValidationError(
-                {"maxWords": ["maxWords cannot be lower than minWords."]}
+            raise serializers.ValidationError(
+                {"maxWords": [_("maxWords cannot be lower than minWords.")]}
             )
 
         # Get search query

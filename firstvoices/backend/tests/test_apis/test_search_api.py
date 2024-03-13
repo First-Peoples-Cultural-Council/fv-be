@@ -2,7 +2,6 @@ import json
 from unittest.mock import patch
 
 import pytest
-from django.core.exceptions import ValidationError
 from elasticsearch.exceptions import ConnectionError
 from elasticsearch_dsl import Search
 
@@ -243,8 +242,11 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
     def test_words_length_filter_invalid_combination(self, mock_search_query_execute):
         # Testing out scenario where a invalid combination of max and min words is supplied,
         # i.e. where maxWords < minWords
-        with pytest.raises(ValidationError):
-            _ = self.client.get(self.get_list_endpoint() + "?minWords=5&maxWords=2")
+        response = self.client.get(self.get_list_endpoint() + "?minWords=5&maxWords=2")
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 400
+        assert response_data["maxWords"] == ["maxWords cannot be lower than minWords."]
 
 
 @pytest.mark.django_db

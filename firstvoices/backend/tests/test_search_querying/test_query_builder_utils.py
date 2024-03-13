@@ -1,5 +1,5 @@
 import pytest
-from django.core.exceptions import ValidationError
+from rest_framework.serializers import ValidationError
 
 from backend.models.constants import Visibility
 from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
@@ -129,6 +129,7 @@ class TestValidSort:
     def test_invalid_input(self):
         actual_sort, descending = get_valid_sort("bananas")
         assert actual_sort is None
+        assert descending is None
         assert descending is None
 
 
