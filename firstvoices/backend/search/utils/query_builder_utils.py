@@ -6,13 +6,14 @@ from elasticsearch_dsl import Q
 from backend.models import Membership
 from backend.models.category import Category
 from backend.models.characters import Alphabet
-from backend.models.constants import DEFAULT_TITLE_LENGTH, AppRole, Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.permissions.utils import get_app_role
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
+    LENGTH_FILTER_MAX,
     TYPE_AUDIO,
     TYPE_IMAGE,
     TYPE_PHRASE,
@@ -343,7 +344,7 @@ def get_valid_site_feature(input_site_feature_str):
 
 def get_valid_count(count, property_name):
     exception_message = "Value must be a non-negative integer."
-    max_value = DEFAULT_TITLE_LENGTH
+    max_value = LENGTH_FILTER_MAX
 
     # If empty, return
     if count is None:
