@@ -8,6 +8,7 @@ from backend.search.utils.validators import (
     get_valid_count,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_site_feature,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -146,3 +147,13 @@ class TestValidCount:
     def test_invalid_count(self, input_count):
         with pytest.raises(ValidationError):
             _ = get_valid_count(input_count, "random_property")
+
+
+class TestValidSiteFeatures:
+    @pytest.mark.parametrize(
+        "valid_input, expected_output",
+        [("VALID_KEY, SHARED_MEDIA", ["valid_key", "shared_media"]), ("", None)],
+    )
+    def test_valid_input(self, valid_input, expected_output):
+        valid_site_features = get_valid_site_feature(valid_input)
+        assert valid_site_features == expected_output
