@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import SearchIndexEntryTypes
+from backend.search.utils.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
 from backend.search.utils.hydration_utils import hydrate_objects
 from backend.search.utils.validators import (
     get_valid_boolean,
@@ -409,6 +409,54 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         "invalid site feature key",
                         value="None",
                         description="If invalid site feature key is passed, the API returns an empty set of results.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="minWords",
+                description="Filter dictionary entries on the minimum number of words in their title."
+                " Only non-negative integer values are allowed.",
+                required=False,
+                default="",
+                type=int,
+                examples=[
+                    OpenApiExample(
+                        "2",
+                        value="2",
+                        description="Only return dictionary entries which have at least 2 words in their title.",
+                    ),
+                    OpenApiExample(
+                        "-1",
+                        value="None",
+                        description="Invalid value.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
+                name="maxWords",
+                description="Filter dictionary entries on the maximum number of words in their title. "
+                "Only non-negative integer values are allowed. "
+                f"The maximum value is capped at {LENGTH_FILTER_MAX}. "
+                "The value in maxWords should always be greater than or equal to the minWords filter.",
+                required=False,
+                default="",
+                type=int,
+                examples=[
+                    OpenApiExample(
+                        "5",
+                        value="5",
+                        description="Only return dictionary entries which have at the most 5 words in their title.",
+                    ),
+                    OpenApiExample(
+                        "1000",
+                        value=str(LENGTH_FILTER_MAX),
+                        description="If any value greater than the max value is supplied, "
+                        "the maxWords filter scales back to the maximum value to filter.",
+                    ),
+                    OpenApiExample(
+                        "-1",
+                        value="None",
+                        description="Invalid value.",
                     ),
                 ],
             ),
