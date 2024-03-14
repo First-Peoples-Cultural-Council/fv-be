@@ -1,6 +1,8 @@
 from django.db.models import TextChoices
 from django.utils.translation import gettext as _
 
+from backend.models.constants import DEFAULT_TITLE_LENGTH
+
 # retry_on_conflict for all update calls
 RETRY_ON_CONFLICT = 10
 
@@ -61,6 +63,8 @@ ES_RETRY_POLICY = {
 }
 
 UNKNOWN_CHARACTER_FLAG = "⚑"
+
+LENGTH_FILTER_MAX = DEFAULT_TITLE_LENGTH
 
 
 class SearchIndexEntryTypes(TextChoices):

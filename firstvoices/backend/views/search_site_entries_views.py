@@ -1,6 +1,6 @@
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
-from backend.search.utils.query_builder_utils import (
+from backend.search.utils.validators import (
     get_valid_category_id,
     get_valid_starts_with_char,
 )

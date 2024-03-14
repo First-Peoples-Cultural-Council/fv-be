@@ -412,3 +412,52 @@ class TestRandomSortParams:
         assert "field" in search_query["functions"][0]["random_score"]
         assert search_query["functions"][0]["random_score"]["field"] == "_seq_no"
         assert 1000 <= search_query["functions"][0]["random_score"]["seed"] <= 9999
+
+
+class TestWordLengthParams:
+    def test_default(self):
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert (
+            "lte" not in search_query["query"]["bool"]
+            and "gte" not in search_query["query"]["bool"]
+        )
+
+    def test_min_words(self):
+        min_words = 2
+        expected_min_words_filter = (
+            "{'range': {'title.token_count': {'gte': " + str(min_words) + "}}}"
+        )
+        search_query = get_search_query(min_words=min_words, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_min_words_filter in str(search_query)
+
+    def test_max_words(self):
+        max_words = 5
+        expected_max_words_filter = (
+            "{'range': {'title.token_count': {'lte': " + str(max_words) + "}}}"
+        )
+        search_query = get_search_query(max_words=max_words, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_max_words_filter in str(search_query)
+
+    def test_combined_filter(self):
+        min_words = 2
+        max_words = 5
+        expected_min_words_filter = (
+            "{'range': {'title.token_count': {'gte': " + str(min_words) + "}}}"
+        )
+        expected_max_words_filter = (
+            "{'range': {'title.token_count': {'lte': " + str(max_words) + "}}}"
+        )
+
+        search_query = get_search_query(
+            min_words=min_words, max_words=max_words, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        assert expected_min_words_filter in str(search_query)
+        assert expected_max_words_filter in str(search_query)
