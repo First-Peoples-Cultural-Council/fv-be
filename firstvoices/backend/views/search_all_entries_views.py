@@ -425,11 +425,6 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value="2",
                         description="Only return dictionary entries which have at least 2 words in their title.",
                     ),
-                    OpenApiExample(
-                        "-1",
-                        value="None",
-                        description="Invalid value.",
-                    ),
                 ],
             ),
             OpenApiParameter(
@@ -452,11 +447,6 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value=str(LENGTH_FILTER_MAX),
                         description="If any value greater than the max value is supplied, "
                         "the maxWords filter scales back to the maximum value to filter.",
-                    ),
-                    OpenApiExample(
-                        "-1",
-                        value="None",
-                        description="Invalid value.",
                     ),
                 ],
             ),
