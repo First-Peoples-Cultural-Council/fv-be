@@ -3,7 +3,7 @@ from rest_framework.serializers import ValidationError
 
 from backend.models.constants import Visibility
 from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
-from backend.search.utils.query_builder_utils import (
+from backend.search.utils.validators import (
     get_valid_category_id,
     get_valid_count,
     get_valid_document_types,

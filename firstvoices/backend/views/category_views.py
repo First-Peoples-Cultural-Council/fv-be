@@ -14,7 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models.category import Category
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.search.utils.query_builder_utils import get_valid_boolean
+from backend.search.utils.validators import get_valid_boolean
 from backend.serializers.category_serializers import (
     CategoryDetailSerializer,
     ParentCategoryFlatListSerializer,

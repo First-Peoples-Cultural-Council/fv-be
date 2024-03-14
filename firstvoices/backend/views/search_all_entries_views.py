@@ -15,7 +15,7 @@ from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import SearchIndexEntryTypes
 from backend.search.utils.hydration_utils import hydrate_objects
-from backend.search.utils.query_builder_utils import (
+from backend.search.utils.validators import (
     get_valid_boolean,
     get_valid_count,
     get_valid_document_types,
