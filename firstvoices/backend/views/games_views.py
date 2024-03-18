@@ -14,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from backend.models import Character, DictionaryEntry
+from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.utils.character_utils import UNKNOWN_FLAG
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 
@@ -28,6 +30,63 @@ def get_wordsy_solution_seed(num_words):
     seconds_in_day = 86400
     index = math.floor((now - epoch) / seconds_in_day)
     return index % num_words
+
+
+def get_wordsy_possible_solutions(site):
+    """Get friendly words with custom length matching the number of game letters."""
+    words_qs = (
+        # filter words based on custom length; this also filters out unknown chars
+        DictionaryEntry.objects.annotate(
+            custom_char_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
+        )
+        # visible, kid-friendly, and games-friendly words only
+        .filter(
+            site=site,
+            visibility=site.visibility,
+            type=TypeOfDictionaryEntry.WORD,
+            exclude_from_games=False,
+            exclude_from_kids=False,
+            custom_char_length__exact=SOLUTION_LENGTH,
+        )
+        # words cannot contain spaces
+        .exclude(title__contains=" ")
+        .exclude(custom_order__contains=UNKNOWN_FLAG)
+        .order_by("custom_order")
+        .distinct("custom_order")
+        .values_list("split_chars_base", flat=True)
+    )
+    solutions = []
+    for split_chars in words_qs.iterator():
+        title_as_base_chars = "".join(split_chars)
+        solutions.append(title_as_base_chars)
+    return solutions
+
+
+def get_wordsy_possible_guesses(site):
+    """Get all words with custom length matching the number of game letters."""
+    # this can be amended later to get possible tokens in more complex ways.
+    # for now, match how solution words are found but with fewer restrictions.
+    entries_qs = (
+        DictionaryEntry.objects.annotate(
+            custom_char_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
+        )
+        .filter(
+            site=site,
+            visibility=site.visibility,
+            custom_char_length=SOLUTION_LENGTH,
+        )
+        .exclude(title__contains=" ")
+        .exclude(custom_order__contains=UNKNOWN_FLAG)
+        .order_by("custom_order")
+        .distinct("custom_order")
+        .values_list("split_chars_base", flat=True)
+    )
+    guesses = []
+    for split_chars in entries_qs.iterator():
+        title_as_base_chars = "".join(split_chars)
+        if title_as_base_chars not in guesses:
+            guesses.append(title_as_base_chars)
+    return guesses
 
 
 @extend_schema_view(
@@ -68,6 +127,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
         # Checking if required query sets are present in cache
         cache_key_orthography = f"{site.title}-orthography"
         cache_key_words = f"{site.title}-words"
+        cache_key_guesses = f"{site.title}-guesses"
 
         # orthography
         orthography_qs = caches[CACHE_KEY_WORDSY].get(cache_key_orthography)
@@ -81,33 +141,23 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
                 cache_key_orthography, orthography_qs, cache_expiry
             )
 
-        # words
+        # friendly words
         words = caches[CACHE_KEY_WORDSY].get(cache_key_words)
         if words is None:
-            # Filtering words based on their length excluding spaces
-            words_qs = (
-                DictionaryEntry.objects.annotate(
-                    chars_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
-                )
-                .filter(
-                    site=site,
-                    visibility=site.visibility,
-                    exclude_from_games=False,
-                    exclude_from_kids=False,
-                    chars_length__exact=SOLUTION_LENGTH,
-                )
-                .exclude(title__contains=" ")
-                .order_by("title", "custom_order")
-                .distinct("title")
-                .values_list("split_chars_base", flat=True)
-            )
-            words = []
-            for split_chars in words_qs.iterator():
-                title_from_base_chars = "".join(split_chars)
-                if title_from_base_chars not in words:
-                    words.append(title_from_base_chars)
+            words = get_wordsy_possible_solutions(site=site)
             caches[CACHE_KEY_WORDSY].set(cache_key_words, words, cache_expiry)
 
+        # possible guesses
+        guesses = caches[CACHE_KEY_WORDSY].get(cache_key_guesses)
+        if guesses is None:
+            # don't bother searching for guesses if there are no friendly words
+            if len(words):
+                guesses = get_wordsy_possible_guesses(site=site)
+                caches[CACHE_KEY_WORDSY].set(cache_key_words, words, cache_expiry)
+            else:
+                guesses = words
+
+        # today's solution
         if len(words):
             seed = get_wordsy_solution_seed(len(words))
             solution = words[seed]
@@ -118,7 +168,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
             data={
                 "orthography": orthography_qs,
                 "words": words,
-                "valid_guesses": words,  # to be expanded later with phrases that satisfy criteria
+                "valid_guesses": guesses,
                 "solution": solution,
             }
         )
