@@ -135,13 +135,18 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     def test_mixed_words(self):
+        CharacterFactory.create(site=self.site, title="aa", sort_order=4)
+
         # test to verify only valid words show up
         invalid_words_list = ["ab Ab", "abC ab", "abCabc", "Xyzav"]
-        valid_words_list = ["ABabA", "BcbCa", "aBcAb", "caBcA"]
-        expected_words = ["ababa", "abcab", "bcbca", "cabca"]  # base character form
+        possible_guesses_list = ["aaaaa", "baaba"]
+        valid_words_list = ["ABabA", "BcbCa", "aBcAb", "caBcA", "aaaaaaaaaa"]
+        # base character form
+        expected_words = ["ababa", "abcab", "bcbca", "cabca", "aaaaaaaaaa"]
+        expected_guesses = expected_words + possible_guesses_list
 
         # adding multiple dictionary entries
-        for title in invalid_words_list + valid_words_list:
+        for title in invalid_words_list + valid_words_list + possible_guesses_list:
             DictionaryEntryFactory(
                 site=self.site, visibility=Visibility.PUBLIC, title=title
             )
@@ -155,7 +160,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         actual_valid_guesses = response_data["validGuesses"]
 
         assert equate_list_content_without_order(actual_words, expected_words)
-        assert equate_list_content_without_order(actual_valid_guesses, expected_words)
+        assert equate_list_content_without_order(actual_valid_guesses, expected_guesses)
         assert response_data["solution"] in expected_words
 
     @pytest.mark.django_db
@@ -179,8 +184,10 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
         actual_words = response_data["words"]
+        actual_valid_guesses = response_data["validGuesses"]
 
         assert equate_list_content_without_order(actual_words, expected_words)
+        assert equate_list_content_without_order(actual_valid_guesses, expected_words)
 
     @pytest.mark.django_db
     def test_cache_used_word_deleted(self):
@@ -196,6 +203,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
         assert response_data["words"] == valid_words_list
+        assert response_data["validGuesses"] == valid_words_list
 
         # Deleting one entry
         dictionary_entry_2.delete()
@@ -204,6 +212,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response_new = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data_new = json.loads(response_new.content)
         assert "bbbbb" in response_data_new["words"]
+        assert "bbbbb" in response_data_new["validGuesses"]
 
     @pytest.mark.django_db
     def test_cache_expiry_generates_new_config(self):
@@ -219,6 +228,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
         assert response_data["words"] == valid_words_list
+        assert response_data["validGuesses"] == valid_words_list
         assert response_data["solution"] in valid_words_list
 
         new_entry = DictionaryEntryFactory(
@@ -233,6 +243,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response_new = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data_new = json.loads(response_new.content)
         assert new_entry.title in response_data_new["words"]
+        assert new_entry.title in response_data_new["validGuesses"]
 
     @pytest.mark.django_db
     def test_cache_expiry_visibility_changed(self):
@@ -248,6 +259,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
         assert response_data["words"] == valid_words_list
+        assert response_data["validGuesses"] == valid_words_list
 
         # Updating visibility of one entry
         dictionary_entry_2.visibility = Visibility.TEAM
@@ -260,6 +272,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response_new = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data_new = json.loads(response_new.content)
         assert "bbbbb" not in response_data_new["words"]
+        assert "bbbbb" not in response_data_new["validGuesses"]
 
     @pytest.mark.django_db
     def test_cache_expiry_word_deleted(self):
@@ -275,6 +288,7 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data = json.loads(response.content)
         assert response_data["words"] == valid_words_list
+        assert response_data["validGuesses"] == valid_words_list
 
         # Updating visibility of one entry
         dictionary_entry_2.delete()
@@ -286,3 +300,4 @@ class TestWordsyEndpoint(BaseSiteContentApiTest):
         response_new = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
         response_data_new = json.loads(response_new.content)
         assert "bbbbb" not in response_data_new["words"]
+        assert "bbbbb" not in response_data_new["validGuesses"]

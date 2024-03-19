@@ -1,4 +1,5 @@
 import math
+import re
 
 from django.core.cache import caches
 from django.db.models.expressions import RawSQL
@@ -13,7 +14,7 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from backend.models import Character, DictionaryEntry
+from backend.models import Alphabet, Character, DictionaryEntry
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.utils.character_utils import UNKNOWN_FLAG
 from backend.views.api_doc_variables import site_slug_parameter
@@ -32,7 +33,7 @@ def get_wordsy_solution_seed(num_words):
     return index % num_words
 
 
-def get_wordsy_possible_solutions(site):
+def get_wordsy_possible_solutions(site) -> list:
     """Get friendly words with custom length matching the number of game letters."""
     words_qs = (
         # filter words based on custom length; this also filters out unknown chars
@@ -62,30 +63,34 @@ def get_wordsy_possible_solutions(site):
     return solutions
 
 
-def get_wordsy_possible_guesses(site):
-    """Get all words with custom length matching the number of game letters."""
+def get_wordsy_possible_guesses(site) -> list:
+    """Get entries that can be spelled with the matching number of game letters."""
     # this can be amended later to get possible tokens in more complex ways.
-    # for now, match how solution words are found but with fewer restrictions.
-    entries_qs = (
-        DictionaryEntry.objects.annotate(
-            custom_char_length=RawSQL("ARRAY_LENGTH(split_chars_base, 1)", ())
-        )
-        .filter(
+    site_alphabet = Alphabet.objects.get(site=site)
+    base_chars = [char.title for char in site_alphabet.base_characters]
+    variant_chars = [char.title for char in site_alphabet.variant_characters]
+    all_chars = base_chars + variant_chars
+
+    if not all_chars:
+        return []
+
+    character_matcher = "(" + "|".join(re.escape(char) for char in all_chars) + ")"
+    word_matcher = r"^" + (character_matcher * SOLUTION_LENGTH) + r"$"
+
+    titles = (
+        DictionaryEntry.objects.filter(
+            title__regex=word_matcher,
             site=site,
             visibility=site.visibility,
-            custom_char_length=SOLUTION_LENGTH,
         )
-        .exclude(title__contains=" ")
-        .exclude(custom_order__contains=UNKNOWN_FLAG)
-        .order_by("custom_order")
-        .distinct("custom_order")
-        .values_list("split_chars_base", flat=True)
+        .distinct("title")
+        .values_list("title", flat=True)
     )
     guesses = []
-    for split_chars in entries_qs.iterator():
-        title_as_base_chars = "".join(split_chars)
-        if title_as_base_chars not in guesses:
-            guesses.append(title_as_base_chars)
+    for matching_title in titles.iterator():
+        base_form = site_alphabet.get_base_form(matching_title)
+        if re.fullmatch(word_matcher, base_form) and base_form not in guesses:
+            guesses.append(base_form)
     return guesses
 
 
@@ -153,9 +158,9 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
             # don't bother searching for guesses if there are no friendly words
             if len(words):
                 guesses = get_wordsy_possible_guesses(site=site)
-                caches[CACHE_KEY_WORDSY].set(cache_key_words, words, cache_expiry)
             else:
                 guesses = words
+            caches[CACHE_KEY_WORDSY].set(cache_key_guesses, guesses, cache_expiry)
 
         # today's solution
         if len(words):
