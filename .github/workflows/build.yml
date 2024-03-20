@@ -91,8 +91,8 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
 
-  build:
-    name: Build and Transfer Image
+  build_fe-be:
+    name: Build and Transfer Image FE-BE
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -106,20 +106,43 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-
       - name: Build, tag, and transfer image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          FE_BE_REPOSITORY: ${{ vars.FE_BE_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --cache=true --reproducible=true --target=django-runtime .
+          docker push $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG
+  
+  build_fe-be-static:
+    name: Build and Transfer Image FE-BE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ca-central-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and transfer image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          FE_BE_STATIC_REPOSITORY: ${{ vars.FE_BE_STATIC_REPOSITORY }}
+          IMAGE_TAG: test
+        run: |
+          docker build -t $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG --cache=true --reproducible=true --target=static-runtime .
+          docker push $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG
   
   django_migrations:
     name: Perfrom Migrations
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build_fe-be, build_fe-be-static]
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -131,5 +154,42 @@ jobs:
         run: |
           aws eks update-kubeconfig --name firstvoices-eks --region ca-central-1
           kubectl get namespaces
+#         python manage.py migrate
+
+  helm_deploy:
+    name: Deploy fv-be
+    runs-on: ubuntu-latest
+    needs: django_migrations
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ca-central-1
+      - name: Install and configure kubectl
+        run: |
+          aws eks update-kubeconfig --name firstvoices-eks --region ca-central-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: helm upgrade
+        env:
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          FE_BE_REPOSITORY: ${{ vars.FE_BE_REPOSITORY }}
+          HELM_REPOSITORY: ${{ vars.HELM_REPOSITORY }}
+          FE_BE_STATIC_REPOSITORY: ${{ vars.FE_BE_STATIC_REPOSITORY }}
+          IMAGE_TAG: test
+          NAMESPACE: 2023-03-fv-be-dev
+          HELM_RELEASE: chart-1679990715
+          HELM_VERSION: 0.3.17
+        run: |
+#          aws ecr --region ca-central-1 get-login-password | helm registry login --username AWS --password-stdin $ECR_REGISTRY
+#          helm -n $NAMESPACE upgrade $HELM_RELEASE oci://$ECR_REGISTRY/$HELM_REPOSITORY --version $HELM_VERSION --reuse-values --set fvbe.image=$ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --set static.image=$ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG
+      - name: Post deploy Django restart
+        env:
+          NAMESPACE: 2023-03-fv-be-dev
+        run: |
+#            kubectl -n  $NAMESPACE rollout restart deployment/django
 
 
