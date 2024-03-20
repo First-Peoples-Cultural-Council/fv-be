@@ -140,7 +140,7 @@ jobs:
           docker push $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG
   
   django_migrations:
-    name: Perfrom Migrations
+    name: Perfom Migrations
     runs-on: ubuntu-latest
     needs: [build_FV-BE, build_FV-BE-static]
     steps:
@@ -158,8 +158,7 @@ jobs:
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
           kubectl get namespaces
-          kubectl -n $NAMESPACE -it deployment/django -c django -- sh
-          python manage.py migrate
+          kubectl -n $NAMESPACE exec deployment/django -c django -- sh -c "python manage.py migrate"
           sleep 40
 
   helm_deploy:
