@@ -10,7 +10,6 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ "3.11.4" ]
@@ -59,7 +58,6 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     needs: pytest
-    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ "3.11.4" ]
@@ -91,9 +89,10 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
 
-  build_fe-be:
-    name: Build and Transfer Image FE-BE
+  build_FV-BE:
+    name: FV-BE Build and Transfer Image
     runs-on: ubuntu-latest
+    needs: sonarcloud
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -109,15 +108,16 @@ jobs:
       - name: Build, tag, and transfer image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-          FE_BE_REPOSITORY: ${{ vars.FE_BE_REPOSITORY }}
+          FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
-          docker push $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
+          docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG
   
-  build_fe-be-static:
-    name: Build and Transfer Image FE-BE
+  build_FV-BE-static:
+    name: FV-BE-Static Build and Transfer Image
     runs-on: ubuntu-latest
+    needs: sonarcloud
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -133,16 +133,16 @@ jobs:
       - name: Build, tag, and transfer image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-          FE_BE_STATIC_REPOSITORY: ${{ vars.FE_BE_STATIC_REPOSITORY }}
+          FV_BE_STATIC_REPOSITORY: ${{ vars.FV_BE_STATIC_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
-          docker push $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
+          docker push $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG
   
   django_migrations:
     name: Perfrom Migrations
     runs-on: ubuntu-latest
-    needs: [build_fe-be, build_fe-be-static]
+    needs: [build_FV-BE, build_FV-BE-static]
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -150,15 +150,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
+        env:
+          NAMESPACE: 2023-03-fv-be-dev
+          REGION: ca-central-1
+          CLUSTER_NAME: firstvoices-eks
       - name: Install and configure kubectl
         run: |
-          aws eks update-kubeconfig --name firstvoices-eks --region ca-central-1
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
           kubectl get namespaces
-#         python manage.py migrate
+          kubectl -n $NAMESPACE -it deployment/django -c django -- sh
+          python manage.py migrate
+          sleep 40
 
   helm_deploy:
-    name: Deploy fv-be
+    name: Deploy FV-BE
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: django_migrations
     steps:
       - name: Configure AWS credentials
@@ -168,28 +175,39 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
       - name: Install and configure kubectl
+        env:
+          NAMESPACE: 2023-03-fv-be-dev
+          REGION: ca-central-1
+          CLUSTER_NAME: firstvoices-eks
         run: |
-          aws eks update-kubeconfig --name firstvoices-eks --region ca-central-1
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
       - name: helm upgrade
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-          FE_BE_REPOSITORY: ${{ vars.FE_BE_REPOSITORY }}
+          FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           HELM_REPOSITORY: ${{ vars.HELM_REPOSITORY }}
-          FE_BE_STATIC_REPOSITORY: ${{ vars.FE_BE_STATIC_REPOSITORY }}
+          FV_BE_STATIC_REPOSITORY: ${{ vars.FV_BE_STATIC_REPOSITORY }}
           IMAGE_TAG: test
           NAMESPACE: 2023-03-fv-be-dev
           HELM_RELEASE: chart-1679990715
           HELM_VERSION: 0.3.17
+          REGION: ca-central-1
         run: |
-#          aws ecr --region ca-central-1 get-login-password | helm registry login --username AWS --password-stdin $ECR_REGISTRY
-#          helm -n $NAMESPACE upgrade $HELM_RELEASE oci://$ECR_REGISTRY/$HELM_REPOSITORY --version $HELM_VERSION --reuse-values --set fvbe.image=$ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --set static.image=$ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG
+          aws ecr --region $REGION get-login-password | helm registry login --username AWS --password-stdin $ECR_REGISTRY
+          helm -n $NAMESPACE upgrade $HELM_RELEASE oci://$ECR_REGISTRY/$HELM_REPOSITORY --version $HELM_VERSION --reuse-values --set fvbe.image=$ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --set static.image=$ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG
+          sleep 40
       - name: Post deploy Django restart
         env:
           NAMESPACE: 2023-03-fv-be-dev
-        run: |
-#            kubectl -n  $NAMESPACE rollout restart deployment/django
+        run: | 
+          #!/bin/bash
+          kubectl -n  $NAMESPACE rollout restart deployment/django --watch &
+          PID=$! 
+          echo $PID
+#          sleep 30
+#          kill $PID
 
 
