@@ -154,11 +154,11 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
+      - name: Setup kubectl & migrate
         env:
           NAMESPACE: 2023-03-fv-be-dev
           REGION: ca-central-1
           CLUSTER_NAME: firstvoices-eks
-      - name: Install and configure kubectl
         run: |
           echo $CLUSTER_NAME
           echo $REGION
@@ -179,13 +179,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
-      - name: Install and configure kubectl
+      - name: Setup kubectl
         env:
           NAMESPACE: 2023-03-fv-be-dev
           REGION: ca-central-1
           CLUSTER_NAME: firstvoices-eks
         run: |
-          aws eks update-kubeconfig --name $CLUSTER_NAME
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
