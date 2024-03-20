@@ -112,7 +112,7 @@ jobs:
           FE_BE_REPOSITORY: ${{ vars.FE_BE_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --reproducible=true --target=django-runtime .
+          docker build -t $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
           docker push $ECR_REGISTRY/$FE_BE_REPOSITORY:$IMAGE_TAG
   
   build_fe-be-static:
@@ -136,7 +136,7 @@ jobs:
           FE_BE_STATIC_REPOSITORY: ${{ vars.FE_BE_STATIC_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG --reproducible=true --target=static-runtime .
+          docker build -t $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
           docker push $ECR_REGISTRY/$FE_BE_STATIC_REPOSITORY:$IMAGE_TAG
   
   django_migrations:
