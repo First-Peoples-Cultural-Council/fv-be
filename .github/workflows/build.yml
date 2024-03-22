@@ -113,7 +113,7 @@ jobs:
           FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG .
+          docker buildx build --platform linux/amd64,linux/arm64 -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
           docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG
   
   build_FV-BE-static:
@@ -138,7 +138,7 @@ jobs:
           FV_BE_STATIC_REPOSITORY: ${{ vars.FV_BE_STATIC_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
+          docker buildx build --platform linux/amd64,linux/arm64 -t $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
           docker push $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG
   
   django_migrations:
