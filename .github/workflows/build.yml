@@ -114,7 +114,7 @@ jobs:
           FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           IMAGE_TAG: test
         with:
-          images: $ECR_REGISTRY/$FV_BE_REPOSITORY
+          images: ${{ vars.ECR_REGISTRY }}/${{ vars.FV_BE_REPOSITORY }}
           tags: type=ref,event=branch
       - uses: int128/kaniko-action@v1
         with:
