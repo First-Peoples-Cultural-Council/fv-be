@@ -107,14 +107,26 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      - name: Build, tag, and transfer image to Amazon ECR
+      - uses: docker/metadata-action@v5
+        id: metadata
         env:
           ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
           FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           IMAGE_TAG: test
-        run: |
-          docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
-          docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG
+        with:
+          images: $ECR_REGISTRY/$FV_BE_REPOSITORY
+          tags: type=ref,event=branch
+      - uses: int128/kaniko-action@v1
+        with:
+          push: true
+          tags: type=ref,event=branch
+          cache: true
+          target: django-runtime
+          cache-repository: $ECR_REGISTRY/$FV_BE_REPOSITORY/cache
+      # - name: Build, tag, and transfer image to Amazon ECR
+      #   run: |
+      #     docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
+      #     docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG
   
   build_FV-BE-static:
     name: FV-BE-Static Build and Transfer Image
