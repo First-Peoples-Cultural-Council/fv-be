@@ -121,7 +121,7 @@ jobs:
           push: true
           cache: true
           target: django-runtime
-          cache-repository: $ECR_REGISTRY/$FV_BE_REPOSITORY/cache
+          cache-repository: ${{ vars.ECR_REGISTRY }}/${{ vars.FV_BE_REPOSITORY }}/cache
           tags: ${{ steps.metadata.outputs.tags }}
       # - name: Build, tag, and transfer image to Amazon ECR
       #   run: |
