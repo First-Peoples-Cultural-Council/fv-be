@@ -119,7 +119,7 @@ jobs:
       - uses: int128/kaniko-action@v1
         with:
           push: true
-          tags: ${{github.ref}}
+          tags: rohit-drop-tekton
           cache: true
           target: django-runtime
           cache-repository: $ECR_REGISTRY/$FV_BE_REPOSITORY/cache
