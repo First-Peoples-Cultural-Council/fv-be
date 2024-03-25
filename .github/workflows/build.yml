@@ -122,6 +122,7 @@ jobs:
           cache: true
           target: django-runtime
           cache-repository: $ECR_REGISTRY/$FV_BE_REPOSITORY/cache
+          tags: ${{ steps.metadata.outputs.tags }}
       # - name: Build, tag, and transfer image to Amazon ECR
       #   run: |
       #     docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
