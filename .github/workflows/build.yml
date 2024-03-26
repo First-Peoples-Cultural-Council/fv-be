@@ -113,8 +113,8 @@ jobs:
           FV_BE_REPOSITORY: ${{ vars.FV_BE_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --target=django-runtime .
-          docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/$FV_BE_REPOSITORY:build-$IMAGE_TAG --target=django-runtime .
+          docker push $ECR_REGISTRY/$FV_BE_REPOSITORY:build-$IMAGE_TAG
   
   
   build_FV-BE-static:
@@ -139,8 +139,8 @@ jobs:
           FV_BE_STATIC_REPOSITORY: ${{ vars.FV_BE_STATIC_REPOSITORY }}
           IMAGE_TAG: test
         run: |
-          docker build -t $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG --target=static-runtime .
-          docker push $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:build-$IMAGE_TAG --target=static-runtime .
+          docker push $ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:build-$IMAGE_TAG
   
   django_migrations:
     name: Perform Migrations
@@ -199,17 +199,7 @@ jobs:
           REGION: ca-central-1
         run: |
           aws ecr --region $REGION get-login-password | helm registry login --username AWS --password-stdin $ECR_REGISTRY
-          helm -n $NAMESPACE upgrade $HELM_RELEASE oci://$ECR_REGISTRY/$HELM_REPOSITORY --version $HELM_VERSION --reuse-values --set fvbe.image=$ECR_REGISTRY/$FV_BE_REPOSITORY:$IMAGE_TAG --set static.image=$ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:$IMAGE_TAG  --set fvbe.buildString=$IMAGE_TAG
+          helm -n $NAMESPACE upgrade $HELM_RELEASE oci://$ECR_REGISTRY/$HELM_REPOSITORY --version $HELM_VERSION --reuse-values --set fvbe.image=$ECR_REGISTRY/$FV_BE_REPOSITORY:build-$IMAGE_TAG --set static.image=$ECR_REGISTRY/$FV_BE_STATIC_REPOSITORY:build-$IMAGE_TAG  --set fvbe.buildString=$IMAGE_TAG
           sleep 40
-      # - name: Post deploy Django restart
-      #   env:
-      #     NAMESPACE: 2023-03-fv-be-dev
-      #   run: | 
-      #     #!/bin/bash
-      #     kubectl -n  $NAMESPACE rollout restart deployment/django --watch &
-      #     PID=$! 
-      #     echo $PID
-#          sleep 30
-#          kill $PID
 
 
