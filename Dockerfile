@@ -1,7 +1,7 @@
 ARG python_image=python:3.11.4-alpine
 ARG caddy_image=caddy:2.6.4-alpine
 
-FROM --platform=linux/arm64 python:3.11.4-alpine AS django-common
+FROM --platform=linux/amd64 python:3.11.4-alpine AS django-common
 ENV DEBUG_DISABLE=True
 
 WORKDIR /app
