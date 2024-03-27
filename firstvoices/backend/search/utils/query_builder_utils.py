@@ -20,7 +20,7 @@ from backend.search.utils.constants import (
     TYPE_VIDEO,
     TYPE_WORD,
 )
-from backend.utils.character_utils import clean_input
+from backend.utils.character_utils import UNKNOWN_FLAG, clean_input
 
 
 class SearchDomains(Enum):
@@ -137,7 +137,7 @@ def get_view_permissions_filter(user):
 
 
 def get_starts_with_query(site_id, starts_with_char):
-    unknown_character_flag = "⚑"
+    unknown_character_flag = UNKNOWN_FLAG
 
     # Check if a custom_order_character is present, if present, look up in the custom_order field
     # if not, look in the title field
