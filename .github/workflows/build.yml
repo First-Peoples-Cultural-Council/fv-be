@@ -99,13 +99,12 @@ jobs:
     steps: 
       - name: Use curl to ping webhook
         run: | 
-          curl -X POST --header "Accept: */*" --header "X-GitHub-Event: push" -d '{ "name": "Darth" }' -n "https://webhook-fv-be.eks.firstvoices.io/"
-          echo "$GITHUB_CONTEXT"
+          curl -X POST --header "Accept: */*" --header "X-GitHub-Event: push" -d '$GITHUB_CONTEXT' -n "https://webhook-fv-be.eks.firstvoices.io/"
 
   check_tekton_run:
     name: Check Tekton Run
     runs-on: ubuntu-latest
-    needs: sonarcloud
+    needs: webhook
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
