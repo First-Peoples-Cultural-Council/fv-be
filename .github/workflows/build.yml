@@ -99,7 +99,7 @@ jobs:
     steps: 
       - name: Use curl to ping webhook
         run: | 
-          curl -X POST --header "Accept: */*" --header "X-GitHub-Event: push" -d '${{ toJson(github) }}' -n "https://xx2-webhook-fv-be.eks.firstvoices.io/"
+          curl -X POST --header "Accept: */*" --header "X-GitHub-Event: custom-push" -d '${{ toJson(github) }}' -n "https://webhook-fv-be.eks.firstvoices.io/"
 
   check_tekton_run:
     name: Check Tekton Run
