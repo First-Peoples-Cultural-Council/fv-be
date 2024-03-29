@@ -102,7 +102,7 @@ jobs:
         with:
           webhook_url: https://webhook-fv-be.eks.firstvoices.io
           webhook_secret: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
-          data: toJson({"body":{"head_commit":{"id":"${{  github.sha  }}"},"repository":{"full_name":"${{  github.action_repository  }}"},"ref":"${{  github.action_ref  }}"},"extentions":{"tag-name":"${{  github.ref  }}"},"event":"${{  github.event_name  }}"})
+          data: toJson("{"body":{"head_commit":{"id":"${{  github.sha  }}"},"repository":{"full_name":"${{  github.action_repository  }}"},"ref":"${{  github.action_ref  }}"},"extentions":{"tag-name":"${{  github.ref  }}"},"event":"${{  github.event_name  }}"}")
 
   check_tekton_run:
     name: Check Tekton Run
