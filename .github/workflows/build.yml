@@ -102,11 +102,7 @@ jobs:
         with:
           webhook_url: https://webhook-fv-be.eks.firstvoices.io
           webhook_secret: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
-          webhook_type: 'form-urlencoded'
-          data: ${{  github.event  }}
-      # - name: Use curl to ping webhook
-      #   run: | 
-      #     curl --request POST --header "Content-Type: application/json" --header "X-GitHub-Event: custom-push" --data '${{ toJson(github.Event) }}' "https://webhook-fv-be.eks.firstvoices.io/"
+          data: toJson({"body":{"head_commit":{"id":"${{  github.sha  }}"},"repository":{"full_name":"${{  github.action_repository  }}"},"ref":"${{  github.action_ref  }}"},"extentions":{"tag-name":"${{  github.ref  }}"},"event":"${{  github.event_name  }}"})
 
   check_tekton_run:
     name: Check Tekton Run
