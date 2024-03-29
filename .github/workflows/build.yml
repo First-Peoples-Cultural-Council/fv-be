@@ -102,7 +102,6 @@ jobs:
         with:
           webhook_url: https://webhook-fv-be.eks.firstvoices.io
           webhook_secret: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
-          data: ${{  toJson(github.event)  }}
           verify_ssl: true
           verbose: true
       # - name: Use curl to ping webhook
