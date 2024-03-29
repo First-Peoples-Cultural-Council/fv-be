@@ -91,7 +91,7 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
   
-  webhook: 
+  webhook-testing: 
     name: Ping tekton webhook
     runs-on: ubuntu-latest 
     env:
@@ -102,11 +102,12 @@ jobs:
         with:
           webhook_url: https://webhook-fv-be.eks.firstvoices.io
           webhook_secret: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
-          
+          data : ${{ toJson(github) }}
+
   check_tekton_run:
     name: Check Tekton Run
     runs-on: ubuntu-latest
-    needs: webhook
+    needs: webhook-testing
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -121,4 +122,4 @@ jobs:
           CLUSTER_NAME: firstvoices-eks
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
-          kubectl get namespaces
+          kubectl logs deployment.apps/el-fv-be-listener -n tekton-fv-builder
