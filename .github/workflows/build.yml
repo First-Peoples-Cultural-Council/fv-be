@@ -123,4 +123,3 @@ jobs:
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
           kubectl logs deployment.apps/el-fv-be-listener -n tekton-fv-builder
-        
