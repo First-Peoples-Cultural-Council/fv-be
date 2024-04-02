@@ -111,4 +111,5 @@ jobs:
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
           echo "RUNID=kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1" >> $GITHUB_ENV
-          kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}"
+          echo "SUCCESS_CONDITION=NOTHING" >> $GITHUB_ENV
+          for(;;) do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";echo "------------------------"; break; done
