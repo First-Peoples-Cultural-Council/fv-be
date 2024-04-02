@@ -1,3 +1,4 @@
+from django.db.models import Exists, OuterRef, Q
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
@@ -9,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models.dictionary import DictionaryEntry
 from backend.models.immersion_labels import ImmersionLabel
 from backend.permissions.utils import filter_by_viewable
 from backend.serializers.immersion_label_serializers import (
@@ -132,8 +134,13 @@ class ImmersionLabelViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
+        visible_dictionary_entry = DictionaryEntry.objects.visible(
+            self.request.user
+        ).filter(immersion_labels=OuterRef("pk"))
         return (
             ImmersionLabel.objects.filter(site__slug=site[0].slug)
+            .annotate(has_visible_entry=Exists(visible_dictionary_entry))
+            .filter(Q(has_visible_entry=True) | Q(dictionary_entry__isnull=True))
             .select_related(
                 "site",
                 "site__language",

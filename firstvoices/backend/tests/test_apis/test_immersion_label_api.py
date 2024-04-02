@@ -190,9 +190,24 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         site, user = factories.access.get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-        factories.ImmersionLabelFactory.create(site=site, key="b")
-        factories.ImmersionLabelFactory.create(site=site, key="c")
-        factories.ImmersionLabelFactory.create(site=site, key="a")
+        entry1 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry3 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry1, key="b"
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry2, key="c"
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry3, key="a"
+        )
 
         self.client.force_authenticate(user=user)
         response = self.client.get(self.get_list_endpoint(site.slug))
@@ -327,9 +342,24 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         site, user = factories.access.get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-        factories.ImmersionLabelFactory.create(site=site, key="c")
-        factories.ImmersionLabelFactory.create(site=site, key="a")
-        factories.ImmersionLabelFactory.create(site=site, key="b")
+        entry1 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        entry3 = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry1, key="c"
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry2, key="a"
+        )
+        factories.ImmersionLabelFactory.create(
+            site=site, dictionary_entry=entry3, key="b"
+        )
 
         self.client.force_authenticate(user=user)
         response = self.client.get(self.get_list_endpoint(site.slug) + "/all")
