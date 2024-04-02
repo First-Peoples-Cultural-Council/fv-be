@@ -110,5 +110,5 @@ jobs:
           CLUSTER_NAME: firstvoices-eks
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
-          RUNID = $(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | head -n 2 | grep "fv-be-webhook-" | cut -d " " -f 1)
+          echo "kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1" >> $RUNID
           kubectl get events -n tekton-fv-builder | grep $RUNID
