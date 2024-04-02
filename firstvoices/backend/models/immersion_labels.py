@@ -23,9 +23,9 @@ class ImmersionLabel(BaseSiteContentModel):
         ]
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
         }
         indexes = [
             models.Index(fields=["site", "key"], name="immersion_label_key_idx"),
