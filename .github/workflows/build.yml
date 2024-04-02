@@ -10,6 +10,7 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ "3.12.2" ]  # Keep this sync with the docker image we run on
@@ -57,6 +58,7 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     needs: pytest
     strategy:
       matrix:
@@ -100,7 +102,7 @@ jobs:
         with:
           webhook_url: https://webhook-fv-be.eks.firstvoices.io
           webhook_secret: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
-          data : ${{ toJson(github) }}
+          data : ${{ toJson(github.event)}}
 
   check_tekton_run:
     name: Check Tekton Run
