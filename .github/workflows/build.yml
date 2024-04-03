@@ -103,16 +103,37 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
-      - name: Setup kubectl & migrate
+      - name: "Setup kubectl"
         env:
           NAMESPACE: 2023-03-fv-be-dev
           REGION: ca-central-1
           CLUSTER_NAME: firstvoices-eks
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
-          echo "RUNID=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> $GITHUB_ENV
+      - name: "Setup RUNID"
+        env:
+          RUNID: kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)
+        run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}"
-          if [${{  env.RUNID  }} == ""]; then echo "No running pipeline associated with this branch, or ambiguous state of the pipeline."; exit 0; fi
-          echo "SUCCESS_CONDITION=$("")" >> $GITHUB_ENV
+      - name: "Check RUNID Validity"
+        env:
+          RUNID: kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)
+        if: ${{  env.RUNID  == ''  }} 
+        run: |
+          echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous."
+          exit 0
+      - name: "Monitor RUNID"
+        env:
+          SUCCESS_CONDITION: ''
+          RUNID: kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)
+        run: |
+          echo "=" >> $GITHUB_ENV
           echo "The success condition associated with this deployment is ${{  env.SUCCESS_CONDITION  }}"
-          for ((;;)) do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";echo "-------------------------------------------"; echo "SUCCESS_CONDITION=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded')" if [${{  env.SUCCESS_CONDITION  }} != ""]; then break; done
+          for ((;;)) 
+          do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
+          echo "-------------------------------------------"; 
+          echo "SUCCESS_CONDITION=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded')"
+          if [${{  env.SUCCESS_CONDITION  }} != ""]; 
+          then break;
+          fi
+          done
