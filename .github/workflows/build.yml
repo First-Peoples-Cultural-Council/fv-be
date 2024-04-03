@@ -10,7 +10,6 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ "3.12.2" ]  # Keep this sync with the docker image we run on
@@ -58,7 +57,6 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     needs: pytest
     strategy:
       matrix:
@@ -96,6 +94,7 @@ jobs:
     environment: dev
     runs-on: ubuntu-latest 
     if: github.ref == 'refs/heads/rohit-drop-tekton'
+    needs: sonarcloud
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -108,8 +107,8 @@ jobs:
           aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: "Setup RUNID"
         run: |
-          echo "RUNID=$(tkn pr list -n ${{  secrets.TEKTON_NAMESPACE  }} | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
-#          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo tkn pr list -n tekton-fv-builder
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | tail -n 1 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
@@ -132,7 +131,7 @@ jobs:
           sleep 1;
           echo "===================================================================================="
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Running URL adjustments for FV-BE..."
+                    echo "Running URL adjustments for FV-BE..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
