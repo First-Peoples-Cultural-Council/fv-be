@@ -13,6 +13,13 @@ class MediaDocumentManager(DocumentManager):
     @classmethod
     def create_index_document(cls, instance):
         """Returns a MediaDocument populated for the given media instance."""
+
+        # Handle the case where the media instance has no original file
+        if instance.original:
+            instance_filename = instance.original.content.name
+        else:
+            instance_filename = None
+
         return cls.document(
             document_id=str(instance.id),
             document_type=type(instance).__name__,
@@ -25,7 +32,7 @@ class MediaDocumentManager(DocumentManager):
             ),
             visibility=Visibility.PUBLIC,
             title=instance.title,
-            filename=instance.original.content.name,
+            filename=instance_filename,
             description=instance.description,
             type=type(instance).__name__.lower(),
             exclude_from_games=instance.exclude_from_games,

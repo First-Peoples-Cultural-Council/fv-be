@@ -49,6 +49,31 @@ class BaseMediaDocumentManagerTest(BaseDocumentManagerTest):
         assert doc.created == instance.created
         assert doc.last_modified == instance.last_modified
 
+    @pytest.mark.django_db
+    def test_create_document_no_original(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        instance = self.factory.create(
+            exclude_from_kids=False, exclude_from_games=True, site=site, original=None
+        )
+        doc = self.manager.create_index_document(instance)
+
+        assert doc.document_id == str(instance.id)
+        assert doc.document_type == self.expected_type
+        assert doc.site_id == str(instance.site.id)
+        assert doc.site_visibility == Visibility.MEMBERS
+        assert doc.visibility == Visibility.PUBLIC
+
+        assert doc.title == instance.title
+        assert doc.filename is None
+        assert doc.description == instance.description
+        assert doc.type == self.expected_type.lower()
+
+        assert doc.exclude_from_games
+        assert not doc.exclude_from_kids
+
+        assert doc.created == instance.created
+        assert doc.last_modified == instance.last_modified
+
 
 class TestAudioDocumentManager(BaseMediaDocumentManagerTest):
     manager = AudioDocumentManager

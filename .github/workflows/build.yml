@@ -20,7 +20,7 @@ jobs:
     if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/rohit-drop-tekton')
     strategy:
       matrix:
-        python-version: [ "3.12.2" ]  # Keep this sync with the docker image we run on
+        python-version: [ "3.12.2" ]  # We should keep this in sync with the docker image we run on
         group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
