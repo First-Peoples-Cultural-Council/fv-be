@@ -22,7 +22,7 @@ class ImmersionLabel(BaseSiteContentModel):
             )
         ]
         rules_permissions = {
-            "view": predicates.has_visible_site,
+            "view": predicates.can_view_immersion_label,
             "add": predicates.is_language_admin_or_super,
             "change": predicates.is_language_admin_or_super,
             "delete": predicates.is_language_admin_or_super,

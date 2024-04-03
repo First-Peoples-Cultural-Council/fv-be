@@ -24,3 +24,15 @@ can_view_user_info = Predicate(
     ),
     name="can_view_membership_model",
 )
+
+
+# Can view immersion label, if the related dictionary-entry should be public
+can_view_immersion_label = Predicate(
+    (
+        base.has_public_access_to_related_dictionary_entry
+        | base.has_member_access_to_related_dictionary_entry
+        | base.is_at_least_staff_admin
+        | base.has_team_access
+    ),
+    name="can_view_immersion_label",
+)
