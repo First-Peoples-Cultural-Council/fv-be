@@ -95,7 +95,6 @@ jobs:
     name: Monitor Deployment
     environment: dev
     runs-on: ubuntu-latest 
-    needs: sonarcloud
     if: github.ref == 'refs/heads/rohit-drop-tekton'
     steps:
       - name: Configure AWS credentials
@@ -110,7 +109,7 @@ jobs:
       - name: "Setup RUNID"
         run: |
           echo tkn pr list -n tekton-fv-builder
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | sort -h -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
