@@ -125,11 +125,9 @@ jobs:
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           echo "The default success condition associated with this deployment is ${{  env.SUCCESS_CONDITION  }}NOT-SET";
-          for ((;;)) 
           do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
           echo "-------------------------------------------------------------------"; 
           echo "SUCCESS_CONDITION=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded')" >> "$GITHUB_ENV";
           if [${{  env.SUCCESS_CONDITION  }} != ""]; 
           then break;
           fi
-          done
