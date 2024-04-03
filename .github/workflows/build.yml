@@ -112,21 +112,23 @@ jobs:
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
       - name: "Setup RUNID"
         run: |
-          echo "RUNID=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> $GITHUB_ENV
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}"
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1;
+          echo "RUNID=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
       - name: "Check RUNID Validity"
-        if: ${{  env.RUNID  == ''  }} 
         run: |
-          echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous."
-          exit 1
+          if [${{  env.RUNID  }} == ""]; 
+          then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
+          exit 1;
+          fi
       - name: "Monitor RUNID"
         run: |
-          echo "SUCCESS_CONDITION=$('')" >> $GITHUB_ENV
-          echo "The default success condition associated with this deployment is ${{  env.SUCCESS_CONDITION  }}NOT-SET"
+          echo "SUCCESS_CONDITION=$('')" >> "$GITHUB_ENV";
+          echo "The default success condition associated with this deployment is ${{  env.SUCCESS_CONDITION  }}NOT-SET";
           for ((;;)) 
           do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
           echo "-------------------------------------------------------------------"; 
-          echo "SUCCESS_CONDITION=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded')" >> $GITHUB_ENV;
+          echo "SUCCESS_CONDITION=$(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded')" >> "$GITHUB_ENV";
           if [${{  env.SUCCESS_CONDITION  }} != ""]; 
           then break;
           fi
