@@ -16,7 +16,7 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/dev'|| (github.ref_type == 'pull_request'))
+    if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
         python-version: [ "3.12.2" ]  # We should keep this in sync with the docker image we run on
@@ -65,7 +65,7 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     needs: pytest
-    if: (github.ref == 'refs/heads/dev'|| (github.ref_type == 'pull_request'))
+    if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
         python-version: [ "3.12.2" ]  # We should keep this in sync with the docker image we run on
@@ -218,7 +218,7 @@ jobs:
     name: Monitor Prod Deployment
     environment: prod
     runs-on: ubuntu-latest 
-    if: (github.ref_type == 'tag' && startsWith(github.ref_name, 'r-'))
+    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
