@@ -10,7 +10,6 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ "3.12.2" ]  # Keep this sync with the docker image we run on
@@ -58,7 +57,6 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     needs: pytest
     strategy:
       matrix:
@@ -94,14 +92,14 @@ jobs:
   deploy_with_tekton: 
     name: Monitor Deployment
     runs-on: ubuntu-latest 
-    env:
-      GITHUB_CONTEXT: ${{ toJson(github) }}
+    needs: sonarcloud
+    if: github.ref == 'refs/heads/rohit-drop-tekton'
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
       - name: "Setup kubectl"
         env:
@@ -125,24 +123,24 @@ jobs:
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
           echo "===================================================================================="
-          echo "Starting repo cloning"
+          echo "Running repo cloning..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-fetch --timeout=300s -n tekton-fv-builder
           kubectl logs pod/${{  env.RUNID  }}-fetch-pod -n tekton-fv-builder 
           echo "===================================================================================="
-          echo "Starting image build"
+          echo "Running image build..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-build-fv-be --timeout=300s -n tekton-fv-builder
           kubectl logs pod/${{  env.RUNID  }}-build-fv-be-pod -n tekton-fv-builder 
           echo "===================================================================================="
-          echo "Starting URL adjustments for FV-BE"
+          echo "Running URL adjustments for FV-BE..."
           kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-trim-url --timeout=300s -n tekton-fv-builder
           kubectl logs pod/${{  env.RUNID  }}-trim-url-pod -n tekton-fv-builder 
           echo "===================================================================================="
-          echo "Starting URL adjustments for FV-BE-Static"
+          echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-trim-static-url --timeout=300s -n tekton-fv-builder
           kubectl logs pod/${{  env.RUNID  }}-trim-static-url-pod -n tekton-fv-builder 
           echo "===================================================================================="
-          echo "Starting Helm-upgrade"
+          echo "Running Helm-upgrade..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-helm-upgrade --timeout=300s -n tekton-fv-builder
           kubectl logs pod/${{  env.RUNID  }}-helm-upgrade-pod -n tekton-fv-builder 
           kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
