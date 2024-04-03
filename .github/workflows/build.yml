@@ -120,18 +120,29 @@ jobs:
           then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
           exit 1;
           fi
-          echo "SUCCESS_CONDITION=$('')" >> "$GITHUB_ENV";
-          touch success_condition.txt
       - name: "Monitor RUNID"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          echo "The default success condition associated with this deployment is ${{  env.SUCCESS_CONDITION  }}NOT-SET";
-          for ((;;)) 
-          do kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
-          echo "-------------------------------------------------------------------"; 
-          cat $(kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | grep '${{ env.RUNID  }}'' | grep 'Succeeded') success_condition.txt;
-          cat success_condition.txt
-          if [${{  env.SUCCESS_CONDITION  }} != ""]; 
-          then break;
-          fi
-          done
+          kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
+          echo "===================================================================================="
+          echo "Starting repo cloning"
+          kubectl wait --for=condition=succeeded pod/${{  env.RUNID  }}-fetch -n tekton-fv-builder
+          kubectl logs pod/${{  env.RUNID  }}-fetch -n tekton-fv-builder 
+          echo "===================================================================================="
+          echo "Starting image build"
+          kubectl wait --for=condition=succeeded pod/${{  env.RUNID  }}-build-fv-be-pod -n tekton-fv-builder
+          kubectl logs pod/${{  env.RUNID  }}-build-fv-be-pod -n tekton-fv-builder 
+          echo "===================================================================================="
+          echo "Starting URL adjustments for FV-BE"
+          kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
+          kubectl wait --for=condition=succeeded pod/${{  env.RUNID  }}-trim-url -n tekton-fv-builder
+          kubectl logs pod/${{  env.RUNID  }}-trim-url -n tekton-fv-builder 
+          echo "===================================================================================="
+          echo "Starting URL adjustments for FV-BE-Static"
+          kubectl wait --for=condition=succeeded pod/${{  env.RUNID  }}-trim-static-url -n tekton-fv-builder
+          kubectl logs pod/${{  env.RUNID  }}-trim-static-url -n tekton-fv-builder 
+          echo "===================================================================================="
+          echo "Starting Helm-upgrade"
+          kubectl wait --for=condition=succeeded pod/${{  env.RUNID  }}-helm-upgrade-n tekton-fv-builder
+          kubectl logs pod/${{  env.RUNID  }}-helm-upgrade -n tekton-fv-builder 
+          kubectl get events -n tekton-fv-builder | grep "${{  env.RUNID  }}";
