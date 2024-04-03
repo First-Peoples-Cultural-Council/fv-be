@@ -110,6 +110,11 @@ jobs:
           CLUSTER_NAME: firstvoices-eks
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | Sort -k 4
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | Sort -k 4 | head -n 2
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | Sort -k 4 | head -n 2 | grep 'fv-be-webhook-'
+          kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | Sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1
           echo "RUNID=kubectl -n tekton-fv-builder get pr -l triggers.tekton.dev/trigger=custom-github-listener | Sort -k 4 | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1" >> $GITHUB_ENV
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}"
           if [${{  env.RUNID  }} == ""]; then echo "No running pipeline associated with this branch, or ambiguous state of the pipeline."; exit 0; fi
