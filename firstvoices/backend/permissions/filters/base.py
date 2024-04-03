@@ -190,7 +190,7 @@ def has_member_access_to_related_dictionary_entry(user):
     )
 
 
-def has_public_access_to_related_dictionary_entry(user=None):
+def has_public_access_to_related_dictionary_entry():
     return Q(dictionary_entry__visibility=Visibility.PUBLIC) & Q(
         site__visibility=Visibility.PUBLIC
     )
