@@ -135,27 +135,3 @@ has_public_access_to_site_obj = predicate(is_public_obj)
 has_member_access_to_site_obj = (
     has_at_least_member_membership & ~is_team_obj
 )  # noqa E1130
-
-
-#
-# Related dictionary_entry predicates
-# used in ImmersionLabels
-@predicate
-def has_related_public_dictionary_entry(user, obj):
-    return obj.dictionary_entry.visibility == Visibility.PUBLIC
-
-
-@predicate
-def has_related_team_dictionary_entry(user, obj):
-    return obj.dictionary_entry.visibility == Visibility.TEAM
-
-
-has_member_access_to_related_dictionary_entry = (
-    has_at_least_member_membership & ~has_related_team_dictionary_entry & ~has_team_site
-)
-
-
-has_public_access_to_related_dictionary_entry = Predicate(
-    has_related_public_dictionary_entry & has_public_site,
-    name="has_public_access_to_related_dictionary_entry",
-)

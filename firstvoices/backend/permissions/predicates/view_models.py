@@ -1,4 +1,4 @@
-from rules import Predicate
+from rules import Predicate, predicate
 
 from . import base, view
 
@@ -27,12 +27,6 @@ can_view_user_info = Predicate(
 
 
 # Can view immersion label, if the related dictionary-entry should be public
-can_view_immersion_label = Predicate(
-    (
-        base.has_public_access_to_related_dictionary_entry
-        | base.has_member_access_to_related_dictionary_entry
-        | base.is_at_least_staff_admin
-        | base.has_team_access
-    ),
-    name="can_view_immersion_label",
-)
+@predicate
+def can_view_immersion_label(user, obj):
+    return view.is_visible_object(user, obj.dictionary_entry)
