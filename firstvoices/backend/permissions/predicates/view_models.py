@@ -1,4 +1,4 @@
-from rules import Predicate
+from rules import Predicate, predicate
 
 from . import base, view
 
@@ -24,3 +24,9 @@ can_view_user_info = Predicate(
     ),
     name="can_view_membership_model",
 )
+
+
+# user can view an immersion label, if the user can view the related dictionary entry
+@predicate
+def can_view_immersion_label(user, obj):
+    return view.is_visible_object(user, obj.dictionary_entry)

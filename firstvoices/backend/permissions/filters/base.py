@@ -177,3 +177,21 @@ def has_team_access_to_site_obj(user):
         return always_false(user)
 
     return Q(membership_set__user=user) & Q(membership_set__role__gte=Role.ASSISTANT)
+
+
+#
+# Filters for related dictionary entry
+# used in ImmersionLabel
+def has_member_access_to_related_dictionary_entry(user):
+    return (
+        has_at_least_member_membership(user)
+        & ~Q(dictionary_entry__visibility=Visibility.TEAM)
+        & ~has_team_site()
+    )
+
+
+# Adding NOSONAR to prevent sonar from raising warnings for unused parameter
+def has_public_access_to_related_dictionary_entry(user=None):  # NOSONAR
+    return Q(dictionary_entry__visibility=Visibility.PUBLIC) & Q(
+        site__visibility=Visibility.PUBLIC
+    )
