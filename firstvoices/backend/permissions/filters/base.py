@@ -190,7 +190,8 @@ def has_member_access_to_related_dictionary_entry(user):
     )
 
 
-def has_public_access_to_related_dictionary_entry(user=None):
+# Adding NOSONAR to prevent sonar from raising warnings for unused parameter
+def has_public_access_to_related_dictionary_entry(user=None):  # NOSONAR
     return Q(dictionary_entry__visibility=Visibility.PUBLIC) & Q(
         site__visibility=Visibility.PUBLIC
     )
