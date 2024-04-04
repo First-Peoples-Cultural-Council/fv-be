@@ -65,14 +65,11 @@ class TestPartsOfSpeechAPI(BaseApiTest):
         # test will fail if fixture not loaded since there will be no items without any children in the response to
         # choose the first element from. If fixture is modified in such as way that all elements now have children at
         # top level, Create another fixture for testing purposes with one such element.
-        item = None
-        for x in list_data:
-            if x["parent"]:
-                item = x
+        for item in list_data:
+            if item["parent"]:
+                response = self.client.get(self.get_detail_endpoint(item["id"]))
+                response_data = json.loads(response.content)
                 break
-
-        response = self.client.get(self.get_detail_endpoint(item["id"]))
-        response_data = json.loads(response.content)
 
         assert response.status_code == 200
         assert "id" in response_data
