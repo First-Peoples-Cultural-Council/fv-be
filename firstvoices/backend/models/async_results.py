@@ -5,6 +5,24 @@ from backend.models.base import BaseSiteContentModel
 from backend.permissions import predicates
 
 
+class JobStatus(models.TextChoices):
+    # Choices for Type
+    ACCEPTED = "word", _("Word")
+    STARTED = "phrase", _("Phrase")
+    COMPLETE = "phrase", _("Phrase")
+    FAILED = "phrase", _("Phrase")
+    CANCELLED = "phrase", _("Phrase")
+
+
+class Job(BaseSiteContentModel):
+    """Base model for tracking asynchronous jobs, such as batch processing."""
+
+    class Meta:
+        abstract = True
+
+    task_id = models.CharField(max_length=255, null=True, blank=True)
+
+
 class CustomOrderRecalculationResult(BaseSiteContentModel):
     """Model to store custom order recalculation results."""
 
