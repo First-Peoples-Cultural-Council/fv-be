@@ -7,20 +7,26 @@ from backend.permissions import predicates
 
 class JobStatus(models.TextChoices):
     # Choices for Type
-    ACCEPTED = "word", _("Word")
-    STARTED = "phrase", _("Phrase")
-    COMPLETE = "phrase", _("Phrase")
-    FAILED = "phrase", _("Phrase")
-    CANCELLED = "phrase", _("Phrase")
+    ACCEPTED = "accepted", _("Accepted")
+    STARTED = "started", _("Started")
+    COMPLETE = "complete", _("Complete")
+    FAILED = "failed", _("Failed")
+    CANCELLED = "cancelled", _("Cancelled")
 
 
-class Job(BaseSiteContentModel):
+class BaseJob(BaseSiteContentModel):
     """Base model for tracking asynchronous jobs, such as batch processing."""
 
     class Meta:
         abstract = True
 
     task_id = models.CharField(max_length=255, null=True, blank=True)
+
+    status = models.CharField(
+        max_length=6,
+        choices=JobStatus.choices,
+        default=JobStatus.ACCEPTED,
+    )
 
 
 class CustomOrderRecalculationResult(BaseSiteContentModel):
