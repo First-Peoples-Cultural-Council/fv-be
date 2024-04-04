@@ -24,7 +24,7 @@ def can_view_membership_model(user):
     )
 
 
-# Can view immersion label, if the related dictionary-entry should be public
+# user can view an immersion label, if the user can view the related dictionary entry
 def can_view_immersion_label(user):
     return (
         base.has_public_access_to_related_dictionary_entry(user)

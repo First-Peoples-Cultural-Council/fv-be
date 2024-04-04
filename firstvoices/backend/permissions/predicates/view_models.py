@@ -26,7 +26,7 @@ can_view_user_info = Predicate(
 )
 
 
-# Can view immersion label, if the related dictionary-entry should be public
+# user can view an immersion label, if the user can view the related dictionary entry
 @predicate
 def can_view_immersion_label(user, obj):
     return view.is_visible_object(user, obj.dictionary_entry)
