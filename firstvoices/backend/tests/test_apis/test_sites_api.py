@@ -235,6 +235,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "audio": f"{site_url}/audio",
             "categories": f"{site_url}/categories",
             "characters": f"{site_url}/characters",
+            "data": f"{site_url}/data",
             "dictionary": f"{site_url}/dictionary",
             "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
