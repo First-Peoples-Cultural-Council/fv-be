@@ -7,9 +7,9 @@ from backend.models.constants import Visibility
 from backend.tests import factories
 
 
-class TestSitesDataEndpoint:
+class TestMTDDataEndpoint:
     """
-    Tests that check the sites-data endpoint for correct formatting and behavior.
+    Tests that check the mtd-data endpoint for correct formatting and behavior.
     """
 
     API_MTD_VIEW = "api:mtd-data-list"
