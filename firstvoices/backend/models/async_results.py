@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.models.base import BaseSiteContentModel
+from backend.models.constants import Visibility
 from backend.permissions import predicates
 
 
@@ -23,7 +24,7 @@ class BaseJob(BaseSiteContentModel):
     task_id = models.CharField(max_length=255, null=True, blank=True)
 
     status = models.CharField(
-        max_length=6,
+        max_length=9,
         choices=JobStatus.choices,
         default=JobStatus.ACCEPTED,
     )
@@ -53,3 +54,28 @@ class CustomOrderRecalculationResult(BaseSiteContentModel):
 
     def __str__(self):
         return self.site.title + " - " + str(self.latest_recalculation_date)
+
+
+class BulkVisibilityJob(BaseJob):
+    """Model to store job results for bulk visibility changes."""
+
+    class Meta:
+        verbose_name = _("bulk visibility job")
+        verbose_name_plural = _("bulk visibility jobs")
+        rules_permissions = {
+            "view": predicates.is_superadmin,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
+    from_visibility = models.IntegerField(
+        choices=Visibility.choices, default=Visibility.TEAM, db_index=True
+    )
+
+    to_visibility = models.IntegerField(
+        choices=Visibility.choices, default=Visibility.TEAM, db_index=True
+    )
+
+    def __str__(self):
+        return self.site.title + " - BulkVisibility - " + self.status
