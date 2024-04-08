@@ -65,7 +65,7 @@ pytest==8.1.1
 pytest-django==4.8.0  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.14.0 #https://github.com/pytest-dev/pytest-mock
 python-crontab==3.0.0
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-magic==0.4.27
 pytz==2024.1
