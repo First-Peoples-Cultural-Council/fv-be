@@ -29,6 +29,9 @@ class BaseJob(BaseSiteContentModel):
         default=JobStatus.ACCEPTED,
     )
 
+    # an error message if the job was cancelled
+    message = models.TextField(blank=True, null=True)
+
 
 class CustomOrderRecalculationResult(BaseSiteContentModel):
     """Model to store custom order recalculation results."""
