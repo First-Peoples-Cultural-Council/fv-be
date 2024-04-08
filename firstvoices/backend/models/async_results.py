@@ -73,11 +73,11 @@ class BulkVisibilityJob(BaseJob):
         }
 
     from_visibility = models.IntegerField(
-        choices=Visibility.choices, default=Visibility.TEAM, db_index=True
+        choices=Visibility.choices, default=Visibility.TEAM
     )
 
     to_visibility = models.IntegerField(
-        choices=Visibility.choices, default=Visibility.TEAM, db_index=True
+        choices=Visibility.choices, default=Visibility.TEAM
     )
 
     def __str__(self):
