@@ -1,5 +1,8 @@
 from .app import AppJson  # noqa F401
-from .async_results import CustomOrderRecalculationResult  # noqa F401
+from .async_results import (  # noqa F401
+    BulkVisibilityJob,
+    CustomOrderRecalculationResult,
+)
 from .base import BaseModel  # noqa F401
 from .category import Category  # noqa F401
 from .characters import (  # noqa F401

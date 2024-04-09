@@ -9,7 +9,10 @@ from backend.models.async_results import (
     BulkVisibilityJob,
     CustomOrderRecalculationResult,
 )
-from backend.serializers.base_serializers import BaseSiteContentSerializer
+from backend.serializers.base_serializers import (
+    BaseSiteContentSerializer,
+    base_timestamp_fields,
+)
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
@@ -24,7 +27,10 @@ class BaseJobSerializer(BaseSiteContentSerializer):
         return instance.get_status_display().lower()
 
     class Meta:
-        fields = BaseSiteContentSerializer.Meta.fields + (
+        fields = base_timestamp_fields + (
+            "id",
+            "url",
+            "site",
             "status",
             "task_id",
             "message",
@@ -115,7 +121,7 @@ class CustomOrderRecalculationPreviewResultSerializer(
 
 class BulkVisibilityJobSerializer(BaseJobSerializer):
     url = SiteHyperlinkedIdentityField(
-        read_only=True, view_name="api:bulkvisibilityjob-detail"
+        read_only=True, view_name="api:bulk-visibility-detail"
     )
     from_visibility = serializers.SerializerMethodField(read_only=True)
     to_visibility = serializers.SerializerMethodField(read_only=True)
