@@ -5,7 +5,30 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models.async_results import CustomOrderRecalculationResult
+from backend.models.async_results import (
+    BulkVisibilityJob,
+    CustomOrderRecalculationResult,
+)
+from backend.serializers.base_serializers import BaseSiteContentSerializer
+from backend.serializers.fields import SiteHyperlinkedIdentityField
+
+
+class BaseJobSerializer(BaseSiteContentSerializer):
+    status = serializers.SerializerMethodField(read_only=True)
+    task_id = serializers.CharField(read_only=True)
+    message = serializers.CharField(read_only=True)
+
+    @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_status(instance):
+        return instance.get_status_display().lower()
+
+    class Meta:
+        fields = BaseSiteContentSerializer.Meta.fields + (
+            "status",
+            "task_id",
+            "message",
+        )
 
 
 class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
@@ -88,3 +111,25 @@ class CustomOrderRecalculationPreviewResultSerializer(
             "latest_recalculation_preview_date",
             "latest_recalculation_preview_result",
         ]
+
+
+class BulkVisibilityJobSerializer(BaseJobSerializer):
+    url = SiteHyperlinkedIdentityField(
+        read_only=True, view_name="api:bulkvisibilityjob-detail"
+    )
+    from_visibility = serializers.SerializerMethodField(read_only=True)
+    to_visibility = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_from_visibility(instance):
+        return instance.get_from_visibility_display().lower()
+
+    @staticmethod
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_to_visibility(instance):
+        return instance.get_to_visibility_display().lower()
+
+    class Meta:
+        model = BulkVisibilityJob
+        fields = BaseJobSerializer.Meta.fields + ("from_visibility", "to_visibility")

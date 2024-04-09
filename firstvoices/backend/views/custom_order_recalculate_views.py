@@ -59,7 +59,7 @@ from backend.views.exceptions import CeleryError
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculateView(
+class CustomOrderRecalculateViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
@@ -168,7 +168,7 @@ class CustomOrderRecalculateView(
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculatePreviewView(
+class CustomOrderRecalculatePreviewViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
