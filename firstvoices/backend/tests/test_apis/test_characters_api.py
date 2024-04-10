@@ -61,7 +61,7 @@ class TestCharactersEndpoints(
         )
 
     def get_expected_response(self, instance, site):
-        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields = self.get_expected_entry_standard_fields(instance, site)
         return {
             **standard_fields,
             "sortOrder": instance.sort_order,

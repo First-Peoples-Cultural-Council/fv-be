@@ -253,7 +253,6 @@ class SiteContentDetailApiTestMixin:
             "lastModifiedBy": instance.last_modified_by.email,
             "id": str(instance.id),
             "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
-            "title": instance.title,
             "site": {
                 "id": str(site.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
@@ -262,6 +261,13 @@ class SiteContentDetailApiTestMixin:
                 "visibility": instance.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
+        }
+
+    def get_expected_entry_standard_fields(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        return {
+            **standard_fields,
+            "title": instance.title,
         }
 
     @pytest.mark.django_db
@@ -392,7 +398,7 @@ class ControlledDetailApiTestMixin:
     """
 
     def get_expected_controlled_standard_fields(self, instance, site):
-        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields = self.get_expected_entry_standard_fields(instance, site)
         return {
             **standard_fields,
             "visibility": instance.get_visibility_display().lower(),
