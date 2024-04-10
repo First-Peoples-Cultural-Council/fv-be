@@ -46,7 +46,7 @@ class WriteableRelatedPersonSerializer(serializers.PrimaryKeyRelatedField):
         return PersonSerializer(context=self.context).to_representation(value)
 
 
-class MediaFileSerializer(serializers.ModelSerializer):
+class FileSerializer(serializers.ModelSerializer):
     path = serializers.FileField(source="content")
 
     class Meta:
@@ -54,32 +54,32 @@ class MediaFileSerializer(serializers.ModelSerializer):
         fields = ("path", "mimetype", "size")
 
 
-class MediaFileUploadSerializer(serializers.FileField):
+class FileUploadSerializer(serializers.FileField):
     def to_representation(self, value):
-        return MediaFileSerializer(context=self.context).to_representation(value)
+        return FileSerializer(context=self.context).to_representation(value)
 
 
-class MediaVideoFileSerializer(MediaFileSerializer):
-    class Meta(MediaFileSerializer.Meta):
+class VideoFileSerializer(FileSerializer):
+    class Meta(FileSerializer.Meta):
         model = media.VideoFile
-        fields = MediaFileSerializer.Meta.fields + ("height", "width")
+        fields = FileSerializer.Meta.fields + ("height", "width")
 
 
-class MediaImageFileSerializer(MediaVideoFileSerializer):
+class ImageFileSerializer(VideoFileSerializer):
     path = serializers.ImageField(source="content")
 
-    class Meta(MediaVideoFileSerializer.Meta):
+    class Meta(VideoFileSerializer.Meta):
         model = media.ImageFile
 
 
 class ImageUploadSerializer(serializers.ImageField):
     def to_representation(self, value):
-        return MediaImageFileSerializer(context=self.context).to_representation(value)
+        return ImageFileSerializer(context=self.context).to_representation(value)
 
 
 class VideoUploadSerializer(serializers.FileField):
     def to_representation(self, value):
-        return MediaVideoFileSerializer(context=self.context).to_representation(value)
+        return VideoFileSerializer(context=self.context).to_representation(value)
 
 
 class MediaSerializer(ExternalSiteContentUrlMixin, serializers.ModelSerializer):
@@ -133,7 +133,7 @@ class AudioSerializer(
             "base_template": "input.html"
         },  # for local dev, settings for browseable api
     )
-    original = MediaFileUploadSerializer(
+    original = FileUploadSerializer(
         validators=[
             SupportedFileType(
                 mimetypes=[
@@ -168,9 +168,9 @@ class AudioSerializer(
 
 
 class MediaWithThumbnailsSerializer(MediaSerializer):
-    thumbnail = MediaImageFileSerializer(read_only=True)
-    small = MediaImageFileSerializer(read_only=True)
-    medium = MediaImageFileSerializer(read_only=True)
+    thumbnail = ImageFileSerializer(read_only=True)
+    small = ImageFileSerializer(read_only=True)
+    medium = ImageFileSerializer(read_only=True)
 
     class Meta(MediaSerializer.Meta):
         fields = MediaSerializer.Meta.fields + ("thumbnail", "small", "medium")
@@ -385,7 +385,7 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
 
 
 class AudioMinimalSerializer(serializers.ModelSerializer):
-    original = MediaFileSerializer(read_only=True)
+    original = FileSerializer(read_only=True)
     speakers = PersonMinimalSerializer(many=True, read_only=True)
 
     class Meta:
@@ -434,7 +434,7 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
 
 class ImageMinimalSerializer(MediaMinimalSerializer):
     original = ImageUploadSerializer(read_only=True)
-    small = MediaImageFileSerializer(read_only=True)
+    small = ImageFileSerializer(read_only=True)
 
     class Meta(MediaMinimalSerializer.Meta):
         model = media.Image

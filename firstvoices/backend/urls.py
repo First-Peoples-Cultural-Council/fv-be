@@ -15,6 +15,7 @@ from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
+from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
 from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.page_views import SitePageViewSet
@@ -73,6 +74,7 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(
     r"immersion-labels", ImmersionLabelViewSet, basename="immersionlabel"
 )
+sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")
