@@ -5,7 +5,13 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models.jobs import BulkVisibilityJob, CustomOrderRecalculationResult
+from backend.models.constants import Visibility
+from backend.models.jobs import (
+    BulkVisibilityJob,
+    CustomOrderRecalculationResult,
+    JobStatus,
+)
+from backend.serializers import fields
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
     base_timestamp_fields,
@@ -14,7 +20,7 @@ from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
 class BaseJobSerializer(BaseSiteContentSerializer):
-    status = serializers.SerializerMethodField(read_only=True)
+    status = fields.EnumField(enum=JobStatus, read_only=True)
     task_id = serializers.CharField(read_only=True)
     message = serializers.CharField(read_only=True)
 
@@ -120,18 +126,8 @@ class BulkVisibilityJobSerializer(BaseJobSerializer):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:bulk-visibility-detail"
     )
-    from_visibility = serializers.SerializerMethodField(read_only=True)
-    to_visibility = serializers.SerializerMethodField(read_only=True)
-
-    @staticmethod
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_from_visibility(instance):
-        return instance.get_from_visibility_display().lower()
-
-    @staticmethod
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_to_visibility(instance):
-        return instance.get_to_visibility_display().lower()
+    from_visibility = fields.EnumField(enum=Visibility)
+    to_visibility = fields.EnumField(enum=Visibility)
 
     class Meta:
         model = BulkVisibilityJob
