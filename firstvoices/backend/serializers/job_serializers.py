@@ -24,11 +24,6 @@ class BaseJobSerializer(BaseSiteContentSerializer):
     task_id = serializers.CharField(read_only=True)
     message = serializers.CharField(read_only=True)
 
-    @staticmethod
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_status(instance):
-        return instance.get_status_display().lower()
-
     class Meta:
         fields = base_timestamp_fields + (
             "id",
