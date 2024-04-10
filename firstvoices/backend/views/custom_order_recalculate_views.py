@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
 from backend.permissions.predicates import is_superadmin
-from backend.serializers.async_results_serializers import (
+from backend.serializers.job_serializers import (
     CustomOrderRecalculationPreviewResultSerializer,
     CustomOrderRecalculationResultSerializer,
 )

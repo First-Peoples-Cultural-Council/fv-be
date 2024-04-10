@@ -1,11 +1,11 @@
 import pytest
 
-from backend.models.async_results import (
+from backend.models.constants import Visibility
+from backend.models.jobs import (
     BulkVisibilityJob,
     CustomOrderRecalculationResult,
     JobStatus,
 )
-from backend.models.constants import Visibility
 from backend.tests.factories import SiteFactory
 
 

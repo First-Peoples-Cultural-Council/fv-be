@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from backend.models.async_results import BulkVisibilityJob
 from backend.models.constants import Visibility
+from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
 
 from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest

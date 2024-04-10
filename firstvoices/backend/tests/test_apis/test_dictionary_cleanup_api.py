@@ -6,9 +6,7 @@ from django.urls import reverse
 
 from backend.models import DictionaryEntry
 from backend.models.constants import AppRole, Role, Visibility
-from backend.serializers.async_results_serializers import (
-    CustomOrderRecalculationResultSerializer,
-)
+from backend.serializers.job_serializers import CustomOrderRecalculationResultSerializer
 from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,

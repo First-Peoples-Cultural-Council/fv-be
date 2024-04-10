@@ -5,10 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from backend.models.async_results import (
-    BulkVisibilityJob,
-    CustomOrderRecalculationResult,
-)
+from backend.models.jobs import BulkVisibilityJob, CustomOrderRecalculationResult
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
     base_timestamp_fields,

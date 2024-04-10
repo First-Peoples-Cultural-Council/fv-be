@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.async_results import BulkVisibilityJob
-from backend.serializers.async_results_serializers import BulkVisibilityJobSerializer
+from backend.models.jobs import BulkVisibilityJob
+from backend.serializers.job_serializers import BulkVisibilityJobSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
 

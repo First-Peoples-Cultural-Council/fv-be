@@ -1,8 +1,4 @@
 from .app import AppJson  # noqa F401
-from .async_results import (  # noqa F401
-    BulkVisibilityJob,
-    CustomOrderRecalculationResult,
-)
 from .base import BaseModel  # noqa F401
 from .category import Category  # noqa F401
 from .characters import (  # noqa F401
@@ -20,6 +16,7 @@ from .dictionary import (  # noqa F401
     Translation,
 )
 from .immersion_labels import ImmersionLabel  # noqa F401
+from .jobs import BulkVisibilityJob, CustomOrderRecalculationResult  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
 from .mtd import MTDExportFormat  # noqa F401
