@@ -32,9 +32,13 @@ class ImportJobReportRowFactory(DjangoModelFactory):
     identifier_value = factory.Sequence(lambda n: "identifier_value %03d" % n)
 
 
-class ImportJob(DjangoModelFactory):
+class ImportJobFactory(DjangoModelFactory):
     class Meta:
         model = ImportJob
+
+    site = factory.SubFactory(SiteFactory)
+    created_by = factory.SubFactory(UserFactory)
+    last_modified_by = factory.SubFactory(UserFactory)
 
     description = factory.Sequence(lambda n: "description %03d" % n)
     data = factory.SubFactory(FileFactory)
