@@ -233,6 +233,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "bannerVideo": None,
             "homepage": None,
             "audio": f"{site_url}/audio",
+            "bulkVisibility": f"{site_url}/bulk-visibility",
             "categories": f"{site_url}/categories",
             "characters": f"{site_url}/characters",
             "dictionary": f"{site_url}/dictionary",
