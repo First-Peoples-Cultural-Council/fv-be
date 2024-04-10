@@ -80,9 +80,10 @@ class ImportJobSerializer(
 
         try:
             # todo: experiment with doing a dry run of the import here
+            # todo: note that this still uses a hardcoded temp data path instead of the file in the request-- sorry!
             dummy_file_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "sample_data",
+                "../tests/temp_test_import_data",
                 "invalid-field.csv",
             )
             with open(dummy_file_path) as f:
