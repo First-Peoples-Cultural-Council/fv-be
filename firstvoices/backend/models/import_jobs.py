@@ -5,7 +5,11 @@ from django.utils.translation import gettext as _
 
 from backend.models.async_results import BaseJob
 from backend.models.base import BaseSiteContentModel
-from backend.models.constants import DEFAULT_TITLE_LENGTH, MAX_NOTE_LENGTH
+from backend.models.constants import (
+    DEFAULT_TITLE_LENGTH,
+    MAX_DESCRIPTION_LENGTH,
+    MAX_NOTE_LENGTH,
+)
 from backend.models.media import File
 from backend.permissions import predicates
 
@@ -26,16 +30,34 @@ class RowStatus(models.TextChoices):
 
 
 class ImportJobReport(BaseSiteContentModel):
+    class Meta:
+        verbose_name = _("Import Job Report")
+        verbose_name_plural = _("Import Job Reports")
+        rules_permissions = {
+            "view": predicates.is_language_admin_or_super,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
+        }
+
     total_rows = models.IntegerField(null=True)
     column_headers = ArrayField(
         models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
     )
-    totals = models.JSONField(
-        null=True
-    )  # todo: probably save the numbers we care about in named fields instead
+    totals = models.JSONField(null=True)
 
 
 class ImportJobReportRow(BaseSiteContentModel):
+    class Meta:
+        verbose_name = _("Import Job Report Row")
+        verbose_name_plural = _("Import Job Report Rows")
+        rules_permissions = {
+            "view": predicates.is_language_admin_or_super,
+            "add": predicates.is_language_admin_or_super,
+            "change": predicates.is_language_admin_or_super,
+            "delete": predicates.is_language_admin_or_super,
+        }
+
     report = models.ForeignKey(
         ImportJobReport, on_delete=models.CASCADE, related_name="rows"
     )
@@ -46,12 +68,8 @@ class ImportJobReportRow(BaseSiteContentModel):
     )
 
     row_number = models.IntegerField()
-    identifier_field = models.CharField(
-        max_length=DEFAULT_TITLE_LENGTH
-    )  # todo: this can be shorter
+    identifier_field = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
     identifier_value = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
-
-    # todo: link to the created object (probably via a model-specific m2m table?)
 
 
 class ImportJob(BaseJob):
@@ -65,7 +83,7 @@ class ImportJob(BaseJob):
             "delete": predicates.is_language_admin_or_super,
         }
 
-    title = models.CharField(blank=True)
+    description = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
 
     mode = models.CharField(
         choices=ImportJobMode.choices,
@@ -79,11 +97,6 @@ class ImportJob(BaseJob):
 
     data = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
 
-    # todo: does the validation_result need to include all rows or only the ones with messages?
     validation_report = models.OneToOneField(
         ImportJobReport, null=True, on_delete=models.SET_NULL
     )
-
-    # todo: import_report = models.OneToOneField(
-    #         ImportJobReport, null=True, on_delete=models.SET_NULL
-    #     )

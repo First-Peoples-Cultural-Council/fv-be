@@ -22,7 +22,7 @@ from backend.tasks.media_tasks import generate_media_thumbnails
 from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
-from .constants import MAX_FILEFIELD_LENGTH
+from .constants import MAX_DESCRIPTION_LENGTH, MAX_FILEFIELD_LENGTH
 from .validators import validate_no_duplicate_urls
 
 
@@ -219,7 +219,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
     title = models.CharField(max_length=200)
 
     # from dc:description
-    description = models.CharField(max_length=500, blank=True)
+    description = models.CharField(max_length=MAX_DESCRIPTION_LENGTH, blank=True)
 
     # see specific media models for migration info
     acknowledgement = models.TextField(max_length=500, blank=True)
