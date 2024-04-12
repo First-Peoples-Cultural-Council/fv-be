@@ -34,10 +34,10 @@ class ImportJobReport(BaseSiteContentModel):
         verbose_name = _("Import Job Report")
         verbose_name_plural = _("Import Job Reports")
         rules_permissions = {
-            "view": predicates.is_language_admin_or_super,
-            "add": predicates.is_language_admin_or_super,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "view": predicates.is_at_least_editor_or_super,
+            "add": predicates.is_at_least_editor_or_super,
+            "change": predicates.is_at_least_editor_or_super,
+            "delete": predicates.is_at_least_editor_or_super,
         }
 
     total_rows = models.IntegerField(null=True)
@@ -52,10 +52,10 @@ class ImportJobReportRow(BaseSiteContentModel):
         verbose_name = _("Import Job Report Row")
         verbose_name_plural = _("Import Job Report Rows")
         rules_permissions = {
-            "view": predicates.is_language_admin_or_super,
-            "add": predicates.is_language_admin_or_super,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "view": predicates.is_at_least_editor_or_super,
+            "add": predicates.is_at_least_editor_or_super,
+            "change": predicates.is_at_least_editor_or_super,
+            "delete": predicates.is_at_least_editor_or_super,
         }
 
     report = models.ForeignKey(
@@ -77,10 +77,10 @@ class ImportJob(BaseJob):
         verbose_name = _("Import Job")
         verbose_name_plural = _("Import Jobs")
         rules_permissions = {
-            "view": predicates.is_language_admin_or_super,
-            "add": predicates.is_language_admin_or_super,
-            "change": predicates.is_language_admin_or_super,
-            "delete": predicates.is_language_admin_or_super,
+            "view": predicates.is_at_least_editor_or_super,
+            "add": predicates.is_at_least_editor_or_super,
+            "change": predicates.is_at_least_editor_or_super,
+            "delete": predicates.is_at_least_editor_or_super,
         }
 
     description = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
