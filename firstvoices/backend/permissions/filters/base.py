@@ -100,7 +100,7 @@ def has_at_least_editor_membership(user):
     return get_site_role_at_least_filter(user, Role.EDITOR)
 
 
-def has_at_least_language_admin_membership(user):
+def has_language_admin_membership(user):
     return get_site_role_at_least_filter(user, Role.LANGUAGE_ADMIN)
 
 
@@ -133,7 +133,7 @@ def is_superadmin(user):
 # combo site-and-app role filters
 #
 def is_at_least_language_admin(user):
-    return has_at_least_language_admin_membership(user) | is_at_least_staff_admin(user)
+    return has_language_admin_membership(user) | is_at_least_staff_admin(user)
 
 
 #
