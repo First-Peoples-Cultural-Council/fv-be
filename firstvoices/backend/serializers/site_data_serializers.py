@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
-from backend.models import Category
+from backend.models import Category, MTDExportFormat, Site
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.media import Audio, Image, Video
+from backend.serializers.base_serializers import SiteContentLinkedTitleSerializer
 
 
 def dict_entry_type_mtd_conversion(type):
@@ -25,6 +26,19 @@ class CategoriesDataSerializer(serializers.ModelSerializer):
             "category",
             "parent_category",
         )
+
+
+class MTDSiteDataSerializer(SiteContentLinkedTitleSerializer):
+    mtd_export_format = serializers.SerializerMethodField()
+
+    def get_mtd_export_format(self, site):
+        return serializers.JSONField(
+            MTDExportFormat.objects.filter(site=site).latest().latest_export_result
+        )
+
+    class Meta:
+        model = Site
+        fields = ("mtd_export_format",)
 
 
 class MediaDataSerializer(serializers.ModelSerializer):
