@@ -3,13 +3,13 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend.models.async_results import BaseJob
 from backend.models.base import BaseSiteContentModel
 from backend.models.constants import (
     DEFAULT_TITLE_LENGTH,
     MAX_DESCRIPTION_LENGTH,
     MAX_NOTE_LENGTH,
 )
+from backend.models.jobs import BaseJob
 from backend.models.media import File
 from backend.permissions import predicates
 
