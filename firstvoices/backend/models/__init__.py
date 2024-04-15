@@ -16,6 +16,12 @@ from .dictionary import (  # noqa F401
     Translation,
 )
 from .immersion_labels import ImmersionLabel  # noqa F401
+from .import_jobs import (  # noqa F401
+    ImportJob,
+    ImportJobMode,
+    ImportJobReport,
+    ImportJobReportRow,
+)
 from .jobs import BulkVisibilityJob, CustomOrderRecalculationResult  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
