@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from backend.models import CustomOrderRecalculationResult
 from backend.permissions.predicates import is_superadmin
-from backend.serializers.async_results_serializers import (
+from backend.serializers.job_serializers import (
     CustomOrderRecalculationPreviewResultSerializer,
     CustomOrderRecalculationResultSerializer,
 )
@@ -59,7 +59,7 @@ from backend.views.exceptions import CeleryError
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculateView(
+class CustomOrderRecalculateViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,
@@ -168,7 +168,7 @@ class CustomOrderRecalculateView(
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculatePreviewView(
+class CustomOrderRecalculatePreviewViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ListViewOnlyModelViewSet,

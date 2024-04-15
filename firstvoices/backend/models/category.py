@@ -3,7 +3,10 @@ from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.models.base import BaseSiteContentModel
-from backend.models.constants import CATEGORY_POS_MAX_TITLE_LENGTH
+from backend.models.constants import (
+    CATEGORY_POS_MAX_TITLE_LENGTH,
+    MAX_DESCRIPTION_LENGTH,
+)
 from backend.permissions import predicates
 
 
@@ -12,7 +15,7 @@ class Category(BaseSiteContentModel):
 
     # Fields
     title = models.CharField(max_length=CATEGORY_POS_MAX_TITLE_LENGTH)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
     # i.e. A category may have a parent, but the parent category cannot have a parent itself. (i.e. no grandparents).
     # This is enforced in the clean method.
     parent = models.ForeignKey(

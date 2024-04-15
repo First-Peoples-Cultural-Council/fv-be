@@ -47,7 +47,6 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "audio",
         "categories",
         "characters",
-        "data",
         "dictionary",
         "dictionary_cleanup",
         "dictionary_cleanup_preview",
@@ -79,9 +78,9 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     # api links
     audio = SiteViewLinkField(view_name="api:audio-list")
+    bulk_visibility = SiteViewLinkField(view_name="api:bulk-visibility-list")
     categories = SiteViewLinkField(view_name="api:category-list")
     characters = SiteViewLinkField(view_name="api:character-list")
-    data = SiteViewLinkField(view_name="api:data-list")
     dictionary = SiteViewLinkField(view_name="api:dictionaryentry-list")
     dictionary_cleanup = SiteViewLinkField(view_name="api:dictionary-cleanup-list")
     dictionary_cleanup_preview = SiteViewLinkField(
@@ -118,9 +117,9 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "banner_video",
             "homepage",
             "audio",
+            "bulk_visibility",
             "categories",
             "characters",
-            "data",
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",

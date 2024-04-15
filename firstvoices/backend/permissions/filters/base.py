@@ -100,7 +100,7 @@ def has_at_least_editor_membership(user):
     return get_site_role_at_least_filter(user, Role.EDITOR)
 
 
-def has_at_least_language_admin_membership(user):
+def has_language_admin_membership(user):
     return get_site_role_at_least_filter(user, Role.LANGUAGE_ADMIN)
 
 
@@ -133,7 +133,7 @@ def is_superadmin(user):
 # combo site-and-app role filters
 #
 def is_at_least_language_admin(user):
-    return has_at_least_language_admin_membership(user) | is_at_least_staff_admin(user)
+    return has_language_admin_membership(user) | is_at_least_staff_admin(user)
 
 
 #
@@ -177,3 +177,21 @@ def has_team_access_to_site_obj(user):
         return always_false(user)
 
     return Q(membership_set__user=user) & Q(membership_set__role__gte=Role.ASSISTANT)
+
+
+#
+# Filters for related dictionary entry
+# used in ImmersionLabel
+def has_member_access_to_related_dictionary_entry(user):
+    return (
+        has_at_least_member_membership(user)
+        & ~Q(dictionary_entry__visibility=Visibility.TEAM)
+        & ~has_team_site()
+    )
+
+
+# Adding NOSONAR to prevent sonar from raising warnings for unused parameter
+def has_public_access_to_related_dictionary_entry(user=None):  # NOSONAR
+    return Q(dictionary_entry__visibility=Visibility.PUBLIC) & Q(
+        site__visibility=Visibility.PUBLIC
+    )

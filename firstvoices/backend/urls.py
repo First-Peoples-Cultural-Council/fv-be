@@ -2,14 +2,15 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.router import CustomRouter
 from backend.views.audio_views import AudioViewSet
+from backend.views.bulkvisibilityjob_views import BulkVisibilityJobViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.contact_us_views import ContactUsView
 from backend.views.custom_order_recalculate_views import (
-    CustomOrderRecalculatePreviewView,
-    CustomOrderRecalculateView,
+    CustomOrderRecalculatePreviewViewSet,
+    CustomOrderRecalculateViewSet,
 )
-from backend.views.data_views import MTDSitesDataViewSet, SitesDataViewSet
+from backend.views.data_views import MTDSitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
@@ -45,20 +46,22 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"audio", AudioViewSet, basename="audio")
+sites_router.register(
+    r"bulk-visibility", BulkVisibilityJobViewSet, basename="bulk-visibility"
+)
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
-sites_router.register(r"data", SitesDataViewSet, basename="data")
 sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
-    CustomOrderRecalculatePreviewView,
+    CustomOrderRecalculatePreviewViewSet,
     basename="dictionary-cleanup-preview",
 )
 sites_router.register(
     r"dictionary-cleanup",
-    CustomOrderRecalculateView,
+    CustomOrderRecalculateViewSet,
     basename="dictionary-cleanup",
 )
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")

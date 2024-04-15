@@ -25,13 +25,13 @@ django-timezone-field==6.1.0
 djangorestframework==3.15.1
 djangorestframework-camel-case==1.4.2
 drf-nested-routers==0.93.5  # https://github.com/alanjds/drf-nested-routers/
-drf-spectacular==0.27.1
+drf-spectacular==0.27.2
 editdistance==0.8.1
 elastic-transport==8.13.0
 elasticsearch==7.13.4
 elasticsearch-dsl==7.4.1
 et-xmlfile==1.1.0
-eventlet==0.35.2
+eventlet==0.36.1
 factory-boy==3.3.0
 Faker==24.3.0
 ffmpeg-python==0.2.0
@@ -65,12 +65,12 @@ pytest==8.1.1
 pytest-django==4.8.0  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.14.0 #https://github.com/pytest-dev/pytest-mock
 python-crontab==3.0.0
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-magic==0.4.27
 pytz==2024.1
 PyYAML==6.0.1
-redis==5.0.1
+redis==5.0.3
 regex==2023.12.25
 requests==2.31.0
 rules==3.3

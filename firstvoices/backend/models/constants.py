@@ -11,6 +11,7 @@ MAX_FILEFIELD_LENGTH = 500
 MAX_NOTE_LENGTH = 500
 MAX_REASON_NOTE_LENGTH = 2500
 MAX_EMAIL_LENGTH = 254
+MAX_DESCRIPTION_LENGTH = 500
 
 # constants for the default widgets, subset of the complete list of widgets
 WIDGET_ALPHABET = "WIDGET_ALPHABET"

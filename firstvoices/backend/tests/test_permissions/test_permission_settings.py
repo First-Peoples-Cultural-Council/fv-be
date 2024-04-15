@@ -3,8 +3,7 @@ import pytest
 from django.apps import apps
 from factory.django import DjangoModelFactory
 
-
-from backend.models import Lyric, StoryPage
+from backend.models import ImmersionLabel, Lyric, StoryPage
 from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentModel
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
@@ -44,7 +43,6 @@ class TestPermissionManager:
     models = [
         m
         for m in apps.get_app_config("backend").get_models()
-
         if (m not in (Lyric, StoryPage))
     ]
 
@@ -120,6 +118,10 @@ class TestPermissionManager:
         when we add new kinds of models.
         """
 
+        if issubclass(model_cls, ImmersionLabel):
+            self.generate_immersion_label_test_data(model_factory, user, user_role)
+            return
+
         if issubclass(model_cls, BaseDictionaryContentModel):
             self.generate_dictionary_content_test_data(model_factory, user, user_role)
             return
@@ -193,3 +195,26 @@ class TestPermissionManager:
                     site=site2, visibility=v2
                 )
                 model_factory.create(dictionary_entry=entry2)
+
+    def generate_immersion_label_test_data(self, model_factory, user, user_role):
+        for site_visibility in Visibility:
+            # create a site with a membership
+            site1 = factories.SiteFactory.create(visibility=site_visibility)
+            factories.MembershipFactory(site=site1, user=user, role=user_role)
+
+            # Adding a dictionary entry matching site's visibility
+            entry_1 = factories.DictionaryEntryFactory.create(
+                site=site1, visibility=site_visibility
+            )
+
+            # create object in the site
+            model_factory.create(site=site1, dictionary_entry=entry_1)
+
+            # create a site with no membership
+            site2 = factories.SiteFactory.create(visibility=site_visibility)
+            entry_2 = factories.DictionaryEntryFactory.create(
+                site=site2, visibility=site_visibility
+            )
+
+            # create object in the site
+            model_factory.create(site=site2, dictionary_entry=entry_2)
