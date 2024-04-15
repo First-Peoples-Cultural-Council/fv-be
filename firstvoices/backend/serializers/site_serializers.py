@@ -78,6 +78,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     # api links
     audio = SiteViewLinkField(view_name="api:audio-list")
+    bulk_visibility = SiteViewLinkField(view_name="api:bulk-visibility-list")
     categories = SiteViewLinkField(view_name="api:category-list")
     characters = SiteViewLinkField(view_name="api:character-list")
     dictionary = SiteViewLinkField(view_name="api:dictionaryentry-list")
@@ -116,6 +117,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "banner_video",
             "homepage",
             "audio",
+            "bulk_visibility",
             "categories",
             "characters",
             "dictionary",
