@@ -7,6 +7,7 @@ from tablib import InvalidDimensions
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
 from backend.models.media import File
+from backend.permissions.predicates.base import is_superadmin
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentUrlMixin,
@@ -52,7 +53,6 @@ class ImportReportSerializer(serializers.ModelSerializer):
     total_rows = serializers.IntegerField(read_only=True)
     diff_headers = serializers.ListField(child=serializers.CharField(), read_only=True)
     rows = ImportReportRowSerializer(many=True, read_only=True)
-    # invalid_rows = ImportResultRowSerializer(many=True)   # todo
     totals = serializers.JSONField(read_only=True)
 
     class Meta:
@@ -84,7 +84,6 @@ class ImportJobSerializer(
         ]
 
     def create_file(self, file_data, filetype, site):
-        # todo: refactor to share this with the media serializers
         user = self.context["request"].user
         file = filetype(
             content=file_data,
@@ -161,17 +160,31 @@ class ImportJobSerializer(
                 entry.mode = mode
 
             # Validate the user and then attach the foreign user object
+            # and check if the user requesting is a superadmin
             if run_as_user:
+                if not is_superadmin(self.context["request"].user, None):
+                    # Only superadmins can use this field
+                    raise serializers.ValidationError(
+                        detail={
+                            "run_as_user": [
+                                "This field can only be used by superadmins."
+                            ]
+                        }
+                    )
                 user_model = get_user_model()
                 user = user_model.objects.filter(email=run_as_user)
                 if len(user) == 0:
                     raise serializers.ValidationError(
-                        detail={"data": ["User with the provided email not found."]}
+                        detail={
+                            "run_as_user": ["User with the provided email not found."]
+                        }
                     )
                 if len(user) > 1:
                     raise serializers.ValidationError(
                         detail={
-                            "data": ["More than 1 user with the provided email found."]
+                            "run_as_user": [
+                                "More than 1 user with the provided email found."
+                            ]
                         }
                     )
                 entry.run_as_user = user[0]
