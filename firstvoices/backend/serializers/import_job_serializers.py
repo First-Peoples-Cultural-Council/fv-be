@@ -1,6 +1,7 @@
 import logging
 
 import tablib
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
@@ -70,6 +71,7 @@ class ImportJobSerializer(
     )
 
     validation_result = ImportReportSerializer(read_only=True)
+    run_as_user = serializers.CharField()
 
     class Meta:
         model = ImportJob
@@ -78,6 +80,7 @@ class ImportJobSerializer(
             "url",
             "data",
             "validation_result",
+            "run_as_user",
         ]
 
     def create_file(self, file_data, filetype, site):
@@ -144,8 +147,7 @@ class ImportJobSerializer(
             # else, print warnings for extra or invalid headers
             self.validate_headers(VALID_HEADERS, table.headers)
 
-            # Step 3. If the file is valid, create an ImportJob instance and save the file
-
+            # If the file is valid, create an ImportJob instance and save the file
             description = validated_data.get("description", "")
             mode = validated_data.get("mode", None)
             run_as_user = validated_data.get("run_as_user", None)
@@ -157,18 +159,23 @@ class ImportJobSerializer(
             )
             if mode:
                 entry.mode = mode
-            # Validated the user and then attach the foreign user object
+
+            # Validate the user and then attach the foreign user object
             if run_as_user:
-                entry.run_as_user = validated_data["run_as_user"]
-            # Step 5. If the model instance gets created, in a signal, launch the async task
-            # to start importing data (where we can import/skip rows etc.)
+                user_model = get_user_model()
+                user = user_model.objects.filter(email=run_as_user)
+                if len(user) == 0:
+                    raise serializers.ValidationError(
+                        detail={"data": ["User with the provided email not found."]}
+                    )
+                if len(user) > 1:
+                    raise serializers.ValidationError(
+                        detail={
+                            "data": ["More than 1 user with the provided email found."]
+                        }
+                    )
+                entry.run_as_user = user[0]
 
-            # In-memory stream
-            # temp_file_contents = copy(stremead contents)
-
-            # Create a new files with original metadata and copied over content
-            # orig_file.contents= temp_file_contents
-            # orig_file.save()
             entry.save()
             return entry
         except InvalidDimensions:
