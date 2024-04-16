@@ -655,6 +655,26 @@ class PauseIndexingSignalMixin:
         mock_index_methods["mock_remove"].assert_not_called()
         mock_index_methods["mock_sync"].assert_not_called()
 
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_edit(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.title = "New Title"
+            instance.save()
+
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_update"].assert_not_called()
+
 
 class PauseIndexingSignalRelatedMixin(PauseIndexingSignalMixin):
     """
