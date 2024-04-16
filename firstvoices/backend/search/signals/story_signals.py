@@ -13,18 +13,18 @@ from backend.search.tasks.index_manager_tasks import (
 
 @receiver(post_save, sender=Story)
 def sync_story_in_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.site):
         request_sync_in_index(StoryDocumentManager, instance)
 
 
 @receiver(post_delete, sender=Story)
 def remove_story_from_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.site):
         request_remove_from_index(StoryDocumentManager, instance)
 
 
 @receiver(post_delete, sender=StoryPage)
 @receiver(post_save, sender=StoryPage)
 def sync_story_pages_in_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.site):
         request_update_in_index(StoryDocumentManager, instance.story)

@@ -40,7 +40,7 @@ def sync_site_features_in_media_indexes(sender, instance, **kwargs):
     sync_all_media_site_content_in_indexes(site)
 
 
-def indexing_signals_paused(instance):
-    if not instance.site.sitefeature_set.filter(key="indexing_paused").exists():
+def indexing_signals_paused(site):
+    if not site.sitefeature_set.filter(key="indexing_paused").exists():
         return False
-    return instance.site.sitefeature_set.get(key="indexing_paused").is_enabled
+    return site.sitefeature_set.get(key="indexing_paused").is_enabled

@@ -4,10 +4,13 @@ from backend.search.indexing.dictionary_index import DictionaryEntryDocumentMana
 from backend.tests import factories
 from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseRelatedInstanceSignalTest,
+    PauseIndexingSignalRelatedMixin,
 )
 
 
-class TestDictionaryEntryIndexingSignals(BaseRelatedInstanceSignalTest):
+class TestDictionaryEntryIndexingSignals(
+    PauseIndexingSignalRelatedMixin, BaseRelatedInstanceSignalTest
+):
     manager = DictionaryEntryDocumentManager
     factory = factories.DictionaryEntryFactory
     related_factories = [

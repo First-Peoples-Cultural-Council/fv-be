@@ -13,18 +13,18 @@ from backend.search.tasks.index_manager_tasks import (
 
 @receiver(post_save, sender=Song)
 def sync_song_in_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.site):
         request_sync_in_index(SongDocumentManager, instance)
 
 
 @receiver(post_delete, sender=Song)
 def remove_song_from_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.site):
         request_remove_from_index(SongDocumentManager, instance)
 
 
 @receiver(post_delete, sender=Lyric)
 @receiver(post_save, sender=Lyric)
 def sync_song_lyrics_in_index(sender, instance, **kwargs):
-    if not indexing_signals_paused(instance):
+    if not indexing_signals_paused(instance.song.site):
         request_update_in_index(SongDocumentManager, instance.song)
