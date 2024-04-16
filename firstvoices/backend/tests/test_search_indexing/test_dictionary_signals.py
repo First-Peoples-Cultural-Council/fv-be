@@ -117,3 +117,59 @@ class TestDictionaryEntryIndexingSignals(
             category.delete()
 
         self.assert_only_update_called(instance, mock_index_methods)
+
+    @pytest.mark.django_db
+    def test_assign_category_m2m_main_instance_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            self.assign_new_category_via_manager(instance)
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_remove_category_m2m_main_instance_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            category = self.assign_new_category_via_manager(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            instance.categories.remove(category)
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_delete_category_m2m_main_instance_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            category = self.assign_new_category_via_manager(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            category.delete()
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
