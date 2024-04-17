@@ -8,11 +8,20 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from backend.models.constants import Visibility
 from backend.models.import_jobs import ImportJob
 from backend.tests.factories.import_job_factories import ImportJobFactory
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    WriteApiTestMixin,
+)
 from backend.tests.test_apis.base_media_test import FormDataMixin
 
 
-class TestImportEndpoints(FormDataMixin, BaseUncontrolledSiteContentApiTest):
+class TestImportEndpoints(
+    FormDataMixin,
+    WriteApiTestMixin,
+    SiteContentCreateApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+):
     """
     End-to-end tests that the /import endpoints have the expected behaviour.
     """
@@ -39,17 +48,20 @@ class TestImportEndpoints(FormDataMixin, BaseUncontrolledSiteContentApiTest):
     def create_minimal_instance(self, site, visibility=None):
         return ImportJobFactory.create(site=site)
 
+    def get_file_data(self, file):
+        return {
+            "path": f"http://testserver{file.content.url}",
+            "mimetype": file.mimetype,
+            "size": file.size,
+        }
+
     def get_expected_response(self, instance, site):
         return {
             "id": str(instance.id),
             "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
             "description": instance.description,
             "runAsUser": instance.run_as_user,
-            "data": {
-                "path": f"http://testserver/{instance.data.content}",
-                "mimetype": instance.data.mimetype,
-                "size": instance.data.size,
-            },
+            "data": self.get_file_data(instance.data),
         }
 
     def get_valid_data(self, site=None):
@@ -75,82 +87,22 @@ class TestImportEndpoints(FormDataMixin, BaseUncontrolledSiteContentApiTest):
     def assert_created_response(self, expected_data, actual_response):
         return self.assert_update_response(expected_data, actual_response)
 
-    def add_related_objects(self, instance):
-        # no related objects to add
-        pass
+    def assert_updated_instance(self, expected_data, actual_instance):
+        assert actual_instance.description == expected_data["description"]
+        # Data field to be verified
 
-    def assert_related_objects_deleted(self, instance):
-        # no related objects to delete
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PATCH requests atm.")
-    @pytest.mark.django_db
-    def test_patch_403(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PATCH requests atm.")
-    @pytest.mark.django_db
-    def test_patch_site_missing_404(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PATCH requests atm.")
-    @pytest.mark.django_db
-    def test_patch_invalid_400(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PATCH requests atm.")
-    @pytest.mark.django_db
-    def test_patch_instance_missing_404(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PATCH requests atm.")
-    @pytest.mark.django_db
-    def test_patch_success_200(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_invalid_400(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_403(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_site_missing_404(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_instance_missing_404(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_success_200(self):
-        pass
-
-    @pytest.mark.skip("The endpoint does not support PUT requests atm.")
-    @pytest.mark.django_db
-    def test_update_with_nulls_success_200(self):
-        pass
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["description"] == expected_data["description"]
+        # Data field to be verified
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_team_access(self, role):
+        # Only editor or above have access to this object
         pass
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_member_access(self, role):
-        # See custom permission tests instead
-        pass
-
-    def assert_updated_instance(self, expected_data, actual_instance):
-        pass
-
-    def assert_update_response(self, expected_data, actual_response):
+        # Only editor or above have access to this object
         pass
 
     @pytest.mark.django_db

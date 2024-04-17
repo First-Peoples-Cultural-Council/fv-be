@@ -142,5 +142,3 @@ class ImportJobSerializer(
                     ]
                 }
             )
-        except Exception as e:
-            raise e
