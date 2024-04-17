@@ -71,16 +71,17 @@ class ImportJobSerializer(
     )
 
     validation_result = ImportReportSerializer(read_only=True)
-    run_as_user = serializers.CharField()
+    run_as_user = serializers.CharField(required=False)
 
     class Meta:
         model = ImportJob
         fields = [
             "id",
             "url",
-            "data",
+            "description",
             "validation_result",
             "run_as_user",
+            "data",
         ]
 
     def create_file(self, file_data, filetype, site):
@@ -139,7 +140,9 @@ class ImportJobSerializer(
         file = self.create_file(validated_data["data"], File, validated_data["site"])
 
         try:
-            table = tablib.Dataset().load(file.content.read().decode("utf-8-sig"))
+            table = tablib.Dataset().load(
+                file.content.read().decode("utf-8-sig"), format="csv"
+            )
 
             # Validate headers
             # If required headers not present, raise ValidationError

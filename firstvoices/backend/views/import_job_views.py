@@ -59,7 +59,7 @@ from .api_doc_variables import id_parameter, site_slug_parameter
 )
 class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
     serializer_class = ImportJobSerializer
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "post", "delete"]
     parser_classes = [
         parsers.FormParser,
         parsers.MultiPartParser,  # to support file uploads
