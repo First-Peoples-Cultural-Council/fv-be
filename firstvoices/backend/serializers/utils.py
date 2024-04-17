@@ -1,8 +1,31 @@
 import logging
 
+from rest_framework import serializers
 from rest_framework.exceptions import APIException
 
 from backend.models.sites import Site
+
+# For import-jobs header validation
+REQUIRED_HEADERS = ["title", "type"]
+VALID_HEADERS = [
+    "title",
+    "type",
+    "translation",
+    "audio",
+    "image",
+    "video",
+    "video_embed_link",
+    "category",
+    "note",
+    "acknowledgement",
+    "part_of_speech",
+    "pronunciation",
+    "alt_spelling",
+    "visibility",
+    "include_on_kids_site",
+    "include_in_games",
+    "related_entry",
+]
 
 
 def get_site_from_context(serializer):
@@ -52,3 +75,45 @@ def get_usages_total(usages_dict):
             # If there is a site the image is a banner/logo of
             total += 1
     return total
+
+
+def validate_headers(input_headers):
+    # If any invalid headers are present, raise a warning
+    # If any headers are present in the _n variaiton, but their original header is not present in the list
+    # before the variation, raise a warning
+    # The headers for which the warning has been raise would be ignored while processing
+
+    input_headers = [h.strip().lower() for h in input_headers]
+
+    # First check for the required headers
+    if set(REQUIRED_HEADERS) - set(input_headers):
+        raise serializers.ValidationError(
+            detail={
+                "data": [
+                    "CSV file does not have the required headers. Please check and upload again."
+                ]
+            }
+        )
+
+    valid_headers_present = {s: False for s in VALID_HEADERS}
+
+    for input_header in input_headers:
+        if input_header in VALID_HEADERS:
+            valid_headers_present[input_header] = True
+        else:
+            checked = False
+            for valid_header in VALID_HEADERS:
+                if (
+                    input_header.startswith(valid_header + "_")
+                    and valid_headers_present[valid_header]
+                ):
+                    # Check if the original header is present before the variation
+                    pass
+                else:
+                    print(
+                        f"Warning: Original header not found, instead found just a variation. {input_header}"
+                    )
+                checked = True
+                break
+            if not checked:
+                print(f"Warning: Unknown header {input_header}")
