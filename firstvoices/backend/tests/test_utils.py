@@ -118,12 +118,12 @@ class TestValidateRequiredHeaders:
 
 class TestValidateAllHeaders:
     def test_valid_headers_correct_order(self, caplog):
-        input_headers = ["title", "type", "related_audio", "related_audio_2"]
+        input_headers = ["title", "type", "audio", "audio_2"]
         validate_all_headers(input_headers)
 
         assert (
             "Warning: Original header not found, instead found just a variation."
-            in caplog.text
+            not in caplog.text
         )
         assert "Warning: Unknown header" not in caplog.text
 
