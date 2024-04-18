@@ -109,7 +109,7 @@ class TestValidateRequiredHeaders:
 
     @pytest.mark.parametrize(
         "input_headers",
-        [["type", "notes"], ["title", "related_audio"], ["notes", "related_audio"]],
+        [["type", "notes"], ["title", "audio"], ["notes", "audio"]],
     )
     def test_valid_headers_missing(self, input_headers):
         with pytest.raises(serializers.ValidationError):
@@ -138,11 +138,11 @@ class TestValidateAllHeaders:
         assert "Warning: Unknown header" not in caplog.text
 
     def test_unknown_header_found(self, caplog):
-        input_headers = ["title", "type", "audio", "audio_2", "related_car"]
+        input_headers = ["title", "type", "audio", "audio_2", "relatedCar"]
         validate_all_headers(input_headers)
 
         assert (
             "Warning: Original header not found, instead found just a variation."
             not in caplog.text
         )
-        assert "Warning: Unknown header related_Car" not in caplog.text
+        assert "Warning: Unknown header relatedCar" not in caplog.text

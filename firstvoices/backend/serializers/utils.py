@@ -94,31 +94,26 @@ def validate_required_headers(input_headers):
 
 def validate_all_headers(input_headers):
     logger = logging.getLogger(__name__)
+    input_headers = [h.strip().lower() for h in input_headers]
+
     # If any invalid headers are present, raise a warning
     # If any headers are present in the _n variaiton, but their original header is not present in the list
     # before the variation, raise a warning
     # The headers for which the warning has been raise would be ignored while processing
-
-    input_headers = [h.strip().lower() for h in input_headers]
-
-    valid_headers_present = {s: False for s in VALID_HEADERS}
-
+    seen_headers = set()
     for input_header in input_headers:
-        if input_header in VALID_HEADERS:
-            valid_headers_present[input_header] = True
-        else:
-            checked = False
-            for valid_header in VALID_HEADERS:
-                if input_header.startswith(valid_header + "_"):
-                    if valid_headers_present[valid_header]:
-                        # Check if the original header is present before the variation
-                        pass
-                    else:
+        if "_" in input_header:
+            base_header, variation = input_header.rsplit("_", 1)
+            if int(variation) > 1:
+                if base_header not in VALID_HEADERS:
+                    logger.warning(f"Warning: Unknown header {input_header}")
+                else:
+                    if base_header not in seen_headers:
                         logger.warning(
                             f"Warning: Original header not found, instead found just a variation. {input_header}"
                         )
-                    checked = True
-                    break
-            if not checked:
+        else:
+            if input_header not in VALID_HEADERS:
                 logger.warning(f"Warning: Unknown header {input_header}")
-    return True
+            else:
+                seen_headers.add(input_header)
