@@ -82,18 +82,27 @@ class TestImportEndpoints(
 
     def assert_created_instance(self, pk, data):
         instance = ImportJob.objects.get(pk=pk)
+        if "description" in data:
+            assert instance.description == data["description"]
         return self.assert_updated_instance(data, instance)
 
     def assert_created_response(self, expected_data, actual_response):
+        # To handle create_with_nulls_success_201
+        if "description" in expected_data and "description" in actual_response:
+            assert actual_response["description"] == expected_data["description"]
         return self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert actual_instance.description == expected_data["description"]
-        # Data field to be verified
+        # Verifying file
+        expected_file_name = expected_data["data"].file.name.split("/")[-1]
+        actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
+        assert expected_file_name == actual_file_name
 
     def assert_update_response(self, expected_data, actual_response):
-        assert actual_response["description"] == expected_data["description"]
-        # Data field to be verified
+        # Verifying file
+        expected_file_name = expected_data["data"].file.name.split("/")[-1]
+        actual_file_name = actual_response["data"]["path"].split("/")[-1]
+        assert expected_file_name == actual_file_name
 
     @pytest.mark.skip("This endpoint has custom permissions")
     def test_detail_team_access(self, role):
