@@ -1,5 +1,9 @@
 from itertools import product
 
+import pytest
+from rest_framework import serializers
+
+from backend.serializers.utils import validate_all_headers, validate_required_headers
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
@@ -96,3 +100,49 @@ class TestCharacterUtils:
         expected_str = "ááááá"
         input_str = "ááááá"
         assert nfc(input_str) == expected_str
+
+
+class TestValidateRequiredHeaders:
+    def test_valid_headers_present(self):
+        input_headers = ["title", "type", "description", "notes"]
+        assert validate_required_headers(input_headers)
+
+    @pytest.mark.parametrize(
+        "input_headers",
+        [["type", "notes"], ["title", "related_audio"], ["notes", "related_audio"]],
+    )
+    def test_valid_headers_missing(self, input_headers):
+        with pytest.raises(serializers.ValidationError):
+            validate_required_headers(input_headers)
+
+
+class TestValidateAllHeaders:
+    def test_valid_headers_correct_order(self, caplog):
+        input_headers = ["title", "type", "related_audio", "related_audio_2"]
+        validate_all_headers(input_headers)
+
+        assert (
+            "Warning: Original header not found, instead found just a variation."
+            in caplog.text
+        )
+        assert "Warning: Unknown header" not in caplog.text
+
+    def test_only__n_variation_found(self, caplog):
+        input_headers = ["title", "type", "audio_2"]
+        validate_all_headers(input_headers)
+
+        assert (
+            "Warning: Original header not found, instead found just a variation. audio_2"
+            in caplog.text
+        )
+        assert "Warning: Unknown header" not in caplog.text
+
+    def test_unknown_header_found(self, caplog):
+        input_headers = ["title", "type", "audio", "audio_2", "related_car"]
+        validate_all_headers(input_headers)
+
+        assert (
+            "Warning: Original header not found, instead found just a variation."
+            not in caplog.text
+        )
+        assert "Warning: Unknown header related_Car" not in caplog.text

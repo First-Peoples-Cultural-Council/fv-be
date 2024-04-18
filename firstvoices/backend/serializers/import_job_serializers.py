@@ -13,7 +13,11 @@ from backend.serializers.base_serializers import (
     SiteContentUrlMixin,
 )
 from backend.serializers.media_serializers import FileUploadSerializer
-from backend.serializers.utils import get_site_from_context, validate_headers
+from backend.serializers.utils import (
+    get_site_from_context,
+    validate_all_headers,
+    validate_required_headers,
+)
 from backend.serializers.validators import SupportedFileType
 
 CSV_MIME_TYPE = "text/csv"
@@ -86,8 +90,10 @@ class ImportJobSerializer(
 
             # Validate headers
             # If required headers not present, raise ValidationError
+            validate_required_headers(table.headers)
+
             # else, print warnings for extra or invalid headers
-            validate_headers(table.headers)
+            validate_all_headers(table.headers)
 
             # If the file is valid, create an ImportJob instance and save the file
             description = validated_data.get("description", "")

@@ -77,15 +77,8 @@ def get_usages_total(usages_dict):
     return total
 
 
-def validate_headers(input_headers):
-    # If any invalid headers are present, raise a warning
-    # If any headers are present in the _n variaiton, but their original header is not present in the list
-    # before the variation, raise a warning
-    # The headers for which the warning has been raise would be ignored while processing
-
-    input_headers = [h.strip().lower() for h in input_headers]
-
-    # First check for the required headers
+def validate_required_headers(input_headers):
+    # check for the required headers
     if set(REQUIRED_HEADERS) - set(input_headers):
         raise serializers.ValidationError(
             detail={
@@ -94,6 +87,17 @@ def validate_headers(input_headers):
                 ]
             }
         )
+    return True
+
+
+def validate_all_headers(input_headers):
+    logger = logging.getLogger(__name__)
+    # If any invalid headers are present, raise a warning
+    # If any headers are present in the _n variaiton, but their original header is not present in the list
+    # before the variation, raise a warning
+    # The headers for which the warning has been raise would be ignored while processing
+
+    input_headers = [h.strip().lower() for h in input_headers]
 
     valid_headers_present = {s: False for s in VALID_HEADERS}
 
@@ -103,17 +107,16 @@ def validate_headers(input_headers):
         else:
             checked = False
             for valid_header in VALID_HEADERS:
-                if (
-                    input_header.startswith(valid_header + "_")
-                    and valid_headers_present[valid_header]
-                ):
-                    # Check if the original header is present before the variation
-                    pass
-                else:
-                    print(
-                        f"Warning: Original header not found, instead found just a variation. {input_header}"
-                    )
-                checked = True
-                break
+                if input_header.startswith(valid_header + "_"):
+                    if valid_headers_present[valid_header]:
+                        # Check if the original header is present before the variation
+                        pass
+                    else:
+                        logger.warning(
+                            f"Warning: Original header not found, instead found just a variation. {input_header}"
+                        )
+                    checked = True
+                    break
             if not checked:
-                print(f"Warning: Unknown header {input_header}")
+                logger.warning(f"Warning: Unknown header {input_header}")
+    return True
