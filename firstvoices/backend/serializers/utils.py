@@ -79,6 +79,8 @@ def get_usages_total(usages_dict):
 
 def validate_required_headers(input_headers):
     # check for the required headers
+
+    input_headers = [h.strip().lower() for h in input_headers]
     if set(REQUIRED_HEADERS) - set(input_headers):
         raise serializers.ValidationError(
             detail={

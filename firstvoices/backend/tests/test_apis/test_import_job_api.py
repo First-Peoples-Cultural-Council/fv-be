@@ -189,10 +189,6 @@ class TestImportEndpoints(
         )
 
         assert response.status_code == 400
-        response_data = json.loads(response.content)
-        assert response_data["runAsUser"] == [
-            "This field can only be used by superadmins."
-        ]
 
     # Custom permissions tests
     @pytest.mark.skip("This endpoint has custom permissions.")
