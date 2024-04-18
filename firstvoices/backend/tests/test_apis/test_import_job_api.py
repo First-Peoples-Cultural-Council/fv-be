@@ -5,8 +5,9 @@ import sys
 import pytest
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
-from backend.models.constants import Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob
+from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
@@ -104,16 +105,6 @@ class TestImportEndpoints(
         actual_file_name = actual_response["data"]["path"].split("/")[-1]
         assert expected_file_name == actual_file_name
 
-    @pytest.mark.skip("This endpoint has custom permissions")
-    def test_detail_team_access(self, role):
-        # Only editor or above have access to this object
-        pass
-
-    @pytest.mark.skip("This endpoint has custom permissions")
-    def test_detail_member_access(self, role):
-        # Only editor or above have access to this object
-        pass
-
     @pytest.mark.django_db
     def test_invalid_dimensions(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -157,3 +148,152 @@ class TestImportEndpoints(
         assert response_data["data"] == [
             "CSV file does not have the required headers. Please check and upload again."
         ]
+
+    @pytest.mark.django_db
+    def test_run_as_user_field_superadmins(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        data = self.get_valid_data(site)
+        data["run_as_user"] = user.email
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+        response_data = json.loads(response.content)
+        assert response_data["runAsUser"] == user.email
+
+    @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.django_db
+    def test_run_as_user_field_non_superadmins_400(self, role):
+        # run_as_user field can only be used by suepradmins
+        # return 400 if used by editors or language admins
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=role
+        )
+
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data(site)
+        data["run_as_user"] = user.email
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert response_data["runAsUser"] == [
+            "This field can only be used by superadmins."
+        ]
+
+    # Custom permissions tests
+    @pytest.mark.skip("This endpoint has custom permissions.")
+    def test_detail_team_access(self, role):
+        # Only editor or above have access to this object
+        # Check custom permissions tests below
+        pass
+
+    @pytest.mark.skip("This endpoint has custom permissions.")
+    def test_detail_member_access(self, role):
+        # Only editor or above have access to this object
+        # Check custom permissions tests below
+        pass
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
+    @pytest.mark.parametrize("visibility", Visibility)
+    @pytest.mark.django_db
+    def test_detail_403_for_members_and_assistants(self, role, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.parametrize("visibility", Visibility)
+    @pytest.mark.django_db
+    def test_detail_editor_and_language_admin_access(self, role, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize("visibility", Visibility)
+    @pytest.mark.django_db
+    def test_detail_superadmin_access(self, visibility):
+        site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
+
+        instance = self.create_minimal_instance(site=site)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
+    @pytest.mark.django_db
+    def test_list_empty_for_non_admins(self, role):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        factories.JoinRequestFactory.create(site=site)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["results"] == []
+
+    @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.parametrize("visibility", Visibility)
+    @pytest.mark.django_db
+    def test_list_editor_and_language_admin_access(self, role, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(user=user, site=site, role=role)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize("visibility", Visibility)
+    @pytest.mark.django_db
+    def test_list_app_admin_access(self, visibility):
+        site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
