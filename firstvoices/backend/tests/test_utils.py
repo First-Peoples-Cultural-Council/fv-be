@@ -122,12 +122,12 @@ class TestValidateAllHeaders:
             "title",
             "type",
             "part_of_speech",
-            "part_of_speech_2, note_def",
+            "part_of_speech_2",
         ]
         validate_all_headers(input_headers)
 
     def test_unknown_header_found(self, caplog):
-        input_headers = ["title", "type", "related_car"]
+        input_headers = ["title", "type", "related_car", "note_def", "unknown"]
         validate_all_headers(input_headers)
 
         assert "Unknown header. Skipping column related_car." in caplog.text
