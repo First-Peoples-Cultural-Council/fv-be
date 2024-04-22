@@ -93,27 +93,37 @@ def validate_required_headers(input_headers):
 
 
 def validate_all_headers(input_headers):
-    logger = logging.getLogger(__name__)
     input_headers = [h.strip().lower() for h in input_headers]
 
-    # If any invalid headers are present, raise a warning
-    # If any headers are present in the _n variaiton, but their original header is not present in the list
-    # before the variation, raise a warning
-    # The headers for which the warning has been raise would be ignored while processing
-    seen_headers = set()
-    for input_header in input_headers:
-        if "_" in input_header:
-            base_header, variation = input_header.rsplit("_", 1)
-            if int(variation) > 1:
-                if base_header not in VALID_HEADERS:
-                    logger.warning(f"Warning: Unknown header {input_header}")
-                else:
-                    if base_header not in seen_headers:
-                        logger.warning(
-                            f"Warning: Original header not found, instead found just a variation. {input_header}"
-                        )
+    # If any invalid headers are present, skip them and raise a warning
+    for header in input_headers:
+        if header in VALID_HEADERS:
+            continue
         else:
-            if input_header not in VALID_HEADERS:
-                logger.warning(f"Warning: Unknown header {input_header}")
-            else:
-                seen_headers.add(input_header)
+            check_header_variation(header)
+
+
+def check_header_variation(input_header):
+    # The input header can have a _n variation upto 5, e.g. note_5
+    # raise a warning if the header is not valid or n>5.
+
+    logger = logging.getLogger(__name__)
+    splits = input_header.split("_")
+    if len(splits) >= 2:
+        prefix = "_".join(splits[:-1])
+        variation = splits[-1]
+    else:
+        prefix = input_header
+        variation = None
+
+    # Check if the prefix is a valid header
+    if prefix in VALID_HEADERS:
+        if variation and variation.isdigit():
+            variation = int(variation)
+            if variation < 1 or variation > 5:
+                logger.warning(
+                    f"Variation out of range. Skipping column {input_header}."
+                )
+                return
+
+    logger.warning(f"Unknown header. Skipping column {input_header}.")

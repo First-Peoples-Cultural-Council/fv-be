@@ -109,7 +109,7 @@ class TestValidateRequiredHeaders:
 
     @pytest.mark.parametrize(
         "input_headers",
-        [["type", "notes"], ["title", "audio"], ["notes", "audio"]],
+        [["type", "note"], ["title", "audio"], ["note", "audio"]],
     )
     def test_valid_headers_missing(self, input_headers):
         with pytest.raises(serializers.ValidationError):
@@ -117,32 +117,26 @@ class TestValidateRequiredHeaders:
 
 
 class TestValidateAllHeaders:
-    def test_valid_headers_correct_order(self, caplog):
-        input_headers = ["title", "type", "audio", "audio_2"]
+    def test_valid_headers(self, caplog):
+        input_headers = [
+            "title",
+            "type",
+            "part_of_speech",
+            "part_of_speech_2, note_def",
+        ]
         validate_all_headers(input_headers)
-
-        assert (
-            "Warning: Original header not found, instead found just a variation."
-            not in caplog.text
-        )
-        assert "Warning: Unknown header" not in caplog.text
-
-    def test_only__n_variation_found(self, caplog):
-        input_headers = ["title", "type", "audio_2"]
-        validate_all_headers(input_headers)
-
-        assert (
-            "Warning: Original header not found, instead found just a variation. audio_2"
-            in caplog.text
-        )
-        assert "Warning: Unknown header" not in caplog.text
 
     def test_unknown_header_found(self, caplog):
-        input_headers = ["title", "type", "audio", "audio_2", "relatedCar"]
+        input_headers = ["title", "type", "related_car"]
         validate_all_headers(input_headers)
 
-        assert (
-            "Warning: Original header not found, instead found just a variation."
-            not in caplog.text
-        )
-        assert "Warning: Unknown header relatedCar" not in caplog.text
+        assert "Unknown header. Skipping column related_car." in caplog.text
+        assert "Variation out of range. Skipping column." not in caplog.text
+
+    @pytest.mark.parametrize("test_header", ["part_of_speech_14", "note_26"])
+    def test_invalid_variation(self, caplog, test_header):
+        input_headers = ["title", "type", test_header]
+        validate_all_headers(input_headers)
+
+        assert "Unknown header. Skipping column" not in caplog.text
+        assert f"Variation out of range. Skipping column {test_header}." in caplog.text

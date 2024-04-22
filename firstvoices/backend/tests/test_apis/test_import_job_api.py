@@ -171,10 +171,29 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
         assert response_data["runAsUser"] == user.email
 
+    @pytest.mark.django_db
+    def test_invalid_run_as_user_field(self):
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        data = self.get_valid_data(site)
+        data["run_as_user"] = "abc@xyz.com"
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert response_data["runAsUser"] == ["User with the provided email not found."]
+
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
     def test_run_as_user_field_non_superadmins_400(self, role):
-        # run_as_user field can only be used by suepradmins
+        # run_as_user field can only be used by superadmins
         # return 400 if used by editors or language admins
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=role

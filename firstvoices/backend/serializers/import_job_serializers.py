@@ -119,18 +119,14 @@ class ImportJobSerializer(
                         }
                     )
                 user_model = get_user_model()
-                user = user_model.objects.filter(email=run_as_user)
+                # in case user_models uses something other than email for their username field
+                username_field = user_model.USERNAME_FIELD
+                user = user_model.objects.filter(**{username_field: run_as_user})
                 if len(user) == 0:
                     raise serializers.ValidationError(
                         detail={
-                            "run_as_user": ["User with the provided email not found."]
-                        }
-                    )
-                if len(user) > 1:
-                    raise serializers.ValidationError(
-                        detail={
                             "run_as_user": [
-                                "More than 1 user with the provided email found."
+                                f"User with the provided {username_field} not found."
                             ]
                         }
                     )
