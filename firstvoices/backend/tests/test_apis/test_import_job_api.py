@@ -91,13 +91,13 @@ class TestImportEndpoints(
     def assert_created_response(self, expected_data, actual_response):
         # To handle create_with_nulls_success_201
         if "mode" in expected_data:
-            expected_data["mode"] == actual_response["mode"]
+            assert expected_data["mode"] == actual_response["mode"]
         assert actual_response["title"] == expected_data["title"]
         return self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
         if "mode" in expected_data:
-            expected_data["mode"] == actual_instance.mode
+            assert expected_data["mode"] == actual_instance.mode
         assert expected_data["title"] == actual_instance.title
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]

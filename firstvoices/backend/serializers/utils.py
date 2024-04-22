@@ -117,13 +117,10 @@ def check_header_variation(input_header):
         variation = None
 
     # Check if the prefix is a valid header
-    if prefix in VALID_HEADERS:
-        if variation and variation.isdigit():
-            variation = int(variation)
-            if variation < 1 or variation > 5:
-                logger.warning(
-                    f"Variation out of range. Skipping column {input_header}."
-                )
-                return
+    if prefix in VALID_HEADERS and variation and variation.isdigit():
+        variation = int(variation)
+        if variation < 1 or variation > 5:
+            logger.warning(f"Variation out of range. Skipping column {input_header}.")
+            return
 
     logger.warning(f"Unknown header. Skipping column {input_header}.")
