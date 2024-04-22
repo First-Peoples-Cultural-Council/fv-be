@@ -94,13 +94,11 @@ class TestImportEndpoints(
         return self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        # Verifying file
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
         assert expected_file_name == actual_file_name
 
     def assert_update_response(self, expected_data, actual_response):
-        # Verifying file
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_response["data"]["path"].split("/")[-1]
         assert expected_file_name == actual_file_name
