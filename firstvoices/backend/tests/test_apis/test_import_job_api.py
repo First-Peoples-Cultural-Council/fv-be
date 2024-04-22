@@ -60,19 +60,22 @@ class TestImportEndpoints(
         return {
             "id": str(instance.id),
             "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
-            "description": instance.description,
+            "title": instance.title,
             "runAsUser": instance.run_as_user,
             "data": self.get_file_data(instance.data),
+            "mode": instance.mode,
         }
 
     def get_valid_data(self, site=None):
         return {
-            "description": "Test Description",
+            "title": "Test Title",
             "data": self.get_sample_file("import_job_minimal.csv"),
+            "mode": "update",
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
+            "title": "Test Title",
             "data": self.get_sample_file("import_job_minimal.csv"),
         }
 
@@ -83,17 +86,19 @@ class TestImportEndpoints(
 
     def assert_created_instance(self, pk, data):
         instance = ImportJob.objects.get(pk=pk)
-        if "description" in data:
-            assert instance.description == data["description"]
         return self.assert_updated_instance(data, instance)
 
     def assert_created_response(self, expected_data, actual_response):
         # To handle create_with_nulls_success_201
-        if "description" in expected_data and "description" in actual_response:
-            assert actual_response["description"] == expected_data["description"]
+        if "mode" in expected_data:
+            expected_data["mode"] == actual_response["mode"]
+        assert actual_response["title"] == expected_data["title"]
         return self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
+        if "mode" in expected_data:
+            expected_data["mode"] == actual_instance.mode
+        assert expected_data["title"] == actual_instance.title
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
         assert expected_file_name == actual_file_name
@@ -108,7 +113,7 @@ class TestImportEndpoints(
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         data = {
-            "description": "Test Description",
+            "title": "Test Title",
             "data": self.get_sample_file("import_job_invalid_dimensions.csv"),
         }
 
@@ -130,7 +135,7 @@ class TestImportEndpoints(
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         data = {
-            "description": "Test Description",
+            "title": "Test Title",
             "data": self.get_sample_file("import_job_missing_req_headers.csv"),
         }
 

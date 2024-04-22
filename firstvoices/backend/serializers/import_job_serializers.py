@@ -10,7 +10,7 @@ from backend.models.media import File
 from backend.permissions.predicates.base import is_superadmin
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
-    SiteContentUrlMixin,
+    SiteContentLinkedTitleSerializer,
 )
 from backend.serializers.media_serializers import FileUploadSerializer
 from backend.serializers.utils import (
@@ -45,7 +45,7 @@ class ImportReportSerializer(serializers.ModelSerializer):
 
 
 class ImportJobSerializer(
-    CreateSiteContentSerializerMixin, SiteContentUrlMixin, serializers.ModelSerializer
+    CreateSiteContentSerializerMixin, SiteContentLinkedTitleSerializer
 ):
     logger = logging.getLogger(__name__)
 
@@ -59,14 +59,12 @@ class ImportJobSerializer(
 
     class Meta:
         model = ImportJob
-        fields = [
-            "id",
-            "url",
-            "description",
+        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
+            "mode",
             "validation_result",
             "run_as_user",
             "data",
-        ]
+        )
 
     def create_file(self, file_data, filetype, site):
         user = self.context["request"].user
@@ -96,12 +94,12 @@ class ImportJobSerializer(
             validate_all_headers(table.headers)
 
             # If the file is valid, create an ImportJob instance and save the file
-            description = validated_data.get("description", "")
+            title = validated_data.get("title", "")
             mode = validated_data.get("mode", None)
             run_as_user = validated_data.get("run_as_user", None)
 
             entry = ImportJob(
-                description=description,
+                title=title,
                 data=file,
                 site=validated_data["site"],
             )

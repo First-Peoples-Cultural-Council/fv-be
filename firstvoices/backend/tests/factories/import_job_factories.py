@@ -40,6 +40,6 @@ class ImportJobFactory(DjangoModelFactory):
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
 
-    description = factory.Sequence(lambda n: "description %03d" % n)
+    title = factory.Sequence(lambda n: "title %03d" % n)
     data = factory.SubFactory(FileFactory)
     validation_report = factory.SubFactory(ImportJobReportFactory)

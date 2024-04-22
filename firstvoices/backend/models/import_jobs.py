@@ -83,7 +83,7 @@ class ImportJob(BaseJob):
             "delete": predicates.is_at_least_editor_or_super,
         }
 
-    description = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
+    title = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
 
     mode = models.CharField(
         choices=ImportJobMode.choices,
