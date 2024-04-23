@@ -1,5 +1,3 @@
-import logging
-
 import tablib
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -14,13 +12,11 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.media_serializers import FileUploadSerializer
 from backend.serializers.utils import (
+    check_required_headers,
     get_site_from_context,
-    validate_all_headers,
-    validate_required_headers,
+    validate_headers,
 )
 from backend.serializers.validators import SupportedFileType
-
-CSV_MIME_TYPE = "text/csv"
 
 
 class ImportReportRowSerializer(serializers.ModelSerializer):
@@ -47,15 +43,12 @@ class ImportReportSerializer(serializers.ModelSerializer):
 class ImportJobSerializer(
     CreateSiteContentSerializerMixin, SiteContentLinkedTitleSerializer
 ):
-    logger = logging.getLogger(__name__)
-
     id = serializers.UUIDField(read_only=True)
     data = FileUploadSerializer(
-        validators=[SupportedFileType(mimetypes=[CSV_MIME_TYPE, "text/plain"])],
+        validators=[SupportedFileType(mimetypes=["text/csv", "text/plain"])],
     )
-
-    validation_result = ImportReportSerializer(read_only=True)
     run_as_user = serializers.CharField(required=False)
+    validation_result = ImportReportSerializer(read_only=True)
 
     class Meta:
         model = ImportJob
@@ -88,10 +81,10 @@ class ImportJobSerializer(
 
             # Validate headers
             # If required headers not present, raise ValidationError
-            validate_required_headers(table.headers)
+            check_required_headers(table.headers)
 
             # else, print warnings for extra or invalid headers
-            validate_all_headers(table.headers)
+            validate_headers(table.headers)
 
             # If the file is valid, create an ImportJob instance and save the file
             title = validated_data.get("title", "")
@@ -119,7 +112,6 @@ class ImportJobSerializer(
                         }
                     )
                 user_model = get_user_model()
-                # in case user_models uses something other than email for their username field
                 username_field = user_model.USERNAME_FIELD
                 user = user_model.objects.filter(**{username_field: run_as_user})
                 if len(user) == 0:

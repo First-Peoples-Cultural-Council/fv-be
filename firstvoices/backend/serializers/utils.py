@@ -77,7 +77,7 @@ def get_usages_total(usages_dict):
     return total
 
 
-def validate_required_headers(input_headers):
+def check_required_headers(input_headers):
     # check for the required headers
 
     input_headers = [h.strip().lower() for h in input_headers]
@@ -92,7 +92,7 @@ def validate_required_headers(input_headers):
     return True
 
 
-def validate_all_headers(input_headers):
+def validate_headers(input_headers):
     input_headers = [h.strip().lower() for h in input_headers]
 
     # If any invalid headers are present, skip them and raise a warning
