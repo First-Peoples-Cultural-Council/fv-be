@@ -12,7 +12,6 @@ on:
       - main
 
 jobs:
-
   pytest:
     name: pytest
     runs-on: ubuntu-latest
