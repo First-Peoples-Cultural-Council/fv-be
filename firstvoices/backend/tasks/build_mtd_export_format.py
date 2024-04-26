@@ -97,7 +97,8 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         remove_combining_characters=True,
     )
     # NOTE: We might want to save these LanguageConfigurations elsewhere
-    #       when we decide to customize the search algorithms. They can
+    #       when we decide to customize
+    #       the search algorithms. They can
     #       be serialized with the export method (config.export()).
     config = LanguageConfiguration(
         L1=None if site is None else site.title,
@@ -121,15 +122,15 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         dictionary.build_indices()
     preview = dictionary.export().model_dump(mode="json")
 
-    # Delete any previous preview results
-    MTDExportFormat.objects.filter(site=site, is_preview=True).delete()
-
-    # Save the result to the database
-    MTDExportFormat.objects.create(
+    # Save the new result to the database
+    new_result = MTDExportFormat.objects.create(
         site=site,
         latest_export_result=preview,
         task_id=task_id,
-        is_preview=True,
+        is_preview=False,
     )
+
+    # Delete any previous results and previews
+    MTDExportFormat.objects.filter(site=site).exclude(id=new_result.id).delete()
 
     return preview
