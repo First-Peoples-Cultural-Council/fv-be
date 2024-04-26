@@ -10,13 +10,13 @@ from backend.views.custom_order_recalculate_views import (
     CustomOrderRecalculatePreviewViewSet,
     CustomOrderRecalculateViewSet,
 )
-from backend.views.data_views import MTDSitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.join_request_views import JoinRequestViewSet
+from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
