@@ -1,4 +1,4 @@
-name: Build
+name: Build FV-BE
 on:
   push:
     branches:
@@ -12,7 +12,6 @@ on:
       - main
 
 jobs:
-
   pytest:
     name: pytest
     runs-on: ubuntu-latest
@@ -101,7 +100,7 @@ jobs:
     name: Monitor Dev Deployment
     environment: dev
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
     needs: sonarcloud
     steps:
       - name: Configure AWS credentials
@@ -124,6 +123,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
@@ -160,7 +160,7 @@ jobs:
     name: Monitor Preprod Deployment
     environment: preprod
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request'))
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -182,6 +182,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
@@ -218,7 +219,7 @@ jobs:
     name: Monitor Prod Deployment
     environment: prod
     runs-on: ubuntu-latest
-    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))
+    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request'))
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -240,6 +241,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";

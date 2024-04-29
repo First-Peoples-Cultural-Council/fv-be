@@ -47,7 +47,7 @@ class TestMTDIndexAndScoreTask:
         assert "type=string_type, input_value=None" in caplog.text
 
     @pytest.mark.django_db
-    def test_entry_not_public(self, site):
+    def test_only_include_public_entries(self, site):
         """Only public entries should be included in MTD exports.
 
         Args:
@@ -77,11 +77,8 @@ class TestMTDIndexAndScoreTask:
         result = build_index_and_calculate_scores(site.slug)
         # Check that the exported contents were saved
         saved_export_format = MTDExportFormat.objects.filter(site=site)
-        assert result == saved_export_format.latest().latest_export_result
-        assert result["config"]["L1"] == site.title
-        assert len(result["data"]) == 0
-        assert len(result["l1_index"]) == 0
-        assert len(result["l2_index"]) == 0
+        assert saved_export_format.latest().latest_export_result == result
+        assert not saved_export_format.latest().is_preview
 
     @pytest.mark.django_db
     def test_build_and_score(self, site):
@@ -157,3 +154,15 @@ class TestMTDIndexAndScoreTask:
         assert len(result["data"][1]["audio"]) == 1
         assert result["data"][1]["img"] is not None
         assert len(result["data"][1]["video"]) == 1
+
+    @pytest.mark.django_db
+    def test_old_results_removed(self, site):
+        build_index_and_calculate_scores(site.slug)
+        build_index_and_calculate_scores(site.slug)
+        final_result = build_index_and_calculate_scores(site.slug)
+
+        # Check that only the most recent is in the db
+        saved_results = MTDExportFormat.objects.filter(site=site)
+        assert len(saved_results) == 1
+        assert saved_results.latest().latest_export_result == final_result
+        assert not saved_results.latest().is_preview

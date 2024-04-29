@@ -6,12 +6,11 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import mixins, serializers, viewsets
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models import MTDExportFormat
-from backend.serializers.site_data_serializers import MTDSiteDataSerializer
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
 
@@ -47,16 +46,15 @@ class MTDSitesDataViewSet(
     viewsets.GenericViewSet,
 ):
     http_method_names = ["get"]
-    serializer_class = MTDSiteDataSerializer
-    renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
-
-    def get_queryset(self):
-        site = self.get_validated_site()
-        return MTDExportFormat.objects.filter(site__id__in=site)
+    renderer_classes = [JSONRenderer]  # no camel-case for this data format
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        mtd_exports_for_site = MTDExportFormat.objects.filter(site__id__in=site)
+        mtd_exports_for_site = (
+            MTDExportFormat.objects.filter(site=site.first())
+            .filter(is_preview=False)
+            .only("latest_export_result")
+        )
 
         if mtd_exports_for_site:
             return Response(mtd_exports_for_site.latest().latest_export_result)
