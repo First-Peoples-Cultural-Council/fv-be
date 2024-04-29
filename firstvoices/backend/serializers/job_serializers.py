@@ -14,6 +14,7 @@ from backend.models.jobs import (
 from backend.serializers import fields
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
+    CreateSiteContentSerializerMixin,
     base_timestamp_fields,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
@@ -117,12 +118,28 @@ class CustomOrderRecalculationPreviewResultSerializer(
         ]
 
 
-class BulkVisibilityJobSerializer(BaseJobSerializer):
+class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:bulk-visibility-detail"
     )
     from_visibility = fields.EnumField(enum=Visibility)
     to_visibility = fields.EnumField(enum=Visibility)
+
+    def validate(self, attrs):
+        from_visibility = attrs.get("from_visibility")
+        to_visibility = attrs.get("to_visibility")
+
+        if abs(from_visibility - to_visibility) != 10:
+            raise serializers.ValidationError(
+                "The difference between 'from_visibility' and 'to_visibility' must be exactly 1 step."
+            )
+
+        if from_visibility == to_visibility:
+            raise serializers.ValidationError(
+                "'from_visibility' and 'to_visibility' must be different."
+            )
+
+        return super().validate(attrs)
 
     class Meta:
         model = BulkVisibilityJob
