@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
-from backend.serializers.utils.context import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 from ..models import Membership, Site
 from ..models.constants import Role, Visibility

@@ -1,18 +1,20 @@
 import tablib
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
 from backend.models.media import File
-from backend.permissions.predicates.base import is_superadmin
 from backend.serializers.base_serializers import (
     CreateSiteContentSerializerMixin,
     SiteContentLinkedTitleSerializer,
 )
 from backend.serializers.media_serializers import FileUploadSerializer
-from backend.serializers.utils.context import get_site_from_context
-from backend.serializers.utils.csv_utils import check_required_headers, validate_headers
+from backend.serializers.utils.context_utils import get_site_from_context
+from backend.serializers.utils.import_job_utils import (
+    check_required_headers,
+    validate_headers,
+    validate_username,
+)
 from backend.serializers.validators import SupportedFileType
 
 
@@ -87,6 +89,10 @@ class ImportJobSerializer(
             title = validated_data.get("title", "")
             mode = validated_data.get("mode", None)
             run_as_user = validated_data.get("run_as_user", None)
+            user = None
+
+            if run_as_user:
+                user = validate_username(run_as_user, self.context["request"].user)
 
             entry = ImportJob(
                 title=title,
@@ -95,31 +101,11 @@ class ImportJobSerializer(
             )
             if mode:
                 entry.mode = mode
+            if user:
+                entry.run_as_user = user
 
             # Validate the user and then attach the foreign user object
             # and check if the user requesting is a superadmin
-            if run_as_user:
-                if not is_superadmin(self.context["request"].user, None):
-                    # Only superadmins can use this field
-                    raise serializers.ValidationError(
-                        detail={
-                            "run_as_user": [
-                                "This field can only be used by superadmins."
-                            ]
-                        }
-                    )
-                user_model = get_user_model()
-                username_field = user_model.USERNAME_FIELD
-                user = user_model.objects.filter(**{username_field: run_as_user})
-                if len(user) == 0:
-                    raise serializers.ValidationError(
-                        detail={
-                            "run_as_user": [
-                                f"User with the provided {username_field} not found."
-                            ]
-                        }
-                    )
-                entry.run_as_user = user[0]
 
             entry.save()
             return entry

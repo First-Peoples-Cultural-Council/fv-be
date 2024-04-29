@@ -11,7 +11,7 @@ from rest_framework.validators import UniqueValidator
 
 from backend.models import media
 from backend.models.validators import validate_no_duplicate_urls
-from backend.serializers.utils.context import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 from .base_serializers import (
     CreateSiteContentSerializerMixin,

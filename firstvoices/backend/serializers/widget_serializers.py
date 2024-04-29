@@ -14,7 +14,7 @@ from backend.serializers.base_serializers import (
     WritableControlledSiteContentSerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.utils.context import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 
 class WidgetSettingsSerializer(serializers.ModelSerializer):

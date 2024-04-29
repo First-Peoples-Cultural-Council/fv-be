@@ -3,7 +3,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator, qs_filter
 
-from backend.serializers.utils.context import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 
 class SameSite:
