@@ -32,6 +32,16 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
             id_parameter,
         ],
     ),
+    create=extend_schema(
+        description="Create and queue a new bulk visibility job.",
+        responses={
+            201: BulkVisibilityJobSerializer,
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
+        },
+        parameters=[site_slug_parameter],
+    ),
 )
 class BulkVisibilityJobViewSet(
     SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
