@@ -7,6 +7,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     # Check for updates to GitHub Actions every weekday
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
@@ -18,5 +19,6 @@ updates:
     # Check for updates to python packages every week
     schedule:
       interval: "weekly"
+    target-branch: "dev"
     ignore:
       - dependency-name: "elasticsearch"  # specific version is required for our prod environment
