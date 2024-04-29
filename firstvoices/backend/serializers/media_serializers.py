@@ -11,6 +11,7 @@ from rest_framework.validators import UniqueValidator
 
 from backend.models import media
 from backend.models.validators import validate_no_duplicate_urls
+from backend.serializers.utils.context import get_site_from_context
 
 from .base_serializers import (
     CreateSiteContentSerializerMixin,
@@ -19,7 +20,6 @@ from .base_serializers import (
     UpdateSerializerMixin,
     base_id_fields,
 )
-from .utils import get_site_from_context
 from .validators import SupportedFileType
 
 

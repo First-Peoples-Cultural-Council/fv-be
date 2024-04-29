@@ -13,7 +13,7 @@ from backend.serializers.media_serializers import (
     VideoSerializer,
 )
 from backend.serializers.page_serializers import SitePageUsageSerializer
-from backend.serializers.utils import get_usages_total
+from backend.serializers.utils.media import get_usages_total
 
 
 class GenericUsageSerializer(

@@ -7,11 +7,12 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 
+from backend.serializers.utils.context import get_site_from_context
+
 from ..models import Membership, Site
 from ..models.constants import Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
-from .utils import get_site_from_context
 
 base_timestamp_fields = ("created", "created_by", "last_modified", "last_modified_by")
 base_id_fields = ("id", "url", "title")

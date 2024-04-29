@@ -14,7 +14,7 @@ from backend.serializers.base_serializers import (
     WritableControlledSiteContentSerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
-from backend.serializers.utils import get_site_from_context
+from backend.serializers.utils.context import get_site_from_context
 
 
 class WidgetSettingsSerializer(serializers.ModelSerializer):
@@ -56,7 +56,11 @@ class SiteWidgetDetailSerializer(
         )
 
     def create(self, validated_data):
-        settings = validated_data.pop("widgetsettings_set") if "widgetsettings_set" in validated_data else []
+        settings = (
+            validated_data.pop("widgetsettings_set")
+            if "widgetsettings_set" in validated_data
+            else []
+        )
         validated_data["format"] = WidgetFormats[
             str.upper(validated_data.pop("get_format_display"))
         ]

@@ -10,7 +10,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
-from backend.serializers.utils import get_site_from_context
+from backend.serializers.utils.context import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 

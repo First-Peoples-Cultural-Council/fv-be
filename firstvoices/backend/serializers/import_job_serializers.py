@@ -11,11 +11,8 @@ from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
 )
 from backend.serializers.media_serializers import FileUploadSerializer
-from backend.serializers.utils import (
-    check_required_headers,
-    get_site_from_context,
-    validate_headers,
-)
+from backend.serializers.utils.context import get_site_from_context
+from backend.serializers.utils.csv_utils import check_required_headers, validate_headers
 from backend.serializers.validators import SupportedFileType
 
 

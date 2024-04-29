@@ -24,7 +24,7 @@ from backend.serializers.media_serializers import (
     RelatedMediaSerializerMixin,
     RelatedVideoMinimalSerializer,
 )
-from backend.serializers.utils import get_story_from_context
+from backend.serializers.utils.context import get_story_from_context
 from backend.serializers.validators import SameSite
 
 
