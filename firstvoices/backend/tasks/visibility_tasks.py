@@ -1,7 +1,5 @@
 from celery import shared_task
 from django.db import transaction
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 from backend.models import DictionaryEntry, SitePage, Song, Story, StoryPage
 from backend.models.jobs import BulkVisibilityJob, JobStatus
@@ -10,19 +8,6 @@ from backend.models.widget import SiteWidget
 from backend.search.tasks.site_content_indexing_tasks import (
     sync_all_site_content_in_indexes,
 )
-from firstvoices.celery import link_error_handler
-
-
-@receiver(post_save, sender=BulkVisibilityJob)
-def request_bulk_visibility_change(sender, instance, **kwargs):
-    """
-    Starts the bulk visibility change job when a BulkVisibilityJob is created.
-    """
-    transaction.on_commit(
-        lambda: bulk_visibility_change_job.apply_async(
-            (instance.id,), link_error=link_error_handler.s()
-        )
-    )
 
 
 @shared_task

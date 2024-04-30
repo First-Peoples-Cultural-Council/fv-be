@@ -1,9 +1,7 @@
-from django.core.exceptions import PermissionDenied
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.jobs import BulkVisibilityJob
-from backend.permissions.predicates import is_superadmin
 from backend.serializers.job_serializers import BulkVisibilityJobSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -52,11 +50,6 @@ class BulkVisibilityJobViewSet(
 
     http_method_names = ["get", "post"]
     serializer_class = BulkVisibilityJobSerializer
-
-    def initial(self, *args, **kwargs):
-        if not is_superadmin(self.request.user, None):
-            raise PermissionDenied
-        super().initial(*args, **kwargs)
 
     def get_queryset(self):
         site = self.get_validated_site()
