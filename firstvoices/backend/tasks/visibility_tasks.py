@@ -28,7 +28,7 @@ def bulk_visibility_change_job(job_instance_id):
     else:
         SiteFeature.objects.create(site=site, key="indexing_paused", is_enabled=True)
     # Update all visibility for dictionary entries, songs, stories, story, pages, pages and widgets
-    # MUST be done as a single transaction
+    # Must be done as a single transaction
     entries = DictionaryEntry.objects.filter(site=site, visibility=job.from_visibility)
     songs = Song.objects.filter(site=site, visibility=job.from_visibility)
     stories = Story.objects.filter(site=site, visibility=job.from_visibility)
