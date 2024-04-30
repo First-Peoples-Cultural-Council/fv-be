@@ -7,6 +7,9 @@ from backend.models import DictionaryEntry, SitePage, Song, Story, StoryPage
 from backend.models.jobs import BulkVisibilityJob, JobStatus
 from backend.models.sites import SiteFeature
 from backend.models.widget import SiteWidget
+from backend.search.tasks.site_content_indexing_tasks import (
+    sync_all_site_content_in_indexes,
+)
 from firstvoices.celery import link_error_handler
 
 
@@ -69,6 +72,7 @@ def bulk_visibility_change_job(job_instance_id):
         return
 
     # Resume search indexing for site, + reindex entire site
+    sync_all_site_content_in_indexes(site)
     indexing_paused = site.sitefeature_set.get(key="indexing_paused")
     indexing_paused.is_enabled = False
     indexing_paused.save()
