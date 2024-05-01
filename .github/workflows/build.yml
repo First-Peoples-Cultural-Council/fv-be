@@ -124,6 +124,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
@@ -182,6 +183,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
@@ -240,6 +242,7 @@ jobs:
           exit 1;
           fi
       - name: "Monitor RUNID"
+        timeout-minutes: 10
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
