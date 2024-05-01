@@ -54,6 +54,10 @@ def bulk_visibility_change_job(job_instance_id):
         job.status = JobStatus.CANCELLED
         job.message = str(e)
         job.save()
+
+        indexing_paused = site.sitefeature_set.get(key="indexing_paused")
+        indexing_paused.is_enabled = False
+        indexing_paused.save()
         return
 
     # Resume search indexing for site, + reindex entire site

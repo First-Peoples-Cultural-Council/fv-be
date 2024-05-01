@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 
@@ -132,25 +133,39 @@ class TestVisibilityTasks:
             == 10 + existing_widgets
         )
 
-    # TODO: Fix this test
-    # @pytest.mark.django_db
-    # def test_bulk_visibility_change_job_exception(self):
-    #     site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-    #     factories.DictionaryEntryFactory.create_batch(10, site=site, visibility=Visibility.PUBLIC)
-    #     job = factories.BulkVisibilityJobFactory.create(
-    #         site=site,
-    #         from_visibility=Visibility.PUBLIC,
-    #         to_visibility=Visibility.MEMBERS
-    #     )
-    #
-    #     with pytest.raises(Exception):
-    #         bulk_visibility_change_job(job.id)
-    #
-    #     job.refresh_from_db()
-    #     site.refresh_from_db()
-    #
-    #     assert job.status == JobStatus.CANCELLED
-    #     assert site.visibility == Visibility.PUBLIC
-    #     assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
-    #     assert DictionaryEntry.objects.filter(site=site, visibility=Visibility.MEMBERS).count() == 0
-    #     assert DictionaryEntry.objects.filter(site=site, visibility=Visibility.PUBLIC).count() == 10
+    @pytest.mark.django_db
+    def test_bulk_visibility_change_job_exception(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.DictionaryEntryFactory.create_batch(
+            10, site=site, visibility=Visibility.PUBLIC
+        )
+        job = factories.BulkVisibilityJobFactory.create(
+            site=site,
+            from_visibility=Visibility.PUBLIC,
+            to_visibility=Visibility.MEMBERS,
+        )
+
+        with patch(
+            "django.db.models.query.QuerySet.update",
+            side_effect=Exception("Mocked exception"),
+        ):
+            bulk_visibility_change_job(job.id)
+
+            job.refresh_from_db()
+            site.refresh_from_db()
+
+            assert job.status == JobStatus.CANCELLED
+            assert site.visibility == Visibility.PUBLIC
+            assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
+            assert (
+                DictionaryEntry.objects.filter(
+                    site=site, visibility=Visibility.MEMBERS
+                ).count()
+                == 0
+            )
+            assert (
+                DictionaryEntry.objects.filter(
+                    site=site, visibility=Visibility.PUBLIC
+                ).count()
+                == 10
+            )
