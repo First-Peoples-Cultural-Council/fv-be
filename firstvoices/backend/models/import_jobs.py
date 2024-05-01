@@ -9,7 +9,7 @@ from backend.models.constants import (
     MAX_DESCRIPTION_LENGTH,
     MAX_NOTE_LENGTH,
 )
-from backend.models.jobs import BaseJob
+from backend.models.jobs import BaseJob, JobStatus
 from backend.models.media import File
 from backend.permissions import predicates
 
@@ -96,6 +96,15 @@ class ImportJob(BaseJob):
     )
 
     data = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+
+    # The following fields are for the dry-run and then presenting those results
+    validation_task_id = models.CharField(max_length=255, null=True, blank=True)
+
+    validation_status = models.CharField(
+        max_length=9,
+        choices=JobStatus.choices,
+        default=JobStatus.ACCEPTED,
+    )
 
     validation_report = models.OneToOneField(
         ImportJobReport, null=True, on_delete=models.SET_NULL

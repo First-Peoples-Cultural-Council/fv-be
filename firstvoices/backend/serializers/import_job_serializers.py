@@ -3,11 +3,11 @@ from rest_framework import serializers
 from tablib import InvalidDimensions
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
+from backend.models.jobs import JobStatus
 from backend.models.media import File
-from backend.serializers.base_serializers import (
-    CreateSiteContentSerializerMixin,
-    SiteContentLinkedTitleSerializer,
-)
+from backend.serializers import fields
+from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
+from backend.serializers.job_serializers import BaseJobSerializer
 from backend.serializers.media_serializers import FileUploadSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.utils.import_job_utils import (
@@ -39,23 +39,26 @@ class ImportReportSerializer(serializers.ModelSerializer):
         fields = ["total_rows", "diff_headers", "totals"]
 
 
-class ImportJobSerializer(
-    CreateSiteContentSerializerMixin, SiteContentLinkedTitleSerializer
-):
+class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     id = serializers.UUIDField(read_only=True)
     data = FileUploadSerializer(
         validators=[SupportedFileType(mimetypes=["text/csv", "text/plain"])],
     )
     run_as_user = serializers.CharField(required=False)
+
+    validation_task_id = serializers.CharField(read_only=True)
+    validation_status = fields.EnumField(enum=JobStatus, read_only=True)
     validation_result = ImportReportSerializer(read_only=True)
 
     class Meta:
         model = ImportJob
-        fields = SiteContentLinkedTitleSerializer.Meta.fields + (
+        fields = BaseJobSerializer.Meta.fields + (
             "mode",
             "validation_result",
             "run_as_user",
             "data",
+            "validation_task_id",
+            "validation_status",
         )
 
     def create_file(self, file_data, filetype, site):
