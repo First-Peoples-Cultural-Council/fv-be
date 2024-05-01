@@ -111,7 +111,7 @@ jobs:
           aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: "Setup RUNID"
         run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | tail -n 1 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | tail -n 1 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
@@ -169,7 +169,7 @@ jobs:
           aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: "Setup RUNID"
         run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | head -n 2 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
@@ -227,7 +227,7 @@ jobs:
           aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: "Setup RUNID"
         run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | head -n 2 | grep 'fv-be-webhook-' | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | head -n 2 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
