@@ -127,32 +127,32 @@ jobs:
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           echo "Running repo cloning..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           echo "Running image build..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
           echo "Running URL adjustments for FV-BE..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
           sleep 1;
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           echo "Running Helm-upgrade..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
           sleep 1;
-          echo "===================================================================================="
+          echo -e "\n========================================================================================================================================================================"
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
           echo "Wrapping up pipeline monitoring";
 
