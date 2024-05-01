@@ -53,6 +53,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     class Meta:
         model = ImportJob
         fields = BaseJobSerializer.Meta.fields + (
+            "title",
             "mode",
             "validation_result",
             "run_as_user",

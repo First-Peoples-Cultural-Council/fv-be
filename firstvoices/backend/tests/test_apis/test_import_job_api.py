@@ -63,7 +63,24 @@ class TestImportEndpoints(
             "title": instance.title,
             "runAsUser": instance.run_as_user,
             "data": self.get_file_data(instance.data),
-            "mode": instance.mode,
+            "created": instance.created.astimezone().isoformat(),
+            "createdBy": instance.created_by.email,
+            "lastModified": instance.last_modified.astimezone().isoformat(),
+            "lastModifiedBy": instance.last_modified_by.email,
+            "mode": instance.mode.lower(),
+            "taskId": instance.task_id,
+            "status": instance.status.lower(),
+            "message": instance.message,
+            "validationTaskId": instance.task_id,
+            "validationStatus": instance.validation_status.lower(),
+            "site": {
+                "id": str(site.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                "title": site.title,
+                "slug": site.slug,
+                "visibility": instance.site.get_visibility_display().lower(),
+                "language": site.language.title,
+            },
         }
 
     def get_valid_data(self, site=None):
