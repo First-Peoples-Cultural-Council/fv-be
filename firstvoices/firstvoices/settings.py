@@ -219,7 +219,7 @@ AUTH_USER_MODEL = "jwt_auth.User"
 JWT = jwt.config()
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"http(s)?:\/\/[a-zA-Z0-9-]+.localhost:3000",
+    r"http(s)?:\/\/([a-zA-Z0-9-]+\.)?localhost:3000",
 ] + os.getenv("ALLOWED_ORIGIN_REGEXES", "").split(",")
 
 LANGUAGE_CODE = "en-ca"
