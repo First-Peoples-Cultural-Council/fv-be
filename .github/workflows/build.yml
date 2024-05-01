@@ -6,6 +6,10 @@ on:
       - main
     tags:
       - 'r-*'
+  pull_request:
+    branches:
+      - dev
+      - main
 
 jobs:
 
@@ -92,11 +96,11 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-  
-  deploy_with_tekton: 
+
+  deploy_with_tekton:
     name: Monitor Dev Deployment
     environment: dev
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
     needs: sonarcloud
     steps:
@@ -115,7 +119,7 @@ jobs:
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""]; 
+          if [${{  env.RUNID  }} == ""];
           then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
           exit 1;
           fi
@@ -126,7 +130,7 @@ jobs:
           echo -e "\n========================================================================================================================================================================"
           echo "Running repo cloning..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           echo -e "\n========================================================================================================================================================================"
           echo "Running image build..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
@@ -141,21 +145,21 @@ jobs:
           echo -e "\n========================================================================================================================================================================"
           echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo -e "\n========================================================================================================================================================================"
           echo "Running Helm-upgrade..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo -e "\n========================================================================================================================================================================"
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
           echo "Wrapping up pipeline monitoring";
 
-  deploy_with_tekton_preprod: 
+  deploy_with_tekton_preprod:
     name: Monitor Preprod Deployment
     environment: preprod
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Configure AWS credentials
@@ -173,7 +177,7 @@ jobs:
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""]; 
+          if [${{  env.RUNID  }} == ""];
           then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
           exit 1;
           fi
@@ -184,7 +188,7 @@ jobs:
           echo "===================================================================================="
           echo "Running repo cloning..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           echo "===================================================================================="
           echo "Running image build..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
@@ -199,21 +203,21 @@ jobs:
           echo "===================================================================================="
           echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
           echo "Running Helm-upgrade..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
           echo "Wrapping up pipeline monitoring";
 
-  deploy_with_tekton_prod: 
+  deploy_with_tekton_prod:
     name: Monitor Prod Deployment
     environment: prod
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))
     steps:
       - name: Configure AWS credentials
@@ -231,7 +235,7 @@ jobs:
       - name: "Check RUNID Validity"
         run: |
           echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""]; 
+          if [${{  env.RUNID  }} == ""];
           then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
           exit 1;
           fi
@@ -242,7 +246,7 @@ jobs:
           echo "===================================================================================="
           echo "Running repo cloning..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           echo "===================================================================================="
           echo "Running image build..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
@@ -257,12 +261,12 @@ jobs:
           echo "===================================================================================="
           echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
           echo "Running Helm-upgrade..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }} 
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
