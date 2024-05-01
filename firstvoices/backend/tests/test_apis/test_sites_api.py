@@ -245,6 +245,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "images": f"{site_url}/images",
             "immersionLabels": f"{site_url}/immersion-labels",
             "joinRequests": f"{site_url}/join-requests",
+            "mtdData": f"{site_url}/mtd-data",
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
             "songs": f"{site_url}/songs",

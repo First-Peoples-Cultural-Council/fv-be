@@ -56,6 +56,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "images",
         "join_requests",
         "immersion_labels",
+        "mtd_data",
         "pages",
         "people",
         "songs",
@@ -92,6 +93,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
+    mtd_data = SiteViewLinkField(view_name="api:mtd-data-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
@@ -129,6 +131,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "images",
             "immersion_labels",
             "join_requests",
+            "mtd_data",
             "pages",
             "people",
             "songs",
