@@ -116,7 +116,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             user = None
 
             if run_as_user:
-                user = validate_username(run_as_user, self.context["request"].user)
+                user = validate_username(run_as_user)
 
             entry = ImportJob(
                 title=title,
