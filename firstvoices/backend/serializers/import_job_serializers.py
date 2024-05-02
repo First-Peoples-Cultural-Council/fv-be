@@ -72,14 +72,14 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
 
         run_as_user_input = attrs.get("run_as_user")
         site_membership = memberships.filter(site=site).first()
-        if site_membership:
-            if (
-                site_membership.role in [Role.EDITOR, Role.LANGUAGE_ADMIN]
-                and run_as_user_input
-            ):
-                raise PermissionDenied(
-                    "The runAsUser field can only be used by superadmins."
-                )
+        if (
+            site_membership
+            and (site_membership.role in [Role.EDITOR, Role.LANGUAGE_ADMIN])
+            and run_as_user_input
+        ):
+            raise PermissionDenied(
+                "The runAsUser field can only be used by superadmins."
+            )
         return super().validate(attrs)
 
     def create_file(self, file_data, filetype, site):
