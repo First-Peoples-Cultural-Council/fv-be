@@ -20,48 +20,29 @@ class TestBulkVisibilityTasks:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
-        "from_visibility, to_visibility",
+        "from_visibility, to_visibility, existing_feature",
         [
-            (Visibility.PUBLIC, Visibility.MEMBERS),
-            (Visibility.MEMBERS, Visibility.PUBLIC),
-            (Visibility.TEAM, Visibility.MEMBERS),
-            (Visibility.MEMBERS, Visibility.TEAM),
+            (Visibility.PUBLIC, Visibility.MEMBERS, True),
+            (Visibility.PUBLIC, Visibility.MEMBERS, False),
+            (Visibility.MEMBERS, Visibility.PUBLIC, True),
+            (Visibility.MEMBERS, Visibility.PUBLIC, False),
+            (Visibility.TEAM, Visibility.MEMBERS, True),
+            (Visibility.TEAM, Visibility.MEMBERS, False),
+            (Visibility.MEMBERS, Visibility.TEAM, True),
+            (Visibility.MEMBERS, Visibility.TEAM, False),
         ],
     )
-    def test_bulk_visibility_change_job_site_only(self, from_visibility, to_visibility):
-        site = factories.SiteFactory.create(visibility=from_visibility)
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site, from_visibility=from_visibility, to_visibility=to_visibility
-        )
-        bulk_visibility_change_job(job.id)
-
-        job.refresh_from_db()
-        site.refresh_from_db()
-
-        assert job.status == JobStatus.COMPLETE
-        assert site.visibility == to_visibility
-        assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "from_visibility, to_visibility",
-        [
-            (Visibility.PUBLIC, Visibility.MEMBERS),
-            (Visibility.MEMBERS, Visibility.PUBLIC),
-            (Visibility.TEAM, Visibility.MEMBERS),
-            (Visibility.MEMBERS, Visibility.TEAM),
-        ],
-    )
-    def test_bulk_visibility_change_job_site_existing_feature(
-        self, from_visibility, to_visibility
+    def test_bulk_visibility_change_job_site_only(
+        self, from_visibility, to_visibility, existing_feature
     ):
         site = factories.SiteFactory.create(visibility=from_visibility)
-        factories.SiteFeatureFactory.create(
-            site=site, key="indexing_paused", is_enabled=True
-        )
         job = factories.BulkVisibilityJobFactory.create(
             site=site, from_visibility=from_visibility, to_visibility=to_visibility
         )
+        if existing_feature:
+            factories.SiteFeatureFactory.create(
+                site=site, key="indexing_paused", is_enabled=True
+            )
         bulk_visibility_change_job(job.id)
 
         job.refresh_from_db()
