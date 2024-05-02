@@ -209,7 +209,7 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
-    def test_run_as_user_field_non_superadmins_400(self, role):
+    def test_run_as_user_field_non_superadmins_403(self, role):
         # run_as_user field can only be used by superadmins
         # return 400 if used by editors or language admins
         site, user = factories.get_site_with_member(
@@ -227,7 +227,12 @@ class TestImportEndpoints(
             content_type=self.content_type,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 403
+        response_data = json.loads(response.content)
+        assert (
+            response_data["detail"]
+            == "The runAsUser field can only be used by superadmins."
+        )
 
     # Custom permissions tests
     @pytest.mark.skip("This endpoint has custom permissions.")

@@ -1,7 +1,10 @@
 import tablib
+from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
+from backend.models import Membership
+from backend.models.constants import Role
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
 from backend.models.jobs import JobStatus
 from backend.models.media import File
@@ -61,6 +64,23 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             "validation_task_id",
             "validation_status",
         )
+
+    def validate(self, attrs):
+        site = get_site_from_context(self)
+        user = self.context["request"].user
+        memberships = Membership.objects.filter(user=user)
+
+        run_as_user_input = attrs.get("run_as_user")
+        site_membership = memberships.filter(site=site).first()
+        if site_membership:
+            if (
+                site_membership.role in [Role.EDITOR, Role.LANGUAGE_ADMIN]
+                and run_as_user_input
+            ):
+                raise PermissionDenied(
+                    "The runAsUser field can only be used by superadmins."
+                )
+        return super().validate(attrs)
 
     def create_file(self, file_data, filetype, site):
         user = self.context["request"].user

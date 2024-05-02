@@ -3,8 +3,6 @@ import logging
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from backend.permissions.predicates.base import is_superadmin
-
 REQUIRED_HEADERS = ["title", "type"]
 VALID_HEADERS = [
     "title",
@@ -76,12 +74,7 @@ def check_header_variation(input_header):
     logger.warning(f"Unknown header. Skipping column {input_header}.")
 
 
-def validate_username(username, request_user):
-    if not is_superadmin(request_user, None):
-        # Only superadmins can use this field
-        raise serializers.ValidationError(
-            detail={"run_as_user": ["This field can only be used by superadmins."]}
-        )
+def validate_username(username):
     user_model = get_user_model()
     username_field = user_model.USERNAME_FIELD
     user = user_model.objects.filter(**{username_field: username})
