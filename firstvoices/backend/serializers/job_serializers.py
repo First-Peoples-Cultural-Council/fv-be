@@ -129,14 +129,14 @@ class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSeria
         from_visibility = attrs.get("from_visibility")
         to_visibility = attrs.get("to_visibility")
 
-        if abs(from_visibility - to_visibility) != 10:
-            raise serializers.ValidationError(
-                "The difference between 'from_visibility' and 'to_visibility' must be exactly 1 step."
-            )
-
         if from_visibility == to_visibility:
             raise serializers.ValidationError(
                 "'from_visibility' and 'to_visibility' must be different."
+            )
+
+        if abs(from_visibility - to_visibility) != 10:
+            raise serializers.ValidationError(
+                "The difference between 'from_visibility' and 'to_visibility' must be exactly 1 step."
             )
 
         return super().validate(attrs)
