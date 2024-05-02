@@ -6,10 +6,18 @@ from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
 
-from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
+from .base_api_test import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    WriteApiTestMixin,
+)
 
 
-class TestBulkVisibilityEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
+class TestBulkVisibilityEndpoints(
+    WriteApiTestMixin,
+    SiteContentCreateApiTestMixin,
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+):
     """
     End-to-end tests that the bulk visibility endpoints have the expected behaviour.
     """
@@ -36,6 +44,24 @@ class TestBulkVisibilityEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
     def get_expected_response(self, instance, site):
         return self.get_expected_detail_response(instance, site)
 
+    def get_valid_data(self, site=None):
+        return {
+            "from_visibility": "public",
+            "to_visibility": "members",
+        }
+
+    def assert_created_instance(self, pk, data):
+        instance = BulkVisibilityJob.objects.get(pk=pk)
+        assert (
+            instance.from_visibility
+            == Visibility[data["from_visibility"].upper()].value
+        )
+        assert instance.to_visibility == Visibility[data["to_visibility"].upper()].value
+
+    def assert_created_response(self, expected_data, actual_response):
+        assert actual_response["fromVisibility"] == expected_data["from_visibility"]
+        assert actual_response["toVisibility"] == expected_data["to_visibility"]
+
     @pytest.mark.skip(reason="Bulk visibility jobs can only be accessed by superusers.")
     def test_detail_member_access(self, role):
         # Bulk visibility jobs can only be accessed by superusers.
@@ -44,6 +70,11 @@ class TestBulkVisibilityEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):
     @pytest.mark.skip(reason="Bulk visibility jobs can only be accessed by superusers.")
     def test_detail_team_access(self, role):
         # Bulk visibility jobs can only be accessed by superusers.
+        pass
+
+    @pytest.mark.skip(reason="Bulk visibility jobs have no eligible nulls.")
+    def test_create_with_nulls_success_201(self):
+        # Bulk visibility jobs have no eligible nulls.
         pass
 
     @pytest.mark.django_db

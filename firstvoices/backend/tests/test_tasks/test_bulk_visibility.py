@@ -10,8 +10,12 @@ from backend.models.widget import SiteWidget
 from backend.tasks.visibility_tasks import bulk_visibility_change_job
 from backend.tests import factories
 
+# from backend.tests.test_search_indexing.base_indexing_tests import (
+#     TransactionOnCommitMixin,
+# )
 
-class TestVisibilityTasks:
+
+class TestBulkVisibilityTasks:
     @pytest.mark.django_db
     def test_bulk_visibility_change_job_invalid_id(self):
         invalid_id = uuid.uuid4()
@@ -169,3 +173,20 @@ class TestVisibilityTasks:
                 ).count()
                 == 10
             )
+
+
+# TODO: Fix the following test
+# class TestBulkVisibilitySignals(TransactionOnCommitMixin):
+#
+#     @pytest.fixture
+#     def mock_bulk_visibility_change_job(self, mocker):
+#         return mocker.patch(
+#             "backend.tasks.visibility_tasks.bulk_visibility_change_job"
+#         )
+#
+#     @pytest.mark.django_db
+#     def test_bulk_visibility_signal_called(self, mock_bulk_visibility_change_job):
+#         with self.capture_on_commit_callbacks(execute=True):
+#             instance = factories.BulkVisibilityJobFactory.create()
+#
+#             mock_bulk_visibility_change_job.assert_called_with(instance.id)
