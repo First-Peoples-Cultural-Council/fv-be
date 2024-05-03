@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 
 import redis.exceptions
-from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404
 from django.utils.translation import gettext as _
@@ -144,9 +143,7 @@ class JoinRequestViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            JoinRequest.objects.filter(
-                site__slug=site[0].slug, status=JoinRequestStatus.PENDING
-            )
+            JoinRequest.objects.filter(site=site, status=JoinRequestStatus.PENDING)
             .order_by("-created")
             .select_related(
                 "site", "site__language", "created_by", "last_modified_by", "user"
@@ -154,21 +151,17 @@ class JoinRequestViewSet(
         )
 
     def get_validated_site(self):
-        site_slug = self.get_site_slug()
-        site = Site.objects.filter(slug=site_slug)
+        if self.action != "create":
+            return super().get_validated_site()
 
-        if len(site) == 0:
+        # Special case to allow creating a join request for any site that exists
+        site_slug = self.get_site_slug()
+        sites = Site.objects.filter(slug=site_slug)
+
+        if not sites.exists():
             raise Http404
 
-        # Check permissions on the site first, skip if the action is create
-        if self.action != "create":
-            perm = Site.get_perm("view")
-            if self.request.user.has_perm(perm, site[0]):
-                return site
-            else:
-                raise PermissionDenied
-        else:
-            return site
+        return sites.first()
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):

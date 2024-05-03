@@ -143,24 +143,19 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
     def calculate_site_stats(self):
         """Calculate statistics for the specified site."""
         site = self.get_validated_site()
-        site_slug = site[0].slug
 
         # Model query sets
         words_qs = list(
-            DictionaryEntry.objects.filter(
-                site__slug=site_slug, type=TypeOfDictionaryEntry.WORD
-            )
+            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.WORD)
         )
         phrases_qs = list(
-            DictionaryEntry.objects.filter(
-                site__slug=site_slug, type=TypeOfDictionaryEntry.PHRASE
-            )
+            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.PHRASE)
         )
-        songs_qs = list(Song.objects.filter(site__slug=site_slug))
-        stories_qs = list(Story.objects.filter(site__slug=site_slug))
-        images_qs = list(Image.objects.filter(site__slug=site_slug))
-        audio_qs = list(Audio.objects.filter(site__slug=site_slug))
-        video_qs = list(Video.objects.filter(site__slug=site_slug))
+        songs_qs = list(Song.objects.filter(site=site))
+        stories_qs = list(Story.objects.filter(site=site))
+        images_qs = list(Image.objects.filter(site=site))
+        audio_qs = list(Audio.objects.filter(site=site))
+        video_qs = list(Video.objects.filter(site=site))
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {

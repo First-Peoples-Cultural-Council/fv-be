@@ -55,7 +55,7 @@ class WordsyViewSet(SiteContentViewSetMixin, GenericViewSet):
     queryset = ""
 
     def list(self, request, **kwargs):
-        site = self.get_validated_site()[0]
+        site = self.get_validated_site()
 
         # setting cache_expiry to 23:59 for current date
         today = datetime.today().date()

@@ -116,7 +116,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             return self.get_detail_queryset()
 
         site = self.get_validated_site()
-        return SitePage.objects.filter(site__slug=site[0].slug).select_related(
+        return SitePage.objects.filter(site=site).select_related(
             "widgets",
             "banner_image",
             "banner_video",
@@ -129,7 +129,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
     def get_detail_queryset(self):
         site = self.get_validated_site()
         return (
-            SitePage.objects.filter(site__slug=site[0].slug)
+            SitePage.objects.filter(site=site)
             .select_related(
                 "widgets",
                 "banner_image",

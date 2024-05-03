@@ -103,7 +103,7 @@ class SiteFeatureViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return SiteFeature.objects.filter(site__slug=site[0].slug).select_related(
+        return SiteFeature.objects.filter(site=site).select_related(
             "site",
             "site__language",
             "created_by",

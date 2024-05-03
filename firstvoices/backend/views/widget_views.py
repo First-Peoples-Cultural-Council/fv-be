@@ -99,19 +99,14 @@ class SiteWidgetViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return (
-                SiteWidget.objects.filter(site__slug=site[0].slug)
-                .order_by("title")
-                .select_related(
-                    "site", "site__language", "created_by", "last_modified_by"
-                )
-                .prefetch_related(
-                    Prefetch(
-                        "widgetsettings_set",
-                        queryset=WidgetSettings.objects.visible(self.request.user),
-                    ),
-                )
+        return (
+            SiteWidget.objects.filter(site=site)
+            .order_by("title")
+            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .prefetch_related(
+                Prefetch(
+                    "widgetsettings_set",
+                    queryset=WidgetSettings.objects.visible(self.request.user),
+                ),
             )
-        else:
-            return SiteWidget.objects.none()
+        )
