@@ -133,7 +133,7 @@ class ImmersionLabelViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            ImmersionLabel.objects.filter(site__slug=site[0].slug)
+            ImmersionLabel.objects.filter(site=site)
             .select_related(
                 "site",
                 "site__language",

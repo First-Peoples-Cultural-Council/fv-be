@@ -107,7 +107,7 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            Gallery.objects.filter(site__slug=site[0].slug)
+            Gallery.objects.filter(site=site)
             .prefetch_related(
                 "site",
                 "site__language",

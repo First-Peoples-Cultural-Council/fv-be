@@ -81,22 +81,18 @@ class CustomOrderRecalculateViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return CustomOrderRecalculationResult.objects.filter(
-                site__slug=site[0].slug, is_preview=False
-            ).order_by("-latest_recalculation_date")
-        else:
-            return CustomOrderRecalculationResult.objects.none()
+        return CustomOrderRecalculationResult.objects.filter(
+            site=site, is_preview=False
+        ).order_by("-latest_recalculation_date")
 
     def create(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        site_slug = site[0].slug
 
         # Call the recalculation task
         try:
             # Check if preview task for the same site is ongoing
             previous_tasks = CustomOrderRecalculationResult.objects.filter(
-                site=site[0], is_preview=False
+                site=site, is_preview=False
             )
             running_tasks = 0
             if len(previous_tasks) > 0:
@@ -112,7 +108,7 @@ class CustomOrderRecalculateViewSet(
                 )
                 return response
 
-            recalculate_custom_order.apply_async((site_slug,))
+            recalculate_custom_order.apply_async((site.slug,))
             return Response({"message": "Recalculation has been queued."}, status=202)
 
         except recalculate_custom_order.OperationalError:
@@ -121,11 +117,8 @@ class CustomOrderRecalculateViewSet(
     @action(methods=["delete"], detail=False)
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        site_slug = site[0].slug
 
-        qs = CustomOrderRecalculationResult.objects.filter(
-            site__slug=site_slug, is_preview=False
-        )
+        qs = CustomOrderRecalculationResult.objects.filter(site=site, is_preview=False)
         qs.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -190,24 +183,21 @@ class CustomOrderRecalculatePreviewViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            queryset = CustomOrderRecalculationResult.objects.filter(
-                site__slug=site[0].slug, is_preview=True
-            ).order_by("-latest_recalculation_date")
-        else:
-            queryset = CustomOrderRecalculationResult.objects.none()
+        queryset = CustomOrderRecalculationResult.objects.filter(
+            site=site, is_preview=True
+        ).order_by("-latest_recalculation_date")
 
         return queryset
 
     def create(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        site_slug = site[0].slug
+        site_slug = site.slug
 
         # Call the recalculation preview task
         try:
             # Check if preview task for the same site is ongoing
             previous_tasks = CustomOrderRecalculationResult.objects.filter(
-                site=site[0], is_preview=True
+                site=site, is_preview=True
             )
             running_tasks = 0
             if len(previous_tasks) > 0:
@@ -234,11 +224,8 @@ class CustomOrderRecalculatePreviewViewSet(
     @action(methods=["delete"], detail=False)
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        site_slug = site[0].slug
 
-        qs = CustomOrderRecalculationResult.objects.filter(
-            site__slug=site_slug, is_preview=True
-        )
+        qs = CustomOrderRecalculationResult.objects.filter(site=site, is_preview=True)
         qs.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

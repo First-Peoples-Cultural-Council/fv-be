@@ -123,8 +123,7 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
     def get_detail_queryset(self):
         site = self.get_validated_site()
         return (
-            Story.objects.filter(site__slug=site[0].slug)
-            .all()
+            Story.objects.filter(site=site)
             .select_related("site", "site__language", "created_by", "last_modified_by")
             .prefetch_related(*get_media_prefetch_list(self.request.user))
         )
@@ -132,9 +131,8 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
     def get_list_queryset(self):
         site = self.get_validated_site()
         return (
-            Story.objects.filter(site__slug=site[0].slug)
+            Story.objects.filter(site=site)
             .order_by("title")
-            .all()
             .select_related("site", "site__language", "created_by", "last_modified_by")
             .prefetch_related(
                 *get_media_prefetch_list(self.request.user),

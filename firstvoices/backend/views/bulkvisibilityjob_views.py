@@ -44,7 +44,7 @@ class BulkVisibilityJobViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            BulkVisibilityJob.objects.filter(site__slug=site[0].slug)
+            BulkVisibilityJob.objects.filter(site=site)
             .select_related("site", "created_by", "last_modified_by")
             .order_by("created")
         )
