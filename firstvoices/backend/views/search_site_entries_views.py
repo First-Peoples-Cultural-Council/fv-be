@@ -15,9 +15,8 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet)
         """
         Add site_slug to search params
         """
-
         site = self.get_validated_site()
-        site_id = site[0].id
+        site_id = site.id
 
         search_params = super().get_search_params()
         search_params["site_id"] = str(site_id)
@@ -30,7 +29,7 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet)
         category_input_str = self.request.GET.get("category", "")
         if category_input_str:
             category_id = get_valid_category_id(
-                self.get_validated_site()[0],
+                site,
                 category_input_str,
             )
             search_params["category_id"] = category_id

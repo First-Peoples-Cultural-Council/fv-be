@@ -81,7 +81,7 @@ class VideoViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            Video.objects.filter(site__slug=site[0].slug)
+            Video.objects.filter(site=site)
             .select_related(*get_select_related_media_fields(None))
             .order_by("-created")
             .defer(
