@@ -3,6 +3,7 @@ import pytest
 from backend.models import Category, DictionaryEntry, Site, Translation
 from backend.models.constants import AppRole, Visibility
 from backend.models.media import Audio, Image
+from backend.models.sites import SiteFeature
 from backend.tests.factories import get_app_admin
 
 
@@ -196,3 +197,15 @@ class TestMtdIndexRebuild:
 
         assert self.mocked_func.call_count == 3
         self.mocked_func.assert_called_with(self.site.slug)
+
+    def test_mtd_rebuld_not_run_on_entry_if_indexing_paused(self):
+        SiteFeature.objects.create(
+            site=self.site, key="indexing_paused", is_enabled=True
+        )
+
+        entry = DictionaryEntry(
+            title="test_entry", site=self.site, visibility=Visibility.PUBLIC
+        )
+        entry.save()
+
+        assert self.mocked_func.call_count == 0
