@@ -64,14 +64,15 @@ class ContactUsView(
     pagination_class = None
 
     def get_queryset(self):
-        return self.get_validated_site()
+        site = self.get_validated_site()
+        return Site.objects.filter(id=site.id)
 
     def list(self, request, *args, **kwargs):
         """
         Returns the list of receiver emails used by the contact-us post endpoint.
         """
 
-        site = self.get_validated_site().first()
+        site = self.get_validated_site()
 
         # Using the Site model "change" permission here as only Language Admins and Super Admins should be able to
         # access the contact-us email list.
@@ -91,7 +92,7 @@ class ContactUsView(
         """
 
         logger = logging.getLogger(__name__)
-        site = self.get_validated_site().first()
+        site = self.get_validated_site()
         if request.user.is_anonymous:
             return Response(
                 {"message": "You must be logged in to send an email."},

@@ -114,7 +114,7 @@ class SongViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSe
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            Song.objects.filter(site__slug=site[0].slug)
+            Song.objects.filter(site=site)
             .order_by("title")
             .all()
             .select_related("site", "site__language", "created_by", "last_modified_by")

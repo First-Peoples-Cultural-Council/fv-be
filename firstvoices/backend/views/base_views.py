@@ -146,26 +146,28 @@ class SiteContentViewSetMixin:
         Add the site to the extra context provided to the serializer class.
         """
         context = super().get_serializer_context()
-        context["site"] = self.get_validated_site().first()
+        context["site"] = self.get_validated_site()
         return context
 
     def get_validated_site(self):
         site_slug = self.get_site_slug()
-        site = Site.objects.filter(slug=site_slug)
+        sites = Site.objects.filter(slug=site_slug)
 
-        if len(site) == 0:
+        if not sites.exists():
             raise Http404
+
+        site = sites.first()
 
         # Check permissions on the site first
         perm = Site.get_perm("view")
-        if self.request.user.has_perm(perm, site[0]):
+        if self.request.user.has_perm(perm, site):
             return site
         else:
             raise PermissionDenied
 
     def get_object_for_create_permission(self):
         """Check create permissions based on the relevant site"""
-        return self.get_validated_site().first()
+        return self.get_validated_site()
 
 
 class DictionarySerializerContextMixin:
@@ -178,7 +180,7 @@ class DictionarySerializerContextMixin:
         A helper function to gather additional model context which can be reused for multiple dictionary entries.
         """
 
-        site = self.get_validated_site()[0]
+        site = self.get_validated_site()
 
         context = super().get_serializer_context()
 

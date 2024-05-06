@@ -51,7 +51,7 @@ class MTDSitesDataViewSet(
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
         mtd_exports_for_site = (
-            MTDExportFormat.objects.filter(site=site.first())
+            MTDExportFormat.objects.filter(site=site)
             .filter(is_preview=False)
             .only("latest_export_result")
         )
