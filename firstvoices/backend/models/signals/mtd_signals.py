@@ -21,10 +21,11 @@ def rebuild_mtd_index(site_slug):
 @receiver(pre_save, sender=DictionaryEntry)
 def store_current_visibility(sender, instance, **kwargs):
     # Adding old visibility to check later in post_save signal, if entry exists in the db
-    dictionary_entry = DictionaryEntry.objects.filter(id=instance.id)
-    if len(dictionary_entry):
-        old_visibility = dictionary_entry[0].visibility
-        instance.old_visibility = old_visibility
+    if not indexing_signals_paused(instance.site):
+        dictionary_entry = DictionaryEntry.objects.filter(id=instance.id)
+        if len(dictionary_entry):
+            old_visibility = dictionary_entry[0].visibility
+            instance.old_visibility = old_visibility
 
 
 @receiver(post_save, sender=DictionaryEntry)
