@@ -135,7 +135,7 @@ class TestBulkVisibilityTasks:
             job.refresh_from_db()
             site.refresh_from_db()
 
-            assert job.status == JobStatus.CANCELLED
+            assert job.status == JobStatus.FAILED
             assert site.visibility == Visibility.PUBLIC
             assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
             assert (
@@ -150,3 +150,37 @@ class TestBulkVisibilityTasks:
                 ).count()
                 == 10
             )
+
+    @pytest.mark.django_db
+    def test_bulkvisiblilityjob_not_triggered_while_running(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.DictionaryEntryFactory.create_batch(
+            10, site=site, visibility=Visibility.PUBLIC
+        )
+        job = factories.BulkVisibilityJobFactory.create(
+            site=site,
+            from_visibility=Visibility.PUBLIC,
+            to_visibility=Visibility.MEMBERS,
+            status=JobStatus.STARTED,
+        )
+
+        job.refresh_from_db()
+        site.refresh_from_db()
+
+        assert job.status == JobStatus.CANCELLED
+        assert job.message == (
+            "Job cancelled as another bulk visibility job is already in progress for the same site."
+        )
+        assert site.visibility == Visibility.PUBLIC
+        assert (
+            DictionaryEntry.objects.filter(
+                site=site, visibility=Visibility.MEMBERS
+            ).count()
+            == 0
+        )
+        assert (
+            DictionaryEntry.objects.filter(
+                site=site, visibility=Visibility.PUBLIC
+            ).count()
+            == 10
+        )

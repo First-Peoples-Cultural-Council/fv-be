@@ -12,6 +12,12 @@ def request_bulk_visibility_change(sender, instance, **kwargs):
     """
     Starts the bulk visibility change job when a BulkVisibilityJob is created.
     """
+    if BulkVisibilityJob.objects.filter(
+        status=JobStatus.STARTED, site=instance.site
+    ).exists():
+        instance.status = JobStatus.CANCELLED
+        instance.message = "Job cancelled as another bulk visibility job is already in progress for the same site."
+        instance.save()
     if instance.status != JobStatus.ACCEPTED:
         return
     transaction.on_commit(

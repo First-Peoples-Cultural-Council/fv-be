@@ -50,8 +50,8 @@ def bulk_visibility_change_job(job_instance_id):
         site.save()
     except Exception as e:
         # if there’s an error during the updates:
-        # add the message to the batch visibility job instance and set the status to cancelled
-        job.status = JobStatus.CANCELLED
+        # add the message to the batch visibility job instance and set the status to failed
+        job.status = JobStatus.FAILED
         job.message = str(e)
         job.save()
 
