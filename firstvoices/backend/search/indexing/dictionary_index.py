@@ -33,7 +33,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             visibility=instance.visibility,
             has_audio=instance.related_audio.exists(),
             has_video=instance.related_videos.exists()
-            or instance.related_video_links.exists(),
+            or bool(instance.related_video_links),
             has_image=instance.related_images.exists(),
             created=instance.created,
             last_modified=instance.last_modified,
