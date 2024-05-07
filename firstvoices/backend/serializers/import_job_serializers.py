@@ -78,7 +78,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             and run_as_user_input
         ):
             raise PermissionDenied(
-                "The runAsUser field can only be used by superadmins."
+                "You don't have permission to use the runAsUser field."
             )
         return super().validate(attrs)
 

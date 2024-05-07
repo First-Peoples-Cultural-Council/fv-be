@@ -33,7 +33,7 @@ def check_required_headers(input_headers):
         raise serializers.ValidationError(
             detail={
                 "data": [
-                    "CSV file does not have the required headers. Please check and upload again."
+                    "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
                 ]
             }
         )
@@ -68,10 +68,10 @@ def check_header_variation(input_header):
     if prefix in VALID_HEADERS and variation and variation.isdigit():
         variation = int(variation)
         if variation < 1 or variation > 5:
-            logger.warning(f"Variation out of range. Skipping column {input_header}.")
+            logger.info(f"Variation out of range. Skipping column {input_header}.")
             return
 
-    logger.warning(f"Unknown header. Skipping column {input_header}.")
+    logger.info(f"Unknown header. Skipping column {input_header}.")
 
 
 def validate_username(username):
@@ -80,9 +80,7 @@ def validate_username(username):
     user = user_model.objects.filter(**{username_field: username})
     if len(user) == 0:
         raise serializers.ValidationError(
-            detail={
-                "run_as_user": [f"User with the provided {username_field} not found."]
-            }
+            detail={"run_as_user": [f"Invalid {username_field}."]}
         )
     else:
         return user[0]

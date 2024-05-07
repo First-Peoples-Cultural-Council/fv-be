@@ -166,7 +166,7 @@ class TestImportEndpoints(
 
         response_data = json.loads(response.content)
         assert response_data["data"] == [
-            "CSV file does not have the required headers. Please check and upload again."
+            "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
         ]
 
     @pytest.mark.django_db
@@ -205,7 +205,7 @@ class TestImportEndpoints(
 
         assert response.status_code == 400
         response_data = json.loads(response.content)
-        assert response_data["runAsUser"] == ["User with the provided email not found."]
+        assert response_data["runAsUser"] == ["Invalid email."]
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
@@ -231,7 +231,7 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
         assert (
             response_data["detail"]
-            == "The runAsUser field can only be used by superadmins."
+            == "You don't have permission to use the runAsUser field."
         )
 
     # Custom permissions tests
