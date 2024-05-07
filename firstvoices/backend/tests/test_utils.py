@@ -1,5 +1,12 @@
 from itertools import product
 
+import pytest
+from rest_framework import serializers
+
+from backend.serializers.utils.import_job_utils import (
+    check_required_headers,
+    validate_headers,
+)
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
@@ -96,3 +103,43 @@ class TestCharacterUtils:
         expected_str = "ááááá"
         input_str = "ááááá"
         assert nfc(input_str) == expected_str
+
+
+class TestValidateRequiredHeaders:
+    def test_valid_headers_present(self):
+        input_headers = ["title", "type", "description", "notes"]
+        assert check_required_headers(input_headers)
+
+    @pytest.mark.parametrize(
+        "input_headers",
+        [["type", "note"], ["title", "audio"], ["note", "audio"]],
+    )
+    def test_valid_headers_missing(self, input_headers):
+        with pytest.raises(serializers.ValidationError):
+            check_required_headers(input_headers)
+
+
+class TestValidateAllHeaders:
+    def test_valid_headers(self, caplog):
+        input_headers = [
+            "title",
+            "type",
+            "part_of_speech",
+            "part_of_speech_2",
+        ]
+        validate_headers(input_headers)
+
+    def test_unknown_header_found(self, caplog):
+        input_headers = ["title", "type", "related_car", "note_def", "unknown"]
+        validate_headers(input_headers)
+
+        assert "Unknown header. Skipping column related_car." in caplog.text
+        assert "Variation out of range. Skipping column." not in caplog.text
+
+    @pytest.mark.parametrize("test_header", ["part_of_speech_14", "note_26"])
+    def test_invalid_variation(self, caplog, test_header):
+        input_headers = ["title", "type", test_header]
+        validate_headers(input_headers)
+
+        assert "Unknown header. Skipping column" not in caplog.text
+        assert f"Variation out of range. Skipping column {test_header}." in caplog.text
