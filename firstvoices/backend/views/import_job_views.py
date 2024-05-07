@@ -69,5 +69,5 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
     def get_queryset(self):
         site = self.get_validated_site()
         return ImportJob.objects.filter(
-            site=site[0]
+            site=site
         ).all()  # permissions are applied by the base view
