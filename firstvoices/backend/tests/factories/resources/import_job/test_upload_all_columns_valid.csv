@@ -1,0 +1,4 @@
+﻿title,type,visibility,acknowledgement,include_in_games,include_on_kids_site
+Word 1,word,Public,123,TRUE,FALSE
+Phrase 1,phrase,Team,123,FALSE,TRUE
+Word 2,word,Public,123,FALSE,TRUE

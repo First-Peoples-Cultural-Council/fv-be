@@ -13,12 +13,12 @@ class TestDryRunImport:
     def test_base_case_dictionary_entries(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        file_content = get_sample_file("import_job_minimal.csv", self.MIMETYPE)
+        file_content = get_sample_file(
+            "import_job/import_job_minimal.csv", self.MIMETYPE
+        )
         file = FileFactory(content=file_content)
-
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        # Manually executing task instead of through signals
         execute_dry_run_import(import_job_instance)
 
         validation_report = import_job_instance.validation_report
@@ -27,12 +27,49 @@ class TestDryRunImport:
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
 
-    # @pytest.mark.django_db
-    # def test_all_columns_dictionary_entries(self):
-    #     # Only testing for MVP columns now.
-    #     # More columns should be added to this file/test
-    #     # as we start supporting more columns, e.g. related_media
-    #
-    #     filepath = '../../../test_upload_all_columns_valid.csv'
-    #     site = SiteFactory(visibility=Visibility.PUBLIC)
-    #     execute_dry_run_import(filepath, site)
+    @pytest.mark.django_db
+    def test_all_columns_dictionary_entries(self):
+        # Only testing for MVP columns.
+        # More columns could be added to this file/test later
+        # as we start supporting more columns, e.g. related_media
+
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/test_upload_all_columns_valid.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance)
+
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 3
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0
+
+    @pytest.mark.django_db
+    def test_invalid_rows(self):
+        # Only testing for MVP columns.
+        # More columns could be added to this file/test later
+        # as we start supporting more columns, e.g. related_media
+
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/test_invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance)
+
+        validation_report = import_job_instance.validation_report
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.values_list("row_number", flat=True)
+        )
+
+        assert len(error_rows) == 3
+        assert error_rows_numbers == [1, 3, 4]

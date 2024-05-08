@@ -71,6 +71,8 @@ class ImportJobReportRow(BaseSiteContentModel):
     )
 
     row_number = models.IntegerField()
+
+    # Unused for MVP, can be removed and be added back later if required
     identifier_field = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
     identifier_value = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
 
