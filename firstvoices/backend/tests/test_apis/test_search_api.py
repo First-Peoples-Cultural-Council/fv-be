@@ -11,6 +11,7 @@ from backend.tests import factories
 from backend.views.exceptions import ElasticSearchConnectionError
 
 from .base_api_test import BaseApiTest, BaseSiteContentApiTest
+from .base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
 from .base_search_test import SearchMocksMixin
 
 
@@ -247,6 +248,68 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
 
         assert response.status_code == 400
         assert response_data["maxWords"] == ["maxWords cannot be lower than minWords."]
+
+    @pytest.mark.django_db
+    def test_has_video_param_video_links(self, mock_search_query_execute):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+        entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        )
+        song = factories.SongFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        )
+        story = factories.StoryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        )
+
+        mock_es_results = {
+            "hits": {
+                "hits": [
+                    {
+                        "_index": "dictionary_entries_2023_06_23_06_11_22",
+                        "_id": str(entry.id),
+                        "_score": 1.0,
+                        "_source": {
+                            "document_id": entry.id,
+                            "site_id": site.id,
+                        },
+                    },
+                    {
+                        "_index": "songs_2023_06_23_06_11_22",
+                        "_id": str(song.id),
+                        "_score": 1.0,
+                        "_source": {
+                            "document_id": song.id,
+                            "site_id": site.id,
+                        },
+                    },
+                    {
+                        "_index": "stories_2023_06_23_06_11_22",
+                        "_id": str(story.id),
+                        "_score": 1.0,
+                        "_source": {
+                            "document_id": story.id,
+                            "site_id": site.id,
+                        },
+                    },
+                ],
+                "total": {"value": 3, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
+        response = self.client.get(self.get_list_endpoint() + "?hasVideo=true")
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 3
+        assert len(response_data["results"]) == 3
 
 
 @pytest.mark.django_db
