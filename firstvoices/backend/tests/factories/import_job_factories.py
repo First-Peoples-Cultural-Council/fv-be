@@ -1,4 +1,5 @@
 import factory
+from django.db.models import signals
 from factory.django import DjangoModelFactory
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
@@ -13,9 +14,6 @@ class ImportJobReportFactory(DjangoModelFactory):
     site = factory.SubFactory(SiteFactory)
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
-
-    total_rows = factory.Sequence(int)
-    totals = factory.Sequence(lambda n: "{ 'value': %03d }" % n)
 
 
 class ImportJobReportRowFactory(DjangoModelFactory):
@@ -32,6 +30,8 @@ class ImportJobReportRowFactory(DjangoModelFactory):
     identifier_value = factory.Sequence(lambda n: "identifier_value %03d" % n)
 
 
+# Muting signals, as related tasks are tested separately
+@factory.django.mute_signals(signals.post_save)
 class ImportJobFactory(DjangoModelFactory):
     class Meta:
         model = ImportJob

@@ -101,6 +101,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             table = tablib.Dataset().load(
                 file.content.read().decode("utf-8-sig"), format="csv"
             )
+            file.content.close()
 
             # Validate headers
             # If required headers not present, raise ValidationError

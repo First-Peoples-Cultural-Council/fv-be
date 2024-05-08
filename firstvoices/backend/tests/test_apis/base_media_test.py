@@ -1,15 +1,13 @@
 import json
-import os
-import sys
 
 import pytest
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
+from backend.tests.utils import get_sample_file
 
 VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
 YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=abc123"
@@ -30,21 +28,6 @@ class MediaTestMixin:
     """
     Utilities for testing media APIs
     """
-
-    def get_sample_file(self, filename, mimetype, title=None):
-        path = (
-            os.path.dirname(os.path.realpath(__file__))
-            + f"/../factories/resources/{filename}"
-        )
-        file = open(path, "rb")
-        return InMemoryUploadedFile(
-            file,
-            "FileField",
-            title if title is not None else filename,
-            mimetype,
-            sys.getsizeof(file),
-            None,
-        )
 
     def get_basic_media_data(self, instance, view_name, detail_view):
         url = reverse(
@@ -392,17 +375,13 @@ class BaseMediaApiTest(
             "acknowledgement": "An acknowledgement of the media",
             "excludeFromGames": True,
             "excludeFromKids": True,
-            "original": self.get_sample_file(
-                self.sample_filename, self.sample_filetype
-            ),
+            "original": get_sample_file(self.sample_filename, self.sample_filetype),
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "A title for the media",
-            "original": self.get_sample_file(
-                self.sample_filename, self.sample_filetype
-            ),
+            "original": get_sample_file(self.sample_filename, self.sample_filetype),
         }
 
     def add_expected_defaults(self, data):
@@ -427,7 +406,7 @@ class BaseMediaApiTest(
 
     def get_valid_patch_file_data(self, site):
         return {
-            "original": self.get_sample_file(
+            "original": get_sample_file(
                 self.sample_filename,
                 self.sample_filetype,
                 f"patch-{self.sample_filename}",
@@ -544,7 +523,7 @@ class BaseMediaApiTest(
     def test_create_400_invalid_filetype(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         data = self.get_valid_data(site)
-        data["original"] = (self.get_sample_file("file.txt", self.sample_filetype),)
+        data["original"] = (get_sample_file("file.txt", self.sample_filetype),)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
