@@ -39,7 +39,7 @@ class ImportReportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ImportJobReport
-        fields = ["total_rows", "diff_headers", "totals"]
+        fields = ["total_rows", "diff_headers", "rows", "totals"]
 
 
 class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
