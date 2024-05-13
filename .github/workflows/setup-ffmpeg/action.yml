@@ -1,0 +1,19 @@
+name: 'Setup ffmpeg'
+description: 'Setting up ffmpeg with additional retries in case a fetch fails.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup ffmpeg
+      id: attempt1
+      continue-on-error: true
+      uses: FedericoCarboni/setup-ffmpeg@v3
+    - name: Setup ffmpeg (retry-2)
+      if: ${{ steps.attempt1.outcome == 'failure' }}
+      id: attempt2
+      continue-on-error: true
+      uses: FedericoCarboni/setup-ffmpeg@v3
+    - name: Setup ffmpeg (retry-3)
+      if: ${{ steps.attempt2.outcome == 'failure' }}
+      id: attempt3
+      continue-on-error: true
+      uses: FedericoCarboni/setup-ffmpeg@v3
