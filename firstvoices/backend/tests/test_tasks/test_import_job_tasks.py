@@ -45,7 +45,7 @@ class TestDryRunImport:
 
         validation_report = import_job_instance.validation_report
 
-        assert validation_report.new_rows == 3
+        assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
 

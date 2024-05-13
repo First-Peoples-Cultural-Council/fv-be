@@ -21,6 +21,7 @@ from backend.models.dictionary import (
     TypeOfDictionaryEntry,
 )
 from backend.resources.base import (
+    AudienceMixin,
     BaseResource,
     RelatedMediaResourceMixin,
     SiteContentResource,
@@ -28,7 +29,9 @@ from backend.resources.base import (
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
-class DictionaryEntryResource(SiteContentResource, RelatedMediaResourceMixin):
+class DictionaryEntryResource(
+    AudienceMixin, SiteContentResource, RelatedMediaResourceMixin
+):
     visibility = fields.Field(
         column_name="visibility",
         widget=ChoicesWidget(Visibility.choices),

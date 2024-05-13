@@ -5,6 +5,7 @@ from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
 from backend.resources.utils.import_export_widgets import (
     ArrayOfStringsWidget,
+    AudienceBooleanFieldWidget,
     ChoicesWidget,
     UserForeignKeyWidget,
 )
@@ -71,6 +72,22 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         column_name="related_video_links",
         attribute="related_video_links",
         widget=ArrayOfStringsWidget(),
+    )
+
+    class Meta:
+        abstract = True
+
+
+class AudienceMixin(resources.ModelResource):
+    exclude_from_games = fields.Field(
+        column_name="include_in_games",
+        attribute="exclude_from_games",
+        widget=AudienceBooleanFieldWidget(),
+    )
+    exclude_from_kids = fields.Field(
+        column_name="include_on_kids_site",
+        attribute="exclude_from_kids",
+        widget=AudienceBooleanFieldWidget(),
     )
 
     class Meta:
