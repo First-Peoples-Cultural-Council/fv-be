@@ -3,7 +3,7 @@ from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
 from backend.models.constants import Visibility
-from backend.serializers.utils import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 
 class SiteHyperlinkedRelatedField(NestedHyperlinkedRelatedField):
