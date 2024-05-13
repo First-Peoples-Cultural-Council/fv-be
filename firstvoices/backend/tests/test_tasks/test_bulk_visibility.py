@@ -157,12 +157,18 @@ class TestBulkVisibilityTasks:
         factories.DictionaryEntryFactory.create_batch(
             10, site=site, visibility=Visibility.PUBLIC
         )
-        job = factories.BulkVisibilityJobFactory.create(
+        factories.BulkVisibilityJobFactory.create(
             site=site,
             from_visibility=Visibility.PUBLIC,
             to_visibility=Visibility.MEMBERS,
             status=JobStatus.STARTED,
         )
+        job = factories.BulkVisibilityJobFactory.create(
+            site=site,
+            from_visibility=Visibility.PUBLIC,
+            to_visibility=Visibility.MEMBERS,
+        )
+        bulk_visibility_change_job(job.id)
 
         job.refresh_from_db()
         site.refresh_from_db()

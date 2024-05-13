@@ -1,11 +1,14 @@
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.jobs import BulkVisibilityJob
 from backend.serializers.job_serializers import BulkVisibilityJobSerializer
+from backend.tasks.visibility_tasks import bulk_visibility_change_job
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from firstvoices.celery import link_error_handler
 
 
 @extend_schema_view(
@@ -57,4 +60,14 @@ class BulkVisibilityJobViewSet(
             BulkVisibilityJob.objects.filter(site=site)
             .select_related("site", "created_by", "last_modified_by")
             .order_by("created")
+        )
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        # Queue the bulk visibility change after model creation
+        transaction.on_commit(
+            lambda: bulk_visibility_change_job.apply_async(
+                (instance.id,), link_error=link_error_handler.s()
+            )
         )

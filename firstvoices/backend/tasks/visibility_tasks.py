@@ -17,6 +17,13 @@ def bulk_visibility_change_job(job_instance_id):
     """
     job = BulkVisibilityJob.objects.get(id=job_instance_id)
     site = job.site
+
+    if BulkVisibilityJob.objects.filter(status=JobStatus.STARTED, site=site).exists():
+        job.status = JobStatus.CANCELLED
+        job.message = "Job cancelled as another bulk visibility job is already in progress for the same site."
+        job.save()
+        return
+
     job.status = JobStatus.STARTED
     job.save()
 
