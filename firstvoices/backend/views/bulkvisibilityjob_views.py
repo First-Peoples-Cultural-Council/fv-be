@@ -4,7 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models.jobs import BulkVisibilityJob
 from backend.serializers.job_serializers import BulkVisibilityJobSerializer
-from backend.tasks.visibility_tasks import bulk_visibility_change_job
+from backend.tasks.visibility_tasks import bulk_change_visibility
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -67,7 +67,7 @@ class BulkVisibilityJobViewSet(
 
         # Queue the bulk visibility change after model creation
         transaction.on_commit(
-            lambda: bulk_visibility_change_job.apply_async(
+            lambda: bulk_change_visibility.apply_async(
                 (instance.id,), link_error=link_error_handler.s()
             )
         )

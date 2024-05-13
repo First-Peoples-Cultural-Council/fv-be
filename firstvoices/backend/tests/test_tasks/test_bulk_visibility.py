@@ -7,7 +7,7 @@ from backend.models import DictionaryEntry, SitePage, Song, Story, StoryPage
 from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob, JobStatus
 from backend.models.widget import SiteWidget
-from backend.tasks.visibility_tasks import bulk_visibility_change_job
+from backend.tasks.visibility_tasks import bulk_change_visibility
 from backend.tests import factories
 
 
@@ -16,7 +16,7 @@ class TestBulkVisibilityTasks:
     def test_bulk_visibility_change_job_invalid_id(self):
         invalid_id = uuid.uuid4()
         with pytest.raises(BulkVisibilityJob.DoesNotExist):
-            bulk_visibility_change_job(invalid_id)
+            bulk_change_visibility(invalid_id)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ class TestBulkVisibilityTasks:
             factories.SiteFeatureFactory.create(
                 site=site, key="indexing_paused", is_enabled=True
             )
-        bulk_visibility_change_job(job.id)
+        bulk_change_visibility(job.id)
 
         job.refresh_from_db()
         site.refresh_from_db()
@@ -88,7 +88,7 @@ class TestBulkVisibilityTasks:
         job = factories.BulkVisibilityJobFactory.create(
             site=site, from_visibility=from_visibility, to_visibility=to_visibility
         )
-        bulk_visibility_change_job(job.id)
+        bulk_change_visibility(job.id)
 
         job.refresh_from_db()
         site.refresh_from_db()
@@ -130,7 +130,7 @@ class TestBulkVisibilityTasks:
             "django.db.models.query.QuerySet.update",
             side_effect=Exception("Mocked exception"),
         ):
-            bulk_visibility_change_job(job.id)
+            bulk_change_visibility(job.id)
 
             job.refresh_from_db()
             site.refresh_from_db()
@@ -168,7 +168,7 @@ class TestBulkVisibilityTasks:
             from_visibility=Visibility.PUBLIC,
             to_visibility=Visibility.MEMBERS,
         )
-        bulk_visibility_change_job(job.id)
+        bulk_change_visibility(job.id)
 
         job.refresh_from_db()
         site.refresh_from_db()
