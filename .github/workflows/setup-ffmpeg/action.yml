@@ -3,7 +3,6 @@ description: 'Setting up ffmpeg with additional retries in case a fetch fails.'
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v4
     - name: Setup ffmpeg
       id: attempt1
       continue-on-error: true

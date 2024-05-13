@@ -42,7 +42,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - name: Setup ffmpeg (with retries)
-        uses: ./setup-ffmpeg
+        uses: ./.github/workflows/setup-ffmpeg
         id: setup-ffmpeg
       - name: Run Pytest
         working-directory: ./firstvoices
