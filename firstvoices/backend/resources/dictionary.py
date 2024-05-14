@@ -50,8 +50,9 @@ class DictionaryEntryResource(
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
 
-    def __init__(self, site):
-        self.site = site
+    def __init__(self, site=None):
+        if site:
+            self.site = site
 
     def before_import_row(self, row=None, **kwargs):
         # Adding 'id' field to the row

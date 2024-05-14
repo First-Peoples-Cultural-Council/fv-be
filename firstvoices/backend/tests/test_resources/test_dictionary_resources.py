@@ -37,7 +37,7 @@ class TestDictionaryEntryImport:
         headers = [
             # these headers should match what is produced by fv-nuxeo-export tool
             "id,created,created_by,last_modified,last_modified_by,site,"
-            "title,visibility,type,batch_id,exclude_from_kids,exclude_from_games,part_of_speech,"
+            "title,visibility,type,batch_id,include_on_kids_site,include_in_games,part_of_speech,"
             "related_video_links"
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
@@ -49,9 +49,9 @@ class TestDictionaryEntryImport:
         site = factories.SiteFactory.create()
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"{site.id},test_word,Public,Word,batch_id,False,False,Noun,https://www.youtube.com/watch?v=A1bcde23f5g",
+            f"{site.id},test_word,Public,Word,batch_id,True,True,Noun,https://www.youtube.com/watch?v=A1bcde23f5g",
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_two@test.com,2023-02-02 21:21:39.864,user_two@test.com,"
-            f"{site.id},test_phrase,Team,Phrase,batch_id,True,True,Verb,",
+            f"{site.id},test_phrase,Team,Phrase,batch_id,False,False,Verb,",
         ]
 
         table = self.build_table(data)
