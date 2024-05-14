@@ -29,7 +29,6 @@ class TestDryRunImport:
 
     @pytest.mark.django_db
     def test_all_columns_dictionary_entries(self):
-        # Only testing for MVP columns.
         # More columns could be added to this file/test later
         # as we start supporting more columns, e.g. related_media
 
@@ -51,10 +50,6 @@ class TestDryRunImport:
 
     @pytest.mark.django_db
     def test_invalid_rows(self):
-        # Only testing for MVP columns.
-        # More columns could be added to this file/test later
-        # as we start supporting more columns, e.g. related_media
-
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         file_content = get_sample_file(
