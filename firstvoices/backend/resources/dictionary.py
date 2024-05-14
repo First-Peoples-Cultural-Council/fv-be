@@ -1,3 +1,5 @@
+import uuid
+
 from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
@@ -47,6 +49,16 @@ class DictionaryEntryResource(
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
+
+    def __init__(self, site):
+        self.site = site
+
+    def before_import_row(self, row=None, **kwargs):
+        # Adding 'id' field to the row
+        if "id" not in row:
+            row["id"] = str(uuid.uuid4())
+        if "site" not in row:
+            row["site"] = str(self.site.id)
 
     class Meta:
         model = DictionaryEntry
