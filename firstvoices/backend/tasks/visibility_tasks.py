@@ -67,9 +67,9 @@ def bulk_change_visibility(job_instance_id):
         return
 
     # Resume search indexing for site, + reindex entire site
-    sync_all_site_content_in_indexes(site)
     indexing_paused_feature[0].is_enabled = False
     indexing_paused_feature[0].save()
+    sync_all_site_content_in_indexes(site)
 
     # update status of job at each step
     job.status = JobStatus.COMPLETE
