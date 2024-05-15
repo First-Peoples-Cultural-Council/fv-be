@@ -35,7 +35,7 @@ class TestDictionaryEntryImport:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            # these headers should match what is produced by fv-nuxeo-export tool
+            # these headers should match the defined template for batch uploads
             "id,created,created_by,last_modified,last_modified_by,site,"
             "title,visibility,type,batch_id,include_on_kids_site,include_in_games,part_of_speech,"
             "related_video_links"
@@ -94,7 +94,7 @@ class BaseDictionaryEntryContentTest:
     @staticmethod
     def build_table(data: list[str]):
         headers = [
-            # these headers should match what is produced by fv-nuxeo-export tool
+            # these headers should match the defined template for batch uploads
             "id,created,created_by,last_modified,last_modified_by,site,dictionary_entry,text",
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")

@@ -42,4 +42,3 @@ class ImportJobFactory(DjangoModelFactory):
 
     title = factory.Sequence(lambda n: "title %03d" % n)
     data = factory.SubFactory(FileFactory)
-    validation_report = factory.SubFactory(ImportJobReportFactory)

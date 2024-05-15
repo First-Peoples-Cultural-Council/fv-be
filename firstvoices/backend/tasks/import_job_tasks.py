@@ -1,16 +1,24 @@
-import logging
-
 import tablib
+from celery import shared_task
+from celery.utils.log import get_task_logger
 
-from backend.models.import_jobs import ImportJobReport, ImportJobReportRow, RowStatus
+from backend.models.import_jobs import (
+    ImportJob,
+    ImportJobReport,
+    ImportJobReportRow,
+    RowStatus,
+)
 from backend.resources.dictionary import DictionaryEntryResource
 
 
-def execute_dry_run_import(import_job_instance):
+@shared_task
+def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     # This function will be modified later with a flag
     # to be used for both dry-run and actual import
 
-    logger = logging.getLogger(__name__)
+    logger = get_task_logger(__name__)
+
+    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
     # Signals to be enabled during actual run, and not dry-run
     # After a batch has been successfully uploaded, we should run a
@@ -41,6 +49,9 @@ def execute_dry_run_import(import_job_instance):
         error_rows=result.totals["error"],
     )
     report.save()
+
+    import_job_instance.validation_report = report
+    import_job_instance.save()
 
     # check for errors
     if result.has_errors():

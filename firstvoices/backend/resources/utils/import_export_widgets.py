@@ -73,7 +73,7 @@ class UserForeignKeyWidget(ForeignKeyWidget):
             return dummy_user
 
 
-class AudienceBooleanFieldWidget(Widget):
+class InvertedBooleanFieldWidget(Widget):
     """Import/export widget to return expected boolean value for audience related fields."""
 
     def clean(self, value, row=None, **kwargs):

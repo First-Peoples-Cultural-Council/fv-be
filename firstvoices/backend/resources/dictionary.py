@@ -15,7 +15,6 @@ from backend.models import (
     Pronunciation,
     Translation,
 )
-from backend.models.constants import Visibility
 from backend.models.dictionary import (
     DictionaryEntryCategory,
     DictionaryEntryLink,
@@ -25,20 +24,15 @@ from backend.models.dictionary import (
 from backend.resources.base import (
     AudienceMixin,
     BaseResource,
+    ControlledSiteContentResource,
     RelatedMediaResourceMixin,
-    SiteContentResource,
 )
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
 class DictionaryEntryResource(
-    AudienceMixin, SiteContentResource, RelatedMediaResourceMixin
+    AudienceMixin, ControlledSiteContentResource, RelatedMediaResourceMixin
 ):
-    visibility = fields.Field(
-        column_name="visibility",
-        widget=ChoicesWidget(Visibility.choices),
-        attribute="visibility",
-    )
     type = fields.Field(
         column_name="type",
         widget=ChoicesWidget(TypeOfDictionaryEntry.choices),
