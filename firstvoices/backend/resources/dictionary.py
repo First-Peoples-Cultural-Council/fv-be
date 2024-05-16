@@ -3,7 +3,6 @@ import uuid
 from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
-from resources.utils.helpers import import_m2m_text_models
 
 from backend.models import (
     Acknowledgement,
@@ -28,6 +27,7 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
+from backend.resources.utils.helpers import import_m2m_text_models
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
@@ -50,8 +50,10 @@ class DictionaryEntryResource(
             self.site = site
 
     def before_import(self, dataset, **kwargs):
-        dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
-        dataset.append_col(lambda x: str(self.site.id), header="site")
+        if "id" not in dataset.headers:
+            dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        if "site" not in dataset.headers:
+            dataset.append_col(lambda x: str(self.site.id), header="site")
 
     def after_import_row(self, row, row_result, **kwargs):
         # text based M2M models
