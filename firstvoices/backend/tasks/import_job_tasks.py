@@ -36,7 +36,7 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     table.headers = [header.lower() for header in table.headers]
 
     try:
-        result = resource.import_data(dataset=table, dry_run=True)
+        result = resource.import_data(dataset=table, raise_errors=True, dry_run=True)
     except Exception as e:
         logger.error(e)
 

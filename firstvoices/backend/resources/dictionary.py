@@ -3,6 +3,7 @@ import uuid
 from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
+from resources.utils.helpers import import_m2m_text_models
 
 from backend.models import (
     Acknowledgement,
@@ -48,12 +49,19 @@ class DictionaryEntryResource(
         if site:
             self.site = site
 
-    def before_import_row(self, row=None, **kwargs):
-        # Adding 'id' field to the row
-        if "id" not in row:
-            row["id"] = str(uuid.uuid4())
-        if "site" not in row:
-            row["site"] = str(self.site.id)
+    def before_import(self, dataset, **kwargs):
+        dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        dataset.append_col(lambda x: str(self.site.id), header="site")
+
+    def after_import_row(self, row, row_result, **kwargs):
+        # text based M2M models
+        import_m2m_text_models(row, "translation", Translation)
+        import_m2m_text_models(row, "acknowledgement", Acknowledgement)
+        import_m2m_text_models(row, "note", Note)
+        import_m2m_text_models(row, "pronunciation", Pronunciation)
+        import_m2m_text_models(row, "alt_spelling", AlternateSpelling)
+
+        super().after_import_row(row, row_result, **kwargs)
 
     class Meta:
         model = DictionaryEntry
