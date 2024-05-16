@@ -27,7 +27,6 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
-from backend.resources.utils.helpers import import_m2m_text_models
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
@@ -56,12 +55,12 @@ class DictionaryEntryResource(
             dataset.append_col(lambda x: str(self.site.id), header="site")
 
     def after_import_row(self, row, row_result, **kwargs):
-        # text based M2M models
-        import_m2m_text_models(row, "translation", Translation)
-        import_m2m_text_models(row, "acknowledgement", Acknowledgement)
-        import_m2m_text_models(row, "note", Note)
-        import_m2m_text_models(row, "pronunciation", Pronunciation)
-        import_m2m_text_models(row, "alt_spelling", AlternateSpelling)
+        # # text based M2M models
+        # import_m2m_text_models(row, "translation", Translation)
+        # import_m2m_text_models(row, "acknowledgement", Acknowledgement)
+        # import_m2m_text_models(row, "note", Note)
+        # import_m2m_text_models(row, "pronunciation", Pronunciation)
+        # import_m2m_text_models(row, "alt_spelling", AlternateSpelling)
 
         super().after_import_row(row, row_result, **kwargs)
 
