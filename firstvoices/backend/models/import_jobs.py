@@ -40,11 +40,14 @@ class ImportJobReport(BaseSiteContentModel):
             "delete": predicates.is_at_least_editor_or_super,
         }
 
-    total_rows = models.IntegerField(null=True)
+    # From results
+    new_rows = models.IntegerField(null=True)
+    skipped_rows = models.IntegerField(null=True)
+    error_rows = models.IntegerField(null=True)
+
     column_headers = ArrayField(
         models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
     )
-    totals = models.JSONField(null=True)
 
 
 class ImportJobReportRow(BaseSiteContentModel):
@@ -68,6 +71,7 @@ class ImportJobReportRow(BaseSiteContentModel):
     )
 
     row_number = models.IntegerField()
+
     identifier_field = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
     identifier_value = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
 

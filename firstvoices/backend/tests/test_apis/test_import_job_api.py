@@ -1,9 +1,6 @@
 import json
-import os
-import sys
 
 import pytest
-from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob
@@ -15,6 +12,7 @@ from backend.tests.test_apis.base_api_test import (
     WriteApiTestMixin,
 )
 from backend.tests.test_apis.base_media_test import FormDataMixin
+from backend.tests.utils import get_sample_file
 
 
 class TestImportEndpoints(
@@ -30,21 +28,6 @@ class TestImportEndpoints(
     API_LIST_VIEW = "api:importjob-list"
     API_DETAIL_VIEW = "api:importjob-detail"
     model = ImportJob
-
-    def get_sample_file(self, filename, mimetype="text/csv"):
-        path = (
-            os.path.dirname(os.path.realpath(__file__))
-            + f"/../factories/resources/{filename}"
-        )
-        file = open(path, "rb")
-        return InMemoryUploadedFile(
-            file,
-            "FileField",
-            filename,
-            mimetype,
-            sys.getsizeof(file),
-            None,
-        )
 
     def create_minimal_instance(self, site, visibility=None):
         return ImportJobFactory.create(site=site)
@@ -86,14 +69,14 @@ class TestImportEndpoints(
     def get_valid_data(self, site=None):
         return {
             "title": "Test Title",
-            "data": self.get_sample_file("import_job_minimal.csv"),
+            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
             "mode": "update",
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "Test Title",
-            "data": self.get_sample_file("import_job_minimal.csv"),
+            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
         }
 
     def add_expected_defaults(self, data):
@@ -131,7 +114,9 @@ class TestImportEndpoints(
 
         data = {
             "title": "Test Title",
-            "data": self.get_sample_file("import_job_invalid_dimensions.csv"),
+            "data": get_sample_file(
+                "import_job/import_job_invalid_dimensions.csv", "text/csv"
+            ),
         }
 
         response = self.client.post(
@@ -153,7 +138,9 @@ class TestImportEndpoints(
 
         data = {
             "title": "Test Title",
-            "data": self.get_sample_file("import_job_missing_req_headers.csv"),
+            "data": get_sample_file(
+                "import_job/import_job_missing_req_headers.csv", "text/csv"
+            ),
         }
 
         response = self.client.post(

@@ -1,8 +1,11 @@
+import os
 import random
 import string
+import sys
 from contextlib import contextmanager
 
 import pytest
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from backend.models.constants import Visibility
 from backend.models.widget import SiteWidgetListOrder
@@ -116,3 +119,18 @@ def not_raises(exception):
         yield
     except exception:
         raise pytest.fail(f"Did raise {exception}")
+
+
+def get_sample_file(filename, mimetype, title=None):
+    path = (
+        os.path.dirname(os.path.realpath(__file__)) + f"/factories/resources/{filename}"
+    )
+    file = open(path, "rb")
+    return InMemoryUploadedFile(
+        file,
+        "FileField",
+        title if title is not None else filename,
+        mimetype,
+        sys.getsizeof(file),
+        None,
+    )
