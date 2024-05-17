@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, Widget
+
+from backend.search.utils.validators import get_valid_boolean
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -68,3 +71,13 @@ class UserForeignKeyWidget(ForeignKeyWidget):
                 **{self.field: DUMMY_USER_EMAIL}, defaults={"email": DUMMY_USER_EMAIL}
             )
             return dummy_user
+
+
+class InvertedBooleanFieldWidget(Widget):
+    """Import/export widget to return expected boolean value for audience related fields."""
+
+    def clean(self, value, row=None, **kwargs):
+        curr_value = get_valid_boolean(value)
+        if curr_value is None:
+            raise ValidationError("Invalid value. Expected 'true' or 'false'.")
+        return str(not curr_value)
