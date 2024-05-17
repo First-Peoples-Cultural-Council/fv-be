@@ -1,3 +1,5 @@
+import uuid
+
 from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
@@ -13,7 +15,6 @@ from backend.models import (
     Pronunciation,
     Translation,
 )
-from backend.models.constants import Visibility
 from backend.models.dictionary import (
     DictionaryEntryCategory,
     DictionaryEntryLink,
@@ -21,19 +22,17 @@ from backend.models.dictionary import (
     TypeOfDictionaryEntry,
 )
 from backend.resources.base import (
+    AudienceMixin,
     BaseResource,
+    ControlledSiteContentResource,
     RelatedMediaResourceMixin,
-    SiteContentResource,
 )
 from backend.resources.utils.import_export_widgets import ChoicesWidget
 
 
-class DictionaryEntryResource(SiteContentResource, RelatedMediaResourceMixin):
-    visibility = fields.Field(
-        column_name="visibility",
-        widget=ChoicesWidget(Visibility.choices),
-        attribute="visibility",
-    )
+class DictionaryEntryResource(
+    AudienceMixin, ControlledSiteContentResource, RelatedMediaResourceMixin
+):
     type = fields.Field(
         column_name="type",
         widget=ChoicesWidget(TypeOfDictionaryEntry.choices),
@@ -44,6 +43,26 @@ class DictionaryEntryResource(SiteContentResource, RelatedMediaResourceMixin):
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
+
+    def __init__(self, site=None):
+        if site:
+            self.site = site
+
+    def before_import(self, dataset, **kwargs):
+        if "id" not in dataset.headers:
+            dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        if "site" not in dataset.headers:
+            dataset.append_col(lambda x: str(self.site.id), header="site")
+
+    def after_import_row(self, row, row_result, **kwargs):
+        # # text based M2M models
+        # import_m2m_text_models(row, "translation", Translation)
+        # import_m2m_text_models(row, "acknowledgement", Acknowledgement)
+        # import_m2m_text_models(row, "note", Note)
+        # import_m2m_text_models(row, "pronunciation", Pronunciation)
+        # import_m2m_text_models(row, "alt_spelling", AlternateSpelling)
+
+        super().after_import_row(row, row_result, **kwargs)
 
     class Meta:
         model = DictionaryEntry
