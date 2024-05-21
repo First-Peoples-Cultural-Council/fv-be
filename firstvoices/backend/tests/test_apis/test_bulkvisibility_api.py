@@ -118,7 +118,7 @@ class TestBulkVisibilityEndpoints(
 
     @pytest.mark.django_db
     def test_more_than_1_visibility_bad_request_400(self):
-        site = factories.SiteFactory.create()
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_superadmin()
         self.client.force_authenticate(user=user)
 
@@ -161,6 +161,30 @@ class TestBulkVisibilityEndpoints(
         assert response_data == {
             "nonFieldErrors": [
                 "'from_visibility' and 'to_visibility' must be different."
+            ]
+        }
+
+    @pytest.mark.django_db
+    def test_from_visibility_different_than_sites_bad_request_400(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_superadmin()
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "from_visibility": "team",
+            "to_visibility": "members",
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), data=data, format="json"
+        )
+
+        assert response.status_code == 400
+
+        response_data = json.loads(response.content)
+        assert response_data == {
+            "nonFieldErrors": [
+                "'from_visibility' must match the site visibility: public."
             ]
         }
 
