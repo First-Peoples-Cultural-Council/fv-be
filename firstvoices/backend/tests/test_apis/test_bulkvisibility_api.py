@@ -118,7 +118,7 @@ class TestBulkVisibilityEndpoints(
 
     @pytest.mark.django_db
     def test_more_than_1_visibility_bad_request_400(self):
-        site = factories.SiteFactory.create()
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_superadmin()
         self.client.force_authenticate(user=user)
 
