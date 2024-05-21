@@ -128,10 +128,16 @@ class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSeria
     def validate(self, attrs):
         from_visibility = attrs.get("from_visibility")
         to_visibility = attrs.get("to_visibility")
+        site = self.context["site"]
 
         if from_visibility == to_visibility:
             raise serializers.ValidationError(
                 "'from_visibility' and 'to_visibility' must be different."
+            )
+
+        if site.visibility != from_visibility:
+            raise serializers.ValidationError(
+                f"'from_visibility' must match the site visibility: {site.get_visibility_display().lower()}."
             )
 
         if abs(from_visibility - to_visibility) != 10:
