@@ -101,7 +101,7 @@ jobs:
     name: Monitor Dev Deployment
     environment: dev
     runs-on: ubuntu-latest
-    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     needs: sonarcloud
     steps:
       - name: Configure AWS credentials
@@ -161,7 +161,7 @@ jobs:
     name: Monitor Preprod Deployment
     environment: preprod
     runs-on: ubuntu-latest
-    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request'))
+    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -220,7 +220,7 @@ jobs:
     name: Monitor Prod Deployment
     environment: prod
     runs-on: ubuntu-latest
-    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request'))
+    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
