@@ -72,21 +72,25 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
 
         run_as_user_input = attrs.get("run_as_user")
         site_membership = memberships.filter(site=site).first()
+
+        valid_app_role = (
+            hasattr(user, "app_role")
+            and user.app_role
+            and user.app_role.role == AppRole.SUPERADMIN
+        )
+        invalid_site_role = site_membership and site_membership.role in [
+            Role.EDITOR,
+            Role.LANGUAGE_ADMIN,
+        ]
+
         if run_as_user_input:
-            if (
-                hasattr(user, "app_role")
-                and user.app_role
-                and user.app_role.role == AppRole.SUPERADMIN
-            ):
-                pass
-            elif site_membership and (
-                site_membership.role in [Role.EDITOR, Role.LANGUAGE_ADMIN]
-            ):
-                # The above condition will only be true if the person is either an editor or lang. admin
-                # If so, the response should be 403 since this field is only accessible by superadmins
+            if valid_app_role:
+                return super().validate(attrs)
+            elif invalid_site_role:
                 raise PermissionDenied(
                     "You don't have permission to use the runAsUser field."
                 )
+
         return super().validate(attrs)
 
     def create_file(self, file_data, filetype, site):
