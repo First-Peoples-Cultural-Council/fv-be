@@ -3,8 +3,7 @@ from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
-from backend.models import Membership
-from backend.models.constants import AppRole, Role
+from backend.models.constants import AppRole
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
 from backend.models.jobs import JobStatus
 from backend.models.media import File
@@ -66,30 +65,20 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
         )
 
     def validate(self, attrs):
-        site = get_site_from_context(self)
+        # Validating permissions for the run_as_user field
         user = self.context["request"].user
-        memberships = Membership.objects.filter(user=user)
-
         run_as_user_input = attrs.get("run_as_user")
-        site_membership = memberships.filter(site=site).first()
 
         valid_app_role = (
             hasattr(user, "app_role")
             and user.app_role
             and user.app_role.role == AppRole.SUPERADMIN
         )
-        invalid_site_role = site_membership and site_membership.role in [
-            Role.EDITOR,
-            Role.LANGUAGE_ADMIN,
-        ]
 
-        if run_as_user_input:
-            if valid_app_role:
-                return super().validate(attrs)
-            elif invalid_site_role:
-                raise PermissionDenied(
-                    "You don't have permission to use the runAsUser field."
-                )
+        if run_as_user_input and not valid_app_role:
+            raise PermissionDenied(
+                "You don't have permission to use the runAsUser field."
+            )
 
         return super().validate(attrs)
 
