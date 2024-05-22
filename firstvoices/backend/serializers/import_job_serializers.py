@@ -98,36 +98,18 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             file.content.close()
 
             # Validate headers
-            # If required headers not present, raise ValidationError
-            check_required_headers(table.headers)
-
+            # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
+            check_required_headers(table.headers)
             validate_headers(table.headers)
 
-            # If the file is valid, create an ImportJob instance and save the file
-            title = validated_data.get("title", "")
-            mode = validated_data.get("mode", None)
             run_as_user = validated_data.get("run_as_user", None)
-            user = None
-
             if run_as_user:
                 user = validate_username(run_as_user)
+                validated_data["run_as_user"] = user
 
-            entry = ImportJob(
-                title=title,
-                data=file,
-                site=validated_data["site"],
-            )
-            if mode:
-                entry.mode = mode
-            if user:
-                entry.run_as_user = user
-
-            # Validate the user and then attach the foreign user object
-            # and check if the user requesting is a superadmin
-
-            entry.save()
-            return entry
+            validated_data["data"] = file
+            return super().create(validated_data)
         except InvalidDimensions:
             raise serializers.ValidationError(
                 detail={
