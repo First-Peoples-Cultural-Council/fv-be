@@ -31,14 +31,9 @@ class ImportReportRowSerializer(serializers.ModelSerializer):
 
 
 class ImportReportSerializer(serializers.ModelSerializer):
-    total_rows = serializers.IntegerField(read_only=True)
-    diff_headers = serializers.ListField(child=serializers.CharField(), read_only=True)
-    rows = ImportReportRowSerializer(many=True, read_only=True)
-    totals = serializers.JSONField(read_only=True)
-
     class Meta:
         model = ImportJobReport
-        fields = ["total_rows", "diff_headers", "rows", "totals"]
+        fields = ["new_rows", "skipped_rows", "error_rows"]
 
 
 class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
@@ -47,21 +42,20 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
         validators=[SupportedFileType(mimetypes=["text/csv", "text/plain"])],
     )
     run_as_user = serializers.CharField(required=False)
-
     validation_task_id = serializers.CharField(read_only=True)
     validation_status = fields.EnumField(enum=JobStatus, read_only=True)
-    validation_result = ImportReportSerializer(read_only=True)
+    validation_report = ImportReportSerializer(read_only=True)
 
     class Meta:
         model = ImportJob
         fields = BaseJobSerializer.Meta.fields + (
             "title",
             "mode",
-            "validation_result",
             "run_as_user",
             "data",
             "validation_task_id",
             "validation_status",
+            "validation_report",
         )
 
     def validate(self, attrs):
