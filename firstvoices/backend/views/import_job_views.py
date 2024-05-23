@@ -1,14 +1,16 @@
+from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import parsers
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob
+from backend.serializers.import_job_serializers import ImportJobSerializer
+from backend.tasks.import_job_tasks import execute_dry_run_import
+from backend.views import doc_strings
+from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-
-from ..serializers.import_job_serializers import ImportJobSerializer
-from . import doc_strings
-from .api_doc_variables import id_parameter, site_slug_parameter
+from firstvoices.celery import link_error_handler
 
 
 @extend_schema_view(
@@ -71,3 +73,13 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         return ImportJob.objects.filter(
             site=site
         ).all()  # permissions are applied by the base view
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        # Dry-run to get validation results
+        transaction.on_commit(
+            lambda: execute_dry_run_import.apply_async(
+                (str(instance.id),), link_error=link_error_handler.s()
+            )
+        )
