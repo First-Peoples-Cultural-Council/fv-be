@@ -223,6 +223,24 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     # related_images from fv:related_pictures
     # related_videos from fv:related_videos
 
+    # Migration from Many-to-one models
+    # All these should be cleaned before saving
+    notes = ArrayField(
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
+    )
+    acknowledgements = ArrayField(
+        models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
+    )
+    translations = ArrayField(
+        models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
+    )
+    alternate_spellings = ArrayField(
+        models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
+    )
+    pronunciations = ArrayField(
+        models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
+    )
+
     class Meta:
         verbose_name = _("Dictionary Entry")
         verbose_name_plural = _("Dictionary Entries")
