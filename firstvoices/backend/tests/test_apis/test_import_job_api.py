@@ -15,6 +15,7 @@ from backend.tests.test_apis.base_media_test import FormDataMixin
 from backend.tests.utils import get_sample_file
 
 
+@pytest.mark.django_db
 class TestImportEndpoints(
     FormDataMixin,
     WriteApiTestMixin,
@@ -56,6 +57,7 @@ class TestImportEndpoints(
             "message": instance.message,
             "validationTaskId": instance.task_id,
             "validationStatus": instance.validation_status.lower(),
+            "validationReport": instance.validation_report,
             "site": {
                 "id": str(site.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
@@ -108,7 +110,6 @@ class TestImportEndpoints(
         actual_file_name = actual_response["data"]["path"].split("/")[-1]
         assert expected_file_name == actual_file_name
 
-    @pytest.mark.django_db
     def test_invalid_dimensions(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
@@ -132,7 +133,6 @@ class TestImportEndpoints(
             "CSV file has invalid dimensions. The size of a column or row doesn't fit the table dimensions."
         ]
 
-    @pytest.mark.django_db
     def test_required_headers_missing(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
@@ -156,7 +156,6 @@ class TestImportEndpoints(
             "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
         ]
 
-    @pytest.mark.django_db
     def test_run_as_user_field_superadmins(self):
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
@@ -175,7 +174,6 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
         assert response_data["runAsUser"] == user.email
 
-    @pytest.mark.django_db
     def test_invalid_run_as_user_field(self):
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
@@ -195,7 +193,6 @@ class TestImportEndpoints(
         assert response_data["runAsUser"] == ["Invalid email."]
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
-    @pytest.mark.django_db
     def test_run_as_user_field_non_superadmins_403(self, role):
         # run_as_user field can only be used by superadmins
         # return 400 if used by editors or language admins
@@ -236,7 +233,6 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
     @pytest.mark.parametrize("visibility", Visibility)
-    @pytest.mark.django_db
     def test_detail_403_for_members_and_assistants(self, role, visibility):
         site = factories.SiteFactory.create(visibility=visibility)
         user = factories.get_non_member_user()
@@ -255,7 +251,6 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.parametrize("visibility", Visibility)
-    @pytest.mark.django_db
     def test_detail_editor_and_language_admin_access(self, role, visibility):
         site = factories.SiteFactory.create(visibility=visibility)
         user = factories.get_non_member_user()
@@ -273,7 +268,6 @@ class TestImportEndpoints(
         assert response.status_code == 200
 
     @pytest.mark.parametrize("visibility", Visibility)
-    @pytest.mark.django_db
     def test_detail_superadmin_access(self, visibility):
         site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
 
@@ -288,7 +282,6 @@ class TestImportEndpoints(
         assert response.status_code == 200
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
-    @pytest.mark.django_db
     def test_list_empty_for_non_admins(self, role):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_non_member_user()
@@ -305,7 +298,6 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.parametrize("visibility", Visibility)
-    @pytest.mark.django_db
     def test_list_editor_and_language_admin_access(self, role, visibility):
         site = factories.SiteFactory.create(visibility=visibility)
         user = factories.get_non_member_user()
@@ -317,7 +309,6 @@ class TestImportEndpoints(
         assert response.status_code == 200
 
     @pytest.mark.parametrize("visibility", Visibility)
-    @pytest.mark.django_db
     def test_list_app_admin_access(self, visibility):
         site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
 
