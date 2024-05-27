@@ -93,7 +93,7 @@ class CharactersViewSet(
                     "related_dictionary_entries",
                     queryset=DictionaryEntry.objects.visible(self.request.user)
                     .select_related("site")
-                    .prefetch_related(*media_prefetches, "translation_set"),
+                    .prefetch_related(*media_prefetches),
                 )
             )
         )

@@ -2,22 +2,22 @@ import json
 
 import pytest
 
+from backend.models import Character
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-
-from ...models import Character
-from .base_api_test import (
+from backend.tests.test_apis.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentPatchApiTestMixin,
     WriteApiTestMixin,
 )
-from .base_media_test import (
+from backend.tests.test_apis.base_media_test import (
     MOCK_EMBED_LINK,
     MOCK_THUMBNAIL_LINK,
     VIMEO_VIDEO_LINK,
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
 )
+from backend.tests.utils import format_dictionary_entry_related_field
 
 
 class TestCharactersEndpoints(
@@ -223,7 +223,9 @@ class TestCharactersEndpoints(
                 "id": str(entry1.id),
                 "title": entry1.title,
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry1.id)}",
-                "translations": [],
+                "translations": format_dictionary_entry_related_field(
+                    entry1.translations
+                ),
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],
