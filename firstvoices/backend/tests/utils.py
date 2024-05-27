@@ -134,3 +134,8 @@ def get_sample_file(filename, mimetype, title=None):
         sys.getsizeof(file),
         None,
     )
+
+
+def format_dictionary_entry_related_field(entries):
+    # To format the provided ArrayField to expected API response structure
+    return [{"text": entry} for entry in entries]

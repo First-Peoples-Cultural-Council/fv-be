@@ -45,110 +45,6 @@ class BaseDictionaryContentModel(BaseModel):
         abstract = True
 
 
-class Note(BaseDictionaryContentModel):
-    """Model for notes associated to each dictionary entry."""
-
-    class Meta:
-        rules_permissions = {
-            "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    # from fv:notes,fv:general_note, fv:cultural_note, fv:literal_translation, fv-word:notes, fv-phrase:notes
-    text = models.CharField(max_length=MAX_NOTE_LENGTH)
-
-    def save(self, *args, **kwargs):
-        self.text = clean_input(self.text)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.text
-
-
-class Acknowledgement(BaseDictionaryContentModel):
-    """Model for acknowledgments associated to each dictionary entry."""
-
-    class Meta:
-        rules_permissions = {
-            "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    # from fv:acknowledgments, fv:source, fv:reference, fv-word:acknowledgement, fv-phrase:acknowledgement
-    text = models.CharField(max_length=MAX_NOTE_LENGTH)
-
-    def save(self, *args, **kwargs):
-        self.text = clean_input(self.text)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.text
-
-
-class Translation(BaseDictionaryContentModel):
-    """Model for translations associated to each dictionary entry."""
-
-    class Meta:
-        rules_permissions = {
-            "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    # Fields
-    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
-
-    def save(self, *args, **kwargs):
-        self.text = clean_input(self.text)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return _("Translation: %(translation)s") % {
-            "translation": self.text,
-        }
-
-
-class AlternateSpelling(BaseDictionaryContentModel):
-    """Model for alternate spellings associated to each dictionary entry."""
-
-    class Meta:
-        rules_permissions = {
-            "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    # from fv:alternate_spelling, fv-word:alternate_spellings, fv-phrase:alternate_spellings
-    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
-
-    def __str__(self):
-        return self.text
-
-
-class Pronunciation(BaseDictionaryContentModel):
-    """Model for pronunciations associated to each dictionary entry."""
-
-    class Meta:
-        rules_permissions = {
-            "view": rules.always_allow,  # see fw-4368
-            "add": predicates.is_superadmin,  # permissions will change when we add a write API
-            "change": predicates.is_superadmin,
-            "delete": predicates.is_superadmin,
-        }
-
-    # from fv-word:pronunciation
-    text = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
-
-    def __str__(self):
-        return self.text
-
-
 class TypeOfDictionaryEntry(models.TextChoices):
     # Choices for Type
     WORD = "word", _("Word")
@@ -223,8 +119,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     # related_images from fv:related_pictures
     # related_videos from fv:related_videos
 
-    # Migration from Many-to-one models
-    # All these should be cleaned before saving
+    # Migration from many-to-one relation, see FW-5867 for reference
     notes = ArrayField(
         models.CharField(max_length=MAX_NOTE_LENGTH), blank=True, default=list
     )
@@ -268,6 +163,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         self.clean_title(alphabet)
         self.set_custom_order(alphabet)
         self.set_split_chars_base(alphabet)
+        self.clean_related_fields()
         super().save(*args, **kwargs)
 
     def clean_title(self, alphabet):
@@ -281,6 +177,14 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     def set_split_chars_base(self, alphabet):
         self.split_chars_base = alphabet.get_split_chars_base(self)
+
+    def clean_related_fields(self):
+        # strip whitespace and normalize related fields
+        self.acknowledgements = [clean_input(ack) for ack in self.acknowledgements]
+        self.notes = [clean_input(note) for note in self.notes]
+        self.translations = [
+            clean_input(translation) for translation in self.translations
+        ]
 
 
 class DictionaryEntryLink(BaseModel):

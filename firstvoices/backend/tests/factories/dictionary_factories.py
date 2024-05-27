@@ -13,31 +13,6 @@ class DictionaryModelFactory(DjangoModelFactory):
     text = factory.Sequence(lambda n: "Sample text %03d" % n)
 
 
-class AcknowledgementFactory(DictionaryModelFactory):
-    class Meta:
-        model = dictionary.Acknowledgement
-
-
-class AlternateSpellingFactory(DictionaryModelFactory):
-    class Meta:
-        model = dictionary.AlternateSpelling
-
-
-class NoteFactory(DictionaryModelFactory):
-    class Meta:
-        model = dictionary.Note
-
-
-class PronunciationFactory(DictionaryModelFactory):
-    class Meta:
-        model = dictionary.Pronunciation
-
-
-class TranslationFactory(DictionaryModelFactory):
-    class Meta:
-        model = dictionary.Translation
-
-
 class DictionaryEntryLinkFactory(DjangoModelFactory):
     class Meta:
         model = dictionary.DictionaryEntryLink

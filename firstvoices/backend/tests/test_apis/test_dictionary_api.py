@@ -4,16 +4,9 @@ import pytest
 
 import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.dictionary import (
-    Acknowledgement,
-    AlternateSpelling,
-    DictionaryEntry,
-    Note,
-    Pronunciation,
-    Translation,
-    TypeOfDictionaryEntry,
-)
+from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.tests import factories
+from backend.tests.utils import format_dictionary_entry_related_field
 
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import (
@@ -45,11 +38,6 @@ class TestDictionaryEndpoint(
         entry = factories.DictionaryEntryFactory.create(
             site=site, visibility=visibility
         )
-        factories.AcknowledgementFactory.create(dictionary_entry=entry)
-        factories.AlternateSpellingFactory.create(dictionary_entry=entry)
-        factories.NoteFactory.create(dictionary_entry=entry)
-        factories.PronunciationFactory.create(dictionary_entry=entry)
-        factories.TranslationFactory.create(dictionary_entry=entry)
         return entry
 
     def get_valid_data(self, site=None):
@@ -92,6 +80,11 @@ class TestDictionaryEndpoint(
             "type": "word",
             "visibility": "public",
             "site": str(site.id),
+            "acknowledgements": [],
+            "alternateSpellings": [],
+            "notes": [],
+            "translations": [],
+            "pronunciations": [],
         }
 
     def add_expected_defaults(self, data):
@@ -115,21 +108,12 @@ class TestDictionaryEndpoint(
         }
 
     def add_related_objects(self, instance):
-        factories.AcknowledgementFactory.create(dictionary_entry=instance)
-        factories.AlternateSpellingFactory.create(dictionary_entry=instance)
-        factories.NoteFactory.create(dictionary_entry=instance)
-        factories.TranslationFactory.create(dictionary_entry=instance)
-        factories.PronunciationFactory.create(dictionary_entry=instance)
+        # No related objects to add
+        pass
 
     def assert_related_objects_deleted(self, instance):
-        for model in (
-            Acknowledgement,
-            AlternateSpelling,
-            Note,
-            Translation,
-            Pronunciation,
-        ):
-            assert model.objects.filter(dictionary_entry=instance).count() == 0
+        # No related object to test deletion for
+        pass
 
     def assert_updated_instance(self, expected_data, actual_instance: DictionaryEntry):
         assert actual_instance.title == expected_data["title"]
@@ -138,24 +122,26 @@ class TestDictionaryEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
-        acknowledgements = Acknowledgement.objects.filter(
-            dictionary_entry=actual_instance
+        assert (
+            format_dictionary_entry_related_field(actual_instance.acknowledgements)
+            == expected_data["acknowledgements"]
         )
-        assert len(acknowledgements) == len(expected_data["acknowledgements"])
-
-        alternate_spellings = AlternateSpelling.objects.filter(
-            dictionary_entry=actual_instance
+        assert (
+            format_dictionary_entry_related_field(actual_instance.notes)
+            == expected_data["notes"]
         )
-        assert len(alternate_spellings) == len(expected_data["alternateSpellings"])
-
-        notes = Note.objects.filter(dictionary_entry=actual_instance)
-        assert len(notes) == len(expected_data["notes"])
-
-        translations = Translation.objects.filter(dictionary_entry=actual_instance)
-        assert len(translations) == len(expected_data["translations"])
-
-        pronunciations = Pronunciation.objects.filter(dictionary_entry=actual_instance)
-        assert len(pronunciations) == len(expected_data["pronunciations"])
+        assert (
+            format_dictionary_entry_related_field(actual_instance.translations)
+            == expected_data["translations"]
+        )
+        assert (
+            format_dictionary_entry_related_field(actual_instance.alternate_spellings)
+            == expected_data["alternateSpellings"]
+        )
+        assert (
+            format_dictionary_entry_related_field(actual_instance.pronunciations)
+            == expected_data["pronunciations"]
+        )
 
         assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
@@ -227,21 +213,16 @@ class TestDictionaryEndpoint(
             "categories": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "acknowledgements": [
-                {"id": str(x.id), "text": x.text}
-                for x in instance.acknowledgement_set.all()
-            ],
-            "alternateSpellings": [
-                {"id": str(x.id), "text": x.text}
-                for x in instance.alternatespelling_set.all()
-            ],
-            "notes": [
-                {"id": str(x.id), "text": x.text} for x in instance.note_set.all()
-            ],
-            "translations": [
-                {"id": str(x.id), "text": x.text}
-                for x in instance.translation_set.all()
-            ],
+            "acknowledgements": format_dictionary_entry_related_field(
+                instance.acknowledgements
+            ),
+            "alternateSpellings": format_dictionary_entry_related_field(
+                instance.alternate_spellings
+            ),
+            "notes": format_dictionary_entry_related_field(instance.notes),
+            "translations": format_dictionary_entry_related_field(
+                instance.translations
+            ),
             "partOfSpeech": {
                 "id": str(instance.part_of_speech.id),
                 "title": instance.part_of_speech.title,
@@ -249,10 +230,9 @@ class TestDictionaryEndpoint(
             }
             if instance.part_of_speech
             else None,
-            "pronunciations": [
-                {"id": str(x.id), "text": x.text}
-                for x in instance.pronunciation_set.all()
-            ],
+            "pronunciations": format_dictionary_entry_related_field(
+                instance.pronunciations
+            ),
             "relatedDictionaryEntries": [],
             "relatedAudio": [],
             "relatedImages": [],
@@ -275,13 +255,12 @@ class TestDictionaryEndpoint(
             related_images=(image,),
             related_videos=(video,),
             related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+            translations=["translation_1", "translation_2"],
+            notes=["note_1", "note_2"],
+            pronunciations=["pronunciation_1", "pronunciation_2"],
+            acknowledgements=["acknowledgement_1", "acknowledgement_2"],
+            alternate_spellings=["alternate_spelling_1", "alternate_spelling_2"],
         )
-
-        factories.AcknowledgementFactory.create(dictionary_entry=dictionary_entry)
-        factories.AlternateSpellingFactory.create(dictionary_entry=dictionary_entry)
-        factories.NoteFactory.create(dictionary_entry=dictionary_entry)
-        factories.PronunciationFactory.create(dictionary_entry=dictionary_entry)
-        factories.TranslationFactory.create(dictionary_entry=dictionary_entry)
 
         entry_two = factories.DictionaryEntryFactory.create(site=site)
         factories.DictionaryEntryLinkFactory.create(
@@ -330,26 +309,14 @@ class TestDictionaryEndpoint(
             original_instance, updated_instance
         )
 
-        acknowledgements = Acknowledgement.objects.filter(
-            dictionary_entry=updated_instance
+        assert updated_instance.acknowledgements == original_instance.acknowledgements
+        assert (
+            updated_instance.alternate_spellings
+            == original_instance.alternate_spellings
         )
-        assert len(acknowledgements) == len(original_instance.acknowledgement_set.all())
-
-        alternate_spellings = AlternateSpelling.objects.filter(
-            dictionary_entry=updated_instance
-        )
-        assert len(alternate_spellings) == len(
-            original_instance.alternatespelling_set.all()
-        )
-
-        notes = Note.objects.filter(dictionary_entry=updated_instance)
-        assert len(notes) == len(original_instance.note_set.all())
-
-        translations = Translation.objects.filter(dictionary_entry=updated_instance)
-        assert len(translations) == len(original_instance.translation_set.all())
-
-        pronunciations = Pronunciation.objects.filter(dictionary_entry=updated_instance)
-        assert len(pronunciations) == len(original_instance.pronunciation_set.all())
+        assert updated_instance.notes == original_instance.notes
+        assert updated_instance.translations == original_instance.translations
+        assert updated_instance.pronunciations == original_instance.pronunciations
 
         assert (
             updated_instance.related_video_links
@@ -411,70 +378,6 @@ class TestDictionaryEndpoint(
 
         assert response_data["count"] == 1, "did not filter out blocked sites"
         assert len(response_data["results"]) == 1, "did not include available site"
-
-    @pytest.mark.parametrize(
-        "field",
-        [
-            {
-                "factory": factories.AlternateSpellingFactory,
-                "name": "alternateSpellings",
-            },
-            {"factory": factories.AcknowledgementFactory, "name": "acknowledgements"},
-            {"factory": factories.NoteFactory, "name": "notes"},
-            {"factory": factories.PronunciationFactory, "name": "pronunciations"},
-        ],
-        ids=["alternateSpellings", "acknowledgements", "notes", "pronunciations"],
-    )
-    @pytest.mark.django_db
-    def test_detail_fields(self, field):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        text = "bon mots"
-        model = field["factory"].create(dictionary_entry=entry, text=text)
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data[field["name"]] == [
-            {"id": str(model.id), "text": f"{text}"}
-        ]
-
-    @pytest.mark.django_db
-    def test_detail_translations(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
-
-        text = "bon mots"
-        model = factories.TranslationFactory.create(dictionary_entry=entry, text=text)
-
-        response = self.client.get(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["translations"] == [
-            {
-                "id": str(model.id),
-                "text": f"{text}",
-            }
-        ]
 
     @pytest.mark.django_db
     def test_detail_categories(self):
@@ -549,7 +452,9 @@ class TestDictionaryEndpoint(
                 "id": str(entry2.id),
                 "title": entry2.title,
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry2.id)}",
-                "translations": [],
+                "translations": format_dictionary_entry_related_field(
+                    entry2.translations
+                ),
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],
@@ -945,26 +850,6 @@ class TestDictionaryEndpoint(
             YOUTUBE_VIDEO_LINK,
             VIMEO_VIDEO_LINK,
         ]
-
-        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
-        assert acknowledgements.count() == 2
-
-        alternate_spellings = AlternateSpelling.objects.filter(
-            dictionary_entry=entry_in_db
-        )
-        assert alternate_spellings.count() == 2
-
-        notes = Note.objects.filter(dictionary_entry=entry_in_db)
-        assert notes.count() == 2
-
-        translations = Translation.objects.filter(dictionary_entry=entry_in_db)
-        assert translations.count() == 1
-        assert translations.first().text == "Hallo"
-
-        pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
-        assert pronunciations.count() == 1
-        assert pronunciations.first().text == "Huh-lo"
-
         assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
 
     @pytest.mark.django_db
@@ -1234,29 +1119,6 @@ class TestDictionaryEndpoint(
         assert entry_in_db.exclude_from_games is True
         assert entry_in_db.exclude_from_kids is True
         assert entry_in_db.part_of_speech.id == part_of_speech.id
-
-        acknowledgements = Acknowledgement.objects.filter(dictionary_entry=entry_in_db)
-        assert acknowledgements.count() == 1
-        assert acknowledgements.first().text == "Thanks"
-
-        alternate_spellings = AlternateSpelling.objects.filter(
-            dictionary_entry=entry_in_db
-        )
-        assert alternate_spellings.count() == 1
-        assert alternate_spellings.first().text == "Gooodbye"
-
-        notes = Note.objects.filter(dictionary_entry=entry_in_db)
-        assert notes.count() == 1
-        assert notes.first().text == self.NOTE_TEXT
-
-        translations = Translation.objects.filter(dictionary_entry=entry_in_db)
-        assert translations.count() == 1
-        assert translations.first().text == self.TRANSLATION_TEXT
-
-        pronunciations = Pronunciation.objects.filter(dictionary_entry=entry_in_db)
-        assert pronunciations.count() == 1
-        assert pronunciations.first().text == "Good-bye"
-
         assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
 
         assert entry_in_db.related_video_links == [
@@ -1448,11 +1310,6 @@ class TestDictionaryEndpoint(
         self.client.force_authenticate(user=user)
 
         entry = factories.DictionaryEntryFactory.create(site=site)
-        factories.AcknowledgementFactory.create(dictionary_entry=entry)
-        factories.AlternateSpellingFactory.create(dictionary_entry=entry)
-        factories.NoteFactory.create(dictionary_entry=entry)
-        factories.TranslationFactory.create(dictionary_entry=entry)
-        factories.PronunciationFactory.create(dictionary_entry=entry)
 
         response = self.client.delete(
             self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
@@ -1460,13 +1317,6 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 204
         assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
-        assert Acknowledgement.objects.filter(dictionary_entry=entry).exists() is False
-        assert (
-            AlternateSpelling.objects.filter(dictionary_entry=entry).exists() is False
-        )
-        assert Note.objects.filter(dictionary_entry=entry).exists() is False
-        assert Translation.objects.filter(dictionary_entry=entry).exists() is False
-        assert Pronunciation.objects.filter(dictionary_entry=entry).exists() is False
 
     @pytest.mark.django_db
     def test_dictionary_entry_delete_does_not_delete_related_entry(self):

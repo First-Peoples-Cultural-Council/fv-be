@@ -50,7 +50,7 @@ def request_update_mtd_index_category_ops(sender, instance, **kwargs):
         DictionaryEntry.objects.filter(
             categories=instance, visibility=Visibility.PUBLIC
         )
-        .exclude(translation_set=None)
+        .exclude(translations__len=0)
         .count()
     )
 

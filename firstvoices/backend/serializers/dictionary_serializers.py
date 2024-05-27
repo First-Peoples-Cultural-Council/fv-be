@@ -13,6 +13,7 @@ from backend.serializers.base_serializers import (
     audience_fields,
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
+from backend.serializers.fields import RelatedTextField
 from backend.serializers.media_serializers import (
     AudioMinimalSerializer,
     RelatedImageMinimalSerializer,
@@ -29,37 +30,12 @@ class DictionaryContentMeta:
     read_only_fields = ("id",)
 
 
-class AcknowledgementSerializer(serializers.ModelSerializer):
-    class Meta(DictionaryContentMeta):
-        model = dictionary.Acknowledgement
-
-
-class AlternateSpellingSerializer(serializers.ModelSerializer):
-    class Meta(DictionaryContentMeta):
-        model = dictionary.AlternateSpelling
-
-
 class WritableCategorySerializer(serializers.PrimaryKeyRelatedField):
     def use_pk_only_optimization(self):
         return False
 
     def to_representation(self, value):
         return LinkedCategorySerializer(context=self.context).to_representation(value)
-
-
-class NoteSerializer(serializers.ModelSerializer):
-    class Meta(DictionaryContentMeta):
-        model = dictionary.Note
-
-
-class PronunciationSerializer(serializers.ModelSerializer):
-    class Meta(DictionaryContentMeta):
-        model = dictionary.Pronunciation
-
-
-class TranslationSerializer(serializers.ModelSerializer):
-    class Meta(DictionaryContentMeta):
-        model = dictionary.Translation
 
 
 class WritableRelatedDictionaryEntrySerializer(serializers.PrimaryKeyRelatedField):
@@ -96,7 +72,7 @@ class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMeta
 class DictionaryEntrySummarySerializer(
     RelatedMediaSerializerMixin, SiteContentLinkedTitleSerializer
 ):
-    translations = TranslationSerializer(source="translation_set", many=True)
+    translations = RelatedTextField(required=False, allow_empty=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = dictionary.DictionaryEntry
@@ -126,25 +102,17 @@ class DictionaryEntryDetailSerializer(
         many=True,
         required=False,
     )
-    acknowledgements = AcknowledgementSerializer(
-        many=True, required=False, source="acknowledgement_set", default=[]
-    )
-    alternate_spellings = AlternateSpellingSerializer(
-        many=True, required=False, source="alternatespelling_set", default=[]
-    )
-    notes = NoteSerializer(many=True, required=False, source="note_set", default=[])
-    translations = TranslationSerializer(
-        many=True, required=False, source="translation_set", default=[]
-    )
     part_of_speech = WritablePartsOfSpeechSerializer(
         queryset=part_of_speech.PartOfSpeech.objects.all(),
         required=False,
         allow_null=True,
         default=None,
     )
-    pronunciations = PronunciationSerializer(
-        many=True, required=False, source="pronunciation_set", default=[]
-    )
+    notes = RelatedTextField(required=False, allow_empty=True)
+    translations = RelatedTextField(required=False, allow_empty=True)
+    acknowledgements = RelatedTextField(required=False, allow_empty=True)
+    pronunciations = RelatedTextField(required=False, allow_empty=True)
+    alternate_spellings = RelatedTextField(required=False, allow_empty=True)
 
     is_immersion_label = serializers.SerializerMethodField(read_only=True)
 
@@ -160,85 +128,6 @@ class DictionaryEntryDetailSerializer(
                         "Related dictionary entry must be in the same site."
                     )
         return super().validate(attrs)
-
-    def create(self, validated_data):
-        acknowledgements = validated_data.pop("acknowledgement_set", [])
-        alternate_spellings = validated_data.pop("alternatespelling_set", [])
-        notes = validated_data.pop("note_set", [])
-        pronunciations = validated_data.pop("pronunciation_set", [])
-        translations = validated_data.pop("translation_set", [])
-
-        created = super().create(validated_data)
-
-        for acknowledgement in acknowledgements:
-            dictionary.Acknowledgement.objects.create(
-                dictionary_entry=created, **acknowledgement
-            )
-
-        for alternate_spelling in alternate_spellings:
-            dictionary.AlternateSpelling.objects.create(
-                dictionary_entry=created, **alternate_spelling
-            )
-
-        for note in notes:
-            dictionary.Note.objects.create(dictionary_entry=created, **note)
-
-        for pronunciation in pronunciations:
-            dictionary.Pronunciation.objects.create(
-                dictionary_entry=created, **pronunciation
-            )
-
-        for translation in translations:
-            dictionary.Translation.objects.create(
-                dictionary_entry=created, **translation
-            )
-
-        return created
-
-    def update(self, instance, validated_data):
-        if "acknowledgement_set" in validated_data:
-            dictionary.Acknowledgement.objects.filter(
-                dictionary_entry=instance
-            ).delete()
-            acknowledgements = validated_data.pop("acknowledgement_set", [])
-            for acknowledgement in acknowledgements:
-                dictionary.Acknowledgement.objects.create(
-                    dictionary_entry=instance, **acknowledgement
-                )
-
-        if "alternatespelling_set" in validated_data:
-            dictionary.AlternateSpelling.objects.filter(
-                dictionary_entry=instance
-            ).delete()
-            alternate_spellings = validated_data.pop("alternatespelling_set", [])
-            for alternate_spelling in alternate_spellings:
-                dictionary.AlternateSpelling.objects.create(
-                    dictionary_entry=instance, **alternate_spelling
-                )
-
-        if "note_set" in validated_data:
-            dictionary.Note.objects.filter(dictionary_entry=instance).delete()
-            notes = validated_data.pop("note_set", [])
-            for note in notes:
-                dictionary.Note.objects.create(dictionary_entry=instance, **note)
-
-        if "pronunciation_set" in validated_data:
-            dictionary.Pronunciation.objects.filter(dictionary_entry=instance).delete()
-            pronunciations = validated_data.pop("pronunciation_set", [])
-            for pronunciation in pronunciations:
-                dictionary.Pronunciation.objects.create(
-                    dictionary_entry=instance, **pronunciation
-                )
-
-        if "translation_set" in validated_data:
-            dictionary.Translation.objects.filter(dictionary_entry=instance).delete()
-            translations = validated_data.pop("translation_set", [])
-            for translation in translations:
-                dictionary.Translation.objects.create(
-                    dictionary_entry=instance, **translation
-                )
-
-        return super().update(instance, validated_data)
 
     def get_model_from_context(self, model_name):
         if self.context is not None and model_name in self.context:
@@ -379,9 +268,7 @@ class DictionaryEntryMinimalSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
-    translations = TranslationSerializer(
-        many=True, required=False, source="translation_set", read_only=True
-    )
+    translations = RelatedTextField(required=False, allow_empty=True)
     related_audio = AudioMinimalSerializer(many=True, required=False, read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
