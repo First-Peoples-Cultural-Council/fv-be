@@ -30,6 +30,7 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
             exclude_from_kids=False,
             exclude_from_games=True,
             visibility=Visibility.MEMBERS,
+            translations=[],
         )
         doc = self.manager.create_index_document(instance)
 
@@ -70,22 +71,19 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
     @pytest.mark.django_db
     def test_create_document_related_models(self):
         instance = self.factory.create()
-        factories.AcknowledgementFactory.create(dictionary_entry=instance)
-        factories.NoteFactory.create(dictionary_entry=instance)
-        factories.TranslationFactory.create(dictionary_entry=instance)
 
         doc = self.manager.create_index_document(instance)
 
         assert_list(
-            list(instance.translation_set.values_list("text", flat=True)),
+            instance.translations,
             doc.translation,
         )
         assert_list(
-            list(instance.acknowledgement_set.values_list("text", flat=True)),
+            instance.acknowledgements,
             doc.acknowledgement,
         )
         assert_list(
-            list(instance.note_set.values_list("text", flat=True)),
+            instance.notes,
             doc.note,
         )
         assert_list(

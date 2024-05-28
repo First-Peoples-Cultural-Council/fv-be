@@ -87,9 +87,9 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         return dict_entry_type_mtd_conversion(dictionaryentry.type)
 
     @staticmethod
-    def get_definition(dictionaryentry):
-        if dictionaryentry.translation_set.count() > 0:
-            return dictionaryentry.translation_set.all()[0].text
+    def get_definition(dictionary_entry):
+        if len(dictionary_entry.translations) > 0:
+            return dictionary_entry.translations[0]
         else:
             return None
 
@@ -150,18 +150,18 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         )
 
     @staticmethod
-    def get_optional(dictionaryentry):
+    def get_optional(dictionary_entry):
         optional_information = {}
-        first_acknowledgement = dictionaryentry.acknowledgement_set.first()
+        first_acknowledgement = dictionary_entry.acknowledgements[0]
         if first_acknowledgement is not None:
-            optional_information["Reference"] = first_acknowledgement.text
-        if dictionaryentry.part_of_speech is not None:
+            optional_information["Reference"] = first_acknowledgement
+        if dictionary_entry.part_of_speech is not None:
             optional_information[
                 "Part of Speech"
-            ] = dictionaryentry.part_of_speech.title
-        first_note = dictionaryentry.note_set.first()
+            ] = dictionary_entry.part_of_speech.title
+        first_note = dictionary_entry.notes[0]
         if first_note is not None:
-            optional_information["Note"] = first_note.text
+            optional_information["Note"] = first_note
         return optional_information
 
     @staticmethod

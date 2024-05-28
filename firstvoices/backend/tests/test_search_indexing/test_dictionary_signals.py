@@ -13,11 +13,6 @@ class TestDictionaryEntryIndexingSignals(
 ):
     manager = DictionaryEntryDocumentManager
     factory = factories.DictionaryEntryFactory
-    related_factories = [
-        factories.NoteFactory,
-        factories.AcknowledgementFactory,
-        factories.TranslationFactory,
-    ]
 
     def create_related_instance(self, related_factory, instance):
         return related_factory.create(dictionary_entry=instance)

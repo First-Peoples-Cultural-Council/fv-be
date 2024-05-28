@@ -1,6 +1,6 @@
 import pytest
 
-from backend.models import Category, DictionaryEntry, Site, Translation
+from backend.models import Category, DictionaryEntry, Site
 from backend.models.constants import AppRole, Visibility
 from backend.models.media import Audio, Image
 from backend.models.sites import SiteFeature
@@ -101,10 +101,12 @@ class TestMtdIndexRebuild:
             last_modified_by=self.admin_user,
         )
         category.save()
-        entry = DictionaryEntry(site=self.site, visibility=Visibility.PUBLIC)
+        entry = DictionaryEntry(
+            site=self.site,
+            visibility=Visibility.PUBLIC,
+            translations=["Test Translation"],
+        )
         entry.categories.add(category)
-        translation = Translation(text="Test Translation", dictionary_entry=entry)
-        translation.save()
 
         entry.save()
         assert self.mocked_func.call_count == 1
@@ -122,7 +124,9 @@ class TestMtdIndexRebuild:
             last_modified_by=self.admin_user,
         )
         category.save()
-        entry = DictionaryEntry(site=self.site, visibility=Visibility.PUBLIC)
+        entry = DictionaryEntry(
+            site=self.site, visibility=Visibility.PUBLIC, translations=[]
+        )
         entry.categories.add(category)
 
         entry.save()
@@ -146,8 +150,6 @@ class TestMtdIndexRebuild:
         category.save()
         entry = DictionaryEntry(site=self.site, visibility=visibility)
         entry.categories.add(category)
-        translation = Translation(text="Test Translation", dictionary_entry=entry)
-        translation.save()
 
         entry.save()
         assert self.mocked_func.call_count == 0
