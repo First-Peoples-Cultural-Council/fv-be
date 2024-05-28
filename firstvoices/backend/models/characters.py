@@ -1,12 +1,13 @@
 import logging
 
-import g2p
 import yaml
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.utils import IntegrityError
 from django.utils.functional import cached_property
 from django.utils.translation import gettext as _
+from g2p.mappings import Mapping
+from g2p.transducer import Transducer
 
 from backend.permissions import predicates
 from backend.utils.character_utils import CustomSorter, nfc
@@ -293,10 +294,10 @@ class Alphabet(BaseSiteContentModel):
             readable_self = Alphabet.objects.only("input_to_canonical_map").get(
                 id=self.id
             )
-            return g2p.Transducer(
-                g2p.Mapping(
+            return Transducer(
+                Mapping(
                     **preprocess_settings,
-                    mapping=readable_self.input_to_canonical_map,
+                    rules=readable_self.input_to_canonical_map,
                 )
             )
         else:
@@ -332,7 +333,7 @@ class Alphabet(BaseSiteContentModel):
 
         presort_settings = self.default_g2p_config["presort_config"]
 
-        return g2p.Transducer(g2p.Mapping(**presort_settings, mapping=full_map))
+        return Transducer(Mapping(**presort_settings, rules=full_map))
 
     def sorter(self, base_characters=None, ignorable_characters=None) -> CustomSorter:
         """
