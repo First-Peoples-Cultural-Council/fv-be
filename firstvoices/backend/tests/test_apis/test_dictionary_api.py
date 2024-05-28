@@ -1303,22 +1303,6 @@ class TestDictionaryEndpoint(
         assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
 
     @pytest.mark.django_db
-    def test_dictionary_entry_delete_related_objects(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(site=site)
-
-        response = self.client.delete(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 204
-        assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
-
-    @pytest.mark.django_db
     def test_dictionary_entry_delete_does_not_delete_related_entry(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
@@ -1364,3 +1348,31 @@ class TestDictionaryEndpoint(
 
         assert response.status_code == 200
         assert response_data["isImmersionLabel"] is True
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_create_invalid_fields_input(self):
+        # Test for if the input for fields such as translations, acknowledgements and such is invalid
+
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "title": "Test Word One",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "public",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "translations": [{"value": "abc"}],
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 400
+        assert response_data["translations"] == [
+            "Expected the objects in the list to contain key 'text'."
+        ]
