@@ -37,7 +37,7 @@ Faker==25.2.0
 ffmpeg-python==0.2.0
 g2p==2.0.0 # https://github.com/roedoejet/g2p
 greenlet==3.0.3
-gunicorn==21.2.0
+gunicorn==22.0.0
 humanfriendly==10.0
 idna==3.7
 inflection==0.5.1
