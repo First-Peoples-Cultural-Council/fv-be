@@ -51,9 +51,9 @@ class Command(BaseCommand):
                         f"{model} count mismatch for dictionary_entry with id: {str(dictionary_entry.id)}."
                     )
 
-            if error_count > 0:
-                logger.error("Error found. Please check the logs below")
-                for log in error_logs:
-                    logger.error(log)
-            else:
-                logger.info("Related models count verified without errors.")
+        if error_count > 0:
+            logger.error("Error found. Please check the logs below")
+            for log in error_logs:
+                logger.error(log)
+        else:
+            logger.info("Related models count verified without errors.")
