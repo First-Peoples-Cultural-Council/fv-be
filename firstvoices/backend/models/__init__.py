@@ -7,7 +7,14 @@ from .characters import (  # noqa F401
     CharacterVariant,
     IgnoredCharacter,
 )
-from .dictionary import DictionaryEntry  # noqa F401
+from .dictionary import (  # noqa F401
+    Acknowledgement,
+    AlternateSpelling,
+    DictionaryEntry,
+    Note,
+    Pronunciation,
+    Translation,
+)
 from .immersion_labels import ImmersionLabel  # noqa F401
 from .import_jobs import (  # noqa F401
     ImportJob,
