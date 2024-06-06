@@ -48,22 +48,15 @@ def get_object_by_id(objects, object_id):
 
 
 def get_translation_text(dictionary_entry_instance):
-    translations = list(
-        dictionary_entry_instance.translation_set.values_list("text", flat=True)
-    )
-    return " ".join(translations)
+    return " ".join(dictionary_entry_instance.translations)
 
 
 def get_acknowledgements_text(dictionary_entry_instance):
-    acknowledgements = list(
-        dictionary_entry_instance.acknowledgement_set.values_list("text", flat=True)
-    )
-    return " ".join(acknowledgements)
+    return " ".join(dictionary_entry_instance.acknowledgements)
 
 
 def get_notes_text(dictionary_entry_instance):
-    notes = list(dictionary_entry_instance.note_set.values_list("text", flat=True))
-    return " ".join(notes)
+    return " ".join(dictionary_entry_instance.notes)
 
 
 def get_categories_ids(dictionary_entry_instance):

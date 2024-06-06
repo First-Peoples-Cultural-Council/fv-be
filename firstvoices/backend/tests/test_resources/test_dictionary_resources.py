@@ -6,26 +6,16 @@ import tablib
 from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
 from backend.models.dictionary import (
-    Acknowledgement,
-    AlternateSpelling,
     DictionaryEntryCategory,
     DictionaryEntryLink,
     DictionaryEntryRelatedCharacter,
-    Note,
-    Pronunciation,
-    Translation,
     TypeOfDictionaryEntry,
 )
 from backend.resources.dictionary import (
-    AcknowledgementResource,
-    AlternateSpellingResource,
     DictionaryEntryCategoryResource,
     DictionaryEntryLinkResource,
     DictionaryEntryRelatedCharacterResource,
     DictionaryEntryResource,
-    NoteResource,
-    PronunciationResource,
-    TranslationResource,
 )
 from backend.tests import factories
 
@@ -126,41 +116,6 @@ class BaseDictionaryEntryContentTest:
         assert table["text"][0] == content.text
         assert table["site"][0] == str(content.site.id)
         assert table["dictionary_entry"][0] == str(content.dictionary_entry.id)
-
-
-@pytest.mark.skip("Tests are for initial migration only")
-class TestNoteImport(BaseDictionaryEntryContentTest):
-    content_type = "note"
-    model = Note
-    resource = NoteResource
-
-
-@pytest.mark.skip("Tests are for initial migration only")
-class TestAcknowledgementImport(BaseDictionaryEntryContentTest):
-    content_type = "acknowledgement"
-    model = Acknowledgement
-    resource = AcknowledgementResource
-
-
-@pytest.mark.skip("Tests are for initial migration only")
-class TestTranslationImport(BaseDictionaryEntryContentTest):
-    content_type = "translation"
-    model = Translation
-    resource = TranslationResource
-
-
-@pytest.mark.skip("Tests are for initial migration only")
-class TestAlternateSpellingImport(BaseDictionaryEntryContentTest):
-    content_type = "alternate_spelling"
-    model = AlternateSpelling
-    resource = AlternateSpellingResource
-
-
-@pytest.mark.skip("Tests are for initial migration only")
-class TestPronunciationImport(BaseDictionaryEntryContentTest):
-    content_type = "pronunciation"
-    model = Pronunciation
-    resource = PronunciationResource
 
 
 @pytest.mark.skip("Tests are for initial migration only")

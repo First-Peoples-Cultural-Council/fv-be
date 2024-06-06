@@ -39,6 +39,7 @@ class TestMTDIndexAndScoreTask:
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
+            translations=[],
         )
         build_index_and_calculate_scores(site.slug)
         # Logs entry id
@@ -53,22 +54,18 @@ class TestMTDIndexAndScoreTask:
         Args:
             site (Union[str, Site])): site or site slug
         """
-        entry_one = factories.DictionaryEntryFactory.create(
+        factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.TEAM,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
-        entry_one_translations = [factories.TranslationFactory.create()]
-        entry_one.translation_set.set(entry_one_translations)
-        entry_two = factories.DictionaryEntryFactory.create(
+        factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
-        entry_two_translations = [factories.TranslationFactory.create()]
-        entry_two.translation_set.set(entry_two_translations)
         result = build_index_and_calculate_scores(site.slug)
         assert len(result["data"]) == 1
 
@@ -92,7 +89,6 @@ class TestMTDIndexAndScoreTask:
         child_category = factories.CategoryFactory.create(
             site=site, parent=parent_category
         )
-        entry_one_translations = [factories.TranslationFactory.create()]
         entry_one = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
@@ -109,23 +105,19 @@ class TestMTDIndexAndScoreTask:
             category=child_category, dictionary_entry=entry_one
         )
 
-        entry_one.translation_set.set(entry_one_translations)
-        entry_two_translations = [factories.TranslationFactory.create()]
-        entry_two = factories.DictionaryEntryFactory.create(
+        # entry_two
+        factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.PHRASE,
             title="title_two",
         )
-        entry_two.translation_set.set(entry_two_translations)
-        entry_three_translations = [factories.TranslationFactory.create()]
         entry_three = factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.PHRASE,
             title="the word 'third' appears as the third word in this sentence",
         )
-        entry_three.translation_set.set(entry_three_translations)
         # Build and index
         result = build_index_and_calculate_scores(site.slug)
         assert len(result["data"]) == 3

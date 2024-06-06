@@ -3,8 +3,8 @@ import pytest
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.immersion_labels import ImmersionLabel
 from backend.tests import factories
-
-from .base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.utils import format_dictionary_entry_related_field
 
 
 class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
@@ -41,7 +41,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{instance.dictionary_entry.id}",
                 "title": instance.dictionary_entry.title,
                 "type": instance.dictionary_entry.type,
-                "translations": [],
+                "translations": format_dictionary_entry_related_field(
+                    instance.dictionary_entry.translations
+                ),
                 "relatedImages": [],
                 "relatedAudio": [],
                 "relatedVideos": [],

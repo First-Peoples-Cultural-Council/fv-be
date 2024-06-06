@@ -171,19 +171,12 @@ class WordOfTheDayView(
             "dictionary_entry__last_modified_by",
             "dictionary_entry__part_of_speech",
         ).prefetch_related(
-            "dictionary_entry__acknowledgement_set",
-            "dictionary_entry__alternatespelling_set",
-            "dictionary_entry__note_set",
-            "dictionary_entry__pronunciation_set",
-            "dictionary_entry__translation_set",
             "dictionary_entry__categories",
             Prefetch(
                 "dictionary_entry__related_dictionary_entries",
                 queryset=DictionaryEntry.objects.visible(self.request.user)
                 .select_related("site")
-                .prefetch_related(
-                    "translation_set", *get_media_prefetch_list(self.request.user)
-                ),
+                .prefetch_related(*get_media_prefetch_list(self.request.user)),
             ),
             Prefetch(
                 "dictionary_entry__related_audio",

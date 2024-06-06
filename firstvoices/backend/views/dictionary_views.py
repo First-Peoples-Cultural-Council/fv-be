@@ -116,20 +116,13 @@ class DictionaryViewSet(
                 "site__language",
                 "created_by",
                 "last_modified_by",
-                "acknowledgement_set",
-                "alternatespelling_set",
-                "note_set",
-                "pronunciation_set",
-                "translation_set",
                 "part_of_speech",
                 "categories",
                 Prefetch(
                     "related_dictionary_entries",
                     queryset=DictionaryEntry.objects.visible(self.request.user)
                     .select_related("site")
-                    .prefetch_related(
-                        "translation_set", *get_media_prefetch_list(self.request.user)
-                    ),
+                    .prefetch_related(*get_media_prefetch_list(self.request.user)),
                 ),
                 *get_media_prefetch_list(self.request.user)
             )

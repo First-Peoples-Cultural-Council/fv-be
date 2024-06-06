@@ -4,17 +4,7 @@ from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
 
-from backend.models import (
-    Acknowledgement,
-    AlternateSpelling,
-    Category,
-    Character,
-    DictionaryEntry,
-    Note,
-    PartOfSpeech,
-    Pronunciation,
-    Translation,
-)
+from backend.models import Category, Character, DictionaryEntry, PartOfSpeech
 from backend.models.dictionary import (
     DictionaryEntryCategory,
     DictionaryEntryLink,
@@ -77,31 +67,6 @@ class BaseDictionaryEntryContentResource(BaseResource):
 
     class Meta:
         abstract = True
-
-
-class NoteResource(BaseDictionaryEntryContentResource):
-    class Meta:
-        model = Note
-
-
-class AcknowledgementResource(BaseDictionaryEntryContentResource):
-    class Meta:
-        model = Acknowledgement
-
-
-class TranslationResource(BaseDictionaryEntryContentResource):
-    class Meta:
-        model = Translation
-
-
-class AlternateSpellingResource(BaseDictionaryEntryContentResource):
-    class Meta:
-        model = AlternateSpelling
-
-
-class PronunciationResource(BaseDictionaryEntryContentResource):
-    class Meta:
-        model = Pronunciation
 
 
 class DictionaryEntryCategoryResource(BaseResource):

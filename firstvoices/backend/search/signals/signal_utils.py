@@ -1,16 +1,13 @@
 from django.db.models import signals
 
 from backend.models import (
-    Acknowledgement,
     DictionaryEntry,
     Language,
     Lyric,
-    Note,
     Site,
     Song,
     Story,
     StoryPage,
-    Translation,
 )
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
@@ -49,9 +46,6 @@ signal_details = {
         (sync_language_family_in_index, LanguageFamily),
         (sync_language_in_index, Language),
         (sync_dictionary_entry_in_index, DictionaryEntry),
-        (sync_related_dictionary_entry_in_index, Translation),
-        (sync_related_dictionary_entry_in_index, Note),
-        (sync_related_dictionary_entry_in_index, Acknowledgement),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (sync_song_in_index, Song),
         (sync_song_lyrics_in_index, Lyric),
@@ -69,9 +63,6 @@ signal_details = {
     ],
     "post_delete": [
         (remove_dictionary_entry_from_index, DictionaryEntry),
-        (sync_related_dictionary_entry_in_index, Translation),
-        (sync_related_dictionary_entry_in_index, Note),
-        (sync_related_dictionary_entry_in_index, Acknowledgement),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (remove_all_site_content, Site),
         (sync_song_lyrics_in_index, Lyric),

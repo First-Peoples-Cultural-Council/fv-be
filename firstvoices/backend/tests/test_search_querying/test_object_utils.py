@@ -137,7 +137,7 @@ class TestGetTranslationText:
     def test_no_translation(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
+            site=site, visibility=Visibility.PUBLIC, translations=[]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
@@ -146,37 +146,19 @@ class TestGetTranslationText:
     def test_basic_case(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-
-        translation_text = "coffee"
-        factories.TranslationFactory.create(
-            dictionary_entry=entry, text=translation_text
+            site=site, visibility=Visibility.PUBLIC, translations=["coffee"]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_translation_text(dictionary_entry) == translation_text
+        assert get_translation_text(dictionary_entry) == "coffee"
 
     def test_multiple_translations(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
+            site=site, visibility=Visibility.PUBLIC, translations=["coffee", "tea"]
         )
-
-        translation_text_1 = "coffee"
-        factories.TranslationFactory.create(
-            dictionary_entry=entry, text=translation_text_1
-        )
-        translation_text_2 = "tea"
-        factories.TranslationFactory.create(
-            dictionary_entry=entry, text=translation_text_2
-        )
-
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert (
-            get_translation_text(dictionary_entry)
-            == f"{translation_text_1} {translation_text_2}"
-        )
+        assert get_translation_text(dictionary_entry) == "coffee tea"
 
 
 @pytest.mark.django_db
@@ -184,7 +166,7 @@ class TestGetAcknowledgementsText:
     def test_no_acknowledgement(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
+            site=site, visibility=Visibility.PUBLIC, acknowledgements=[]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
@@ -193,37 +175,20 @@ class TestGetAcknowledgementsText:
     def test_basic_case(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-
-        acknowledgement_text = "coffee"
-        factories.AcknowledgementFactory.create(
-            dictionary_entry=entry, text=acknowledgement_text
+            site=site, visibility=Visibility.PUBLIC, acknowledgements=["coffee"]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_acknowledgements_text(dictionary_entry) == acknowledgement_text
+        assert get_acknowledgements_text(dictionary_entry) == "coffee"
 
     def test_multiple_acknowledgements(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-
-        acknowledgement_text_1 = "coffee"
-        factories.AcknowledgementFactory.create(
-            dictionary_entry=entry, text=acknowledgement_text_1
-        )
-        acknowledgement_text_2 = "tea"
-        factories.AcknowledgementFactory.create(
-            dictionary_entry=entry, text=acknowledgement_text_2
+            site=site, visibility=Visibility.PUBLIC, acknowledgements=["coffee", "tea"]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert (
-            get_acknowledgements_text(dictionary_entry)
-            == f"{acknowledgement_text_1} {acknowledgement_text_2}"
-        )
+        assert get_acknowledgements_text(dictionary_entry) == "coffee tea"
 
 
 @pytest.mark.django_db
@@ -231,7 +196,7 @@ class TestGetNotesText:
     def test_no_notes(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
+            site=site, visibility=Visibility.PUBLIC, notes=[]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
@@ -240,35 +205,20 @@ class TestGetNotesText:
     def test_basic_case(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
+            site=site, visibility=Visibility.PUBLIC, notes=["coffee"]
         )
 
-        notes_text = "coffee"
-        factories.NoteFactory.create(dictionary_entry=entry, text=notes_text)
-
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_notes_text(dictionary_entry) == notes_text
+        assert get_notes_text(dictionary_entry) == "coffee"
 
     def test_multiple_notes(self):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC
-        )
-
-        note_text_1 = "coffee"
-        factories.AcknowledgementFactory.create(
-            dictionary_entry=entry, text=note_text_1
-        )
-        note_text_2 = "tea"
-        factories.AcknowledgementFactory.create(
-            dictionary_entry=entry, text=note_text_2
+            site=site, visibility=Visibility.PUBLIC, notes=["coffee", "tea"]
         )
 
         dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert (
-            get_acknowledgements_text(dictionary_entry)
-            == f"{note_text_1} {note_text_2}"
-        )
+        assert get_notes_text(dictionary_entry) == "coffee tea"
 
 
 @pytest.mark.django_db

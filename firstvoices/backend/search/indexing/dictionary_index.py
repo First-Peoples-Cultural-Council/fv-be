@@ -23,9 +23,9 @@ class DictionaryEntryDocumentManager(DocumentManager):
             site_visibility=instance.site.visibility,
             title=instance.title,
             type=instance.type,
-            translation=fields_as_list(instance.translation_set, "text"),
-            acknowledgement=fields_as_list(instance.acknowledgement_set, "text"),
-            note=fields_as_list(instance.note_set, "text"),
+            translation=instance.translations,
+            acknowledgement=instance.acknowledgements,
+            note=instance.notes,
             categories=fields_as_list(instance.categories, "id"),
             exclude_from_kids=instance.exclude_from_kids,
             exclude_from_games=instance.exclude_from_games,
@@ -37,7 +37,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             has_image=instance.related_images.exists(),
             created=instance.created,
             last_modified=instance.last_modified,
-            has_translation=instance.translation_set.exists(),
+            has_translation=(len(instance.translations) > 0),
             has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in instance.custom_order,
         )
 

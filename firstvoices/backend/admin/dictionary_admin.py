@@ -2,15 +2,10 @@ from django.contrib import admin
 
 from backend.models.category import Category
 from backend.models.dictionary import (
-    Acknowledgement,
-    AlternateSpelling,
     DictionaryEntry,
     DictionaryEntryCategory,
     DictionaryEntryLink,
     DictionaryEntryRelatedCharacter,
-    Note,
-    Pronunciation,
-    Translation,
     WordOfTheDay,
 )
 from backend.models.part_of_speech import PartOfSpeech
@@ -107,11 +102,6 @@ class PartsOfSpeechAdmin(BaseAdmin):
 
 # Non-customized admin forms
 admin.site.register(Category, HiddenBaseAdmin)
-admin.site.register(Note, HiddenBaseAdmin)
-admin.site.register(Acknowledgement, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryLink, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryCategory, HiddenBaseAdmin)
 admin.site.register(DictionaryEntryRelatedCharacter, HiddenBaseAdmin)
-admin.site.register(Translation, HiddenBaseAdmin)
-admin.site.register(AlternateSpelling, HiddenBaseAdmin)
-admin.site.register(Pronunciation, HiddenBaseAdmin)
