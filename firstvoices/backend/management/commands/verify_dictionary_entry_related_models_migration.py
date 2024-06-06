@@ -22,6 +22,9 @@ class Command(BaseCommand):
         logger = logging.getLogger(__name__)
         dictionary_entries = DictionaryEntry.objects.all()
 
+        error_count = 0
+        error_logs = []
+
         for dictionary_entry in dictionary_entries:
             notes_count = len(dictionary_entry.notes)
             translations_count = len(dictionary_entry.translations)
@@ -43,8 +46,14 @@ class Command(BaseCommand):
                     dictionary_entry=dictionary_entry
                 ).count()
                 if related_entries_count != model_count:
-                    logger.error(
+                    error_count += 1
+                    error_logs.append(
                         f"{model} count mismatch for dictionary_entry with id: {str(dictionary_entry.id)}."
                     )
-                else:
-                    logger.info(f"{model} count verified.")
+
+            if error_count > 0:
+                logger.error("Error found. Please check the logs below")
+                for log in error_logs:
+                    logger.error(log)
+            else:
+                logger.info("Related models count verified without errors.")
