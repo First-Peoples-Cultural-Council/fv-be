@@ -13,7 +13,7 @@ from backend.serializers.base_serializers import (
     audience_fields,
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
-from backend.serializers.fields import RelatedTextField
+from backend.serializers.fields import TextListField
 from backend.serializers.media_serializers import (
     AudioMinimalSerializer,
     RelatedImageMinimalSerializer,
@@ -72,7 +72,7 @@ class RelatedDictionaryEntrySerializerMixin(metaclass=serializers.SerializerMeta
 class DictionaryEntrySummarySerializer(
     RelatedMediaSerializerMixin, SiteContentLinkedTitleSerializer
 ):
-    translations = RelatedTextField(required=False, allow_empty=True)
+    translations = TextListField(required=False, allow_empty=True)
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = dictionary.DictionaryEntry
@@ -108,11 +108,11 @@ class DictionaryEntryDetailSerializer(
         allow_null=True,
         default=None,
     )
-    notes = RelatedTextField(required=False, allow_empty=True)
-    translations = RelatedTextField(required=False, allow_empty=True)
-    acknowledgements = RelatedTextField(required=False, allow_empty=True)
-    pronunciations = RelatedTextField(required=False, allow_empty=True)
-    alternate_spellings = RelatedTextField(required=False, allow_empty=True)
+    notes = TextListField(required=False, allow_empty=True)
+    translations = TextListField(required=False, allow_empty=True)
+    acknowledgements = TextListField(required=False, allow_empty=True)
+    pronunciations = TextListField(required=False, allow_empty=True)
+    alternate_spellings = TextListField(required=False, allow_empty=True)
 
     is_immersion_label = serializers.SerializerMethodField(read_only=True)
 
@@ -268,7 +268,7 @@ class DictionaryEntryMinimalSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
-    translations = RelatedTextField(required=False, allow_empty=True)
+    translations = TextListField(required=False, allow_empty=True)
     related_audio = AudioMinimalSerializer(many=True, required=False, read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True

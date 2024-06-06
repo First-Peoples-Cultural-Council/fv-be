@@ -110,7 +110,7 @@ class EnumField(serializers.Field):
             )
 
 
-class RelatedTextField(serializers.ListField):
+class TextListField(serializers.ListField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
