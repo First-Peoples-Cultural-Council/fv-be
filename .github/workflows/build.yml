@@ -14,7 +14,7 @@ on:
 jobs:
   pytest:
     name: pytest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
@@ -63,7 +63,7 @@ jobs:
 
   sonarcloud:
     name: SonarCloud
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: pytest
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
@@ -100,7 +100,7 @@ jobs:
   deploy_with_tekton:
     name: Monitor Dev Deployment
     environment: dev
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     needs: sonarcloud
     steps:
@@ -160,7 +160,7 @@ jobs:
   deploy_with_tekton_preprod:
     name: Monitor Preprod Deployment
     environment: preprod
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     steps:
       - name: Configure AWS credentials
@@ -219,7 +219,7 @@ jobs:
   deploy_with_tekton_prod:
     name: Monitor Prod Deployment
     environment: prod
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     steps:
       - name: Configure AWS credentials
