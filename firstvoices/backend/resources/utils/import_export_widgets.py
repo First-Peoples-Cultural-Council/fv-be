@@ -81,3 +81,15 @@ class InvertedBooleanFieldWidget(Widget):
         if curr_value is None:
             raise ValidationError("Invalid value. Expected 'true' or 'false'.")
         return str(not curr_value)
+
+
+class TextListWidget(Widget):
+    """Import/export widget to return valid values for arrayFields from attributes
+    that can span multiple columns in the input csv."""
+
+    def __init__(self, prefix, *args, **kwargs):
+        self.prefix = prefix
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        return [value for key, value in row.items() if key.startswith(self.prefix)]
