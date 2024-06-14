@@ -1,6 +1,7 @@
 from django.db.models import signals
 
 from backend.models import (
+    Category,
     DictionaryEntry,
     Language,
     Lyric,
@@ -11,6 +12,11 @@ from backend.models import (
 )
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
+from backend.models.signals import (
+    request_update_mtd_index,
+    request_update_mtd_index_category_ops,
+    store_current_visibility,
+)
 from backend.models.sites import LanguageFamily, SiteFeature
 from backend.search.signals import (
     change_site_visibility,
@@ -39,13 +45,19 @@ from backend.search.signals import (
 )
 
 # Verify the list with signals present in all index documents present in
-# backend.search.indexing package if this list goes out of sync
+# backend.search.indexing and backend.models.signals packages if this list goes out of sync
 signal_details = {
-    "pre_save": [(sync_site_in_language_index, Site), (change_site_visibility, Site)],
+    "pre_save": [
+        (sync_site_in_language_index, Site),
+        (change_site_visibility, Site),
+        (store_current_visibility, DictionaryEntry),
+    ],
     "post_save": [
+        (request_update_mtd_index_category_ops, Category),
         (sync_language_family_in_index, LanguageFamily),
         (sync_language_in_index, Language),
         (sync_dictionary_entry_in_index, DictionaryEntry),
+        (request_update_mtd_index, DictionaryEntry),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (sync_song_in_index, Song),
         (sync_song_lyrics_in_index, Lyric),
@@ -62,7 +74,9 @@ signal_details = {
         (remove_song_from_index, Song),
     ],
     "post_delete": [
+        (request_update_mtd_index_category_ops, Category),
         (remove_dictionary_entry_from_index, DictionaryEntry),
+        (request_update_mtd_index, DictionaryEntry),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (remove_all_site_content, Site),
         (sync_song_lyrics_in_index, Lyric),
@@ -88,3 +102,24 @@ def connect_signals():
         signal = getattr(signals, signal_name)
         for handler, sender in details:
             signal.connect(handler, sender=sender)
+
+
+INDEXING_PAUSED_FEATURE = "indexing_paused"
+
+
+def pause_indexing(site):
+    feature = SiteFeature.objects.get_or_create(site=site, key=INDEXING_PAUSED_FEATURE)
+    feature.is_enabled = True
+    feature.save()
+
+
+def unpause_indexing(site):
+    feature = SiteFeature.objects.get_or_create(site=site, key=INDEXING_PAUSED_FEATURE)
+    feature.is_enabled = False
+    feature.save()
+
+
+def is_indexing_paused(site):
+    if not site.sitefeature_set.filter(key=INDEXING_PAUSED_FEATURE).exists():
+        return False
+    return site.sitefeature_set.get(key=INDEXING_PAUSED_FEATURE).is_enabled
