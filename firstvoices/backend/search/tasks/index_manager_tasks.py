@@ -3,6 +3,7 @@ from django.db import transaction
 
 from backend.search import es_logging, indexing
 from backend.search.indexing import DocumentManager
+from backend.search.signals.signal_utils import is_indexing_paused
 from firstvoices.celery import link_error_handler
 
 
@@ -58,12 +59,33 @@ def request_index_task(task, document_manager, instance):
 
 
 def request_sync_in_index(document_manager, instance):
+    if is_indexing_paused(instance.site):
+        es_logging.logger.debug(
+            f"Skipping search index sync for [{instance.__class__.__name__}] instance [{instance.id}] "
+            + f"because indexing is paused for site [{instance.site.slug}]"
+        )
+        return
+
     request_index_task(sync_in_index, document_manager, instance)
 
 
 def request_update_in_index(document_manager, instance):
+    if is_indexing_paused(instance.site):
+        es_logging.logger.debug(
+            f"Skipping search index update for [{instance.__class__.__name__}] instance [{instance.id}] "
+            + f"because indexing is paused for site [{instance.site.slug}]"
+        )
+        return
+
     request_index_task(update_in_index, document_manager, instance)
 
 
 def request_remove_from_index(document_manager, instance):
+    if is_indexing_paused(instance.site):
+        es_logging.logger.debug(
+            f"Skipping search index remove for [{instance.__class__.__name__}] instance [{instance.id}] "
+            + f"because indexing is paused for site [{instance.site.slug}]"
+        )
+        return
+
     request_index_task(remove_from_index, document_manager, instance)
