@@ -59,7 +59,7 @@ def request_index_task(task, document_manager, instance):
 
 
 def request_sync_in_index(document_manager, instance):
-    if is_indexing_paused(instance.site):
+    if hasattr(instance, "site") and is_indexing_paused(instance.site):
         es_logging.logger.debug(
             f"Skipping search index sync for [{instance.__class__.__name__}] instance [{instance.id}] "
             + f"because indexing is paused for site [{instance.site.slug}]"
@@ -70,7 +70,7 @@ def request_sync_in_index(document_manager, instance):
 
 
 def request_update_in_index(document_manager, instance):
-    if is_indexing_paused(instance.site):
+    if hasattr(instance, "site") and is_indexing_paused(instance.site):
         es_logging.logger.debug(
             f"Skipping search index update for [{instance.__class__.__name__}] instance [{instance.id}] "
             + f"because indexing is paused for site [{instance.site.slug}]"
@@ -81,7 +81,7 @@ def request_update_in_index(document_manager, instance):
 
 
 def request_remove_from_index(document_manager, instance):
-    if is_indexing_paused(instance.site):
+    if hasattr(instance, "site") and is_indexing_paused(instance.site):
         es_logging.logger.debug(
             f"Skipping search index remove for [{instance.__class__.__name__}] instance [{instance.id}] "
             + f"because indexing is paused for site [{instance.site.slug}]"
