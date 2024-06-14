@@ -6,7 +6,7 @@ from django.dispatch import receiver
 
 from backend.models import Category, DictionaryEntry
 from backend.models.constants import Visibility
-from backend.search.signals.signal_utils import is_indexing_paused
+from backend.search.signals.utils.pausing import is_indexing_paused
 from backend.tasks.build_mtd_export_format import build_index_and_calculate_scores
 from firstvoices.celery import link_error_handler
 

@@ -1,4 +1,4 @@
-from backend.search.signals.signal_utils import connect_signals, disconnect_signals
+from backend.search.signals.utils.connecting import connect_signals, disconnect_signals
 from backend.tests.utils import not_raises
 
 

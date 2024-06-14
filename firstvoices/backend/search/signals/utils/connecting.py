@@ -12,7 +12,7 @@ from backend.models import (
 )
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
-from backend.models.signals import (
+from backend.models.signals.mtd_signals import (
     request_update_mtd_index,
     request_update_mtd_index_category_ops,
     store_current_visibility,
@@ -102,24 +102,3 @@ def connect_signals():
         signal = getattr(signals, signal_name)
         for handler, sender in details:
             signal.connect(handler, sender=sender)
-
-
-INDEXING_PAUSED_FEATURE = "indexing_paused"
-
-
-def pause_indexing(site):
-    feature = SiteFeature.objects.get_or_create(site=site, key=INDEXING_PAUSED_FEATURE)
-    feature.is_enabled = True
-    feature.save()
-
-
-def unpause_indexing(site):
-    feature = SiteFeature.objects.get_or_create(site=site, key=INDEXING_PAUSED_FEATURE)
-    feature.is_enabled = False
-    feature.save()
-
-
-def is_indexing_paused(site):
-    if not site.sitefeature_set.filter(key=INDEXING_PAUSED_FEATURE).exists():
-        return False
-    return site.sitefeature_set.get(key=INDEXING_PAUSED_FEATURE).is_enabled

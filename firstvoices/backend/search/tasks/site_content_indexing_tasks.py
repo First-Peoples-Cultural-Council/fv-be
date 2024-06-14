@@ -11,7 +11,7 @@ from backend.search.indexing import (
     StoryDocumentManager,
     VideoDocumentManager,
 )
-from backend.search.signals.signal_utils import is_indexing_paused
+from backend.search.signals.utils.pausing import is_indexing_paused
 from firstvoices.celery import link_error_handler
 
 # special tasks for bulk Site content indexing actions

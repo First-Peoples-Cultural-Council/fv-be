@@ -3,7 +3,7 @@ from django.db import transaction
 
 from backend.search import es_logging, indexing
 from backend.search.indexing import DocumentManager
-from backend.search.signals.signal_utils import is_indexing_paused
+from backend.search.signals.utils.pausing import is_indexing_paused
 from firstvoices.celery import link_error_handler
 
 
