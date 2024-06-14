@@ -3,9 +3,9 @@ from django.dispatch import receiver
 
 from backend.models.sites import Site, SiteFeature
 from backend.search.tasks.site_content_indexing_tasks import (
-    remove_all_site_content_from_indexes,
-    sync_all_media_site_content_in_indexes,
-    sync_all_site_content_in_indexes,
+    request_remove_all_site_content_from_indexes,
+    request_sync_all_media_site_content_in_indexes,
+    request_sync_all_site_content_in_indexes,
 )
 
 
@@ -24,23 +24,17 @@ def change_site_visibility(sender, instance, **kwargs):
         # no changes needed
         return
 
-    sync_all_site_content_in_indexes(instance)
+    request_sync_all_site_content_in_indexes(instance)
 
 
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
 def remove_all_site_content(sender, instance, **kwargs):
-    remove_all_site_content_from_indexes(instance)
+    request_remove_all_site_content_from_indexes(instance)
 
 
 @receiver(post_save, sender=SiteFeature)
 @receiver(post_delete, sender=SiteFeature)
 def sync_site_features_in_media_indexes(sender, instance, **kwargs):
     site = instance.site
-    sync_all_media_site_content_in_indexes(site)
-
-
-def indexing_signals_paused(site):
-    if not site.sitefeature_set.filter(key="indexing_paused").exists():
-        return False
-    return site.sitefeature_set.get(key="indexing_paused").is_enabled
+    request_sync_all_media_site_content_in_indexes(site)
