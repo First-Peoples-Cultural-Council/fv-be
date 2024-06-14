@@ -2,6 +2,8 @@ import logging
 import re
 import unicodedata
 
+UNKNOWN_FLAG = unicodedata.lookup("BLACK FLAG")
+
 
 # From https://github.com/roedoejet/mothertongues/blob/master/mtd/processors/sorter.py
 # with additions for ignorables and out-of-vocab chars (on branch: dev.sorter)
@@ -94,7 +96,7 @@ class CustomSorter(ArbSorter):
     max_alphabet_length = len(basic_latin) + len(extended_latin) - len(exclude_chars)
 
     space = " "
-    out_of_vocab_flag = unicodedata.lookup("BLACK FLAG")
+    out_of_vocab_flag = UNKNOWN_FLAG
 
     logger = logging.getLogger(__name__)
 
