@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from backend.models import Category, DictionaryEntry
+from backend.models import Category, DictionaryEntry, Site
 from backend.models.constants import Visibility
 from backend.search.signals.utils.pausing import is_indexing_paused
 from backend.tasks.build_mtd_export_format import build_index_and_calculate_scores
@@ -13,7 +13,7 @@ from firstvoices.celery import link_error_handler
 LOGGER = logging.getLogger(__name__)
 
 
-def rebuild_mtd_index(site):
+def rebuild_mtd_index(site: Site):
     if is_indexing_paused(site):
         LOGGER.debug(
             f"Skipping mtd index rebuild because indexing is paused for site [{site.slug}]"
@@ -46,7 +46,7 @@ def request_update_mtd_index(sender, instance, **kwargs):
         hasattr(instance, "old_visibility")
         and instance.old_visibility == Visibility.PUBLIC
     ) or instance.visibility == Visibility.PUBLIC:
-        rebuild_mtd_index(instance.site.slug)
+        rebuild_mtd_index(instance.site)
 
 
 @receiver(post_save, sender=Category)
@@ -63,4 +63,4 @@ def request_update_mtd_index_category_ops(sender, instance, **kwargs):
     )
 
     if relevant_dictionary_entries_count:
-        rebuild_mtd_index(instance.site.slug)
+        rebuild_mtd_index(instance.site)
