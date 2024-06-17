@@ -16,6 +16,7 @@ from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
+from PIL import ImageOps
 
 from backend.permissions import predicates
 from backend.tasks.media_tasks import generate_media_thumbnails
@@ -479,6 +480,7 @@ class Image(ThumbnailMixin, MediaBase):
 
     def create_thumbnail(self, img, output_size):
         output_img = BytesIO()
+        img = ImageOps.exif_transpose(img)  # Handle orientation
         img.thumbnail(output_size)
         # Remove transparency values if they exist so that the image can be converted to JPEG.
         try:
