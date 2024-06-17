@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, Widget
@@ -92,4 +94,5 @@ class TextListWidget(Widget):
         super().__init__(*args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        return [value for key, value in row.items() if key.startswith(self.prefix)]
+        match_pattern = rf"{self.prefix}[_2-5]*"
+        return [value for key, value in row.items() if re.fullmatch(match_pattern, key)]
