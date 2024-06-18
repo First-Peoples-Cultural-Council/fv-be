@@ -101,15 +101,14 @@ class TextListWidget(Widget):
 
 class CategoryWidget(ManyToManyWidget):
     def __init__(self, *args, **kwargs):
-        # Verify if this looks okay or if we need to use CategoryWidget to pass-through
-        # since this widget is not going to be used anywhere else
-        self.prefix = "category"
         super().__init__(model=Category, field="title", *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        match_pattern = rf"{self.prefix}[_2-5]*"
+        category_match_pattern = r"category[_2-5]*"
         input_categories = [
-            value for key, value in row.items() if re.fullmatch(match_pattern, key)
+            value
+            for key, value in row.items()
+            if re.fullmatch(category_match_pattern, key)
         ]
 
         if len(input_categories) == 0:
