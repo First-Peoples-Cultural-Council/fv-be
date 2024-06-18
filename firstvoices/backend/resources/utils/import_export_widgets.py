@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, Widget
@@ -81,3 +83,16 @@ class InvertedBooleanFieldWidget(Widget):
         if curr_value is None:
             raise ValidationError("Invalid value. Expected 'true' or 'false'.")
         return str(not curr_value)
+
+
+class TextListWidget(Widget):
+    """Import/export widget to return valid values for arrayFields from attributes
+    that can span multiple columns in the input csv."""
+
+    def __init__(self, prefix, *args, **kwargs):
+        self.prefix = prefix
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        match_pattern = rf"{self.prefix}[_2-5]*"
+        return [value for key, value in row.items() if re.fullmatch(match_pattern, key)]

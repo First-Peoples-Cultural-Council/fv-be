@@ -17,7 +17,7 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
-from backend.resources.utils.import_export_widgets import ChoicesWidget
+from backend.resources.utils.import_export_widgets import ChoicesWidget, TextListWidget
 
 
 class DictionaryEntryResource(
@@ -33,6 +33,30 @@ class DictionaryEntryResource(
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
+    # Text List attributes
+    translations = fields.Field(
+        column_name="translation",
+        attribute="translations",
+        widget=TextListWidget(prefix="translation"),
+    )
+    acknowledgements = fields.Field(
+        column_name="acknowledgement",
+        attribute="acknowledgements",
+        widget=TextListWidget(prefix="acknowledgement"),
+    )
+    notes = fields.Field(
+        column_name="note", attribute="notes", widget=TextListWidget(prefix="note")
+    )
+    pronunciations = fields.Field(
+        column_name="pronunciation",
+        attribute="pronunciations",
+        widget=TextListWidget(prefix="pronunciation"),
+    )
+    alternate_spellings = fields.Field(
+        column_name="alt_spelling",
+        attribute="alternate_spellings",
+        widget=TextListWidget(prefix="alt_spelling"),
+    )
 
     def __init__(self, site=None):
         if site:
@@ -43,16 +67,6 @@ class DictionaryEntryResource(
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
         if "site" not in dataset.headers:
             dataset.append_col(lambda x: str(self.site.id), header="site")
-
-    def after_import_row(self, row, row_result, **kwargs):
-        # # text based M2M models
-        # import_m2m_text_models(row, "translation", Translation)
-        # import_m2m_text_models(row, "acknowledgement", Acknowledgement)
-        # import_m2m_text_models(row, "note", Note)
-        # import_m2m_text_models(row, "pronunciation", Pronunciation)
-        # import_m2m_text_models(row, "alt_spelling", AlternateSpelling)
-
-        super().after_import_row(row, row_result, **kwargs)
 
     class Meta:
         model = DictionaryEntry
