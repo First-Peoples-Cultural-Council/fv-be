@@ -1,7 +1,9 @@
+import io
 import logging
 from unittest.mock import patch
 
 import pytest
+from django.core.files.base import ContentFile
 from django.db import NotSupportedError
 from embed_video.backends import (
     UnknownBackendException,
@@ -10,6 +12,7 @@ from embed_video.backends import (
     detect_backend,
 )
 from embed_video.fields import EmbedVideoField
+from PIL import Image as PILImage
 
 from backend.models.media import (
     File,
@@ -341,6 +344,45 @@ class TestImageModel(ThumbnailTestMixin):
 
     def create_original_file(self, size="thumbnail"):
         return self.file_factory.create()
+
+    def create_original_file_with_exif_orientation(self):
+        # Create an image file with exif orientation data
+        img = PILImage.new("RGB", (100, 100), color="red")
+        exif = img.getexif()
+        exif[0x0112] = 6
+
+        # Save the image to a bytes buffer with EXIF data
+        img_bytes = io.BytesIO()
+        exif_data = exif.tobytes()
+        img.save(img_bytes, "JPEG", exif=exif_data)
+
+        # Create a Django ContentFile
+        img_bytes.seek(0)
+        content_file = ContentFile(img_bytes.read(), "test_image_with_exif.jpg")
+
+        return self.file_factory.create(content=content_file)
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
+    def test_thumbnails_remove_exif_orientation(self):
+        site = factories.SiteFactory.create()
+        original_file = self.create_original_file_with_exif_orientation()
+        original_file_exif = PILImage.open(original_file.content).getexif()
+        assert original_file_exif.get(0x0112) == 6
+
+        image_instance = self.create_media_model(site=site, original=original_file)
+        original_id = image_instance.original.id
+        thumbnail_image_ids = [
+            image_instance.thumbnail.id,
+            image_instance.small.id,
+            image_instance.medium.id,
+        ]
+
+        assert ImageFile.objects.filter(pk=original_id).count() == 1
+        for thumbnail_id in thumbnail_image_ids:
+            thumbnail_image_content = ImageFile.objects.get(pk=thumbnail_id).content
+            thumbnail_image_exif = PILImage.open(thumbnail_image_content).getexif()
+            assert thumbnail_image_exif.get(0x0112) is None
 
 
 class RelatedVideoLinksValidationMixin:
