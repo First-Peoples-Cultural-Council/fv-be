@@ -2,8 +2,9 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from import_export.widgets import ForeignKeyWidget, Widget
+from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
+from backend.models import Category
 from backend.search.utils.validators import get_valid_boolean
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
@@ -96,3 +97,21 @@ class TextListWidget(Widget):
     def clean(self, value, row=None, **kwargs):
         match_pattern = rf"{self.prefix}[_2-5]*"
         return [value for key, value in row.items() if re.fullmatch(match_pattern, key)]
+
+
+class CategoryWidget(ManyToManyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model=Category, field="title", *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        category_match_pattern = r"category[_2-5]*"
+        input_categories = [
+            value
+            for key, value in row.items()
+            if re.fullmatch(category_match_pattern, key)
+        ]
+
+        if len(input_categories) == 0:
+            return Category.objects.none()
+
+        return Category.objects.filter(title__in=input_categories)

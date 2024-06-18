@@ -17,7 +17,11 @@ from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
-from backend.resources.utils.import_export_widgets import ChoicesWidget, TextListWidget
+from backend.resources.utils.import_export_widgets import (
+    CategoryWidget,
+    ChoicesWidget,
+    TextListWidget,
+)
 
 
 class DictionaryEntryResource(
@@ -33,6 +37,13 @@ class DictionaryEntryResource(
         attribute="part_of_speech",
         widget=ForeignKeyWidget(PartOfSpeech, "title"),
     )
+    categories = fields.Field(
+        column_name="category",
+        attribute="categories",
+        m2m_add=True,
+        widget=CategoryWidget(),
+    )
+
     # Text List attributes
     translations = fields.Field(
         column_name="translation",
