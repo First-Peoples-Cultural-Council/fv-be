@@ -75,3 +75,27 @@ class TestDryRunImport:
 
         assert len(error_rows) == 3
         assert error_rows_numbers == [1, 3, 4]
+
+    @pytest.mark.django_db
+    def test_validation_report_columns(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/test_unknown_columns.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
+
+        assert "abc" in ignored_columns
+        assert "xyz" in ignored_columns
+
+        assert "title" in accepted_columns
+        assert "type" in accepted_columns

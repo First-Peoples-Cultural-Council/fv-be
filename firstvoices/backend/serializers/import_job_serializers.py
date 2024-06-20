@@ -14,7 +14,6 @@ from backend.serializers.media_serializers import FileUploadSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.utils.import_job_utils import (
     check_required_headers,
-    validate_headers,
     validate_username,
 )
 from backend.serializers.validators import SupportedFileType
@@ -101,7 +100,6 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
             check_required_headers(table.headers)
-            validate_headers(table.headers)
 
             run_as_user = validated_data.get("run_as_user", None)
             if run_as_user:

@@ -3,10 +3,9 @@ from itertools import product
 import pytest
 from rest_framework import serializers
 
-from backend.serializers.utils.import_job_utils import (
-    check_required_headers,
-    validate_headers,
-)
+from backend.serializers.utils.import_job_utils import check_required_headers
+from backend.tasks.import_job_tasks import clean_csv
+from backend.tests.utils import get_tablib_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
@@ -119,27 +118,34 @@ class TestValidateRequiredHeaders:
             check_required_headers(input_headers)
 
 
-class TestValidateAllHeaders:
-    def test_valid_headers(self, caplog):
-        input_headers = [
-            "title",
-            "type",
-            "part_of_speech",
-            "part_of_speech_2",
-        ]
-        validate_headers(input_headers)
+class TestCleanCsv:
+    def test_valid_columns(self):
+        data = get_tablib_dataset("test_upload_all_columns_valid.csv")
+        accepted_headers, invalid_headers, data = clean_csv(data)
 
-    def test_unknown_header_found(self, caplog):
-        input_headers = ["title", "type", "related_car", "note_def", "unknown"]
-        validate_headers(input_headers)
+        # All headers should be present in accepted headers
+        assert len(accepted_headers) == len(data.headers)
+        assert invalid_headers == []
 
-        assert "Unknown header. Skipping column related_car." in caplog.text
-        assert "Variation out of range. Skipping column." not in caplog.text
+    def test_unknown_columns(self):
+        data = get_tablib_dataset("test_unknown_columns.csv")
+        accepted_headers, invalid_headers, cleaned_data = clean_csv(data)
 
-    @pytest.mark.parametrize("test_header", ["part_of_speech_14", "note_26"])
-    def test_invalid_variation(self, caplog, test_header):
-        input_headers = ["title", "type", test_header]
-        validate_headers(input_headers)
+        assert len(accepted_headers) == 3
+        assert "abc" in invalid_headers
+        assert "xyz" in invalid_headers
 
-        assert "Unknown header. Skipping column" not in caplog.text
-        assert f"Variation out of range. Skipping column {test_header}." in caplog.text
+        assert "title" in cleaned_data.headers
+        assert "abc" not in cleaned_data.headers
+        assert "xyz" not in cleaned_data.headers
+
+    def test_out_of_range_variations(self):
+        data = get_tablib_dataset("test_out_of_range_variations.csv")
+        accepted_headers, invalid_headers, cleaned_data = clean_csv(data)
+
+        assert len(accepted_headers) == 7
+        assert "translation_2" in accepted_headers
+        assert "note_2" in accepted_headers
+
+        assert "translation_8" in invalid_headers
+        assert "note_99" in invalid_headers
