@@ -141,7 +141,7 @@ class TestCleanCsv:
 
     def test_out_of_range_variations(self):
         data = get_tablib_dataset("test_out_of_range_variations.csv")
-        accepted_headers, invalid_headers, cleaned_data = clean_csv(data)
+        accepted_headers, invalid_headers, _ = clean_csv(data)
 
         assert len(accepted_headers) == 7
         assert "translation_2" in accepted_headers
