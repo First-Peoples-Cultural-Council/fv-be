@@ -109,19 +109,21 @@ class CategoryWidget(ManyToManyWidget):
         input_categories = {}
         valid_categories = []
 
-        for key, value in row.items():
-            if re.fullmatch(category_match_pattern, key):
-                input_categories[key] = value
+        for column, input_value in row.items():
+            if re.fullmatch(category_match_pattern, column):
+                input_categories[column] = input_value
 
         # If no categories provided, return
         if len(input_categories) == 0:
             return Category.objects.none()
 
         # Validate categories
-        for key, value in input_categories.items():
-            category_lookup = Category.objects.filter(site__id=row["site"], title=value)
+        for column, input_value in input_categories.items():
+            category_lookup = Category.objects.filter(
+                site__id=row["site"], title=input_value
+            )
             if len(category_lookup) == 0:
-                raise ValidationError(f"Invalid category supplied in column {key}")
+                raise ValidationError(f"Invalid category supplied in column {column}.")
             else:
                 valid_categories.append(category_lookup[0])
 

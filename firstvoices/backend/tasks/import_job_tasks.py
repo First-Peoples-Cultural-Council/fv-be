@@ -59,7 +59,8 @@ def is_valid_header_variation(input_header):
 def clean_csv(data):
     """
     Method to run validations on a csv file and returns a list of
-    warnings found and a cleaned csv for importing.
+    accepted columns, ignored columns and a cleaned csv for importing.
+    This method also drops the ignored columns as those will not be used during import.
     """
 
     all_headers = data.headers

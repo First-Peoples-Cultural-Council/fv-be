@@ -142,7 +142,7 @@ def format_dictionary_entry_related_field(entries):
     return [{"text": entry} for entry in entries]
 
 
-def get_tablib_dataset(filename):
+def get_batch_import_test_dataset(filename):
     path = (
         os.path.dirname(os.path.realpath(__file__))
         + f"/factories/resources/import_job/{filename}"

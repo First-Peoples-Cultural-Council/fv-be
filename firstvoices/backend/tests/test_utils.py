@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from backend.serializers.utils.import_job_utils import check_required_headers
 from backend.tasks.import_job_tasks import clean_csv
-from backend.tests.utils import get_tablib_dataset
+from backend.tests.utils import get_batch_import_test_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
@@ -120,7 +120,7 @@ class TestValidateRequiredHeaders:
 
 class TestCleanCsv:
     def test_valid_columns(self):
-        data = get_tablib_dataset("test_upload_all_columns_valid.csv")
+        data = get_batch_import_test_dataset("test_upload_all_columns_valid.csv")
         accepted_headers, invalid_headers, data = clean_csv(data)
 
         # All headers should be present in accepted headers
@@ -128,7 +128,7 @@ class TestCleanCsv:
         assert invalid_headers == []
 
     def test_unknown_columns(self):
-        data = get_tablib_dataset("test_unknown_columns.csv")
+        data = get_batch_import_test_dataset("test_unknown_columns.csv")
         accepted_headers, invalid_headers, cleaned_data = clean_csv(data)
 
         assert len(accepted_headers) == 3
@@ -140,7 +140,7 @@ class TestCleanCsv:
         assert "xyz" not in cleaned_data.headers
 
     def test_out_of_range_variations(self):
-        data = get_tablib_dataset("test_out_of_range_variations.csv")
+        data = get_batch_import_test_dataset("test_out_of_range_variations.csv")
         accepted_headers, invalid_headers, _ = clean_csv(data)
 
         assert len(accepted_headers) == 7
