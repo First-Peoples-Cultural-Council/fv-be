@@ -1,19 +1,12 @@
 import uuid
 
 from import_export import fields
-from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
 
-from backend.models import Category, Character, DictionaryEntry, PartOfSpeech
-from backend.models.dictionary import (
-    DictionaryEntryCategory,
-    DictionaryEntryLink,
-    DictionaryEntryRelatedCharacter,
-    TypeOfDictionaryEntry,
-)
+from backend.models import DictionaryEntry, PartOfSpeech
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.resources.base import (
     AudienceMixin,
-    BaseResource,
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
@@ -81,121 +74,3 @@ class DictionaryEntryResource(
 
     class Meta:
         model = DictionaryEntry
-
-
-class BaseDictionaryEntryContentResource(BaseResource):
-    dictionary_entry = fields.Field(
-        column_name="dictionary_entry",
-        attribute="dictionary_entry",
-        widget=ForeignKeyWidget(DictionaryEntry, "id"),
-    )
-
-    class Meta:
-        abstract = True
-
-
-class DictionaryEntryCategoryResource(BaseResource):
-    dictionary_entry = fields.Field(
-        column_name="dictionary_entry",
-        attribute="dictionary_entry",
-        widget=ForeignKeyWidget(DictionaryEntry, "id"),
-    )
-
-    category = fields.Field(
-        column_name="category",
-        attribute="category",
-        widget=ForeignKeyWidget(Category, "id"),
-    )
-
-    class Meta:
-        model = DictionaryEntryCategory
-
-    def import_row(
-        self,
-        row,
-        instance_loader,
-        using_transactions=True,
-        dry_run=False,
-        raise_errors=None,
-        **kwargs,
-    ):
-        # overriding import_row to ignore errors and skip rows that fail to import without failing the entire import
-        # ref: https://github.com/django-import-export/django-import-export/issues/763
-        import_result = super().import_row(row, instance_loader, **kwargs)
-        if (
-            import_result.import_type == RowResult.IMPORT_TYPE_ERROR
-            and type(import_result.errors[0].error) == Category.DoesNotExist
-        ):
-            # Copy the values to display in the preview report
-            import_result.diff = [row[val] for val in row]
-            # Add a column with the error message
-            import_result.diff.append(
-                f"Errors: {[err.error for err in import_result.errors]}"
-            )
-            # clear errors and mark the record to skip
-            import_result.errors = []
-            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
-
-        return import_result
-
-
-class DictionaryEntryRelatedCharacterResource(BaseResource):
-    character = fields.Field(
-        column_name="character",
-        attribute="character",
-        widget=ForeignKeyWidget(Character, "id"),
-    )
-    dictionary_entry = fields.Field(
-        column_name="dictionary_entry",
-        attribute="dictionary_entry",
-        widget=ForeignKeyWidget(DictionaryEntry, "id"),
-    )
-
-    class Meta:
-        model = DictionaryEntryRelatedCharacter
-
-
-class DictionaryEntryLinkResource(BaseResource):
-    from_dictionary_entry = fields.Field(
-        column_name="dictionary_entry",
-        attribute="from_dictionary_entry",
-        widget=ForeignKeyWidget(DictionaryEntry, "id"),
-    )
-
-    to_dictionary_entry = fields.Field(
-        column_name="related_entry",
-        attribute="to_dictionary_entry",
-        widget=ForeignKeyWidget(DictionaryEntry, "id"),
-    )
-
-    class Meta:
-        report_skipped = True
-        model = DictionaryEntryLink
-
-    def import_row(
-        self,
-        row,
-        instance_loader,
-        using_transactions=True,
-        dry_run=False,
-        raise_errors=None,
-        **kwargs,
-    ):
-        # overriding import_row to ignore errors and skip rows that fail to import without failing the entire import
-        # ref: https://github.com/django-import-export/django-import-export/issues/763
-        import_result = super().import_row(row, instance_loader, **kwargs)
-        if (
-            import_result.import_type == RowResult.IMPORT_TYPE_ERROR
-            and type(import_result.errors[0].error) == DictionaryEntry.DoesNotExist
-        ):
-            # Copy the values to display in the preview report
-            import_result.diff = [row[val] for val in row]
-            # Add a column with the error message
-            import_result.diff.append(
-                f"Errors: {[err.error for err in import_result.errors]}"
-            )
-            # clear errors and mark the record to skip
-            import_result.errors = []
-            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
-
-        return import_result

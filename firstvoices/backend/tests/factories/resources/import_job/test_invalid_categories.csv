@@ -1,0 +1,6 @@
+﻿title,type,category,category_2
+Word 1,word,Animals,Body
+Word 2,word,invalid_category,Animals
+Word 2,word,Body,invalid_category
+Word 2,word,invalid_category,invalid_category
+Phrase 1,phrase,
