@@ -119,7 +119,7 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
         importjob=import_job_instance,
         new_rows=result.totals["new"],
         skipped_rows=result.totals["skip"],
-        error_rows=result.totals["error"],
+        error_rows=result.totals["error"] + result.totals["invalid"],
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
     )
@@ -133,14 +133,27 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     if result.has_errors():
         for row in result.error_rows:
             error_messages = []
-            for e in row.errors:
-                error_messages.append(str(e.error))
+            for error_row in row.errors:
+                first_line = str(error_row.error).split("\n")[0]
+                error_messages.append(first_line)
             error_row_instance = ImportJobReportRow(
                 site=import_job_instance.site,
                 report=report,
                 status=RowStatus.ERROR,
                 row_number=row.number,
                 errors=error_messages,
+            )
+            error_row_instance.save()
+
+    # Check for invalid rows
+    if len(result.invalid_rows):
+        for row in result.invalid_rows:
+            error_row_instance = ImportJobReportRow(
+                site=import_job_instance.site,
+                report=report,
+                status=RowStatus.ERROR,
+                row_number=row.number,
+                errors=row.error.messages,
             )
             error_row_instance.save()
 

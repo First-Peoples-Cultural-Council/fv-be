@@ -32,7 +32,13 @@ class ImportReportRowSerializer(serializers.ModelSerializer):
 class ImportReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImportJobReport
-        fields = ["new_rows", "skipped_rows", "error_rows"]
+        fields = [
+            "new_rows",
+            "skipped_rows",
+            "error_rows",
+            "accepted_columns",
+            "ignored_columns",
+        ]
 
 
 class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):

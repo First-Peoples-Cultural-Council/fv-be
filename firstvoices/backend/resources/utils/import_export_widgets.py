@@ -105,13 +105,24 @@ class CategoryWidget(ManyToManyWidget):
 
     def clean(self, value, row=None, **kwargs):
         category_match_pattern = r"category[_2-5]*"
-        input_categories = [
-            value
-            for key, value in row.items()
-            if re.fullmatch(category_match_pattern, key)
-        ]
 
+        input_categories = {}
+        valid_categories = []
+
+        for key, value in row.items():
+            if re.fullmatch(category_match_pattern, key):
+                input_categories[key] = value
+
+        # If no categories provided, return
         if len(input_categories) == 0:
             return Category.objects.none()
 
-        return Category.objects.filter(title__in=input_categories)
+        # Validate categories
+        for key, value in input_categories.items():
+            category_lookup = Category.objects.filter(site__id=row["site"], title=value)
+            if len(category_lookup) == 0:
+                raise ValidationError(f"Invalid category supplied in column {key}")
+            else:
+                valid_categories.append(category_lookup[0])
+
+        return valid_categories
