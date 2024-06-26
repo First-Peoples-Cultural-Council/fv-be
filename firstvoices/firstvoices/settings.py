@@ -308,27 +308,33 @@ sentry_sdk.init(
 
 # File hosting on AWS S3
 # See: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("MEDIA_UPLOAD_S3_BUCKET")
-AWS_S3_REGION_NAME = os.getenv("MEDIA_UPLOAD_S3_REGION", None)
-AWS_S3_FILE_OVERWRITE = False
-AWS_QUERYSTRING_AUTH = False
-AWS_QUERYSTRING_EXPIRE = (
-    60 * 60
-)  # seconds until a query string expires; this is the default setting
-
 _AWS_EXPIRY = 60 * 60 * 24 * 7
-# https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
-AWS_S3_OBJECT_PARAMETERS = {
-    "ContentDisposition": "attachment",  # default to downloading files rather than displaying
-    "CacheControl": f"max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate",
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+            "bucket_name": os.getenv("MEDIA_UPLOAD_S3_BUCKET"),
+            "region_name": os.getenv("MEDIA_UPLOAD_S3_REGION", None),
+            "file_overwrite": False,
+            "querystring_auth": False,
+            "querystring_expire": (
+                60 * 60
+            ),  # seconds until a query string expires; this is the default setting
+            "max_memory_size": os.getenv(
+                "DJANGO_AWS_S3_MAX_MEMORY_SIZE", 100_000_000
+            ),  # 100MB
+            "object_parameters": {
+                "ContentDisposition": "attachment",  # default to downloading files rather than displaying
+                "CacheControl": f"max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate",
+            },
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
 }
-
-AWS_S3_MAX_MEMORY_SIZE = os.getenv(
-    "DJANGO_AWS_S3_MAX_MEMORY_SIZE", 100_000_000
-)  # 100MB
 
 # Disallow import/export unless you have write permission
 IMPORT_EXPORT_IMPORT_PERMISSION_CODE = "change"
