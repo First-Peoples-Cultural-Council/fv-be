@@ -3,8 +3,8 @@ from django.db import transaction
 
 from backend.models import DictionaryEntry, SitePage, Song, Story, StoryPage
 from backend.models.jobs import BulkVisibilityJob, JobStatus
-from backend.models.sites import SiteFeature
 from backend.models.widget import SiteWidget
+from backend.search.signals.utils.pausing import pause_indexing, unpause_indexing
 from backend.search.tasks.site_content_indexing_tasks import (
     sync_all_site_content_in_indexes,
 )
@@ -17,9 +17,6 @@ def bulk_change_visibility(job_instance_id):
     """
     job = BulkVisibilityJob.objects.get(id=job_instance_id)
     site = job.site
-    indexing_paused_feature = SiteFeature.objects.get_or_create(
-        site=site, key="indexing_paused"
-    )
 
     if BulkVisibilityJob.objects.filter(status=JobStatus.STARTED, site=site).exists():
         job.status = JobStatus.CANCELLED
@@ -30,9 +27,7 @@ def bulk_change_visibility(job_instance_id):
     job.status = JobStatus.STARTED
     job.save()
 
-    # Pause search indexing for the site the job is for
-    indexing_paused_feature[0].is_enabled = True
-    indexing_paused_feature[0].save()
+    pause_indexing(site)
 
     # Update all visibility for dictionary entries, songs, stories, story, pages, pages and widgets
     # Must be done as a single transaction
@@ -62,13 +57,11 @@ def bulk_change_visibility(job_instance_id):
         job.message = str(e)
         job.save()
 
-        indexing_paused_feature[0].is_enabled = False
-        indexing_paused_feature[0].save()
+        unpause_indexing(site)
         return
 
     # Resume search indexing for site, + reindex entire site
-    indexing_paused_feature[0].is_enabled = False
-    indexing_paused_feature[0].save()
+    unpause_indexing(site)
     sync_all_site_content_in_indexes(site)
 
     # update status of job at each step

@@ -6,6 +6,7 @@ from backend.models import (
     DictionaryEntry,
     Site,
 )
+from backend.search.signals.utils.pausing import pause_indexing, unpause_indexing
 
 
 @shared_task
@@ -98,34 +99,42 @@ def recalculate_custom_order(site_slug: str):
         is_preview=False,
     )
 
+    pause_indexing(site)
+
     # Return the results of the recalculation i.e. the changes in custom order and title for every entry
-    for entry in DictionaryEntry.objects.filter(site=site):
-        original_title = entry.title
-        original_custom_order = entry.custom_order
+    try:
+        for entry in DictionaryEntry.objects.filter(site=site):
+            original_title = entry.title
+            original_custom_order = entry.custom_order
 
-        cleaned_title = alphabet.clean_confusables(entry.title)
-        new_order = alphabet.get_custom_order(cleaned_title)
+            cleaned_title = alphabet.clean_confusables(entry.title)
+            new_order = alphabet.get_custom_order(cleaned_title)
 
-        # Save the entry to recalculate custom order and clean title
-        entry.save(set_modified_date=False)
+            # Save the entry to recalculate custom order and clean title
+            entry.save(set_modified_date=False)
 
-        append_updated_entry(
-            updated_entries,
-            original_title,
-            original_custom_order,
-            cleaned_title,
-            new_order,
-        )
+            append_updated_entry(
+                updated_entries,
+                original_title,
+                original_custom_order,
+                cleaned_title,
+                new_order,
+            )
 
-        # Count unknown characters remaining in each entry, first split by character, then apply custom order
-        if "⚑" in new_order:
-            chars = alphabet.get_character_list(cleaned_title)
-            for char in chars:
-                custom_order = alphabet.get_custom_order(char)
-                if "⚑" in custom_order:
-                    if custom_order not in unknown_character_count:
-                        unknown_character_count[custom_order] = 0
-                    unknown_character_count[custom_order] += 1
+            # Count unknown characters remaining in each entry, first split by character, then apply custom order
+            if "⚑" in new_order:
+                chars = alphabet.get_character_list(cleaned_title)
+                for char in chars:
+                    custom_order = alphabet.get_custom_order(char)
+                    if "⚑" in custom_order:
+                        if custom_order not in unknown_character_count:
+                            unknown_character_count[custom_order] = 0
+                        unknown_character_count[custom_order] += 1
+    except Exception:
+        # Carry on with cleanup tasks
+        pass
+
+    unpause_indexing(site)
 
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries
