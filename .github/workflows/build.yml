@@ -289,10 +289,10 @@ jobs:
           aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: "Run image scan"
         run: |
-          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }}
-          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }}
+          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
           echo "List of findings are below"
-          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
-          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
-          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
-          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}.${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"UNDEFINED\"') ]]; then echo "UNDEFINED Vulnerabilities present in this deployment"; exit 1; fi
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"UNDEFINED\"') ]]; then echo "UNDEFINED Vulnerabilities present in this deployment"; exit 1; fi
