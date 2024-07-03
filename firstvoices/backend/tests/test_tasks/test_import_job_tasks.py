@@ -14,9 +14,7 @@ class TestDryRunImport:
     def test_base_case_dictionary_entries(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        file_content = get_sample_file(
-            "import_job/import_job_minimal.csv", self.MIMETYPE
-        )
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
@@ -37,7 +35,7 @@ class TestDryRunImport:
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         file_content = get_sample_file(
-            "import_job/test_upload_all_columns_valid.csv", self.MIMETYPE
+            "import_job/all_valid_columns.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
@@ -56,7 +54,7 @@ class TestDryRunImport:
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         file_content = get_sample_file(
-            "import_job/test_invalid_dictionary_entries.csv", self.MIMETYPE
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
@@ -78,7 +76,7 @@ class TestDryRunImport:
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         file_content = get_sample_file(
-            "import_job/test_invalid_categories.csv", self.MIMETYPE
+            "import_job/invalid_categories.csv", self.MIMETYPE
         )  # 1st row in the file a valid row for control
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
@@ -99,9 +97,7 @@ class TestDryRunImport:
     def test_validation_report_columns(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        file_content = get_sample_file(
-            "import_job/test_unknown_columns.csv", self.MIMETYPE
-        )
+        file_content = get_sample_file("import_job/unknown_columns.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 

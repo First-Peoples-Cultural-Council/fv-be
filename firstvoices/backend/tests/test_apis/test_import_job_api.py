@@ -71,14 +71,14 @@ class TestImportEndpoints(
     def get_valid_data(self, site=None):
         return {
             "title": "Test Title",
-            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
+            "data": get_sample_file("import_job/minimal.csv", "text/csv"),
             "mode": "update",
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "Test Title",
-            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
+            "data": get_sample_file("import_job/minimal.csv", "text/csv"),
         }
 
     def add_expected_defaults(self, data):
@@ -115,9 +115,7 @@ class TestImportEndpoints(
 
         data = {
             "title": "Test Title",
-            "data": get_sample_file(
-                "import_job/import_job_invalid_dimensions.csv", "text/csv"
-            ),
+            "data": get_sample_file("import_job/invalid_dimensions.csv", "text/csv"),
         }
 
         response = self.client.post(
@@ -139,7 +137,7 @@ class TestImportEndpoints(
         data = {
             "title": "Test Title",
             "data": get_sample_file(
-                "import_job/import_job_missing_req_headers.csv", "text/csv"
+                "import_job/required_headers_missing.csv", "text/csv"
             ),
         }
 
