@@ -30,12 +30,15 @@ class ImportReportRowSerializer(serializers.ModelSerializer):
 
 
 class ImportReportSerializer(serializers.ModelSerializer):
+    error_details = ImportReportRowSerializer(many=True, source="rows")
+
     class Meta:
         model = ImportJobReport
         fields = [
             "new_rows",
             "skipped_rows",
             "error_rows",
+            "error_details",
             "accepted_columns",
             "ignored_columns",
         ]
