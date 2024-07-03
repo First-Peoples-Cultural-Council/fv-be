@@ -91,7 +91,7 @@ class FileBase(BaseSiteContentModel):
             self.content.delete(save=False)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
             )
 
@@ -264,7 +264,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
             self._delete_related_media(old_instance)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete associated file model when updating [{str(self)}]. Error: {e} "
             )
 
@@ -283,7 +283,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
             self._delete_related_media(self)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete associated file model when deleting [{str(self)}]. Error: {e} "
             )
 
