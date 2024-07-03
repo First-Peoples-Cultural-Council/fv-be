@@ -278,6 +278,7 @@ jobs:
     name: Check Image for vulnerabilities in Dev
     environment: dev
     runs-on: ubuntu-22.04
+    needs: deploy_with_tekton
     if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
     steps:
       - name: Configure AWS credentials
