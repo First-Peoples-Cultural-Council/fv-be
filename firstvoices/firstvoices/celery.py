@@ -27,8 +27,23 @@ def link_error_handler(request, exc, traceback):
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
+    # Importing after django.setup() to avoid AppRegistryNotReady error
+    from django_celery_beat.models import IntervalSchedule, PeriodicTask
+
     # print a debug message every 3 minutes
     sender.add_periodic_task(
         crontab(minute="*/3"),
         debug_task.s(),
     )
+
+    # Create the PeriodicTask and schedule for the MTD export task if they don't exist
+    if not PeriodicTask.objects.filter(name="sync_mtd_index").exists():
+        schedule, created = IntervalSchedule.objects.get_or_create(
+            every=6, period=IntervalSchedule.HOURS
+        )
+
+        PeriodicTask.objects.create(
+            interval=schedule,
+            name="sync_mtd_index",
+            task="backend.tasks.check_sites_for_mtd_sync",
+        )
