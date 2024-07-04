@@ -154,6 +154,27 @@ class TestImportEndpoints(
             "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
         ]
 
+    def test_duplicate_headers(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file("import_job/duplicate_cols.csv", "text/csv"),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+        response_data = json.loads(response.content)
+        assert response_data["data"] == [
+            "CSV file contains duplicate headers: title,type."
+        ]
+
     def test_run_as_user_field_superadmins(self):
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)

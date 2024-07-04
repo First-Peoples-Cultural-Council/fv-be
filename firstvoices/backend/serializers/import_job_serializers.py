@@ -13,6 +13,7 @@ from backend.serializers.job_serializers import BaseJobSerializer
 from backend.serializers.media_serializers import FileUploadSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.utils.import_job_utils import (
+    check_duplicate_headers,
     check_required_headers,
     validate_username,
 )
@@ -109,6 +110,9 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
             check_required_headers(table.headers)
+
+            # Check for duplicate headers
+            check_duplicate_headers(table.headers)
 
             run_as_user = validated_data.get("run_as_user", None)
             if run_as_user:
