@@ -5,7 +5,7 @@ import pytest
 from backend.models import MTDExportFormat
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.tasks.build_mtd_export_format import build_index_and_calculate_scores
+from backend.tasks.build_mtd_export_format_tasks import build_index_and_calculate_scores
 from backend.tests import factories
 
 LOGGER = logging.getLogger(__name__)

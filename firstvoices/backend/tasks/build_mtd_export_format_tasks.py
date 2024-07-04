@@ -150,7 +150,7 @@ def check_sites_for_mtd_sync():
         ).count()
 
         updated_categories_count = DictionaryEntryCategory.objects.filter(
-            site=site, last_modified__gte=six_hours_ago
+            category__site=site, last_modified__gte=six_hours_ago
         ).count()
 
         updated_related_media_count = (
