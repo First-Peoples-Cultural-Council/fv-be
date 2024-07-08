@@ -40,7 +40,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
     # Create the PeriodicTask and schedule for the MTD export task if they don't exist
     if not PeriodicTask.objects.filter(name="check_sites_for_mtd_sync").exists():
-        schedule, created = IntervalSchedule.objects.get_or_create(
+        schedule, _ = IntervalSchedule.objects.get_or_create(
             every=6, period=IntervalSchedule.HOURS
         )
 
