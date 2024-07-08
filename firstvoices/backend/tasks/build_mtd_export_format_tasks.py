@@ -144,6 +144,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
 def check_sites_for_mtd_sync(self):
     try:
         LOGGER.info("Starting MTD Sync check.")
+        self.state = "STARTED"
         sites = Site.objects.all()
         six_hours_ago = timezone.now() - timedelta(hours=6)
 
