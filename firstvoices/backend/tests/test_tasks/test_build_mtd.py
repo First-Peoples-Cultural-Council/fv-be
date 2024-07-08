@@ -1,12 +1,18 @@
 import logging
+from datetime import timedelta
 
 import pytest
+from django.utils import timezone
 
 from backend.models import MTDExportFormat
 from backend.models.constants import Visibility
-from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.tasks.build_mtd_export_format_tasks import build_index_and_calculate_scores
+from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.tasks.build_mtd_export_format_tasks import (
+    build_index_and_calculate_scores,
+    check_sites_for_mtd_sync,
+)
 from backend.tests import factories
+from firstvoices.celery import link_error_handler
 
 LOGGER = logging.getLogger(__name__)
 
@@ -158,3 +164,115 @@ class TestMTDIndexAndScoreTask:
         assert len(saved_results) == 1
         assert saved_results.latest().latest_export_result == final_result
         assert not saved_results.latest().is_preview
+
+
+class TestCheckSitesForMTDSyncTask:
+    @pytest.fixture(scope="function", autouse=True)
+    def mocked_mtd_build_func(self, mocker):
+        self.mocked_func = mocker.patch(
+            "backend.tasks.build_mtd_export_format_tasks.build_index_and_calculate_scores.apply_async"
+        )
+
+    @pytest.fixture(autouse=True)
+    def sites(self):
+        return {
+            "site_one": factories.SiteFactory.create(slug="site_one"),
+            "site_two": factories.SiteFactory.create(slug="site_two"),
+            "site_three": factories.SiteFactory.create(slug="site_three"),
+        }
+
+    @pytest.mark.django_db
+    def test_no_sites_eligible_to_sync(self):
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 0
+
+    @pytest.mark.django_db
+    def test_single_site_updated_entries(self, sites):
+        factories.DictionaryEntryFactory.create(site=sites["site_one"])
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_once_with(
+            (sites["site_one"].slug,), link_error=link_error_handler.s()
+        )
+
+    @pytest.mark.django_db
+    def test_single_site_updated_categories(self, sites):
+        seven_hours_ago = timezone.now() - timedelta(hours=7)
+        category = factories.CategoryFactory.create(site=sites["site_one"])
+        entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
+
+        # update the timestamps to not trigger the updated entries check
+        DictionaryEntry.objects.filter(id=entry.id).update(
+            created=seven_hours_ago, last_modified=seven_hours_ago
+        )
+
+        check_sites_for_mtd_sync.apply()
+        assert self.mocked_func.call_count == 0
+
+        entry.categories.add(category)
+        entry.save()
+
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_once_with(
+            (sites["site_one"].slug,), link_error=link_error_handler.s()
+        )
+
+    @pytest.mark.django_db
+    def test_single_site_updated_related_media(self, sites):
+        seven_hours_ago = timezone.now() - timedelta(hours=7)
+        audio = factories.AudioFactory.create(site=sites["site_one"])
+        entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
+
+        # update the timestamps to not trigger the updated entries check
+        DictionaryEntry.objects.filter(id=entry.id).update(
+            created=seven_hours_ago, last_modified=seven_hours_ago
+        )
+
+        check_sites_for_mtd_sync.apply()
+        assert self.mocked_func.call_count == 0
+
+        entry.related_audio.add(audio)
+        entry.save()
+
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_once_with(
+            (sites["site_one"].slug,), link_error=link_error_handler.s()
+        )
+
+    @pytest.mark.django_db
+    def test_single_site_all_updates(self, sites):
+        audio = factories.AudioFactory.create(site=sites["site_one"])
+        category = factories.CategoryFactory.create(site=sites["site_one"])
+        entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
+
+        entry.related_audio.add(audio)
+        entry.categories.add(category)
+        entry.save()
+
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_once_with(
+            (sites["site_one"].slug,), link_error=link_error_handler.s()
+        )
+
+    @pytest.mark.django_db
+    def test_multiple_sites_updated_entries(self, sites):
+        factories.DictionaryEntryFactory.create(site=sites["site_one"])
+        factories.DictionaryEntryFactory.create(site=sites["site_two"])
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 2
+
+    @pytest.mark.django_db
+    def test_check_for_sync_error(self, sites):
+        factories.DictionaryEntryFactory.create(site=sites["site_one"])
+        self.mocked_func.side_effect = Exception("Error")
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "FAILURE"

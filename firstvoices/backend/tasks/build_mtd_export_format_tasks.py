@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from celery import current_task, shared_task
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils import timezone
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
 from mothertongues.config.models import (
@@ -139,40 +140,47 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     return preview
 
 
-@shared_task
-def check_sites_for_mtd_sync():
-    sites = Site.objects.all()
-    six_hours_ago = datetime.now() - timedelta(hours=6)
+@shared_task(bind=True)
+def check_sites_for_mtd_sync(self):
+    try:
+        LOGGER.info("Starting MTD Sync check.")
+        sites = Site.objects.all()
+        six_hours_ago = timezone.now() - timedelta(hours=6)
 
-    for site in sites:
-        updated_entries_count = DictionaryEntry.objects.filter(
-            site=site, last_modified__gte=six_hours_ago
-        ).count()
+        for site in sites:
+            updated_entries_count = DictionaryEntry.objects.filter(
+                site=site, last_modified__gte=six_hours_ago
+            ).count()
 
-        updated_categories_count = DictionaryEntryCategory.objects.filter(
-            category__site=site, last_modified__gte=six_hours_ago
-        ).count()
+            updated_categories_count = DictionaryEntryCategory.objects.filter(
+                category__site=site, last_modified__gte=six_hours_ago
+            ).count()
 
-        updated_related_media_count = (
-            DictionaryEntry.objects.filter(site=site)
-            .filter(
-                Q(related_audio__last_modified__gte=six_hours_ago)
-                | Q(related_images__last_modified__gte=six_hours_ago)
-                | Q(related_videos__last_modified__gte=six_hours_ago)
+            updated_related_media_count = (
+                DictionaryEntry.objects.filter(site=site)
+                .filter(
+                    Q(related_audio__last_modified__gte=six_hours_ago)
+                    | Q(related_images__last_modified__gte=six_hours_ago)
+                    | Q(related_videos__last_modified__gte=six_hours_ago)
+                )
+                .distinct()
+                .count()
             )
-            .distinct()
-            .count()
-        )
 
-        relevant_changes_count = (
-            updated_entries_count
-            + updated_categories_count
-            + updated_related_media_count
-        )
-
-        if relevant_changes_count > 0:
-            build_index_and_calculate_scores.apply_async(
-                (site,),
-                link_error=link_error_handler.s(),
+            relevant_changes_count = (
+                updated_entries_count
+                + updated_categories_count
+                + updated_related_media_count
             )
-            LOGGER.info(f"MTD Index for site {site.slug} has been updated.")
+
+            if relevant_changes_count > 0:
+                LOGGER.info(f"Starting MTD Index update for site {site.slug}.")
+                build_index_and_calculate_scores.apply_async(
+                    (site.slug,),
+                    link_error=link_error_handler.s(),
+                )
+
+    except Exception as e:
+        self.state = "FAILURE"
+        LOGGER.error(f"MTD Sync check failed: {e}")
+        raise e
