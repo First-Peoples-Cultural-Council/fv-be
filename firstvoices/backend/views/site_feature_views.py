@@ -108,6 +108,12 @@ class SiteFeatureViewSet(
     lookup_field = "key"
     serializer_class = SiteFeatureDetailSerializer
 
+    @staticmethod
+    def _sync_media_site_content(instance):
+        # Sync all media content in indexes
+        site = instance.site
+        sync_all_media_site_content_in_indexes(site)
+
     def get_queryset(self):
         site = self.get_validated_site()
         return SiteFeature.objects.filter(site=site).select_related(
@@ -120,17 +126,14 @@ class SiteFeatureViewSet(
     def perform_create(self, serializer):
         # Once a site feature is created via the API, sync all media content in indexes
         instance = serializer.save()
-        site = instance.site
-        sync_all_media_site_content_in_indexes(site)
+        self._sync_media_site_content(instance)
 
     def perform_update(self, serializer):
         # Once a site feature is updated via the API, sync all media content in indexes
         instance = serializer.save()
-        site = instance.site
-        sync_all_media_site_content_in_indexes(site)
+        self._sync_media_site_content(instance)
 
     def perform_destroy(self, instance):
-        # Once a site feature is deleted via the API, sync all media content in indexes
         site = instance.site
         instance.delete()
         sync_all_media_site_content_in_indexes(site)
