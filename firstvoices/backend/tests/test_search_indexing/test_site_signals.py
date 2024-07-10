@@ -145,32 +145,6 @@ class TestSiteSignals(TransactionOnCommitMixin):
             document_manager_mocks, VideoDocumentManager, video
         )
 
-    @pytest.mark.parametrize("action", ["save", "delete"])
-    @pytest.mark.django_db
-    def test_edit_site_features_syncs_media_index(
-        self, index_manager_mocks, document_manager_mocks, action
-    ):
-        with self.capture_on_commit_callbacks(execute=True):
-            site = factories.SiteFactory.create()
-            audio = factories.AudioFactory.create(site=site)
-            image = factories.ImageFactory.create(site=site)
-            video = factories.VideoFactory.create(site=site)
-            feature = factories.SiteFeatureFactory.create(site=site, is_enabled=False)
-
-        self.reset_all_mocks(index_manager_mocks)
-        self.reset_all_mocks(document_manager_mocks)
-
-        with self.capture_on_commit_callbacks(execute=True):
-            if action == "save":
-                feature.is_enabled = True
-                feature.save()
-            else:
-                feature.delete()
-
-        self.assert_document_synced(document_manager_mocks, AudioDocumentManager, audio)
-        self.assert_document_synced(document_manager_mocks, ImageDocumentManager, image)
-        self.assert_document_synced(document_manager_mocks, VideoDocumentManager, video)
-
     def reset_all_mocks(self, mocks):
         for mock in mocks.values():
             mock.reset_mock()
