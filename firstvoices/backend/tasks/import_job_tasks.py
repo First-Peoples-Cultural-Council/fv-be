@@ -10,6 +10,7 @@ from backend.models.import_jobs import (
     RowStatus,
 )
 from backend.resources.dictionary import DictionaryEntryResource
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 VALID_HEADERS = [
     "title",
@@ -90,6 +91,10 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
 
+    logger.info(
+        ASYNC_TASK_START_TEMPLATE, f"import_job_instance_id: {import_job_instance_id}"
+    )
+
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
     import_job_instance.validation_task_id = task_id
     import_job_instance.validation_status = JobStatus.STARTED
@@ -161,3 +166,5 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     # Connecting back search indexing signals
     # connect_signals()
     # logger.info("Re-connected all search index related signals")
+
+    logger.info(ASYNC_TASK_END_TEMPLATE)
