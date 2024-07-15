@@ -1,3 +1,4 @@
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -9,6 +10,7 @@ from backend.serializers.site_feature_serializers import SiteFeatureDetailSerial
 from backend.views import doc_strings
 from backend.views.api_doc_variables import key_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from firstvoices.celery import link_error_handler
 
 
 @extend_schema_view(
@@ -121,14 +123,26 @@ class SiteFeatureViewSet(
         # Once a site feature is created via the API, sync all media content in indexes
         instance = serializer.save()
         site = instance.site
-        sync_all_media_site_content_in_indexes(site)
+
+        # Queue the site media sync after updating the model
+        transaction.on_commit(
+            lambda: sync_all_media_site_content_in_indexes.apply_async(
+                (site.id,), link_error=link_error_handler.s()
+            )
+        )
 
     def perform_update(self, serializer):
-        # Once a site feature is updated via the API, sync all media content in indexes
+        # Once a site feature is updated via the API, sync all media content in indexes, same as creation.
         self.perform_create(serializer)
 
     def perform_destroy(self, instance):
         # Once a site feature is deleted via the API, sync all media content in indexes
         site = instance.site
         instance.delete()
-        sync_all_media_site_content_in_indexes(site)
+
+        # Queue the site media sync after deleting the model
+        transaction.on_commit(
+            lambda: sync_all_media_site_content_in_indexes.apply_async(
+                (site.id,), link_error=link_error_handler.s()
+            )
+        )

@@ -4,10 +4,13 @@ from backend.models.constants import AppRole, Visibility
 from backend.models.sites import SiteFeature
 from backend.tests import factories
 
+from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
 from .base_api_test import BaseUncontrolledSiteContentApiTest
 
 
-class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestSiteFeatureEndpoints(
+    BaseUncontrolledSiteContentApiTest, TransactionOnCommitMixin
+):
     """
     End-to-end tests that check the site feature endpoint for expected behavior.
     """
@@ -19,9 +22,9 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
     model = SiteFeature
 
     @pytest.fixture(scope="function", autouse=True)
-    def mocked_media_sync_func(self, mocker):
+    def mocked_media_async_func(self, mocker):
         self.mocked_func = mocker.patch(
-            "backend.views.site_feature_views.sync_all_media_site_content_in_indexes"
+            "backend.views.site_feature_views.sync_all_media_site_content_in_indexes.apply_async"
         )
 
     def get_lookup_key(self, instance):
@@ -209,7 +212,7 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response.status_code == 201
 
     @pytest.mark.django_db
-    def test_api_create_triggers_media_sync(self, mocked_media_sync_func):
+    def test_api_create_triggers_media_sync(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
 
@@ -217,12 +220,12 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
             "key": self.TEST_KEY,
             "isEnabled": True,
         }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            format="json",
-            data=data,
-        )
+        with self.capture_on_commit_callbacks(execute=True):
+            response = self.client.post(
+                self.get_list_endpoint(site_slug=site.slug),
+                format="json",
+                data=data,
+            )
 
         assert response.status_code == 201
         assert self.mocked_func.call_count == 1
@@ -238,11 +241,12 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
             "isEnabled": False,
         }
 
-        response = self.client.put(
-            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
+        with self.capture_on_commit_callbacks(execute=True):
+            response = self.client.put(
+                self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+                format="json",
+                data=data,
+            )
 
         assert response.status_code == 200
         assert self.mocked_func.call_count == 1
@@ -253,10 +257,11 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         feature = factories.SiteFeatureFactory.create(site=site)
         self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
 
-        response = self.client.delete(
-            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
-            format="json",
-        )
+        with self.capture_on_commit_callbacks(execute=True):
+            response = self.client.delete(
+                self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+                format="json",
+            )
 
         assert response.status_code == 204
         assert self.mocked_func.call_count == 1
@@ -271,11 +276,12 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
             "isEnabled": False,
         }
 
-        response = self.client.patch(
-            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
+        with self.capture_on_commit_callbacks(execute=True):
+            response = self.client.patch(
+                self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+                format="json",
+                data=data,
+            )
 
         assert response.status_code == 200
         assert self.mocked_func.call_count == 1

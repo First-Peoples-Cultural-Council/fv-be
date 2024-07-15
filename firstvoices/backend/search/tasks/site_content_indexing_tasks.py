@@ -1,5 +1,6 @@
 from celery import shared_task
 
+from backend.models import Site
 from backend.search.indexing import (
     AudioDocumentManager,
     DictionaryEntryDocumentManager,
@@ -18,7 +19,9 @@ def remove_all(document_manager, queryset):
 
 
 @shared_task
-def remove_all_site_content_from_indexes(site):
+def remove_all_site_content_from_indexes(site_id):
+    site = Site.objects.get(id=site_id)
+
     remove_all(DictionaryEntryDocumentManager, site.dictionaryentry_set.all())
     remove_all(SongDocumentManager, site.song_set.all())
     remove_all(StoryDocumentManager, site.story_set.all())
@@ -33,15 +36,19 @@ def sync_all(document_manager, queryset):
 
 
 @shared_task
-def sync_all_site_content_in_indexes(site):
+def sync_all_site_content_in_indexes(site_id):
+    site = Site.objects.get(id=site_id)
+
     sync_all(DictionaryEntryDocumentManager, site.dictionaryentry_set.all())
     sync_all(SongDocumentManager, site.song_set.all())
     sync_all(StoryDocumentManager, site.story_set.all())
-    sync_all_media_site_content_in_indexes(site)
+    sync_all_media_site_content_in_indexes(site_id)
 
 
 @shared_task
-def sync_all_media_site_content_in_indexes(site):
+def sync_all_media_site_content_in_indexes(site_id):
+    site = Site.objects.get(id=site_id)
+
     sync_all(AudioDocumentManager, site.audio_set.all())
     sync_all(ImageDocumentManager, site.image_set.all())
     sync_all(VideoDocumentManager, site.video_set.all())

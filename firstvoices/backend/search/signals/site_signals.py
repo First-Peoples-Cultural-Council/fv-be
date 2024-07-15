@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 
@@ -6,6 +7,7 @@ from backend.search.tasks.site_content_indexing_tasks import (
     remove_all_site_content_from_indexes,
     sync_all_site_content_in_indexes,
 )
+from firstvoices.celery import link_error_handler
 
 
 @receiver(pre_save, sender=Site)
@@ -23,13 +25,24 @@ def change_site_visibility(sender, instance, **kwargs):
         # no changes needed
         return
 
-    sync_all_site_content_in_indexes(instance)
+    transaction.on_commit(
+        lambda: sync_all_site_content_in_indexes.apply_async(
+            (instance.id,),
+            link_error=link_error_handler.s(),
+        )
+    )
 
 
 # If a site is deleted, delete all docs from index related to site
 @receiver(post_delete, sender=Site)
 def remove_all_site_content(sender, instance, **kwargs):
-    remove_all_site_content_from_indexes(instance)
+    site_id = instance.id
+    transaction.on_commit(
+        lambda: remove_all_site_content_from_indexes.apply_async(
+            (site_id,),
+            link_error=link_error_handler.s(),
+        )
+    )
 
 
 def indexing_signals_paused(site):
