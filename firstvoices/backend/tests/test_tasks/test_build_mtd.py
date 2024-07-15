@@ -7,6 +7,7 @@ from django.utils import timezone
 from backend.models import MTDExportFormat
 from backend.models.constants import Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.media import Audio
 from backend.tasks.build_mtd_export_format_tasks import (
     build_index_and_calculate_scores,
     check_sites_for_mtd_sync,
@@ -236,6 +237,34 @@ class TestCheckSitesForMTDSyncTask:
         assert self.mocked_func.call_count == 0
 
         entry.related_audio.add(audio)
+        entry.save()
+
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
+        self.mocked_func.assert_called_once_with(
+            (sites["site_one"].slug,), link_error=link_error_handler.s()
+        )
+
+    @pytest.mark.django_db
+    def test_single_site_updated_remove_related_media(self, sites):
+        seven_hours_ago = timezone.now() - timedelta(hours=7)
+        audio = factories.AudioFactory.create(site=sites["site_one"])
+        entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
+        entry.related_audio.add(audio)
+
+        # update the timestamps to not trigger the updated entries check
+        DictionaryEntry.objects.filter(id=entry.id).update(
+            created=seven_hours_ago, last_modified=seven_hours_ago
+        )
+        Audio.objects.filter(id=audio.id).update(
+            created=seven_hours_ago, last_modified=seven_hours_ago
+        )
+
+        check_sites_for_mtd_sync.apply()
+        assert self.mocked_func.call_count == 0
+
+        entry.related_audio.remove(audio)
         entry.save()
 
         result = check_sites_for_mtd_sync.apply()
