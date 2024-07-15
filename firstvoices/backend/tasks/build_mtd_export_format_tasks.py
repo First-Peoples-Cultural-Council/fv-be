@@ -145,7 +145,7 @@ def check_sites_for_mtd_sync(self):
     try:
         LOGGER.info("Starting MTD Sync check.")
         self.state = "STARTED"
-        sites = Site.objects.all()
+        sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
         six_hours_ago = timezone.now() - timedelta(hours=6)
 
         for site in sites:

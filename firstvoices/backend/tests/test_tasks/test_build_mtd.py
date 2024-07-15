@@ -174,16 +174,32 @@ class TestCheckSitesForMTDSyncTask:
             "backend.tasks.build_mtd_export_format_tasks.build_index_and_calculate_scores.apply_async"
         )
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def sites(self):
         return {
-            "site_one": factories.SiteFactory.create(slug="site_one"),
-            "site_two": factories.SiteFactory.create(slug="site_two"),
-            "site_three": factories.SiteFactory.create(slug="site_three"),
+            "site_one": factories.SiteFactory.create(
+                slug="site_one", visibility=Visibility.PUBLIC
+            ),
+            "site_two": factories.SiteFactory.create(
+                slug="site_two", visibility=Visibility.PUBLIC
+            ),
+            "site_three": factories.SiteFactory.create(
+                slug="site_three", visibility=Visibility.PUBLIC
+            ),
         }
 
     @pytest.mark.django_db
     def test_no_sites_eligible_to_sync(self):
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 0
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("visibility", [Visibility.MEMBERS, Visibility.TEAM])
+    def test_no_sites_eligible_to_sync_private(self, sites, visibility):
+        private_site = factories.SiteFactory.create(visibility=visibility)
+        factories.DictionaryEntryFactory.create(site=private_site)
+
         result = check_sites_for_mtd_sync.apply()
         assert result.state == "SUCCESS"
         assert self.mocked_func.call_count == 0
@@ -295,9 +311,10 @@ class TestCheckSitesForMTDSyncTask:
     def test_multiple_sites_updated_entries(self, sites):
         factories.DictionaryEntryFactory.create(site=sites["site_one"])
         factories.DictionaryEntryFactory.create(site=sites["site_two"])
+        factories.DictionaryEntryFactory.create(site=sites["site_three"])
         result = check_sites_for_mtd_sync.apply()
         assert result.state == "SUCCESS"
-        assert self.mocked_func.call_count == 2
+        assert self.mocked_func.call_count == 3
 
     @pytest.mark.django_db
     def test_check_for_sync_error(self, sites):
