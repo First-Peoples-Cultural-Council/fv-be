@@ -47,7 +47,7 @@ def is_valid_header_variation(input_header):
     # Check if the prefix is a valid header
     if prefix in VALID_HEADERS and variation and variation.isdigit():
         variation = int(variation)
-        if variation < 1 or variation > 5:
+        if variation <= 1 or variation > 5:
             # Variation out of range. Skipping column.
             return False
     else:
