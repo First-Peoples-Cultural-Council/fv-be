@@ -11,9 +11,9 @@ class TestSiteFeatureModel:
     """
 
     @pytest.fixture(scope="function", autouse=True)
-    def mocked_media_sync_func(self, mocker):
+    def mocked_media_async_func(self, mocker):
         self.mocked_func = mocker.patch(
-            "backend.search.tasks.site_content_indexing_tasks.sync_all_media_site_content_in_indexes"
+            "backend.search.tasks.site_content_indexing_tasks.sync_all_media_site_content_in_indexes.apply_async"
         )
 
     @pytest.fixture
