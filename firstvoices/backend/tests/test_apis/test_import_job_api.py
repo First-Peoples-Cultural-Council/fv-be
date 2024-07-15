@@ -71,14 +71,14 @@ class TestImportEndpoints(
     def get_valid_data(self, site=None):
         return {
             "title": "Test Title",
-            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
+            "data": get_sample_file("import_job/minimal.csv", "text/csv"),
             "mode": "update",
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "Test Title",
-            "data": get_sample_file("import_job/import_job_minimal.csv", "text/csv"),
+            "data": get_sample_file("import_job/minimal.csv", "text/csv"),
         }
 
     def add_expected_defaults(self, data):
@@ -115,9 +115,7 @@ class TestImportEndpoints(
 
         data = {
             "title": "Test Title",
-            "data": get_sample_file(
-                "import_job/import_job_invalid_dimensions.csv", "text/csv"
-            ),
+            "data": get_sample_file("import_job/invalid_dimensions.csv", "text/csv"),
         }
 
         response = self.client.post(
@@ -139,7 +137,7 @@ class TestImportEndpoints(
         data = {
             "title": "Test Title",
             "data": get_sample_file(
-                "import_job/import_job_missing_req_headers.csv", "text/csv"
+                "import_job/required_headers_missing.csv", "text/csv"
             ),
         }
 
@@ -154,6 +152,27 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
         assert response_data["data"] == [
             "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
+        ]
+
+    def test_duplicate_headers(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file("import_job/duplicate_cols.csv", "text/csv"),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+        response_data = json.loads(response.content)
+        assert response_data["data"] == [
+            "CSV file contains duplicate headers: title,type."
         ]
 
     def test_run_as_user_field_superadmins(self):
