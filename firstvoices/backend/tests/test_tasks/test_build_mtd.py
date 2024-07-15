@@ -247,7 +247,7 @@ class TestCheckSitesForMTDSyncTask:
         )
 
     @pytest.mark.django_db
-    def test_single_site_updated_remove_related_media(self, sites):
+    def test_single_site_remove_related_media(self, sites):
         seven_hours_ago = timezone.now() - timedelta(hours=7)
         audio = factories.AudioFactory.create(site=sites["site_one"])
         entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
