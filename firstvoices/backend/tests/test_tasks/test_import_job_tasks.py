@@ -11,6 +11,21 @@ from backend.tests.utils import get_sample_file
 class TestDryRunImport:
     MIMETYPE = "text/csv"
 
+    def test_import_task_logs(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance.id)
+
+        assert (
+            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}."
+            in caplog.text
+        )
+        assert "Task ended." in caplog.text
+
     def test_base_case_dictionary_entries(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 

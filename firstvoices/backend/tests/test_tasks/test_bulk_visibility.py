@@ -13,10 +13,15 @@ from backend.tests import factories
 
 class TestBulkVisibilityTasks:
     @pytest.mark.django_db
-    def test_bulk_visibility_change_job_invalid_id(self):
+    def test_bulk_visibility_change_job_invalid_id(self, caplog):
         invalid_id = uuid.uuid4()
         with pytest.raises(BulkVisibilityJob.DoesNotExist):
             bulk_change_visibility(invalid_id)
+
+        assert (
+            f"Task started. Additional info: job_instance_id: {invalid_id}"
+            in caplog.text
+        )
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -33,7 +38,7 @@ class TestBulkVisibilityTasks:
         ],
     )
     def test_bulk_visibility_change_job_site_only(
-        self, from_visibility, to_visibility, existing_feature
+        self, from_visibility, to_visibility, existing_feature, caplog
     ):
         site = factories.SiteFactory.create(visibility=from_visibility)
         job = factories.BulkVisibilityJobFactory.create(
@@ -52,6 +57,11 @@ class TestBulkVisibilityTasks:
         assert site.visibility == to_visibility
         assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
 
+        assert (
+            f"Task started. Additional info: job_instance_id: {job.id}" in caplog.text
+        )
+        assert "Task ended." in caplog.text
+
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "from_visibility, to_visibility",
@@ -62,7 +72,9 @@ class TestBulkVisibilityTasks:
             (Visibility.MEMBERS, Visibility.TEAM),
         ],
     )
-    def test_bulk_visibility_change_job_full(self, from_visibility, to_visibility):
+    def test_bulk_visibility_change_job_full(
+        self, from_visibility, to_visibility, caplog
+    ):
         site = factories.SiteFactory.create(visibility=from_visibility)
         existing_widgets = SiteWidget.objects.filter(
             site=site, visibility=from_visibility
@@ -114,8 +126,13 @@ class TestBulkVisibilityTasks:
             == 10 + existing_widgets
         )
 
+        assert (
+            f"Task started. Additional info: job_instance_id: {job.id}" in caplog.text
+        )
+        assert "Task ended." in caplog.text
+
     @pytest.mark.django_db
-    def test_bulk_visibility_change_job_exception(self):
+    def test_bulk_visibility_change_job_exception(self, caplog):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         factories.DictionaryEntryFactory.create_batch(
             10, site=site, visibility=Visibility.PUBLIC
@@ -151,8 +168,14 @@ class TestBulkVisibilityTasks:
                 == 10
             )
 
+        assert (
+            f"Task started. Additional info: job_instance_id: {job.id}" in caplog.text
+        )
+        assert "Mocked exception" in caplog.text
+        assert "Task ended." in caplog.text
+
     @pytest.mark.django_db
-    def test_bulkvisiblilityjob_not_triggered_while_running(self):
+    def test_bulkvisiblilityjob_not_triggered_while_running(self, caplog):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         factories.DictionaryEntryFactory.create_batch(
             10, site=site, visibility=Visibility.PUBLIC
@@ -190,3 +213,12 @@ class TestBulkVisibilityTasks:
             ).count()
             == 10
         )
+
+        assert (
+            f"Task started. Additional info: job_instance_id: {job.id}" in caplog.text
+        )
+        assert (
+            "Job cancelled as another bulk visibility job is already in progress for the same site."
+            in caplog.text
+        )
+        assert "Task ended." in caplog.text

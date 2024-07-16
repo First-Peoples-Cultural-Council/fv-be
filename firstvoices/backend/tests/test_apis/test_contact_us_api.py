@@ -95,7 +95,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     )
     @pytest.mark.django_db
     def test_post_smtp_connection_refused(self, caplog, exception):
-        caplog.set_level("ERROR")
+        caplog.set_level("INFO")
         site = factories.SiteFactory.create(
             slug="test",
             visibility=Visibility.PUBLIC,
@@ -118,6 +118,11 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
             assert response.status_code == 202
             assert len(mail.outbox) == 0
             assert f"Failed to send email. Error: {exception}" in caplog.text
+
+        assert (
+            "Task started." in caplog.text
+        )  # No additional info in async send_email_task task.
+        assert "Task ended." in caplog.text
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db

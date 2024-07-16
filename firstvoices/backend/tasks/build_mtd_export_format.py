@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from celery import current_task, shared_task
+from celery.utils.log import get_task_logger
 from django.db.models.query import QuerySet
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
@@ -15,13 +16,13 @@ from mothertongues.dictionary import MTDictionary
 
 from backend.models import DictionaryEntry, MTDExportFormat, Site, constants
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
-
-LOGGER = logging.getLogger(__name__)
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 def parse_queryset_for_mtd(
     dictionary_entries_queryset: QuerySet | list[DictionaryEntry],
 ):
+    logger = logging.getLogger(__name__)
     entries = []
     for entry in dictionary_entries_queryset:
         try:
@@ -41,7 +42,7 @@ def parse_queryset_for_mtd(
                 optional=DictionaryEntryDataSerializer.get_optional(entry),
             )
         except ValueError as e:
-            LOGGER.warning(
+            logger.warning(
                 f"Entry with ID {entry.id} did not pass Validation. Instead raised: {e}"
             )
             continue
@@ -54,8 +55,11 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     """This task builds the inverted index and calculates the entry rankings
 
     Args:
-        site_slug (Union[str, Site]): A valid site slug or a backend.models.Site object
+        site_or_site_slug (Union[str, Site]): A valid site slug or a backend.models.Site object
     """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"site: {site_or_site_slug}")
+
     if isinstance(site_or_site_slug, Site):
         site = site_or_site_slug
     elif isinstance(site_or_site_slug, str):
@@ -132,5 +136,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
 
     # Delete any previous results and previews
     MTDExportFormat.objects.filter(site=site).exclude(id=new_result.id).delete()
+
+    logger.info(ASYNC_TASK_END_TEMPLATE)
 
     return preview
