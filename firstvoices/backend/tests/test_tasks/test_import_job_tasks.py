@@ -14,9 +14,7 @@ class TestDryRunImport:
     def test_import_task_logs(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        file_content = get_sample_file(
-            "import_job/import_job_minimal.csv", self.MIMETYPE
-        )
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 

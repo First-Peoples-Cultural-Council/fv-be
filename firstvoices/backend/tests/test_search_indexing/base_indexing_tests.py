@@ -6,6 +6,7 @@ import pytest
 from django.db import DEFAULT_DB_ALIAS, connections
 from elasticsearch import ConnectionError, NotFoundError
 
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 
 TEST_SEARCH_INDEX_ID = "test search index id"
@@ -764,7 +765,7 @@ class BaseSignalTest(TransactionOnCommitMixin):
             f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance.id}"
             in caplog.text
         )
-        assert "Task ended." in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
     @pytest.mark.django_db
     def test_edited_instance_is_synced(self, mock_index_methods, caplog):
@@ -784,7 +785,7 @@ class BaseSignalTest(TransactionOnCommitMixin):
             f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance.id}"
             in caplog.text
         )
-        assert "Task ended." in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
     @pytest.mark.django_db
     def test_deleted_instance_is_removed(self, mock_index_methods, caplog):
@@ -804,7 +805,7 @@ class BaseSignalTest(TransactionOnCommitMixin):
             f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance_id}"
             in caplog.text
         )
-        assert "Task ended." in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
 
 class BaseRelatedInstanceSignalTest(BaseSignalTest):
