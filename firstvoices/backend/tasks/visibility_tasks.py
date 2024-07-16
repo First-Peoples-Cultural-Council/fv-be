@@ -31,9 +31,9 @@ def bulk_change_visibility(job_instance_id):
         cancelled_message = "Job cancelled as another bulk visibility job is already in progress for the same site."
         job.status = JobStatus.CANCELLED
         job.message = cancelled_message
+        job.save()
         logger.info(cancelled_message)
         logger.info(ASYNC_TASK_END_TEMPLATE)
-        job.save()
         return
 
     job.status = JobStatus.STARTED
@@ -70,12 +70,13 @@ def bulk_change_visibility(job_instance_id):
         job.status = JobStatus.FAILED
         error_message = str(e)
         job.message = error_message
-        logger.error(error_message)
-        logger.info(ASYNC_TASK_END_TEMPLATE)
         job.save()
 
         indexing_paused_feature[0].is_enabled = False
         indexing_paused_feature[0].save()
+
+        logger.error(error_message)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
         return
 
     # Resume search indexing for site, + reindex entire site
