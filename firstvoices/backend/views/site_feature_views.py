@@ -1,16 +1,14 @@
-from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.sites import SiteFeature
 from backend.search.tasks.site_content_indexing_tasks import (
-    sync_all_media_site_content_in_indexes,
+    request_sync_all_media_site_content_in_indexes,
 )
 from backend.serializers.site_feature_serializers import SiteFeatureDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import key_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-from firstvoices.celery import link_error_handler
 
 
 @extend_schema_view(
@@ -42,8 +40,7 @@ from firstvoices.celery import link_error_handler
         ],
     ),
     create=extend_schema(
-        description="Create a new feature flag for the site. Site feature keys cannot be changed after creation. "
-        "Triggers a reindex of all media content in the site.",
+        description="Create a new feature flag for the site. Site feature keys cannot be changed after creation.",
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201,
@@ -56,8 +53,7 @@ from firstvoices.celery import link_error_handler
         parameters=[site_slug_parameter],
     ),
     update=extend_schema(
-        description="Edit a feature flag for the specified site. Site feature keys cannot be changed after creation."
-        "Triggers a reindex of all media content in the site.",
+        description="Edit a feature flag for the specified site. Site feature keys cannot be changed after creation.",
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
@@ -73,8 +69,7 @@ from firstvoices.celery import link_error_handler
         ],
     ),
     partial_update=extend_schema(
-        description="Edit a feature flag for the specified site. Any omitted fields will be unchanged."
-        "Triggers a reindex of all media content in the site.",
+        description="Edit a feature flag for the specified site. Any omitted fields will be unchanged.",
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
@@ -90,8 +85,7 @@ from firstvoices.celery import link_error_handler
         ],
     ),
     destroy=extend_schema(
-        description="Delete a feature flag from the specified site. "
-        "Triggers a reindex of all media content in the site.",
+        description="Delete a feature flag from the specified site.",
         responses={
             204: OpenApiResponse(description=doc_strings.success_204_deleted),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -125,11 +119,7 @@ class SiteFeatureViewSet(
         site = instance.site
 
         # Queue the site media sync after updating the model
-        transaction.on_commit(
-            lambda: sync_all_media_site_content_in_indexes.apply_async(
-                (site.id,), link_error=link_error_handler.s()
-            )
-        )
+        request_sync_all_media_site_content_in_indexes(site)
 
     def perform_update(self, serializer):
         # Once a site feature is updated via the API, sync all media content in indexes, same as creation.
@@ -141,8 +131,4 @@ class SiteFeatureViewSet(
         instance.delete()
 
         # Queue the site media sync after deleting the model
-        transaction.on_commit(
-            lambda: sync_all_media_site_content_in_indexes.apply_async(
-                (site.id,), link_error=link_error_handler.s()
-            )
-        )
+        request_sync_all_media_site_content_in_indexes(site)

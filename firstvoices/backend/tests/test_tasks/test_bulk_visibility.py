@@ -12,6 +12,12 @@ from backend.tests import factories
 
 
 class TestBulkVisibilityTasks:
+    @pytest.fixture(scope="function", autouse=True)
+    def mocked_indexing_async_func(self, mocker):
+        self.mocked_func = mocker.patch(
+            "backend.tasks.visibility_tasks.request_sync_all_site_content_in_indexes"
+        )
+
     @pytest.mark.django_db
     def test_bulk_visibility_change_job_invalid_id(self):
         invalid_id = uuid.uuid4()
@@ -51,6 +57,7 @@ class TestBulkVisibilityTasks:
         assert job.status == JobStatus.COMPLETE
         assert site.visibility == to_visibility
         assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
+        assert self.mocked_func.call_count == 1
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -96,6 +103,7 @@ class TestBulkVisibilityTasks:
         assert job.status == JobStatus.COMPLETE
         assert site.visibility == to_visibility
         assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
+        assert self.mocked_func.call_count == 1
 
         assert (
             DictionaryEntry.objects.filter(site=site, visibility=to_visibility).count()
@@ -138,6 +146,7 @@ class TestBulkVisibilityTasks:
             assert job.status == JobStatus.FAILED
             assert site.visibility == Visibility.PUBLIC
             assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
+            assert self.mocked_func.call_count == 0
             assert (
                 DictionaryEntry.objects.filter(
                     site=site, visibility=Visibility.MEMBERS

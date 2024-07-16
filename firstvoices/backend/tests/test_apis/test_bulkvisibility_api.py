@@ -6,6 +6,7 @@ from backend.models.constants import Role, Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
 
+from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
 from .base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
@@ -16,6 +17,7 @@ from .base_api_test import (
 class TestBulkVisibilityEndpoints(
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
+    TransactionOnCommitMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     """
@@ -26,6 +28,12 @@ class TestBulkVisibilityEndpoints(
     API_DETAIL_VIEW = "api:bulk-visibility-detail"
 
     model = BulkVisibilityJob
+
+    @pytest.fixture(scope="function")
+    def mocked_bulk_change_visibility_async_func(self, mocker):
+        self.mocked_func = mocker.patch(
+            "backend.views.bulkvisibilityjob_views.bulk_change_visibility.apply_async"
+        )
 
     def create_minimal_instance(self, site, visibility):
         return factories.BulkVisibilityJobFactory(site=site)
@@ -292,3 +300,24 @@ class TestBulkVisibilityEndpoints(
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_bulk_change_visibility_called(
+        self, mocked_bulk_change_visibility_async_func
+    ):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_superadmin()
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "from_visibility": "public",
+            "to_visibility": "members",
+        }
+
+        with self.capture_on_commit_callbacks(execute=True):
+            response = self.client.post(
+                self.get_list_endpoint(site_slug=site.slug), data=data, format="json"
+            )
+
+        assert response.status_code == 201
+        assert self.mocked_func.call_count == 1

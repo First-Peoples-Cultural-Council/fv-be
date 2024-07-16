@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.db import transaction
 
 from backend.models import Site
 from backend.search.indexing import (
@@ -9,10 +10,10 @@ from backend.search.indexing import (
     StoryDocumentManager,
     VideoDocumentManager,
 )
+from firstvoices.celery import link_error_handler
+
 
 # special tasks for bulk Site content indexing actions
-
-
 def remove_all(document_manager, queryset):
     for instance in queryset:
         document_manager.remove_from_index(instance.id)
@@ -52,3 +53,30 @@ def sync_all_media_site_content_in_indexes(site_id):
     sync_all(AudioDocumentManager, site.audio_set.all())
     sync_all(ImageDocumentManager, site.image_set.all())
     sync_all(VideoDocumentManager, site.video_set.all())
+
+
+def request_remove_all_site_content_from_indexes(site):
+    transaction.on_commit(
+        lambda: remove_all_site_content_from_indexes.apply_async(
+            (site.id,),
+            link_error=link_error_handler.s(),
+        )
+    )
+
+
+def request_sync_all_site_content_in_indexes(site):
+    transaction.on_commit(
+        lambda: sync_all_site_content_in_indexes.apply_async(
+            (site.id,),
+            link_error=link_error_handler.s(),
+        )
+    )
+
+
+def request_sync_all_media_site_content_in_indexes(site):
+    transaction.on_commit(
+        lambda: sync_all_media_site_content_in_indexes.apply_async(
+            (site.id,),
+            link_error=link_error_handler.s(),
+        )
+    )
