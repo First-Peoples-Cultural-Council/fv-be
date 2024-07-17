@@ -154,7 +154,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
     def get_detail_queryset(self):
         site = self.get_validated_site()
         return (
-            Category.objects.filter(site__slug=site[0].slug)
+            Category.objects.filter(site=site)
             .select_related("site", "created_by", "last_modified_by")
             .prefetch_related("children")
             .all()
@@ -162,7 +162,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
 
     def get_list_queryset(self):
         site = self.get_validated_site()
-        query = Q(site__slug=site[0].slug)
+        query = Q(site=site)
 
         # Check for the nested flag
         nested_flag_input = self.request.GET.get("nested", True)

@@ -6,6 +6,9 @@ import pytest
 from django.db import DEFAULT_DB_ALIAS, connections
 from elasticsearch import ConnectionError, NotFoundError
 
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
+from backend.tests import factories
+
 TEST_SEARCH_INDEX_ID = "test search index id"
 
 
@@ -617,6 +620,122 @@ class TransactionOnCommitMixin:
             callback()
 
 
+class PauseIndexingSignalMixin:
+    """
+    Tests for entry types that support the indexing_paused site feature.
+    """
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_create(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            self.factory.create(site=paused_site)
+
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_update"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_delete(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+
+        mock_index_methods["mock_sync"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.delete()
+
+        mock_index_methods["mock_remove"].assert_not_called()
+        mock_index_methods["mock_sync"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_edit(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.title = "New Title"
+            instance.save()
+
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_update"].assert_not_called()
+
+
+class PauseIndexingSignalRelatedMixin(PauseIndexingSignalMixin):
+    """
+    Tests for entry types that support the indexing_paused site feature and have related models.
+    """
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_related_create(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+            self.create_all_related_instances(instance)
+
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_update"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_related_delete(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+            self.create_all_related_instances(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.delete()
+
+        mock_index_methods["mock_remove"].assert_not_called()
+        mock_index_methods["mock_sync"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_indexing_signals_paused_related_edit(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create(site=paused_site)
+            self.create_all_related_instances(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            self.edit_related_instance(instance)
+
+        mock_index_methods["mock_sync"].assert_not_called()
+        mock_index_methods["mock_update"].assert_not_called()
+
+
 class BaseSignalTest(TransactionOnCommitMixin):
     """
     Tests for basic indexing signal cases:
@@ -635,15 +754,21 @@ class BaseSignalTest(TransactionOnCommitMixin):
         }
 
     @pytest.mark.django_db
-    def test_new_instance_is_synced(self, mock_index_methods):
+    def test_new_instance_is_synced(self, mock_index_methods, caplog):
         with self.capture_on_commit_callbacks(execute=True):
             instance = self.factory.create()
 
         mock_index_methods["mock_sync"].assert_called_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
+        assert (
+            f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance.id}"
+            in caplog.text
+        )
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
     @pytest.mark.django_db
-    def test_edited_instance_is_synced(self, mock_index_methods):
+    def test_edited_instance_is_synced(self, mock_index_methods, caplog):
         with self.capture_on_commit_callbacks(execute=True):
             instance = self.factory.create()
 
@@ -656,8 +781,14 @@ class BaseSignalTest(TransactionOnCommitMixin):
         mock_index_methods["mock_sync"].assert_called_once_with(instance.id)
         mock_index_methods["mock_remove"].assert_not_called()
 
+        assert (
+            f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance.id}"
+            in caplog.text
+        )
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
     @pytest.mark.django_db
-    def test_deleted_instance_is_removed(self, mock_index_methods):
+    def test_deleted_instance_is_removed(self, mock_index_methods, caplog):
         with self.capture_on_commit_callbacks(execute=True):
             instance = self.factory.create()
             instance_id = instance.id
@@ -669,6 +800,12 @@ class BaseSignalTest(TransactionOnCommitMixin):
 
         mock_index_methods["mock_remove"].assert_called_once_with(instance_id)
         mock_index_methods["mock_sync"].assert_not_called()
+
+        assert (
+            f"Task started. Additional info: document_manager_name: {self.manager.__name__}, instance_id: {instance_id}"
+            in caplog.text
+        )
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
 
 class BaseRelatedInstanceSignalTest(BaseSignalTest):

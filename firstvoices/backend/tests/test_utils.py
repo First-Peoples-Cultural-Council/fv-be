@@ -1,5 +1,11 @@
 from itertools import product
 
+import pytest
+from rest_framework import serializers
+
+from backend.serializers.utils.import_job_utils import check_required_headers
+from backend.tasks.import_job_tasks import clean_csv
+from backend.tests.utils import get_batch_import_test_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
 
 
@@ -96,3 +102,50 @@ class TestCharacterUtils:
         expected_str = "ááááá"
         input_str = "ááááá"
         assert nfc(input_str) == expected_str
+
+
+class TestValidateRequiredHeaders:
+    def test_valid_headers_present(self):
+        input_headers = ["title", "type", "description", "notes"]
+        assert check_required_headers(input_headers)
+
+    @pytest.mark.parametrize(
+        "input_headers",
+        [["type", "note"], ["title", "audio"], ["note", "audio"]],
+    )
+    def test_valid_headers_missing(self, input_headers):
+        with pytest.raises(serializers.ValidationError):
+            check_required_headers(input_headers)
+
+
+class TestCleanCsv:
+    def test_valid_columns(self):
+        data = get_batch_import_test_dataset("all_valid_columns.csv")
+        accepted_headers, invalid_headers, data = clean_csv(data)
+
+        # All headers should be present in accepted headers
+        assert len(accepted_headers) == len(data.headers)
+        assert invalid_headers == []
+
+    def test_unknown_columns(self):
+        data = get_batch_import_test_dataset("unknown_columns.csv")
+        accepted_headers, invalid_headers, cleaned_data = clean_csv(data)
+
+        assert len(accepted_headers) == 3
+        assert "abc" in invalid_headers
+        assert "xyz" in invalid_headers
+
+        assert "title" in cleaned_data.headers
+        assert "abc" not in cleaned_data.headers
+        assert "xyz" not in cleaned_data.headers
+
+    def test_out_of_range_variations(self):
+        data = get_batch_import_test_dataset("out_of_range_variations.csv")
+        accepted_headers, invalid_headers, _ = clean_csv(data)
+
+        assert len(accepted_headers) == 7
+        assert "translation_2" in accepted_headers
+        assert "note_2" in accepted_headers
+
+        assert "translation_8" in invalid_headers
+        assert "note_99" in invalid_headers

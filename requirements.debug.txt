@@ -1,18 +1,18 @@
 -r requirements.txt
 
 # Debug tools --------------------------------------
-django-debug-toolbar==4.3.0  # https://github.com/jazzband/django-debug-toolbar
+django-debug-toolbar==4.4.2  # https://github.com/jazzband/django-debug-toolbar
 django-extensions==3.2.3  # https://github.com/django-extensions/django-extensions
 
 # Linting ------------------------------------------
-flake8==7.0.0  # https://github.com/PyCQA/flake8
+flake8==7.1.0  # https://github.com/PyCQA/flake8
 flake8-isort==6.1.1  # https://github.com/gforcada/flake8-isort
-coverage==7.4.0  # https://github.com/nedbat/coveragepy
-black==24.3.0  # https://github.com/psf/black
+coverage==7.6.0  # https://github.com/nedbat/coveragepy
+black==24.4.2  # https://github.com/psf/black
 pylint-django==2.5.5  # https://github.com/PyCQA/pylint-django
-pre-commit==3.6.2  # https://github.com/pre-commit/pre-commit
+pre-commit==3.7.1  # https://github.com/pre-commit/pre-commit
 
 # Pytest --------------------------
-pytest-xdist==3.5.0  # https://github.com/pytest-dev/pytest-xdist
-pytest-split==0.8.2  # https://github.com/jerry-git/pytest-split
+pytest-xdist==3.6.1  # https://github.com/pytest-dev/pytest-xdist
+pytest-split==0.9.0  # https://github.com/jerry-git/pytest-split
 pytest-cov==5.0.0  # https://github.com/pytest-dev/pytest-cov

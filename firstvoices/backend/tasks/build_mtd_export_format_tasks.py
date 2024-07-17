@@ -1,8 +1,11 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from celery import current_task, shared_task
+from celery.utils.log import get_task_logger
+from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils import timezone
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
 from mothertongues.config.models import (
@@ -14,14 +17,16 @@ from mothertongues.config.models import (
 from mothertongues.dictionary import MTDictionary
 
 from backend.models import DictionaryEntry, MTDExportFormat, Site, constants
+from backend.models.dictionary import DictionaryEntryCategory
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
-
-LOGGER = logging.getLogger(__name__)
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from firstvoices.celery import link_error_handler
 
 
 def parse_queryset_for_mtd(
     dictionary_entries_queryset: QuerySet | list[DictionaryEntry],
 ):
+    logger = logging.getLogger(__name__)
     entries = []
     for entry in dictionary_entries_queryset:
         try:
@@ -41,7 +46,7 @@ def parse_queryset_for_mtd(
                 optional=DictionaryEntryDataSerializer.get_optional(entry),
             )
         except ValueError as e:
-            LOGGER.warning(
+            logger.info(
                 f"Entry with ID {entry.id} did not pass Validation. Instead raised: {e}"
             )
             continue
@@ -54,8 +59,11 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     """This task builds the inverted index and calculates the entry rankings
 
     Args:
-        site_slug (Union[str, Site]): A valid site slug or a backend.models.Site object
+        site_or_site_slug (Union[str, Site]): A valid site slug or a backend.models.Site object
     """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"site: {site_or_site_slug}")
+
     if isinstance(site_or_site_slug, Site):
         site = site_or_site_slug
     elif isinstance(site_or_site_slug, str):
@@ -97,7 +105,8 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         remove_combining_characters=True,
     )
     # NOTE: We might want to save these LanguageConfigurations elsewhere
-    #       when we decide to customize the search algorithms. They can
+    #       when we decide to customize
+    #       the search algorithms. They can
     #       be serialized with the export method (config.export()).
     config = LanguageConfiguration(
         L1=None if site is None else site.title,
@@ -121,15 +130,69 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         dictionary.build_indices()
     preview = dictionary.export().model_dump(mode="json")
 
-    # Delete any previous preview results
-    MTDExportFormat.objects.filter(site=site, is_preview=True).delete()
-
-    # Save the result to the database
-    MTDExportFormat.objects.create(
+    # Save the new result to the database
+    new_result = MTDExportFormat.objects.create(
         site=site,
         latest_export_result=preview,
         task_id=task_id,
-        is_preview=True,
+        is_preview=False,
     )
 
+    # Delete any previous results and previews
+    MTDExportFormat.objects.filter(site=site).exclude(id=new_result.id).delete()
+
+    logger.info(ASYNC_TASK_END_TEMPLATE)
+
     return preview
+
+
+@shared_task(bind=True)
+def check_sites_for_mtd_sync(self):
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE)
+
+    try:
+        self.state = "STARTED"
+        sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
+        six_hours_ago = timezone.now() - timedelta(hours=6)
+
+        for site in sites:
+            updated_entries_count = DictionaryEntry.objects.filter(
+                site=site, last_modified__gte=six_hours_ago
+            ).count()
+
+            updated_categories_count = DictionaryEntryCategory.objects.filter(
+                category__site=site, last_modified__gte=six_hours_ago
+            ).count()
+
+            updated_related_media_count = (
+                DictionaryEntry.objects.filter(site=site)
+                .filter(
+                    Q(related_audio__last_modified__gte=six_hours_ago)
+                    | Q(related_images__last_modified__gte=six_hours_ago)
+                    | Q(related_videos__last_modified__gte=six_hours_ago)
+                )
+                .distinct()
+                .count()
+            )
+
+            relevant_changes_count = (
+                updated_entries_count
+                + updated_categories_count
+                + updated_related_media_count
+            )
+
+            if relevant_changes_count > 0:
+                logger.info(f"Starting MTD Index update for site {site.slug}.")
+                build_index_and_calculate_scores.apply_async(
+                    (site.slug,),
+                    link_error=link_error_handler.s(),
+                )
+
+            logger.info(ASYNC_TASK_END_TEMPLATE)
+
+    except Exception as e:
+        self.state = "FAILURE"
+        logger.error(f"MTD Sync check failed: {e}")
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        raise e

@@ -13,6 +13,7 @@ from backend.search.indexing import (
     StoryIndexManager,
     VideoDocumentManager,
 )
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from backend.tests.test_search_indexing.base_indexing_tests import (
     TransactionOnCommitMixin,
@@ -65,7 +66,7 @@ class TestSiteSignals(TransactionOnCommitMixin):
 
     @pytest.mark.django_db
     def test_edit_site_title_does_not_affect_index(
-        self, index_manager_mocks, document_manager_mocks
+        self, index_manager_mocks, document_manager_mocks, caplog
     ):
         with self.capture_on_commit_callbacks(execute=True):
             site = factories.SiteFactory.create()
@@ -80,9 +81,12 @@ class TestSiteSignals(TransactionOnCommitMixin):
         self.assert_no_mocks_called(index_manager_mocks)
         self.assert_no_mocks_called(document_manager_mocks)
 
+        # Verify that no task from site_indexing_tasks was started
+        assert "site_content_indexing_tasks" not in caplog.text
+
     @pytest.mark.django_db
     def test_edit_site_visibility_syncs_index(
-        self, index_manager_mocks, document_manager_mocks
+        self, index_manager_mocks, document_manager_mocks, caplog
     ):
         with self.capture_on_commit_callbacks(execute=True):
             site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
@@ -109,9 +113,12 @@ class TestSiteSignals(TransactionOnCommitMixin):
         self.assert_document_synced(document_manager_mocks, ImageDocumentManager, image)
         self.assert_document_synced(document_manager_mocks, VideoDocumentManager, video)
 
+        assert f"Task started. Additional info: site: {site}" in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
     @pytest.mark.django_db
     def test_delete_site_removes_all_content_from_index(
-        self, index_manager_mocks, document_manager_mocks
+        self, index_manager_mocks, document_manager_mocks, caplog
     ):
         with self.capture_on_commit_callbacks(execute=True):
             site = factories.SiteFactory.create()
@@ -145,50 +152,32 @@ class TestSiteSignals(TransactionOnCommitMixin):
             document_manager_mocks, VideoDocumentManager, video
         )
 
-    @pytest.mark.parametrize("action", ["save", "delete"])
-    @pytest.mark.django_db
-    def test_edit_site_features_syncs_media_index(
-        self, index_manager_mocks, document_manager_mocks, action
-    ):
-        with self.capture_on_commit_callbacks(execute=True):
-            site = factories.SiteFactory.create()
-            audio = factories.AudioFactory.create(site=site)
-            image = factories.ImageFactory.create(site=site)
-            video = factories.VideoFactory.create(site=site)
-            feature = factories.SiteFeatureFactory.create(site=site, is_enabled=False)
+        assert f"Task started. Additional info: site: {site}" in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
-        self.reset_all_mocks(index_manager_mocks)
-        self.reset_all_mocks(document_manager_mocks)
-
-        with self.capture_on_commit_callbacks(execute=True):
-            if action == "save":
-                feature.is_enabled = True
-                feature.save()
-            else:
-                feature.delete()
-
-        self.assert_document_synced(document_manager_mocks, AudioDocumentManager, audio)
-        self.assert_document_synced(document_manager_mocks, ImageDocumentManager, image)
-        self.assert_document_synced(document_manager_mocks, VideoDocumentManager, video)
-
-    def reset_all_mocks(self, mocks):
+    @staticmethod
+    def reset_all_mocks(mocks):
         for mock in mocks.values():
             mock.reset_mock()
 
-    def assert_no_mocks_called(self, mocks):
+    @staticmethod
+    def assert_no_mocks_called(mocks):
         for mock in mocks.values():
             mock.assert_not_called()
 
-    def assert_all_called_once_with(self, mocks, called_with):
+    @staticmethod
+    def assert_all_called_once_with(mocks, called_with):
         for mock in mocks.values():
             mock.assert_called_once_with(**called_with)
 
-    def assert_document_removed(self, mocks, document_manager, instance):
+    @staticmethod
+    def assert_document_removed(mocks, document_manager, instance):
         mocks[document_manager.__name__ + "_remove_from_index"].assert_called_once_with(
             instance.id
         )
 
-    def assert_document_synced(self, mocks, document_manager, instance):
+    @staticmethod
+    def assert_document_synced(mocks, document_manager, instance):
         mocks[document_manager.__name__ + "_sync_in_index"].assert_called_once_with(
             instance.id
         )

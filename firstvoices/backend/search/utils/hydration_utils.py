@@ -87,7 +87,6 @@ def hydrate_objects(search_results, games_flag=None):
         DictionaryEntry,
         select_related_fields=["site"],
         prefetch_fields=[
-            "translation_set",
             "related_audio",
             "related_images",
             "related_audio__original",

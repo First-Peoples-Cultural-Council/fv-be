@@ -2,10 +2,13 @@ from backend.search.indexing.story_index import StoryDocumentManager
 from backend.tests import factories
 from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseRelatedInstanceSignalTest,
+    PauseIndexingSignalRelatedMixin,
 )
 
 
-class TestStoryIndexingSignals(BaseRelatedInstanceSignalTest):
+class TestStoryIndexingSignals(
+    PauseIndexingSignalRelatedMixin, BaseRelatedInstanceSignalTest
+):
     manager = StoryDocumentManager
     factory = factories.StoryFactory
     related_factories = [factories.StoryPageFactory]

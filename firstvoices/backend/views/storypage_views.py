@@ -103,12 +103,12 @@ from .api_doc_variables import id_parameter, site_slug_parameter
 )
 class StoryPageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
     def get_detail_queryset(self):
-        site = self.get_validated_site().first()
+        site = self.get_validated_site()
         story = self.get_validated_story(site)
         return StoryPage.objects.filter(site=site, story=story).all()
 
     def get_list_queryset(self):
-        site = self.get_validated_site().first()
+        site = self.get_validated_site()
         story = self.get_validated_story(site)
         return StoryPage.objects.filter(site=site, story=story).order_by("id").all()
 

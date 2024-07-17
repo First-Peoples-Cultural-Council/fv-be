@@ -1,9 +1,10 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
 from backend.models.constants import Visibility
-from backend.serializers.utils import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 
 
 class SiteHyperlinkedRelatedField(NestedHyperlinkedRelatedField):
@@ -107,3 +108,30 @@ class EnumField(serializers.Field):
             raise serializers.ValidationError(
                 f"Invalid value {data}. Valid values are: {', '.join(self.enum.names)}"
             )
+
+
+class TextListField(serializers.ListField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, data):
+        """
+        Transform the *outgoing* native value into primitive data.
+        """
+        return [{"text": item} if item is not None else None for item in data]
+
+    def to_internal_value(self, data):
+        """
+        Transform the *incoming* primitive data into a native value.
+        """
+        response = []
+        if len(data) == 0:
+            return response
+        for entry in data:
+            try:
+                response.append(entry["text"])
+            except KeyError:
+                raise ValidationError(
+                    "Expected the objects in the list to contain key 'text'."
+                )
+        return response

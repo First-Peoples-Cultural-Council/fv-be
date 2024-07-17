@@ -15,6 +15,7 @@ from backend.models.dictionary import (
 from backend.models.media import Audio, Video
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
+from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     DictionarySerializerContextMixin,
@@ -29,8 +30,8 @@ from backend.views.utils import get_media_prefetch_list, get_select_related_medi
         description="Returns a word of the day for the given site.",
         responses={
             200: WordOfTheDayListSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[site_slug_parameter],
     ),
@@ -53,17 +54,18 @@ class WordOfTheDayView(
     queryset = ""
 
     @staticmethod
-    def get_unassigned_word(site_slug, today):
+    def get_unassigned_word(site, today):
         # Returns words which have not yet been assigned as a word of the day
         # also adds a word of the day entry for it
-        words_used = WordOfTheDay.objects.filter(site__slug=site_slug).values_list(
+        words_used = WordOfTheDay.objects.filter(site=site).values_list(
             "dictionary_entry_id", flat=True
         )
         dictionary_entry_queryset = DictionaryEntry.objects.filter(
-            site__slug=site_slug,
+            site=site,
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
             visibility=F("site__visibility"),
+            translations__len__gt=0,
         ).exclude(id__in=list(words_used))
         if len(dictionary_entry_queryset) > 0:
             selected_word = dictionary_entry_queryset.first()
@@ -76,20 +78,21 @@ class WordOfTheDayView(
             return WordOfTheDay.objects.none()
 
     @staticmethod
-    def get_wotd_before_date(site_slug, today, given_date):
+    def get_wotd_before_date(site, today, given_date):
         # filters words which have been used since the given date, then picks a random word from the older words
         words_used_since_given_date = (
-            WordOfTheDay.objects.filter(site__slug=site_slug)
+            WordOfTheDay.objects.filter(site=site)
             .filter(date__gte=given_date)
             .order_by("dictionary_entry__id")
             .distinct("dictionary_entry__id")
             .values_list("dictionary_entry__id", flat=True)
         )
         random_old_word = (
-            WordOfTheDay.objects.filter(site__slug=site_slug)
+            WordOfTheDay.objects.filter(site=site)
             .exclude(dictionary_entry__id__in=words_used_since_given_date)
             .filter(
-                dictionary_entry__visibility=F("dictionary_entry__site__visibility")
+                dictionary_entry__visibility=F("dictionary_entry__site__visibility"),
+                dictionary_entry__translations__len__gt=0,
             )
             .order_by("?")
             .first()
@@ -106,13 +109,14 @@ class WordOfTheDayView(
             return WordOfTheDay.objects.none()
 
     @staticmethod
-    def get_random_word_as_wotd(site_slug, today):
+    def get_random_word_as_wotd(site, today):
         # Returns a random word and adds a word of the day entry for it
         primary_keys_list = DictionaryEntry.objects.filter(
-            site__slug=site_slug,
+            site=site,
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
             visibility=F("site__visibility"),
+            translations__len__gt=0,
         ).values_list("id", flat=True)
         if len(primary_keys_list) == 0:
             # No words found
@@ -125,23 +129,23 @@ class WordOfTheDayView(
         wotd_entry.save()
         return WordOfTheDay.objects.filter(id=wotd_entry.id)
 
-    def get_selected_word(self, site_slug):
+    def get_selected_word(self, site):
         # Goes over a few conditions to find a suitable word of the day
 
         # Case 1. Check if there is a word assigned word-of-the-day date of today
         today = datetime.today()
-        selected_word = WordOfTheDay.objects.filter(site__slug=site_slug, date=today)
+        selected_word = WordOfTheDay.objects.filter(site=site, date=today)
         if len(selected_word) == 0:
             # Case 2. If no words found with today's date, Get words which have not yet been assigned word-of-the-day
-            selected_word = self.get_unassigned_word(site_slug, today)
+            selected_word = self.get_unassigned_word(site, today)
         if len(selected_word) == 0:
             # Case 3. If no words found satisfying any of the above condition, try to find wotd which has not
             # been assigned a date in the last year
             last_year_date = today - timedelta(weeks=52)
-            selected_word = self.get_wotd_before_date(site_slug, today, last_year_date)
+            selected_word = self.get_wotd_before_date(site, today, last_year_date)
         if len(selected_word) == 0:
             # Case 4. If there is no word that passes any of the above conditions, choose a word at random
-            random_word = self.get_random_word_as_wotd(site_slug, today)
+            random_word = self.get_random_word_as_wotd(site, today)
             return random_word
 
         return selected_word
@@ -149,7 +153,7 @@ class WordOfTheDayView(
     def list(self, request, *args, **kwargs):
         # Overriding list method from FVPermissionViewSetMixin to only get the first word
         site = self.get_validated_site()
-        selected_word = self.get_selected_word(site[0].slug)
+        selected_word = self.get_selected_word(site)
 
         queryset = WordOfTheDay.objects.none()
 
@@ -171,19 +175,12 @@ class WordOfTheDayView(
             "dictionary_entry__last_modified_by",
             "dictionary_entry__part_of_speech",
         ).prefetch_related(
-            "dictionary_entry__acknowledgement_set",
-            "dictionary_entry__alternatespelling_set",
-            "dictionary_entry__note_set",
-            "dictionary_entry__pronunciation_set",
-            "dictionary_entry__translation_set",
             "dictionary_entry__categories",
             Prefetch(
                 "dictionary_entry__related_dictionary_entries",
                 queryset=DictionaryEntry.objects.visible(self.request.user)
                 .select_related("site")
-                .prefetch_related(
-                    "translation_set", *get_media_prefetch_list(self.request.user)
-                ),
+                .prefetch_related(*get_media_prefetch_list(self.request.user)),
             ),
             Prefetch(
                 "dictionary_entry__related_audio",

@@ -109,36 +109,25 @@ class DictionaryViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if len(site) > 0:
-            return (
-                DictionaryEntry.objects.filter(site__slug=site[0].slug)
-                .prefetch_related(
-                    "site",
-                    "site__language",
-                    "created_by",
-                    "last_modified_by",
-                    "acknowledgement_set",
-                    "alternatespelling_set",
-                    "note_set",
-                    "pronunciation_set",
-                    "translation_set",
-                    "part_of_speech",
-                    "categories",
-                    Prefetch(
-                        "related_dictionary_entries",
-                        queryset=DictionaryEntry.objects.visible(self.request.user)
-                        .select_related("site")
-                        .prefetch_related(
-                            "translation_set",
-                            *get_media_prefetch_list(self.request.user)
-                        ),
-                    ),
-                    *get_media_prefetch_list(self.request.user)
-                )
-                .defer(
-                    "exclude_from_wotd",
-                    "batch_id",
-                )
+        return (
+            DictionaryEntry.objects.filter(site=site)
+            .prefetch_related(
+                "site",
+                "site__language",
+                "created_by",
+                "last_modified_by",
+                "part_of_speech",
+                "categories",
+                Prefetch(
+                    "related_dictionary_entries",
+                    queryset=DictionaryEntry.objects.visible(self.request.user)
+                    .select_related("site")
+                    .prefetch_related(*get_media_prefetch_list(self.request.user)),
+                ),
+                *get_media_prefetch_list(self.request.user)
             )
-        else:
-            return DictionaryEntry.objects.none()
+            .defer(
+                "exclude_from_wotd",
+                "batch_id",
+            )
+        )

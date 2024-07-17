@@ -1,6 +1,6 @@
 from .access import *  # noqa F401, F403  # isort:skip
 from .app_factories import *  # noqa F401, F403  # isort:skip
-from .async_results_factories import *  # noqa F401, F403  # isort:skip
+from .job_factories import *  # noqa F401, F403  # isort:skip
 from .category_factories import *  # noqa F401, F403 # isort:skip
 from .site_info_factories import *  # noqa F401, F403 # isort:skip
 from .site_page_factories import *  # noqa F401, F403 # isort:skip
@@ -17,5 +17,6 @@ from .story_factories import *  # noqa F401, F403 # isort:skip
 
 from .immersion_label_factories import *  # noqa F401, F403 # isort:skip
 from .join_request_factories import *  # noqa F401, F403 # isort:skip
+from .import_job_factories import *  # noqa F401, F403 # isort:skip
 
 from .generic import *  # noqa F401, F403 # isort:skip

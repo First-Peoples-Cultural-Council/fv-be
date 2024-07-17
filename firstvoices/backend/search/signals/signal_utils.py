@@ -1,20 +1,17 @@
 from django.db.models import signals
 
 from backend.models import (
-    Acknowledgement,
     DictionaryEntry,
     Language,
     Lyric,
-    Note,
     Site,
     Song,
     Story,
     StoryPage,
-    Translation,
 )
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.media import Audio, Image, Video
-from backend.models.sites import LanguageFamily, SiteFeature
+from backend.models.sites import LanguageFamily
 from backend.search.signals import (
     change_site_visibility,
     remove_all_site_content,
@@ -32,7 +29,6 @@ from backend.search.signals import (
     sync_language_family_in_index,
     sync_language_in_index,
     sync_related_dictionary_entry_in_index,
-    sync_site_features_in_media_indexes,
     sync_site_in_language_index,
     sync_song_in_index,
     sync_song_lyrics_in_index,
@@ -49,9 +45,6 @@ signal_details = {
         (sync_language_family_in_index, LanguageFamily),
         (sync_language_in_index, Language),
         (sync_dictionary_entry_in_index, DictionaryEntry),
-        (sync_related_dictionary_entry_in_index, Translation),
-        (sync_related_dictionary_entry_in_index, Note),
-        (sync_related_dictionary_entry_in_index, Acknowledgement),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (sync_song_in_index, Song),
         (sync_song_lyrics_in_index, Lyric),
@@ -60,7 +53,6 @@ signal_details = {
         (sync_audio_in_index, Audio),
         (sync_image_in_index, Image),
         (sync_video_in_index, Video),
-        (sync_site_features_in_media_indexes, SiteFeature),
     ],
     "pre_delete": [
         (remove_language_from_index, Language),
@@ -69,9 +61,6 @@ signal_details = {
     ],
     "post_delete": [
         (remove_dictionary_entry_from_index, DictionaryEntry),
-        (sync_related_dictionary_entry_in_index, Translation),
-        (sync_related_dictionary_entry_in_index, Note),
-        (sync_related_dictionary_entry_in_index, Acknowledgement),
         (sync_related_dictionary_entry_in_index, DictionaryEntryCategory),
         (remove_all_site_content, Site),
         (sync_song_lyrics_in_index, Lyric),
@@ -80,7 +69,6 @@ signal_details = {
         (remove_audio_from_index, Audio),
         (remove_image_from_index, Image),
         (remove_video_from_index, Video),
-        (sync_site_features_in_media_indexes, SiteFeature),
     ],
 }
 

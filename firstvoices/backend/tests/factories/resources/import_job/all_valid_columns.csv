@@ -1,0 +1,5 @@
+﻿title,type,visibility,include_in_games,include_on_kids_site,translation,translation_2,acknowledgement,acknowledgement_2,note,note_2,pronunciation,pronunciation_2,alt_spelling,alt_spelling_2,category,category_2
+Word 1,word,Public,TRUE,FALSE,first_translation,second_translation,first_ack,second_ack,first_note,second_note,first_p,second_p,alt_s_1,alt_s_2,Animals,Body
+Phrase 1,phrase,Team,FALSE,TRUE,first_translation,second_translation,first_ack,second_ack,first_note,second_note,first_p,second_p,alt_s_2,alt_s_3,Animals,Body
+Word 2,word,Public,FALSE,TRUE,first_translation,second_translation,first_ack,second_ack,first_note,second_note,first_p,second_p,alt_s_3,alt_s_4,Animals,Body
+Phrase 2,phrase,Team,FALSE,FALSE,first_translation,second_translation,first_ack,second_ack,first_note,second_note,first_p,second_p,alt_s_4,alt_s_5,Animals,Body

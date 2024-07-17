@@ -16,13 +16,14 @@ from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
 from PIL import Image as PILImage
+from PIL import ImageOps
 
 from backend.permissions import predicates
 from backend.tasks.media_tasks import generate_media_thumbnails
 from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
-from .constants import MAX_FILEFIELD_LENGTH
+from .constants import MAX_DESCRIPTION_LENGTH, MAX_FILEFIELD_LENGTH
 from .validators import validate_no_duplicate_urls
 
 
@@ -90,7 +91,7 @@ class FileBase(BaseSiteContentModel):
             self.content.delete(save=False)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
             )
 
@@ -219,7 +220,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
     title = models.CharField(max_length=200)
 
     # from dc:description
-    description = models.CharField(max_length=500, blank=True)
+    description = models.CharField(max_length=MAX_DESCRIPTION_LENGTH, blank=True)
 
     # see specific media models for migration info
     acknowledgement = models.TextField(max_length=500, blank=True)
@@ -263,7 +264,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
             self._delete_related_media(old_instance)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete associated file model when updating [{str(self)}]. Error: {e} "
             )
 
@@ -282,7 +283,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
             self._delete_related_media(self)
         except Exception as e:
             # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warn(
+            self.logger.warning(
                 f"Failed to delete associated file model when deleting [{str(self)}]. Error: {e} "
             )
 
@@ -479,6 +480,7 @@ class Image(ThumbnailMixin, MediaBase):
 
     def create_thumbnail(self, img, output_size):
         output_img = BytesIO()
+        img = ImageOps.exif_transpose(img)  # Handle orientation
         img.thumbnail(output_size)
         # Remove transparency values if they exist so that the image can be converted to JPEG.
         try:

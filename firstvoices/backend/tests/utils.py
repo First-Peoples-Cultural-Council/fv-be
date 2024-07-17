@@ -1,8 +1,12 @@
+import os
 import random
 import string
+import sys
 from contextlib import contextmanager
 
 import pytest
+import tablib
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from backend.models.constants import Visibility
 from backend.models.widget import SiteWidgetListOrder
@@ -116,3 +120,33 @@ def not_raises(exception):
         yield
     except exception:
         raise pytest.fail(f"Did raise {exception}")
+
+
+def get_sample_file(filename, mimetype, title=None):
+    path = (
+        os.path.dirname(os.path.realpath(__file__)) + f"/factories/resources/{filename}"
+    )
+    file = open(path, "rb")
+    return InMemoryUploadedFile(
+        file,
+        "FileField",
+        title if title is not None else filename,
+        mimetype,
+        sys.getsizeof(file),
+        None,
+    )
+
+
+def format_dictionary_entry_related_field(entries):
+    # To format the provided ArrayField to expected API response structure
+    return [{"text": entry} for entry in entries]
+
+
+def get_batch_import_test_dataset(filename):
+    path = (
+        os.path.dirname(os.path.realpath(__file__))
+        + f"/factories/resources/import_job/{filename}"
+    )
+    file = open(path, "rb").read().decode("utf-8-sig")
+    data = tablib.Dataset().load(file, format="csv")
+    return data

@@ -81,27 +81,22 @@ class CharactersViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            media_prefetches = get_media_prefetch_list(self.request.user)
-            return (
-                Character.objects.filter(site__slug=site[0].slug)
-                .order_by("sort_order")
-                .select_related(
-                    "site", "site__language", "created_by", "last_modified_by"
-                )
-                .prefetch_related(
-                    "variants",
-                    *media_prefetches,
-                    Prefetch(
-                        "related_dictionary_entries",
-                        queryset=DictionaryEntry.objects.visible(self.request.user)
-                        .select_related("site")
-                        .prefetch_related(*media_prefetches, "translation_set"),
-                    )
+        media_prefetches = get_media_prefetch_list(self.request.user)
+        return (
+            Character.objects.filter(site=site)
+            .order_by("sort_order")
+            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .prefetch_related(
+                "variants",
+                *media_prefetches,
+                Prefetch(
+                    "related_dictionary_entries",
+                    queryset=DictionaryEntry.objects.visible(self.request.user)
+                    .select_related("site")
+                    .prefetch_related(*media_prefetches),
                 )
             )
-        else:
-            return Character.objects.none()
+        )
 
 
 @extend_schema_view(
@@ -139,9 +134,6 @@ class IgnoredCharactersViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        if site.count() > 0:
-            return IgnoredCharacter.objects.filter(
-                site__slug=site[0].slug
-            ).select_related("site", "site__language", "created_by", "last_modified_by")
-        else:
-            return IgnoredCharacter.objects.none()
+        return IgnoredCharacter.objects.filter(site=site).select_related(
+            "site", "site__language", "created_by", "last_modified_by"
+        )

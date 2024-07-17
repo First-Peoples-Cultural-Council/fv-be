@@ -2,20 +2,22 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.router import CustomRouter
 from backend.views.audio_views import AudioViewSet
+from backend.views.bulkvisibilityjob_views import BulkVisibilityJobViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.contact_us_views import ContactUsView
 from backend.views.custom_order_recalculate_views import (
-    CustomOrderRecalculatePreviewView,
-    CustomOrderRecalculateView,
+    CustomOrderRecalculatePreviewViewSet,
+    CustomOrderRecalculateViewSet,
 )
-from backend.views.data_views import MTDSitesDataViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
+from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
+from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
@@ -45,6 +47,9 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
 sites_router.register(r"audio", AudioViewSet, basename="audio")
+sites_router.register(
+    r"bulk-visibility", BulkVisibilityJobViewSet, basename="bulk-visibility"
+)
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
@@ -52,12 +57,12 @@ sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
-    CustomOrderRecalculatePreviewView,
+    CustomOrderRecalculatePreviewViewSet,
     basename="dictionary-cleanup-preview",
 )
 sites_router.register(
     r"dictionary-cleanup",
-    CustomOrderRecalculateView,
+    CustomOrderRecalculateViewSet,
     basename="dictionary-cleanup",
 )
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
@@ -69,6 +74,7 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(
     r"immersion-labels", ImmersionLabelViewSet, basename="immersionlabel"
 )
+sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")

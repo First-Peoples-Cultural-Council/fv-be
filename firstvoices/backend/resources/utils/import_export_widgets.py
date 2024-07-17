@@ -1,5 +1,11 @@
+import re
+
 from django.contrib.auth import get_user_model
-from import_export.widgets import ForeignKeyWidget, Widget
+from django.core.exceptions import ValidationError
+from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
+
+from backend.models import Category
+from backend.search.utils.validators import get_valid_boolean
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -68,3 +74,57 @@ class UserForeignKeyWidget(ForeignKeyWidget):
                 **{self.field: DUMMY_USER_EMAIL}, defaults={"email": DUMMY_USER_EMAIL}
             )
             return dummy_user
+
+
+class InvertedBooleanFieldWidget(Widget):
+    """Import/export widget to return expected boolean value for audience related fields."""
+
+    def clean(self, value, row=None, **kwargs):
+        curr_value = get_valid_boolean(value)
+        if curr_value is None:
+            raise ValidationError("Invalid value. Expected 'true' or 'false'.")
+        return str(not curr_value)
+
+
+class TextListWidget(Widget):
+    """Import/export widget to return valid values for arrayFields from attributes
+    that can span multiple columns in the input csv."""
+
+    def __init__(self, prefix, *args, **kwargs):
+        self.prefix = prefix
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        match_pattern = rf"{self.prefix}[_2-5]*"
+        return [value for key, value in row.items() if re.fullmatch(match_pattern, key)]
+
+
+class CategoryWidget(ManyToManyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model=Category, field="title", *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        category_column_name_pattern = r"category[_2-5]*"
+
+        input_categories = {}
+        valid_categories = []
+
+        for column, input_value in row.items():
+            if re.fullmatch(category_column_name_pattern, column):
+                input_categories[column] = input_value
+
+        # If no categories provided, return
+        if len(input_categories) == 0:
+            return Category.objects.none()
+
+        # Validate categories
+        for column, input_value in input_categories.items():
+            category_lookup = Category.objects.filter(
+                site__id=row["site"], title=input_value
+            )
+            if len(category_lookup) == 0:
+                raise ValidationError(f"Invalid category supplied in column {column}.")
+            else:
+                valid_categories.append(category_lookup[0])
+
+        return valid_categories

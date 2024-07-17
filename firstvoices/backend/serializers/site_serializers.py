@@ -11,7 +11,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.fields import SiteViewLinkField
 from backend.serializers.media_serializers import ImageSerializer, VideoSerializer
-from backend.serializers.utils import get_site_from_context
+from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.validators import SameSite
 from backend.serializers.widget_serializers import SiteWidgetListSerializer
 
@@ -56,6 +56,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "images",
         "join_requests",
         "immersion_labels",
+        "mtd_data",
         "pages",
         "people",
         "songs",
@@ -78,6 +79,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     # api links
     audio = SiteViewLinkField(view_name="api:audio-list")
+    bulk_visibility = SiteViewLinkField(view_name="api:bulk-visibility-list")
     categories = SiteViewLinkField(view_name="api:category-list")
     characters = SiteViewLinkField(view_name="api:character-list")
     dictionary = SiteViewLinkField(view_name="api:dictionaryentry-list")
@@ -91,6 +93,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
+    mtd_data = SiteViewLinkField(view_name="api:mtd-data-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
@@ -116,6 +119,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "banner_video",
             "homepage",
             "audio",
+            "bulk_visibility",
             "categories",
             "characters",
             "dictionary",
@@ -127,6 +131,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "images",
             "immersion_labels",
             "join_requests",
+            "mtd_data",
             "pages",
             "people",
             "songs",

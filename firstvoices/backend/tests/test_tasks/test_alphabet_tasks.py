@@ -5,6 +5,7 @@ from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,
 )
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 
 
@@ -19,14 +20,21 @@ class TestAlphabetTasks:
     def alphabet(self, site):
         return factories.AlphabetFactory.create(site=site)
 
+    @staticmethod
+    def assert_async_task_logs(site, caplog):
+        assert f"Task started. Additional info: site_slug: {site.slug}." in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
     @pytest.mark.django_db
-    def test_recalculate_preview_empty(self, site, alphabet):
+    def test_recalculate_preview_empty(self, site, alphabet, caplog):
         result = recalculate_custom_order_preview(site_slug=site.slug)
 
         assert result == {"unknown_character_count": {}, "updated_entries": []}
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_unknown_only(self, site, alphabet):
+    def test_recalculate_preview_unknown_only(self, site, alphabet, caplog):
         factories.DictionaryEntryFactory.create(site=site, title="abc")
 
         result = recalculate_custom_order_preview(site_slug=site.slug)
@@ -35,8 +43,12 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_updated_custom_order_only(self, site, alphabet):
+    def test_recalculate_preview_updated_custom_order_only(
+        self, site, alphabet, caplog
+    ):
         factories.DictionaryEntryFactory.create(site=site, title="abc")
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
@@ -56,8 +68,10 @@ class TestAlphabetTasks:
             ],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_updated_confusables_only(self, site, alphabet):
+    def test_recalculate_preview_updated_confusables_only(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="A")
         factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
@@ -77,8 +91,10 @@ class TestAlphabetTasks:
             ],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_full_update(self, site, alphabet):
+    def test_recalculate_preview_full_update(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="A")
         factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
         factories.DictionaryEntryFactory.create(site=site, title="abcd")
@@ -117,8 +133,10 @@ class TestAlphabetTasks:
             ],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_unaffected(self, site, alphabet):
+    def test_recalculate_preview_unaffected(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
@@ -131,8 +149,12 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_unknown_character_unaffected(self, site, alphabet):
+    def test_recalculate_preview_unknown_character_unaffected(
+        self, site, alphabet, caplog
+    ):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
@@ -144,8 +166,10 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_multichar(self, site, alphabet):
+    def test_recalculate_preview_multichar(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.DictionaryEntryFactory.create(site=site, title="aab")
@@ -165,8 +189,10 @@ class TestAlphabetTasks:
             ],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_empty(self, site, alphabet):
+    def test_recalculate_empty(self, site, alphabet, caplog):
         result = recalculate_custom_order(site.slug)
 
         assert result == {
@@ -174,8 +200,10 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_unknown_only(self, site, alphabet):
+    def test_recalculate_unknown_only(self, site, alphabet, caplog):
         factories.DictionaryEntryFactory.create(site=site, title="abc")
 
         result = recalculate_custom_order(site.slug)
@@ -184,8 +212,10 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_updated_custom_order_only(self, site, alphabet):
+    def test_recalculate_updated_custom_order_only(self, site, alphabet, caplog):
         entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
@@ -206,8 +236,10 @@ class TestAlphabetTasks:
         }
         assert DictionaryEntry.objects.get(id=entry.id).custom_order == "!#$"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_updated_confusables_only(self, site, alphabet):
+    def test_recalculate_updated_confusables_only(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="A")
         entry = factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
@@ -230,8 +262,10 @@ class TestAlphabetTasks:
         assert updated_entry.title == "AAA"
         assert updated_entry.custom_order == "!!!"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_updated_full_update_single(self, site, alphabet):
+    def test_recalculate_updated_full_update_single(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="A")
         entry = factories.DictionaryEntryFactory.create(site=site, title="ᐱbcd")
         factories.CharacterFactory.create(site=site, title="b")
@@ -256,8 +290,10 @@ class TestAlphabetTasks:
         assert updated_entry.title == "Abcd"
         assert updated_entry.custom_order == "!#$⚑d"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_unaffected(self, site, alphabet):
+    def test_recalculate_unaffected(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
@@ -277,8 +313,10 @@ class TestAlphabetTasks:
         assert updated_entry2.title == "cab"
         assert updated_entry2.custom_order == "$!#"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_unknown_character_unaffected(self, site, alphabet):
+    def test_recalculate_unknown_character_unaffected(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
@@ -294,8 +332,10 @@ class TestAlphabetTasks:
         assert updated_entry.title == "abcx"
         assert updated_entry.custom_order == "!#$⚑x"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_multichar(self, site, alphabet):
+    def test_recalculate_multichar(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         entry = factories.DictionaryEntryFactory.create(site=site, title="aab")
@@ -319,8 +359,10 @@ class TestAlphabetTasks:
         assert updated_entry.title == "aab"
         assert updated_entry.custom_order == "$#"
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_last_modified_not_updated(self, site, alphabet):
+    def test_last_modified_not_updated(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
@@ -343,8 +385,10 @@ class TestAlphabetTasks:
         entry = DictionaryEntry.objects.get(site=site, title="abc")
         assert entry.last_modified == entry_last_modified
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_preview_alphabet_missing(self, site):
+    def test_recalculate_preview_alphabet_missing(self, site, caplog):
         assert Alphabet.objects.count() == 0
         result = recalculate_custom_order_preview(site_slug=site.slug)
         assert result == {
@@ -353,8 +397,10 @@ class TestAlphabetTasks:
         }
         assert Alphabet.objects.count() == 1
 
+        self.assert_async_task_logs(site, caplog)
+
     @pytest.mark.django_db
-    def test_recalculate_alphabet_missing(self, site):
+    def test_recalculate_alphabet_missing(self, site, caplog):
         assert Alphabet.objects.count() == 0
         result = recalculate_custom_order(site_slug=site.slug)
         assert result == {
@@ -362,3 +408,5 @@ class TestAlphabetTasks:
             "updated_entries": [],
         }
         assert Alphabet.objects.count() == 1
+
+        self.assert_async_task_logs(site, caplog)

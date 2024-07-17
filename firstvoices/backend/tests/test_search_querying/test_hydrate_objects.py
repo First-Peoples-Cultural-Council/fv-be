@@ -16,7 +16,6 @@ from backend.tests.factories import (
     SiteFactory,
     SongFactory,
     StoryFactory,
-    TranslationFactory,
     VideoFactory,
 )
 
@@ -115,9 +114,8 @@ def assert_related_videos(hydrated_object_entry, video_instance):
     )
 
 
-def assert_translations(hydrated_object_entry, translation):
-    assert hydrated_object_entry["translations"][0]["id"] == str(translation.id)
-    assert hydrated_object_entry["translations"][0]["text"] == translation.text
+def assert_translations(hydrated_object_entry, translation_text):
+    assert hydrated_object_entry["translations"][0]["text"] == translation_text
 
 
 @pytest.mark.django_db
@@ -144,11 +142,10 @@ class TestHydrateObjects:
     def test_dictionary_entry_hydration(self, entry_type):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         entry = DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, type=entry_type
-        )
-
-        translation = TranslationFactory.create(
-            dictionary_entry=entry, text="translation"
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=entry_type,
+            translations=["translation"],
         )
         audio = AudioFactory.create(site=site)
         entry.related_audio.add(audio)
@@ -190,7 +187,7 @@ class TestHydrateObjects:
         )
 
         assert_site_object(hydrated_object_entry, site)
-        assert_translations(hydrated_object_entry, translation)
+        assert_translations(hydrated_object_entry, "translation")
         assert_related_audio(hydrated_object_entry, audio, speaker)
         assert_related_images(hydrated_object_entry, image)
 
