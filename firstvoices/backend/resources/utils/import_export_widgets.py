@@ -104,14 +104,27 @@ class CategoryWidget(ManyToManyWidget):
         super().__init__(model=Category, field="title", *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        category_match_pattern = r"category[_2-5]*"
-        input_categories = [
-            value
-            for key, value in row.items()
-            if re.fullmatch(category_match_pattern, key)
-        ]
+        category_column_name_pattern = r"category[_2-5]*"
 
+        input_categories = {}
+        valid_categories = []
+
+        for column, input_value in row.items():
+            if re.fullmatch(category_column_name_pattern, column):
+                input_categories[column] = input_value
+
+        # If no categories provided, return
         if len(input_categories) == 0:
             return Category.objects.none()
 
-        return Category.objects.filter(title__in=input_categories)
+        # Validate categories
+        for column, input_value in input_categories.items():
+            category_lookup = Category.objects.filter(
+                site__id=row["site"], title=input_value
+            )
+            if len(category_lookup) == 0:
+                raise ValidationError(f"Invalid category supplied in column {column}.")
+            else:
+                valid_categories.append(category_lookup[0])
+
+        return valid_categories
