@@ -46,7 +46,7 @@ def parse_queryset_for_mtd(
                 optional=DictionaryEntryDataSerializer.get_optional(entry),
             )
         except ValueError as e:
-            logger.warning(
+            logger.info(
                 f"Entry with ID {entry.id} did not pass Validation. Instead raised: {e}"
             )
             continue
