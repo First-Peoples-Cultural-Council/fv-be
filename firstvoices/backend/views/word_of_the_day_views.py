@@ -15,6 +15,7 @@ from backend.models.dictionary import (
 from backend.models.media import Audio, Video
 from backend.permissions import utils
 from backend.serializers.word_of_the_day_serializers import WordOfTheDayListSerializer
+from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     DictionarySerializerContextMixin,
@@ -29,8 +30,8 @@ from backend.views.utils import get_media_prefetch_list, get_select_related_medi
         description="Returns a word of the day for the given site.",
         responses={
             200: WordOfTheDayListSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[site_slug_parameter],
     ),
@@ -64,6 +65,7 @@ class WordOfTheDayView(
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
             visibility=F("site__visibility"),
+            translations__len__gt=0,
         ).exclude(id__in=list(words_used))
         if len(dictionary_entry_queryset) > 0:
             selected_word = dictionary_entry_queryset.first()
@@ -89,7 +91,8 @@ class WordOfTheDayView(
             WordOfTheDay.objects.filter(site=site)
             .exclude(dictionary_entry__id__in=words_used_since_given_date)
             .filter(
-                dictionary_entry__visibility=F("dictionary_entry__site__visibility")
+                dictionary_entry__visibility=F("dictionary_entry__site__visibility"),
+                dictionary_entry__translations__len__gt=0,
             )
             .order_by("?")
             .first()
@@ -113,6 +116,7 @@ class WordOfTheDayView(
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_wotd=False,
             visibility=F("site__visibility"),
+            translations__len__gt=0,
         ).values_list("id", flat=True)
         if len(primary_keys_list) == 0:
             # No words found
