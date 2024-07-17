@@ -1,28 +1,7 @@
-import logging
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 REQUIRED_HEADERS = ["title", "type"]
-VALID_HEADERS = [
-    "title",
-    "type",
-    "translation",
-    "audio",
-    "image",
-    "video",
-    "video_embed_link",
-    "category",
-    "note",
-    "acknowledgement",
-    "part_of_speech",
-    "pronunciation",
-    "alt_spelling",
-    "visibility",
-    "include_on_kids_site",
-    "include_in_games",
-    "related_entry",
-]
 
 
 def check_required_headers(input_headers):
@@ -40,38 +19,31 @@ def check_required_headers(input_headers):
     return True
 
 
-def validate_headers(input_headers):
+def check_duplicate_headers(input_headers):
+    # check for any duplicate headers
+
     input_headers = [h.strip().lower() for h in input_headers]
 
-    # If any invalid headers are present, skip them and raise a warning
+    unique_headers = []
+    duplicate_headers = []
+
     for header in input_headers:
-        if header in VALID_HEADERS:
-            continue
-        else:
-            check_header_variation(header)
+        if header not in unique_headers:
+            unique_headers.append(header)
+        elif header not in duplicate_headers:
+            duplicate_headers.append(header)
 
+    if len(duplicate_headers):
+        duplicate_headers_str = ",".join(str(header) for header in duplicate_headers)
+        raise serializers.ValidationError(
+            detail={
+                "data": [
+                    f"CSV file contains duplicate headers: {duplicate_headers_str}."
+                ]
+            }
+        )
 
-def check_header_variation(input_header):
-    # The input header can have a _n variation upto 5, e.g. note_5
-    # raise a warning if the header is not valid or n>5.
-
-    logger = logging.getLogger(__name__)
-    splits = input_header.split("_")
-    if len(splits) >= 2:
-        prefix = "_".join(splits[:-1])
-        variation = splits[-1]
-    else:
-        prefix = input_header
-        variation = None
-
-    # Check if the prefix is a valid header
-    if prefix in VALID_HEADERS and variation and variation.isdigit():
-        variation = int(variation)
-        if variation < 1 or variation > 5:
-            logger.info(f"Variation out of range. Skipping column {input_header}.")
-            return
-
-    logger.info(f"Unknown header. Skipping column {input_header}.")
+    return True
 
 
 def validate_username(username):

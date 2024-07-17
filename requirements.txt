@@ -11,16 +11,16 @@ cffi==1.16.0
 charset-normalizer==3.3.2
 coloredlogs==14.0
 cron-descriptor==1.4.3
-cryptography==42.0.5
+cryptography==42.0.8
 Django==5.0.6
 django-admin-env-notice==1.0
 django-celery-beat==2.6.0
-django-cors-headers==4.3.1
+django-cors-headers==4.4.0
 django-coverage-plugin==3.1.0
 django-debug-toolbar==4.4.2
 django-embed-video==1.4.10
-django-import-export==4.0.9
-django-storages==1.14.3
+django-import-export==4.1.0
+django-storages==1.14.4
 django-timezone-field==6.1.0
 djangorestframework==3.15.1
 djangorestframework-camel-case==1.4.2
@@ -33,7 +33,7 @@ elasticsearch-dsl==7.4.1
 et-xmlfile==1.1.0
 eventlet==0.36.1
 factory-boy==3.3.0
-Faker==25.2.0
+Faker==26.0.0
 ffmpeg-python==0.2.0
 g2p==2.0.0 # https://github.com/roedoejet/g2p
 greenlet==3.0.3
@@ -44,7 +44,7 @@ inflection==0.5.1
 iniconfig==2.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.4
-jsonschema==4.21.1
+jsonschema==4.22.0
 kombu==5.3.5
 MarkupSafe==2.1.5
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
@@ -54,7 +54,7 @@ numpy==1.26.4
 openpyxl==3.1.5
 packaging==24.0
 panphon==0.20.0
-Pillow==10.3.0
+Pillow==10.4.0
 pluggy==1.5.0
 prompt-toolkit==3.0.36
 psycopg2-binary==2.9.9
@@ -64,7 +64,7 @@ pyrsistent==0.20.0
 pytest==8.1.1
 pytest-django==4.8.0  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.14.0 #https://github.com/pytest-dev/pytest-mock
-python-crontab==3.1.0
+python-crontab==3.2.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-magic==0.4.27

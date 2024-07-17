@@ -1,4 +1,3 @@
-import logging
 from datetime import timedelta
 
 import pytest
@@ -12,26 +11,32 @@ from backend.tasks.build_mtd_export_format_tasks import (
     build_index_and_calculate_scores,
     check_sites_for_mtd_sync,
 )
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from firstvoices.celery import link_error_handler
-
-LOGGER = logging.getLogger(__name__)
 
 
 class TestMTDIndexAndScoreTask:
     sample_entry_title = "title_one word"
+
+    @staticmethod
+    def assert_async_task_logs(site, caplog):
+        assert f"Task started. Additional info: site: {site.slug}." in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
     @pytest.fixture
     def site(self):
         return factories.SiteFactory.create(slug="test")
 
     @pytest.mark.django_db
-    def test_build_empty(self, site):
+    def test_build_empty(self, site, caplog):
         result = build_index_and_calculate_scores(site.slug)
         assert result["config"]["L1"] == site.title
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
         assert len(result["l2_index"]) == 0
+
+        self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
     def test_validation_error(self, site, caplog):
@@ -53,6 +58,8 @@ class TestMTDIndexAndScoreTask:
         assert str(entry_one.id) in caplog.text
         # Logs the type of error, in this case, Definition (str, required) is None
         assert "type=string_type, input_value=None" in caplog.text
+
+        self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
     def test_only_include_public_entries(self, site):
@@ -85,7 +92,7 @@ class TestMTDIndexAndScoreTask:
         assert not saved_export_format.latest().is_preview
 
     @pytest.mark.django_db
-    def test_build_and_score(self, site):
+    def test_build_and_score(self, site, caplog):
         # Add some entries
         speaker = factories.PersonFactory.create(site=site)
         audio = factories.AudioFactory.create(site=site)
@@ -153,6 +160,8 @@ class TestMTDIndexAndScoreTask:
         assert len(result["data"][1]["audio"]) == 1
         assert result["data"][1]["img"] is not None
         assert len(result["data"][1]["video"]) == 1
+
+        self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
     def test_old_results_removed(self, site):

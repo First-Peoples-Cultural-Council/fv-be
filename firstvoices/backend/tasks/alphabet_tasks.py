@@ -1,4 +1,5 @@
 from celery import current_task, shared_task
+from celery.utils.log import get_task_logger
 
 from backend.models import (
     Alphabet,
@@ -6,6 +7,7 @@ from backend.models import (
     DictionaryEntry,
     Site,
 )
+from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 @shared_task
@@ -14,6 +16,8 @@ def recalculate_custom_order_preview(site_slug: str):
     Generates a preview of the changes that will be made to the custom order
     and title of entries in a site's dictionary.
     """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"site_slug: {site_slug}")
 
     site = Site.objects.get(slug=site_slug)
     alphabet = Alphabet.objects.get_or_create(site=site)[0]
@@ -72,6 +76,8 @@ def recalculate_custom_order_preview(site_slug: str):
         is_preview=True,
     )
 
+    logger.info(ASYNC_TASK_END_TEMPLATE)
+
     return preview
 
 
@@ -81,6 +87,8 @@ def recalculate_custom_order(site_slug: str):
     Returns the same format as recalculate_custom_order_preview, but actually updates the custom order and
     title of entries in a site's dictionary by saving the entries.
     """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"site_slug: {site_slug}")
 
     site = Site.objects.get(slug=site_slug)
     alphabet = Alphabet.objects.get_or_create(site=site)[0]
@@ -140,6 +148,8 @@ def recalculate_custom_order(site_slug: str):
         task_id=task_id,
         is_preview=False,
     )
+
+    logger.info(ASYNC_TASK_END_TEMPLATE)
 
     return results
 
