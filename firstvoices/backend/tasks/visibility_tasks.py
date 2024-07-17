@@ -7,7 +7,7 @@ from backend.models.jobs import BulkVisibilityJob, JobStatus
 from backend.models.sites import SiteFeature
 from backend.models.widget import SiteWidget
 from backend.search.tasks.site_content_indexing_tasks import (
-    sync_all_site_content_in_indexes,
+    request_sync_all_site_content_in_indexes,
 )
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
@@ -82,7 +82,7 @@ def bulk_change_visibility(job_instance_id):
     # Resume search indexing for site, + reindex entire site
     indexing_paused_feature[0].is_enabled = False
     indexing_paused_feature[0].save()
-    sync_all_site_content_in_indexes(site)
+    request_sync_all_site_content_in_indexes(site)
 
     # update status of job at each step
     job.status = JobStatus.COMPLETE

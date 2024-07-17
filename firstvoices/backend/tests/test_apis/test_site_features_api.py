@@ -18,6 +18,12 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
 
     model = SiteFeature
 
+    @pytest.fixture(scope="function", autouse=True)
+    def mocked_media_async_func(self, mocker):
+        self.mocked_func = mocker.patch(
+            "backend.views.site_feature_views.request_sync_all_media_site_content_in_indexes"
+        )
+
     def get_lookup_key(self, instance):
         return instance.key
 
@@ -201,3 +207,75 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         )
 
         assert response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_api_create_triggers_media_sync(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
+
+        data = {
+            "key": self.TEST_KEY,
+            "isEnabled": True,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 201
+        assert self.mocked_func.call_count == 1
+
+    @pytest.mark.django_db
+    def test_api_update_triggers_media_sync(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        feature = factories.SiteFeatureFactory.create(site=site)
+        self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
+
+        data = {
+            "key": feature.key,
+            "isEnabled": False,
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+        assert self.mocked_func.call_count == 1
+
+    @pytest.mark.django_db
+    def test_api_delete_triggers_media_sync(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        feature = factories.SiteFeatureFactory.create(site=site)
+        self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+            format="json",
+        )
+
+        assert response.status_code == 204
+        assert self.mocked_func.call_count == 1
+
+    @pytest.mark.django_db
+    def test_api_patch_triggers_media_sync(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        feature = factories.SiteFeatureFactory.create(site=site)
+        self.client.force_authenticate(user=factories.get_app_admin(AppRole.SUPERADMIN))
+
+        data = {
+            "isEnabled": False,
+        }
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=feature.key, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+        assert self.mocked_func.call_count == 1

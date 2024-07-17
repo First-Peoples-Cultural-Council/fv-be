@@ -2,6 +2,9 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.sites import SiteFeature
+from backend.search.tasks.site_content_indexing_tasks import (
+    request_sync_all_media_site_content_in_indexes,
+)
 from backend.serializers.site_feature_serializers import SiteFeatureDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import key_parameter, site_slug_parameter
@@ -109,3 +112,23 @@ class SiteFeatureViewSet(
             "created_by",
             "last_modified_by",
         )
+
+    def perform_create(self, serializer):
+        # Once a site feature is created via the API, sync all media content in indexes
+        instance = serializer.save()
+        site = instance.site
+
+        # Queue the site media sync after updating the model
+        request_sync_all_media_site_content_in_indexes(site)
+
+    def perform_update(self, serializer):
+        # Once a site feature is updated via the API, sync all media content in indexes, same as creation.
+        self.perform_create(serializer)
+
+    def perform_destroy(self, instance):
+        # Once a site feature is deleted via the API, sync all media content in indexes
+        site = instance.site
+        instance.delete()
+
+        # Queue the site media sync after deleting the model
+        request_sync_all_media_site_content_in_indexes(site)
