@@ -124,7 +124,7 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     resource = DictionaryEntryResource(site=import_job_instance.site)
 
     try:
-        result = resource.import_data(dataset=cleaned_data, dry_run=False)
+        result = resource.import_data(dataset=cleaned_data, dry_run=True)
     except Exception as e:
         logger.error(e)
 
