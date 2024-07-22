@@ -129,3 +129,26 @@ class TestDryRunImport:
 
         assert "title" in accepted_columns
         assert "type" in accepted_columns
+
+    def test_missing_original_column(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/original_header_missing.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
+
+        assert "note_2" in ignored_columns
+        assert "note_3" in ignored_columns
+
+        assert "title" in accepted_columns
+        assert "type" in accepted_columns

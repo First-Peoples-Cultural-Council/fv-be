@@ -33,7 +33,7 @@ VALID_HEADERS = [
 ]
 
 
-def is_valid_header_variation(input_header):
+def is_valid_header_variation(input_header, all_headers):
     # The input header can have a _n variation from 2 to 5, e.g. note_5
     # All other variations are invalid
 
@@ -46,7 +46,12 @@ def is_valid_header_variation(input_header):
         variation = None
 
     # Check if the prefix is a valid header
-    if prefix in VALID_HEADERS and variation and variation.isdigit():
+    if (
+        prefix in VALID_HEADERS
+        and prefix in all_headers
+        and variation
+        and variation.isdigit()
+    ):
         variation = int(variation)
         if variation <= 1 or variation > 5:
             # Variation out of range. Skipping column.
@@ -65,21 +70,23 @@ def clean_csv(data):
     """
 
     all_headers = data.headers
+    accepted_headers = []
     invalid_headers = []
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
         header = header.strip().lower()
         if header in VALID_HEADERS:
-            continue
-        elif not is_valid_header_variation(header):
+            accepted_headers.append(header)
+        elif is_valid_header_variation(header, all_headers):
+            accepted_headers.append(header)
+        else:
             invalid_headers.append(header)
 
     # Dropping invalid columns
     for invalid_header in invalid_headers:
         del data[invalid_header]
 
-    accepted_headers = list(set(all_headers) - set(invalid_headers))
     return accepted_headers, invalid_headers, data
 
 
@@ -115,7 +122,7 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     resource = DictionaryEntryResource(site=import_job_instance.site)
 
     try:
-        result = resource.import_data(dataset=cleaned_data, dry_run=True)
+        result = resource.import_data(dataset=cleaned_data, dry_run=False)
     except Exception as e:
         logger.error(e)
 
