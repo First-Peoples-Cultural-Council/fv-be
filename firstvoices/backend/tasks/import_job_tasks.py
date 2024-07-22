@@ -34,7 +34,9 @@ VALID_HEADERS = [
 
 
 def is_valid_header_variation(input_header, all_headers):
-    # The input header can have a _n variation from 2 to 5, e.g. note_5
+    # The input header can have a _n variation from 2 to 5, e.g. 'note_5'
+    # The original header also has to be present for the variation to be accepted,
+    # e.g. 'note_2' to 'note_5' columns will only be accepted if 'note' column is present in the table
     # All other variations are invalid
 
     splits = input_header.split("_")
