@@ -10,10 +10,14 @@ site_slug_parameter = OpenApiParameter(
     name="site_slug",
     type=OpenApiTypes.STR,
     location=OpenApiParameter.PATH,
-    description="site-slug",
+    description="A URL-friendly slug identifying a FirstVoices site. "
+    "Contains only alphanumeric characters and hyphens.",
 )
 id_parameter = OpenApiParameter(
-    name="id", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
+    name="id",
+    type=OpenApiTypes.STR,
+    location=OpenApiParameter.PATH,
+    description="A UUID identifying the target resource.",
 )
 key_parameter = OpenApiParameter(
     name="key", type=OpenApiTypes.STR, location=OpenApiParameter.PATH
@@ -22,7 +26,7 @@ site_page_slug_parameter = OpenApiParameter(
     name="slug",
     type=OpenApiTypes.STR,
     location=OpenApiParameter.PATH,
-    description="page-slug",
+    description="A URL-friendly slug identifying this web page resource.",
 )
 
 inline_site_doc_detail_serializer = inline_serializer(
