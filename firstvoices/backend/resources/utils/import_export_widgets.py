@@ -96,7 +96,11 @@ class TextListWidget(Widget):
 
     def clean(self, value, row=None, **kwargs):
         match_pattern = rf"{self.prefix}[_2-5]*"
-        return [value for key, value in row.items() if re.fullmatch(match_pattern, key)]
+        return [
+            value
+            for key, value in row.items()
+            if re.fullmatch(match_pattern, key) and len(value.strip())
+        ]
 
 
 class CategoryWidget(ManyToManyWidget):
