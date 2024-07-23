@@ -104,8 +104,8 @@ class CharactersViewSet(
         description="A list of all ignored characters on the specified site",
         responses={
             200: IgnoredCharacterSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
@@ -113,8 +113,8 @@ class CharactersViewSet(
         description="Details about an ignored character in the specified site",
         responses={
             200: IgnoredCharacterSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404),
         },
         parameters=[
             site_slug_parameter,

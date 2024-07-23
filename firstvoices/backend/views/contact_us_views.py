@@ -20,7 +20,6 @@ from backend.utils.contact_us_utils import get_fallback_emails
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
-from backend.views.doc_strings import error_403
 from backend.views.exceptions import ContactUsError
 
 
@@ -29,15 +28,15 @@ from backend.views.exceptions import ContactUsError
         description="Returns the list of receiver emails used by the contact us post endpoint.",
         responses={
             200: ContactUsSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     create=extend_schema(
         description="Sends emails to the addresses listed on the site contact_us_email and contact_us_users fields.",
         responses={
-            202: OpenApiResponse(description="Success. Email successfully sent."),
+            202: OpenApiResponse(description=doc_strings.success_202_email),
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
@@ -79,7 +78,9 @@ class ContactUsView(
         perm = Site.get_perm("change")
 
         if not request.user.has_perm(perm, site):
-            return Response({"message": error_403}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": doc_strings.error_403}, status=status.HTTP_403_FORBIDDEN
+            )
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -145,9 +146,9 @@ class ContactUsView(
                 status=status.HTTP_202_ACCEPTED,
             )
         except Exception as e:
-            raise ContactUsError(e.message) if hasattr(
-                e, "message"
-            ) else ContactUsError()
+            raise (
+                ContactUsError(e.message) if hasattr(e, "message") else ContactUsError()
+            )
 
     @staticmethod
     def validate_no_excluded_words(message, name, from_email, site):
