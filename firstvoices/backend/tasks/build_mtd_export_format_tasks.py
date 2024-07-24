@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.db.models import Q
-from django.db.models.query import QuerySet
+from django.db.models.query import Prefetch, QuerySet
 from django.utils import timezone
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
@@ -16,8 +16,9 @@ from mothertongues.config.models import (
 )
 from mothertongues.dictionary import MTDictionary
 
-from backend.models import DictionaryEntry, MTDExportFormat, Site, constants
+from backend.models import Category, DictionaryEntry, MTDExportFormat, Site, constants
 from backend.models.dictionary import DictionaryEntryCategory
+from backend.models.media import Audio, Image, Video
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from firstvoices.celery import link_error_handler
@@ -74,11 +75,43 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
                 {type(site_or_site_slug)} was received instead."""
         )
     characters_list = site.character_set.all().order_by("sort_order")
-    dictionary_entries = parse_queryset_for_mtd(
+    dictionary_entries_queryset = (
         DictionaryEntry.objects.filter(
             site=site, visibility=constants.Visibility.PUBLIC
         )
+        .prefetch_related(
+            "part_of_speech",
+            Prefetch(
+                "categories",
+                queryset=Category.objects.all().select_related("parent"),
+            ),
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.all()
+                .select_related("original")
+                .prefetch_related("speakers"),
+            ),
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.all().select_related("original"),
+            ),
+            Prefetch(
+                "related_videos",
+                queryset=Video.objects.all().select_related("original"),
+            ),
+        )
+        .defer(
+            "exclude_from_wotd",
+            "batch_id",
+            "related_dictionary_entries",
+            "related_characters",
+            "custom_order",
+            "split_chars_base",
+            "alternate_spellings",
+            "pronunciations",
+        )
     )
+    dictionary_entries = parse_queryset_for_mtd(dictionary_entries_queryset)
     preview = {}
     task_id = current_task.request.id
     # Saving an empty row to depict that the task has started
