@@ -19,6 +19,18 @@ def cleanup_dictionary(job_instance_id: str):
 
     job = DictionaryCleanupJob.objects.get(id=job_instance_id)
     job.task_id = current_task.request.id
+
+    if DictionaryCleanupJob.objects.filter(
+        status=JobStatus.STARTED, site=job.site
+    ).exists():
+        cancelled_message = "Job cancelled as another dictionary cleanup job is already in progress for the same site."
+        job.status = JobStatus.CANCELLED
+        job.message = cancelled_message
+        job.save()
+        logger.info(cancelled_message)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return
+
     job.status = JobStatus.STARTED
     job.save()
 
@@ -40,7 +52,16 @@ def cleanup_dictionary(job_instance_id: str):
 
         # If job is not preview, save the entry to recalculate custom order and clean title
         if not job.is_preview:
-            entry.save(set_modified_date=False)
+            try:
+                entry.save(set_modified_date=False)
+            except Exception as e:
+                job.status = JobStatus.FAILED
+                job.message = str(e)
+                job.save()
+
+                logger.error(e)
+                logger.info(ASYNC_TASK_END_TEMPLATE)
+                return
 
         append_updated_entry(
             updated_entries,
