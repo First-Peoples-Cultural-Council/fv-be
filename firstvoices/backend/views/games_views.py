@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from backend.models import Character, DictionaryEntry
+from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 
@@ -43,8 +44,8 @@ def get_wordsy_solution_seed(num_words):
                     "solution": serializers.CharField(),
                 },
             ),
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),

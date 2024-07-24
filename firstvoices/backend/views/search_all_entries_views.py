@@ -24,6 +24,7 @@ from backend.search.utils.validators import (
     get_valid_sort,
     get_valid_visibility,
 )
+from backend.views import doc_strings
 from backend.views.base_views import ThrottlingMixin
 from backend.views.exceptions import ElasticSearchConnectionError
 
@@ -43,7 +44,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     "entry": serializers.DictField(),
                 },
             ),
-            403: OpenApiResponse(description="Todo: Not authorized"),
+            403: OpenApiResponse(description=doc_strings.error_403),
         },
         parameters=[
             OpenApiParameter(
