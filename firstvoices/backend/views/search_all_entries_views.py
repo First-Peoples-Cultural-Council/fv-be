@@ -44,7 +44,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     "entry": serializers.DictField(),
                 },
             ),
-            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
+            403: OpenApiResponse(description=doc_strings.error_403),
         },
         parameters=[
             OpenApiParameter(
