@@ -60,7 +60,7 @@ class TestDictionaryCleanupTasks:
         cleanup_dictionary(job.id)
 
         job.refresh_from_db()
-        assert job.status == JobStatus.COMPLETED
+        assert job.status == JobStatus.COMPLETE
         assert job.cleanup_result == {
             "unknown_character_count": {"⚑a": 1, "⚑b": 1, "⚑c": 1},
             "updated_entries": [],
