@@ -5,17 +5,15 @@ from backend.models.jobs import BulkVisibilityJob, DictionaryCleanupJob, JobStat
 from backend.tests.factories import SiteFactory
 
 
-class TestCustomOrderRecalculationResultModel:
+class TestDictionaryCleanupJobModel:
     @pytest.mark.django_db
     def test_representation(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        test_entry = DictionaryCleanupJob.objects.create(
-            site=site, latest_recalculation_result={}, task_id="abc123", is_preview=True
-        )
+        test_job = DictionaryCleanupJob.objects.create(site=site)
 
-        expected_str = f"{site.title} - {test_entry.latest_recalculation_date}"
-        assert str(test_entry) == expected_str
+        expected_str = f"{site.title} - DictionaryCleanup - {test_job.status}"
+        assert str(test_job) == expected_str
 
 
 class TestBulkVisibilityJobModel:

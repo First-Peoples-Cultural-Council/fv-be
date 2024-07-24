@@ -36,7 +36,7 @@ from firstvoices.celery import link_error_handler
     create=extend_schema(
         description="Create and queue a new bulk visibility job.",
         responses={
-            202: BulkVisibilityJobSerializer,
+            201: BulkVisibilityJobSerializer,
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),

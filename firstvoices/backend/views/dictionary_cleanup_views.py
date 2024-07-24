@@ -42,7 +42,7 @@ from firstvoices.celery import link_error_handler
     create=extend_schema(
         description="Create and queue a new dictionary cleanup job.",
         responses={
-            202: DictionaryCleanupJobSerializer,
+            201: DictionaryCleanupJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
