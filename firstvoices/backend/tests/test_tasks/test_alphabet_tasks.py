@@ -1,8 +1,8 @@
 import pytest
 
 from backend.models import Alphabet, DictionaryEntry
-from backend.tasks.alphabet_tasks import (
-    recalculate_custom_order,
+from backend.tasks.dictionary_cleanup_tasks import (
+    cleanup_dictionary,
     recalculate_custom_order_preview,
 )
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
@@ -193,7 +193,7 @@ class TestAlphabetTasks:
 
     @pytest.mark.django_db
     def test_recalculate_empty(self, site, alphabet, caplog):
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
 
         assert result == {
             "unknown_character_count": {},
@@ -206,7 +206,7 @@ class TestAlphabetTasks:
     def test_recalculate_unknown_only(self, site, alphabet, caplog):
         factories.DictionaryEntryFactory.create(site=site, title="abc")
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {"⚑a": 1, "⚑b": 1, "⚑c": 1},
             "updated_entries": [],
@@ -221,7 +221,7 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="b")
         factories.CharacterFactory.create(site=site, title="c")
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -245,7 +245,7 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -273,7 +273,7 @@ class TestAlphabetTasks:
         alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
         alphabet.save()
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {"⚑d": 1},
             "updated_entries": [
@@ -300,7 +300,7 @@ class TestAlphabetTasks:
         entry1 = factories.DictionaryEntryFactory.create(site=site, title="abc")
         entry2 = factories.DictionaryEntryFactory.create(site=site, title="cab")
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [],
@@ -322,7 +322,7 @@ class TestAlphabetTasks:
         factories.CharacterFactory.create(site=site, title="c")
         entry = factories.DictionaryEntryFactory.create(site=site, title="abcx")
 
-        result = recalculate_custom_order(site.slug)
+        result = cleanup_dictionary(site.slug)
         assert result == {
             "unknown_character_count": {"⚑x": 1},
             "updated_entries": [],
@@ -341,7 +341,7 @@ class TestAlphabetTasks:
         entry = factories.DictionaryEntryFactory.create(site=site, title="aab")
         factories.CharacterFactory.create(site=site, title="aa")
 
-        result = recalculate_custom_order(site_slug=site.slug)
+        result = cleanup_dictionary(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -369,7 +369,7 @@ class TestAlphabetTasks:
         entry_last_modified = entry.last_modified
         factories.CharacterFactory.create(site=site, title="c")
 
-        result = recalculate_custom_order(site_slug=site.slug)
+        result = cleanup_dictionary(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [
@@ -402,7 +402,7 @@ class TestAlphabetTasks:
     @pytest.mark.django_db
     def test_recalculate_alphabet_missing(self, site, caplog):
         assert Alphabet.objects.count() == 0
-        result = recalculate_custom_order(site_slug=site.slug)
+        result = cleanup_dictionary(site_slug=site.slug)
         assert result == {
             "unknown_character_count": {},
             "updated_entries": [],

@@ -6,9 +6,9 @@ from django.urls import reverse
 
 from backend.models import DictionaryEntry
 from backend.models.constants import AppRole, Role, Visibility
-from backend.serializers.job_serializers import CustomOrderRecalculationJobSerializer
-from backend.tasks.alphabet_tasks import (
-    recalculate_custom_order,
+from backend.serializers.job_serializers import DictionaryCleanupJobSerializer
+from backend.tasks.dictionary_cleanup_tasks import (
+    cleanup_dictionary,
     recalculate_custom_order_preview,
 )
 from backend.tests import factories
@@ -23,7 +23,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
     @pytest.fixture
     def mock_celery_task_status(self, mocker):
         with patch.object(
-            CustomOrderRecalculationJobSerializer, "get_current_task_status"
+            DictionaryCleanupJobSerializer, "get_current_task_status"
         ) as mock_method:
             yield mock_method
 
@@ -239,9 +239,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
-        factories.CustomOrderRecalculationResultFactory.create(
-            site=site, is_preview=is_preview
-        )
+        factories.DictionaryCleanupFactory.create(site=site, is_preview=is_preview)
 
         response_delete = self.client.delete(
             self.get_detail_endpoint(site.slug) + self.CLEAR
@@ -261,9 +259,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        factories.CustomOrderRecalculationResultFactory.create(
-            site=site, is_preview=is_preview
-        )
+        factories.DictionaryCleanupFactory.create(site=site, is_preview=is_preview)
 
         response_delete = self.client.delete(
             self.get_detail_endpoint(site.slug) + self.CLEAR
@@ -313,7 +309,7 @@ class TestDictionaryCleanupAPI(TestDictionaryCleanupPreviewAPI):
         ]
         alphabet.save()
 
-        recalculate_custom_order(site_slug=site.slug)
+        cleanup_dictionary(site_slug=site.slug)
         mock_celery_task_status.return_value = "SUCCESS"
 
         response = self.client.get(self.get_detail_endpoint(site.slug))

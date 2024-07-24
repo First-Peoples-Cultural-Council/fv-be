@@ -1,13 +1,13 @@
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 
-from backend.models import Alphabet, CustomOrderRecalculationJob, DictionaryEntry
+from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 @shared_task
-def recalculate_custom_order(job_instance_id: str):
+def cleanup_dictionary(job_instance_id: str):
     """
     Calculates and returns the results of a custom order recalculation,
     including the changes in custom order and title and the count of unknown characters.
@@ -17,7 +17,7 @@ def recalculate_custom_order(job_instance_id: str):
     logger = get_task_logger(__name__)
     logger.info(ASYNC_TASK_START_TEMPLATE, f"job_instance_id: {job_instance_id}")
 
-    job = CustomOrderRecalculationJob.objects.get(id=job_instance_id)
+    job = DictionaryCleanupJob.objects.get(id=job_instance_id)
     job.task_id = current_task.request.id
     job.status = JobStatus.STARTED
     job.save()
@@ -65,7 +65,7 @@ def recalculate_custom_order(job_instance_id: str):
     results["updated_entries"] = updated_entries
 
     # Save the result to the database
-    job.recalculation_result = results
+    job.cleanup_result = results
     job.status = JobStatus.COMPLETE
     job.save()
 

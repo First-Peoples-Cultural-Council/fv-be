@@ -5,11 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models.constants import Visibility
-from backend.models.jobs import (
-    BulkVisibilityJob,
-    CustomOrderRecalculationJob,
-    JobStatus,
-)
+from backend.models.jobs import BulkVisibilityJob, DictionaryCleanupJob, JobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
@@ -35,23 +31,23 @@ class BaseJobSerializer(BaseSiteContentSerializer):
         )
 
 
-class CustomOrderRecalculationJobSerializer(
+class DictionaryCleanupJobSerializer(
     CreateSiteContentSerializerMixin, BaseJobSerializer
 ):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:dictionary-cleanup-detail"
     )
     is_preview = serializers.BooleanField(read_only=True)
-    recalculation_result = serializers.SerializerMethodField(read_only=True)
+    cleanup_result = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     @extend_schema_field(OpenApiTypes.STR)
-    def get_recalculation_result(obj):
-        if hasattr(obj, "recalculation_result") and obj.recalculation_result:
-            unknown_character_count = obj.recalculation_result.get(
+    def get_cleanup_result(obj):
+        if hasattr(obj, "cleanup_result") and obj.cleanup_result:
+            unknown_character_count = obj.cleanup_result.get(
                 "unknown_character_count", 0
             )
-            updated_entries = obj.recalculation_result["updated_entries"]
+            updated_entries = obj.cleanup_result["updated_entries"]
         else:
             unknown_character_count = 0
             updated_entries = []
@@ -78,26 +74,24 @@ class CustomOrderRecalculationJobSerializer(
         return ordered_result
 
     class Meta:
-        model = CustomOrderRecalculationJob
-        fields = BaseJobSerializer.Meta.fields + ("is_preview", "recalculation_result")
+        model = DictionaryCleanupJob
+        fields = BaseJobSerializer.Meta.fields + ("is_preview", "cleanup_result")
 
 
-class CustomOrderRecalculationPreviewJobSerializer(
-    CustomOrderRecalculationJobSerializer
-):
+class DictionaryCleanupPreviewJobSerializer(DictionaryCleanupJobSerializer):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:dictionary-cleanup-preview-detail"
     )
-    recalculation_preview_result = serializers.JSONField(
+    cleanup_preview_result = serializers.JSONField(
         read_only=True,
-        source="recalculation_result",
+        source="cleanup_result",
     )
 
     class Meta:
-        model = CustomOrderRecalculationJob
+        model = DictionaryCleanupJob
         fields = BaseJobSerializer.Meta.fields + (
             "is_preview",
-            "recalculation_preview_result",
+            "cleanup_preview_result",
         )
 
 

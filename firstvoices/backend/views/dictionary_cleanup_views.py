@@ -5,12 +5,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.jobs import CustomOrderRecalculationJob, JobStatus
+from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.serializers.job_serializers import (
-    CustomOrderRecalculationJobSerializer,
-    CustomOrderRecalculationPreviewJobSerializer,
+    DictionaryCleanupJobSerializer,
+    DictionaryCleanupPreviewJobSerializer,
 )
-from backend.tasks.alphabet_tasks import recalculate_custom_order
+from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -19,18 +19,18 @@ from firstvoices.celery import link_error_handler
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of all custom order recalculation results for the specified site.",
+        description="A list of all dictionary cleanup results for the specified site.",
         responses={
-            200: CustomOrderRecalculationJobSerializer,
+            200: DictionaryCleanupJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
-        description="Details about a specific custom order recalculation result.",
+        description="Details about a specific dictionary cleanup result.",
         responses={
-            200: CustomOrderRecalculationJobSerializer,
+            200: DictionaryCleanupJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
@@ -40,16 +40,16 @@ from firstvoices.celery import link_error_handler
         ],
     ),
     create=extend_schema(
-        description="Create and queue a new custom order recalculation job.",
+        description="Create and queue a new dictionary cleanup job.",
         responses={
-            202: CustomOrderRecalculationJobSerializer,
+            202: DictionaryCleanupJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     clear=extend_schema(
-        description="Deletes all finished custom order recalculation results for the specified site.",
+        description="Deletes all finished dictionary cleanup results for the specified site.",
         responses={
             204: OpenApiResponse(description=doc_strings.success_204_deleted),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -58,13 +58,13 @@ from firstvoices.celery import link_error_handler
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculateJobViewSet(
+class DictionaryCleanupJobViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ModelViewSet,
 ):
     http_method_names = ["get", "post", "delete"]
-    serializer_class = CustomOrderRecalculationJobSerializer
+    serializer_class = DictionaryCleanupJobSerializer
     permission_type_map = {
         **FVPermissionViewSetMixin.permission_type_map,
         "clear": "delete",
@@ -76,13 +76,10 @@ class CustomOrderRecalculateJobViewSet(
     #         raise PermissionDenied
     #     super().initial(*args, **kwargs)
 
-    # def get_view_name(self):
-    #     return "Custom Order Recalculation Results"
-
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            CustomOrderRecalculationJob.objects.filter(site=site, is_preview=False)
+            DictionaryCleanupJob.objects.filter(site=site, is_preview=False)
             .select_related("site", "created_by", "last_modified_by")
             .order_by("created")
         )
@@ -90,9 +87,9 @@ class CustomOrderRecalculateJobViewSet(
     def perform_create(self, serializer):
         instance = serializer.save(is_preview=False)
 
-        # Queue the recalculation task after model creation
+        # Queue the cleanup task after model creation
         transaction.on_commit(
-            lambda: recalculate_custom_order.apply_async(
+            lambda: cleanup_dictionary.apply_async(
                 (instance.id,), link_error=link_error_handler.s()
             )
         )
@@ -101,7 +98,7 @@ class CustomOrderRecalculateJobViewSet(
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
 
-        qs = CustomOrderRecalculationJob.objects.filter(
+        qs = DictionaryCleanupJob.objects.filter(
             site=site,
             is_preview=False,
             status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
@@ -113,18 +110,18 @@ class CustomOrderRecalculateJobViewSet(
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of all custom order recalculation preview results for the specified site.",
+        description="A list of all dictionary cleanup preview results for the specified site.",
         responses={
-            200: CustomOrderRecalculationPreviewJobSerializer,
+            200: DictionaryCleanupPreviewJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
-        description="Details about a specific custom order recalculation preview result.",
+        description="Details about a specific dictionary cleanup preview result.",
         responses={
-            200: CustomOrderRecalculationPreviewJobSerializer,
+            200: DictionaryCleanupPreviewJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
@@ -134,16 +131,16 @@ class CustomOrderRecalculateJobViewSet(
         ],
     ),
     create=extend_schema(
-        description="Create and queue a new custom order recalculation preview job.",
+        description="Create and queue a new dictionary cleanup preview job.",
         responses={
-            202: CustomOrderRecalculationPreviewJobSerializer,
+            202: DictionaryCleanupPreviewJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     clear=extend_schema(
-        description="Deletes all finished custom order recalculation preview results for the specified site.",
+        description="Deletes all finished dictionary cleanup preview results for the specified site.",
         responses={
             204: OpenApiResponse(description=doc_strings.success_204_deleted),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -152,15 +149,15 @@ class CustomOrderRecalculateJobViewSet(
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculatePreviewViewSet(
-    CustomOrderRecalculateJobViewSet,
+class DictionaryCleanupPreviewViewSet(
+    DictionaryCleanupJobViewSet,
 ):
-    serializer_class = CustomOrderRecalculationPreviewJobSerializer
+    serializer_class = DictionaryCleanupPreviewJobSerializer
 
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            CustomOrderRecalculationJob.objects.filter(site=site, is_preview=True)
+            DictionaryCleanupJob.objects.filter(site=site, is_preview=True)
             .select_related("site", "created_by", "last_modified_by")
             .order_by("created")
         )
@@ -169,9 +166,9 @@ class CustomOrderRecalculatePreviewViewSet(
         # Create the model instance with the preview flag set
         instance = serializer.save(is_preview=True)
 
-        # Queue the recalculation task after model creation
+        # Queue the cleanup task after model creation
         transaction.on_commit(
-            lambda: recalculate_custom_order.apply_async(
+            lambda: cleanup_dictionary.apply_async(
                 (instance.id,), link_error=link_error_handler.s()
             )
         )
@@ -180,7 +177,7 @@ class CustomOrderRecalculatePreviewViewSet(
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
 
-        qs = CustomOrderRecalculationJob.objects.filter(
+        qs = DictionaryCleanupJob.objects.filter(
             site=site,
             is_preview=True,
             status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],

@@ -1,18 +1,18 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from backend.models import BulkVisibilityJob, CustomOrderRecalculationJob
+from backend.models import BulkVisibilityJob, DictionaryCleanupJob
 from backend.tests.factories.access import SiteFactory, UserFactory
 
 
-class CustomOrderRecalculationResultFactory(DjangoModelFactory):
+class DictionaryCleanupFactory(DjangoModelFactory):
     class Meta:
-        model = CustomOrderRecalculationJob
+        model = DictionaryCleanupJob
 
     site = factory.SubFactory(SiteFactory)
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
-    latest_recalculation_result = {"test": "test"}
+    cleanup_result = {"test": "test"}
 
 
 class BulkVisibilityJobFactory(DjangoModelFactory):

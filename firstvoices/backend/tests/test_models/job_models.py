@@ -1,11 +1,7 @@
 import pytest
 
 from backend.models.constants import Visibility
-from backend.models.jobs import (
-    BulkVisibilityJob,
-    CustomOrderRecalculationJob,
-    JobStatus,
-)
+from backend.models.jobs import BulkVisibilityJob, DictionaryCleanupJob, JobStatus
 from backend.tests.factories import SiteFactory
 
 
@@ -14,7 +10,7 @@ class TestCustomOrderRecalculationResultModel:
     def test_representation(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        test_entry = CustomOrderRecalculationJob.objects.create(
+        test_entry = DictionaryCleanupJob.objects.create(
             site=site, latest_recalculation_result={}, task_id="abc123", is_preview=True
         )
 
