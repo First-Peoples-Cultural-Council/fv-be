@@ -7,8 +7,8 @@ from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.contact_us_views import ContactUsView
 from backend.views.custom_order_recalculate_views import (
+    CustomOrderRecalculateJobViewSet,
     CustomOrderRecalculatePreviewViewSet,
-    CustomOrderRecalculateViewSet,
 )
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
@@ -62,7 +62,7 @@ sites_router.register(
 )
 sites_router.register(
     r"dictionary-cleanup",
-    CustomOrderRecalculateViewSet,
+    CustomOrderRecalculateJobViewSet,
     basename="dictionary-cleanup",
 )
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")

@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from backend.models import DictionaryEntry
 from backend.models.constants import AppRole, Role, Visibility
-from backend.serializers.job_serializers import CustomOrderRecalculationResultSerializer
+from backend.serializers.job_serializers import CustomOrderRecalculationJobSerializer
 from backend.tasks.alphabet_tasks import (
     recalculate_custom_order,
     recalculate_custom_order_preview,
@@ -23,7 +23,7 @@ class TestDictionaryCleanupPreviewAPI(BaseApiTest):
     @pytest.fixture
     def mock_celery_task_status(self, mocker):
         with patch.object(
-            CustomOrderRecalculationResultSerializer, "get_current_task_status"
+            CustomOrderRecalculationJobSerializer, "get_current_task_status"
         ) as mock_method:
             yield mock_method
 

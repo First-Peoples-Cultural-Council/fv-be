@@ -1,47 +1,46 @@
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 
-from backend.models import (
-    Alphabet,
-    CustomOrderRecalculationResult,
-    DictionaryEntry,
-    Site,
-)
+from backend.models import Alphabet, CustomOrderRecalculationJob, DictionaryEntry
+from backend.models.jobs import JobStatus
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 @shared_task
-def recalculate_custom_order_preview(site_slug: str):
+def recalculate_custom_order(job_instance_id: str):
     """
-    Generates a preview of the changes that will be made to the custom order
-    and title of entries in a site's dictionary.
+    Calculates and returns the results of a custom order recalculation,
+    including the changes in custom order and title and the count of unknown characters.
+    Jobs marked as preview will not save the changes to the database.
     """
-    logger = get_task_logger(__name__)
-    logger.info(ASYNC_TASK_START_TEMPLATE, f"site_slug: {site_slug}")
 
-    site = Site.objects.get(slug=site_slug)
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"job_instance_id: {job_instance_id}")
+
+    job = CustomOrderRecalculationJob.objects.get(id=job_instance_id)
+    job.task_id = current_task.request.id
+    job.status = JobStatus.STARTED
+    job.save()
+
+    site = job.site
     alphabet = Alphabet.objects.get_or_create(site=site)[0]
-    preview = {}
-    task_id = current_task.request.id
+    results = {}
 
     # First, get the changes in custom order and title for every entry, and store entries with unknown characters
     updated_entries = []
     unknown_character_count = {}
 
-    # Saving an empty row to depict that the task has started
-    CustomOrderRecalculationResult.objects.create(
-        site=site,
-        latest_recalculation_result=preview,
-        task_id=task_id,
-        is_preview=True,
-    )
-
+    # Return the results of the recalculation i.e. the changes in custom order and title for every entry
     for entry in DictionaryEntry.objects.filter(site=site):
         original_title = entry.title
         original_custom_order = entry.custom_order
 
         cleaned_title = alphabet.clean_confusables(entry.title)
         new_order = alphabet.get_custom_order(cleaned_title)
+
+        # If job is not preview, save the entry to recalculate custom order and clean title
+        if not job.is_preview:
+            entry.save(set_modified_date=False)
 
         append_updated_entry(
             updated_entries,
@@ -62,96 +61,15 @@ def recalculate_custom_order_preview(site_slug: str):
                         unknown_character_count[custom_order] = 0
                     unknown_character_count[custom_order] += 1
 
-    preview["unknown_character_count"] = unknown_character_count
-    preview["updated_entries"] = updated_entries
-
-    # Delete any previous preview results
-    CustomOrderRecalculationResult.objects.filter(site=site, is_preview=True).delete()
-
-    # Save the result to the database
-    CustomOrderRecalculationResult.objects.create(
-        site=site,
-        latest_recalculation_result=preview,
-        task_id=task_id,
-        is_preview=True,
-    )
-
-    logger.info(ASYNC_TASK_END_TEMPLATE)
-
-    return preview
-
-
-@shared_task
-def recalculate_custom_order(site_slug: str):
-    """
-    Returns the same format as recalculate_custom_order_preview, but actually updates the custom order and
-    title of entries in a site's dictionary by saving the entries.
-    """
-    logger = get_task_logger(__name__)
-    logger.info(ASYNC_TASK_START_TEMPLATE, f"site_slug: {site_slug}")
-
-    site = Site.objects.get(slug=site_slug)
-    alphabet = Alphabet.objects.get_or_create(site=site)[0]
-    results = {}
-    task_id = current_task.request.id
-
-    updated_entries = []
-    unknown_character_count = {}
-
-    # Saving an empty row to depict that the task has started
-    CustomOrderRecalculationResult.objects.create(
-        site=site,
-        latest_recalculation_result=results,
-        task_id=task_id,
-        is_preview=False,
-    )
-
-    # Return the results of the recalculation i.e. the changes in custom order and title for every entry
-    for entry in DictionaryEntry.objects.filter(site=site):
-        original_title = entry.title
-        original_custom_order = entry.custom_order
-
-        cleaned_title = alphabet.clean_confusables(entry.title)
-        new_order = alphabet.get_custom_order(cleaned_title)
-
-        # Save the entry to recalculate custom order and clean title
-        entry.save(set_modified_date=False)
-
-        append_updated_entry(
-            updated_entries,
-            original_title,
-            original_custom_order,
-            cleaned_title,
-            new_order,
-        )
-
-        # Count unknown characters remaining in each entry, first split by character, then apply custom order
-        if "⚑" in new_order:
-            chars = alphabet.get_character_list(cleaned_title)
-            for char in chars:
-                custom_order = alphabet.get_custom_order(char)
-                if "⚑" in custom_order:
-                    if custom_order not in unknown_character_count:
-                        unknown_character_count[custom_order] = 0
-                    unknown_character_count[custom_order] += 1
-
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries
 
-    # Delete any previous results
-    CustomOrderRecalculationResult.objects.filter(site=site, is_preview=False).delete()
-
     # Save the result to the database
-    CustomOrderRecalculationResult.objects.create(
-        site=site,
-        latest_recalculation_result=results,
-        task_id=task_id,
-        is_preview=False,
-    )
+    job.recalculation_result = results
+    job.status = JobStatus.COMPLETE
+    job.save()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
-
-    return results
 
 
 def append_updated_entry(

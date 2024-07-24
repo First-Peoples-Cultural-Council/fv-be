@@ -1,13 +1,13 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from backend.models import BulkVisibilityJob, CustomOrderRecalculationResult
+from backend.models import BulkVisibilityJob, CustomOrderRecalculationJob
 from backend.tests.factories.access import SiteFactory, UserFactory
 
 
 class CustomOrderRecalculationResultFactory(DjangoModelFactory):
     class Meta:
-        model = CustomOrderRecalculationResult
+        model = CustomOrderRecalculationJob
 
     site = factory.SubFactory(SiteFactory)
     created_by = factory.SubFactory(UserFactory)

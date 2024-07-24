@@ -1,56 +1,55 @@
-from celery.result import AsyncResult
-from django.core.exceptions import PermissionDenied
-from django.urls import reverse
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
-from backend.models import CustomOrderRecalculationResult
-from backend.permissions.predicates import is_superadmin
+from backend.models.jobs import CustomOrderRecalculationJob, JobStatus
 from backend.serializers.job_serializers import (
-    CustomOrderRecalculationPreviewResultSerializer,
-    CustomOrderRecalculationResultSerializer,
+    CustomOrderRecalculationJobSerializer,
+    CustomOrderRecalculationPreviewJobSerializer,
 )
-from backend.tasks.alphabet_tasks import (
-    recalculate_custom_order,
-    recalculate_custom_order_preview,
-)
+from backend.tasks.alphabet_tasks import recalculate_custom_order
 from backend.views import doc_strings
-from backend.views.api_doc_variables import site_slug_parameter
-from backend.views.base_views import (
-    FVPermissionViewSetMixin,
-    ListViewOnlyModelViewSet,
-    SiteContentViewSetMixin,
-)
-from backend.views.exceptions import CeleryError
+from backend.views.api_doc_variables import id_parameter, site_slug_parameter
+from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from firstvoices.celery import link_error_handler
 
 
 @extend_schema_view(
     list=extend_schema(
-        description="Returns the most recent custom order recalculation results for the specified site.",
+        description="A list of all custom order recalculation results for the specified site.",
         responses={
-            200: CustomOrderRecalculationResultSerializer,
+            200: CustomOrderRecalculationJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
-    create=extend_schema(
-        description="Queues a custom order recalculation task for the specified site.",
+    retrieve=extend_schema(
+        description="Details about a specific custom order recalculation result.",
         responses={
-            202: OpenApiResponse(description="Recalculation has been queued."),
-            303: OpenApiResponse(
-                description="Recalculation is already running. Refer to the redirect-url(location)"
-                " in the response headers to get the current status."
-            ),
+            200: CustomOrderRecalculationJobSerializer,
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    create=extend_schema(
+        description="Create and queue a new custom order recalculation job.",
+        responses={
+            202: CustomOrderRecalculationJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     clear=extend_schema(
-        description="Deletes all custom order recalculation results for the specified site.",
+        description="Deletes all finished custom order recalculation results for the specified site.",
         responses={
             204: OpenApiResponse(description=doc_strings.success_204_deleted),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -59,66 +58,54 @@ from backend.views.exceptions import CeleryError
         parameters=[site_slug_parameter],
     ),
 )
-class CustomOrderRecalculateViewSet(
+class CustomOrderRecalculateJobViewSet(
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
-    ListViewOnlyModelViewSet,
+    ModelViewSet,
 ):
     http_method_names = ["get", "post", "delete"]
-    serializer_class = CustomOrderRecalculationResultSerializer
+    serializer_class = CustomOrderRecalculationJobSerializer
     permission_type_map = {
         **FVPermissionViewSetMixin.permission_type_map,
         "clear": "delete",
     }
 
-    def initial(self, *args, **kwargs):
-        if not is_superadmin(self.request.user, None):
-            raise PermissionDenied
-        super().initial(*args, **kwargs)
+    # TODO: Unsure if this code is needed after refactor
+    # def initial(self, *args, **kwargs):
+    #     if not is_superadmin(self.request.user, None):
+    #         raise PermissionDenied
+    #     super().initial(*args, **kwargs)
 
-    def get_view_name(self):
-        return "Custom Order Recalculation Results"
+    # def get_view_name(self):
+    #     return "Custom Order Recalculation Results"
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return CustomOrderRecalculationResult.objects.filter(
-            site=site, is_preview=False
-        ).order_by("-latest_recalculation_date")
+        return (
+            CustomOrderRecalculationJob.objects.filter(site=site, is_preview=False)
+            .select_related("site", "created_by", "last_modified_by")
+            .order_by("created")
+        )
 
-    def create(self, request, *args, **kwargs):
-        site = self.get_validated_site()
+    def perform_create(self, serializer):
+        instance = serializer.save(is_preview=False)
 
-        # Call the recalculation task
-        try:
-            # Check if preview task for the same site is ongoing
-            previous_tasks = CustomOrderRecalculationResult.objects.filter(
-                site=site, is_preview=False
+        # Queue the recalculation task after model creation
+        transaction.on_commit(
+            lambda: recalculate_custom_order.apply_async(
+                (instance.id,), link_error=link_error_handler.s()
             )
-            running_tasks = 0
-            if len(previous_tasks) > 0:
-                for task in previous_tasks:
-                    status = AsyncResult(task.task_id).status
-                    if status == "PENDING":
-                        running_tasks += 1
-
-            if running_tasks > 0:
-                response = Response(status=303)
-                response["Location"] = reverse(
-                    "api:dictionary-cleanup-list", kwargs=kwargs
-                )
-                return response
-
-            recalculate_custom_order.apply_async((site.slug,))
-            return Response({"message": "Recalculation has been queued."}, status=202)
-
-        except recalculate_custom_order.OperationalError:
-            raise CeleryError()
+        )
 
     @action(methods=["delete"], detail=False)
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
 
-        qs = CustomOrderRecalculationResult.objects.filter(site=site, is_preview=False)
+        qs = CustomOrderRecalculationJob.objects.filter(
+            site=site,
+            is_preview=False,
+            status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
+        )
         qs.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -126,33 +113,37 @@ class CustomOrderRecalculateViewSet(
 
 @extend_schema_view(
     list=extend_schema(
-        description="Returns the most recent custom order recalculation preview results for the specified site. "
-        "Preview results are not saved to the database.",
+        description="A list of all custom order recalculation preview results for the specified site.",
         responses={
-            200: CustomOrderRecalculationResultSerializer,
-            403: OpenApiResponse(description="Todo: Not authorized for this Site"),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            200: CustomOrderRecalculationPreviewJobSerializer,
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
-    create=extend_schema(
-        description="Queues a custom order recalculation preview task for the specified site. ",
+    retrieve=extend_schema(
+        description="Details about a specific custom order recalculation preview result.",
         responses={
-            202: OpenApiResponse(description="Recalculation preview has been queued."),
-            303: OpenApiResponse(
-                description="Recalculation preview is already running. Refer to the "
-                "redirect-url(location) in the response headers to get the "
-                "current status."
-            ),
-            403: OpenApiResponse(
-                description="Todo: Action not authorized for this User"
-            ),
-            404: OpenApiResponse(description="Todo: Site not found"),
+            200: CustomOrderRecalculationPreviewJobSerializer,
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    create=extend_schema(
+        description="Create and queue a new custom order recalculation preview job.",
+        responses={
+            202: CustomOrderRecalculationPreviewJobSerializer,
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
         parameters=[site_slug_parameter],
     ),
     clear=extend_schema(
-        description="Deletes all custom order recalculation preview results for the specified site.",
+        description="Deletes all finished custom order recalculation preview results for the specified site.",
         responses={
             204: OpenApiResponse(description=doc_strings.success_204_deleted),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -162,70 +153,38 @@ class CustomOrderRecalculateViewSet(
     ),
 )
 class CustomOrderRecalculatePreviewViewSet(
-    SiteContentViewSetMixin,
-    FVPermissionViewSetMixin,
-    ListViewOnlyModelViewSet,
+    CustomOrderRecalculateJobViewSet,
 ):
-    http_method_names = ["get", "post", "delete"]
-    serializer_class = CustomOrderRecalculationPreviewResultSerializer
-    permission_type_map = {
-        **FVPermissionViewSetMixin.permission_type_map,
-        "clear": "delete",
-    }
-
-    def initial(self, *args, **kwargs):
-        if not is_superadmin(self.request.user, None):
-            raise PermissionDenied
-        super().initial(*args, **kwargs)
-
-    def get_view_name(self):
-        return "Custom Order Recalculation Preview Results"
+    serializer_class = CustomOrderRecalculationPreviewJobSerializer
 
     def get_queryset(self):
         site = self.get_validated_site()
-        queryset = CustomOrderRecalculationResult.objects.filter(
-            site=site, is_preview=True
-        ).order_by("-latest_recalculation_date")
+        return (
+            CustomOrderRecalculationJob.objects.filter(site=site, is_preview=True)
+            .select_related("site", "created_by", "last_modified_by")
+            .order_by("created")
+        )
 
-        return queryset
+    def perform_create(self, serializer):
+        # Create the model instance with the preview flag set
+        instance = serializer.save(is_preview=True)
 
-    def create(self, request, *args, **kwargs):
-        site = self.get_validated_site()
-        site_slug = site.slug
-
-        # Call the recalculation preview task
-        try:
-            # Check if preview task for the same site is ongoing
-            previous_tasks = CustomOrderRecalculationResult.objects.filter(
-                site=site, is_preview=True
+        # Queue the recalculation task after model creation
+        transaction.on_commit(
+            lambda: recalculate_custom_order.apply_async(
+                (instance.id,), link_error=link_error_handler.s()
             )
-            running_tasks = 0
-            if len(previous_tasks) > 0:
-                for task in previous_tasks:
-                    status = AsyncResult(task.task_id).status
-                    if status == "PENDING":
-                        running_tasks += 1
-
-            if running_tasks > 0:
-                response = Response(status=303)
-                response["Location"] = reverse(
-                    "api:dictionary-cleanup-preview-list", kwargs=kwargs
-                )
-                return response
-
-            recalculate_custom_order_preview.apply_async((site_slug,))
-            return Response(
-                {"message": "Recalculation preview has been queued."}, status=202
-            )
-
-        except recalculate_custom_order_preview.OperationalError:
-            raise CeleryError()
+        )
 
     @action(methods=["delete"], detail=False)
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
 
-        qs = CustomOrderRecalculationResult.objects.filter(site=site, is_preview=True)
+        qs = CustomOrderRecalculationJob.objects.filter(
+            site=site,
+            is_preview=True,
+            status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
+        )
         qs.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

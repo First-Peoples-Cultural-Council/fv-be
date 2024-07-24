@@ -15,7 +15,7 @@ from .import_jobs import (  # noqa F401
     ImportJobReport,
     ImportJobReportRow,
 )
-from .jobs import BulkVisibilityJob, CustomOrderRecalculationResult  # noqa F401
+from .jobs import BulkVisibilityJob, CustomOrderRecalculationJob  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Image  # noqa F401
 from .mtd import MTDExportFormat  # noqa F401

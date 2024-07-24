@@ -1,6 +1,5 @@
 from collections import OrderedDict
 
-from celery.result import AsyncResult
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -8,7 +7,7 @@ from rest_framework import serializers
 from backend.models.constants import Visibility
 from backend.models.jobs import (
     BulkVisibilityJob,
-    CustomOrderRecalculationResult,
+    CustomOrderRecalculationJob,
     JobStatus,
 )
 from backend.serializers import fields
@@ -36,28 +35,23 @@ class BaseJobSerializer(BaseSiteContentSerializer):
         )
 
 
-class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
-    site = serializers.StringRelatedField()
-    current_task_status = serializers.SerializerMethodField()
-    latest_recalculation_result = serializers.SerializerMethodField()
+class CustomOrderRecalculationJobSerializer(
+    CreateSiteContentSerializerMixin, BaseJobSerializer
+):
+    url = SiteHyperlinkedIdentityField(
+        read_only=True, view_name="api:dictionary-cleanup-detail"
+    )
+    is_preview = serializers.BooleanField(read_only=True)
+    recalculation_result = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     @extend_schema_field(OpenApiTypes.STR)
-    def get_current_task_status(obj):
-        async_result = AsyncResult(obj.task_id)
-        return async_result.status
-
-    @staticmethod
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_latest_recalculation_result(obj):
-        if (
-            hasattr(obj, "latest_recalculation_result")
-            and obj.latest_recalculation_result
-        ):
-            unknown_character_count = obj.latest_recalculation_result.get(
+    def get_recalculation_result(obj):
+        if hasattr(obj, "recalculation_result") and obj.recalculation_result:
+            unknown_character_count = obj.recalculation_result.get(
                 "unknown_character_count", 0
             )
-            updated_entries = obj.latest_recalculation_result["updated_entries"]
+            updated_entries = obj.recalculation_result["updated_entries"]
         else:
             unknown_character_count = 0
             updated_entries = []
@@ -84,38 +78,27 @@ class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
         return ordered_result
 
     class Meta:
-        model = CustomOrderRecalculationResult
-        fields = [
-            "site",
-            "current_task_status",
-            "latest_recalculation_date",
-            "latest_recalculation_result",
-        ]
+        model = CustomOrderRecalculationJob
+        fields = BaseJobSerializer.Meta.fields + ("is_preview", "recalculation_result")
 
 
-class CustomOrderRecalculationPreviewResultSerializer(
-    CustomOrderRecalculationResultSerializer
+class CustomOrderRecalculationPreviewJobSerializer(
+    CustomOrderRecalculationJobSerializer
 ):
-    current_preview_task_status = serializers.SerializerMethodField()
-    latest_recalculation_preview_result = serializers.JSONField(
-        source="latest_recalculation_result"
+    url = SiteHyperlinkedIdentityField(
+        read_only=True, view_name="api:dictionary-cleanup-preview-detail"
     )
-    latest_recalculation_preview_date = serializers.DateTimeField(
-        source="latest_recalculation_date"
+    recalculation_preview_result = serializers.JSONField(
+        read_only=True,
+        source="recalculation_result",
     )
-
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_current_preview_task_status(self, obj):
-        return self.get_current_task_status(obj)
 
     class Meta:
-        model = CustomOrderRecalculationResult
-        fields = [
-            "site",
-            "current_preview_task_status",
-            "latest_recalculation_preview_date",
-            "latest_recalculation_preview_result",
-        ]
+        model = CustomOrderRecalculationJob
+        fields = BaseJobSerializer.Meta.fields + (
+            "is_preview",
+            "recalculation_preview_result",
+        )
 
 
 class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
