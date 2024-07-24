@@ -72,15 +72,13 @@ def cleanup_dictionary(job_instance_id: str):
         )
 
         # Count unknown characters remaining in each entry, first split by character, then apply custom order
-        # If a "⚑" is in the custom order, it means that the character is unknown
-        if "⚑" in new_order:
-            chars = alphabet.get_character_list(cleaned_title)
-            for char in chars:
-                custom_order = alphabet.get_custom_order(char)
-                if "⚑" in custom_order:
-                    if custom_order not in unknown_character_count:
-                        unknown_character_count[custom_order] = 0
-                    unknown_character_count[custom_order] += 1
+        chars = alphabet.get_character_list(cleaned_title)
+        for char in chars:
+            custom_order = alphabet.get_custom_order(char)
+            if "⚑" in custom_order:
+                unknown_character_count[custom_order] = (
+                    unknown_character_count.get(custom_order, 0) + 1
+                )
 
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries

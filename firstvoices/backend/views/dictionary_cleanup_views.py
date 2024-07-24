@@ -70,12 +70,6 @@ class DictionaryCleanupJobViewSet(
         "clear": "delete",
     }
 
-    # TODO: Unsure if this code is needed after refactor
-    # def initial(self, *args, **kwargs):
-    #     if not is_superadmin(self.request.user, None):
-    #         raise PermissionDenied
-    #     super().initial(*args, **kwargs)
-
     def get_queryset(self):
         site = self.get_validated_site()
         return (
