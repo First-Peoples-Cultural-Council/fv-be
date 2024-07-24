@@ -189,7 +189,7 @@ def check_sites_for_mtd_sync(self):
                     link_error=link_error_handler.s(),
                 )
 
-            logger.info(ASYNC_TASK_END_TEMPLATE)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
 
     except Exception as e:
         self.state = "FAILURE"
