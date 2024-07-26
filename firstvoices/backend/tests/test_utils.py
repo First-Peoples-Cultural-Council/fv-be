@@ -147,5 +147,7 @@ class TestCleanCsv:
         assert "translation_2" in accepted_headers
         assert "note_2" in accepted_headers
 
+        assert "translation_6" in invalid_headers
         assert "translation_8" in invalid_headers
+        assert "note_6" in invalid_headers
         assert "note_99" in invalid_headers

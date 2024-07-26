@@ -60,10 +60,56 @@ class TestDryRunImport:
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
+
+        expected_valid_columns = [
+            "title",
+            "type",
+            "visibility",
+            "include_in_games",
+            "include_on_kids_site",
+            "translation",
+            "translation_2",
+            "translation_3",
+            "translation_4",
+            "translation_5",
+            "acknowledgement",
+            "acknowledgement_2",
+            "acknowledgement_3",
+            "acknowledgement_4",
+            "acknowledgement_5",
+            "note",
+            "note_2",
+            "note_3",
+            "note_4",
+            "note_5",
+            "alt_spelling",
+            "alt_spelling_2",
+            "alt_spelling_3",
+            "alt_spelling_4",
+            "alt_spelling_5",
+            "category",
+            "category_2",
+            "category_3",
+            "category_4",
+            "category_5",
+            "part_of_speech",
+            "pronunciation",
+            "pronunciation_2",
+            "pronunciation_3",
+            "pronunciation_4",
+            "pronunciation_5",
+        ]
+
+        for column in expected_valid_columns:
+            assert column in accepted_columns
+
+        assert len(ignored_columns) == 0
 
     def test_invalid_rows(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
