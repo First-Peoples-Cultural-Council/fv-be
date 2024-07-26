@@ -115,7 +115,7 @@ class CategoryWidget(ManyToManyWidget):
 
         for column, input_value in row.items():
             if re.fullmatch(category_column_name_pattern, column):
-                input_categories[column] = input_value
+                input_categories[column] = input_value.strip()
 
         # If no categories provided, return
         if len(input_categories) == 0:
@@ -132,3 +132,12 @@ class CategoryWidget(ManyToManyWidget):
                 valid_categories.append(category_lookup[0])
 
         return valid_categories
+
+
+class CleanForeignKeyWidget(ForeignKeyWidget):
+    def __init__(self, model, field, *args, **kwargs):
+        super().__init__(model=model, field=field, *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        value = value.strip()
+        return super().clean(value, row, **kwargs)

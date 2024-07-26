@@ -81,11 +81,13 @@ class TestDryRunImport:
         validation_report = import_job_instance.validation_report
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
-            validation_report.rows.values_list("row_number", flat=True)
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
         )
 
-        assert len(error_rows) == 4
-        assert error_rows_numbers == [1, 3, 4, 5]
+        assert len(error_rows) == 5
+        assert error_rows_numbers == [2, 3, 4, 5, 6]
 
     def test_invalid_categories(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
