@@ -77,10 +77,11 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     characters_list = site.character_set.all().order_by("sort_order")
     dictionary_entries_queryset = (
         DictionaryEntry.objects.filter(
-            site=site, visibility=constants.Visibility.PUBLIC
+            site=site, visibility=constants.Visibility.PUBLIC, translations__len__gt=0
         )
+        .select_related("part_of_speech")
         .prefetch_related(
-            "part_of_speech",
+            "site__alphabet_set",
             Prefetch(
                 "categories",
                 queryset=Category.objects.all().select_related("parent"),

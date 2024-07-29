@@ -39,25 +39,25 @@ class TestMTDIndexAndScoreTask:
         self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
-    def test_validation_error(self, site, caplog):
-        """If a validation error happens with a DictionaryEntry
-           The entry should be skipped, but logged as a warning.
+    def test_missing_translation(self, site, caplog):
+        """The entry should be skipped.
 
         Args:
             site (Union[str, Site])): site or site slug
         """
-        entry_one = factories.DictionaryEntryFactory.create(
+        factories.DictionaryEntryFactory.create(
             site=site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
             translations=[],
         )
-        build_index_and_calculate_scores(site.slug)
-        # Logs entry id
-        assert str(entry_one.id) in caplog.text
-        # Logs the type of error, in this case, Definition (str, required) is None
-        assert "type=string_type, input_value=None" in caplog.text
+        result = build_index_and_calculate_scores(site.slug)
+
+        assert result["config"]["L1"] == site.title
+        assert len(result["data"]) == 0
+        assert len(result["l1_index"]) == 0
+        assert len(result["l2_index"]) == 0
 
         self.assert_async_task_logs(site, caplog)
 
