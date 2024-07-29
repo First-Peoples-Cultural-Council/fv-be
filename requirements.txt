@@ -50,7 +50,7 @@ MarkupSafe==2.1.5
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
 networkx==2.8.4
-numpy==1.26.4
+numpy==2.0.1
 openpyxl==3.1.5
 packaging==24.0
 panphon==0.20.0
