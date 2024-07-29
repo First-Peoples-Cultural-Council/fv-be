@@ -21,9 +21,9 @@ def import_m2m_text_models(row, prefix, model):
 def get_valid_boolean_for_batch_import(input_val):
     cleaned_input = str(input_val).strip().lower()
 
-    if cleaned_input == "true" or "yes" or "y" or "1":
+    if cleaned_input in ["true", "yes", "y", "1"]:
         return True
-    elif cleaned_input == "false" or "no" or "n" or "0":
+    elif cleaned_input in ["false", "no", "n", "0"]:
         return False
     else:
         return None
