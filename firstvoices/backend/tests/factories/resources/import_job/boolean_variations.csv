@@ -1,0 +1,13 @@
+﻿title,type,include_in_games
+Word 1,word,TRUE
+Phrase 1,phrase,True
+Word 2,word,TrUE
+Phrase 2,phrase,Yes
+Word 3,word,Y
+Phrase 3,phrase,1
+Word 4,word,FALSE
+Phrase 4,phrase,False
+Word 5,word,FalSE
+Phrase 5,phrase,No
+Word 6,word,N
+Phrase 6,phrase,0

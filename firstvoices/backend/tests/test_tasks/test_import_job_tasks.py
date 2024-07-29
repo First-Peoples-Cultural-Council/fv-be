@@ -200,3 +200,22 @@ class TestDryRunImport:
 
         assert "title" in accepted_columns
         assert "type" in accepted_columns
+
+    def test_boolean_variations(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/boolean_variations.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 12
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0

@@ -16,3 +16,14 @@ def import_m2m_text_models(row, prefix, model):
     for text in input_values:
         entry = model(text=text, dictionary_entry_id=row["id"])
         entry.save()
+
+
+def get_valid_boolean_for_batch_import(input_val):
+    cleaned_input = str(input_val).strip().lower()
+
+    if cleaned_input == "true" or "yes" or "y" or "1":
+        return True
+    elif cleaned_input == "false" or "no" or "n" or "0":
+        return False
+    else:
+        return None
