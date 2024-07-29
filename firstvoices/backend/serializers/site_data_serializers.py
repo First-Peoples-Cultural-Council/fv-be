@@ -16,8 +16,8 @@ def dict_entry_type_mtd_conversion(type):
 
 
 class CategoriesDataSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(source="title")
-    parent_category = serializers.CharField(source="parent")
+    category = serializers.CharField(source="title", read_only=True)
+    parent_category = serializers.CharField(source="parent", read_only=True)
 
     class Meta:
         model = Category
@@ -28,14 +28,14 @@ class CategoriesDataSerializer(serializers.ModelSerializer):
 
 
 class MediaDataSerializer(serializers.ModelSerializer):
-    filename = serializers.FileField(source="original.content")
+    filename = serializers.FileField(source="original.content", read_only=True)
 
     class Meta:
         fields = ("filename",)
 
 
 class AudioDataSerializer(MediaDataSerializer):
-    description = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     def get_description(audio):
@@ -49,7 +49,7 @@ class AudioDataSerializer(MediaDataSerializer):
 
 
 class VideoDataSerializer(MediaDataSerializer):
-    description = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     def get_description(video):
@@ -71,16 +71,16 @@ class ImageDataSerializer(MediaDataSerializer):
 
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
-    source = serializers.SerializerMethodField()
-    entryID = serializers.UUIDField(source="id")
-    word = serializers.CharField(source="title")
-    definition = serializers.SerializerMethodField()
-    audio = serializers.SerializerMethodField()
-    img = serializers.SerializerMethodField()
-    theme = serializers.SerializerMethodField()
-    secondary_theme = serializers.SerializerMethodField()
-    optional = serializers.SerializerMethodField()
-    sorting_form = serializers.SerializerMethodField()
+    source = serializers.SerializerMethodField(read_only=True)
+    entryID = serializers.UUIDField(source="id", read_only=True)
+    word = serializers.CharField(source="title", read_only=True)
+    definition = serializers.SerializerMethodField(read_only=True)
+    audio = serializers.SerializerMethodField(read_only=True)
+    img = serializers.SerializerMethodField(read_only=True)
+    theme = serializers.SerializerMethodField(read_only=True)
+    secondary_theme = serializers.SerializerMethodField(read_only=True)
+    optional = serializers.SerializerMethodField(read_only=True)
+    sorting_form = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     def get_source(dictionaryentry):
@@ -104,9 +104,12 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_img(dictionaryentry):
         # NOTE: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
-        return ImageDataSerializer(dictionaryentry.related_images.first()).data[
-            "filename"
-        ]
+        image = dictionaryentry.related_images.first()
+
+        if image is None:
+            return None
+
+        return ImageDataSerializer(image).data["filename"]
 
     @staticmethod
     def get_theme(dictionaryentry):
