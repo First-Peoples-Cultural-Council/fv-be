@@ -59,7 +59,7 @@ class DictionaryEntryResource(
     alternate_spellings = fields.Field(
         column_name="alt_spelling",
         attribute="alternate_spellings",
-        widget=TextListWidget(prefix="alt_spelling"),
+        widget=TextListWidget(prefix="alternate_spelling"),
     )
 
     def __init__(self, site=None):

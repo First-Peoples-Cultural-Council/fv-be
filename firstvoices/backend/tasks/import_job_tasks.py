@@ -25,7 +25,7 @@ VALID_HEADERS = [
     "acknowledgement",
     "part_of_speech",
     "pronunciation",
-    "alt_spelling",
+    "alternate_spelling",
     "visibility",
     "include_on_kids_site",
     "include_in_games",
