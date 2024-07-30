@@ -24,6 +24,6 @@ def generate_media_thumbnails(model_name: str, instance_id: str):
         instance = model_class.objects.get(id=instance_id)
         # again, let the exceptions be logged -- nothing useful we can do here
         instance.generate_resized_images()
-        instance.save(generate_thumbnails=False)
+        instance.save(generate_thumbnails=False, set_modified_date=False)
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
