@@ -27,7 +27,7 @@ class ChoicesWidget(Widget):
 
     def clean(self, value, row=None, *args, **kwargs):
         """Returns the db value given the display value"""
-        value = value.title()
+        value = value.strip().lower().title()
         return self.choice_values.get(value) if value else None
 
     def render(self, value, obj=None):
@@ -135,9 +135,14 @@ class CategoryWidget(ManyToManyWidget):
 
 
 class CleanForeignKeyWidget(ForeignKeyWidget):
-    def __init__(self, model, field, *args, **kwargs):
+    def __init__(self, model, field, title_case=False, *args, **kwargs):
+        self.title_case = title_case
         super().__init__(model=model, field=field, *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        value = value.strip()
+        value = value.strip().lower()
+
+        if self.title_case:
+            value = value.title()
+
         return super().clean(value, row, **kwargs)

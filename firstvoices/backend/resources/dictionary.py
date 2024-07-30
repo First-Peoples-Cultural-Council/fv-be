@@ -28,7 +28,7 @@ class DictionaryEntryResource(
     part_of_speech = fields.Field(
         column_name="part_of_speech",
         attribute="part_of_speech",
-        widget=CleanForeignKeyWidget(PartOfSpeech, "title"),
+        widget=CleanForeignKeyWidget(PartOfSpeech, "title", title_case=True),
     )
     categories = fields.Field(
         column_name="category",
