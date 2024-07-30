@@ -60,10 +60,56 @@ class TestDryRunImport:
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
+
+        expected_valid_columns = [
+            "title",
+            "type",
+            "visibility",
+            "include_in_games",
+            "include_on_kids_site",
+            "translation",
+            "translation_2",
+            "translation_3",
+            "translation_4",
+            "translation_5",
+            "acknowledgement",
+            "acknowledgement_2",
+            "acknowledgement_3",
+            "acknowledgement_4",
+            "acknowledgement_5",
+            "note",
+            "note_2",
+            "note_3",
+            "note_4",
+            "note_5",
+            "alternate_spelling",
+            "alternate_spelling_2",
+            "alternate_spelling_3",
+            "alternate_spelling_4",
+            "alternate_spelling_5",
+            "category",
+            "category_2",
+            "category_3",
+            "category_4",
+            "category_5",
+            "part_of_speech",
+            "pronunciation",
+            "pronunciation_2",
+            "pronunciation_3",
+            "pronunciation_4",
+            "pronunciation_5",
+        ]
+
+        for column in expected_valid_columns:
+            assert column in accepted_columns
+
+        assert len(ignored_columns) == 0
 
     def test_invalid_rows(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
@@ -81,11 +127,13 @@ class TestDryRunImport:
         validation_report = import_job_instance.validation_report
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
-            validation_report.rows.values_list("row_number", flat=True)
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
         )
 
-        assert len(error_rows) == 4
-        assert error_rows_numbers == [1, 3, 4, 5]
+        assert len(error_rows) == 5
+        assert error_rows_numbers == [2, 3, 4, 5, 6]
 
     def test_invalid_categories(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
@@ -152,3 +200,22 @@ class TestDryRunImport:
 
         assert "title" in accepted_columns
         assert "type" in accepted_columns
+
+    def test_boolean_variations(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/boolean_variations.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        execute_dry_run_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 12
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0

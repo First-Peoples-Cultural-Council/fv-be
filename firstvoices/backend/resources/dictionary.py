@@ -1,7 +1,6 @@
 import uuid
 
 from import_export import fields
-from import_export.widgets import ForeignKeyWidget
 
 from backend.models import DictionaryEntry, PartOfSpeech
 from backend.models.dictionary import TypeOfDictionaryEntry
@@ -13,6 +12,7 @@ from backend.resources.base import (
 from backend.resources.utils.import_export_widgets import (
     CategoryWidget,
     ChoicesWidget,
+    CleanForeignKeyWidget,
     TextListWidget,
 )
 
@@ -28,7 +28,7 @@ class DictionaryEntryResource(
     part_of_speech = fields.Field(
         column_name="part_of_speech",
         attribute="part_of_speech",
-        widget=ForeignKeyWidget(PartOfSpeech, "title"),
+        widget=CleanForeignKeyWidget(PartOfSpeech, "title", title_case=True),
     )
     categories = fields.Field(
         column_name="category",
@@ -59,7 +59,7 @@ class DictionaryEntryResource(
     alternate_spellings = fields.Field(
         column_name="alt_spelling",
         attribute="alternate_spellings",
-        widget=TextListWidget(prefix="alt_spelling"),
+        widget=TextListWidget(prefix="alternate_spelling"),
     )
 
     def __init__(self, site=None):

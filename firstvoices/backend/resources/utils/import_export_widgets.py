@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
 from backend.models import Category
-from backend.search.utils.validators import get_valid_boolean
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -27,7 +26,7 @@ class ChoicesWidget(Widget):
 
     def clean(self, value, row=None, *args, **kwargs):
         """Returns the db value given the display value"""
-        value = value.title()
+        value = value.strip().lower().title()
         return self.choice_values.get(value) if value else None
 
     def render(self, value, obj=None):
@@ -80,10 +79,15 @@ class InvertedBooleanFieldWidget(Widget):
     """Import/export widget to return expected boolean value for audience related fields."""
 
     def clean(self, value, row=None, **kwargs):
-        curr_value = get_valid_boolean(value)
-        if curr_value is None:
+        cleaned_input = str(value).strip().lower()
+
+        # Returning negative of input value
+        if cleaned_input in ["true", "yes", "y", "1"]:
+            return False
+        elif cleaned_input in ["false", "no", "n", "0"]:
+            return True
+        else:
             raise ValidationError("Invalid value. Expected 'true' or 'false'.")
-        return str(not curr_value)
 
 
 class TextListWidget(Widget):
@@ -115,7 +119,7 @@ class CategoryWidget(ManyToManyWidget):
 
         for column, input_value in row.items():
             if re.fullmatch(category_column_name_pattern, column):
-                input_categories[column] = input_value
+                input_categories[column] = input_value.strip()
 
         # If no categories provided, return
         if len(input_categories) == 0:
@@ -132,3 +136,17 @@ class CategoryWidget(ManyToManyWidget):
                 valid_categories.append(category_lookup[0])
 
         return valid_categories
+
+
+class CleanForeignKeyWidget(ForeignKeyWidget):
+    def __init__(self, model, field, title_case=False, *args, **kwargs):
+        self.title_case = title_case
+        super().__init__(model=model, field=field, *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        value = value.strip().lower()
+
+        if self.title_case:
+            value = value.title()
+
+        return super().clean(value, row, **kwargs)

@@ -25,7 +25,7 @@ VALID_HEADERS = [
     "acknowledgement",
     "part_of_speech",
     "pronunciation",
-    "alt_spelling",
+    "alternate_spelling",
     "visibility",
     "include_on_kids_site",
     "include_in_games",
@@ -77,10 +77,10 @@ def clean_csv(data):
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
-        header = header.strip().lower()
-        if header in VALID_HEADERS:
+        cleaned_header = header.strip().lower()
+        if cleaned_header in VALID_HEADERS:
             accepted_headers.append(header)
-        elif is_valid_header_variation(header, all_headers):
+        elif is_valid_header_variation(cleaned_header, all_headers):
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)

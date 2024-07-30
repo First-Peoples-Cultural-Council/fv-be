@@ -1,3 +1,3 @@
-TITLE,TYPE,ACKNOWLEDGEMENT,TITLE,TYPE
-abc,word,def,not_abc,not_word
-xyz,phrase,def,not_xyz,not_phrase
+TITLE,TYPE,ACKNOWLEDGEMENT,title,TYPE,type
+abc,word,def,not_abc,not_word,different_case
+xyz,phrase,def,not_xyz,not_phrase,different_case
