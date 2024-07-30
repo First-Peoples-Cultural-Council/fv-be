@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
 from backend.models import Category
-from backend.resources.utils.helpers import get_valid_boolean_for_batch_import
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -80,10 +79,15 @@ class InvertedBooleanFieldWidget(Widget):
     """Import/export widget to return expected boolean value for audience related fields."""
 
     def clean(self, value, row=None, **kwargs):
-        curr_value = get_valid_boolean_for_batch_import(value)
-        if curr_value is None:
+        cleaned_input = str(value).strip().lower()
+
+        # Returning negative of input value
+        if cleaned_input in ["true", "yes", "y", "1"]:
+            return False
+        elif cleaned_input in ["false", "no", "n", "0"]:
+            return True
+        else:
             raise ValidationError("Invalid value. Expected 'true' or 'false'.")
-        return str(not curr_value)
 
 
 class TextListWidget(Widget):
