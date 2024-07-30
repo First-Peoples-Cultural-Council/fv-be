@@ -31,4 +31,4 @@ class MTDExportFormat(BaseSiteContentModel):
     is_preview = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.site.title + " - " + str(self.latest_export_date)
+        return self.site.title + " - " + str(self.created)
