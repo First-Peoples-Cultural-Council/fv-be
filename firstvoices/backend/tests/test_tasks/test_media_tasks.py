@@ -44,6 +44,8 @@ class TestThumbnailGeneration:
         media_item = model_factory.create(site=site, original=media_file)
         original_last_modified = media_item.last_modified
 
+        media_item._request_thumbnail_generation()
+
         media_item = model.objects.get(id=media_item.id)
 
         new_last_modified = media_item.last_modified
