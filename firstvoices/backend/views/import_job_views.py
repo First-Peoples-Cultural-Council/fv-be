@@ -1,8 +1,11 @@
+from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import parsers
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import mixins, parsers, status
+from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from backend.models.import_jobs import ImportJob
 from backend.serializers.import_job_serializers import ImportJobSerializer
@@ -83,3 +86,46 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 (str(instance.id),), link_error=link_error_handler.s()
             )
         )
+
+
+class ImportJobConfirmViewSet(
+    SiteContentViewSetMixin,
+    FVPermissionViewSetMixin,
+    mixins.CreateModelMixin,
+    GenericViewSet,
+):
+    http_method_names = ["post"]
+
+    def create(self, validated_data, *args, **kwargs):
+        site = self.get_validated_site()
+        import_job = self.get_validated_import_job(site)
+
+        # Start the task
+
+        # Return the job
+        serializer = ImportJobSerializer(
+            import_job, context={"request": self.request, "site": site}
+        )
+        headers = self.get_success_headers(serializer.data)
+
+        return Response(
+            serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
+        )
+
+    def get_queryset(self):
+        site = self.get_validated_site()
+        import_job = self.get_validated_import_job(site)
+        return ImportJob.objects.filter(site=site, id=import_job.id)
+
+    def get_validated_import_job(self, site):
+        import_job_id = self.kwargs["importjob_pk"]
+        try:
+            import_job = ImportJob.objects.filter(pk=import_job_id)
+        except ValidationError:
+            # story id is not a valid uuid
+            raise Http404
+
+        if len(import_job) == 0:
+            raise Http404
+
+        return import_job.first()
