@@ -2,7 +2,7 @@ import pytest
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
-from backend.tasks.import_job_tasks import execute_dry_run_import
+from backend.tasks.import_job_tasks import batch_import
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
 from backend.tests.utils import get_sample_file
 
@@ -18,7 +18,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}."
@@ -33,7 +33,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -55,7 +55,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -120,7 +120,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -144,7 +144,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -164,7 +164,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -187,7 +187,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -210,7 +210,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)

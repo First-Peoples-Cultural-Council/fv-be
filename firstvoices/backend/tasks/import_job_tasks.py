@@ -10,6 +10,7 @@ from backend.models.import_jobs import (
     RowStatus,
 )
 from backend.resources.dictionary import DictionaryEntryResource
+from backend.search.signals.signal_utils import connect_signals, disconnect_signals
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 VALID_HEADERS = [
@@ -93,7 +94,7 @@ def clean_csv(data):
 
 
 @shared_task
-def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
+def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
     # This function will be modified later with a flag
     # to be used for both dry-run and actual import
 
@@ -101,12 +102,19 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     task_id = current_task.request.id
 
     logger.info(
-        ASYNC_TASK_START_TEMPLATE, f"import_job_instance_id: {import_job_instance_id}"
+        ASYNC_TASK_START_TEMPLATE,
+        f"import_job_instance_id: {import_job_instance_id}, dry-run: {dry_run}.",
     )
 
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
-    import_job_instance.validation_task_id = task_id
-    import_job_instance.validation_status = JobStatus.STARTED
+
+    if dry_run:
+        import_job_instance.validation_task_id = task_id
+        import_job_instance.validation_status = JobStatus.STARTED
+    else:
+        import_job_instance.task_id = task_id
+        import_job_instance.status = JobStatus.STARTED
+
     import_job_instance.save()
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
@@ -114,66 +122,76 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
 
     # Signals to be enabled during actual run, and not dry-run
-    # After a batch has been successfully uploaded, we should run a
-    # re-index for the site
+    # todo: After a batch has been successfully uploaded, we should run a re-index for the site
+    # test if the entries are properly indexed during bulk import, then we can do away with the site re-index
+    # for now. But ideally would still require it.
 
     # Disconnecting search indexing signals
-    # disconnect_signals()
-    # logger.info("Disconnected all search index related signals")
+    if not dry_run:
+        disconnect_signals()
+        logger.info(
+            f"Disconnected all search index related signals for site: {import_job_instance.site}."
+        )
 
     resource = DictionaryEntryResource(site=import_job_instance.site)
 
     try:
-        result = resource.import_data(dataset=cleaned_data, dry_run=True)
+        result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
+
+        # Create an ImportJobReport for the run
+        report = ImportJobReport(
+            site=import_job_instance.site,
+            importjob=import_job_instance,
+            new_rows=result.totals["new"],
+            skipped_rows=result.totals["skip"],
+            error_rows=result.totals["error"] + result.totals["invalid"],
+            accepted_columns=accepted_columns,
+            ignored_columns=ignored_columns,
+        )
+        report.save()
+
+        if dry_run:
+            import_job_instance.validation_status = JobStatus.COMPLETE
+            import_job_instance.validation_report = report
+        else:
+            import_job_instance.status = JobStatus.COMPLETE
+        import_job_instance.save()
+
+        # check for errors
+        if result.has_errors():
+            for row in result.error_rows:
+                error_messages = []
+                for error_row in row.errors:
+                    first_line = str(error_row.error).split("\n")[0]
+                    error_messages.append(first_line)
+                error_row_instance = ImportJobReportRow(
+                    site=import_job_instance.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=error_messages,
+                )
+                error_row_instance.save()
+
+        # Check for invalid rows
+        if len(result.invalid_rows):
+            for row in result.invalid_rows:
+                error_row_instance = ImportJobReportRow(
+                    site=import_job_instance.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=row.error.messages,
+                )
+                error_row_instance.save()
     except Exception as e:
         logger.error(e)
 
-    # Create an ImportJobReport for the run
-    report = ImportJobReport(
-        site=import_job_instance.site,
-        importjob=import_job_instance,
-        new_rows=result.totals["new"],
-        skipped_rows=result.totals["skip"],
-        error_rows=result.totals["error"] + result.totals["invalid"],
-        accepted_columns=accepted_columns,
-        ignored_columns=ignored_columns,
-    )
-    report.save()
-
-    import_job_instance.validation_status = JobStatus.COMPLETE
-    import_job_instance.validation_report = report
-    import_job_instance.save()
-
-    # check for errors
-    if result.has_errors():
-        for row in result.error_rows:
-            error_messages = []
-            for error_row in row.errors:
-                first_line = str(error_row.error).split("\n")[0]
-                error_messages.append(first_line)
-            error_row_instance = ImportJobReportRow(
-                site=import_job_instance.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=error_messages,
-            )
-            error_row_instance.save()
-
-    # Check for invalid rows
-    if len(result.invalid_rows):
-        for row in result.invalid_rows:
-            error_row_instance = ImportJobReportRow(
-                site=import_job_instance.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=row.error.messages,
-            )
-            error_row_instance.save()
-
     # Connecting back search indexing signals
-    # connect_signals()
-    # logger.info("Re-connected all search index related signals")
+    if not dry_run:
+        connect_signals()
+        logger.info(
+            "Re-connected all search index related signals for site: {import_job_instance.site}."
+        )
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
