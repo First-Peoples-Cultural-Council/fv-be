@@ -9,8 +9,8 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.sites import SiteFeature
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.search.signals.signal_utils import connect_signals, disconnect_signals
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 VALID_HEADERS = [
@@ -103,10 +103,43 @@ def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
 
     logger.info(
         ASYNC_TASK_START_TEMPLATE,
-        f"import_job_instance_id: {import_job_instance_id}, dry-run: {dry_run}.",
+        f"import_job_instance_id: {import_job_instance_id}, dry-run: {dry_run}",
     )
 
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
+
+    # If any variation of an import job is currently running for the provided site,
+    # abort the task and provide an error message.
+    site = import_job_instance.site
+    existing_incomplete_import_jobs = ImportJob.objects.filter(
+        site=site, status=JobStatus.STARTED
+    )
+
+    if len(existing_incomplete_import_jobs):
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+
+        # Should we raise a exception here or just log and return ?
+        logger.error(
+            "There is at least 1 already on-going job on this site. "
+            "Please wait for it to finish before starting a new one."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return
+
+    # The job status is already completed, also abort the task
+    if import_job_instance.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+
+        logger.error(
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return
+
+    # Check about other job statuses
 
     if dry_run:
         import_job_instance.validation_task_id = task_id
@@ -128,10 +161,14 @@ def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
 
     # Disconnecting search indexing signals
     if not dry_run:
-        disconnect_signals()
-        logger.info(
-            f"Disconnected all search index related signals for site: {import_job_instance.site}."
+        # todo: Test this
+        indexing_paused_feature = SiteFeature.objects.get_or_create(
+            site=site, key="indexing_paused"
         )
+        indexing_paused_feature[0].is_enabled = True
+        indexing_paused_feature[0].save()
+
+        logger.info(f"Indexing paused for site: {import_job_instance.site}.")
 
     resource = DictionaryEntryResource(site=import_job_instance.site)
 
@@ -185,13 +222,17 @@ def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
                 )
                 error_row_instance.save()
     except Exception as e:
+        import_job_instance.status = JobStatus.FAILED
+        import_job_instance.save()
+
         logger.error(e)
 
     # Connecting back search indexing signals
     if not dry_run:
-        connect_signals()
-        logger.info(
-            "Re-connected all search index related signals for site: {import_job_instance.site}."
-        )
+        # todo: Test this
+        indexing_paused_feature[0].is_enabled = False
+        indexing_paused_feature[0].save()
+
+        logger.info(f"Indexing now resumed for site: {import_job_instance.site}.")
 
     logger.info(ASYNC_TASK_END_TEMPLATE)

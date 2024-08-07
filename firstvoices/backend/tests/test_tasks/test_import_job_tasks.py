@@ -21,7 +21,7 @@ class TestDryRunImport:
         batch_import(import_job_instance.id)
 
         assert (
-            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}."
+            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
             in caplog.text
         )
         assert "Task ended." in caplog.text
