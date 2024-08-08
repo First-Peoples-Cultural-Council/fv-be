@@ -12,7 +12,7 @@ class TestDictionaryCleanupJobModel:
 
         test_job = DictionaryCleanupJob.objects.create(site=site)
 
-        expected_str = f"{site.title} - DictionaryCleanup - {test_job.status}"
+        expected_str = f"{site.title} - DictionaryCleanup - {str(test_job.id)}"
         assert str(test_job) == expected_str
 
 

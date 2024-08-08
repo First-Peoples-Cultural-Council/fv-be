@@ -54,7 +54,7 @@ class DictionaryCleanupJob(BaseJob):
     is_preview = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.site.title + " - DictionaryCleanup - " + self.status
+        return self.site.title + " - DictionaryCleanup - " + str(self.id)
 
 
 class BulkVisibilityJob(BaseJob):
