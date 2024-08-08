@@ -1,6 +1,6 @@
 import pytest
 
-from backend.models import ImportJob
+from backend.models import ImportJob, Site
 from backend.models.constants import Visibility
 from backend.tasks.import_job_tasks import batch_import
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
@@ -8,7 +8,7 @@ from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
-class TestDryRunImport:
+class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
 
     def test_import_task_logs(self, caplog):
@@ -219,3 +219,35 @@ class TestDryRunImport:
         assert validation_report.new_rows == 12
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
+
+
+@pytest.mark.django_db
+class TestBulkImport:
+    MIMETYPE = "text/csv"
+
+    def test_indexing_behaviour(self):
+        site = SiteFactory.create(visibility=Visibility.PUBLIC)
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # After the job has been completed, verify that indexing_paused is False
+        site = Site.objects.get(id=site.id)
+        assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
+
+    def test_import_task_logs(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        assert (
+            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: False."
+            in caplog.text
+        )
+        assert "Task ended." in caplog.text

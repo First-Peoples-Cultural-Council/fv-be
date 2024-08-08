@@ -154,14 +154,10 @@ def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
     data = tablib.Dataset().load(file, format="csv")
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
 
-    # Signals to be enabled during actual run, and not dry-run
-    # todo: After a batch has been successfully uploaded, we should run a re-index for the site
-    # test if the entries are properly indexed during bulk import, then we can do away with the site re-index
-    # for now. But ideally would still require it.
+    # After a batch has been successfully uploaded, we should run a re-index for the site
 
     # Disconnecting search indexing signals
     if not dry_run:
-        # todo: Test this
         indexing_paused_feature = SiteFeature.objects.get_or_create(
             site=site, key="indexing_paused"
         )
@@ -229,7 +225,6 @@ def batch_import(import_job_instance_id, dry_run=True, *args, **kwargs):
 
     # Connecting back search indexing signals
     if not dry_run:
-        # todo: Test this
         indexing_paused_feature[0].is_enabled = False
         indexing_paused_feature[0].save()
 
