@@ -9,7 +9,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.tasks.import_job_tasks import batch_import
+from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -82,7 +82,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
 
         # Dry-run to get validation results
         transaction.on_commit(
-            lambda: batch_import.apply_async(
+            lambda: batch_import_dry_run.apply_async(
                 (str(instance.id),), link_error=link_error_handler.s()
             )
         )
@@ -100,7 +100,6 @@ class ImportJobConfirmViewSet(
         site = self.get_validated_site()
         import_job = self.get_validated_import_job(site)
 
-        # todo: Verify if we want to keep this here or just in the async task
         import_job.status = JobStatus.STARTED
         import_job.save()
 
