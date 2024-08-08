@@ -90,6 +90,9 @@ def clean_csv(data):
     for invalid_header in invalid_headers:
         del data[invalid_header]
 
+    # Lowercasing headers
+    data.headers = [header.lower() for header in data.headers]
+
     return accepted_headers, invalid_headers, data
 
 

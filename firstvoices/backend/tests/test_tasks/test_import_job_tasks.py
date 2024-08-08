@@ -1,7 +1,8 @@
 import pytest
 
-from backend.models import ImportJob, Site
+from backend.models import DictionaryEntry, ImportJob, Site
 from backend.models.constants import Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
 from backend.tests.utils import get_sample_file
@@ -251,3 +252,78 @@ class TestBulkImport:
             in caplog.text
         )
         assert "Task ended." in caplog.text
+
+    def test_base_case_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # word
+        word = DictionaryEntry.objects.filter(site=site, title="abc")[0]
+        assert word.type == TypeOfDictionaryEntry.WORD
+
+        # phrase
+        phrase = DictionaryEntry.objects.filter(site=site, title="xyz")[0]
+        assert phrase.type == TypeOfDictionaryEntry.PHRASE
+
+    def test_all_columns_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/all_valid_columns.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Verifying first entry
+        first_entry = DictionaryEntry.objects.filter(site=site, title="Word 1")[0]
+        assert first_entry.type == TypeOfDictionaryEntry.WORD
+        assert first_entry.visibility == Visibility.PUBLIC
+        assert first_entry.part_of_speech.title == "Adjective"
+        assert first_entry.exclude_from_games is False
+        assert first_entry.exclude_from_kids is True
+        assert first_entry.translations == [
+            "first_translation",
+            "second_translation",
+            "third_translation",
+            "fourth_translation",
+            "fifth_translation",
+        ]
+        assert first_entry.acknowledgements == [
+            "first_ack",
+            "second_ack",
+            "third_ack",
+            "fourth_ack",
+            "fifth_ack",
+        ]
+        assert first_entry.notes == [
+            "first_note",
+            "second_note",
+            "third_note",
+            "fourth_note",
+            "fifth_note",
+        ]
+        assert first_entry.alternate_spellings == [
+            "alt_s_1",
+            "alt_s_2",
+            "alt_s_3",
+            "alt_s_4",
+            "alt_s_5",
+        ]
+        assert first_entry.pronunciations == [
+            "first_p",
+            "second_p",
+            "third_p",
+            "fourth_p",
+            "fifth_p",
+        ]
+
+        categories = list(first_entry.categories.all().values_list("title", flat=True))
+        assert "Animals" in categories
+        assert "Body" in categories
