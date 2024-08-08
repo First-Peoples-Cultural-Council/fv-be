@@ -11,7 +11,7 @@ def cleanup_dictionary(job_instance_id: str):
     """
     Calculates and returns the results of a custom order recalculation,
     including the changes in custom order and title and the count of unknown characters.
-    Jobs marked as preview will not save the changes to the database.
+    Jobs marked as preview will not update DictionaryEntries in the database.
     """
 
     logger = get_task_logger(__name__)
