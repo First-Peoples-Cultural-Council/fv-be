@@ -13,7 +13,7 @@ from firstvoices.celery import link_error_handler
 
 @extend_schema_view(
     list=extend_schema(
-        description="A list of all characters available on the specified site.",
+        description="A list of all bulk visibility jobs for the specified site.",
         responses={
             200: BulkVisibilityJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -22,7 +22,7 @@ from firstvoices.celery import link_error_handler
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
-        description="Details about a specific character in the specified site.",
+        description="Details about a specific bulk visibility job.",
         responses={
             200: BulkVisibilityJobSerializer,
             403: OpenApiResponse(description=doc_strings.error_403),

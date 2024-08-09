@@ -6,9 +6,9 @@ from backend.views.bulkvisibilityjob_views import BulkVisibilityJobViewSet
 from backend.views.category_views import CategoryViewSet
 from backend.views.character_views import CharactersViewSet, IgnoredCharactersViewSet
 from backend.views.contact_us_views import ContactUsView
-from backend.views.custom_order_recalculate_views import (
-    CustomOrderRecalculatePreviewViewSet,
-    CustomOrderRecalculateViewSet,
+from backend.views.dictionary_cleanup_views import (
+    DictionaryCleanupJobViewSet,
+    DictionaryCleanupPreviewViewSet,
 )
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.gallery_views import GalleryViewSet
@@ -57,12 +57,12 @@ sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
-    CustomOrderRecalculatePreviewViewSet,
+    DictionaryCleanupPreviewViewSet,
     basename="dictionary-cleanup-preview",
 )
 sites_router.register(
     r"dictionary-cleanup",
-    CustomOrderRecalculateViewSet,
+    DictionaryCleanupJobViewSet,
     basename="dictionary-cleanup",
 )
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
