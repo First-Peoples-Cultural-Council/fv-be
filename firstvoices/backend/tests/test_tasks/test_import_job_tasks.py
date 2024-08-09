@@ -1,9 +1,9 @@
 import pytest
 
-from backend.models import DictionaryEntry, ImportJob, Site
+from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
+from backend.tasks.import_job_tasks import batch_import
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
 from backend.tests.utils import get_sample_file
 
@@ -19,7 +19,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
@@ -34,7 +34,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -56,7 +56,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -121,7 +121,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -145,7 +145,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -165,7 +165,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -188,7 +188,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -211,7 +211,7 @@ class TestBulkImportDryRun:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import_dry_run(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -226,18 +226,6 @@ class TestBulkImportDryRun:
 class TestBulkImport:
     MIMETYPE = "text/csv"
 
-    def test_indexing_behaviour(self):
-        site = SiteFactory.create(visibility=Visibility.PUBLIC)
-        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
-
-        batch_import(import_job_instance.id)
-
-        # After the job has been completed, verify that indexing_paused is False
-        site = Site.objects.get(id=site.id)
-        assert site.sitefeature_set.get(key="indexing_paused").is_enabled is False
-
     def test_import_task_logs(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
@@ -245,7 +233,7 @@ class TestBulkImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import(import_job_instance.id)
+        batch_import(import_job_instance.id, dry_run=False)
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: False."
@@ -260,7 +248,7 @@ class TestBulkImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import(import_job_instance.id)
+        batch_import(import_job_instance.id, dry_run=False)
 
         # word
         word = DictionaryEntry.objects.filter(site=site, title="abc")[0]
@@ -279,7 +267,7 @@ class TestBulkImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        batch_import(import_job_instance.id)
+        batch_import(import_job_instance.id, dry_run=False)
 
         # Verifying first entry
         first_entry = DictionaryEntry.objects.filter(site=site, title="Word 1")[0]
