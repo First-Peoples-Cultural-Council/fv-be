@@ -89,7 +89,7 @@ def clean_csv(data):
     for invalid_header in invalid_headers:
         del data[invalid_header]
 
-    # Lowercasing headers
+    # lower-casing headers
     data.headers = [header.lower() for header in data.headers]
 
     return accepted_headers, invalid_headers, data
@@ -168,36 +168,49 @@ def batch_import(import_job_instance_id, dry_run=True):
     # If any variation of an import job is currently running for the provided site,
     # abort the task and provide an error message.
 
-    # site = import_job_instance.site
-    # existing_incomplete_import_jobs = ImportJob.objects.filter(
-    #     site=site, status=JobStatus.STARTED
-    # )
-    # if len(existing_incomplete_import_jobs):
-    #     if dry_run:
-    #         import_job_instance.validation_status = JobStatus.CANCELLED
-    #     else:
-    #         import_job_instance.status = JobStatus.CANCELLED
-    #     import_job_instance.save()
-    #
-    #     # Should we raise a exception here or just log and return ?
-    #     logger.error(
-    #         "There is at least 1 already on-going job on this site. "
-    #         "Please wait for it to finish before starting a new one."
-    #     )
-    #     logger.info(ASYNC_TASK_END_TEMPLATE)
-    #     return
-    #
-    # # The job status is already completed, also abort the task
-    # if import_job_instance.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
-    #     import_job_instance.status = JobStatus.CANCELLED
-    #     import_job_instance.save()
-    #
-    #     logger.error(
-    #         "The job has already been executed once. "
-    #         "Please create another batch request to import the entries."
-    #     )
-    #     logger.info(ASYNC_TASK_END_TEMPLATE)
-    #     return
+    site = import_job_instance.site
+    existing_incomplete_import_jobs = ImportJob.objects.filter(
+        site=site, status=JobStatus.STARTED
+    )
+
+    if len(existing_incomplete_import_jobs):
+        logger.error(
+            "There is at least 1 already on-going job on this site. "
+            "Please wait for it to finish before starting a new one."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        if dry_run:
+            import_job_instance.validation_status = JobStatus.CANCELLED
+        else:
+            import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+        return
+
+    # If the job status is already completed, also abort the task
+    if import_job_instance.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
+        logger.error(
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+        return
+
+    # If dry-run has not been executed successfully, do not proceed
+    if (dry_run is False) and (
+        import_job_instance.validation_status != JobStatus.COMPLETE
+    ):
+        logger.error(
+            "A successful dry-run is required before doing the import. "
+            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+        return
 
     import_job_instance.validation_task_id = task_id
     import_job_instance.validation_status = JobStatus.STARTED
@@ -224,13 +237,13 @@ def batch_import(import_job_instance_id, dry_run=True):
             import_job_instance.validation_report = report
         else:
             import_job_instance.status = JobStatus.COMPLETE
-        import_job_instance.save()
     except Exception as e:
+        logger.error(e)
+
         if dry_run:
             import_job_instance.validation_status = JobStatus.FAILED
         else:
             import_job_instance.status = JobStatus.FAILED
-        import_job_instance.save()
-        logger.error(e)
 
+    import_job_instance.save()
     logger.info(ASYNC_TASK_END_TEMPLATE)

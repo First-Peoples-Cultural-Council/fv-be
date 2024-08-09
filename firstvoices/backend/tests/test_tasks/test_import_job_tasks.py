@@ -3,6 +3,7 @@ import pytest
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import batch_import
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
 from backend.tests.utils import get_sample_file
@@ -231,7 +232,9 @@ class TestBulkImport:
 
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
 
         batch_import(import_job_instance.id, dry_run=False)
 
@@ -246,7 +249,9 @@ class TestBulkImport:
 
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
 
         batch_import(import_job_instance.id, dry_run=False)
 
