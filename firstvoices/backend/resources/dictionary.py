@@ -57,7 +57,7 @@ class DictionaryEntryResource(
         widget=TextListWidget(prefix="pronunciation"),
     )
     alternate_spellings = fields.Field(
-        column_name="alt_spelling",
+        column_name="alternate_spelling",
         attribute="alternate_spellings",
         widget=TextListWidget(prefix="alternate_spelling"),
     )
