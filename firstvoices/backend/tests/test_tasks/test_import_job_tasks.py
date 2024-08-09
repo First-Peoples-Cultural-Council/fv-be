@@ -270,7 +270,9 @@ class TestBulkImport:
             "import_job/all_valid_columns.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
 
         batch_import(import_job_instance.id, dry_run=False)
 
