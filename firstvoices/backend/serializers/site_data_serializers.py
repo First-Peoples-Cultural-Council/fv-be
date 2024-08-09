@@ -65,6 +65,8 @@ class VideoDataSerializer(MediaDataSerializer):
 
 
 class ImageDataSerializer(MediaDataSerializer):
+    filename = serializers.FileField(source="small.content", read_only=True)
+
     class Meta:
         model = Image
         fields = MediaDataSerializer.Meta.fields

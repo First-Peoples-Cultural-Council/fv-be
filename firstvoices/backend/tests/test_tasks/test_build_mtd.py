@@ -92,6 +92,7 @@ class TestMTDIndexAndScoreTask:
         assert not saved_export_format.latest().is_preview
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
     def test_build_and_score(self, site, caplog):
         # Add some entries
         speaker = factories.PersonFactory.create(site=site)
