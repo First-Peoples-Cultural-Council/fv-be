@@ -69,17 +69,18 @@ class DictionaryCleanupJobViewSet(
         **FVPermissionViewSetMixin.permission_type_map,
         "clear": "delete",
     }
+    is_preview = False
 
     def get_queryset(self):
         site = self.get_validated_site()
         return (
-            DictionaryCleanupJob.objects.filter(site=site, is_preview=False)
+            DictionaryCleanupJob.objects.filter(site=site, is_preview=self.is_preview)
             .select_related("site", "created_by", "last_modified_by")
             .order_by("created")
         )
 
     def perform_create(self, serializer):
-        instance = serializer.save(is_preview=False)
+        instance = serializer.save(is_preview=self.is_preview)
 
         # Queue the cleanup task after model creation
         transaction.on_commit(
@@ -88,13 +89,13 @@ class DictionaryCleanupJobViewSet(
             )
         )
 
-    @action(methods=["delete"], detail=False)
+    @action(methods=["post"], detail=False)
     def clear(self, request, *args, **kwargs):
         site = self.get_validated_site()
 
         qs = DictionaryCleanupJob.objects.filter(
             site=site,
-            is_preview=False,
+            is_preview=self.is_preview,
             status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
         )
         qs.delete()
@@ -147,35 +148,4 @@ class DictionaryCleanupPreviewViewSet(
     DictionaryCleanupJobViewSet,
 ):
     serializer_class = DictionaryCleanupPreviewJobSerializer
-
-    def get_queryset(self):
-        site = self.get_validated_site()
-        return (
-            DictionaryCleanupJob.objects.filter(site=site, is_preview=True)
-            .select_related("site", "created_by", "last_modified_by")
-            .order_by("created")
-        )
-
-    def perform_create(self, serializer):
-        # Create the model instance with the preview flag set
-        instance = serializer.save(is_preview=True)
-
-        # Queue the cleanup task after model creation
-        transaction.on_commit(
-            lambda: cleanup_dictionary.apply_async(
-                (instance.id,), link_error=link_error_handler.s()
-            )
-        )
-
-    @action(methods=["delete"], detail=False)
-    def clear(self, request, *args, **kwargs):
-        site = self.get_validated_site()
-
-        qs = DictionaryCleanupJob.objects.filter(
-            site=site,
-            is_preview=True,
-            status__in=[JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
-        )
-        qs.delete()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    is_preview = True

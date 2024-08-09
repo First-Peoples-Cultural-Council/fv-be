@@ -149,7 +149,7 @@ class TestDictionaryCleanupAPI(
         )
 
     @pytest.mark.django_db
-    def test_recalculate_result_display(self, result="cleanupResult"):
+    def test_recalculate_result_display(self):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         alphabet = factories.AlphabetFactory.create(site=site)
 
@@ -179,7 +179,7 @@ class TestDictionaryCleanupAPI(
         )
         response_data = json.loads(response.content)
         assert response.status_code == 200
-        assert response_data[result] == {
+        assert response_data["cleanupResult"] == {
             "unknownCharacterCount": {},
             "updatedEntries": [
                 {
@@ -217,10 +217,8 @@ class TestDictionaryCleanupAPI(
             site=site, is_preview=is_preview, status=JobStatus.CANCELLED
         )
 
-        response_delete = self.client.delete(
-            self.get_list_endpoint(site.slug) + self.CLEAR
-        )
-        assert response_delete.status_code == 204
+        response_post = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
+        assert response_post.status_code == 204
 
         response_get = self.client.get(self.get_list_endpoint(site.slug))
         response_get_data = json.loads(response_get.content)
@@ -233,7 +231,7 @@ class TestDictionaryCleanupAPI(
         user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
-        response = self.client.delete(self.get_list_endpoint(site.slug) + self.CLEAR)
+        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
         assert response.status_code == 403
 
     @pytest.mark.django_db
@@ -247,7 +245,7 @@ class TestDictionaryCleanupAPI(
         factories.MembershipFactory.create(user=user, site=site, role=role)
         self.client.force_authenticate(user=user)
 
-        response = self.client.delete(self.get_list_endpoint(site.slug) + self.CLEAR)
+        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
         assert response.status_code == 403
 
     @pytest.mark.django_db
@@ -257,7 +255,7 @@ class TestDictionaryCleanupAPI(
         factories.AppMembershipFactory.create(user=user, role=AppRole.STAFF)
         self.client.force_authenticate(user=user)
 
-        response = self.client.delete(self.get_list_endpoint(site.slug) + self.CLEAR)
+        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
         assert response.status_code == 403
 
     @pytest.mark.django_db
@@ -285,21 +283,6 @@ class TestDictionaryCleanupPreviewAPI(TestDictionaryCleanupAPI):
 
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
-
-    def get_expected_detail_response(self, instance, site):
-        standard_fields = self.get_expected_standard_fields(instance, site)
-        return {
-            **standard_fields,
-            "status": instance.get_status_display().lower(),
-            "taskId": instance.task_id,
-            "message": instance.message,
-            "cleanupPreviewResult": None,
-            "isPreview": instance.is_preview,
-        }
-
-    @pytest.mark.django_db
-    def test_recalculate_result_display(self, result="cleanupPreviewResult"):
-        super().test_recalculate_result_display(result=result)
 
     @pytest.mark.django_db
     def test_clear(self, is_preview=True):

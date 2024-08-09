@@ -34,11 +34,18 @@ class BaseJobSerializer(BaseSiteContentSerializer):
 class DictionaryCleanupJobSerializer(
     CreateSiteContentSerializerMixin, BaseJobSerializer
 ):
-    url = SiteHyperlinkedIdentityField(
-        read_only=True, view_name="api:dictionary-cleanup-detail"
-    )
+    detail_view_name = "api:dictionary-cleanup-detail"
+
     is_preview = serializers.BooleanField(read_only=True)
     cleanup_result = serializers.SerializerMethodField(read_only=True)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Dynamically assign the view_name to the url field
+        fields["url"] = SiteHyperlinkedIdentityField(
+            read_only=True, view_name=self.detail_view_name
+        )
+        return fields
 
     @staticmethod
     @extend_schema_field(OpenApiTypes.STR)
@@ -79,20 +86,7 @@ class DictionaryCleanupJobSerializer(
 
 
 class DictionaryCleanupPreviewJobSerializer(DictionaryCleanupJobSerializer):
-    url = SiteHyperlinkedIdentityField(
-        read_only=True, view_name="api:dictionary-cleanup-preview-detail"
-    )
-    cleanup_preview_result = serializers.JSONField(
-        read_only=True,
-        source="cleanup_result",
-    )
-
-    class Meta:
-        model = DictionaryCleanupJob
-        fields = BaseJobSerializer.Meta.fields + (
-            "is_preview",
-            "cleanup_preview_result",
-        )
+    detail_view_name = "api:dictionary-cleanup-preview-detail"
 
 
 class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
