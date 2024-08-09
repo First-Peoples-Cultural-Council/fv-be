@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
 
@@ -10,6 +10,7 @@ from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
 from .base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
+    SuperAdminAsyncJobPermissionsMixin,
     WriteApiTestMixin,
 )
 
@@ -18,6 +19,7 @@ class TestBulkVisibilityEndpoints(
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     TransactionOnCommitMixin,
+    SuperAdminAsyncJobPermissionsMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     """
@@ -195,111 +197,6 @@ class TestBulkVisibilityEndpoints(
                 "'from_visibility' must match the site visibility: public."
             ]
         }
-
-    @pytest.mark.django_db
-    def test_list_403_non_member(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "role",
-        [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN],
-    )
-    def test_list_empty_non_superuser(self, role):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        factories.BulkVisibilityJobFactory.create(site=site)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert response_data["count"] == 0
-        assert response_data["results"] == []
-
-    @pytest.mark.django_db
-    def test_get_403_non_member(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "role",
-        [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN],
-    )
-    def test_get_403_non_superuser(self, role):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_post_403_non_member(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        self.client.force_authenticate(user=user)
-
-        data = {
-            "from_visibility": "public",
-            "to_visibility": "members",
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), data=data, format="json"
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "role",
-        [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN],
-    )
-    def test_post_403_non_superuser(self, role):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
-        data = {
-            "from_visibility": "public",
-            "to_visibility": "members",
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), data=data, format="json"
-        )
-
-        assert response.status_code == 403
 
     @pytest.mark.django_db
     def test_bulk_change_visibility_called(

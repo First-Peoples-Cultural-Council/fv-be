@@ -13,7 +13,7 @@ from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLA
 
 
 @shared_task
-def bulk_change_visibility(job_instance_id):
+def bulk_change_visibility(job_instance_id: str):
     """
     Changes the visibility of all site content from one visibility to another.
     """

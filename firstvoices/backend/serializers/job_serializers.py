@@ -1,16 +1,11 @@
 from collections import OrderedDict
 
-from celery.result import AsyncResult
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models.constants import Visibility
-from backend.models.jobs import (
-    BulkVisibilityJob,
-    CustomOrderRecalculationResult,
-    JobStatus,
-)
+from backend.models.jobs import BulkVisibilityJob, DictionaryCleanupJob, JobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
@@ -36,28 +31,30 @@ class BaseJobSerializer(BaseSiteContentSerializer):
         )
 
 
-class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
-    site = serializers.StringRelatedField()
-    current_task_status = serializers.SerializerMethodField()
-    latest_recalculation_result = serializers.SerializerMethodField()
+class DictionaryCleanupJobSerializer(
+    CreateSiteContentSerializerMixin, BaseJobSerializer
+):
+    detail_view_name = "api:dictionary-cleanup-detail"
+
+    is_preview = serializers.BooleanField(read_only=True)
+    cleanup_result = serializers.SerializerMethodField(read_only=True)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Dynamically assign the view_name to the url field
+        fields["url"] = SiteHyperlinkedIdentityField(
+            read_only=True, view_name=self.detail_view_name
+        )
+        return fields
 
     @staticmethod
     @extend_schema_field(OpenApiTypes.STR)
-    def get_current_task_status(obj):
-        async_result = AsyncResult(obj.task_id)
-        return async_result.status
-
-    @staticmethod
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_latest_recalculation_result(obj):
-        if (
-            hasattr(obj, "latest_recalculation_result")
-            and obj.latest_recalculation_result
-        ):
-            unknown_character_count = obj.latest_recalculation_result.get(
+    def get_cleanup_result(obj):
+        if hasattr(obj, "cleanup_result") and obj.cleanup_result:
+            unknown_character_count = obj.cleanup_result.get(
                 "unknown_character_count", 0
             )
-            updated_entries = obj.latest_recalculation_result["updated_entries"]
+            updated_entries = obj.cleanup_result["updated_entries"]
         else:
             unknown_character_count = 0
             updated_entries = []
@@ -84,38 +81,12 @@ class CustomOrderRecalculationResultSerializer(serializers.ModelSerializer):
         return ordered_result
 
     class Meta:
-        model = CustomOrderRecalculationResult
-        fields = [
-            "site",
-            "current_task_status",
-            "latest_recalculation_date",
-            "latest_recalculation_result",
-        ]
+        model = DictionaryCleanupJob
+        fields = BaseJobSerializer.Meta.fields + ("is_preview", "cleanup_result")
 
 
-class CustomOrderRecalculationPreviewResultSerializer(
-    CustomOrderRecalculationResultSerializer
-):
-    current_preview_task_status = serializers.SerializerMethodField()
-    latest_recalculation_preview_result = serializers.JSONField(
-        source="latest_recalculation_result"
-    )
-    latest_recalculation_preview_date = serializers.DateTimeField(
-        source="latest_recalculation_date"
-    )
-
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_current_preview_task_status(self, obj):
-        return self.get_current_task_status(obj)
-
-    class Meta:
-        model = CustomOrderRecalculationResult
-        fields = [
-            "site",
-            "current_preview_task_status",
-            "latest_recalculation_preview_date",
-            "latest_recalculation_preview_result",
-        ]
+class DictionaryCleanupPreviewJobSerializer(DictionaryCleanupJobSerializer):
+    detail_view_name = "api:dictionary-cleanup-preview-detail"
 
 
 class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
