@@ -7,7 +7,7 @@ from backend.models import MTDExportFormat
 from backend.models.constants import Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.media import Audio
-from backend.tasks.build_mtd_export_format_tasks import (
+from backend.tasks.mtd_export_tasks import (
     build_index_and_calculate_scores,
     check_sites_for_mtd_sync,
 )
@@ -180,7 +180,7 @@ class TestCheckSitesForMTDSyncTask:
     @pytest.fixture(scope="function", autouse=True)
     def mocked_mtd_build_func(self, mocker):
         self.mocked_func = mocker.patch(
-            "backend.tasks.build_mtd_export_format_tasks.build_index_and_calculate_scores.apply_async"
+            "backend.tasks.mtd_export_tasks.build_index_and_calculate_scores.apply_async"
         )
 
     @pytest.fixture
