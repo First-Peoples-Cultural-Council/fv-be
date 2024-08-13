@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from backend.models import DictionaryEntry, ImportJob
@@ -222,6 +224,26 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
 
+    def test_dry_run_failed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        with patch(
+            "backend.tasks.import_job_tasks.import_resource",
+            side_effect=Exception("Random exception."),
+        ):
+            batch_import(import_job_instance.id)
+
+            # Updated import job instance
+            import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+            assert import_job_instance.validation_status == JobStatus.FAILED
+            assert "Random exception." in caplog.text
+
 
 @pytest.mark.django_db
 class TestBulkImport:
@@ -322,3 +344,99 @@ class TestBulkImport:
         categories = list(first_entry.categories.all().values_list("title", flat=True))
         assert "Animals" in categories
         assert "Body" in categories
+
+    def test_parallel_jobs_not_allowed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+        same_file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )  # Since it's a OneToOne field, can't use a file again
+
+        ImportJobFactory(
+            site=site,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.STARTED,
+        )
+        import_job_instance = ImportJobFactory(
+            site=site, data=same_file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated import job instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        assert import_job_instance.status == JobStatus.CANCELLED
+        assert (
+            "There is at least 1 already on-going job on this site. "
+            "Please wait for it to finish before starting a new one." in caplog.text
+        )
+
+    @pytest.mark.parametrize("status", [JobStatus.COMPLETE, JobStatus.FAILED])
+    def test_task_already_completed(self, status, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE, status=status
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        assert (
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries." in caplog.text
+        )
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
+    )
+    def test_confirm_not_allowed_for_invalid_dry_run(self, validation_status, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=validation_status
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated import job instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        assert import_job_instance.status == JobStatus.CANCELLED
+        assert (
+            "A successful dry-run is required before doing the import. "
+            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+            in caplog.text
+        )
+
+    def test_import_job_failed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        with patch(
+            "backend.tasks.import_job_tasks.import_resource",
+            side_effect=Exception("Random exception."),
+        ):
+            batch_import(import_job_instance.id, dry_run=False)
+
+            # Updated import job instance
+            import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+            assert import_job_instance.status == JobStatus.FAILED
+            assert "Random exception." in caplog.text

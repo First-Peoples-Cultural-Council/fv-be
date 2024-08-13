@@ -181,10 +181,7 @@ def batch_import(import_job_instance_id, dry_run=True):
             "Please wait for it to finish before starting a new one."
         )
         logger.info(ASYNC_TASK_END_TEMPLATE)
-        if dry_run:
-            import_job_instance.validation_status = JobStatus.CANCELLED
-        else:
-            import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.status = JobStatus.CANCELLED
         import_job_instance.save()
         return
 
@@ -195,9 +192,6 @@ def batch_import(import_job_instance_id, dry_run=True):
             "Please create another batch request to import the entries."
         )
         logger.info(ASYNC_TASK_END_TEMPLATE)
-
-        import_job_instance.status = JobStatus.CANCELLED
-        import_job_instance.save()
         return
 
     # If dry-run has not been executed successfully, do not proceed
