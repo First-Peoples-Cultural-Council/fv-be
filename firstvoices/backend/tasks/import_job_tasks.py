@@ -169,9 +169,11 @@ def batch_import(import_job_instance_id, dry_run=True):
     # abort the task and provide an error message.
 
     site = import_job_instance.site
+
+    # Get any incomplete jobs, except for the currently specified one.
     existing_incomplete_import_jobs = ImportJob.objects.filter(
         site=site, status=JobStatus.STARTED
-    )
+    ).exclude(id=import_job_instance.id)
 
     if len(existing_incomplete_import_jobs):
         logger.error(

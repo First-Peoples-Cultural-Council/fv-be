@@ -3,9 +3,10 @@ from django.db import transaction
 from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import mixins, parsers, status
+from rest_framework import parsers, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
@@ -71,11 +72,16 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         parsers.JSONParser,
     ]
 
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "confirm": "change",
+    }
+
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(
-            site=site
-        ).all()  # permissions are applied by the base view
+        return ImportJob.objects.filter(site=site).order_by(
+            "-created"
+        )  # permissions are applied by the base view
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -87,16 +93,8 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             )
         )
 
-
-class ImportJobConfirmViewSet(
-    SiteContentViewSetMixin,
-    FVPermissionViewSetMixin,
-    mixins.CreateModelMixin,
-    GenericViewSet,
-):
-    http_method_names = ["post"]
-
-    def create(self, validated_data, *args, **kwargs):
+    @action(detail=True, methods=["post"])
+    def confirm(self, request, site_slug=None, pk=None):
         site = self.get_validated_site()
         import_job = self.get_validated_import_job(site)
 
@@ -121,13 +119,8 @@ class ImportJobConfirmViewSet(
             serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
         )
 
-    def get_queryset(self):
-        site = self.get_validated_site()
-        import_job = self.get_validated_import_job(site)
-        return ImportJob.objects.filter(site=site, id=import_job.id)
-
     def get_validated_import_job(self, site):
-        import_job_id = self.kwargs["importjob_pk"]
+        import_job_id = self.kwargs["pk"]
         try:
             import_job = ImportJob.objects.filter(pk=import_job_id)
         except ValidationError:
