@@ -363,3 +363,19 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
 
         assert response_data["status"] == JobStatus.STARTED
+
+    def test_confirm_action_404_unknown_key(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[site.slug, "fake-key"],
+        )
+
+        response = self.client.post(confirm_endpoint)
+
+        assert response.status_code == 404

@@ -1,6 +1,4 @@
-from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import parsers, status
@@ -94,9 +92,11 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         )
 
     @action(detail=True, methods=["post"])
-    def confirm(self, request, site_slug=None, pk=None):
+    def confirm(self):
+        import_job_id = self.kwargs["pk"]
+
         site = self.get_validated_site()
-        import_job = self.get_validated_import_job(site)
+        import_job = ImportJob.objects.get(id=import_job_id)
 
         import_job.status = JobStatus.STARTED
         import_job.save()
@@ -109,7 +109,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         )
 
         # Update the in-memory instance and return the job
-        import_job = self.get_validated_import_job(site)
+        import_job = ImportJob.objects.get(id=import_job_id)
         serializer = ImportJobSerializer(
             import_job, context={"request": self.request, "site": site}
         )
@@ -118,16 +118,3 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         return Response(
             serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
         )
-
-    def get_validated_import_job(self, site):
-        import_job_id = self.kwargs["pk"]
-        try:
-            import_job = ImportJob.objects.filter(pk=import_job_id)
-        except ValidationError:
-            # story id is not a valid uuid
-            raise Http404
-
-        if len(import_job) == 0:
-            raise Http404
-
-        return import_job.first()
