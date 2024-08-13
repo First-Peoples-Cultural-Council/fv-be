@@ -165,6 +165,49 @@ class TestMTDIndexAndScoreTask:
         self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
+    def test_build_and_score_bad_image_data(self, site, caplog):
+        # build an entry with a bad image
+        speaker = factories.PersonFactory.create(site=site)
+        audio = factories.AudioFactory.create(site=site)
+        factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
+
+        bad_image = factories.ImageFactory.create(site=site)
+        bad_image.small = None
+        bad_image.save()
+
+        video = factories.VideoFactory.create(site=site)
+        parent_category = factories.CategoryFactory.create(site=site)
+        child_category = factories.CategoryFactory.create(
+            site=site, parent=parent_category
+        )
+        entry_one = factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=TypeOfDictionaryEntry.WORD,
+            title=self.sample_entry_title,
+            related_audio=[audio],
+            related_images=[bad_image],
+            related_videos=[video],
+        )
+        factories.DictionaryEntryCategoryFactory.create(
+            category=parent_category, dictionary_entry=entry_one
+        )
+        factories.DictionaryEntryCategoryFactory.create(
+            category=child_category, dictionary_entry=entry_one
+        )
+
+        # Build and index
+        result = build_index_and_calculate_scores(site.slug)
+        assert len(result["data"]) == 1
+        assert result["data"][0]["word"] == self.sample_entry_title
+        assert result["data"][0]["img"] is None
+        assert len(result["data"][0]["audio"]) == 1
+        assert len(result["data"][0]["video"]) == 1
+
+        self.assert_async_task_logs(site, caplog)
+
+    @pytest.mark.django_db
     def test_old_results_removed(self, site):
         build_index_and_calculate_scores(site.slug)
         build_index_and_calculate_scores(site.slug)
