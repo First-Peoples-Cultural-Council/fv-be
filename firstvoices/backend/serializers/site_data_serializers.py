@@ -108,7 +108,8 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         # NOTE: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
         image = dictionaryentry.related_images.first()
 
-        if image is None:
+        # If no small image is available (possibly due to the wrong file type), return None
+        if image is None or image.small is None:
             return None
 
         return ImageDataSerializer(image).data["filename"]
