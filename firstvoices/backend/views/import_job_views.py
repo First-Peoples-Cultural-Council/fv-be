@@ -92,7 +92,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         )
 
     @action(detail=True, methods=["post"])
-    def confirm(self):
+    def confirm(self, request, site_slug=None, pk=None):
         import_job_id = self.kwargs["pk"]
 
         site = self.get_validated_site()
