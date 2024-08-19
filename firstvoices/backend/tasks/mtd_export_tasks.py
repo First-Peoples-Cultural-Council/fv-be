@@ -6,6 +6,7 @@ from celery.utils.log import get_task_logger
 from django.db.models import Q
 from django.db.models.query import Prefetch, QuerySet
 from django.utils import timezone
+from django_celery_beat.models import PeriodicTask
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
 from mothertongues.config.models import (
@@ -188,23 +189,25 @@ def check_sites_for_mtd_sync(self):
     try:
         self.state = "STARTED"
         sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
-        six_hours_ago = timezone.now() - timedelta(hours=6)
+        last_modified_check_period = (
+            get_period_for_mtd_check() or timezone.now() - timedelta(days=1)
+        )
 
         for site in sites:
             updated_entries_count = DictionaryEntry.objects.filter(
-                site=site, last_modified__gte=six_hours_ago
+                site=site, last_modified__gte=last_modified_check_period
             ).count()
 
             updated_categories_count = DictionaryEntryCategory.objects.filter(
-                category__site=site, last_modified__gte=six_hours_ago
+                category__site=site, last_modified__gte=last_modified_check_period
             ).count()
 
             updated_related_media_count = (
                 DictionaryEntry.objects.filter(site=site)
                 .filter(
-                    Q(related_audio__last_modified__gte=six_hours_ago)
-                    | Q(related_images__last_modified__gte=six_hours_ago)
-                    | Q(related_videos__last_modified__gte=six_hours_ago)
+                    Q(related_audio__last_modified__gte=last_modified_check_period)
+                    | Q(related_images__last_modified__gte=last_modified_check_period)
+                    | Q(related_videos__last_modified__gte=last_modified_check_period)
                 )
                 .distinct()
                 .count()
@@ -230,3 +233,60 @@ def check_sites_for_mtd_sync(self):
         logger.error(f"MTD Sync check failed: {e}")
         logger.info(ASYNC_TASK_END_TEMPLATE)
         raise e
+
+
+def get_period_for_mtd_check():
+    periodic_task = PeriodicTask.objects.get(name="check_sites_for_mtd_sync")
+    if not periodic_task:
+        return None
+
+    if not periodic_task.interval and not periodic_task.crontab:
+        return None
+
+    if periodic_task.crontab:
+        period_in_hours = calculate_crontab_period(periodic_task.crontab)
+    else:
+        period_in_hours = periodic_task.interval
+
+    return period_in_hours
+
+
+def calculate_crontab_period(crontab_schedule):
+    if crontab_schedule.day_of_month != "*" or crontab_schedule.month_of_year != "*":
+        # Schedule involves specific days of the month or months of the year, return invalid
+        return None
+
+    if crontab_schedule.day_of_week != "*":
+        # Schedule involves specific days of the week, return invalid
+        return None
+
+    # Calculate the interval in hours
+    hour_list = (
+        list(map(int, crontab_schedule.hour.split(",")))
+        if crontab_schedule.hour != "*"
+        else list(range(24))
+    )
+    minute_list = (
+        list(map(int, crontab_schedule.minute.split(",")))
+        if crontab_schedule.minute != "*"
+        else list(range(60))
+    )
+
+    if len(hour_list) > 1:
+        # If there are multiple hours, consider the difference between them
+        period_in_hours = min(
+            [(hour_list[i + 1] - hour_list[i]) % 24 for i in range(len(hour_list) - 1)]
+        )
+    elif len(minute_list) > 1:
+        # If it's the same hour but multiple minutes
+        period_in_hours = min(
+            [
+                (minute_list[i + 1] - minute_list[i]) / 60.0
+                for i in range(len(minute_list) - 1)
+            ]
+        )
+    else:
+        # If only one execution per day or hour
+        period_in_hours = 24 if crontab_schedule.hour != "*" else 1
+
+    return period_in_hours
