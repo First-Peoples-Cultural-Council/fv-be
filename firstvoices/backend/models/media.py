@@ -33,8 +33,8 @@ class Person(BaseSiteContentModel):
         verbose_name_plural = _("People")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -104,8 +104,8 @@ class File(FileBase):
         verbose_name_plural = _("Files")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -131,8 +131,8 @@ class ImageFile(VisualFileBase):
         verbose_name_plural = _("Image Files")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -173,8 +173,8 @@ class VideoFile(VisualFileBase):
         verbose_name_plural = _("Video Files")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -298,8 +298,8 @@ class Audio(MediaBase):
         verbose_name_plural = _("Audio")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -444,8 +444,8 @@ class Image(ThumbnailMixin, MediaBase):
         verbose_name_plural = _("Images")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 
@@ -511,8 +511,8 @@ class Video(ThumbnailMixin, MediaBase):
         verbose_name_plural = _("Videos")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.can_delete_core_uncontrolled_data,
         }
 

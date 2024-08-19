@@ -4,7 +4,7 @@ import pytest
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis import base_api_test
 from backend.tests.utils import get_sample_file
@@ -13,6 +13,36 @@ VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
 YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=abc123"
 MOCK_EMBED_LINK = "https://mock_embed_link.com/"
 MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
+
+
+def get_site_with_authenticated_member(
+    client, visibility=Visibility.PUBLIC, role=Role.MEMBER
+):
+    site, user = factories.get_site_with_member(visibility, role)
+    client.force_authenticate(user=user)
+    return site, user
+
+
+def get_site_with_authenticated_nonmember(client, visibility=Visibility.PUBLIC):
+    site = factories.SiteFactory.create(visibility=visibility)
+    user = factories.get_non_member_user()
+    client.force_authenticate(user=user)
+    return site, user
+
+
+def get_site_with_anonymous_user(client=None, visibility=Visibility.PUBLIC):
+    # client is intentionally ignored so all these site_with_user functions can have the same signature
+    site = factories.SiteFactory.create(visibility=visibility)
+    user = factories.get_anonymous_user()
+    return site, user
+
+
+def get_site_with_staff_user(client=None, visibility=Visibility.PUBLIC):
+    # client is intentionally ignored so all these site_with_user functions can have the same signature
+    site = factories.SiteFactory.create(visibility=visibility)
+    user = factories.get_app_admin(AppRole.STAFF)
+    client.force_authenticate(user=user)
+    return site, user
 
 
 class FormDataMixin:
@@ -484,7 +514,7 @@ class BaseMediaApiTest(
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
-        response_data = self.perform_detail_request(instance, site, data)
+        response_data = self.perform_successful_detail_request(instance, site, data)
 
         self.assert_update_response(data, response_data, instance)
 
@@ -495,7 +525,7 @@ class BaseMediaApiTest(
         data = self.get_valid_data_with_nulls(site)
         expected_data = self.add_expected_defaults(data)
 
-        response_data = self.perform_detail_request(instance, site, data)
+        response_data = self.perform_successful_detail_request(instance, site, data)
 
         self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
         self.assert_update_response(expected_data, response_data, instance)
@@ -532,6 +562,104 @@ class BaseMediaApiTest(
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_create_permissions_valid(self, role):
+        site, _ = get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_create_permissions_valid_superadmin(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_superadmin()
+        self.client.force_authenticate(user=user)
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "get_site_with_user",
+        [
+            get_site_with_authenticated_member,
+            get_site_with_authenticated_nonmember,
+            get_site_with_anonymous_user,
+            get_site_with_staff_user,
+        ],
+    )
+    def test_create_permissions_denied(self, get_site_with_user):
+        site, _ = get_site_with_user(self.client)
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_update_permissions_valid(self, role):
+        site, _ = get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        self.perform_successful_detail_request(instance, site, data)
+
+    @pytest.mark.django_db
+    def test_update_permissions_valid_superadmin(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.get_superadmin()
+        self.client.force_authenticate(user=user)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        self.perform_successful_detail_request(instance, site, data)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "get_site_with_user",
+        [
+            get_site_with_authenticated_member,
+            get_site_with_authenticated_nonmember,
+            get_site_with_anonymous_user,
+            get_site_with_staff_user,
+        ],
+    )
+    def test_update_permissions_denied(self, get_site_with_user):
+        site, _ = get_site_with_user(self.client, Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 403
 
     def add_related_media_to_objects(self, visibility):
         # Add media file as related media to objects to verify that they show up correctly
