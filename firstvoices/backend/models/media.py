@@ -33,9 +33,9 @@ class Person(BaseSiteContentModel):
         verbose_name_plural = _("People")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.is_at_least_assistant_or_super,
-            "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "add": predicates.is_at_least_editor_or_super,
+            "change": predicates.is_at_least_editor_or_super,
+            "delete": predicates.can_delete_media,
         }
 
     name = models.CharField(max_length=200)
@@ -106,7 +106,7 @@ class File(FileBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
 
@@ -133,7 +133,7 @@ class ImageFile(VisualFileBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
     def get_image_dimensions(self):
@@ -175,7 +175,7 @@ class VideoFile(VisualFileBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
     def save(self, update_file_metadata=False, **kwargs):
@@ -300,7 +300,7 @@ class Audio(MediaBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
     # acknowledgment from fvm:recorder
@@ -446,7 +446,7 @@ class Image(ThumbnailMixin, MediaBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
     # acknowledgement from fvm:recorder, fvm:source
@@ -513,7 +513,7 @@ class Video(ThumbnailMixin, MediaBase):
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "delete": predicates.can_delete_media,
         }
 
     # from fvm:content

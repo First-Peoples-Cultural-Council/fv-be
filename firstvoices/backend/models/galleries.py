@@ -23,9 +23,9 @@ class Gallery(TranslatedTitleMixin, TranslatedIntroMixin, BaseSiteContentModel):
         verbose_name_plural = _("galleries")
         rules_permissions = {
             "view": predicates.has_visible_site,
-            "add": predicates.can_add_core_uncontrolled_data,
-            "change": predicates.can_edit_core_uncontrolled_data,
-            "delete": predicates.can_delete_core_uncontrolled_data,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
+            "delete": predicates.can_delete_media,
         }
 
     cover_image = models.ForeignKey(
