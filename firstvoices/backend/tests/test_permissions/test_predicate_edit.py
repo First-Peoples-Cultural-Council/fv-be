@@ -8,6 +8,7 @@ from backend.tests.factories import (
     UncontrolledSiteContentFactory,
     get_anonymous_user,
     get_app_admin,
+    get_member_of_other_site,
     get_non_member_user,
     get_site_with_member,
 )
@@ -41,11 +42,6 @@ class TestEditRolePredicates:
         user = get_app_admin(AppRole.STAFF)
         obj = SiteFactory.create()
         assert not predicate(user, obj)
-
-
-def get_member_of_other_site():
-    _, user = get_site_with_member(Visibility.PUBLIC, Role.LANGUAGE_ADMIN)
-    return user
 
 
 class TestCanDeleteCoreUncontrolledData:

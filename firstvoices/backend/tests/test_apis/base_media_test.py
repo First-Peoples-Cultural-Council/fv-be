@@ -4,8 +4,14 @@ import pytest
 from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import Role, Visibility
 from backend.tests import factories
+from backend.tests.factories import (
+    get_site_with_anonymous_user,
+    get_site_with_authenticated_member,
+    get_site_with_authenticated_nonmember,
+    get_site_with_staff_user,
+)
 from backend.tests.test_apis import base_api_test
 from backend.tests.utils import get_sample_file
 
@@ -13,36 +19,6 @@ VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
 YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=abc123"
 MOCK_EMBED_LINK = "https://mock_embed_link.com/"
 MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
-
-
-def get_site_with_authenticated_member(
-    client, visibility=Visibility.PUBLIC, role=Role.MEMBER
-):
-    site, user = factories.get_site_with_member(visibility, role)
-    client.force_authenticate(user=user)
-    return site, user
-
-
-def get_site_with_authenticated_nonmember(client, visibility=Visibility.PUBLIC):
-    site = factories.SiteFactory.create(visibility=visibility)
-    user = factories.get_non_member_user()
-    client.force_authenticate(user=user)
-    return site, user
-
-
-def get_site_with_anonymous_user(client=None, visibility=Visibility.PUBLIC):
-    # client is intentionally ignored so all these site_with_user functions can have the same signature
-    site = factories.SiteFactory.create(visibility=visibility)
-    user = factories.get_anonymous_user()
-    return site, user
-
-
-def get_site_with_staff_user(client=None, visibility=Visibility.PUBLIC):
-    # client is intentionally ignored so all these site_with_user functions can have the same signature
-    site = factories.SiteFactory.create(visibility=visibility)
-    user = factories.get_app_admin(AppRole.STAFF)
-    client.force_authenticate(user=user)
-    return site, user
 
 
 class FormDataMixin:
