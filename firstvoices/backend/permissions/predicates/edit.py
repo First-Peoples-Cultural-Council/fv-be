@@ -24,30 +24,12 @@ is_language_admin_or_super = Predicate(
     name="is_language_admin_or_super",
 )
 
-"""
-Same as ``can_edit_core_uncontrolled_data`` but does not check the visibility of the object that is saved in the db.
 
+"""
 - Assistant has permission for Team-visibility data
 - Editor, Language Admin, and Superadmin have permission
 """
-can_add_core_uncontrolled_data = Predicate(
-    base.has_at_least_editor_membership
-    | base.is_superadmin
-    | (
-        base.has_at_least_assistant_membership
-        & base.is_team_obj  # will be called with a site object
-    ),
-    name="can_add_core_uncontrolled_data",
-)
-
-
-"""
-Same as ``can_add_core_uncontrolled_data`` but also checks the visibility of the object that is saved in the db.
-
-- Assistant has permission for Team-visibility data
-- Editor, Language Admin, and Superadmin have permission
-"""
-can_edit_core_uncontrolled_data = Predicate(
+can_delete_media = Predicate(
     base.has_at_least_editor_membership
     | base.is_superadmin
     | (
@@ -56,11 +38,6 @@ can_edit_core_uncontrolled_data = Predicate(
         & base.has_saved_team_site
     ),
     name="can_edit_core_uncontrolled_data",
-)
-
-# just a convenient alias
-can_delete_core_uncontrolled_data = Predicate(
-    is_at_least_editor_or_super, name="can_edit_core_uncontrolled_data"
 )
 
 # This predicate must be combined with the CreateControlledSiteContentSerializerMixin in

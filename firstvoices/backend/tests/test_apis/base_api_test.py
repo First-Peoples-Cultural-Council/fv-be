@@ -659,7 +659,7 @@ class SiteContentUpdateApiTestMixin:
 
         assert response.status_code == 404
 
-    def perform_detail_request(self, instance, site, data):
+    def perform_successful_detail_request(self, instance, site, data):
         response = self.client.put(
             self.get_detail_endpoint(
                 key=self.get_lookup_key(instance), site_slug=site.slug
@@ -667,8 +667,9 @@ class SiteContentUpdateApiTestMixin:
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
-        response_data = json.loads(response.content)
+        assert response.status_code == 200
 
+        response_data = json.loads(response.content)
         return response_data
 
     @pytest.mark.django_db
@@ -677,7 +678,7 @@ class SiteContentUpdateApiTestMixin:
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
-        response_data = self.perform_detail_request(instance, site, data)
+        response_data = self.perform_successful_detail_request(instance, site, data)
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
 
@@ -688,7 +689,7 @@ class SiteContentUpdateApiTestMixin:
         data = self.get_valid_data_with_nulls(site)
         expected_data = self.add_expected_defaults(data)
 
-        response_data = self.perform_detail_request(instance, site, data)
+        response_data = self.perform_successful_detail_request(instance, site, data)
         self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
         self.assert_update_response(expected_data, response_data)
 
