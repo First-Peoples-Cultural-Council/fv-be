@@ -82,12 +82,12 @@ class AudienceMixin(resources.ModelResource):
     exclude_from_games = fields.Field(
         column_name="include_in_games",
         attribute="exclude_from_games",
-        widget=InvertedBooleanFieldWidget(),
+        widget=InvertedBooleanFieldWidget(column="include_in_games"),
     )
     exclude_from_kids = fields.Field(
         column_name="include_on_kids_site",
         attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(),
+        widget=InvertedBooleanFieldWidget(column="include_on_kids_site"),
     )
 
     class Meta:

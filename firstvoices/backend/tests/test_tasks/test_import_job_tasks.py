@@ -221,8 +221,15 @@ class TestBulkImportDryRun:
         validation_report = import_job_instance.validation_report
 
         assert validation_report.new_rows == 12
-        assert validation_report.error_rows == 0
+        assert validation_report.error_rows == 1
         assert validation_report.skipped_rows == 0
+
+        validation_error_row = validation_report.rows.first()
+        assert validation_error_row.row_number == 13
+        assert (
+            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            in validation_error_row.errors
+        )
 
     def test_dry_run_failed(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
