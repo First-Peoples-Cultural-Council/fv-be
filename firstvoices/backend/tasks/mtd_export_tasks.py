@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from croniter import croniter
 from django.db.models import Q
 from django.db.models.query import Prefetch, QuerySet
 from django.utils import timezone
-from django_celery_beat.models import PeriodicTask
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
 from mothertongues.config.models import (
@@ -189,8 +190,10 @@ def check_sites_for_mtd_sync(self):
     try:
         self.state = "STARTED"
         sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
-        last_modified_check_period = (
-            get_period_for_mtd_check() or timezone.now() - timedelta(days=1)
+        delta = get_delta_for_mtd_check() or timedelta(hours=24)
+        last_modified_check_period = timezone.now() - delta
+        logger.info(
+            f"Checking for MTD changes since {last_modified_check_period}. Current time: {timezone.now()}"
         )
 
         for site in sites:
@@ -235,58 +238,60 @@ def check_sites_for_mtd_sync(self):
         raise e
 
 
-def get_period_for_mtd_check():
-    periodic_task = PeriodicTask.objects.get(name="check_sites_for_mtd_sync")
-    if not periodic_task:
+def get_delta_for_mtd_check():
+    if PeriodicTask.objects.filter(name="check_sites_for_mtd_sync").exists():
+        periodic_task = PeriodicTask.objects.get(name="check_sites_for_mtd_sync")
+    else:
+        # No period if the task cannot be found
         return None
 
+    # No period if the task does not have an interval or crontab
     if not periodic_task.interval and not periodic_task.crontab:
         return None
 
     if periodic_task.crontab:
-        period_in_hours = calculate_crontab_period(periodic_task.crontab)
+        delta = crontab_to_timedelta(periodic_task.crontab)
     else:
-        period_in_hours = periodic_task.interval
+        delta = interval_to_timedelta(periodic_task.interval)
 
-    return period_in_hours
+    return delta
 
 
-def calculate_crontab_period(crontab_schedule):
-    if crontab_schedule.day_of_month != "*" or crontab_schedule.month_of_year != "*":
-        # Schedule involves specific days of the month or months of the year, return invalid
-        return None
+def interval_to_timedelta(interval):
+    period_map = {
+        IntervalSchedule.SECONDS: "seconds",
+        IntervalSchedule.MINUTES: "minutes",
+        IntervalSchedule.HOURS: "hours",
+        IntervalSchedule.DAYS: "days",
+    }
 
-    if crontab_schedule.day_of_week != "*":
-        # Schedule involves specific days of the week, return invalid
-        return None
+    period = period_map.get(interval.period)
 
-    # Calculate the interval in hours
-    hour_list = (
-        list(map(int, crontab_schedule.hour.split(",")))
-        if crontab_schedule.hour != "*"
-        else list(range(24))
+    if not period:
+        raise ValueError(f"Unsupported interval period: {interval.period}")
+
+    kwargs = {period: interval.every}
+
+    return timedelta(**kwargs)
+
+
+def crontab_to_timedelta(crontab_schedule):
+    # Construct the cron expression
+    cron_expr = (
+        f"{crontab_schedule.minute} "
+        f"{crontab_schedule.hour} "
+        f"{crontab_schedule.day_of_month} "
+        f"{crontab_schedule.month_of_year} "
+        f"{crontab_schedule.day_of_week}"
     )
-    minute_list = (
-        list(map(int, crontab_schedule.minute.split(",")))
-        if crontab_schedule.minute != "*"
-        else list(range(60))
-    )
 
-    if len(hour_list) > 1:
-        # If there are multiple hours, consider the difference between them
-        period_in_hours = min(
-            [(hour_list[i + 1] - hour_list[i]) % 24 for i in range(len(hour_list) - 1)]
-        )
-    elif len(minute_list) > 1:
-        # If it's the same hour but multiple minutes
-        period_in_hours = min(
-            [
-                (minute_list[i + 1] - minute_list[i]) / 60.0
-                for i in range(len(minute_list) - 1)
-            ]
-        )
-    else:
-        # If only one execution per day or hour
-        period_in_hours = 24 if crontab_schedule.hour != "*" else 1
+    now = timezone.now()
 
-    return period_in_hours
+    # Use croniter to find the last occurrence of the schedule
+    cron = croniter(cron_expr, now)
+    last_occurrence = cron.get_prev(datetime)
+
+    # Calculate the timedelta since the last occurrence
+    delta = now - last_occurrence
+
+    return delta
