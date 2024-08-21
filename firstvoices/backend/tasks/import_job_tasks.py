@@ -96,13 +96,13 @@ def clean_csv(data):
 
 
 def import_resource(
+    data,
     resource,
-    cleaned_data,
     import_job_instance,
-    accepted_columns,
-    ignored_columns,
     dry_run,
 ):
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
+
     # Method to import the cleaned data for the provided resource along with a dry-run flag.
     result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
 
@@ -147,6 +147,31 @@ def import_resource(
             error_row_instance.save()
 
     return report
+
+
+def import_job(data, import_job_instance, logger):
+    resource = DictionaryEntryResource(site=import_job_instance.site)
+
+    try:
+        import_resource(data, resource, import_job_instance, dry_run=False)
+        import_job_instance.status = JobStatus.COMPLETE
+    except Exception as e:
+        logger.error(e)
+        import_job_instance.status = JobStatus.FAILED
+
+
+def import_job_dry_run(data, import_job_instance, logger):
+    """Variation of the import_job method above, for dry-run only.
+    Updates the validationReport and validationStatus instead of the job status."""
+    resource = DictionaryEntryResource(site=import_job_instance.site)
+
+    try:
+        report = import_resource(data, resource, import_job_instance, dry_run=True)
+        import_job_instance.validation_status = JobStatus.COMPLETE
+        import_job_instance.validation_report = report
+    except Exception as e:
+        logger.error(e)
+        import_job_instance.validation_status = JobStatus.FAILED
 
 
 @shared_task
@@ -214,32 +239,11 @@ def batch_import(import_job_instance_id, dry_run=True):
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
 
-    resource = DictionaryEntryResource(site=import_job_instance.site)
-
-    try:
-        report = import_resource(
-            resource,
-            cleaned_data,
-            import_job_instance,
-            accepted_columns,
-            ignored_columns,
-            dry_run,
-        )
-
-        if dry_run:
-            import_job_instance.validation_status = JobStatus.COMPLETE
-            import_job_instance.validation_report = report
-        else:
-            import_job_instance.status = JobStatus.COMPLETE
-    except Exception as e:
-        logger.error(e)
-
-        if dry_run:
-            import_job_instance.validation_status = JobStatus.FAILED
-        else:
-            import_job_instance.status = JobStatus.FAILED
+    if dry_run:
+        import_job_dry_run(data, import_job_instance, logger)
+    else:
+        import_job(data, import_job_instance, logger)
 
     import_job_instance.save()
     logger.info(ASYNC_TASK_END_TEMPLATE)
