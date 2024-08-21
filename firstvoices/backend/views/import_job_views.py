@@ -32,13 +32,7 @@ from firstvoices.celery import link_error_handler
         parameters=[site_slug_parameter],
     ),
     retrieve=extend_schema(
-        description=_(
-            "Details about a specific batch import job. "
-            "Includes standard task fields: status, task ID, and error message. "
-            "If doing a dry-run, validationTaskId, validationStatus, and validationReport are also added. "
-            "ValidationReport contains information about accepted columns, ignored columns, new rows, "
-            "skipped rows, any erroneous rows and their details in errorDetails field. "
-        ),
+        description=_("Details about a specific batch import job."),
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_detail,
@@ -54,11 +48,9 @@ from firstvoices.celery import link_error_handler
     ),
     create=extend_schema(
         description=_(
-            "Queue a new batch import job and create a model instance to track the job. The first stage "
-            "of the import job workflow is to validate and execute a dry-run of the provided CSV, and "
-            "display any issues with the CSV or rows. It also displays how many rows will be imported,"
-            " ignored or contain any errors with their details. Once the dry-run has been successfully "
-            "completed, the confirm action can be used to do the database import for the provided CSV."
+            "Creates a new batch import job and automatically starts generating a validation report. "
+            "Once the validationStatus is 'COMPLETE', the validationReport will list how many rows can "
+            "be imported, ignored columns, rows or any errors. See the 'confirm' API to import the data."
         ),
         responses={
             201: OpenApiResponse(
@@ -88,11 +80,9 @@ from firstvoices.celery import link_error_handler
     ),
     confirm=extend_schema(
         description=_(
-            "This action proceeds to import the entries from the CSV file for the specified import-job. "
-            "It requires the CSV to be validated, and a successful dry-run for the specified import-job. "
-            "The response shall return with the current status for the import-job in the `status` field, "
-            "which is different from the `validationStatus` field. "
-            "*Note: No request body is required for this action.*"
+            "Starts importing the data, as described in the validationReport. In order to succeed, the "
+            "validationStatus must already be 'COMPLETE' and there must be no other imports jobs in progress "
+            "for the site. When finished, the status will be 'COMPLETE'."
         ),
         responses={
             201: OpenApiResponse(
