@@ -8,12 +8,7 @@ from backend.models.sites import (
     SiteMenu,
 )
 
-from .base_admin import (
-    BaseAdmin,
-    BaseInlineAdmin,
-    BaseInlineSiteContentAdmin,
-    BaseSiteContentAdmin,
-)
+from .base_admin import BaseAdmin, BaseSiteContentAdmin
 
 # Admin settings for the sites models, except Site. For the main Site admin, see .admin instead.
 
@@ -86,33 +81,3 @@ class SiteMenuAdmin(BaseSiteContentAdmin):
     search_fields = ("site__title", "json")
     autocomplete_fields = ("site",)
     list_filter = ()
-
-
-class MembershipInline(BaseInlineSiteContentAdmin):
-    model = Membership
-    fields = (
-        "user",
-        "role",
-    ) + BaseInlineAdmin.fields
-    readonly_fields = (
-        ("user",) + BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
-    )
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request).select_related("user")
-        return qs
-
-
-class SiteFeatureInline(BaseInlineAdmin):
-    model = SiteFeature
-    fields = (
-        "key",
-        "is_enabled",
-    ) + BaseInlineAdmin.fields
-    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
-
-
-class SiteMenuInline(BaseInlineAdmin):
-    model = SiteMenu
-    fields = ("json",) + BaseInlineAdmin.fields
-    readonly_fields = BaseInlineAdmin.readonly_fields + MembershipAdmin.readonly_fields
