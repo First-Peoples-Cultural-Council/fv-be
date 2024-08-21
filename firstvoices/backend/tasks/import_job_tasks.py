@@ -89,44 +89,22 @@ def clean_csv(data):
     for invalid_header in invalid_headers:
         del data[invalid_header]
 
+    # lower-casing headers
+    data.headers = [header.lower() for header in data.headers]
+
     return accepted_headers, invalid_headers, data
 
 
-@shared_task
-def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
-    # This function will be modified later with a flag
-    # to be used for both dry-run and actual import
-
-    logger = get_task_logger(__name__)
-    task_id = current_task.request.id
-
-    logger.info(
-        ASYNC_TASK_START_TEMPLATE, f"import_job_instance_id: {import_job_instance_id}"
-    )
-
-    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
-    import_job_instance.validation_task_id = task_id
-    import_job_instance.validation_status = JobStatus.STARTED
-    import_job_instance.save()
-
-    file = import_job_instance.data.content.open().read().decode("utf-8-sig")
-    data = tablib.Dataset().load(file, format="csv")
+def import_resource(
+    data,
+    resource,
+    import_job_instance,
+    dry_run,
+):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
 
-    # Signals to be enabled during actual run, and not dry-run
-    # After a batch has been successfully uploaded, we should run a
-    # re-index for the site
-
-    # Disconnecting search indexing signals
-    # disconnect_signals()
-    # logger.info("Disconnected all search index related signals")
-
-    resource = DictionaryEntryResource(site=import_job_instance.site)
-
-    try:
-        result = resource.import_data(dataset=cleaned_data, dry_run=True)
-    except Exception as e:
-        logger.error(e)
+    # Method to import the cleaned data for the provided resource along with a dry-run flag.
+    result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(
@@ -139,10 +117,6 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
         ignored_columns=ignored_columns,
     )
     report.save()
-
-    import_job_instance.validation_status = JobStatus.COMPLETE
-    import_job_instance.validation_report = report
-    import_job_instance.save()
 
     # check for errors
     if result.has_errors():
@@ -172,8 +146,104 @@ def execute_dry_run_import(import_job_instance_id, *args, **kwargs):
             )
             error_row_instance.save()
 
-    # Connecting back search indexing signals
-    # connect_signals()
-    # logger.info("Re-connected all search index related signals")
+    return report
 
+
+def import_job(data, import_job_instance, logger):
+    resource = DictionaryEntryResource(site=import_job_instance.site)
+
+    try:
+        import_resource(data, resource, import_job_instance, dry_run=False)
+        import_job_instance.status = JobStatus.COMPLETE
+    except Exception as e:
+        logger.error(e)
+        import_job_instance.status = JobStatus.FAILED
+
+
+def import_job_dry_run(data, import_job_instance, logger):
+    """Variation of the import_job method above, for dry-run only.
+    Updates the validationReport and validationStatus instead of the job status."""
+    resource = DictionaryEntryResource(site=import_job_instance.site)
+
+    try:
+        report = import_resource(data, resource, import_job_instance, dry_run=True)
+        import_job_instance.validation_status = JobStatus.COMPLETE
+        import_job_instance.validation_report = report
+    except Exception as e:
+        logger.error(e)
+        import_job_instance.validation_status = JobStatus.FAILED
+
+
+@shared_task
+def batch_import(import_job_instance_id, dry_run=True):
+    # This method passes the provided CSV file through the clean method,
+    # does a dry-run or the import as per the dry_run flag provided,
+    # then parses through the result to return a validation report.
+
+    logger = get_task_logger(__name__)
+    task_id = current_task.request.id
+    logger.info(
+        ASYNC_TASK_START_TEMPLATE,
+        f"import_job_instance_id: {import_job_instance_id}, dry-run: {dry_run}",
+    )
+
+    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
+
+    # Assert conditions to verify no other job is running.
+    # If any variation of an import job is currently running for the provided site,
+    # abort the task and provide an error message.
+
+    site = import_job_instance.site
+
+    # Get any incomplete jobs, except for the currently specified one.
+    existing_incomplete_import_jobs = ImportJob.objects.filter(
+        site=site, status=JobStatus.STARTED
+    ).exclude(id=import_job_instance.id)
+
+    if len(existing_incomplete_import_jobs):
+        logger.error(
+            "There is at least 1 already on-going job on this site. "
+            "Please wait for it to finish before starting a new one."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+        return
+
+    # If the job status is already completed, also abort the task
+    if import_job_instance.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
+        logger.error(
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return
+
+    # If dry-run has not been executed successfully, do not proceed
+    if (dry_run is False) and (
+        import_job_instance.validation_status != JobStatus.COMPLETE
+    ):
+        logger.error(
+            "A successful dry-run is required before doing the import. "
+            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+        )
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+
+        import_job_instance.status = JobStatus.CANCELLED
+        import_job_instance.save()
+        return
+
+    import_job_instance.validation_task_id = task_id
+    import_job_instance.validation_status = JobStatus.STARTED
+    import_job_instance.save()
+
+    file = import_job_instance.data.content.open().read().decode("utf-8-sig")
+    data = tablib.Dataset().load(file, format="csv")
+
+    if dry_run:
+        import_job_dry_run(data, import_job_instance, logger)
+    else:
+        import_job(data, import_job_instance, logger)
+
+    import_job_instance.save()
     logger.info(ASYNC_TASK_END_TEMPLATE)

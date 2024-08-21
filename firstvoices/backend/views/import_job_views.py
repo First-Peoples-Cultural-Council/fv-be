@@ -1,12 +1,14 @@
 from django.db import transaction
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import parsers
+from rest_framework import parsers, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.import_jobs import ImportJob
+from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.tasks.import_job_tasks import execute_dry_run_import
+from backend.tasks.import_job_tasks import batch_import
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -16,7 +18,8 @@ from firstvoices.celery import link_error_handler
 @extend_schema_view(
     list=extend_schema(
         description=_(
-            "A list of batch import jobs associated with the specified site."
+            "A list of batch import jobs associated with the specified site. "
+            "See the detail view for more information on specified fields."
         ),
         responses={
             200: OpenApiResponse(
@@ -44,7 +47,43 @@ from firstvoices.celery import link_error_handler
         ],
     ),
     create=extend_schema(
-        description=_("Add a batch import job."),
+        description=_(
+            "Creates a new batch import job and automatically starts generating a validation report. "
+            "Once the validationStatus is 'COMPLETE', the validationReport will list how many rows can "
+            "be imported, ignored columns, rows or any errors. See the 'confirm' API to import the data."
+        ),
+        responses={
+            201: OpenApiResponse(
+                description=doc_strings.success_201, response=ImportJobSerializer
+            ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    destroy=extend_schema(
+        description="Deletes a single import-job and its associated file and result for the specified site. "
+        "This action does not delete any of the entries imported by the import-job.",
+        responses={
+            204: OpenApiResponse(description=doc_strings.success_204_deleted),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    confirm=extend_schema(
+        description=_(
+            "Starts importing the data, as described in the validationReport. In order to succeed, the "
+            "validationStatus must already be 'COMPLETE' and there must be no other imports jobs in progress "
+            "for the site. When finished, the status will be 'COMPLETE'."
+        ),
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201, response=ImportJobSerializer
@@ -68,18 +107,55 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         parsers.JSONParser,
     ]
 
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "confirm": "change",
+    }
+
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(
-            site=site
-        ).all()  # permissions are applied by the base view
+        return ImportJob.objects.filter(site=site).order_by(
+            "-created"
+        )  # permissions are applied by the base view
 
     def perform_create(self, serializer):
         instance = serializer.save()
 
         # Dry-run to get validation results
         transaction.on_commit(
-            lambda: execute_dry_run_import.apply_async(
-                (str(instance.id),), link_error=link_error_handler.s()
+            lambda: batch_import.apply_async(
+                (str(instance.id),),
+                link_error=link_error_handler.s(),
+                ignore_result=True,
             )
+        )
+
+    @action(detail=True, methods=["post"])
+    def confirm(self, request, site_slug=None, pk=None):
+        import_job_id = self.kwargs["pk"]
+
+        site = self.get_validated_site()
+        import_job = ImportJob.objects.get(id=import_job_id)
+
+        import_job.status = JobStatus.STARTED
+        import_job.save()
+
+        # Start the task
+        transaction.on_commit(
+            lambda: batch_import.apply_async(
+                (str(import_job.id), False),
+                link_error=link_error_handler.s(),
+                ignore_result=True,
+            )
+        )
+
+        # Update the in-memory instance and return the job
+        import_job = ImportJob.objects.get(id=import_job_id)
+        serializer = ImportJobSerializer(
+            import_job, context={"request": self.request, "site": site}
+        )
+        headers = self.get_success_headers(serializer.data)
+
+        return Response(
+            serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
         )

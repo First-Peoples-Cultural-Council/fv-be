@@ -1,9 +1,10 @@
 import json
 
 import pytest
+from rest_framework.reverse import reverse
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.import_jobs import ImportJob
+from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
@@ -28,6 +29,7 @@ class TestImportEndpoints(
 
     API_LIST_VIEW = "api:importjob-list"
     API_DETAIL_VIEW = "api:importjob-detail"
+    API_CONFIRM_ACTION = "api:importjob-confirm"
     model = ImportJob
 
     def create_minimal_instance(self, site, visibility=None):
@@ -334,3 +336,46 @@ class TestImportEndpoints(
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
+
+    def test_confirm_action(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+
+        # Mock import-job with completed validation status
+        file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
+        file = factories.FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[site.slug, str(import_job_instance.id)],
+        )
+
+        response = self.client.post(confirm_endpoint)
+
+        assert response.status_code == 202
+        response_data = json.loads(response.content)
+
+        assert response_data["status"] == JobStatus.STARTED
+
+    def test_confirm_action_404_unknown_key(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[site.slug, "fake-key"],
+        )
+
+        response = self.client.post(confirm_endpoint)
+
+        assert response.status_code == 404
