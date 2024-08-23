@@ -78,6 +78,10 @@ class UserForeignKeyWidget(ForeignKeyWidget):
 class InvertedBooleanFieldWidget(Widget):
     """Import/export widget to return expected boolean value for audience related fields."""
 
+    def __init__(self, column, coerce_to_string=True):
+        self.column_name = column
+        super().__init__(coerce_to_string=coerce_to_string)
+
     def clean(self, value, row=None, **kwargs):
         cleaned_input = str(value).strip().lower()
 
@@ -87,7 +91,9 @@ class InvertedBooleanFieldWidget(Widget):
         elif cleaned_input in ["false", "no", "n", "0"]:
             return True
         else:
-            raise ValidationError("Invalid value. Expected 'true' or 'false'.")
+            raise ValidationError(
+                f"Invalid value in {self.column_name} column. Expected 'true' or 'false'."
+            )
 
 
 class TextListWidget(Widget):
