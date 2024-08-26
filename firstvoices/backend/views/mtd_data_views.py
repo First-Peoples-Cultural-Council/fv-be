@@ -57,7 +57,7 @@ class MTDSitesDataViewSet(
         )
 
         if mtd_exports_for_site:
-            return Response(mtd_exports_for_site.latest().latest_export_result)
+            return Response(mtd_exports_for_site.latest().export_result)
         return HttpResponseNotFound(
             "Site has not been indexed yet. MTD export format not found."
         )

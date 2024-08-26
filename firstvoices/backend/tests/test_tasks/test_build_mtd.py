@@ -88,7 +88,7 @@ class TestMTDIndexAndScoreTask:
         result = build_index_and_calculate_scores(site.slug)
         # Check that the exported contents were saved
         saved_export_format = MTDExportFormat.objects.filter(site=site)
-        assert saved_export_format.latest().latest_export_result == result
+        assert saved_export_format.latest().export_result == result
         assert not saved_export_format.latest().is_preview
 
     @pytest.mark.django_db
@@ -216,7 +216,7 @@ class TestMTDIndexAndScoreTask:
         # Check that only the most recent is in the db
         saved_results = MTDExportFormat.objects.filter(site=site)
         assert len(saved_results) == 1
-        assert saved_results.latest().latest_export_result == final_result
+        assert saved_results.latest().export_result == final_result
         assert not saved_results.latest().is_preview
 
 

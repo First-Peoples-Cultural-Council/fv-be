@@ -1,11 +1,11 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from backend.models.base import BaseSiteContentModel
+from backend.models.jobs import BaseJob
 from backend.permissions import predicates
 
 
-class MTDExportFormat(BaseSiteContentModel):
+class MTDExportFormat(BaseJob):
     """Model to store MTD app export format results.
     This format includes the configuration, inverted indices,
     and entry scoring needed by an MTD compatible front-end.
@@ -22,13 +22,7 @@ class MTDExportFormat(BaseSiteContentModel):
             "delete": predicates.is_superadmin,
         }
 
-        indexes = [
-            models.Index(fields=["site", "is_preview"], name="mtd_site_preview_idx"),
-        ]
-
-    latest_export_result = models.JSONField(default=dict)
-    task_id = models.CharField(max_length=255, null=True, blank=True)
-    is_preview = models.BooleanField(default=True)
+    export_result = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.site.title + " - " + str(self.created)
+        return self.site.title + " - MTD Export - " + str(self.id)
