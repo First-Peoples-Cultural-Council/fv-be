@@ -95,7 +95,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         export_job.save()
         logger.info(cancelled_message)
         logger.info(ASYNC_TASK_END_TEMPLATE)
-        return
+        return export_job
 
     characters_list = site.character_set.all().order_by("sort_order")
     dictionary_entries_queryset = (
@@ -184,7 +184,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
             export_job.save()
             logger.error(e)
             logger.info(ASYNC_TASK_END_TEMPLATE)
-            return
+            return export_job
     result = dictionary.export().model_dump(mode="json")
 
     # Save the new result to the database
@@ -197,7 +197,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
 
-    return result
+    return export_job
 
 
 @shared_task(bind=True)
