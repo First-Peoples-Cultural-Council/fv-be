@@ -14,6 +14,7 @@ from backend.models import MTDExportFormat
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
 
+from ..serializers.mtd_serializers import MTDExportFormatSerializer
 from . import doc_strings
 
 
@@ -50,12 +51,12 @@ class MTDSitesDataViewSet(
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        mtd_exports_for_site = MTDExportFormat.objects.filter(site=site).only(
-            "export_result"
-        )
+        mtd_exports_for_site = MTDExportFormat.objects.filter(site=site)
 
         if mtd_exports_for_site:
-            return Response(mtd_exports_for_site.latest().export_result)
+            return Response(
+                MTDExportFormatSerializer(mtd_exports_for_site.latest()).data
+            )
         return HttpResponseNotFound(
             "Site has not been indexed yet. MTD export format not found."
         )
