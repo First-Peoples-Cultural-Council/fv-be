@@ -39,6 +39,8 @@ def is_valid_header_variation(input_header, all_headers):
     # e.g. 'note_2' to 'note_5' columns will only be accepted if 'note' column is present in the table
     # All other variations are invalid
 
+    all_headers = [h.strip().lower() for h in all_headers]
+
     splits = input_header.split("_")
     if len(splits) >= 2:
         prefix = "_".join(splits[:-1])
