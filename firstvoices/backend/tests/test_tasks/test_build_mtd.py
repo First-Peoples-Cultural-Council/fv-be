@@ -233,7 +233,10 @@ class TestMTDIndexAndScoreTask:
         assert result == {}
         assert "Task started. Additional info: site: test." in caplog.text
         assert "Task ended." in caplog.text
-        assert "Job cancelled as another MTD export job is already in progress for the same site."
+        assert (
+            "Job cancelled as another MTD export job is already in progress for the same site."
+            in caplog.text
+        )
 
     @pytest.mark.django_db
     def test_build_and_score_exception(self, site, caplog):
