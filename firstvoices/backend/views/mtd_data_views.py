@@ -69,7 +69,7 @@ class MTDSitesDataViewSet(
             return Response(mtd_exports_for_site.latest().export_result)
         return Response(
             {
-                "message": "Site has not successfully been indexed yet. MTD export format not found."
+                "message": "Site has not been successfully indexed yet. MTD export format not found."
             },
             status=status.HTTP_404_NOT_FOUND,
         )
