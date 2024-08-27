@@ -243,6 +243,11 @@ class TestBulkImportDryRun:
         DictionaryEntryFactory(
             site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
+        DictionaryEntryFactory(
+            site=site,
+            type=TypeOfDictionaryEntry.PHRASE,
+            id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
+        )
 
         file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
