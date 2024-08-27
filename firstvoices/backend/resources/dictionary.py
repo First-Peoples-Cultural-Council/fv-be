@@ -13,6 +13,7 @@ from backend.resources.utils.import_export_widgets import (
     CategoryWidget,
     ChoicesWidget,
     CleanForeignKeyWidget,
+    RelatedEntriesWidget,
     TextListWidget,
 )
 
@@ -60,6 +61,13 @@ class DictionaryEntryResource(
         column_name="alternate_spelling",
         attribute="alternate_spellings",
         widget=TextListWidget(prefix="alternate_spelling"),
+    )
+
+    # Related entries
+    related_dictionary_entries = fields.Field(
+        column_name="related_entry",
+        attribute="related_dictionary_entries",
+        widget=RelatedEntriesWidget(),
     )
 
     def __init__(self, site=None):

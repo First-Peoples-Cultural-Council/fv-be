@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 
@@ -7,7 +8,12 @@ from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import batch_import
-from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
+from backend.tests.factories import (
+    DictionaryEntryFactory,
+    FileFactory,
+    ImportJobFactory,
+    SiteFactory,
+)
 from backend.tests.utils import get_sample_file
 
 
@@ -231,6 +237,31 @@ class TestBulkImportDryRun:
             in validation_error_row.errors
         )
 
+    def test_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+
+        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 1
+        assert validation_report.error_rows == 1
+        assert validation_report.skipped_rows == 0
+
+        validation_error_row = validation_report.rows.first()
+        assert validation_error_row.row_number == 1
+        assert "“invalid_uuid” is not a valid UUID." in validation_error_row.errors
+
     def test_dry_run_failed(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
@@ -447,3 +478,52 @@ class TestBulkImport:
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
             assert import_job_instance.status == JobStatus.FAILED
             assert "Random exception." in caplog.text
+
+    def test_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        existing_entry = DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+
+        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        new_entry = DictionaryEntry.objects.get(title="Word 2")
+        related_entry = new_entry.dictionaryentrylink_set.first()
+
+        assert related_entry.from_dictionary_entry.id == new_entry.id
+        assert related_entry.to_dictionary_entry.id == existing_entry.id
+
+    def test_multiple_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        existing_entry_1 = DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        existing_entry_2 = DictionaryEntryFactory(
+            site=site,
+            type=TypeOfDictionaryEntry.PHRASE,
+            id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
+        )
+
+        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        related_entry = DictionaryEntry.objects.get(
+            title="Word 3"
+        ).dictionaryentrylink_set.values_list("to_dictionary_entry_id", flat=True)
+        related_entry_list = list(related_entry)
+
+        assert existing_entry_1.id in related_entry_list
+        assert existing_entry_2.id in related_entry_list

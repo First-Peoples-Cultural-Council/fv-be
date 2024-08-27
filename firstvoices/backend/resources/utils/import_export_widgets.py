@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
-from backend.models import Category
+from backend.models import Category, DictionaryEntry
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -161,3 +161,41 @@ class CleanForeignKeyWidget(ForeignKeyWidget):
             value = value.title()
 
         return super().clean(value, row, **kwargs)
+
+
+class RelatedEntriesWidget(ManyToManyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model=DictionaryEntry, *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        column_name_pattern = r"related_entry[_2-5]*"
+
+        input_entries = {}
+        valid_entries = []
+
+        for column, input_value in row.items():
+            if re.fullmatch(column_name_pattern, column):
+                input_entries[column] = input_value.strip()
+
+        # removing empty values from dict
+        input_entries = {
+            entry: value for entry, value in input_entries.items() if value
+        }
+
+        # If no categories provided, return
+        if len(input_entries) == 0:
+            return Category.objects.none()
+
+        # Validate entries
+        for column, input_value in input_entries.items():
+            entry_lookup = DictionaryEntry.objects.filter(
+                site__id=row["site"], id=input_value
+            )
+            if len(entry_lookup) == 0:
+                raise ValidationError(
+                    f"Invalid dictionary entry supplied in column {column}."
+                )
+            else:
+                valid_entries.append(entry_lookup[0])
+
+        return valid_entries
