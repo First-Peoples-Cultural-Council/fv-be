@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models import MTDExportFormat
+from backend.models.jobs import JobStatus
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
     FVPermissionViewSetMixin,
@@ -60,14 +61,16 @@ class MTDSitesDataViewSet(
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        mtd_exports_for_site = MTDExportFormat.objects.filter(site=site).only(
-            "export_result"
-        )
+        mtd_exports_for_site = MTDExportFormat.objects.filter(
+            site=site, status=JobStatus.COMPLETE
+        ).only("export_result")
 
         if mtd_exports_for_site:
             return Response(mtd_exports_for_site.latest().export_result)
         return Response(
-            {"message": "Site has not been indexed yet. MTD export format not found."},
+            {
+                "message": "Site has not successfully been indexed yet. MTD export format not found."
+            },
             status=status.HTTP_404_NOT_FOUND,
         )
 

@@ -4,6 +4,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import Visibility
+from backend.models.jobs import JobStatus
 from backend.tasks.mtd_export_tasks import build_index_and_calculate_scores
 from backend.tests import factories
 
@@ -57,7 +58,7 @@ class TestMTDDataEndpoint:
         assert response.status_code == 404
         assert (
             response.content
-            == b'{"message":"Site has not been indexed yet. MTD export format not found."}'
+            == b'{"message":"Site has not been successfully indexed yet. MTD export format not found."}'
         )
 
     @pytest.mark.django_db
@@ -101,3 +102,29 @@ class TestMTDDataEndpoint:
         )
         assert response.status_code == 200
         assert response.data == self.get_expected_task_response(site, mtd)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("status", [JobStatus.CANCELLED, JobStatus.FAILED])
+    def test_data_integrity_build_and_score_failed(self, status):
+        self.user = factories.get_superadmin()
+        self.client.force_authenticate(user=self.user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.CharacterFactory.create_batch(10, site=site)
+        factories.DictionaryEntryFactory.create_batch(
+            10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
+        )
+
+        mtd = build_index_and_calculate_scores(site.slug)
+
+        factories.MTDExportFormatFactory.create(site=site, status=status)
+
+        response = self.client.get(self.get_mtd_endpoint(site_slug=site.slug))
+        assert response.status_code == 200
+        assert response.data == self.get_expected_mtd_data_response(mtd.export_result)
+
+        response = self.client.get(
+            self.get_mtd_endpoint(site_slug=site.slug) + "/task/"
+        )
+        assert response.status_code == 200
+        assert response.data["status"] == status
