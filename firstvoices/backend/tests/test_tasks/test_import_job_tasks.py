@@ -254,7 +254,7 @@ class TestBulkImportDryRun:
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
 
-        assert validation_report.new_rows == 1
+        assert validation_report.new_rows == 2
         assert validation_report.error_rows == 1
         assert validation_report.skipped_rows == 0
 
