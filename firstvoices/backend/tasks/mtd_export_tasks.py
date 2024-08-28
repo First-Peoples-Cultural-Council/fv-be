@@ -1,13 +1,11 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
-from croniter import croniter
 from django.db.models import Q
 from django.db.models.query import Prefetch, QuerySet
 from django.utils import timezone
-from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from mothertongues.config.models import DataSource
 from mothertongues.config.models import DictionaryEntry as MTDictionaryEntry
 from mothertongues.config.models import (
@@ -188,42 +186,54 @@ def check_sites_for_mtd_sync(self):
     logger.info(ASYNC_TASK_START_TEMPLATE)
 
     try:
-        self.state = "STARTED"
         sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
-        delta = get_delta_for_mtd_check() or timedelta(hours=24)
-        last_modified_check_period = timezone.now() - delta
-        logger.info(
-            f"Checking for MTD changes since {last_modified_check_period}. Current time: {timezone.now()}"
-        )
 
         for site in sites:
-            updated_entries_count = DictionaryEntry.objects.filter(
-                site=site, last_modified__gte=last_modified_check_period
-            ).count()
-
-            updated_categories_count = DictionaryEntryCategory.objects.filter(
-                category__site=site, last_modified__gte=last_modified_check_period
-            ).count()
-
-            updated_related_media_count = (
-                DictionaryEntry.objects.filter(site=site)
-                .filter(
-                    Q(related_audio__last_modified__gte=last_modified_check_period)
-                    | Q(related_images__last_modified__gte=last_modified_check_period)
-                    | Q(related_videos__last_modified__gte=last_modified_check_period)
+            if MTDExportFormat.objects.filter(site=site).exists():
+                last_export = MTDExportFormat.objects.filter(site=site).latest()
+                last_modified_check_period = last_export.created
+                logger.info(
+                    f"Checking for MTD changes on site {site.title} since {last_modified_check_period}. "
+                    f"Current time: {timezone.now()}"
                 )
-                .distinct()
-                .count()
-            )
 
-            relevant_changes_count = (
-                updated_entries_count
-                + updated_categories_count
-                + updated_related_media_count
-            )
+                updated_entries_count = DictionaryEntry.objects.filter(
+                    site=site, last_modified__gte=last_modified_check_period
+                ).count()
 
-            if relevant_changes_count > 0:
-                logger.info(f"Starting MTD Index update for site {site.slug}.")
+                updated_categories_count = DictionaryEntryCategory.objects.filter(
+                    category__site=site, last_modified__gte=last_modified_check_period
+                ).count()
+
+                updated_related_media_count = (
+                    DictionaryEntry.objects.filter(site=site)
+                    .filter(
+                        Q(related_audio__last_modified__gte=last_modified_check_period)
+                        | Q(
+                            related_images__last_modified__gte=last_modified_check_period
+                        )
+                        | Q(
+                            related_videos__last_modified__gte=last_modified_check_period
+                        )
+                    )
+                    .distinct()
+                    .count()
+                )
+
+                relevant_changes_count = (
+                    updated_entries_count
+                    + updated_categories_count
+                    + updated_related_media_count
+                )
+
+                if relevant_changes_count > 0:
+                    logger.info(f"Starting MTD Index update for site {site.slug}.")
+                    build_index_and_calculate_scores.apply_async(
+                        (site.slug,),
+                        link_error=link_error_handler.s(),
+                    )
+            else:
+                logger.info(f"Starting MTD Index build for site {site.slug}.")
                 build_index_and_calculate_scores.apply_async(
                     (site.slug,),
                     link_error=link_error_handler.s(),
@@ -236,62 +246,3 @@ def check_sites_for_mtd_sync(self):
         logger.error(f"MTD Sync check failed: {e}")
         logger.info(ASYNC_TASK_END_TEMPLATE)
         raise e
-
-
-def get_delta_for_mtd_check():
-    if PeriodicTask.objects.filter(name="check_sites_for_mtd_sync").exists():
-        periodic_task = PeriodicTask.objects.get(name="check_sites_for_mtd_sync")
-    else:
-        # No period if the task cannot be found
-        return None
-
-    # No period if the task does not have an interval or crontab
-    if not periodic_task.interval and not periodic_task.crontab:
-        return None
-
-    if periodic_task.crontab:
-        delta = crontab_to_timedelta(periodic_task.crontab)
-    else:
-        delta = interval_to_timedelta(periodic_task.interval)
-
-    return delta
-
-
-def interval_to_timedelta(interval):
-    period_map = {
-        IntervalSchedule.SECONDS: "seconds",
-        IntervalSchedule.MINUTES: "minutes",
-        IntervalSchedule.HOURS: "hours",
-        IntervalSchedule.DAYS: "days",
-    }
-
-    period = period_map.get(interval.period)
-
-    if not period:
-        raise ValueError(f"Unsupported interval period: {interval.period}")
-
-    kwargs = {period: interval.every}
-
-    return timedelta(**kwargs)
-
-
-def crontab_to_timedelta(crontab_schedule):
-    # Construct the cron expression
-    cron_expr = (
-        f"{crontab_schedule.minute} "
-        f"{crontab_schedule.hour} "
-        f"{crontab_schedule.day_of_month} "
-        f"{crontab_schedule.month_of_year} "
-        f"{crontab_schedule.day_of_week}"
-    )
-
-    now = timezone.now()
-
-    # Use croniter to find the last occurrence of the schedule
-    cron = croniter(cron_expr, now)
-    last_occurrence = cron.get_prev(datetime)
-
-    # Calculate the timedelta since the last occurrence
-    delta = now - last_occurrence
-
-    return delta
