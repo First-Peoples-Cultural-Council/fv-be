@@ -16,7 +16,7 @@ from mothertongues.config.models import (
 )
 from mothertongues.dictionary import MTDictionary
 
-from backend.models import Category, DictionaryEntry, MTDExportFormat, Site, constants
+from backend.models import Category, DictionaryEntry, MTDExportJob, Site, constants
 from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.jobs import JobStatus
 from backend.models.media import Audio, Image, Video
@@ -77,7 +77,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         )
 
     # Saving an empty model to depict that the task has started
-    export_job = MTDExportFormat.objects.create(
+    export_job = MTDExportJob.objects.create(
         site=site,
         export_result={},
         task_id=current_task.request.id,
@@ -85,7 +85,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     )
 
     if (
-        MTDExportFormat.objects.filter(status=JobStatus.STARTED, site=site)
+        MTDExportJob.objects.filter(status=JobStatus.STARTED, site=site)
         .exclude(id=export_job.id)
         .exists()
     ):
@@ -193,7 +193,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     export_job.save()
 
     # Delete any previous results for the same site
-    MTDExportFormat.objects.filter(site=site).exclude(id=export_job.id).delete()
+    MTDExportJob.objects.filter(site=site).exclude(id=export_job.id).delete()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
 

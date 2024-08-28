@@ -5,7 +5,7 @@ from backend.models.jobs import BaseJob
 from backend.permissions import predicates
 
 
-class MTDExportFormat(BaseJob):
+class MTDExportJob(BaseJob):
     """Model to store MTD app export format results.
     This format includes the configuration, inverted indices,
     and entry scoring needed by an MTD compatible front-end.

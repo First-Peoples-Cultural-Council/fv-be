@@ -1,7 +1,7 @@
 import pytest
 
 from backend.models.constants import Visibility
-from backend.tests.factories import MTDExportFormatFactory, SiteFactory
+from backend.tests.factories import MTDExportTaskFactory, SiteFactory
 
 
 class TestMTDExportFormatModel:
@@ -9,7 +9,7 @@ class TestMTDExportFormatModel:
     def test_representation(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        mtd = MTDExportFormatFactory(site=site)
+        mtd = MTDExportTaskFactory(site=site)
 
         expected_str = f"{site.title} - MTD Export - {str(mtd.id)}"
         assert str(mtd) == expected_str

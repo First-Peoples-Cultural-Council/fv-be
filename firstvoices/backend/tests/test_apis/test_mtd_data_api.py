@@ -101,7 +101,7 @@ class TestMTDDataEndpoint:
             self.get_mtd_endpoint(site_slug=site.slug) + "/task/"
         )
         assert response.status_code == 200
-        assert response.data == self.get_expected_task_response(site, mtd)
+        assert response.data[0] == self.get_expected_task_response(site, mtd)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("status", [JobStatus.CANCELLED, JobStatus.FAILED])
@@ -117,7 +117,7 @@ class TestMTDDataEndpoint:
 
         mtd = build_index_and_calculate_scores(site.slug)
 
-        factories.MTDExportFormatFactory.create(site=site, status=status)
+        factories.MTDExportTaskFactory.create(site=site, status=status)
 
         response = self.client.get(self.get_mtd_endpoint(site_slug=site.slug))
         assert response.status_code == 200
@@ -127,4 +127,4 @@ class TestMTDDataEndpoint:
             self.get_mtd_endpoint(site_slug=site.slug) + "/task/"
         )
         assert response.status_code == 200
-        assert response.data["status"] == status
+        assert response.data[0]["status"] == status

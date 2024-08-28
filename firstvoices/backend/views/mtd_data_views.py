@@ -10,7 +10,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models import MTDExportFormat
+from backend.models import MTDExportJob
 from backend.models.jobs import JobStatus
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_views import (
@@ -20,7 +20,7 @@ from backend.views.base_views import (
 )
 
 from ..permissions.utils import filter_by_viewable
-from ..serializers.mtd_serializers import MTDExportFormatTaskSerializer
+from ..serializers.mtd_serializers import MTDExportJobSerializer
 from . import doc_strings
 
 
@@ -61,7 +61,7 @@ class MTDSitesDataViewSet(
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        mtd_exports_for_site = MTDExportFormat.objects.filter(
+        mtd_exports_for_site = MTDExportJob.objects.filter(
             site=site, status=JobStatus.COMPLETE
         ).only("export_result")
 
@@ -78,11 +78,11 @@ class MTDSitesDataViewSet(
     def task(self, request, *args, **kwargs):
         site = self.get_validated_site()
         mtd_exports_for_site = filter_by_viewable(
-            request.user, MTDExportFormat.objects.filter(site=site)
-        )
+            request.user, MTDExportJob.objects.filter(site=site)
+        ).order_by("-created")
         if mtd_exports_for_site:
             return Response(
-                MTDExportFormatTaskSerializer(mtd_exports_for_site.latest()).data
+                MTDExportJobSerializer(mtd_exports_for_site, many=True).data
             )
         return Response(
             {"message": "MTD export task information not available."},

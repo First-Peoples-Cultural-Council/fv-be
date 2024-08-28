@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from django.utils import timezone
 
-from backend.models import MTDExportFormat
+from backend.models import MTDExportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.models.jobs import JobStatus
@@ -89,7 +89,7 @@ class TestMTDIndexAndScoreTask:
     def test_export_is_saved(self, site):
         result = build_index_and_calculate_scores(site.slug).export_result
         # Check that the exported contents were saved
-        saved_export_format = MTDExportFormat.objects.filter(site=site)
+        saved_export_format = MTDExportJob.objects.filter(site=site)
         assert saved_export_format.latest().export_result == result
 
     @pytest.mark.django_db
@@ -215,13 +215,13 @@ class TestMTDIndexAndScoreTask:
         final_result = build_index_and_calculate_scores(site.slug).export_result
 
         # Check that only the most recent is in the db
-        saved_results = MTDExportFormat.objects.filter(site=site)
+        saved_results = MTDExportJob.objects.filter(site=site)
         assert len(saved_results) == 1
         assert saved_results.latest().export_result == final_result
 
     @pytest.mark.django_db
-    def test_build_and_score_not_triggered_while_running(self, site, caplog):
-        factories.MTDExportFormatFactory.create(site=site, status=JobStatus.STARTED)
+    def test_parallel_build_and_score_jobs_not_allowed(self, site, caplog):
+        factories.MTDExportTaskFactory.create(site=site, status=JobStatus.STARTED)
 
         export_job = build_index_and_calculate_scores(site.slug)
         assert export_job.status == JobStatus.CANCELLED
