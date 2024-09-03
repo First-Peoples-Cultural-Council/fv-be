@@ -209,8 +209,11 @@ def check_sites_for_mtd_sync(self):
         sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
 
         for site in sites:
-            if MTDExportFormat.objects.filter(site=site).exists():
-                last_export = MTDExportFormat.objects.filter(site=site).latest()
+            completed_jobs = MTDExportJob.objects.filter(
+                site=site, status=JobStatus.COMPLETE
+            )
+            if completed_jobs.exists():
+                last_export = completed_jobs.latest()
                 last_modified_check_period = last_export.created
                 logger.info(
                     f"Checking for MTD changes on site {site.title} since {last_modified_check_period}. "
