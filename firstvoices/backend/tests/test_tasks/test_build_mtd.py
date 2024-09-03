@@ -305,7 +305,10 @@ class TestCheckSitesForMTDSyncTask:
         assert self.mocked_func.call_count == 0
 
     @pytest.mark.django_db
-    def test_no_site_updates(self, sites):
+    def test_no_site_updates(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.MTDExportJobFactory.create(site=site, status=JobStatus.COMPLETE)
+
         result = check_sites_for_mtd_sync.apply()
         assert result.state == "SUCCESS"
         assert self.mocked_func.call_count == 0
