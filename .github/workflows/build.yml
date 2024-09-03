@@ -55,6 +55,9 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
       - name: Upload coverage
         uses: actions/upload-artifact@v3
         with:
