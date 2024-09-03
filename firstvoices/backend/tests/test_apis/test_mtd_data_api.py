@@ -117,7 +117,7 @@ class TestMTDDataEndpoint:
 
         mtd = build_index_and_calculate_scores(site.slug)
 
-        factories.MTDExportTaskFactory.create(site=site, status=status)
+        factories.MTDExportJobFactory.create(site=site, status=status)
 
         response = self.client.get(self.get_mtd_endpoint(site_slug=site.slug))
         assert response.status_code == 200

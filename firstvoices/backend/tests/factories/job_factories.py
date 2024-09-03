@@ -25,7 +25,7 @@ class BulkVisibilityJobFactory(DjangoModelFactory):
     task_id = factory.sequence(lambda n: f"task_id_{n}")
 
 
-class MTDExportTaskFactory(DjangoModelFactory):
+class MTDExportJobFactory(DjangoModelFactory):
     class Meta:
         model = MTDExportJob
 
