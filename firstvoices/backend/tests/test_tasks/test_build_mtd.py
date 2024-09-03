@@ -227,7 +227,7 @@ class TestMTDIndexAndScoreTask:
 
     @pytest.mark.django_db
     def test_parallel_build_and_score_jobs_not_allowed(self, site, caplog):
-        factories.MTDExportTaskFactory.create(site=site, status=JobStatus.STARTED)
+        factories.MTDExportJobFactory.create(site=site, status=JobStatus.STARTED)
 
         export_job = build_index_and_calculate_scores(site.slug)
         assert export_job.status == JobStatus.CANCELLED
