@@ -1,19 +1,26 @@
-from django.http import HttpResponseNotFound
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
     extend_schema_view,
     inline_serializer,
 )
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
-from backend.models import MTDExportFormat
+from backend.models import MTDExportJob
+from backend.models.jobs import JobStatus
 from backend.views.api_doc_variables import site_slug_parameter
-from backend.views.base_views import SiteContentViewSetMixin, ThrottlingMixin
+from backend.views.base_views import (
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+    ThrottlingMixin,
+)
 
+from ..permissions.utils import filter_by_viewable
+from ..serializers.mtd_serializers import MTDExportJobSerializer
 from . import doc_strings
 
 
@@ -47,17 +54,37 @@ class MTDSitesDataViewSet(
 ):
     http_method_names = ["get"]
     renderer_classes = [JSONRenderer]  # no camel-case for this data format
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "task": None,
+    }
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
-        mtd_exports_for_site = (
-            MTDExportFormat.objects.filter(site=site)
-            .filter(is_preview=False)
-            .only("latest_export_result")
-        )
+        mtd_exports_for_site = MTDExportJob.objects.filter(
+            site=site, status=JobStatus.COMPLETE
+        ).only("export_result")
 
         if mtd_exports_for_site:
-            return Response(mtd_exports_for_site.latest().latest_export_result)
-        return HttpResponseNotFound(
-            "Site has not been indexed yet. MTD export format not found."
+            return Response(mtd_exports_for_site.latest().export_result)
+        return Response(
+            {
+                "message": "Site has not been successfully indexed yet. MTD export format not found."
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    @action(detail=False, methods=["get"])
+    def task(self, request, *args, **kwargs):
+        site = self.get_validated_site()
+        mtd_exports_for_site = filter_by_viewable(
+            request.user, MTDExportJob.objects.filter(site=site)
+        ).order_by("-created")
+        if mtd_exports_for_site:
+            return Response(
+                MTDExportJobSerializer(mtd_exports_for_site, many=True).data
+            )
+        return Response(
+            {"message": "MTD export task information not available."},
+            status=status.HTTP_404_NOT_FOUND,
         )
