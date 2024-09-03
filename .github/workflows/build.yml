@@ -57,9 +57,9 @@ jobs:
           pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage
         uses: actions/upload-artifact@v3
-        include-hidden-files: true
         with:
           if-no-files-found: error
+          include-hidden-files: true
           name: coverage${{ matrix.group }}
           path: firstvoices/.coverage
 
