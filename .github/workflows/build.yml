@@ -55,18 +55,13 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
-      - name: List files in the repository
-        run: |
-          ls -a ${{ github.workspace }}
-      - name: List files in the FV directory
-        run: |
-          ls -a ${{ github.workspace }}/firstvoices
       - name: Upload coverage
         uses: actions/upload-artifact@v3
+        include-hidden-files: true
         with:
           if-no-files-found: error
           name: coverage${{ matrix.group }}
-          path: ${{ github.workspace }}/firstvoices/.coverage
+          path: firstvoices/.coverage
 
   sonarcloud:
     name: SonarCloud
