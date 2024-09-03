@@ -64,8 +64,9 @@ jobs:
       - name: Upload coverage
         uses: actions/upload-artifact@v3
         with:
+          if-no-files-found: error
           name: coverage${{ matrix.group }}
-          path: .coverage
+          path: ${{ github.workspace }}/firstvoices/.coverage
 
   sonarcloud:
     name: SonarCloud
