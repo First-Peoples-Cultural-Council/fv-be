@@ -1,14 +1,18 @@
+from unittest.mock import patch
+
 import pytest
 
-from backend.models import ImportJob
+from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
-from backend.tasks.import_job_tasks import execute_dry_run_import
+from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.import_jobs import JobStatus
+from backend.tasks.import_job_tasks import batch_import
 from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
 from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
-class TestDryRunImport:
+class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
 
     def test_import_task_logs(self, caplog):
@@ -18,10 +22,10 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         assert (
-            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}."
+            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
             in caplog.text
         )
         assert "Task ended." in caplog.text
@@ -33,7 +37,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -55,7 +59,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -120,7 +124,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -144,7 +148,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -164,7 +168,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -187,7 +191,7 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -210,12 +214,236 @@ class TestDryRunImport:
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
-        execute_dry_run_import(import_job_instance.id)
+        batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
 
         assert validation_report.new_rows == 12
-        assert validation_report.error_rows == 0
+        assert validation_report.error_rows == 1
         assert validation_report.skipped_rows == 0
+
+        validation_error_row = validation_report.rows.first()
+        assert validation_error_row.row_number == 13
+        assert (
+            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            in validation_error_row.errors
+        )
+
+    def test_dry_run_failed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        with patch(
+            "backend.tasks.import_job_tasks.import_resource",
+            side_effect=Exception("Random exception."),
+        ):
+            batch_import(import_job_instance.id)
+
+            # Updated import job instance
+            import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+            assert import_job_instance.validation_status == JobStatus.FAILED
+            assert "Random exception." in caplog.text
+
+
+@pytest.mark.django_db
+class TestBulkImport:
+    MIMETYPE = "text/csv"
+
+    def test_import_task_logs(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        assert (
+            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: False."
+            in caplog.text
+        )
+        assert "Task ended." in caplog.text
+
+    def test_base_case_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # word
+        word = DictionaryEntry.objects.filter(site=site, title="abc")[0]
+        assert word.type == TypeOfDictionaryEntry.WORD
+
+        # phrase
+        phrase = DictionaryEntry.objects.filter(site=site, title="xyz")[0]
+        assert phrase.type == TypeOfDictionaryEntry.PHRASE
+
+    def test_all_columns_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/all_valid_columns.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Verifying first entry
+        first_entry = DictionaryEntry.objects.filter(site=site, title="Word 1")[0]
+        assert first_entry.type == TypeOfDictionaryEntry.WORD
+        assert first_entry.visibility == Visibility.PUBLIC
+        assert first_entry.part_of_speech.title == "Adjective"
+        assert first_entry.exclude_from_games is False
+        assert first_entry.exclude_from_kids is True
+        assert first_entry.translations == [
+            "first_translation",
+            "second_translation",
+            "third_translation",
+            "fourth_translation",
+            "fifth_translation",
+        ]
+        assert first_entry.acknowledgements == [
+            "first_ack",
+            "second_ack",
+            "third_ack",
+            "fourth_ack",
+            "fifth_ack",
+        ]
+        assert first_entry.notes == [
+            "first_note",
+            "second_note",
+            "third_note",
+            "fourth_note",
+            "fifth_note",
+        ]
+        assert first_entry.alternate_spellings == [
+            "alt_s_1",
+            "alt_s_2",
+            "alt_s_3",
+            "alt_s_4",
+            "alt_s_5",
+        ]
+        assert first_entry.pronunciations == [
+            "first_p",
+            "second_p",
+            "third_p",
+            "fourth_p",
+            "fifth_p",
+        ]
+
+        categories = list(first_entry.categories.all().values_list("title", flat=True))
+        assert "Animals" in categories
+        assert "Body" in categories
+
+    def test_parallel_jobs_not_allowed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+        same_file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )  # Since it's a OneToOne field, can't use a file again
+
+        ImportJobFactory(
+            site=site,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.STARTED,
+        )
+        import_job_instance = ImportJobFactory(
+            site=site, data=same_file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated import job instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        assert import_job_instance.status == JobStatus.CANCELLED
+        assert (
+            "There is at least 1 already on-going job on this site. "
+            "Please wait for it to finish before starting a new one." in caplog.text
+        )
+
+    @pytest.mark.parametrize("status", [JobStatus.COMPLETE, JobStatus.FAILED])
+    def test_task_already_completed(self, status, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE, status=status
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        assert (
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries." in caplog.text
+        )
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
+    )
+    def test_confirm_not_allowed_for_invalid_dry_run(self, validation_status, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=validation_status
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated import job instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        assert import_job_instance.status == JobStatus.CANCELLED
+        assert (
+            "A successful dry-run is required before doing the import. "
+            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+            in caplog.text
+        )
+
+    def test_import_job_failed(self, caplog):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        file = FileFactory(
+            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
+        )
+
+        # Mock that the task has already completed
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        with patch(
+            "backend.tasks.import_job_tasks.import_resource",
+            side_effect=Exception("Random exception."),
+        ):
+            batch_import(import_job_instance.id, dry_run=False)
+
+            # Updated import job instance
+            import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+            assert import_job_instance.status == JobStatus.FAILED
+            assert "Random exception." in caplog.text

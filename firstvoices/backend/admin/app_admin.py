@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from backend.models.app import AppImportStatus, AppJson, AppMembership
+from backend.models.app import AppJson, AppMembership
 
 from .base_admin import BaseAdmin
 
@@ -40,23 +40,3 @@ class AppMembershipAdmin(BaseAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("user", "created_by", "last_modified_by")
-
-
-@admin.register(AppImportStatus)
-class AppImportStatusAdmin(BaseAdmin):
-    fields = (
-        "label",
-        "no_warnings",
-        "successful",
-    )
-    list_display = (
-        "label",
-        "no_warnings",
-        "successful",
-    ) + BaseAdmin.list_display
-    readonly_fields = (
-        "label",
-        "no_warnings",
-        "successful",
-    ) + BaseAdmin.readonly_fields
-    search_fields = ("label",)

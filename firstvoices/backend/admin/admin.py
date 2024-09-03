@@ -10,8 +10,6 @@ from .characters_admin import (
     CharacterVariantInline,
     IgnoredCharacterInline,
 )
-from .dictionary_admin import WordOfTheDayInline
-from .sites_admin import MembershipInline, SiteFeatureInline, SiteMenuInline
 
 # Main Site admin settings. For related sites models, see .sites_admin
 
@@ -25,13 +23,9 @@ class SiteAdmin(DynamicArrayMixin, BaseAdmin):
         "language_family",
     ) + BaseAdmin.list_display
     inlines = [
-        MembershipInline,
         CharacterInline,
         CharacterVariantInline,
         IgnoredCharacterInline,
-        SiteFeatureInline,
-        SiteMenuInline,
-        WordOfTheDayInline,
     ]
     search_fields = ("id", "title", "slug", "language__title", "contact_emails")
     autocomplete_fields = (

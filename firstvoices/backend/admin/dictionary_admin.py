@@ -13,37 +13,16 @@ from backend.models.part_of_speech import PartOfSpeech
 from .base_admin import (
     BaseAdmin,
     BaseControlledSiteContentAdmin,
-    BaseInlineAdmin,
-    BaseInlineSiteContentAdmin,
+    BaseSiteContentAdmin,
     FilterAutocompleteBySiteMixin,
     HiddenBaseAdmin,
 )
 
 
-class WordOfTheDayInline(BaseInlineSiteContentAdmin):
-    model = WordOfTheDay
-    fields = (
-        "dictionary_entry",
-        "date",
-    ) + BaseInlineAdmin.fields
-    autocomplete_fields = ("dictionary_entry",)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "dictionary_entry":
-            kwargs["queryset"] = DictionaryEntry.objects.filter(
-                site=self.get_site_from_object(request)
-            )
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("dictionary_entry")
-
-
 @admin.register(WordOfTheDay)
-class WordOfTheDayAdmin(FilterAutocompleteBySiteMixin, HiddenBaseAdmin):
+class WordOfTheDayAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     model = WordOfTheDay
-    readonly_fields = ("site",) + HiddenBaseAdmin.readonly_fields
+    readonly_fields = ("site",) + BaseSiteContentAdmin.readonly_fields
     autocomplete_fields = ("dictionary_entry",)
 
 

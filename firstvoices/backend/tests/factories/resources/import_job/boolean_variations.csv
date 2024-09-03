@@ -11,3 +11,4 @@ Word 5,word,  FalSE  ,TRUE
 Phrase 5,phrase,  No,TRUE
 Word 6,word,N  ,TRUE
 Phrase 6,phrase,  0  ,TRUE
+Phrase 6,phrase,  0  ,NotABool

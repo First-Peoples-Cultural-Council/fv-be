@@ -1,5 +1,4 @@
 import factory
-from django.db.models import signals
 from factory.django import DjangoModelFactory
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
@@ -30,8 +29,6 @@ class ImportJobReportRowFactory(DjangoModelFactory):
     identifier_value = factory.Sequence(lambda n: "identifier_value %03d" % n)
 
 
-# Muting signals, as related tasks are tested separately
-@factory.django.mute_signals(signals.post_save)
 class ImportJobFactory(DjangoModelFactory):
     class Meta:
         model = ImportJob
