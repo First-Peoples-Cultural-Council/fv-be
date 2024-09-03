@@ -57,7 +57,10 @@ jobs:
           pytest --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: List files in the repository
         run: |
-          ls ${{ github.workspace }}
+          ls -a ${{ github.workspace }}
+      - name: List files in the FV directory
+        run: |
+          ls -a ${{ github.workspace }}/firstvoices
       - name: Upload coverage
         uses: actions/upload-artifact@v3
         with:
