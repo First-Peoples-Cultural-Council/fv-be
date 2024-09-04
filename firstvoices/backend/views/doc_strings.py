@@ -14,6 +14,8 @@ success_204_deleted = _("Success. Resource destroyed. No content in response.")
 
 error_400_validation = _("Error. Invalid data.")
 
+error_401 = _("Error. Not authenticated.")
+
 error_403 = _("Error. Not authorized.")
 error_403_site_access_denied = _("Error. Not authorized for this site.")
 

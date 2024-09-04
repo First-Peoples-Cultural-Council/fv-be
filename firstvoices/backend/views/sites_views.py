@@ -34,7 +34,7 @@ from .utils import get_select_related_media_fields
         description="Basic information about a language site, for authorized users.",
         responses={
             200: inline_site_doc_detail_serializer,
-            403: OpenApiResponse(description=doc_strings.error_403),
+            401: OpenApiResponse(description=doc_strings.error_401),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
