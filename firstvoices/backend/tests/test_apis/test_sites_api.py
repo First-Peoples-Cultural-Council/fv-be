@@ -592,14 +592,14 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response_data["slug"] == str(site.slug)
 
     @pytest.mark.django_db
-    def test_detail_403(self):
+    def test_detail_401(self):
         site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     def test_detail_404(self):
@@ -955,7 +955,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert len(response_data["results"]) == 0
 
     @pytest.mark.django_db
-    def test_hidden_site_detail_403(self):
+    def test_hidden_site_detail_401(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
         instance = factories.SiteFactory.create(
@@ -963,10 +963,10 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
 
         response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     @pytest.mark.django_db
-    def test_hidden_site_detail_403_members(self):
+    def test_hidden_site_detail_401_members(self):
         user = factories.get_non_member_user()
         instance = factories.SiteFactory.create(
             visibility=Visibility.PUBLIC, is_hidden=True
@@ -975,7 +975,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
 
         response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("app_role", [AppRole.SUPERADMIN, AppRole.STAFF])

@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
@@ -94,6 +95,8 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         # Finally, check permission
         perm = self.get_queryset().model.get_perm(perm_type)
         if not self.request.user.has_perm(perm, obj):
+            if perm == "backend.view_site":
+                raise NotAuthenticated
             raise PermissionDenied
 
     def get_object_for_create_permission(self):
