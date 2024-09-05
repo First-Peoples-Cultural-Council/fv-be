@@ -16,8 +16,9 @@ from mothertongues.config.models import (
 )
 from mothertongues.dictionary import MTDictionary
 
-from backend.models import Category, DictionaryEntry, MTDExportFormat, Site, constants
+from backend.models import Category, DictionaryEntry, MTDExportJob, Site, constants
 from backend.models.dictionary import DictionaryEntryCategory
+from backend.models.jobs import JobStatus
 from backend.models.media import Audio, Image, Video
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
@@ -74,6 +75,28 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
             f"""site_or_site_slug must be a backend.models.Site object or a valid site slug.
                 {type(site_or_site_slug)} was received instead."""
         )
+
+    # Saving an empty model to depict that the task has started
+    export_job = MTDExportJob.objects.create(
+        site=site,
+        export_result={},
+        task_id=current_task.request.id,
+        status=JobStatus.STARTED,
+    )
+
+    if (
+        MTDExportJob.objects.filter(status=JobStatus.STARTED, site=site)
+        .exclude(id=export_job.id)
+        .exists()
+    ):
+        cancelled_message = "Job cancelled as another MTD export job is already in progress for the same site."
+        export_job.status = JobStatus.CANCELLED
+        export_job.message = cancelled_message
+        export_job.save()
+        logger.info(cancelled_message)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return export_job
+
     characters_list = site.character_set.all().order_by("sort_order")
     dictionary_entries_queryset = (
         DictionaryEntry.objects.filter(
@@ -113,15 +136,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
         )
     )
     dictionary_entries = parse_queryset_for_mtd(dictionary_entries_queryset)
-    preview = {}
-    task_id = current_task.request.id
-    # Saving an empty row to depict that the task has started
-    MTDExportFormat.objects.create(
-        site=site,
-        latest_export_result=preview,
-        task_id=task_id,
-        is_preview=True,
-    )
+
     # Normalization transducers can be defined to:
     #       - apply lower casing
     #       - apply unicode normalization
@@ -161,23 +176,28 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
     #       and ensure that the language configuration includes the correct alphabet.
     dictionary = MTDictionary(mtd_config, sort_data=False)
     if dictionary.data and len(dictionary) > 0:
-        dictionary.build_indices()
-    preview = dictionary.export().model_dump(mode="json")
+        try:
+            dictionary.build_indices()
+        except Exception as e:
+            export_job.status = JobStatus.FAILED
+            export_job.message = str(e)
+            export_job.save()
+            logger.error(e)
+            logger.info(ASYNC_TASK_END_TEMPLATE)
+            return export_job
+    result = dictionary.export().model_dump(mode="json")
 
     # Save the new result to the database
-    new_result = MTDExportFormat.objects.create(
-        site=site,
-        latest_export_result=preview,
-        task_id=task_id,
-        is_preview=False,
-    )
+    export_job.export_result = result
+    export_job.status = JobStatus.COMPLETE
+    export_job.save()
 
-    # Delete any previous results and previews
-    MTDExportFormat.objects.filter(site=site).exclude(id=new_result.id).delete()
+    # Delete any previous results for the same site
+    MTDExportJob.objects.filter(site=site).exclude(id=export_job.id).delete()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
 
-    return preview
+    return export_job
 
 
 @shared_task(bind=True)

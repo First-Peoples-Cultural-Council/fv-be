@@ -1,11 +1,13 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
 
-from backend.models import MTDExportFormat
+from backend.models import MTDExportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.jobs import JobStatus
 from backend.models.media import Audio
 from backend.tasks.mtd_export_tasks import (
     build_index_and_calculate_scores,
@@ -26,11 +28,11 @@ class TestMTDIndexAndScoreTask:
 
     @pytest.fixture
     def site(self):
-        return factories.SiteFactory.create(slug="test")
+        return factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
 
     @pytest.mark.django_db
     def test_build_empty(self, site, caplog):
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
         assert result["config"]["L1"] == site.title
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
@@ -52,7 +54,7 @@ class TestMTDIndexAndScoreTask:
             title=self.sample_entry_title,
             translations=[],
         )
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
 
         assert result["config"]["L1"] == site.title
         assert len(result["data"]) == 0
@@ -80,16 +82,15 @@ class TestMTDIndexAndScoreTask:
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
         assert len(result["data"]) == 1
 
     @pytest.mark.django_db
     def test_export_is_saved(self, site):
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
         # Check that the exported contents were saved
-        saved_export_format = MTDExportFormat.objects.filter(site=site)
-        assert saved_export_format.latest().latest_export_result == result
-        assert not saved_export_format.latest().is_preview
+        saved_export_format = MTDExportJob.objects.filter(site=site)
+        assert saved_export_format.latest().export_result == result
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
@@ -134,7 +135,7 @@ class TestMTDIndexAndScoreTask:
             title="the word 'third' appears as the third word in this sentence",
         )
         # Build and index
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
         assert len(result["data"]) == 3
         assert result["data"][1]["word"] == self.sample_entry_title
         # punctuation is removed by default so it is titleone in the index
@@ -198,7 +199,7 @@ class TestMTDIndexAndScoreTask:
         )
 
         # Build and index
-        result = build_index_and_calculate_scores(site.slug)
+        result = build_index_and_calculate_scores(site.slug).export_result
         assert len(result["data"]) == 1
         assert result["data"][0]["word"] == self.sample_entry_title
         assert result["data"][0]["img"] is None
@@ -211,13 +212,49 @@ class TestMTDIndexAndScoreTask:
     def test_old_results_removed(self, site):
         build_index_and_calculate_scores(site.slug)
         build_index_and_calculate_scores(site.slug)
-        final_result = build_index_and_calculate_scores(site.slug)
+        final_result = build_index_and_calculate_scores(site.slug).export_result
 
         # Check that only the most recent is in the db
-        saved_results = MTDExportFormat.objects.filter(site=site)
+        saved_results = MTDExportJob.objects.filter(site=site)
         assert len(saved_results) == 1
-        assert saved_results.latest().latest_export_result == final_result
-        assert not saved_results.latest().is_preview
+        assert saved_results.latest().export_result == final_result
+
+    @pytest.mark.django_db
+    def test_parallel_build_and_score_jobs_not_allowed(self, site, caplog):
+        factories.MTDExportJobFactory.create(site=site, status=JobStatus.STARTED)
+
+        export_job = build_index_and_calculate_scores(site.slug)
+        assert export_job.status == JobStatus.CANCELLED
+        assert export_job.message == (
+            "Job cancelled as another MTD export job is already in progress for the same site."
+        )
+
+        result = export_job.export_result
+        assert result == {}
+        assert (
+            "Job cancelled as another MTD export job is already in progress for the same site."
+            in caplog.text
+        )
+        self.assert_async_task_logs(site, caplog)
+
+    @pytest.mark.django_db
+    def test_build_and_score_exception(self, site, caplog):
+        factories.CharacterFactory.create_batch(10, site=site)
+        factories.DictionaryEntryFactory.create_batch(
+            10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
+        )
+
+        with patch(
+            "mothertongues.dictionary.MTDictionary.build_indices",
+            side_effect=Exception("Mocked exception"),
+        ):
+            result = build_index_and_calculate_scores(site.slug)
+
+        assert result.status == JobStatus.FAILED
+        assert result.message == "Mocked exception"
+        assert "Task started. Additional info: site: test." in caplog.text
+        assert "Mocked exception" in caplog.text
+        self.assert_async_task_logs(site, caplog)
 
 
 class TestCheckSitesForMTDSyncTask:
