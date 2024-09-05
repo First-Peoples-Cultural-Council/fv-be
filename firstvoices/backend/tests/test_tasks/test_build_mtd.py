@@ -1,14 +1,11 @@
-from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
-from django.utils import timezone
 
 from backend.models import MTDExportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.jobs import JobStatus
-from backend.models.media import Audio
 from backend.tasks.mtd_export_tasks import (
     build_index_and_calculate_scores,
     check_sites_for_mtd_sync,
@@ -266,16 +263,26 @@ class TestCheckSitesForMTDSyncTask:
 
     @pytest.fixture
     def sites(self):
+        # create 3 sites and corresponding completed jobs to not trigger the sync immediately
+        site_one = factories.SiteFactory.create(
+            slug="site_one", visibility=Visibility.PUBLIC
+        )
+        factories.MTDExportJobFactory.create(site=site_one, status=JobStatus.COMPLETE)
+
+        site_two = factories.SiteFactory.create(
+            slug="site_two", visibility=Visibility.PUBLIC
+        )
+        factories.MTDExportJobFactory.create(site=site_two, status=JobStatus.COMPLETE)
+
+        site_three = factories.SiteFactory.create(
+            slug="site_three", visibility=Visibility.PUBLIC
+        )
+        factories.MTDExportJobFactory.create(site=site_three, status=JobStatus.COMPLETE)
+
         return {
-            "site_one": factories.SiteFactory.create(
-                slug="site_one", visibility=Visibility.PUBLIC
-            ),
-            "site_two": factories.SiteFactory.create(
-                slug="site_two", visibility=Visibility.PUBLIC
-            ),
-            "site_three": factories.SiteFactory.create(
-                slug="site_three", visibility=Visibility.PUBLIC
-            ),
+            "site_one": site_one,
+            "site_two": site_two,
+            "site_three": site_three,
         }
 
     @pytest.mark.django_db
@@ -286,13 +293,29 @@ class TestCheckSitesForMTDSyncTask:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("visibility", [Visibility.MEMBERS, Visibility.TEAM])
-    def test_no_sites_eligible_to_sync_private(self, sites, visibility):
+    def test_no_sites_eligible_to_sync_private(self, visibility):
         private_site = factories.SiteFactory.create(visibility=visibility)
         factories.DictionaryEntryFactory.create(site=private_site)
 
         result = check_sites_for_mtd_sync.apply()
         assert result.state == "SUCCESS"
         assert self.mocked_func.call_count == 0
+
+    @pytest.mark.django_db
+    def test_no_site_updates(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.MTDExportJobFactory.create(site=site, status=JobStatus.COMPLETE)
+
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 0
+
+    @pytest.mark.django_db
+    def test_single_site_no_existing_mtd_exports(self):
+        factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        result = check_sites_for_mtd_sync.apply()
+        assert result.state == "SUCCESS"
+        assert self.mocked_func.call_count == 1
 
     @pytest.mark.django_db
     def test_single_site_updated_entries(self, sites):
@@ -306,13 +329,12 @@ class TestCheckSitesForMTDSyncTask:
 
     @pytest.mark.django_db
     def test_single_site_updated_categories(self, sites):
-        seven_hours_ago = timezone.now() - timedelta(hours=7)
         category = factories.CategoryFactory.create(site=sites["site_one"])
         entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
 
-        # update the timestamps to not trigger the updated entries check
-        DictionaryEntry.objects.filter(id=entry.id).update(
-            created=seven_hours_ago, last_modified=seven_hours_ago
+        # create a new mtd export job to not trigger the sync immediately
+        factories.MTDExportJobFactory.create(
+            site=sites["site_one"], status=JobStatus.COMPLETE
         )
 
         check_sites_for_mtd_sync.apply()
@@ -330,13 +352,12 @@ class TestCheckSitesForMTDSyncTask:
 
     @pytest.mark.django_db
     def test_single_site_updated_related_media(self, sites):
-        seven_hours_ago = timezone.now() - timedelta(hours=7)
         audio = factories.AudioFactory.create(site=sites["site_one"])
         entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
 
-        # update the timestamps to not trigger the updated entries check
-        DictionaryEntry.objects.filter(id=entry.id).update(
-            created=seven_hours_ago, last_modified=seven_hours_ago
+        # create a new mtd export job to not trigger the sync immediately
+        factories.MTDExportJobFactory.create(
+            site=sites["site_one"], status=JobStatus.COMPLETE
         )
 
         check_sites_for_mtd_sync.apply()
@@ -354,17 +375,13 @@ class TestCheckSitesForMTDSyncTask:
 
     @pytest.mark.django_db
     def test_single_site_remove_related_media(self, sites):
-        seven_hours_ago = timezone.now() - timedelta(hours=7)
         audio = factories.AudioFactory.create(site=sites["site_one"])
         entry = factories.DictionaryEntryFactory.create(site=sites["site_one"])
         entry.related_audio.add(audio)
 
-        # update the timestamps to not trigger the updated entries check
-        DictionaryEntry.objects.filter(id=entry.id).update(
-            created=seven_hours_ago, last_modified=seven_hours_ago
-        )
-        Audio.objects.filter(id=audio.id).update(
-            created=seven_hours_ago, last_modified=seven_hours_ago
+        # create a new mtd export job to not trigger the sync immediately
+        factories.MTDExportJobFactory.create(
+            site=sites["site_one"], status=JobStatus.COMPLETE
         )
 
         check_sites_for_mtd_sync.apply()

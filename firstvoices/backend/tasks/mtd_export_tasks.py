@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
@@ -206,38 +206,53 @@ def check_sites_for_mtd_sync(self):
     logger.info(ASYNC_TASK_START_TEMPLATE)
 
     try:
-        self.state = "STARTED"
         sites = Site.objects.filter(visibility=constants.Visibility.PUBLIC)
-        six_hours_ago = timezone.now() - timedelta(hours=6)
 
         for site in sites:
-            updated_entries_count = DictionaryEntry.objects.filter(
-                site=site, last_modified__gte=six_hours_ago
-            ).count()
-
-            updated_categories_count = DictionaryEntryCategory.objects.filter(
-                category__site=site, last_modified__gte=six_hours_ago
-            ).count()
-
-            updated_related_media_count = (
-                DictionaryEntry.objects.filter(site=site)
-                .filter(
-                    Q(related_audio__last_modified__gte=six_hours_ago)
-                    | Q(related_images__last_modified__gte=six_hours_ago)
-                    | Q(related_videos__last_modified__gte=six_hours_ago)
+            completed_jobs = MTDExportJob.objects.filter(
+                site=site, status=JobStatus.COMPLETE
+            )
+            if completed_jobs.exists():
+                last_export = completed_jobs.latest()
+                last_export_created = last_export.created
+                logger.info(
+                    f"Checking for MTD changes on site {site.title} since {last_export_created}. "
+                    f"Current time: {timezone.now()}"
                 )
-                .distinct()
-                .count()
-            )
 
-            relevant_changes_count = (
-                updated_entries_count
-                + updated_categories_count
-                + updated_related_media_count
-            )
+                updated_entries_count = DictionaryEntry.objects.filter(
+                    site=site, last_modified__gte=last_export_created
+                ).count()
 
-            if relevant_changes_count > 0:
-                logger.info(f"Starting MTD Index update for site {site.slug}.")
+                updated_categories_count = DictionaryEntryCategory.objects.filter(
+                    category__site=site, last_modified__gte=last_export_created
+                ).count()
+
+                updated_related_media_count = (
+                    DictionaryEntry.objects.filter(site=site)
+                    .filter(
+                        Q(related_audio__last_modified__gte=last_export_created)
+                        | Q(related_images__last_modified__gte=last_export_created)
+                        | Q(related_videos__last_modified__gte=last_export_created)
+                    )
+                    .distinct()
+                    .count()
+                )
+
+                relevant_changes_count = (
+                    updated_entries_count
+                    + updated_categories_count
+                    + updated_related_media_count
+                )
+
+                if relevant_changes_count > 0:
+                    logger.info(f"Starting MTD Index update for site {site.slug}.")
+                    build_index_and_calculate_scores.apply_async(
+                        (site.slug,),
+                        link_error=link_error_handler.s(),
+                    )
+            else:
+                logger.info(f"Starting MTD Index build for site {site.slug}.")
                 build_index_and_calculate_scores.apply_async(
                     (site.slug,),
                     link_error=link_error_handler.s(),
