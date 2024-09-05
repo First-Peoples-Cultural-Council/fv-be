@@ -13,6 +13,7 @@ from backend.tests.factories import (
     FileFactory,
     ImportJobFactory,
     SiteFactory,
+    SongFactory,
 )
 from backend.tests.utils import get_sample_file
 
@@ -249,7 +250,9 @@ class TestBulkImportDryRun:
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
         )
 
-        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(site=site, data=file)
 
@@ -260,12 +263,44 @@ class TestBulkImportDryRun:
         validation_report = import_job_instance.validation_report
 
         assert validation_report.new_rows == 2
-        assert validation_report.error_rows == 1
+        assert validation_report.error_rows == 0
         assert validation_report.skipped_rows == 0
 
-        validation_error_row = validation_report.rows.first()
-        assert validation_error_row.row_number == 1
-        assert "“invalid_uuid” is not a valid UUID." in validation_error_row.errors
+    def test_invalid_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        # Referring to a different model
+        SongFactory(site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c"))
+
+        file_content = get_sample_file(
+            "import_job/invalid_related_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 0
+        assert validation_report.error_rows == 2
+        assert validation_report.skipped_rows == 0
+
+        validation_error_rows = validation_report.rows.all().order_by("row_number")
+
+        assert validation_error_rows[0].row_number == 1
+        assert (
+            "Invalid DictionaryEntry supplied in column: related_entry. Expected field: id"
+            in validation_error_rows[0].errors
+        )
+
+        assert validation_error_rows[1].row_number == 2
+        assert (
+            "No DictionaryEntry found with the provided id in column related_entry."
+            in validation_error_rows[1].errors
+        )
 
     def test_dry_run_failed(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
@@ -491,7 +526,9 @@ class TestBulkImport:
             site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
 
-        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
             site=site, data=file, validation_status=JobStatus.COMPLETE
@@ -499,7 +536,7 @@ class TestBulkImport:
 
         batch_import(import_job_instance.id, dry_run=False)
 
-        new_entry = DictionaryEntry.objects.get(title="Word 2")
+        new_entry = DictionaryEntry.objects.get(title="Word 1")
         related_entry = new_entry.dictionaryentrylink_set.first()
 
         assert related_entry.from_dictionary_entry.id == new_entry.id
@@ -517,7 +554,9 @@ class TestBulkImport:
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
         )
 
-        file_content = get_sample_file("import_job/related_entries.csv", self.MIMETYPE)
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
             site=site, data=file, validation_status=JobStatus.COMPLETE
@@ -526,7 +565,7 @@ class TestBulkImport:
         batch_import(import_job_instance.id, dry_run=False)
 
         related_entry = DictionaryEntry.objects.get(
-            title="Word 3"
+            title="Word 2"
         ).dictionaryentrylink_set.values_list("to_dictionary_entry_id", flat=True)
         related_entry_list = list(related_entry)
 

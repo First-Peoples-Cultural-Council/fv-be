@@ -1,7 +1,7 @@
 import re
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
@@ -153,14 +153,26 @@ class CustomManyToManyWidget(ManyToManyWidget):
 
         # Validate entries
         for column, input_value in input_entries.items():
-            entry_lookup = self.model.objects.filter(
-                site__id=row["site"], **{self.field: input_value}
-            )
-            if len(entry_lookup) == 0:
-                raise ValidationError(
-                    f"Invalid {str(self.model).lower()} supplied in column {column}."
+            try:
+                entry_lookup = self.model.objects.filter(
+                    site__id=row["site"], **{self.field: input_value}
                 )
-            else:
-                valid_entries.append(entry_lookup[0])
+
+                if len(entry_lookup):
+                    valid_entries.append(entry_lookup[0])
+                else:
+                    raise ObjectDoesNotExist()
+            except ValidationError:
+                # Also catches "invalid uuid" validation error
+                field = "id" if self.field == "pk" else self.field
+                raise ValidationError(
+                    f"Invalid {self.model.__name__} supplied in column: {column}. "
+                    f"Expected field: {field}"
+                )
+            except ObjectDoesNotExist:
+                field = "id" if self.field == "pk" else self.field
+                raise ValidationError(
+                    f"No {self.model.__name__} found with the provided {field} in column {column}."
+                )
 
         return valid_entries
