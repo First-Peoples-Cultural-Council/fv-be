@@ -1,10 +1,8 @@
 import re
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
-
-from backend.models import Category
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -113,42 +111,6 @@ class TextListWidget(Widget):
         ]
 
 
-class CategoryWidget(ManyToManyWidget):
-    def __init__(self, *args, **kwargs):
-        super().__init__(model=Category, field="title", *args, **kwargs)
-
-    def clean(self, value, row=None, **kwargs):
-        category_column_name_pattern = r"category[_2-5]*"
-
-        input_categories = {}
-        valid_categories = []
-
-        for column, input_value in row.items():
-            if re.fullmatch(category_column_name_pattern, column):
-                input_categories[column] = input_value.strip()
-
-        # removing empty values from dict
-        input_categories = {
-            category: value for category, value in input_categories.items() if value
-        }
-
-        # If no categories provided, return
-        if len(input_categories) == 0:
-            return Category.objects.none()
-
-        # Validate categories
-        for column, input_value in input_categories.items():
-            category_lookup = Category.objects.filter(
-                site__id=row["site"], title=input_value
-            )
-            if len(category_lookup) == 0:
-                raise ValidationError(f"Invalid category supplied in column {column}.")
-            else:
-                valid_categories.append(category_lookup[0])
-
-        return valid_categories
-
-
 class CleanForeignKeyWidget(ForeignKeyWidget):
     def __init__(self, model, field, title_case=False, *args, **kwargs):
         self.title_case = title_case
@@ -161,3 +123,57 @@ class CleanForeignKeyWidget(ForeignKeyWidget):
             value = value.title()
 
         return super().clean(value, row, **kwargs)
+
+
+class CustomManyToManyWidget(ManyToManyWidget):
+    def __init__(self, model, column_name, field=None, *args, **kwargs):
+        self.model = model
+        self.field = field
+        self.column_name = column_name
+        super().__init__(model=self.model, field=field, *args, **kwargs)
+
+    def clean(self, value, row=None, **kwargs):
+        column_name_pattern = rf"{self.column_name}[_2-5]*"
+
+        # to be used in exceptions if need be
+        error_message_field = "id" if self.field == "pk" else self.field
+
+        input_entries = {}
+        valid_entries = []
+
+        for column, input_value in row.items():
+            if re.fullmatch(column_name_pattern, column):
+                input_entries[column] = input_value.strip()
+
+        # removing empty values from dict
+        input_entries = {
+            entry: value for entry, value in input_entries.items() if value
+        }
+
+        # If no entries provided, return
+        if len(input_entries) == 0:
+            return self.model.objects.none()
+
+        # Validate entries
+        for column, input_value in input_entries.items():
+            try:
+                entry_lookup = self.model.objects.filter(
+                    site__id=row["site"], **{self.field: input_value}
+                )
+
+                if len(entry_lookup):
+                    valid_entries.append(entry_lookup[0])
+                else:
+                    raise ObjectDoesNotExist()
+            except ValidationError:
+                # Also catches "invalid uuid" validation error
+                raise ValidationError(
+                    f"Invalid {self.model.__name__} supplied in column: {column}. "
+                    f"Expected field: {error_message_field}"
+                )
+            except ObjectDoesNotExist:
+                raise ValidationError(
+                    f"No {self.model.__name__} found with the provided {error_message_field} in column {column}."
+                )
+
+        return valid_entries

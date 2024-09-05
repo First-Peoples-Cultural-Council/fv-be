@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 
@@ -7,7 +8,13 @@ from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import batch_import
-from backend.tests.factories import FileFactory, ImportJobFactory, SiteFactory
+from backend.tests.factories import (
+    DictionaryEntryFactory,
+    FileFactory,
+    ImportJobFactory,
+    SiteFactory,
+    SongFactory,
+)
 from backend.tests.utils import get_sample_file
 
 
@@ -231,6 +238,70 @@ class TestBulkImportDryRun:
             in validation_error_row.errors
         )
 
+    def test_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        DictionaryEntryFactory(
+            site=site,
+            type=TypeOfDictionaryEntry.PHRASE,
+            id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
+        )
+
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 2
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0
+
+    def test_invalid_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        # Referring to a different model
+        SongFactory(site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c"))
+
+        file_content = get_sample_file(
+            "import_job/invalid_related_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 0
+        assert validation_report.error_rows == 2
+        assert validation_report.skipped_rows == 0
+
+        validation_error_rows = validation_report.rows.all().order_by("row_number")
+
+        assert validation_error_rows[0].row_number == 1
+        assert (
+            "Invalid DictionaryEntry supplied in column: related_entry. Expected field: id"
+            in validation_error_rows[0].errors
+        )
+
+        assert validation_error_rows[1].row_number == 2
+        assert (
+            "No DictionaryEntry found with the provided id in column related_entry."
+            in validation_error_rows[1].errors
+        )
+
     def test_dry_run_failed(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
@@ -447,3 +518,56 @@ class TestBulkImport:
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
             assert import_job_instance.status == JobStatus.FAILED
             assert "Random exception." in caplog.text
+
+    def test_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        existing_entry = DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        new_entry = DictionaryEntry.objects.get(title="Word 1")
+        related_entry = new_entry.dictionaryentrylink_set.first()
+
+        assert related_entry.from_dictionary_entry.id == new_entry.id
+        assert related_entry.to_dictionary_entry.id == existing_entry.id
+
+    def test_multiple_existing_related_entries(self):
+        # For entries that are already present in the db
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+        existing_entry_1 = DictionaryEntryFactory(
+            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        existing_entry_2 = DictionaryEntryFactory(
+            site=site,
+            type=TypeOfDictionaryEntry.PHRASE,
+            id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
+        )
+
+        file_content = get_sample_file(
+            "import_job/valid_related_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        related_entry = DictionaryEntry.objects.get(
+            title="Word 2"
+        ).dictionaryentrylink_set.values_list("to_dictionary_entry_id", flat=True)
+        related_entry_list = list(related_entry)
+
+        assert existing_entry_1.id in related_entry_list
+        assert existing_entry_2.id in related_entry_list

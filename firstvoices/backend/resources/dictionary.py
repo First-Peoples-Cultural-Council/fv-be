@@ -2,7 +2,7 @@ import uuid
 
 from import_export import fields
 
-from backend.models import DictionaryEntry, PartOfSpeech
+from backend.models import Category, DictionaryEntry, PartOfSpeech
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.resources.base import (
     AudienceMixin,
@@ -10,9 +10,9 @@ from backend.resources.base import (
     RelatedMediaResourceMixin,
 )
 from backend.resources.utils.import_export_widgets import (
-    CategoryWidget,
     ChoicesWidget,
     CleanForeignKeyWidget,
+    CustomManyToManyWidget,
     TextListWidget,
 )
 
@@ -34,7 +34,9 @@ class DictionaryEntryResource(
         column_name="category",
         attribute="categories",
         m2m_add=True,
-        widget=CategoryWidget(),
+        widget=CustomManyToManyWidget(
+            model=Category, field="title", column_name="category"
+        ),
     )
 
     # Text List attributes
@@ -59,7 +61,17 @@ class DictionaryEntryResource(
     alternate_spellings = fields.Field(
         column_name="alternate_spelling",
         attribute="alternate_spellings",
+        m2m_add=True,
         widget=TextListWidget(prefix="alternate_spelling"),
+    )
+
+    # Related entries
+    related_dictionary_entries = fields.Field(
+        column_name="related_entry",
+        attribute="related_dictionary_entries",
+        widget=CustomManyToManyWidget(
+            model=DictionaryEntry, column_name="related_entry"
+        ),
     )
 
     def __init__(self, site=None):
