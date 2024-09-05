@@ -78,7 +78,7 @@ class TestBulkImportDryRun:
             "include_in_games",
             "include_on_kids_site",
             "translation",
-            "translation_2",
+            "TRANSLATION_2",
             "translation_3",
             "translation_4",
             "translation_5",
@@ -158,8 +158,8 @@ class TestBulkImportDryRun:
             validation_report.rows.values_list("row_number", flat=True)
         )
 
-        assert len(error_rows) == 4
-        assert error_rows_numbers == [2, 3, 4, 5]
+        assert len(error_rows) == 3
+        assert error_rows_numbers == [3, 4, 5]
 
     def test_validation_report_columns(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)

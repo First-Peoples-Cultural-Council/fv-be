@@ -127,6 +127,11 @@ class CategoryWidget(ManyToManyWidget):
             if re.fullmatch(category_column_name_pattern, column):
                 input_categories[column] = input_value.strip()
 
+        # removing empty values from dict
+        input_categories = {
+            category: value for category, value in input_categories.items() if value
+        }
+
         # If no categories provided, return
         if len(input_categories) == 0:
             return Category.objects.none()

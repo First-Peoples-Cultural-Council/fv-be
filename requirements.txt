@@ -6,7 +6,7 @@ attrs==24.2.0
 boto3==1.35.5
 botocore>=1.29.139
 celery==5.4.0
-certifi==2024.7.4
+certifi==2024.8.30
 cffi==1.17.0
 charset-normalizer==3.3.2
 coloredlogs==14.0
@@ -37,7 +37,7 @@ Faker==27.0.0
 ffmpeg-python==0.2.0
 g2p==2.0.0 # https://github.com/roedoejet/g2p
 greenlet==3.0.3
-gunicorn==22.0.0
+gunicorn==23.0.0
 humanfriendly==10.0
 idna==3.7
 inflection==0.5.1
@@ -53,13 +53,13 @@ networkx==2.8.4
 numpy==1.26.4
 openpyxl==3.1.5
 packaging==24.1
-panphon==0.20.0
+panphon==0.21.2
 Pillow==10.4.0
 pluggy==1.5.0
 prompt-toolkit==3.0.36
 psycopg2-binary==2.9.9
 pycparser==2.22
-PyJWT==2.8.0
+PyJWT==2.9.0
 pyrsistent==0.20.0
 pytest==8.1.1
 pytest-django==4.8.0  # https://github.com/pytest-dev/pytest-django
