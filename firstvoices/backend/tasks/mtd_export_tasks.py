@@ -214,30 +214,26 @@ def check_sites_for_mtd_sync(self):
             )
             if completed_jobs.exists():
                 last_export = completed_jobs.latest()
-                last_modified_check_period = last_export.created
+                last_export_created = last_export.created
                 logger.info(
-                    f"Checking for MTD changes on site {site.title} since {last_modified_check_period}. "
+                    f"Checking for MTD changes on site {site.title} since {last_export_created}. "
                     f"Current time: {timezone.now()}"
                 )
 
                 updated_entries_count = DictionaryEntry.objects.filter(
-                    site=site, last_modified__gte=last_modified_check_period
+                    site=site, last_modified__gte=last_export_created
                 ).count()
 
                 updated_categories_count = DictionaryEntryCategory.objects.filter(
-                    category__site=site, last_modified__gte=last_modified_check_period
+                    category__site=site, last_modified__gte=last_export_created
                 ).count()
 
                 updated_related_media_count = (
                     DictionaryEntry.objects.filter(site=site)
                     .filter(
-                        Q(related_audio__last_modified__gte=last_modified_check_period)
-                        | Q(
-                            related_images__last_modified__gte=last_modified_check_period
-                        )
-                        | Q(
-                            related_videos__last_modified__gte=last_modified_check_period
-                        )
+                        Q(related_audio__last_modified__gte=last_export_created)
+                        | Q(related_images__last_modified__gte=last_export_created)
+                        | Q(related_videos__last_modified__gte=last_export_created)
                     )
                     .distinct()
                     .count()
