@@ -135,6 +135,9 @@ class CustomManyToManyWidget(ManyToManyWidget):
     def clean(self, value, row=None, **kwargs):
         column_name_pattern = rf"{self.column_name}[_2-5]*"
 
+        # to be used in exceptions if need be
+        error_message_field = "id" if self.field == "pk" else self.field
+
         input_entries = {}
         valid_entries = []
 
@@ -164,15 +167,13 @@ class CustomManyToManyWidget(ManyToManyWidget):
                     raise ObjectDoesNotExist()
             except ValidationError:
                 # Also catches "invalid uuid" validation error
-                field = "id" if self.field == "pk" else self.field
                 raise ValidationError(
                     f"Invalid {self.model.__name__} supplied in column: {column}. "
-                    f"Expected field: {field}"
+                    f"Expected field: {error_message_field}"
                 )
             except ObjectDoesNotExist:
-                field = "id" if self.field == "pk" else self.field
                 raise ValidationError(
-                    f"No {self.model.__name__} found with the provided {field} in column {column}."
+                    f"No {self.model.__name__} found with the provided {error_message_field} in column {column}."
                 )
 
         return valid_entries
