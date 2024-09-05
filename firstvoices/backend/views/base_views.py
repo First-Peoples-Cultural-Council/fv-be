@@ -1,5 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404
+from django.utils.translation import gettext as _
+from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 
@@ -95,7 +97,7 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         # Finally, check permission
         perm = self.get_queryset().model.get_perm(perm_type)
         if not self.request.user.has_perm(perm, obj):
-            if perm == "backend.view_site":
+            if not self.request.user.is_authenticated:
                 raise NotAuthenticated
             raise PermissionDenied
 
@@ -132,6 +134,18 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
             return self.get_paginated_response(serializer.data)
 
         return Response(serializer.data)
+
+    def handle_exception(self, exc):
+        # Ensure NotAuthenticated always returns 401
+        response = super().handle_exception(exc)
+        if isinstance(exc, NotAuthenticated):
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            response.data = {
+                "detail": _(
+                    "Authentication credentials with the proper permissions were not provided."
+                )
+            }
+        return response
 
 
 class SiteContentViewSetMixin:

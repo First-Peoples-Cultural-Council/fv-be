@@ -2,8 +2,6 @@ from django.db.models import Prefetch, Q
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import status
-from rest_framework.exceptions import NotAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.sites import Membership, Site, SiteFeature
@@ -34,7 +32,7 @@ from .utils import get_select_related_media_fields
         description="Basic information about a language site, for authorized users.",
         responses={
             200: inline_site_doc_detail_serializer,
-            401: OpenApiResponse(description=doc_strings.error_401),
+            403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
@@ -134,18 +132,6 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
         if self.action != "list":
             context["site"] = self.get_object()
         return context
-
-    def handle_exception(self, exc):
-        # Ensure NotAuthenticated always returns 401
-        response = super().handle_exception(exc)
-        if isinstance(exc, NotAuthenticated):
-            response.status_code = status.HTTP_401_UNAUTHORIZED
-            response.data = {
-                "detail": _(
-                    "Authentication credentials with the proper permissions were not provided."
-                )
-            }
-        return response
 
 
 @extend_schema_view(

@@ -172,6 +172,18 @@ class SiteContentListApiTestMixin:
         [Visibility.MEMBERS, Visibility.TEAM],
     )
     @pytest.mark.django_db
+    def test_list_401_site_not_visible_unauthenticated(self, visibility):
+        site, user = factories.get_site_with_anonymous_user(visibility=visibility)
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "visibility",
+        [Visibility.MEMBERS, Visibility.TEAM],
+    )
+    @pytest.mark.django_db
     def test_list_403_site_not_visible(self, visibility):
         site = self.create_site_with_non_member(visibility)
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -291,6 +303,23 @@ class SiteContentDetailApiTestMixin:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_detail_401_unauthenticated(self):
+        site, user = factories.get_site_with_anonymous_user(
+            visibility=Visibility.MEMBERS
+        )
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     def test_detail_403_site_not_visible(self):
