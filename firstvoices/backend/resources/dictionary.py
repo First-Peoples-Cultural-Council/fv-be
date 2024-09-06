@@ -1,6 +1,7 @@
 import uuid
 
 from import_export import fields
+from import_export.results import RowResult
 
 from backend.models import Category, DictionaryEntry, PartOfSpeech
 from backend.models.dictionary import TypeOfDictionaryEntry
@@ -85,6 +86,33 @@ class DictionaryEntryResource(
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
         if "site" not in dataset.headers:
             dataset.append_col(lambda x: str(self.site.id), header="site")
+
+    def import_row(self, row, instance_loader, **kwargs):
+        # Marking erroneous and invalid rows as skipped, then clearing the errors and validation_errors
+        # so the valid rows can be imported
+        import_result = super().import_row(row, instance_loader, **kwargs)
+        if import_result.import_type in [
+            RowResult.IMPORT_TYPE_ERROR,
+            RowResult.IMPORT_TYPE_INVALID,
+        ]:
+            import_result.error_messages = []  # custom field to store messages
+            import_result.number = kwargs["row_number"]
+
+            if import_result.errors:
+                import_result.error_messages = [
+                    str(err.error).split("\n")[0] for err in import_result.errors
+                ]
+                import_result.errors = []
+
+            if import_result.validation_error:
+                import_result.error_messages = [
+                    err for err in import_result.validation_error.messages
+                ]
+                import_result.validation_error = []
+
+            import_result.import_type = RowResult.IMPORT_TYPE_SKIP
+
+        return import_result
 
     class Meta:
         model = DictionaryEntry

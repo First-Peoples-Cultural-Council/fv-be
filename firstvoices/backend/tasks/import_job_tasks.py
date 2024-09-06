@@ -6,6 +6,7 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from import_export.results import RowResult
 
 from backend.models.import_jobs import (
     ImportJob,
@@ -150,8 +151,8 @@ def import_resource(
         site=import_job_instance.site,
         importjob=import_job_instance,
         new_rows=result.totals["new"],
-        skipped_rows=result.totals["skip"],
-        error_rows=result.totals["error"] + result.totals["invalid"],
+        skipped_rows=0,
+        error_rows=result.totals["error"] + result.totals["invalid"] + result.totals["skip"],
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
     )
@@ -160,32 +161,15 @@ def import_resource(
     # to keep track of row numbers of erroneous rows
     error_row_numbers = []
 
-    # check for errors
-    if result.has_errors():
-        for row in result.error_rows:
-            error_messages = []
-            for error_row in row.errors:
-                first_line = str(error_row.error).split("\n")[0]
-                error_messages.append(first_line)
+    # Adding error messages to the report
+    for row in result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
             error_row_instance = ImportJobReportRow(
                 site=import_job_instance.site,
                 report=report,
                 status=RowStatus.ERROR,
                 row_number=row.number,
-                errors=error_messages,
-            )
-            error_row_instance.save()
-            error_row_numbers.append(row.number)
-
-    # Check for invalid rows
-    if len(result.invalid_rows):
-        for row in result.invalid_rows:
-            error_row_instance = ImportJobReportRow(
-                site=import_job_instance.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=row.error.messages,
+                errors=row.error_messages,
             )
             error_row_instance.save()
             error_row_numbers.append(row.number)

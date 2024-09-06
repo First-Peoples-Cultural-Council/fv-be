@@ -668,3 +668,26 @@ class TestBulkImport:
 
         assert existing_entry_1.id in related_entry_list
         assert existing_entry_2.id in related_entry_list
+
+    def test_skip_rows_with_erroneous_values(self):
+        # If a row has validation errors, skip that row, but import the rest of the file
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.error_rows == 5
+
+        imported_entries = DictionaryEntry.objects.all()
+        assert len(imported_entries) == 1
+        assert imported_entries[0].title == "Phrase 1"
