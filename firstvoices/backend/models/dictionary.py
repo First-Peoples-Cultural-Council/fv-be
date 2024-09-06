@@ -263,6 +263,7 @@ class DictionaryEntryCategory(BaseDictionaryContentModel):
         on_delete=models.CASCADE,
         related_name="dictionaryentrycategory_set",
     )
+
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="dictionaryentrycategory_set"
     )

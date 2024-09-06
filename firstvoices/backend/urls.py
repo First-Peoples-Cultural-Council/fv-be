@@ -21,6 +21,7 @@ from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
+from backend.views.report_views import ReportViewSet
 from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 from backend.views.search_languages_views import LanguageViewSet
 from backend.views.search_site_entries_views import SearchSiteEntriesViewSet
@@ -40,6 +41,7 @@ ROUTER = CustomRouter()
 ROUTER.register(r"languages", LanguageViewSet, basename="language")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
+ROUTER.register(r"reports", ReportViewSet, basename="report")
 ROUTER.register(r"search", SearchAllEntriesViewSet, basename="search")
 
 ROUTER.register(r"sites", SiteViewSet, basename="site")
