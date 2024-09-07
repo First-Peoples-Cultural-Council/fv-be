@@ -3,34 +3,37 @@ from rest_framework import serializers
 
 from backend.models import Category, PartOfSpeech, Site
 from backend.models.constants import Visibility
-from backend.models.dictionary import DictionaryEntryCategory, TypeOfDictionaryEntry
+from backend.models.dictionary import TypeOfDictionaryEntry
 
 
 class CategoryCountSerializer(serializers.Serializer):
-    title = serializers.CharField(read_only=True)
+    title = serializers.SerializerMethodField()
     words = serializers.SerializerMethodField()
     phrases = serializers.SerializerMethodField()
 
-    def get_words(self, category):
-        return self.get_count_by_type(category, TypeOfDictionaryEntry.WORD)
+    def get_title(self, dictionary_entries):
+        id = self.context["category_id"]
+        return Category.objects.get(pk=id).title
 
-    def get_phrases(self, category):
-        return self.get_count_by_type(category, TypeOfDictionaryEntry.PHRASE)
+    def get_words(self, dictionary_entries):
+        return self.get_count_by_type(dictionary_entries, TypeOfDictionaryEntry.WORD)
 
-    def get_count_by_type(self, category, entry_type):
+    def get_phrases(self, dictionary_entries):
+        return self.get_count_by_type(dictionary_entries, TypeOfDictionaryEntry.PHRASE)
+
+    def get_count_by_type(self, dictionary_entries, entry_type):
+        category = self.context["category_id"]
         category_ids = [
             c
             for c in Category.objects.filter(parent=category).values_list(
                 "id", flat=True
             )
         ]
-        category_ids.append(category.id)
+        category_ids.append(category)
         return (
-            DictionaryEntryCategory.objects.filter(category__in=category_ids)
-            .filter(dictionary_entry__type=entry_type)
-            .filter(dictionary_entry__translations__len__gte=1)
-            .filter(dictionary_entry__related_audio__isnull=False)
-            .filter(dictionary_entry__visibility__gte=Visibility.MEMBERS)
+            dictionary_entries.filter(
+                dictionaryentrycategory_set__category__in=category_ids
+            )
             .distinct()
             .count()
         )
@@ -140,7 +143,12 @@ class DictionaryCountDetailsSerializer(serializers.Serializer):
                 Category.objects.filter(site=site).filter(parent=None).distinct()
             )
 
-            return [CategoryCountSerializer(c).data for c in top_level_categories]
+            return [
+                CategoryCountSerializer(
+                    dictionary_entries, context={"category_id": c.id}
+                ).data
+                for c in top_level_categories
+            ]
 
     def get_by_key_part_of_speech(self, dictionary_entries):
         if dictionary_entries.count() > 0:
