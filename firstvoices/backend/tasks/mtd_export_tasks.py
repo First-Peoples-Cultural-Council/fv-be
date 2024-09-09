@@ -93,7 +93,7 @@ def build_index_and_calculate_scores(site_slug: str, *args, **kwargs):
         export_job.save()
         logger.info(cancelled_message)
         logger.info(ASYNC_TASK_END_TEMPLATE)
-        return export_job
+        return export_job.id
 
     characters_list = site.character_set.all().order_by("sort_order")
     dictionary_entries_queryset = (
@@ -182,7 +182,7 @@ def build_index_and_calculate_scores(site_slug: str, *args, **kwargs):
             export_job.save()
             logger.error(e)
             logger.info(ASYNC_TASK_END_TEMPLATE)
-            return export_job
+            return export_job.id
     result = dictionary.export().model_dump(mode="json")
 
     # Save the new result to the database
