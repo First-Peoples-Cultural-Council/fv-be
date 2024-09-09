@@ -227,7 +227,9 @@ class TestMTDIndexAndScoreTask:
     def test_parallel_build_and_score_jobs_not_allowed(self, site, caplog):
         factories.MTDExportJobFactory.create(site=site, status=JobStatus.STARTED)
 
-        export_job = build_index_and_calculate_scores(site.slug)
+        export_job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(site.slug)
+        )
         assert export_job.status == JobStatus.CANCELLED
         assert export_job.message == (
             "Job cancelled as another MTD export job is already in progress for the same site."
@@ -252,7 +254,9 @@ class TestMTDIndexAndScoreTask:
             "mothertongues.dictionary.MTDictionary.build_indices",
             side_effect=Exception("Mocked exception"),
         ):
-            result = build_index_and_calculate_scores(site.slug)
+            result = MTDExportJob.objects.get(
+                id=build_index_and_calculate_scores(site.slug)
+            )
 
         assert result.status == JobStatus.FAILED
         assert result.message == "Mocked exception"
