@@ -57,23 +57,21 @@ def parse_queryset_for_mtd(
 
 
 @shared_task
-def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwargs):
+def build_index_and_calculate_scores(site_slug: str, *args, **kwargs):
     """This task builds the inverted index and calculates the entry rankings
 
     Args:
-        site_or_site_slug (Union[str, Site]): A valid site slug or a backend.models.Site object
+        site_slug (str): A valid site slug
     """
     logger = get_task_logger(__name__)
-    logger.info(ASYNC_TASK_START_TEMPLATE, f"site: {site_or_site_slug}")
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"site: {site_slug}")
 
-    if isinstance(site_or_site_slug, Site):
-        site = site_or_site_slug
-    elif isinstance(site_or_site_slug, str):
-        site = Site.objects.get(slug=site_or_site_slug)
+    if isinstance(site_slug, str):
+        site = Site.objects.get(slug=site_slug)
     else:
         raise TypeError(
             f"""site_or_site_slug must be a backend.models.Site object or a valid site slug.
-                {type(site_or_site_slug)} was received instead."""
+                {type(site_slug)} was received instead."""
         )
 
     # Saving an empty model to depict that the task has started
@@ -197,7 +195,7 @@ def build_index_and_calculate_scores(site_or_site_slug: str | Site, *args, **kwa
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
 
-    return export_job
+    return export_job.id
 
 
 @shared_task(bind=True)

@@ -3,6 +3,7 @@ from mothertongues.config.models import LanguageConfiguration
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
+from backend.models import MTDExportJob
 from backend.models.constants import Visibility
 from backend.models.jobs import JobStatus
 from backend.tasks.mtd_export_tasks import build_index_and_calculate_scores
@@ -69,7 +70,7 @@ class TestMTDDataEndpoint:
             10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
         )
 
-        mtd = build_index_and_calculate_scores(site.slug)
+        mtd = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
 
         response = self.client.get(self.get_mtd_endpoint(site_slug=site.slug))
         assert response.status_code == 200
@@ -95,7 +96,7 @@ class TestMTDDataEndpoint:
             10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
         )
 
-        mtd = build_index_and_calculate_scores(site.slug)
+        mtd = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
 
         response = self.client.get(
             self.get_mtd_endpoint(site_slug=site.slug) + "/task/"
@@ -115,7 +116,7 @@ class TestMTDDataEndpoint:
             10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
         )
 
-        mtd = build_index_and_calculate_scores(site.slug)
+        mtd = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
 
         factories.MTDExportJobFactory.create(site=site, status=status)
 
