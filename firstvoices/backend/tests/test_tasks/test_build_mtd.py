@@ -29,7 +29,8 @@ class TestMTDIndexAndScoreTask:
 
     @pytest.mark.django_db
     def test_build_empty(self, site, caplog):
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
         assert result["config"]["L1"] == site.title
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
@@ -51,7 +52,8 @@ class TestMTDIndexAndScoreTask:
             title=self.sample_entry_title,
             translations=[],
         )
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
 
         assert result["config"]["L1"] == site.title
         assert len(result["data"]) == 0
@@ -79,12 +81,14 @@ class TestMTDIndexAndScoreTask:
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
         assert len(result["data"]) == 1
 
     @pytest.mark.django_db
     def test_export_is_saved(self, site):
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
         # Check that the exported contents were saved
         saved_export_format = MTDExportJob.objects.filter(site=site)
         assert saved_export_format.latest().export_result == result
@@ -132,7 +136,8 @@ class TestMTDIndexAndScoreTask:
             title="the word 'third' appears as the third word in this sentence",
         )
         # Build and index
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
         assert len(result["data"]) == 3
         assert result["data"][1]["word"] == self.sample_entry_title
         # punctuation is removed by default so it is titleone in the index
@@ -196,7 +201,8 @@ class TestMTDIndexAndScoreTask:
         )
 
         # Build and index
-        result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
         assert len(result["data"]) == 1
         assert result["data"][0]["word"] == self.sample_entry_title
         assert result["data"][0]["img"] is None
@@ -209,7 +215,8 @@ class TestMTDIndexAndScoreTask:
     def test_old_results_removed(self, site):
         build_index_and_calculate_scores(site.slug)
         build_index_and_calculate_scores(site.slug)
-        final_result = build_index_and_calculate_scores(site.slug).export_result
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        final_result = job.export_result
 
         # Check that only the most recent is in the db
         saved_results = MTDExportJob.objects.filter(site=site)
