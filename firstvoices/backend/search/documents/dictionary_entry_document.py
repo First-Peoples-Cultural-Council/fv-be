@@ -18,6 +18,7 @@ class DictionaryEntryDocument(BaseSiteEntryWithMediaDocument):
     translation = Text(copy_to="primary_translation_search_fields")
     note = Text(copy_to="other_translation_search_fields")
     acknowledgement = Text(copy_to="other_translation_search_fields")
+    alternate_spelling = Text(copy_to="primary_language_search_fields")
 
     # filter and sorting
     type = Keyword()

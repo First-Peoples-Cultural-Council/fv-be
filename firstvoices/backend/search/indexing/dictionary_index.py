@@ -25,6 +25,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             type=instance.type,
             translation=instance.translations,
             acknowledgement=instance.acknowledgements,
+            alternate_spelling=instance.alternate_spellings,
             note=instance.notes,
             categories=fields_as_list(instance.categories, "id"),
             exclude_from_kids=instance.exclude_from_kids,
