@@ -86,8 +86,6 @@ jobs:
           pip install -r requirements.sonarcov.txt
       - name: Download all artifacts
         uses: actions/download-artifact@v3
-      - name: List all files
-        run: ls -a
       - name: Run coverage
         working-directory: ./firstvoices
         run: |
