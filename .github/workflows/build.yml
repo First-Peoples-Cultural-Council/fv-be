@@ -86,6 +86,8 @@ jobs:
           pip install -r requirements.sonarcov.txt
       - name: Download all artifacts
         uses: actions/download-artifact@v3
+      - name: List all files
+        uses: ls -a
       - name: Run coverage
         run: |
           coverage combine coverage*/.coverage*
