@@ -87,7 +87,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: List all files
-        uses: ls -a
+        run: ls -a
       - name: Run coverage
         run: |
           coverage combine coverage*/.coverage*
