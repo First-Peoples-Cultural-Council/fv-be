@@ -89,8 +89,9 @@ jobs:
       - name: List all files
         run: ls -a
       - name: Run coverage
+        working-directory: ./firstvoices
         run: |
-          coverage combine coverage*/.coverage*
+          coverage combine ../coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
