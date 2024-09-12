@@ -94,6 +94,8 @@ jobs:
           coverage xml
       - name: List files
         run: ls -a
+      - name: List files in FV folder
+        run: ls -a firstvoices
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
