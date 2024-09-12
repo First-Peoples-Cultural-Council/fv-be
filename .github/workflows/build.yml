@@ -92,6 +92,8 @@ jobs:
           coverage combine ../coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
+      - name: List files
+        run: ls -a
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
