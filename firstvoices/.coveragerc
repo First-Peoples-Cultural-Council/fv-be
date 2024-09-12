@@ -1,7 +1,13 @@
 [run]
 branch = True
 relative_files = True
-include = *
+include =
+    backend/*
+    firstvoices/*
+    healthcheck/*
+    jwt_auth/*
+    scripts/*
+    manage.py
 omit =
     */tests/*
     */migrations/*
