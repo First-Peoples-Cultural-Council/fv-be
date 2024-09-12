@@ -120,6 +120,27 @@ REST_FRAMEWORK = {
 # LOGGERS
 ELASTICSEARCH_LOGGER = "elasticsearch"
 
+# Based on the default settings
+# ref: https://docs.djangoproject.com/en/5.1/ref/logging/#default-logging-configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "{levelname} {asctime}: {pathname}:{module} - {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        }
+    },
+}
+
+
 # local only
 if DEBUG:
     REST_FRAMEWORK.update(
@@ -150,9 +171,7 @@ if DEBUG:
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
     LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {"console": {"class": "logging.StreamHandler"}},
+        **LOGGING,
         "root": {"handlers": ["console"], "level": "WARNING"},
         "loggers": {
             ELASTICSEARCH_LOGGER: {
