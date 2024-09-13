@@ -357,10 +357,12 @@ ELASTICSEARCH_LOGGER = "elasticsearch"
 # Filtering logs to console
 console_filters = []
 log_handlers = ["console"]
+log_file = "./app.log"
 
 if not DEBUG:
     console_filters += ["debug_info_log_level_filter"]
     log_handlers += ["file"]
+    log_file = "/var/log/django/app.log"
 
 # Based on the default settings
 # ref: https://docs.djangoproject.com/en/5.1/ref/logging/#default-logging-configuration
@@ -392,7 +394,7 @@ LOGGING = {
         "file": {
             "level": "WARNING",  # WARNING + ERROR
             "class": "logging.FileHandler",
-            "filename": "/var/log/django/app.log",
+            "filename": log_file,
             "formatter": "detailed",
         },
     },
