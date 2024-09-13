@@ -392,7 +392,7 @@ LOGGING = {
         "file": {
             "level": "WARNING",  # WARNING + ERROR
             "class": "logging.FileHandler",
-            "filename": "./app.log",
+            "filename": "/var/log/django/app.log",
             "formatter": "detailed",
         },
     },
