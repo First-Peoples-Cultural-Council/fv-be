@@ -16,6 +16,9 @@ RUN pip3 install gunicorn
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
 
+# Adding folder for the log file
+RUN mkdir -p /var/log/django
+
 COPY . /app
 WORKDIR /app/firstvoices
 
