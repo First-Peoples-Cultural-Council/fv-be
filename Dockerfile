@@ -7,11 +7,11 @@ ENV DEBUG_DISABLE=True
 WORKDIR /app
 RUN apk add --no-cache \
     build-base \
+    ffmpeg \
+    git \
     libffi-dev \
     libmagic \
     openblas-dev \
-    ffmpeg \
-    git \
 && pip3 install gunicorn
 
 COPY requirements.txt /app
