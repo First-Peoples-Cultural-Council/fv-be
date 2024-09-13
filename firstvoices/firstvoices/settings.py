@@ -125,18 +125,46 @@ ELASTICSEARCH_LOGGER = "elasticsearch"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "debug_info_log_level_filter": {
+            "()": "firstvoices.logging_utils.DebugInfoLogLevelFilter"
+        },
+    },
     "formatters": {
         "standard": {
-            "format": "{levelname} {asctime}: {pathname}:{module} - {message}",
+            "format": "{levelname}-{asctime}:{pathname} -- {message}",
+            "style": "{",
+        },
+        "detailed": {
+            "format": "{levelname}-{asctime}:{pathname} {process:d} {thread:d} -- {message}",
             "style": "{",
         },
     },
     "handlers": {
         "console": {
-            "level": "INFO",
+            "level": "DEBUG",  # DEBUG + INFO
+            "filters": ["debug_info_log_level_filter"],
             "class": "logging.StreamHandler",
             "formatter": "standard",
-        }
+        },
+        "file": {
+            "level": "WARNING",  # WARNING + ERROR
+            "class": "logging.FileHandler",
+            "filename": "./app.log",
+            "formatter": "detailed",
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        ELASTICSEARCH_LOGGER: {
+            "handlers": ["console", "file"],
+            "level": "WARNING",  # Change level to INFO to debug connection requests,
+            "propagate": False,
+        },
     },
 }
 
@@ -170,16 +198,6 @@ if DEBUG:
 
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
-    LOGGING = {
-        **LOGGING,
-        "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {
-            ELASTICSEARCH_LOGGER: {
-                "handlers": ["console"],
-                "level": "INFO",  # Change level to INFO to view connection requests
-            },
-        },
-    }
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
