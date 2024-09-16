@@ -117,9 +117,6 @@ REST_FRAMEWORK = {
     },
 }
 
-# LOGGERS
-ELASTICSEARCH_LOGGER = "elasticsearch"
-
 # local only
 if DEBUG:
     REST_FRAMEWORK.update(
@@ -149,18 +146,6 @@ if DEBUG:
 
     # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
     INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {"console": {"class": "logging.StreamHandler"}},
-        "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {
-            ELASTICSEARCH_LOGGER: {
-                "handlers": ["console"],
-                "level": "INFO",  # Change level to INFO to view connection requests
-            },
-        },
-    }
 
 AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
@@ -364,3 +349,65 @@ if ENABLE_SMTP_BACKEND:
 else:
     EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
+# LOGGING SETUP
+ELASTICSEARCH_LOGGER = "elasticsearch"
+
+# Filtering logs to console
+console_filters = []
+log_handlers = ["console"]
+log_file = "./app.log"
+
+if not DEBUG:
+    console_filters += ["debug_info_log_level_filter"]
+    log_handlers += ["file"]
+    log_file = "/var/log/django/app.log"
+
+# Based on the default settings
+# ref: https://docs.djangoproject.com/en/5.1/ref/logging/#default-logging-configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "debug_info_log_level_filter": {
+            "()": "firstvoices.logging_utils.DebugInfoLogLevelFilter"
+        },
+    },
+    "formatters": {
+        "standard": {
+            "format": "{levelname}-{asctime}:{pathname} -- {message}",
+            "style": "{",
+        },
+        "detailed": {
+            "format": "{levelname}-{asctime}:{pathname} {process:d} {thread:d} -- {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",  # DEBUG + INFO
+            "filters": console_filters,
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "file": {
+            "level": "WARNING",  # WARNING + ERROR
+            "class": "logging.FileHandler",
+            "filename": log_file,
+            "formatter": "detailed",
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": log_handlers,
+            "level": "INFO",
+            "propagate": True,
+        },
+        ELASTICSEARCH_LOGGER: {
+            "handlers": log_handlers,
+            "level": "WARNING",  # Change level to INFO to debug connection requests,
+            "propagate": False,
+        },
+    },
+}

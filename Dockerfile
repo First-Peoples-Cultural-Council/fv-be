@@ -15,7 +15,8 @@ RUN apk add --no-cache \
 && pip3 install gunicorn
 
 COPY requirements.txt /app
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt \
+ && mkdir -p /var/log/django  # Adding folder for the log file
 
 COPY . /app
 WORKDIR /app/firstvoices
