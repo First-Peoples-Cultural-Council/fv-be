@@ -135,3 +135,10 @@ class TextListField(serializers.ListField):
                     "Expected the objects in the list to contain key 'text'."
                 )
         return response
+
+
+class NonNullableCharField(serializers.CharField):
+    def to_internal_value(self, data):
+        if data is None:
+            return ""
+        return super().to_internal_value(data)

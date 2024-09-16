@@ -12,7 +12,7 @@ from backend.serializers.utils.context_utils import get_site_from_context
 from ..models import Membership, Site
 from ..models.constants import Role, Visibility
 from . import fields
-from .fields import WritableVisibilityField
+from .fields import NonNullableCharField, WritableVisibilityField
 
 base_timestamp_fields = ("created", "created_by", "last_modified", "last_modified_by")
 base_id_fields = ("id", "url", "title")
@@ -146,7 +146,7 @@ class LinkedSiteSerializer(
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
-    slug = serializers.CharField(read_only=True)
+    slug = NonNullableCharField(read_only=True)
 
     class Meta:
         model = Site
