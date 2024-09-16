@@ -90,3 +90,4 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
             list(instance.categories.values_list("id", flat=True)),
             doc.categories,
         )
+        assert_list(instance.alternate_spellings, doc.alternate_spelling)

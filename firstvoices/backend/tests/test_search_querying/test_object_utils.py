@@ -7,13 +7,7 @@ from elasticsearch_dsl import Search
 
 from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
-from backend.search.utils.object_utils import (
-    get_acknowledgements_text,
-    get_categories_ids,
-    get_notes_text,
-    get_object_from_index,
-    get_translation_text,
-)
+from backend.search.utils.object_utils import get_categories_ids, get_object_from_index
 from backend.tests import factories
 
 
@@ -130,95 +124,6 @@ class TestGetObjectFromIndex:
             assert "Indexed document not found." in caplog.text
             assert test_index in caplog.text
             assert document_id in caplog.text
-
-
-@pytest.mark.django_db
-class TestGetTranslationText:
-    def test_no_translation(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, translations=[]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_translation_text(dictionary_entry) == ""
-
-    def test_basic_case(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, translations=["coffee"]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_translation_text(dictionary_entry) == "coffee"
-
-    def test_multiple_translations(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, translations=["coffee", "tea"]
-        )
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_translation_text(dictionary_entry) == "coffee tea"
-
-
-@pytest.mark.django_db
-class TestGetAcknowledgementsText:
-    def test_no_acknowledgement(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, acknowledgements=[]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_acknowledgements_text(dictionary_entry) == ""
-
-    def test_basic_case(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, acknowledgements=["coffee"]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_acknowledgements_text(dictionary_entry) == "coffee"
-
-    def test_multiple_acknowledgements(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, acknowledgements=["coffee", "tea"]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_acknowledgements_text(dictionary_entry) == "coffee tea"
-
-
-@pytest.mark.django_db
-class TestGetNotesText:
-    def test_no_notes(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, notes=[]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_notes_text(dictionary_entry) == ""
-
-    def test_basic_case(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, notes=["coffee"]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_notes_text(dictionary_entry) == "coffee"
-
-    def test_multiple_notes(self):
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        entry = factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, notes=["coffee", "tea"]
-        )
-
-        dictionary_entry = DictionaryEntry.objects.get(id=entry.id)
-        assert get_notes_text(dictionary_entry) == "coffee tea"
 
 
 @pytest.mark.django_db
