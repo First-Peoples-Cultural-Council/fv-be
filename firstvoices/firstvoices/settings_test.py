@@ -3,7 +3,6 @@ Settings for automated testing only.
 """
 
 from .settings import *  # noqa
-from .settings import ELASTICSEARCH_LOGGER
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
@@ -28,21 +27,3 @@ STORAGES = {
     },
 }
 MEDIA_ROOT = BASE_DIR / "backend" / "tests" / "tmp"  # noqa F405
-
-# Logging for tests
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "level": "INFO",
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {
-        ELASTICSEARCH_LOGGER: {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-    },
-}
