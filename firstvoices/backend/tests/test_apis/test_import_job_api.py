@@ -252,6 +252,20 @@ class TestImportEndpoints(
         # Check custom permissions tests below
         pass
 
+    @pytest.mark.skip(
+        reason="Import job API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Import job API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Import job API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Import job API does not have eligible optional charfields.
+        pass
+
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
     @pytest.mark.parametrize("visibility", Visibility)
     def test_detail_403_for_members_and_assistants(self, role, visibility):

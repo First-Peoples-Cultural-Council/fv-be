@@ -132,6 +132,20 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         # Immersion label API does not have eligible null fields.
         pass
 
+    @pytest.mark.skip(
+        reason="Immersion label API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Immersion label API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Immersion label API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Immersion label API does not have eligible optional charfields.
+        pass
+
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):
         """
