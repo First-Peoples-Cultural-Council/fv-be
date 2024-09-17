@@ -156,6 +156,14 @@ class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):
             "title": "Test Gallery",
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "title": "Test Gallery",
+            "titleTranslation": None,
+            "introduction": None,
+            "introductionTranslation": None,
+        }
+
     @pytest.mark.django_db
     def test_gallery_cover_image_not_unique(self):
         """Galleries can be created using the same image as their cover image"""

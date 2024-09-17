@@ -41,6 +41,16 @@ class GallerySummarySerializer(WritableSiteContentSerializer):
     List serializer for Gallery model.
     """
 
+    title_translation = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    introduction = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    introduction_translation = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+
     cover_image = WriteableRelatedImageSerializer(
         required=False,
         queryset=Image.objects.all(),
