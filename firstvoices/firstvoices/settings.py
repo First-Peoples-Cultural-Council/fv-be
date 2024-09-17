@@ -136,7 +136,7 @@ LOGGING = {
             "formatter": "standard",
         }
     },
-    "root": {"handlers": ["console"], "level": "WARNING", "formatter": "standard",},
+    "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
 # local only
