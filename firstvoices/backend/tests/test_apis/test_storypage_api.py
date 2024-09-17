@@ -98,6 +98,13 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             "ordering": 8,
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "text": "Title",
+            "translation": None,
+            "ordering": 8,
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,
@@ -377,6 +384,27 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id)),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_created_instance(pk, expected_data)
+        self.assert_created_response(expected_data, response_data)
+
+    @pytest.mark.django_db
+    def test_create_with_null_optional_charfields_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=site.visibility)
+        data = self.get_valid_data_with_null_optional_charfields(site)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id)),

@@ -142,5 +142,7 @@ def nfc(string: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFD", string))
 
 
-def clean_input(string: str) -> str:
+def clean_input(string: str | None) -> str:
+    if string is None:
+        return ""
     return nfc(string.strip())
