@@ -358,19 +358,19 @@ class TestDictionaryEndpoint(
             },
         ]
 
-        @pytest.mark.skip(
-            reason="Dictionary entry API does not have eligible optional charfields."
-        )
-        def test_create_with_null_optional_charfields_success_201(self):
-            # Dictionary entry API does not have eligible optional charfields.
-            pass
+    @pytest.mark.skip(
+        reason="Dictionary entry API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Dictionary entry API does not have eligible optional charfields.
+        pass
 
-        @pytest.mark.skip(
-            reason="Dictionary entry API does not have eligible optional charfields."
-        )
-        def test_update_with_null_optional_charfields_success_200(self):
-            # Dictionary entry API does not have eligible optional charfields.
-            pass
+    @pytest.mark.skip(
+        reason="Dictionary entry API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Dictionary entry API does not have eligible optional charfields.
+        pass
 
     @pytest.mark.django_db
     def test_list_permissions(self):
