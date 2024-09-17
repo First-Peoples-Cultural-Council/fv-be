@@ -136,11 +136,11 @@ LOGGING = {
             "formatter": "standard",
         }
     },
-    "root": {"handlers": ["console"], "level": "WARNING"},
+    "root": {"handlers": ["console"], "level": "WARNING", "formatter": "standard"},
 }
 
 # local only
-if DEBUG
+if DEBUG:
     REST_FRAMEWORK.update(
         {
             "DEFAULT_RENDERER_CLASSES": (
