@@ -18,6 +18,7 @@ from .base_serializers import (
     ExternalSiteContentUrlMixin,
     SiteContentLinkedTitleSerializer,
     UpdateSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     base_id_fields,
 )
 from .validators import SupportedFileType
@@ -26,8 +27,11 @@ from .validators import SupportedFileType
 class PersonSerializer(
     UpdateSerializerMixin,
     CreateSiteContentSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     SiteContentLinkedTitleSerializer,
 ):
+    bio = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = media.Person
         fields = (
