@@ -707,6 +707,20 @@ class BaseMediaApiTest(
         assert len(response_data["usage"]["songs"]) == 0
         assert len(response_data["usage"]["stories"]) == 0
 
+    @pytest.mark.skip(
+        reason="Multipart form data not supported for null string values."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # This test is skipped because the multipart form data encoder does not support null string values.
+        pass
+
+    @pytest.mark.skip(
+        reason="Multipart form data not supported for null string values."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # This test is skipped because the multipart form data encoder does not support null string values.
+        pass
+
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):
     @pytest.fixture()
