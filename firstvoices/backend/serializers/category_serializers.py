@@ -6,7 +6,6 @@ from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     WritableSiteContentSerializer,
 )
-from backend.serializers.fields import NonNullableCharField
 from backend.serializers.validators import HasNoParent, SameSite, UniqueForSite
 
 
@@ -16,11 +15,13 @@ class LinkedCategorySerializer(SiteContentLinkedTitleSerializer):
 
 
 class ChildCategoryListSerializer(SiteContentLinkedTitleSerializer):
-    title = NonNullableCharField(
+    title = serializers.CharField(
         max_length=CATEGORY_POS_MAX_TITLE_LENGTH,
         validators=[UniqueForSite(queryset=Category.objects.all())],
     )
-    description = NonNullableCharField(required=False, allow_blank=True)
+    description = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
         model = Category
@@ -42,7 +43,9 @@ class ParentCategoryFlatListSerializer(ChildCategoryListSerializer):
 class CategoryDetailSerializer(
     WritableSiteContentSerializer,
 ):
-    description = NonNullableCharField(required=False, allow_blank=True)
+    description = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
     children = ChildCategoryListSerializer(many=True, read_only=True)
     parent = LinkedCategorySerializer(read_only=True)
     parent_id = serializers.PrimaryKeyRelatedField(

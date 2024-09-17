@@ -12,7 +12,7 @@ from backend.serializers.utils.context_utils import get_site_from_context
 from ..models import Membership, Site
 from ..models.constants import Role, Visibility
 from . import fields
-from .fields import NonNullableCharField, WritableVisibilityField
+from .fields import WritableVisibilityField
 
 base_timestamp_fields = ("created", "created_by", "last_modified", "last_modified_by")
 base_id_fields = ("id", "url", "title")
@@ -135,6 +135,20 @@ class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
         fields = ("visibility",)
 
 
+class ValidateNonNullableCharFieldsMixin:
+    """
+    A mixin for ModelSerializers that replaces null values with an empty string for char fields.
+    """
+
+    def validate(self, attrs):
+        for field_name, field in self.fields.items():
+            if isinstance(field, serializers.CharField):
+                if field_name in attrs and attrs.get(field_name) is None:
+                    attrs[field_name] = ""
+
+        return super().validate(attrs)
+
+
 class LinkedSiteSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.HyperlinkedModelSerializer
 ):
@@ -146,7 +160,7 @@ class LinkedSiteSerializer(
         view_name="api:site-detail", lookup_field="slug"
     )
     language = serializers.StringRelatedField()
-    slug = NonNullableCharField(read_only=True)
+    slug = serializers.CharField(read_only=True)
 
     class Meta:
         model = Site
@@ -186,6 +200,7 @@ class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
 class WritableSiteContentSerializer(
     CreateSiteContentSerializerMixin,
     UpdateSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     BaseSiteContentSerializer,
 ):
     """
@@ -210,6 +225,7 @@ class BaseControlledSiteContentSerializer(
 class WritableControlledSiteContentSerializer(
     CreateControlledSiteContentSerializerMixin,
     UpdateSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     BaseControlledSiteContentSerializer,
 ):
     """
