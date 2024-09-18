@@ -173,6 +173,20 @@ class TestJoinRequestEndpoints(
         # See custom permission tests instead
         pass
 
+    @pytest.mark.skip(
+        reason="Join request API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Join request API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Join request API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Join request API does not have eligible optional charfields.
+        pass
+
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db

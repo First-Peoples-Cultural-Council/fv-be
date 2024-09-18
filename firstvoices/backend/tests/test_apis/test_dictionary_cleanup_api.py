@@ -87,6 +87,20 @@ class TestDictionaryCleanupAPI(
         # Dictionary cleanup jobs require no data to post.
         pass
 
+    @pytest.mark.skip(
+        reason="Dictionary cleanup jobs have no eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        #  Dictionary cleanup jobs have no eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Dictionary cleanup jobs have no eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Dictionary cleanup jobs have no eligible optional charfields..
+        pass
+
     @pytest.mark.django_db
     def test_list_minimal(self):
         site = factories.SiteFactory.create()

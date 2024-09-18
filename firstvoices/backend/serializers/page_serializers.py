@@ -23,7 +23,7 @@ class SitePageSerializer(
     )
 
     slug = serializers.CharField(required=False)
-    subtitle = serializers.CharField(required=False)
+    subtitle = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = SitePage
@@ -49,7 +49,9 @@ class SitePageDetailSerializer(SitePageSerializer):
 
 class SitePageDetailWriteSerializer(WritableControlledSiteContentSerializer):
     slug = serializers.CharField(required=False)
-    subtitle = serializers.CharField(required=False)
+    subtitle = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
     widgets = serializers.PrimaryKeyRelatedField(
         queryset=SiteWidget.objects.all(),
         allow_null=True,

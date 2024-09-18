@@ -54,6 +54,17 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             "slug": "test-page-slug",
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "public",
+            "subtitle": None,
+            "slug": "test-page-slug",
+            "widgets": [],
+            "banner_image": None,
+            "banner_video": None,
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,

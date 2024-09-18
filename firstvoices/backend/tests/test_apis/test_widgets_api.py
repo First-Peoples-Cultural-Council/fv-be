@@ -41,10 +41,7 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         }
 
     def add_expected_defaults(self, data):
-        return {
-            **data,
-            "settings": []
-        }
+        return {**data, "settings": []}
 
     def add_related_objects(self, instance):
         factories.WidgetSettingsFactory.create(widget=instance)
@@ -165,6 +162,20 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
     )
     def test_list_minimal(self):
         # Skipping test as it is same as the test_list_permissions test above.
+        pass
+
+    @pytest.mark.skip(
+        reason="Site widget API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Site widget API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Site widget API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Site widget API does not have eligible optional charfields.
         pass
 
     @pytest.mark.django_db

@@ -95,6 +95,21 @@ class TestSongEndpoint(
             ],
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "titleTranslation": None,
+            "introduction": None,
+            "introductionTranslation": None,
+            "lyrics": [
+                {
+                    "text": "First lyrics page",
+                    "translation": "Translated 1st",
+                }
+            ],
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,

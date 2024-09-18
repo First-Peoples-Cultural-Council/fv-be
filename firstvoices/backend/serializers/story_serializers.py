@@ -13,6 +13,7 @@ from backend.serializers.base_serializers import (
     ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
+    ValidateNonNullableCharFieldsMixin,
     WritableControlledSiteContentSerializer,
     WritableVisibilityField,
     audience_fields,
@@ -59,7 +60,9 @@ class StoryPageSummarySerializer(
 
 
 class StoryPageDetailSerializer(
-    CreateControlledSiteContentSerializerMixin, StoryPageSummarySerializer
+    CreateControlledSiteContentSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
+    StoryPageSummarySerializer,
 ):
     created = serializers.DateTimeField(read_only=True)
     created_by = serializers.StringRelatedField(read_only=True)
@@ -68,7 +71,9 @@ class StoryPageDetailSerializer(
     story = LinkedStorySerializer(read_only=True)
     site = LinkedSiteSerializer(read_only=True)
 
-    translation = serializers.CharField(required=False, allow_blank=True, default="")
+    translation = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
 
     class Meta(StoryPageSummarySerializer.Meta):
         fields = (
@@ -101,15 +106,20 @@ class StorySerializer(
     RelatedMediaSerializerMixin,
     WritableControlledSiteContentSerializer,
 ):
+    author = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
     site = LinkedSiteSerializer(required=False, read_only=True)
     visibility = WritableVisibilityField(required=True)
 
     title_translation = serializers.CharField(
-        required=False, allow_blank=True, default=""
+        required=False, allow_blank=True, allow_null=True, default=""
     )
-    introduction = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
     introduction_translation = serializers.CharField(
-        required=False, allow_blank=True, default=""
+        required=False, allow_blank=True, allow_null=True, default=""
     )
 
     pages = StoryPageSummarySerializer(many=True, read_only=True)

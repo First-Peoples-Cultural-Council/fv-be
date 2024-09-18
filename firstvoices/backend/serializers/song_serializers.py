@@ -36,11 +36,13 @@ class SongSerializer(
     visibility = WritableVisibilityField(required=True)
 
     title_translation = serializers.CharField(
-        required=False, allow_blank=True, default=""
+        required=False, allow_blank=True, allow_null=True, default=""
     )
-    introduction = serializers.CharField(required=False, allow_blank=True, default="")
+    introduction = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
     introduction_translation = serializers.CharField(
-        required=False, allow_blank=True, default=""
+        required=False, allow_blank=True, allow_null=True, default=""
     )
 
     lyrics = LyricSerializer(many=True)

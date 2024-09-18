@@ -75,6 +75,17 @@ class TestStoryEndpoint(
             "pages": [],
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "title": "Title",
+            "visibility": "Public",
+            "pages": [],
+            "titleTranslation": None,
+            "introduction": None,
+            "introductionTranslation": None,
+            "author": None,
+        }
+
     def get_valid_page_data(self, site, story, page):
         return {
             "id": str(page.id),

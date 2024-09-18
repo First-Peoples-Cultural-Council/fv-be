@@ -35,6 +35,12 @@ class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
             "name": "Cool new name",
         }
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "name": "Cool new name",
+            "bio": None,
+        }
+
     def add_expected_defaults(self, data):
         return {
             **data,

@@ -123,6 +123,20 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         # SiteFeature API does not have eligible null fields.
         pass
 
+    @pytest.mark.skip(
+        reason="SiteFeature API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # SiteFeature API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="SiteFeature API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # SiteFeature API does not have eligible optional charfields.
+        pass
+
     @pytest.mark.django_db
     def test_feature_key_read_only(self):
         """
