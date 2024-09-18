@@ -30,7 +30,9 @@ class PersonSerializer(
     ValidateNonNullableCharFieldsMixin,
     SiteContentLinkedTitleSerializer,
 ):
-    bio = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    bio = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=""
+    )
 
     class Meta:
         model = media.Person

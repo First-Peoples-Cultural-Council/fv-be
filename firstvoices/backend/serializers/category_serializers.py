@@ -20,7 +20,7 @@ class ChildCategoryListSerializer(SiteContentLinkedTitleSerializer):
         validators=[UniqueForSite(queryset=Category.objects.all())],
     )
     description = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
+        required=False, allow_blank=True, allow_null=True, default=""
     )
 
     class Meta(SiteContentLinkedTitleSerializer.Meta):
@@ -44,7 +44,7 @@ class CategoryDetailSerializer(
     WritableSiteContentSerializer,
 ):
     description = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
+        required=False, allow_blank=True, allow_null=True, default=""
     )
     children = ChildCategoryListSerializer(many=True, read_only=True)
     parent = LinkedCategorySerializer(read_only=True)
