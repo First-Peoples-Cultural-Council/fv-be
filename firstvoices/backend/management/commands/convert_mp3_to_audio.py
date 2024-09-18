@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--site",
-            dest="site_name",
+            dest="site_slug",
             help="Site slug of the site to convert media models for (optional)",
             default=None,
         )
@@ -50,16 +50,15 @@ class Command(BaseCommand):
                 exclude_from_kids=model.exclude_from_kids,
             )
 
-            # Ensure the original model is deleted only after the transaction commits
-            transaction.on_commit(lambda: model.delete())
+            model.delete()
 
     def handle(self, *args, **options):
         # Setting logger level to get all logs
         logger = logging.getLogger("convert_mp3_to_audio")
         logger.setLevel(logging.INFO)
 
-        if options["site_name"]:
-            sites = Site.objects.filter(slug=options["site_name"])
+        if options["site_slug"]:
+            sites = Site.objects.filter(slug=options["site_slug"])
         else:
             sites = Site.objects.all()
 
