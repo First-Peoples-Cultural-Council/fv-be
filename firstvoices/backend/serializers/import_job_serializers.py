@@ -10,7 +10,7 @@ from backend.models.media import File
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
 from backend.serializers.job_serializers import BaseJobSerializer
-from backend.serializers.media_serializers import FileUploadSerializer
+from backend.serializers.media_serializers import FileSerializer, FileUploadSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.utils.import_job_utils import (
     check_duplicate_headers,
@@ -54,6 +54,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     validation_task_id = serializers.CharField(read_only=True)
     validation_status = fields.EnumField(enum=JobStatus, read_only=True)
     validation_report = ImportReportSerializer(read_only=True)
+    failed_rows_csv = FileSerializer(read_only=True)
 
     class Meta:
         model = ImportJob
@@ -65,6 +66,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             "validation_task_id",
             "validation_status",
             "validation_report",
+            "failed_rows_csv",
         )
 
     def validate(self, attrs):
