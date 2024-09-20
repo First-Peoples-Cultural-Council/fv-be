@@ -116,3 +116,10 @@ class ImportJob(BaseJob):
     validation_report = models.OneToOneField(
         ImportJobReport, null=True, on_delete=models.SET_NULL
     )
+
+    failed_rows_csv = models.ForeignKey(
+        File,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="import_job_failed_rows_csv_set",
+    )
