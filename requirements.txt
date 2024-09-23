@@ -35,7 +35,7 @@ eventlet==0.37.0
 factory-boy==3.3.0
 Faker==27.0.0
 ffmpeg-python==0.2.0
-g2p==2.0.0 # https://github.com/roedoejet/g2p
+g2p==2.1.1 # https://github.com/roedoejet/g2p
 greenlet==3.0.3
 gunicorn==23.0.0
 humanfriendly==10.0
