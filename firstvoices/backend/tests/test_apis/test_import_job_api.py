@@ -60,6 +60,7 @@ class TestImportEndpoints(
             "validationTaskId": instance.task_id,
             "validationStatus": instance.validation_status.lower(),
             "validationReport": instance.validation_report,
+            "failedRowsCsv": instance.failed_rows_csv,
             "site": {
                 "id": str(site.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
