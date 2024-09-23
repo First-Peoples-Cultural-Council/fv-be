@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db.models import Prefetch
 from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
@@ -8,9 +9,11 @@ from rest_framework.viewsets import ModelViewSet
 from backend.models import Story, StoryPage
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
+from ..models.media import Audio, Image, Video
 from ..serializers.story_serializers import StoryPageDetailSerializer
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_select_related_media_fields
 
 
 @extend_schema_view(
@@ -102,15 +105,36 @@ from .api_doc_variables import id_parameter, site_slug_parameter
     ),
 )
 class StoryPageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    def get_detail_queryset(self):
+    def get_queryset(self):
         site = self.get_validated_site()
         story = self.get_validated_story(site)
-        return StoryPage.objects.filter(site=site, story=story).all()
-
-    def get_list_queryset(self):
-        site = self.get_validated_site()
-        story = self.get_validated_story(site)
-        return StoryPage.objects.filter(site=site, story=story).order_by("id").all()
+        user = self.request.user
+        return (
+            StoryPage.objects.filter(site=site, story=story)
+            .order_by("ordering")
+            .all()
+            .prefetch_related(
+                Prefetch(
+                    "related_audio",
+                    queryset=Audio.objects.visible(user)
+                    .order_by("created")
+                    .select_related("original", "site")
+                    .prefetch_related("speakers"),
+                ),
+                Prefetch(
+                    "related_images",
+                    queryset=Image.objects.visible(user)
+                    .order_by("created")
+                    .select_related(*get_select_related_media_fields(None)),
+                ),
+                Prefetch(
+                    "related_videos",
+                    queryset=Video.objects.visible(user)
+                    .order_by("created")
+                    .select_related(*get_select_related_media_fields(None)),
+                ),
+            )
+        )
 
     def get_serializer_class(self):
         return StoryPageDetailSerializer

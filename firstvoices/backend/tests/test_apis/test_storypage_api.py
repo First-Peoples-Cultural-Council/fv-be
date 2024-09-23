@@ -637,3 +637,67 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert response_data["results"][0] == self.get_expected_list_response_item(
             instance, site
         )
+
+    @pytest.mark.django_db
+    def test_story_page_list_in_order(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=Visibility.PUBLIC)
+        page3 = factories.StoryPageFactory.create(site=site, story=story, ordering=3)
+        page2 = factories.StoryPageFactory.create(site=site, story=story, ordering=2)
+        page1 = factories.StoryPageFactory.create(site=site, story=story, ordering=1)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id))
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 3
+        assert len(response_data["results"]) == 3
+
+        assert response_data["results"][0] == self.get_expected_list_response_item(
+            page1, site
+        )
+        assert response_data["results"][1] == self.get_expected_list_response_item(
+            page2, site
+        )
+        assert response_data["results"][2] == self.get_expected_list_response_item(
+            page3, site
+        )
+
+    @pytest.mark.django_db
+    def test_story_page_related_media_ordered_by_created(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=Visibility.PUBLIC)
+        page = factories.StoryPageFactory.create(site=site, story=story, ordering=1)
+        audio1 = factories.AudioFactory.create(site=site)
+        audio2 = factories.AudioFactory.create(site=site)
+        image1 = factories.ImageFactory.create(site=site)
+        image2 = factories.ImageFactory.create(site=site)
+        video1 = factories.VideoFactory.create(site=site)
+        video2 = factories.VideoFactory.create(site=site)
+        page.related_audio.add(audio1)
+        page.related_audio.add(audio2)
+        page.related_images.add(image1)
+        page.related_images.add(image2)
+        page.related_videos.add(video1)
+        page.related_videos.add(video2)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id))
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        page_response = response_data["results"][0]
+        assert page_response["relatedAudio"][0]["id"] == str(audio1.id)
+        assert page_response["relatedAudio"][1]["id"] == str(audio2.id)
+        assert page_response["relatedImages"][0]["id"] == str(image1.id)
+        assert page_response["relatedImages"][1]["id"] == str(image2.id)
+        assert page_response["relatedVideos"][0]["id"] == str(video1.id)
+        assert page_response["relatedVideos"][1]["id"] == str(video2.id)
