@@ -23,6 +23,22 @@ from backend.tests.utils import get_sample_file
 class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
 
+    def import_invalid_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+
+        return import_job_instance
+
     def test_import_task_logs(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
@@ -124,19 +140,9 @@ class TestBulkImportDryRun:
         assert len(ignored_columns) == 0
 
     def test_invalid_rows(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
-        file_content = get_sample_file(
-            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
-        )
-        file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
-
-        batch_import(import_job_instance.id)
-
-        # Updated instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        import_job_instance = self.import_invalid_dictionary_entries()
         validation_report = import_job_instance.validation_report
+
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
             validation_report.rows.order_by("row_number").values_list(
@@ -324,18 +330,7 @@ class TestBulkImportDryRun:
             assert "Random exception." in caplog.text
 
     def test_failed_rows_csv(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
-        file_content = get_sample_file(
-            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
-        )
-        file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
-
-        batch_import(import_job_instance.id)
-
-        # Updated instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        import_job_instance = self.import_invalid_dictionary_entries()
         validation_report = import_job_instance.validation_report
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
