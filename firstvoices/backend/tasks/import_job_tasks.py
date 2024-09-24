@@ -235,9 +235,10 @@ def batch_import(import_job_instance_id, dry_run=True):
         import_job_instance.save()
         return
 
-    import_job_instance.validation_task_id = task_id
-    import_job_instance.validation_status = JobStatus.STARTED
-    import_job_instance.save()
+    if dry_run:
+        import_job_instance.validation_task_id = task_id
+        import_job_instance.validation_status = JobStatus.STARTED
+        import_job_instance.save()
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
