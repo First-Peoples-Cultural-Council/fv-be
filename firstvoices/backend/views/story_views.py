@@ -19,7 +19,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
-from .utils import get_media_prefetch_list
+from .utils import get_created_ordered_media_prefetch_list, get_media_prefetch_list
 
 
 @extend_schema_view(
@@ -125,7 +125,20 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
         return (
             Story.objects.filter(site=site)
             .select_related("site", "site__language", "created_by", "last_modified_by")
-            .prefetch_related(*get_media_prefetch_list(self.request.user))
+            .prefetch_related(
+                *get_media_prefetch_list(self.request.user),
+                Prefetch(
+                    "pages",
+                    queryset=StoryPage.objects.filter(site=site)
+                    .order_by("ordering")
+                    .select_related(
+                        "site", "site__language", "created_by", "last_modified_by"
+                    )
+                    .prefetch_related(
+                        *get_created_ordered_media_prefetch_list(self.request.user)
+                    ),
+                )
+            )
         )
 
     def get_list_queryset(self):
@@ -138,11 +151,14 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
                 *get_media_prefetch_list(self.request.user),
                 Prefetch(
                     "pages",
-                    queryset=StoryPage.objects.all()
+                    queryset=StoryPage.objects.filter(site=site)
+                    .order_by("ordering")
                     .select_related(
                         "site", "site__language", "created_by", "last_modified_by"
                     )
-                    .prefetch_related(*get_media_prefetch_list(self.request.user)),
+                    .prefetch_related(
+                        *get_created_ordered_media_prefetch_list(self.request.user)
+                    ),
                 )
             )
         )
