@@ -22,7 +22,9 @@ class DictionaryEntryResource(
 ):
     type = fields.Field(
         column_name="type",
-        widget=ChoicesWidget(TypeOfDictionaryEntry.choices),
+        widget=ChoicesWidget(
+            TypeOfDictionaryEntry.choices, default=TypeOfDictionaryEntry.WORD
+        ),
         attribute="type",
     )
     part_of_speech = fields.Field(

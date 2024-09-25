@@ -122,6 +122,23 @@ class TestBulkImportDryRun:
 
         assert len(ignored_columns) == 0
 
+    def test_default_values(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 4
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0
+
     def test_invalid_rows(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
@@ -422,6 +439,46 @@ class TestBulkImport:
         categories = list(first_entry.categories.all().values_list("title", flat=True))
         assert "Animals" in categories
         assert "Body" in categories
+
+    def test_default_values(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 4
+        assert validation_report.error_rows == 0
+        assert validation_report.skipped_rows == 0
+
+        # Verifying default type
+        empty_type = DictionaryEntry.objects.filter(site=site, title="Empty type")[0]
+        assert empty_type.type == TypeOfDictionaryEntry.WORD
+
+        # default visibility
+        empty_visibility = DictionaryEntry.objects.filter(
+            site=site, title="Empty visibility"
+        )[0]
+        assert empty_visibility.visibility == Visibility.TEAM
+
+        # default audience flags
+        empty_games_flag = DictionaryEntry.objects.filter(
+            site=site, title="Empty include in games"
+        )[0]
+        assert empty_games_flag.exclude_from_games is False
+        empty_kids_flag = DictionaryEntry.objects.filter(
+            site=site, title="Empty include on kids site"
+        )[0]
+        assert empty_kids_flag.exclude_from_kids is False
 
     def test_parallel_jobs_not_allowed(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)

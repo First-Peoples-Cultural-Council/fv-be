@@ -41,7 +41,7 @@ class SiteContentResource(BaseResource):
 class ControlledSiteContentResource(SiteContentResource):
     visibility = fields.Field(
         column_name="visibility",
-        widget=ChoicesWidget(Visibility.choices),
+        widget=ChoicesWidget(Visibility.choices, default=Visibility.TEAM),
         attribute="visibility",
     )
 
@@ -82,12 +82,12 @@ class AudienceMixin(resources.ModelResource):
     exclude_from_games = fields.Field(
         column_name="include_in_games",
         attribute="exclude_from_games",
-        widget=InvertedBooleanFieldWidget(column="include_in_games"),
+        widget=InvertedBooleanFieldWidget(column="include_in_games", default=False),
     )
     exclude_from_kids = fields.Field(
         column_name="include_on_kids_site",
         attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(column="include_on_kids_site"),
+        widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
     )
 
     class Meta:

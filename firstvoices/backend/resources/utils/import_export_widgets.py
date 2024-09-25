@@ -13,7 +13,7 @@ class ChoicesWidget(Widget):
     Maps display labels to db values for import, and vvsa for export.
     """
 
-    def __init__(self, choices, *args, **kwargs):
+    def __init__(self, choices, default=None, *args, **kwargs):
         """
         Input:
         - choices: iterable of choices containing (dbvalue, label)
@@ -21,11 +21,12 @@ class ChoicesWidget(Widget):
         """
         self.choice_labels = dict(choices)
         self.choice_values = {v: k for k, v in choices}
+        self.default = default
 
     def clean(self, value, row=None, *args, **kwargs):
         """Returns the db value given the display value"""
         value = value.strip().lower().title()
-        return self.choice_values.get(value) if value else None
+        return self.choice_values.get(value) if value else self.default
 
     def render(self, value, obj=None):
         """Returns the display value given the db value"""
@@ -76,12 +77,17 @@ class UserForeignKeyWidget(ForeignKeyWidget):
 class InvertedBooleanFieldWidget(Widget):
     """Import/export widget to return expected boolean value for audience related fields."""
 
-    def __init__(self, column, coerce_to_string=True):
+    def __init__(self, column, coerce_to_string=True, default=None):
         self.column_name = column
+        self.default = default
         super().__init__(coerce_to_string=coerce_to_string)
 
     def clean(self, value, row=None, **kwargs):
         cleaned_input = str(value).strip().lower()
+
+        if not cleaned_input:
+            # emtpy value, resolves to default value
+            return self.default
 
         # Returning negative of input value
         if cleaned_input in ["true", "yes", "y", "1"]:
