@@ -1,5 +1,4 @@
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch
 from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
@@ -9,11 +8,10 @@ from rest_framework.viewsets import ModelViewSet
 from backend.models import Story, StoryPage
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
-from ..models.media import Audio, Image, Video
 from ..serializers.story_serializers import StoryPageDetailSerializer
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
-from .utils import get_select_related_media_fields
+from .utils import get_created_ordered_media_prefetch_list
 
 
 @extend_schema_view(
@@ -114,25 +112,7 @@ class StoryPageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             .order_by("ordering")
             .all()
             .prefetch_related(
-                Prefetch(
-                    "related_audio",
-                    queryset=Audio.objects.visible(user)
-                    .order_by("created")
-                    .select_related("original", "site")
-                    .prefetch_related("speakers"),
-                ),
-                Prefetch(
-                    "related_images",
-                    queryset=Image.objects.visible(user)
-                    .order_by("created")
-                    .select_related(*get_select_related_media_fields(None)),
-                ),
-                Prefetch(
-                    "related_videos",
-                    queryset=Video.objects.visible(user)
-                    .order_by("created")
-                    .select_related(*get_select_related_media_fields(None)),
-                ),
+                *get_created_ordered_media_prefetch_list(user),
             )
         )
 

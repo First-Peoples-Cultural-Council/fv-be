@@ -593,3 +593,37 @@ class TestStoryEndpoint(
         assert result["id"] == str(story.id)
         assert len(result["pages"]) == 1
         assert result["pages"][0] == self.get_valid_page_data(site, story, page)
+
+    @pytest.mark.django_db
+    def test_story_detail_page_related_media_ordered_by_created(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=Visibility.PUBLIC)
+        page = factories.StoryPageFactory.create(site=site, story=story, ordering=1)
+        audio1 = factories.AudioFactory.create(site=site)
+        audio2 = factories.AudioFactory.create(site=site)
+        image1 = factories.ImageFactory.create(site=site)
+        image2 = factories.ImageFactory.create(site=site)
+        video1 = factories.VideoFactory.create(site=site)
+        video2 = factories.VideoFactory.create(site=site)
+
+        page.related_audio.add(audio2)
+        page.related_audio.add(audio1)
+
+        page.related_images.add(image2)
+        page.related_images.add(image1)
+
+        page.related_videos.add(video2)
+        page.related_videos.add(video1)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=story.id, site_slug=site.slug)
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["pages"][0]["relatedAudio"][0]["id"] == str(audio1.id)
+        assert response_data["pages"][0]["relatedAudio"][1]["id"] == str(audio2.id)
+        assert response_data["pages"][0]["relatedImages"][0]["id"] == str(image1.id)
+        assert response_data["pages"][0]["relatedImages"][1]["id"] == str(image2.id)
+        assert response_data["pages"][0]["relatedVideos"][0]["id"] == str(video1.id)
+        assert response_data["pages"][0]["relatedVideos"][1]["id"] == str(video2.id)
