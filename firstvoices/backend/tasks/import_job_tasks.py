@@ -1,6 +1,11 @@
+import io
+import sys
+from copy import deepcopy
+
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from backend.models.import_jobs import (
     ImportJob,
@@ -9,6 +14,7 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.media import File
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
@@ -73,6 +79,7 @@ def clean_csv(data):
     This method also drops the ignored columns as those will not be used during import.
     """
 
+    cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
     all_headers = data.headers
     accepted_headers = []
     invalid_headers = []
@@ -89,12 +96,42 @@ def clean_csv(data):
 
     # Dropping invalid columns
     for invalid_header in invalid_headers:
-        del data[invalid_header]
+        del cleaned_data[invalid_header]
 
     # lower-casing headers
-    data.headers = [header.lower() for header in data.headers]
+    cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
-    return accepted_headers, invalid_headers, data
+    return accepted_headers, invalid_headers, cleaned_data
+
+
+def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
+    # Generate a csv for the erroneous rows
+    failed_row_dataset = []
+    for row_num in error_row_numbers:
+        failed_row_dataset.append(
+            data[row_num - 1]
+        )  # -1 to subtract to account for headers
+    failed_row_dataset = tablib.Dataset(*failed_row_dataset)
+    failed_row_dataset.headers = data.headers
+
+    failed_row_export = failed_row_dataset.export("csv")
+    in_memory_csv_file = io.BytesIO(failed_row_export.encode("utf-8"))
+    in_memory_csv_file = InMemoryUploadedFile(
+        file=in_memory_csv_file,
+        field_name="failed_rows_csv",
+        name="failed_rows.csv",
+        content_type="text/csv",
+        size=sys.getsizeof(in_memory_csv_file),
+        charset="utf-8",
+    )
+    failed_row_csv_file = File(
+        content=in_memory_csv_file,
+        site=import_job_instance.site,
+        created_by=import_job_instance.last_modified_by,
+        last_modified_by=import_job_instance.last_modified_by,
+    )
+    failed_row_csv_file.save()
+    return failed_row_csv_file
 
 
 def import_resource(
@@ -120,6 +157,9 @@ def import_resource(
     )
     report.save()
 
+    # to keep track of row numbers of erroneous rows
+    error_row_numbers = []
+
     # check for errors
     if result.has_errors():
         for row in result.error_rows:
@@ -135,6 +175,7 @@ def import_resource(
                 errors=error_messages,
             )
             error_row_instance.save()
+            error_row_numbers.append(row.number)
 
     # Check for invalid rows
     if len(result.invalid_rows):
@@ -147,6 +188,16 @@ def import_resource(
                 errors=row.error.messages,
             )
             error_row_instance.save()
+            error_row_numbers.append(row.number)
+
+    error_row_numbers.sort()
+
+    # Attach the csv
+    failed_row_csv_file = get_failed_rows_csv_file(
+        import_job_instance, data, error_row_numbers
+    )
+    import_job_instance.failed_rows_csv = failed_row_csv_file
+    import_job_instance.save()
 
     return report
 

@@ -2,6 +2,7 @@ from unittest.mock import patch
 from uuid import UUID
 
 import pytest
+import tablib
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
@@ -21,6 +22,22 @@ from backend.tests.utils import get_sample_file
 @pytest.mark.django_db
 class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
+
+    def import_invalid_dictionary_entries(self):
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(site=site, data=file)
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+
+        return import_job_instance
 
     def test_import_task_logs(self, caplog):
         site = SiteFactory(visibility=Visibility.PUBLIC)
@@ -140,19 +157,9 @@ class TestBulkImportDryRun:
         assert validation_report.skipped_rows == 0
 
     def test_invalid_rows(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
-        file_content = get_sample_file(
-            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
-        )
-        file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
-
-        batch_import(import_job_instance.id)
-
-        # Updated instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        import_job_instance = self.import_invalid_dictionary_entries()
         validation_report = import_job_instance.validation_report
+
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
             validation_report.rows.order_by("row_number").values_list(
@@ -338,6 +345,39 @@ class TestBulkImportDryRun:
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
             assert import_job_instance.validation_status == JobStatus.FAILED
             assert "Random exception." in caplog.text
+
+    def test_failed_rows_csv(self):
+        import_job_instance = self.import_invalid_dictionary_entries()
+        validation_report = import_job_instance.validation_report
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 5
+        assert error_rows_numbers == [2, 3, 4, 5, 6]
+
+        # Reading actual file
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        input_csv_table = tablib.Dataset().load(
+            file_content.read().decode("utf-8-sig"), format="csv"
+        )
+
+        failed_rows_csv_table = tablib.Dataset().load(
+            import_job_instance.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
+        assert len(failed_rows_csv_table) == 5
+
+        for i in range(0, len(error_rows_numbers)):
+            input_index = (
+                error_rows_numbers[i] - 1
+            )  # since we do +1 while generating error row numbers
+            assert input_csv_table[input_index] == failed_rows_csv_table[i]
 
 
 @pytest.mark.django_db
