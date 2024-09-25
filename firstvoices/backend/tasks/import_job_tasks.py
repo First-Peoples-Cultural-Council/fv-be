@@ -127,7 +127,7 @@ def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
     failed_row_csv_file = File(
         content=in_memory_csv_file,
         site=import_job_instance.site,
-        created_by=import_job_instance.created_by,
+        created_by=import_job_instance.last_modified_by,
         last_modified_by=import_job_instance.last_modified_by,
     )
     failed_row_csv_file.save()

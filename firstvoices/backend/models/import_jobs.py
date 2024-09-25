@@ -102,7 +102,7 @@ class ImportJob(BaseJob):
         get_user_model(), blank=True, null=True, on_delete=models.PROTECT
     )
 
-    data = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+    data = models.ForeignKey(File, null=True, on_delete=models.SET_NULL)
 
     # The following fields are for the dry-run and then presenting those results
     validation_task_id = models.CharField(max_length=255, null=True, blank=True)
