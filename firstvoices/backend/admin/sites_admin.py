@@ -8,6 +8,9 @@ from backend.models.sites import (
     SiteMenu,
 )
 
+from ..search.tasks.site_content_indexing_tasks import (
+    request_sync_all_media_site_content_in_indexes,
+)
 from .base_admin import BaseAdmin, BaseSiteContentAdmin
 
 # Admin settings for the sites models, except Site. For the main Site admin, see .admin instead.
@@ -72,6 +75,14 @@ class SiteFeatureAdmin(BaseSiteContentAdmin):
         "is_enabled",
     )
     autocomplete_fields = ("site",)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        request_sync_all_media_site_content_in_indexes(obj.site)
+
+    def delete_model(self, request, obj):
+        super().delete_model(request, obj)
+        request_sync_all_media_site_content_in_indexes(obj.site)
 
 
 @admin.register(SiteMenu)
