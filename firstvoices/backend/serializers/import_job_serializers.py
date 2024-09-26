@@ -37,7 +37,6 @@ class ImportReportSerializer(serializers.ModelSerializer):
         model = ImportJobReport
         fields = [
             "new_rows",
-            "skipped_rows",
             "error_rows",
             "error_details",
             "accepted_columns",

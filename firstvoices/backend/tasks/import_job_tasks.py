@@ -151,8 +151,9 @@ def import_resource(
         site=import_job_instance.site,
         importjob=import_job_instance,
         new_rows=result.totals["new"],
-        skipped_rows=0,
-        error_rows=result.totals["error"] + result.totals["invalid"] + result.totals["skip"],
+        error_rows=result.totals["error"]
+        + result.totals["invalid"]
+        + result.totals["skip"],
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
     )

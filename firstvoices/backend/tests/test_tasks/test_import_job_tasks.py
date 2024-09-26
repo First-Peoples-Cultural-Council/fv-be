@@ -69,7 +69,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_all_columns_dictionary_entries(self):
         # More columns could be added to this file/test later
@@ -93,7 +92,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
         expected_valid_columns = [
             "title",
@@ -154,7 +152,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_invalid_rows(self):
         import_job_instance = self.import_invalid_dictionary_entries()
@@ -253,7 +250,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 12
         assert validation_report.error_rows == 1
-        assert validation_report.skipped_rows == 0
 
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
@@ -288,7 +284,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_invalid_related_entries(self):
         # For entries that are already present in the db
@@ -310,7 +305,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 0
         assert validation_report.error_rows == 2
-        assert validation_report.skipped_rows == 0
 
         validation_error_rows = validation_report.rows.all().order_by("row_number")
 
@@ -498,7 +492,6 @@ class TestBulkImport:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
         # Verifying default type
         empty_type = DictionaryEntry.objects.filter(site=site, title="Empty type")[0]
