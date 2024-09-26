@@ -69,7 +69,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_all_columns_dictionary_entries(self):
         # More columns could be added to this file/test later
@@ -93,7 +92,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
         expected_valid_columns = [
             "title",
@@ -154,7 +152,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_invalid_rows(self):
         import_job_instance = self.import_invalid_dictionary_entries()
@@ -253,7 +250,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 12
         assert validation_report.error_rows == 1
-        assert validation_report.skipped_rows == 0
 
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
@@ -288,7 +284,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_invalid_related_entries(self):
         # For entries that are already present in the db
@@ -310,7 +305,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 0
         assert validation_report.error_rows == 2
-        assert validation_report.skipped_rows == 0
 
         validation_error_rows = validation_report.rows.all().order_by("row_number")
 
@@ -498,7 +492,6 @@ class TestBulkImport:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
         # Verifying default type
         empty_type = DictionaryEntry.objects.filter(site=site, title="Empty type")[0]
@@ -668,3 +661,26 @@ class TestBulkImport:
 
         assert existing_entry_1.id in related_entry_list
         assert existing_entry_2.id in related_entry_list
+
+    def test_skip_rows_with_erroneous_values(self):
+        # If a row has validation errors, skip that row, but import the rest of the file
+        site = SiteFactory(visibility=Visibility.PUBLIC)
+
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=site, data=file, validation_status=JobStatus.COMPLETE
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.error_rows == 5
+
+        imported_entries = DictionaryEntry.objects.all()
+        assert len(imported_entries) == 1
+        assert imported_entries[0].title == "Phrase 1"

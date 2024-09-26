@@ -42,7 +42,6 @@ class ImportJobReport(BaseSiteContentModel):
 
     # From results
     new_rows = models.IntegerField(null=True)
-    skipped_rows = models.IntegerField(null=True)
     error_rows = models.IntegerField(null=True)
 
     accepted_columns = ArrayField(
