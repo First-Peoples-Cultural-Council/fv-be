@@ -39,7 +39,7 @@ class TestBulkImportDryRun:
 
         return import_job_instance
 
-    def test_import_task_logs(self, caplog):
+    def import_minimal_dictionary_entries(self):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
@@ -47,6 +47,14 @@ class TestBulkImportDryRun:
         import_job_instance = ImportJobFactory(site=site, data=file)
 
         batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+
+        return import_job_instance
+
+    def test_import_task_logs(self, caplog):
+        import_job_instance = self.import_minimal_dictionary_entries()
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
@@ -372,6 +380,13 @@ class TestBulkImportDryRun:
                 error_rows_numbers[i] - 1
             )  # since we do +1 while generating error row numbers
             assert input_csv_table[input_index] == failed_rows_csv_table[i]
+
+    def test_failed_rows_csv_not_generated_on_valid_rows(self):
+        # To verify no failedRowsCsv is generated if all rows
+        # in the input file are valid.
+
+        import_job_instance = self.import_minimal_dictionary_entries()
+        assert import_job_instance.failed_rows_csv is None
 
 
 @pytest.mark.django_db

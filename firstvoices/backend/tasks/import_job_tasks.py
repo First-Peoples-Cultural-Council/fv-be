@@ -175,14 +175,14 @@ def import_resource(
             error_row_instance.save()
             error_row_numbers.append(row.number)
 
-    error_row_numbers.sort()
-
-    # Attach the csv
-    failed_row_csv_file = get_failed_rows_csv_file(
-        import_job_instance, data, error_row_numbers
-    )
-    import_job_instance.failed_rows_csv = failed_row_csv_file
-    import_job_instance.save()
+    # Sort rows and attach the csv
+    if error_row_numbers:
+        error_row_numbers.sort()
+        failed_row_csv_file = get_failed_rows_csv_file(
+            import_job_instance, data, error_row_numbers
+        )
+        import_job_instance.failed_rows_csv = failed_row_csv_file
+        import_job_instance.save()
 
     return report
 
