@@ -108,7 +108,7 @@ class DictionaryEntryResource(
                 import_result.error_messages = [
                     err for err in import_result.validation_error.messages
                 ]
-                import_result.validation_error = []
+                import_result.validation_error = None
 
             import_result.import_type = RowResult.IMPORT_TYPE_SKIP
 
