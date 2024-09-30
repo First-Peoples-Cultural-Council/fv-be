@@ -56,7 +56,7 @@ packaging==24.1
 panphon==0.21.2
 Pillow==10.4.0
 pluggy==1.5.0
-prompt-toolkit==3.0.36
+prompt-toolkit==3.0.48
 psycopg2-binary==2.9.9
 pycparser==2.22
 PyJWT==2.9.0
