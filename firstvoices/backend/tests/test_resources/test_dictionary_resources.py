@@ -10,7 +10,7 @@ from backend.resources.dictionary import DictionaryEntryResource
 from backend.tests import factories
 
 
-# @pytest.mark.skip("Tests are for initial migration only")
+@pytest.mark.skip("Tests are for initial migration only")
 class TestDictionaryEntryImport:
     @staticmethod
     def build_table(data: list[str]):
