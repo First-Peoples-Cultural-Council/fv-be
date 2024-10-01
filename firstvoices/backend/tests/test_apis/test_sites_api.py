@@ -276,7 +276,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.SiteFeatureFactory.create(site=site, key="has_app")
+        factories.SiteFeatureFactory.create(site=site, key="has_app", is_enabled=True)
         menu = AppJson.objects.get(key="has_app_site_menu")
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")

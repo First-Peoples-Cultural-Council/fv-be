@@ -110,10 +110,17 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     @staticmethod
     def get_default_menu(site):
-        if SiteFeature.objects.filter(site=site, key="has_app").exists():
-            default_menu = AppJson.objects.filter(key="has_app_site_menu")
-        else:
-            default_menu = AppJson.objects.filter(key="default_site_menu")
+        try:
+            has_app_feature = SiteFeature.objects.get(site=site, key="has_app")
+            default_menu_key = (
+                "has_app_site_menu"
+                if has_app_feature.is_enabled
+                else "default_site_menu"
+            )
+        except SiteFeature.DoesNotExist:
+            default_menu_key = "default_site_menu"
+
+        default_menu = AppJson.objects.filter(key=default_menu_key)
         return default_menu[0].json if len(default_menu) > 0 else None
 
     class Meta(SiteSummarySerializer.Meta):
