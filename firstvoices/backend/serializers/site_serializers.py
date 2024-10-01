@@ -106,7 +106,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_menu(self, site):
-        return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
+        return site.menu.json if hasattr(site, "menu") else self.get_default_menu(site)
 
     @staticmethod
     def get_default_menu(site):
