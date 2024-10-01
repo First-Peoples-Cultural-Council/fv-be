@@ -77,15 +77,16 @@ class DictionaryEntryResource(
         ),
     )
 
-    def __init__(self, site=None):
-        if site:
-            self.site = site
+    def __init__(self, site=None, run_as_user=None):
+        self.site = site
+        self.run_as_user = run_as_user
 
     def before_import(self, dataset, **kwargs):
-        if "id" not in dataset.headers:
-            dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
-        if "site" not in dataset.headers:
-            dataset.append_col(lambda x: str(self.site.id), header="site")
+        # Adding required columns, since these will not be present in the headers
+        dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        dataset.append_col(lambda x: str(self.site.id), header="site")
+        dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
+        dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
 
     def import_row(self, row, instance_loader, **kwargs):
         # Marking erroneous and invalid rows as skipped, then clearing the errors and validation_errors
@@ -108,7 +109,7 @@ class DictionaryEntryResource(
                 import_result.error_messages = [
                     err for err in import_result.validation_error.messages
                 ]
-                import_result.validation_error = []
+                import_result.validation_error = None
 
             import_result.import_type = RowResult.IMPORT_TYPE_SKIP
 
@@ -116,3 +117,4 @@ class DictionaryEntryResource(
 
     class Meta:
         model = DictionaryEntry
+        clean_model_instances = True

@@ -175,20 +175,22 @@ def import_resource(
             error_row_instance.save()
             error_row_numbers.append(row.number)
 
-    error_row_numbers.sort()
-
-    # Attach the csv
-    failed_row_csv_file = get_failed_rows_csv_file(
-        import_job_instance, data, error_row_numbers
-    )
-    import_job_instance.failed_rows_csv = failed_row_csv_file
-    import_job_instance.save()
+    # Sort rows and attach the csv
+    if error_row_numbers:
+        error_row_numbers.sort()
+        failed_row_csv_file = get_failed_rows_csv_file(
+            import_job_instance, data, error_row_numbers
+        )
+        import_job_instance.failed_rows_csv = failed_row_csv_file
+        import_job_instance.save()
 
     return report
 
 
 def import_job(data, import_job_instance, logger):
-    resource = DictionaryEntryResource(site=import_job_instance.site)
+    resource = DictionaryEntryResource(
+        site=import_job_instance.site, run_as_user=import_job_instance.run_as_user
+    )
 
     try:
         import_resource(data, resource, import_job_instance, dry_run=False)
@@ -201,7 +203,9 @@ def import_job(data, import_job_instance, logger):
 def import_job_dry_run(data, import_job_instance, logger):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
-    resource = DictionaryEntryResource(site=import_job_instance.site)
+    resource = DictionaryEntryResource(
+        site=import_job_instance.site, run_as_user=import_job_instance.run_as_user
+    )
 
     try:
         report = import_resource(data, resource, import_job_instance, dry_run=True)
@@ -272,9 +276,13 @@ def batch_import(import_job_instance_id, dry_run=True):
         return
 
     if dry_run:
-        import_job_instance.validation_task_id = task_id
         import_job_instance.validation_status = JobStatus.STARTED
-        import_job_instance.save()
+        import_job_instance.validation_task_id = task_id
+    else:
+        # we don't need to set the import_job_instance primary task status here
+        # as that is assigned in the @confirm view
+        import_job_instance.task_id = task_id
+    import_job_instance.save()
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")

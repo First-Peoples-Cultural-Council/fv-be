@@ -119,6 +119,10 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             if run_as_user:
                 user = validate_username(run_as_user)
                 validated_data["run_as_user"] = user
+            else:
+                # If no alternative user supplied, treat the user requesting
+                # the import as run_as_user
+                validated_data["run_as_user"] = self.context["request"].user
 
             validated_data["data"] = file
             return super().create(validated_data)
