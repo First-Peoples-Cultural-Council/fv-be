@@ -50,7 +50,11 @@
 					"href": "/keyboards",
 					"title": "Keyboards",
 					"transKey": "navigation-keyboards"
-				}]
+				}, {
+          "href": "/apps",
+          "title": "Mobile App",
+          "transKey": "navigation-apps"
+        }]
 			},
 			"dictionary": {
 				"id": "dictionary",
@@ -73,14 +77,7 @@
 					"title": "Categories",
 					"transKey": "navigation-categories"
 				}]
-			},
-      "app": {
-        "id": "app",
-        "href": "/app",
-        "title": "App",
-        "transKey": "navigation-app",
-        "itemsData": []
-      }
+			}
 		}
 	}
 }]
