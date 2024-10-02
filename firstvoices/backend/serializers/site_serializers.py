@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from backend.models.app import AppJson
 from backend.models.media import Image, Video
+from backend.models.sites import SiteFeature
 from backend.models.widget import SiteWidget, SiteWidgetList
 from backend.serializers.base_serializers import (
     LinkedSiteSerializer,
@@ -105,11 +106,21 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_menu(self, site):
-        return site.menu.json if hasattr(site, "menu") else self.get_default_menu()
+        return site.menu.json if hasattr(site, "menu") else self.get_default_menu(site)
 
     @staticmethod
-    def get_default_menu():
-        default_menu = AppJson.objects.filter(key="default_site_menu")
+    def get_default_menu(site):
+        try:
+            has_app_feature = SiteFeature.objects.get(site=site, key="has_app")
+            default_menu_key = (
+                "has_app_site_menu"
+                if has_app_feature.is_enabled
+                else "default_site_menu"
+            )
+        except SiteFeature.DoesNotExist:
+            default_menu_key = "default_site_menu"
+
+        default_menu = AppJson.objects.filter(key=default_menu_key)
         return default_menu[0].json if len(default_menu) > 0 else None
 
     class Meta(SiteSummarySerializer.Meta):
