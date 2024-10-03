@@ -9,9 +9,15 @@ from backend.models.jobs import BulkVisibilityJob, JobStatus
 from backend.models.widget import SiteWidget
 from backend.tasks.visibility_tasks import bulk_change_visibility
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
 
-class TestBulkVisibilityTasks:
+class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
+    TASK = bulk_change_visibility
+
+    def get_valid_task_args(self):
+        return (uuid.uuid4(),)
+
     @pytest.fixture(scope="function", autouse=True)
     def mocked_indexing_async_func(self, mocker):
         self.mocked_func = mocker.patch(

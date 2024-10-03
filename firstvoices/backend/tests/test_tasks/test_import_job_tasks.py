@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from backend.tests.factories import (
     SongFactory,
     get_superadmin,
 )
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import get_sample_file
 
 
@@ -397,8 +399,12 @@ class TestBulkImportDryRun:
 
 
 @pytest.mark.django_db
-class TestBulkImport:
+class TestBulkImport(IgnoreTaskResultsMixin):
     MIMETYPE = "text/csv"
+    TASK = batch_import
+
+    def get_valid_task_args(self):
+        return (uuid.uuid4(),)
 
     def setup_method(self):
         self.user = get_superadmin()
