@@ -12,11 +12,16 @@ from backend.tasks.mtd_export_tasks import (
 )
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from firstvoices.celery import link_error_handler
 
 
-class TestMTDIndexAndScoreTask:
+class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin):
     sample_entry_title = "title_one word"
+    TASK = build_index_and_calculate_scores
+
+    def get_valid_task_args(self):
+        return ("test",)
 
     @staticmethod
     def assert_async_task_logs(site, caplog):
@@ -265,7 +270,12 @@ class TestMTDIndexAndScoreTask:
         self.assert_async_task_logs(site, caplog)
 
 
-class TestCheckSitesForMTDSyncTask:
+class TestCheckSitesForMTDSyncTask(IgnoreTaskResultsMixin):
+    TASK = check_sites_for_mtd_sync
+
+    def get_valid_task_args(self):
+        return None
+
     @pytest.fixture(scope="function", autouse=True)
     def mocked_mtd_build_func(self, mocker):
         self.mocked_func = mocker.patch(

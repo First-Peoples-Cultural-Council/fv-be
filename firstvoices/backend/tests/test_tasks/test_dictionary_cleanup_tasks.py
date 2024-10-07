@@ -8,10 +8,16 @@ from backend.models.jobs import JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
 
-class TestDictionaryCleanupTasks:
+class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
     CONFUSABLE_PREV_CUSTOM_ORDER = "⚑ᐱ⚑ᐱ⚑ᐱ"
+    TASK = cleanup_dictionary
+    TASK_ADDITIONAL_INFO = "job_instance_id"
+
+    def get_valid_task_args(self):
+        return (uuid.uuid4(),)
 
     @pytest.fixture
     def site(self):
