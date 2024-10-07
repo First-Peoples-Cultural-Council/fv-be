@@ -42,6 +42,22 @@ class TestRebuildIndex:
         assert "No index name provided. Building all indices." in caplog.text
         assert "Index rebuild complete." in caplog.text
 
+    def test_valid_index_name_passed(self, caplog):
+        # Testing all indices are rebuild if no args are passed.
+        with patch(
+            "elasticsearch_dsl.connections.Connections.get_connection",
+            return_value=self.mock_connection,
+        ), patch(
+            "backend.management.commands.rebuild_index.Command.index_managers",
+            {
+                "MOCK_MANAGER": self.mock_manager,
+            },
+        ), patch.object(
+            self.mock_manager, "rebuild", return_value=None
+        ):
+            # This should return manager.rebuild() which should be none for this test case
+            assert self.call_command(index_name="MOCK_MANAGER") is None
+
     def test_invalid_index_provided(self, caplog):
         with patch(
             "elasticsearch_dsl.connections.Connections.get_connection",
