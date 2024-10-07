@@ -170,12 +170,12 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
     banner_image = serializers.PrimaryKeyRelatedField(
         queryset=Image.objects.all(),
         allow_null=True,
-        validators=[SameSite()],
+        validators=[],
     )
     banner_video = serializers.PrimaryKeyRelatedField(
         queryset=Video.objects.all(),
         allow_null=True,
-        validators=[SameSite()],
+        validators=[],
     )
 
     def validate_homepage(self, homepage):

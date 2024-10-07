@@ -11,7 +11,6 @@ from backend.serializers.media_serializers import (
     ImageSerializer,
     WriteableRelatedImageSerializer,
 )
-from backend.serializers.validators import SameSite
 
 
 class GalleryItemSerializer(serializers.ModelSerializer):
@@ -55,7 +54,7 @@ class GallerySummarySerializer(WritableSiteContentSerializer):
         required=False,
         queryset=Image.objects.all(),
         allow_null=True,
-        validators=[SameSite()],
+        validators=[],
     )
 
     def validate(self, attrs):
