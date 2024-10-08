@@ -1,7 +1,6 @@
 [run]
 source=.
-branch = True
-relative_files = True
+branch=True
 omit =
     */tests/*
     */migrations/*
