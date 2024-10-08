@@ -1,5 +1,5 @@
 [run]
-source=.
+source=['firstvoices']
 branch=True
 omit =
     */tests/*
