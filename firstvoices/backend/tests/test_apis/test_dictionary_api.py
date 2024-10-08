@@ -6,8 +6,18 @@ import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.utils import format_dictionary_entry_related_field
+from backend.tests.utils import format_dictionary_entry_related_field, is_valid_uuid
 
+from ...serializers.base_serializers import LinkedSiteSerializer
+from ...serializers.category_serializers import CategoryDetailSerializer
+from ...serializers.dictionary_serializers import DictionaryEntrySummarySerializer
+from ...serializers.media_serializers import (
+    AudioSerializer,
+    ImageSerializer,
+    RelatedVideoLinksSerializer,
+    VideoSerializer,
+)
+from ...serializers.parts_of_speech_serializers import PartsOfSpeechSerializer
 from .base_api_test import BaseControlledSiteContentApiTest
 from .base_media_test import (
     MOCK_EMBED_LINK,
@@ -452,6 +462,7 @@ class TestDictionaryEndpoint(
         response = self.client.get(
             self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
+        request = response.wsgi_request
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -461,21 +472,8 @@ class TestDictionaryEndpoint(
         assert (
             not len(response_data["relatedDictionaryEntries"]) > 1
         ), "Did not block private related entry"
-        assert response_data["relatedDictionaryEntries"] == [
-            {
-                "id": str(entry2.id),
-                "title": entry2.title,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry2.id)}",
-                "translations": format_dictionary_entry_related_field(
-                    entry2.translations
-                ),
-                "relatedImages": [],
-                "relatedAudio": [],
-                "relatedVideos": [],
-                "relatedVideoLinks": [],
-                "type": entry2.type,
-            }
-        ]
+        for entry in response_data["relatedDictionaryEntries"]:
+            assert_dictionary_entry_summary_response(entry, entry2, request)
 
     @pytest.mark.django_db
     def test_detail_team_access(self):
@@ -1390,3 +1388,91 @@ class TestDictionaryEndpoint(
         assert response_data["translations"] == [
             "Expected the objects in the list to contain key 'text'."
         ]
+
+
+def assert_dictionary_entry_summary_response(data, entry, request):
+    assert data["id"] == str(entry.id)
+    assert data["title"] == entry.title
+    assert data["type"] == entry.type
+    assert (
+        data["url"]
+        == f"http://testserver/api/1.0/sites/{entry.site.slug}/dictionary/{str(entry.id)}"
+    )
+    for index, translation in enumerate(entry.translations):
+        assert is_valid_uuid(data["translations"][index]["id"])
+        assert data["translations"][index]["text"] == translation
+    assert (
+        data["relatedImages"]
+        == ImageSerializer(
+            entry.related_images, context={"request": request}, many=True
+        ).data
+    )
+    assert (
+        data["relatedAudio"]
+        == AudioSerializer(
+            entry.related_audio, context={"request": request}, many=True
+        ).data
+    )
+    assert (
+        data["relatedVideos"]
+        == VideoSerializer(
+            entry.related_videos, context={"request": request}, many=True
+        ).data
+    )
+    assert (
+        data["relatedVideoLinks"]
+        == RelatedVideoLinksSerializer(
+            entry.related_video_links, context={"request": request}, many=True
+        ).data
+    )
+
+
+def assert_dictionary_entry_detail_response(data, entry, request):
+    assert_dictionary_entry_summary_response(data, entry, request)
+    assert data["created"] == entry.created.astimezone().isoformat()
+    assert data["createdBy"] == entry.created_by.email
+    assert data["lastModified"] == entry.last_modified.astimezone().isoformat()
+    assert data["lastModifiedBy"] == entry.last_modified_by.email
+    assert (
+        data["site"]
+        == LinkedSiteSerializer(entry.site, context={"request": request}).data
+    )
+    assert data["visibility"] == entry.visibility
+    assert data["customOrder"] == entry.custom_order
+    assert (
+        data["categories"]
+        == CategoryDetailSerializer(
+            entry.categories, context={"request": request}, many=True
+        ).data
+    )
+    assert data["excludeFromGames"] == entry.exclude_from_games
+    assert data["excludeFromKids"] == entry.exclude_from_kids
+
+    for index, acknowledgement in enumerate(entry.acknowledgements):
+        assert is_valid_uuid(data["acknowledgements"][index]["id"])
+        assert data["acknowledgements"][index]["text"] == acknowledgement
+    for index, alternate_spelling in enumerate(entry.alternate_spellings):
+        assert is_valid_uuid(data["alternateSpellings"][index]["id"])
+        assert data["alternateSpellings"][index]["text"] == alternate_spelling
+    for index, note in enumerate(entry.notes):
+        assert is_valid_uuid(data["notes"][index]["id"])
+        assert data["notes"][index]["text"] == note
+
+    assert (
+        data["partOfSpeech"]
+        == PartsOfSpeechSerializer(
+            entry.part_of_speech, context={"request": request}
+        ).data
+    )
+
+    for index, pronunciation in enumerate(entry.pronunciations):
+        assert is_valid_uuid(data["pronunciations"][index]["id"])
+        assert data["pronunciations"][index]["text"] == pronunciation
+
+    assert (
+        data["relatedDictionaryEntries"]
+        == DictionaryEntrySummarySerializer(
+            entry.related_dictionary_entries, context={"request": request}, many=True
+        ).data
+    )
+    assert data["isImmersionLabel"] == entry.is_immersion_label
