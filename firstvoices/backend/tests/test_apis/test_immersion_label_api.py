@@ -1,9 +1,14 @@
+import json
+
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.immersion_labels import ImmersionLabel
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.test_dictionary_api import (
+    assert_dictionary_entry_summary_response,
+)
 from backend.tests.utils import format_dictionary_entry_related_field
 
 
@@ -145,6 +150,70 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def test_update_with_null_optional_charfields_success_200(self):
         # Immersion label API does not have eligible optional charfields.
         pass
+
+    @pytest.mark.django_db
+    def test_detail_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+        request_data = response.wsgi_request
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        for key, value in standard_fields.items():
+            assert response_data[key] == value
+
+        assert response_data["key"] == str(instance.key)
+        assert_dictionary_entry_summary_response(
+            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
+        )
+
+    @pytest.mark.django_db
+    def test_list_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        request_data = response.wsgi_request
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        assert len(response_data["results"]) == 1
+        response_data = response_data["results"][0]
+
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        for key, value in standard_fields.items():
+            assert response_data[key] == value
+
+        assert response_data["key"] == str(instance.key)
+        assert_dictionary_entry_summary_response(
+            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
+        )
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):

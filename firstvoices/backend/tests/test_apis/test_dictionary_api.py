@@ -8,7 +8,7 @@ from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.tests.utils import format_dictionary_entry_related_field, is_valid_uuid
 
-from ...serializers.base_serializers import LinkedSiteSerializer
+from ...models import ImmersionLabel
 from ...serializers.category_serializers import CategoryDetailSerializer
 from ...serializers.dictionary_serializers import DictionaryEntrySummarySerializer
 from ...serializers.media_serializers import (
@@ -383,6 +383,60 @@ class TestDictionaryEndpoint(
         pass
 
     @pytest.mark.django_db
+    def test_detail_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+        request_data = response.wsgi_request
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
+        for key, value in controlled_standard_fields.items():
+            assert response_data[key] == value
+        assert_dictionary_entry_detail_response(response_data, instance, request_data)
+
+    @pytest.mark.django_db
+    def test_list_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        request_data = response.wsgi_request
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        assert len(response_data["results"]) == 1
+        response_data = response_data["results"][0]
+
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, site
+        )
+        for key, value in controlled_standard_fields.items():
+            assert response_data[key] == value
+        assert_dictionary_entry_detail_response(response_data, instance, request_data)
+
+    @pytest.mark.django_db
     def test_list_permissions(self):
         # create some visible words and some invisible words
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
@@ -462,7 +516,7 @@ class TestDictionaryEndpoint(
         response = self.client.get(
             self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
         )
-        request = response.wsgi_request
+        request_data = response.wsgi_request
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -473,7 +527,7 @@ class TestDictionaryEndpoint(
             not len(response_data["relatedDictionaryEntries"]) > 1
         ), "Did not block private related entry"
         for entry in response_data["relatedDictionaryEntries"]:
-            assert_dictionary_entry_summary_response(entry, entry2, request)
+            assert_dictionary_entry_summary_response(entry, entry2, request_data)
 
     @pytest.mark.django_db
     def test_detail_team_access(self):
@@ -1390,7 +1444,8 @@ class TestDictionaryEndpoint(
         ]
 
 
-def assert_dictionary_entry_summary_response(data, entry, request):
+def assert_dictionary_entry_summary_response(data, entry, request_data):
+    # standalone utility function to assert dictionary entry summary response
     assert data["id"] == str(entry.id)
     assert data["title"] == entry.title
     assert data["type"] == entry.type
@@ -1404,45 +1459,37 @@ def assert_dictionary_entry_summary_response(data, entry, request):
     assert (
         data["relatedImages"]
         == ImageSerializer(
-            entry.related_images, context={"request": request}, many=True
+            entry.related_images, context={"request": request_data}, many=True
         ).data
     )
     assert (
         data["relatedAudio"]
         == AudioSerializer(
-            entry.related_audio, context={"request": request}, many=True
+            entry.related_audio, context={"request": request_data}, many=True
         ).data
     )
     assert (
         data["relatedVideos"]
         == VideoSerializer(
-            entry.related_videos, context={"request": request}, many=True
+            entry.related_videos, context={"request": request_data}, many=True
         ).data
     )
     assert (
         data["relatedVideoLinks"]
         == RelatedVideoLinksSerializer(
-            entry.related_video_links, context={"request": request}, many=True
+            entry.related_video_links, context={"request": request_data}, many=True
         ).data
     )
 
 
-def assert_dictionary_entry_detail_response(data, entry, request):
-    assert_dictionary_entry_summary_response(data, entry, request)
-    assert data["created"] == entry.created.astimezone().isoformat()
-    assert data["createdBy"] == entry.created_by.email
-    assert data["lastModified"] == entry.last_modified.astimezone().isoformat()
-    assert data["lastModifiedBy"] == entry.last_modified_by.email
-    assert (
-        data["site"]
-        == LinkedSiteSerializer(entry.site, context={"request": request}).data
-    )
-    assert data["visibility"] == entry.visibility
+def assert_dictionary_entry_detail_response(data, entry, request_data):
+    # standalone utility function to assert dictionary entry detail response
+    assert_dictionary_entry_summary_response(data, entry, request_data)
     assert data["customOrder"] == entry.custom_order
     assert (
         data["categories"]
         == CategoryDetailSerializer(
-            entry.categories, context={"request": request}, many=True
+            entry.categories, context={"request": request_data}, many=True
         ).data
     )
     assert data["excludeFromGames"] == entry.exclude_from_games
@@ -1461,7 +1508,7 @@ def assert_dictionary_entry_detail_response(data, entry, request):
     assert (
         data["partOfSpeech"]
         == PartsOfSpeechSerializer(
-            entry.part_of_speech, context={"request": request}
+            entry.part_of_speech, context={"request": request_data}
         ).data
     )
 
@@ -1472,7 +1519,12 @@ def assert_dictionary_entry_detail_response(data, entry, request):
     assert (
         data["relatedDictionaryEntries"]
         == DictionaryEntrySummarySerializer(
-            entry.related_dictionary_entries, context={"request": request}, many=True
+            entry.related_dictionary_entries,
+            context={"request": request_data},
+            many=True,
         ).data
     )
-    assert data["isImmersionLabel"] == entry.is_immersion_label
+    assert (
+        data["isImmersionLabel"]
+        == ImmersionLabel.objects.filter(dictionary_entry=entry).exists()
+    )
