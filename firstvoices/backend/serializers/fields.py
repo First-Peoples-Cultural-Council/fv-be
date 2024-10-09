@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
@@ -118,7 +120,10 @@ class TextListField(serializers.ListField):
         """
         Transform the *outgoing* native value into primitive data.
         """
-        return [{"text": item} if item is not None else None for item in data]
+        return [
+            {"text": item, "id": uuid.uuid4()} if item is not None else None
+            for item in data
+        ]
 
     def to_internal_value(self, data):
         """

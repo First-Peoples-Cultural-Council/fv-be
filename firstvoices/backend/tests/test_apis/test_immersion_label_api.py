@@ -1,9 +1,14 @@
+import json
+
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.immersion_labels import ImmersionLabel
 from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.test_dictionary_api import (
+    assert_dictionary_entry_summary_response,
+)
 from backend.tests.utils import format_dictionary_entry_related_field
 
 
@@ -122,6 +127,19 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert original_instance.key == actual_response["key"]
         assert actual_response["dictionaryEntry"]["id"] == data["dictionary_entry"]
 
+    def assert_immersion_label_response(self, instance, response_data, request_data):
+        standard_fields = self.get_expected_standard_fields(instance, instance.site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        for key, value in standard_fields.items():
+            assert response_data[key] == value
+
+        assert response_data["key"] == str(instance.key)
+        assert_dictionary_entry_summary_response(
+            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
+        )
+
     @pytest.mark.skip(reason="Immersion label API does not have eligible null fields.")
     def test_create_with_nulls_success_201(self):
         # Immersion label API does not have eligible null fields.
@@ -145,6 +163,38 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
     def test_update_with_null_optional_charfields_success_200(self):
         # Immersion label API does not have eligible optional charfields.
         pass
+
+    @pytest.mark.django_db
+    def test_detail_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.perform_successful_get_request_response(instance, site, True)
+        request_data = response.wsgi_request
+        response_data = json.loads(response.content)
+
+        self.assert_immersion_label_response(instance, response_data, request_data)
+
+    @pytest.mark.django_db
+    def test_list_minimal(self):
+        # overwriting the base test to test text list field ids
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.perform_successful_get_request_response(instance, site, False)
+        request_data = response.wsgi_request
+        response_data = json.loads(response.content)["results"][0]
+
+        self.assert_immersion_label_response(instance, response_data, request_data)
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):
