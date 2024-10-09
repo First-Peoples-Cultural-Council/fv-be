@@ -127,6 +127,19 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         assert original_instance.key == actual_response["key"]
         assert actual_response["dictionaryEntry"]["id"] == data["dictionary_entry"]
 
+    def assert_immersion_label_response(self, instance, response_data, request_data):
+        standard_fields = self.get_expected_standard_fields(instance, instance.site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        for key, value in standard_fields.items():
+            assert response_data[key] == value
+
+        assert response_data["key"] == str(instance.key)
+        assert_dictionary_entry_summary_response(
+            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
+        )
+
     @pytest.mark.skip(reason="Immersion label API does not have eligible null fields.")
     def test_create_with_nulls_success_201(self):
         # Immersion label API does not have eligible null fields.
@@ -160,28 +173,12 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         self.client.force_authenticate(user=user)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
+
+        response = self.perform_successful_get_request_response(instance, site, True)
         request_data = response.wsgi_request
-
-        assert response.status_code == 200
-
         response_data = json.loads(response.content)
 
-        standard_fields = self.get_expected_standard_fields(instance, site)
-        standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
-        for key, value in standard_fields.items():
-            assert response_data[key] == value
-
-        assert response_data["key"] == str(instance.key)
-        assert_dictionary_entry_summary_response(
-            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
-        )
+        self.assert_immersion_label_response(instance, response_data, request_data)
 
     @pytest.mark.django_db
     def test_list_minimal(self):
@@ -193,27 +190,11 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response = self.perform_successful_get_request_response(instance, site, False)
         request_data = response.wsgi_request
+        response_data = json.loads(response.content)["results"][0]
 
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-
-        assert len(response_data["results"]) == 1
-        response_data = response_data["results"][0]
-
-        standard_fields = self.get_expected_standard_fields(instance, site)
-        standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
-        for key, value in standard_fields.items():
-            assert response_data[key] == value
-
-        assert response_data["key"] == str(instance.key)
-        assert_dictionary_entry_summary_response(
-            response_data["dictionaryEntry"], instance.dictionary_entry, request_data
-        )
+        self.assert_immersion_label_response(instance, response_data, request_data)
 
     @pytest.mark.django_db
     def test_dictionary_entry_same_site_validation(self):

@@ -368,6 +368,14 @@ class TestDictionaryEndpoint(
             },
         ]
 
+    def assert_dictionary_entry_detail(self, instance, response_data, request_data):
+        controlled_standard_fields = self.get_expected_controlled_standard_fields(
+            instance, instance.site
+        )
+        for key, value in controlled_standard_fields.items():
+            assert response_data[key] == value
+        assert_dictionary_entry_detail_response(response_data, instance, request_data)
+
     @pytest.mark.skip(
         reason="Dictionary entry API does not have eligible optional charfields."
     )
@@ -391,23 +399,12 @@ class TestDictionaryEndpoint(
         self.client.force_authenticate(user=user)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
+
+        response = self.perform_successful_get_request_response(instance, site, True)
         request_data = response.wsgi_request
-
-        assert response.status_code == 200
-
         response_data = json.loads(response.content)
 
-        controlled_standard_fields = self.get_expected_controlled_standard_fields(
-            instance, site
-        )
-        for key, value in controlled_standard_fields.items():
-            assert response_data[key] == value
-        assert_dictionary_entry_detail_response(response_data, instance, request_data)
+        self.assert_dictionary_entry_detail(instance, response_data, request_data)
 
     @pytest.mark.django_db
     def test_list_minimal(self):
@@ -419,22 +416,15 @@ class TestDictionaryEndpoint(
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response = self.perform_successful_get_request_response(instance, site, False)
         request_data = response.wsgi_request
-
-        assert response.status_code == 200
-
         response_data = json.loads(response.content)
 
+        assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
-        response_data = response_data["results"][0]
+        response_data = json.loads(response.content)["results"][0]
 
-        controlled_standard_fields = self.get_expected_controlled_standard_fields(
-            instance, site
-        )
-        for key, value in controlled_standard_fields.items():
-            assert response_data[key] == value
-        assert_dictionary_entry_detail_response(response_data, instance, request_data)
+        self.assert_dictionary_entry_detail(instance, response_data, request_data)
 
     @pytest.mark.django_db
     def test_list_permissions(self):
