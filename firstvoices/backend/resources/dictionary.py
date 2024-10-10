@@ -2,8 +2,9 @@ import uuid
 
 from import_export import fields
 from import_export.results import RowResult
+from import_export.widgets import ForeignKeyWidget
 
-from backend.models import Category, DictionaryEntry, PartOfSpeech
+from backend.models import Category, DictionaryEntry, ImportJob, PartOfSpeech
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.resources.base import (
     AudienceMixin,
@@ -77,9 +78,16 @@ class DictionaryEntryResource(
         ),
     )
 
-    def __init__(self, site=None, run_as_user=None):
+    import_job = fields.Field(
+        column_name="import_job",
+        attribute="import_job",
+        widget=ForeignKeyWidget(ImportJob),
+    )
+
+    def __init__(self, site=None, run_as_user=None, import_job=None):
         self.site = site
         self.run_as_user = run_as_user
+        self.import_job = import_job
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
@@ -87,6 +95,7 @@ class DictionaryEntryResource(
         dataset.append_col(lambda x: str(self.site.id), header="site")
         dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
         dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
+        dataset.append_col(lambda x: str(self.import_job), header="import_job")
 
     def import_row(self, row, instance_loader, **kwargs):
         # Marking erroneous and invalid rows as skipped, then clearing the errors and validation_errors
