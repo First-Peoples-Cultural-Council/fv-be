@@ -733,3 +733,24 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         imported_entries = DictionaryEntry.objects.all()
         assert len(imported_entries) == 1
         assert imported_entries[0].title == "Phrase 1"
+
+    def test_invalid_m2m_entries_not_imported(self):
+        # Testing out with categories, but is similar
+        # for any m2m relation.
+
+        file_content = get_sample_file(
+            "import_job/invalid_m2m.csv", self.MIMETYPE
+        )  # 1st row in the file a valid row for control
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        dictionary_entries_count = DictionaryEntry.objects.all().count()
+        assert dictionary_entries_count == 1
+        assert DictionaryEntry.objects.first().title == "Valid m2m"
