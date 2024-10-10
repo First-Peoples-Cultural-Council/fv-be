@@ -733,3 +733,23 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         imported_entries = DictionaryEntry.objects.all()
         assert len(imported_entries) == 1
         assert imported_entries[0].title == "Phrase 1"
+
+    def test_import_id_added_to_imported_entries(self):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # word
+        word = DictionaryEntry.objects.filter(title="abc")[0]
+        assert word.import_job == import_job_instance
+
+        # phrase
+        phrase = DictionaryEntry.objects.filter(title="xyz")[0]
+        assert phrase.import_job == import_job_instance
