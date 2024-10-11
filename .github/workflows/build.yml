@@ -298,3 +298,4 @@ jobs:
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+          
