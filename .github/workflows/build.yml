@@ -87,8 +87,9 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: Run coverage
+        working-directory: ./firstvoices
         run: |
-          coverage combine ./coverage*/.coverage*
+          coverage combine ../coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan

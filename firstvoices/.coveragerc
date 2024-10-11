@@ -1,6 +1,13 @@
 [run]
-source=.
-branch=True
+branch = True
+relative_files = True
+include =
+    backend/*
+    firstvoices/*
+    healthcheck/*
+    jwt_auth/*
+    scripts/*
+    manage.py
 omit =
     */tests/*
     */migrations/*
