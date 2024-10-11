@@ -5,6 +5,7 @@ omit =
     */tests/*
     */migrations/*
     */backend/admin/*
+    */backend/resources/*
     */__init__.py
     */jwt_auth/admin.py
     */jwt_auth/tests.py
@@ -12,6 +13,7 @@ omit =
     */wsgi.py
     */manage.py
     */settings.py
+    */backend/search/tasks/*
 
 [report]
 include_namespace_packages=True
