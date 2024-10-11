@@ -12,8 +12,9 @@ RUN apk add --no-cache \
     libffi-dev \
     libmagic \
     openblas-dev \
-    pip3 install psycopg2-binary \
 && pip3 install gunicorn
+
+RUN pip3 install psycopg2-binary
 
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
