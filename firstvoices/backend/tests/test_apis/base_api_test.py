@@ -697,6 +697,20 @@ class SiteContentUpdateApiTestMixin:
         response_data = json.loads(response.content)
         return response_data
 
+    def perform_successful_get_request_response(self, instance, site, detail=False):
+        if detail:
+            response = self.client.get(
+                self.get_detail_endpoint(
+                    key=self.get_lookup_key(instance), site_slug=site.slug
+                )
+            )
+        else:
+            response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        return response
+
     @pytest.mark.django_db
     def test_update_success_200(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
