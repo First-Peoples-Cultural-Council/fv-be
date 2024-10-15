@@ -14,6 +14,12 @@ RUN apk add --no-cache \
     openblas-dev \
 && pip3 install gunicorn
 
+RUN apk update && apk add --no-cache \
+    postgresql-dev \
+    gcc \
+    musl-dev \
+    python3-dev
+
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
 
