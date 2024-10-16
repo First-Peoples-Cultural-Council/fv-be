@@ -20,6 +20,7 @@ from .base import (
 )
 from .category import Category
 from .characters import Alphabet, Character
+from .import_jobs import ImportJob
 from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
 
@@ -134,6 +135,12 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     )
     pronunciations = ArrayField(
         models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list
+    )
+
+    import_job = models.ForeignKey(
+        ImportJob,
+        null=True,
+        on_delete=models.SET_NULL,
     )
 
     class Meta:

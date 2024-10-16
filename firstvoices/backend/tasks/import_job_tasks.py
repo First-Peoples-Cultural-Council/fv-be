@@ -189,7 +189,9 @@ def import_resource(
 
 def import_job(data, import_job_instance, logger):
     resource = DictionaryEntryResource(
-        site=import_job_instance.site, run_as_user=import_job_instance.run_as_user
+        site=import_job_instance.site,
+        run_as_user=import_job_instance.run_as_user,
+        import_job=import_job_instance.id,
     )
 
     try:
@@ -204,7 +206,9 @@ def import_job_dry_run(data, import_job_instance, logger):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
     resource = DictionaryEntryResource(
-        site=import_job_instance.site, run_as_user=import_job_instance.run_as_user
+        site=import_job_instance.site,
+        run_as_user=import_job_instance.run_as_user,
+        import_job=import_job_instance.id,
     )
 
     try:
