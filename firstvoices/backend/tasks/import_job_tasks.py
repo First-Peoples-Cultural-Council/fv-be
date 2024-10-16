@@ -1,6 +1,12 @@
+import io
+import sys
+from copy import deepcopy
+
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from import_export.results import RowResult
 
 from backend.models.import_jobs import (
     ImportJob,
@@ -9,6 +15,7 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.media import File
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
@@ -73,6 +80,7 @@ def clean_csv(data):
     This method also drops the ignored columns as those will not be used during import.
     """
 
+    cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
     all_headers = data.headers
     accepted_headers = []
     invalid_headers = []
@@ -89,12 +97,42 @@ def clean_csv(data):
 
     # Dropping invalid columns
     for invalid_header in invalid_headers:
-        del data[invalid_header]
+        del cleaned_data[invalid_header]
 
     # lower-casing headers
-    data.headers = [header.lower() for header in data.headers]
+    cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
-    return accepted_headers, invalid_headers, data
+    return accepted_headers, invalid_headers, cleaned_data
+
+
+def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
+    # Generate a csv for the erroneous rows
+    failed_row_dataset = []
+    for row_num in error_row_numbers:
+        failed_row_dataset.append(
+            data[row_num - 1]
+        )  # -1 to subtract to account for headers
+    failed_row_dataset = tablib.Dataset(*failed_row_dataset)
+    failed_row_dataset.headers = data.headers
+
+    failed_row_export = failed_row_dataset.export("csv")
+    in_memory_csv_file = io.BytesIO(failed_row_export.encode("utf-8"))
+    in_memory_csv_file = InMemoryUploadedFile(
+        file=in_memory_csv_file,
+        field_name="failed_rows_csv",
+        name="failed_rows.csv",
+        content_type="text/csv",
+        size=sys.getsizeof(in_memory_csv_file),
+        charset="utf-8",
+    )
+    failed_row_csv_file = File(
+        content=in_memory_csv_file,
+        site=import_job_instance.site,
+        created_by=import_job_instance.last_modified_by,
+        last_modified_by=import_job_instance.last_modified_by,
+    )
+    failed_row_csv_file.save()
+    return failed_row_csv_file
 
 
 def import_resource(
@@ -113,46 +151,48 @@ def import_resource(
         site=import_job_instance.site,
         importjob=import_job_instance,
         new_rows=result.totals["new"],
-        skipped_rows=result.totals["skip"],
-        error_rows=result.totals["error"] + result.totals["invalid"],
+        error_rows=result.totals["error"]
+        + result.totals["invalid"]
+        + result.totals["skip"],
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
     )
     report.save()
 
-    # check for errors
-    if result.has_errors():
-        for row in result.error_rows:
-            error_messages = []
-            for error_row in row.errors:
-                first_line = str(error_row.error).split("\n")[0]
-                error_messages.append(first_line)
-            error_row_instance = ImportJobReportRow(
-                site=import_job_instance.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=error_messages,
-            )
-            error_row_instance.save()
+    # to keep track of row numbers of erroneous rows
+    error_row_numbers = []
 
-    # Check for invalid rows
-    if len(result.invalid_rows):
-        for row in result.invalid_rows:
+    # Adding error messages to the report
+    for row in result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
             error_row_instance = ImportJobReportRow(
                 site=import_job_instance.site,
                 report=report,
                 status=RowStatus.ERROR,
                 row_number=row.number,
-                errors=row.error.messages,
+                errors=row.error_messages,
             )
             error_row_instance.save()
+            error_row_numbers.append(row.number)
+
+    # Sort rows and attach the csv
+    if error_row_numbers:
+        error_row_numbers.sort()
+        failed_row_csv_file = get_failed_rows_csv_file(
+            import_job_instance, data, error_row_numbers
+        )
+        import_job_instance.failed_rows_csv = failed_row_csv_file
+        import_job_instance.save()
 
     return report
 
 
 def import_job(data, import_job_instance, logger):
-    resource = DictionaryEntryResource(site=import_job_instance.site)
+    resource = DictionaryEntryResource(
+        site=import_job_instance.site,
+        run_as_user=import_job_instance.run_as_user,
+        import_job=import_job_instance.id,
+    )
 
     try:
         import_resource(data, resource, import_job_instance, dry_run=False)
@@ -165,7 +205,11 @@ def import_job(data, import_job_instance, logger):
 def import_job_dry_run(data, import_job_instance, logger):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
-    resource = DictionaryEntryResource(site=import_job_instance.site)
+    resource = DictionaryEntryResource(
+        site=import_job_instance.site,
+        run_as_user=import_job_instance.run_as_user,
+        import_job=import_job_instance.id,
+    )
 
     try:
         report = import_resource(data, resource, import_job_instance, dry_run=True)
@@ -235,8 +279,13 @@ def batch_import(import_job_instance_id, dry_run=True):
         import_job_instance.save()
         return
 
-    import_job_instance.validation_task_id = task_id
-    import_job_instance.validation_status = JobStatus.STARTED
+    if dry_run:
+        import_job_instance.validation_status = JobStatus.STARTED
+        import_job_instance.validation_task_id = task_id
+    else:
+        # we don't need to set the import_job_instance primary task status here
+        # as that is assigned in the @confirm view
+        import_job_instance.task_id = task_id
     import_job_instance.save()
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")

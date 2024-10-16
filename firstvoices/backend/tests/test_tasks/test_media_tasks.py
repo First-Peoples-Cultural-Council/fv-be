@@ -1,6 +1,7 @@
 import pytest
 
 from backend.models.media import Image, Video
+from backend.tasks.media_tasks import generate_media_thumbnails
 from backend.tests.factories import (
     ImageFactory,
     ImageFileFactory,
@@ -8,9 +9,16 @@ from backend.tests.factories import (
     VideoFactory,
     VideoFileFactory,
 )
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
 
-class TestThumbnailGeneration:
+class TestThumbnailGeneration(IgnoreTaskResultsMixin):
+    TASK = generate_media_thumbnails
+
+    def get_valid_task_args(self):
+        image = ImageFactory.create()
+        return image._meta.model_name, image.id
+
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     @pytest.mark.parametrize(

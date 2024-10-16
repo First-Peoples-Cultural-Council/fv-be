@@ -437,6 +437,10 @@ class WriteApiTestMixin:
         suitable for create/update requests"""
         raise NotImplementedError
 
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        """Returns a valid data object that includes all optional charfields set to None"""
+        raise NotImplementedError
+
     def add_expected_defaults(self, data):
         """Returns a data object with default values filled in for all non-required fields"""
         raise NotImplementedError
@@ -519,6 +523,27 @@ class SiteContentCreateApiTestMixin:
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         data = self.get_valid_data_with_nulls(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        pk = response_data["id"]
+
+        expected_data = self.add_expected_defaults(data)
+        self.assert_created_instance(pk, expected_data)
+        self.assert_created_response(expected_data, response_data)
+
+    @pytest.mark.django_db
+    def test_create_with_null_optional_charfields_success_201(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = self.get_valid_data_with_null_optional_charfields(site)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
@@ -672,6 +697,20 @@ class SiteContentUpdateApiTestMixin:
         response_data = json.loads(response.content)
         return response_data
 
+    def perform_successful_get_request_response(self, instance, site, detail=False):
+        if detail:
+            response = self.client.get(
+                self.get_detail_endpoint(
+                    key=self.get_lookup_key(instance), site_slug=site.slug
+                )
+            )
+        else:
+            response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+
+        return response
+
     @pytest.mark.django_db
     def test_update_success_200(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
@@ -687,6 +726,17 @@ class SiteContentUpdateApiTestMixin:
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data_with_nulls(site)
+        expected_data = self.add_expected_defaults(data)
+
+        response_data = self.perform_successful_detail_request(instance, site, data)
+        self.assert_updated_instance(expected_data, self.get_updated_instance(instance))
+        self.assert_update_response(expected_data, response_data)
+
+    @pytest.mark.django_db
+    def test_update_with_null_optional_charfields_success_200(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data_with_null_optional_charfields(site)
         expected_data = self.add_expected_defaults(data)
 
         response_data = self.perform_successful_detail_request(instance, site, data)

@@ -87,6 +87,20 @@ class TestBulkVisibilityEndpoints(
         # Bulk visibility jobs have no eligible nulls.
         pass
 
+    @pytest.mark.skip(
+        reason="Bulk visibility jobs have no eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        #  Bulk visibility jobs have no eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Bulk visibility jobs have no eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Bulk visibility jobs have no eligible optional charfields..
+        pass
+
     @pytest.mark.django_db
     def test_list_minimal(self):
         site = factories.SiteFactory.create()

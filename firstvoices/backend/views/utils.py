@@ -1,6 +1,6 @@
-from django.core.cache import caches
 import logging
 
+from django.core.cache import caches
 from django.db.models import Prefetch
 from rest_framework.throttling import UserRateThrottle
 
@@ -45,6 +45,30 @@ def get_media_prefetch_list(user):
             queryset=Video.objects.visible(user).select_related(
                 *get_select_related_media_fields(None)
             ),
+        ),
+    ]
+
+
+def get_created_ordered_media_prefetch_list(user):
+    return [
+        Prefetch(
+            "related_audio",
+            queryset=Audio.objects.visible(user)
+            .order_by("created")
+            .select_related("original", "site")
+            .prefetch_related("speakers"),
+        ),
+        Prefetch(
+            "related_images",
+            queryset=Image.objects.visible(user)
+            .order_by("created")
+            .select_related(*get_select_related_media_fields(None)),
+        ),
+        Prefetch(
+            "related_videos",
+            queryset=Video.objects.visible(user)
+            .order_by("created")
+            .select_related(*get_select_related_media_fields(None)),
         ),
     ]
 

@@ -60,6 +60,7 @@ class TestImportEndpoints(
             "validationTaskId": instance.task_id,
             "validationStatus": instance.validation_status.lower(),
             "validationReport": instance.validation_report,
+            "failedRowsCsv": instance.failed_rows_csv,
             "site": {
                 "id": str(site.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}",
@@ -252,6 +253,20 @@ class TestImportEndpoints(
         # Check custom permissions tests below
         pass
 
+    @pytest.mark.skip(
+        reason="Import job API does not have eligible optional charfields."
+    )
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Import job API does not have eligible optional charfields.
+        pass
+
+    @pytest.mark.skip(
+        reason="Import job API does not have eligible optional charfields."
+    )
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Import job API does not have eligible optional charfields.
+        pass
+
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT])
     @pytest.mark.parametrize("visibility", Visibility)
     def test_detail_403_for_members_and_assistants(self, role, visibility):
@@ -379,3 +394,22 @@ class TestImportEndpoints(
         response = self.client.post(confirm_endpoint)
 
         assert response.status_code == 404
+
+    def test_failed_rows_csv_field_exists(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file(
+                "import_job/invalid_dictionary_entries.csv", "text/csv"
+            ),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        response_data = json.loads(response.content)
+
+        assert "failedRowsCsv" in response_data

@@ -18,7 +18,7 @@ jobs:
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
-        python-version: [ "3.12.2" ]  # We should keep this in sync with the docker image we run on
+        python-version: [ "3.12.7" ]  # We should keep this in sync with the docker image we run on
         group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
@@ -87,9 +87,8 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: Run coverage
-        working-directory: ./firstvoices
         run: |
-          coverage combine ../coverage*/.coverage*
+          coverage combine ./coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
@@ -298,3 +297,4 @@ jobs:
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+          

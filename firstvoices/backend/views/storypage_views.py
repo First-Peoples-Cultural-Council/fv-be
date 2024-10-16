@@ -11,6 +11,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 from ..serializers.story_serializers import StoryPageDetailSerializer
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_created_ordered_media_prefetch_list
 
 
 @extend_schema_view(
@@ -102,15 +103,18 @@ from .api_doc_variables import id_parameter, site_slug_parameter
     ),
 )
 class StoryPageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
-    def get_detail_queryset(self):
+    def get_queryset(self):
         site = self.get_validated_site()
         story = self.get_validated_story(site)
-        return StoryPage.objects.filter(site=site, story=story).all()
-
-    def get_list_queryset(self):
-        site = self.get_validated_site()
-        story = self.get_validated_story(site)
-        return StoryPage.objects.filter(site=site, story=story).order_by("id").all()
+        user = self.request.user
+        return (
+            StoryPage.objects.filter(site=site, story=story)
+            .order_by("ordering")
+            .all()
+            .prefetch_related(
+                *get_created_ordered_media_prefetch_list(user),
+            )
+        )
 
     def get_serializer_class(self):
         return StoryPageDetailSerializer

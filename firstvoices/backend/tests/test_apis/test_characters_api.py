@@ -17,7 +17,9 @@ from backend.tests.test_apis.base_media_test import (
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
 )
-from backend.tests.utils import format_dictionary_entry_related_field
+from backend.tests.test_apis.test_dictionary_api import (
+    assert_dictionary_entry_summary_response,
+)
 
 
 class TestCharactersEndpoints(
@@ -213,26 +215,15 @@ class TestCharactersEndpoints(
             self.get_detail_endpoint(key=character.id, site_slug=site.slug)
         )
 
+        request = response.wsgi_request
+
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
         assert response_data["id"] == str(character.id)
         assert len(response_data["relatedDictionaryEntries"]) == 1
-        assert response_data["relatedDictionaryEntries"] == [
-            {
-                "id": str(entry1.id),
-                "title": entry1.title,
-                "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{str(entry1.id)}",
-                "translations": format_dictionary_entry_related_field(
-                    entry1.translations
-                ),
-                "relatedImages": [],
-                "relatedAudio": [],
-                "relatedVideos": [],
-                "relatedVideoLinks": [],
-                "type": entry1.type,
-            }
-        ]
+        for entry in response_data["relatedDictionaryEntries"]:
+            assert_dictionary_entry_summary_response(entry, entry1, request)
 
     # /------------------------------------------------------------------\
     # |  The following tests can be converted into a generic set of tests in the RelatedMediaTestMixin          |

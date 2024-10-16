@@ -287,6 +287,8 @@ else:
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost/0")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+CELERY_TASK_IGNORE_RESULT = True
 # Celery tasks are not picked up by autodiscover_tasks() if they are not globally imported. This adds missing tasks.
 # CELERY_IMPORTS = ("backend.tasks.my_task",)
 

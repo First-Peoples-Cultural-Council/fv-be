@@ -2,6 +2,7 @@ import os
 import random
 import string
 import sys
+import uuid
 from contextlib import contextmanager
 
 import pytest
@@ -140,6 +141,14 @@ def get_sample_file(filename, mimetype, title=None):
 def format_dictionary_entry_related_field(entries):
     # To format the provided ArrayField to expected API response structure
     return [{"text": entry} for entry in entries]
+
+
+def is_valid_uuid(uuid_string):
+    try:
+        val = uuid.UUID(uuid_string)
+    except ValueError:
+        return False
+    return str(val) == uuid_string
 
 
 def get_batch_import_test_dataset(filename):

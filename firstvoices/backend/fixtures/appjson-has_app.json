@@ -1,0 +1,83 @@
+[{
+	"model": "backend.appjson",
+	"fields": {
+		"key": "has_app_site_menu",
+		"json": {
+			"kids": {
+				"id": "kids",
+				"href": "/kids",
+				"title": "Kids",
+				"transKey": "navigation-kids",
+				"itemsData": []
+			},
+			"about": {
+				"id": "about",
+				"title": "About",
+				"transKey": "navigation-about",
+				"itemsData": [{
+					"href": "/our-language",
+					"title": "Our Language",
+					"transKey": "navigation-our-language"
+				}, {
+					"href": "/our-people",
+					"title": "Our People",
+					"transKey": "navigation-our-people"
+				}]
+			},
+			"learn": {
+				"id": "learn",
+				"title": "Learn",
+				"transKey": "navigation-learn",
+				"itemsData": [{
+					"href": "/songs",
+					"title": "Songs",
+					"transKey": "navigation-songs"
+				}, {
+					"href": "/stories",
+					"title": "Stories",
+					"transKey": "navigation-stories"
+				}, {
+					"href": "/games",
+					"title": "Games",
+					"transKey": "navigation-games"
+				}]
+			},
+			"resources": {
+				"id": "resources",
+				"title": "Resources",
+				"transKey": "navigation-resources",
+				"itemsData": [{
+					"href": "/keyboards",
+					"title": "Keyboards",
+					"transKey": "navigation-keyboards"
+				}, {
+          "href": "/apps",
+          "title": "Mobile App",
+          "transKey": "navigation-apps"
+        }]
+			},
+			"dictionary": {
+				"id": "dictionary",
+				"title": "Dictionary",
+				"transKey": "navigation-dictionary",
+				"itemsData": [{
+					"href": "/words",
+					"title": "Words",
+					"transKey": "navigation-words"
+				}, {
+					"href": "/phrases",
+					"title": "Phrases",
+					"transKey": "navigation-phrases"
+				}, {
+					"href": "/alphabet",
+					"title": "Alphabet",
+					"transKey": "navigation-alphabet"
+				}, {
+					"href": "/categories",
+					"title": "Categories",
+					"transKey": "navigation-categories"
+				}]
+			}
+		}
+	}
+}]

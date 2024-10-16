@@ -42,7 +42,6 @@ class ImportJobReport(BaseSiteContentModel):
 
     # From results
     new_rows = models.IntegerField(null=True)
-    skipped_rows = models.IntegerField(null=True)
     error_rows = models.IntegerField(null=True)
 
     accepted_columns = ArrayField(
@@ -102,7 +101,7 @@ class ImportJob(BaseJob):
         get_user_model(), blank=True, null=True, on_delete=models.PROTECT
     )
 
-    data = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+    data = models.ForeignKey(File, null=True, on_delete=models.SET_NULL)
 
     # The following fields are for the dry-run and then presenting those results
     validation_task_id = models.CharField(max_length=255, null=True, blank=True)
@@ -115,4 +114,11 @@ class ImportJob(BaseJob):
 
     validation_report = models.OneToOneField(
         ImportJobReport, null=True, on_delete=models.SET_NULL
+    )
+
+    failed_rows_csv = models.ForeignKey(
+        File,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="import_job_failed_rows_csv_set",
     )

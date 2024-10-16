@@ -1,7 +1,9 @@
+import uuid
 from unittest.mock import patch
 from uuid import UUID
 
 import pytest
+import tablib
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
@@ -14,7 +16,9 @@ from backend.tests.factories import (
     ImportJobFactory,
     SiteFactory,
     SongFactory,
+    get_superadmin,
 )
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import get_sample_file
 
 
@@ -22,14 +26,42 @@ from backend.tests.utils import get_sample_file
 class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
 
-    def test_import_task_logs(self, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
+    def setup_method(self):
+        self.user = get_superadmin()
+        self.site = SiteFactory(visibility=Visibility.PUBLIC)
 
-        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+    def import_invalid_dictionary_entries(self):
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+
+        return import_job_instance
+
+    def import_minimal_dictionary_entries(self):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
+
+        batch_import(import_job_instance.id)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+
+        return import_job_instance
+
+    def test_import_task_logs(self, caplog):
+        import_job_instance = self.import_minimal_dictionary_entries()
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
@@ -38,11 +70,11 @@ class TestBulkImportDryRun:
         assert "Task ended." in caplog.text
 
     def test_base_case_dictionary_entries(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -52,19 +84,17 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_all_columns_dictionary_entries(self):
         # More columns could be added to this file/test later
         # as we start supporting more columns, e.g. related_media
-
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file(
             "import_job/all_valid_columns.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -76,7 +106,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
         expected_valid_columns = [
             "title",
@@ -122,20 +151,26 @@ class TestBulkImportDryRun:
 
         assert len(ignored_columns) == 0
 
-    def test_invalid_rows(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
-        file_content = get_sample_file(
-            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
-        )
+    def test_default_values(self):
+        file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 4
+        assert validation_report.error_rows == 0
+
+    def test_invalid_rows(self):
+        import_job_instance = self.import_invalid_dictionary_entries()
+        validation_report = import_job_instance.validation_report
+
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
             validation_report.rows.order_by("row_number").values_list(
@@ -147,13 +182,13 @@ class TestBulkImportDryRun:
         assert error_rows_numbers == [2, 3, 4, 5, 6]
 
     def test_invalid_categories(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file(
             "import_job/invalid_categories.csv", self.MIMETYPE
         )  # 1st row in the file a valid row for control
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -169,11 +204,11 @@ class TestBulkImportDryRun:
         assert error_rows_numbers == [3, 4, 5]
 
     def test_validation_report_columns(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file("import_job/unknown_columns.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -190,13 +225,13 @@ class TestBulkImportDryRun:
         assert "type" in accepted_columns
 
     def test_missing_original_column(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file(
             "import_job/original_header_missing.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -213,13 +248,13 @@ class TestBulkImportDryRun:
         assert "type" in accepted_columns
 
     def test_boolean_variations(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file(
             "import_job/boolean_variations.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -229,7 +264,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 12
         assert validation_report.error_rows == 1
-        assert validation_report.skipped_rows == 0
 
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
@@ -240,12 +274,11 @@ class TestBulkImportDryRun:
 
     def test_existing_related_entries(self):
         # For entries that are already present in the db
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         DictionaryEntryFactory(
-            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
         DictionaryEntryFactory(
-            site=site,
+            site=self.site,
             type=TypeOfDictionaryEntry.PHRASE,
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
         )
@@ -254,7 +287,9 @@ class TestBulkImportDryRun:
             "import_job/valid_related_entries.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -264,19 +299,19 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
-        assert validation_report.skipped_rows == 0
 
     def test_invalid_related_entries(self):
         # For entries that are already present in the db
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         # Referring to a different model
-        SongFactory(site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c"))
+        SongFactory(site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c"))
 
         file_content = get_sample_file(
             "import_job/invalid_related_entries.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         batch_import(import_job_instance.id)
 
@@ -286,7 +321,6 @@ class TestBulkImportDryRun:
 
         assert validation_report.new_rows == 0
         assert validation_report.error_rows == 2
-        assert validation_report.skipped_rows == 0
 
         validation_error_rows = validation_report.rows.all().order_by("row_number")
 
@@ -303,13 +337,14 @@ class TestBulkImportDryRun:
         )
 
     def test_dry_run_failed(self, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
         # Mock that the task has already completed
-        import_job_instance = ImportJobFactory(site=site, data=file)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file
+        )
 
         with patch(
             "backend.tasks.import_job_tasks.import_resource",
@@ -322,18 +357,67 @@ class TestBulkImportDryRun:
             assert import_job_instance.validation_status == JobStatus.FAILED
             assert "Random exception." in caplog.text
 
+    def test_failed_rows_csv(self):
+        import_job_instance = self.import_invalid_dictionary_entries()
+        validation_report = import_job_instance.validation_report
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 5
+        assert error_rows_numbers == [2, 3, 4, 5, 6]
+
+        # Reading actual file
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        input_csv_table = tablib.Dataset().load(
+            file_content.read().decode("utf-8-sig"), format="csv"
+        )
+
+        failed_rows_csv_table = tablib.Dataset().load(
+            import_job_instance.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
+        assert len(failed_rows_csv_table) == 5
+
+        for i in range(0, len(error_rows_numbers)):
+            input_index = (
+                error_rows_numbers[i] - 1
+            )  # since we do +1 while generating error row numbers
+            assert input_csv_table[input_index] == failed_rows_csv_table[i]
+
+    def test_failed_rows_csv_not_generated_on_valid_rows(self):
+        # To verify no failedRowsCsv is generated if all rows
+        # in the input file are valid.
+
+        import_job_instance = self.import_minimal_dictionary_entries()
+        assert import_job_instance.failed_rows_csv is None
+
 
 @pytest.mark.django_db
-class TestBulkImport:
+class TestBulkImport(IgnoreTaskResultsMixin):
     MIMETYPE = "text/csv"
+    TASK = batch_import
+
+    def get_valid_task_args(self):
+        return (uuid.uuid4(),)
+
+    def setup_method(self):
+        self.user = get_superadmin()
+        self.site = SiteFactory(visibility=Visibility.PUBLIC)
 
     def test_import_task_logs(self, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -345,39 +429,45 @@ class TestBulkImport:
         assert "Task ended." in caplog.text
 
     def test_base_case_dictionary_entries(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
 
         # word
-        word = DictionaryEntry.objects.filter(site=site, title="abc")[0]
+        word = DictionaryEntry.objects.filter(title="abc")[0]
         assert word.type == TypeOfDictionaryEntry.WORD
+        assert word.created_by == self.user
+        assert word.last_modified_by == self.user
 
         # phrase
-        phrase = DictionaryEntry.objects.filter(site=site, title="xyz")[0]
+        phrase = DictionaryEntry.objects.filter(title="xyz")[0]
         assert phrase.type == TypeOfDictionaryEntry.PHRASE
+        assert phrase.created_by == self.user
+        assert phrase.last_modified_by == self.user
 
     def test_all_columns_dictionary_entries(self):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
-
         file_content = get_sample_file(
             "import_job/all_valid_columns.csv", self.MIMETYPE
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
 
         # Verifying first entry
-        first_entry = DictionaryEntry.objects.filter(site=site, title="Word 1")[0]
+        first_entry = DictionaryEntry.objects.filter(title="Word 1")[0]
         assert first_entry.type == TypeOfDictionaryEntry.WORD
         assert first_entry.visibility == Visibility.PUBLIC
         assert first_entry.part_of_speech.title == "Adjective"
@@ -423,8 +513,43 @@ class TestBulkImport:
         assert "Animals" in categories
         assert "Body" in categories
 
+    def test_default_values(self):
+        file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # Updated instance
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.new_rows == 4
+        assert validation_report.error_rows == 0
+
+        # Verifying default type
+        empty_type = DictionaryEntry.objects.filter(title="Empty type")[0]
+        assert empty_type.type == TypeOfDictionaryEntry.WORD
+
+        # default visibility
+        empty_visibility = DictionaryEntry.objects.filter(title="Empty visibility")[0]
+        assert empty_visibility.visibility == Visibility.TEAM
+
+        # default audience flags
+        empty_games_flag = DictionaryEntry.objects.filter(
+            title="Empty include in games"
+        )[0]
+        assert empty_games_flag.exclude_from_games is False
+        empty_kids_flag = DictionaryEntry.objects.filter(
+            title="Empty include on kids site"
+        )[0]
+        assert empty_kids_flag.exclude_from_kids is False
+
     def test_parallel_jobs_not_allowed(self, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
@@ -433,13 +558,17 @@ class TestBulkImport:
         )  # Since it's a OneToOne field, can't use a file again
 
         ImportJobFactory(
-            site=site,
+            site=self.site,
             data=file,
+            run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.STARTED,
         )
         import_job_instance = ImportJobFactory(
-            site=site, data=same_file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            data=same_file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -454,14 +583,16 @@ class TestBulkImport:
 
     @pytest.mark.parametrize("status", [JobStatus.COMPLETE, JobStatus.FAILED])
     def test_task_already_completed(self, status, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
-        # Mock that the task has already completed
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE, status=status
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=status,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -476,14 +607,15 @@ class TestBulkImport:
         [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
     )
     def test_confirm_not_allowed_for_invalid_dry_run(self, validation_status, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
-        # Mock that the task has already completed
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=validation_status
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=validation_status,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -498,14 +630,16 @@ class TestBulkImport:
         )
 
     def test_import_job_failed(self, caplog):
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         file = FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
         # Mock that the task has already completed
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
         )
 
         with patch(
@@ -521,9 +655,8 @@ class TestBulkImport:
 
     def test_existing_related_entries(self):
         # For entries that are already present in the db
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         existing_entry = DictionaryEntryFactory(
-            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
 
         file_content = get_sample_file(
@@ -531,7 +664,10 @@ class TestBulkImport:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -544,12 +680,11 @@ class TestBulkImport:
 
     def test_multiple_existing_related_entries(self):
         # For entries that are already present in the db
-        site = SiteFactory(visibility=Visibility.PUBLIC)
         existing_entry_1 = DictionaryEntryFactory(
-            site=site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
         existing_entry_2 = DictionaryEntryFactory(
-            site=site,
+            site=self.site,
             type=TypeOfDictionaryEntry.PHRASE,
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
         )
@@ -559,7 +694,10 @@ class TestBulkImport:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -571,3 +709,68 @@ class TestBulkImport:
 
         assert existing_entry_1.id in related_entry_list
         assert existing_entry_2.id in related_entry_list
+
+    def test_skip_rows_with_erroneous_values(self):
+        # If a row has validation errors, skip that row, but import the rest of the file
+        file_content = get_sample_file(
+            "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
+        validation_report = import_job_instance.validation_report
+
+        assert validation_report.error_rows == 5
+
+        imported_entries = DictionaryEntry.objects.all()
+        assert len(imported_entries) == 1
+        assert imported_entries[0].title == "Phrase 1"
+
+    def test_invalid_m2m_entries_not_imported(self):
+        # Testing out with categories, but is similar
+        # for any m2m relation.
+
+        file_content = get_sample_file(
+            "import_job/invalid_m2m.csv", self.MIMETYPE
+        )  # 1st row in the file a valid row for control
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        dictionary_entries_count = DictionaryEntry.objects.all().count()
+        assert dictionary_entries_count == 1
+        assert DictionaryEntry.objects.first().title == "Valid m2m"
+
+    def test_import_id_added_to_imported_entries(self):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        batch_import(import_job_instance.id, dry_run=False)
+
+        # word
+        word = DictionaryEntry.objects.filter(title="abc")[0]
+        assert word.import_job == import_job_instance
+
+        # phrase
+        phrase = DictionaryEntry.objects.filter(title="xyz")[0]
+        assert phrase.import_job == import_job_instance

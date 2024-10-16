@@ -1,4 +1,4 @@
-ARG python_image=python:alpine3.19
+ARG python_image=python:3.12.7-alpine3.19
 ARG caddy_image=caddy:2.7.6-alpine
 
 FROM $python_image AS django-common

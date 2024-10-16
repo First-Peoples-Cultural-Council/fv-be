@@ -135,6 +135,20 @@ class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
         fields = ("visibility",)
 
 
+class ValidateNonNullableCharFieldsMixin:
+    """
+    A mixin for ModelSerializers that replaces null values with an empty string for char fields.
+    """
+
+    def validate(self, attrs):
+        for field_name, field in self.fields.items():
+            if isinstance(field, serializers.CharField):
+                if field_name in attrs and attrs.get(field_name) is None:
+                    attrs[field_name] = ""
+
+        return super().validate(attrs)
+
+
 class LinkedSiteSerializer(
     ReadOnlyVisibilityFieldMixin, serializers.HyperlinkedModelSerializer
 ):
@@ -186,6 +200,7 @@ class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
 class WritableSiteContentSerializer(
     CreateSiteContentSerializerMixin,
     UpdateSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     BaseSiteContentSerializer,
 ):
     """
@@ -210,6 +225,7 @@ class BaseControlledSiteContentSerializer(
 class WritableControlledSiteContentSerializer(
     CreateControlledSiteContentSerializerMixin,
     UpdateSerializerMixin,
+    ValidateNonNullableCharFieldsMixin,
     BaseControlledSiteContentSerializer,
 ):
     """

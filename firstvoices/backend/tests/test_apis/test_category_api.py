@@ -28,6 +28,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     API_LIST_VIEW = "api:category-list"
     API_DETAIL_VIEW = "api:category-detail"
+    TITLE = "Cool new title"
     model = Category
 
     def setup_method(self):
@@ -52,14 +53,20 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         parent = CategoryFactory.create(site=site)
 
         return {
-            "title": "Cool new title",
+            "title": self.TITLE,
             "description": "Cool new description",
             "parent_id": str(parent.id),
         }
 
     def get_valid_data_with_nulls(self, site=None):
         return {
-            "title": "Cool new title",
+            "title": self.TITLE,
+        }
+
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        return {
+            "title": self.TITLE,
+            "description": None,
         }
 
     def add_expected_defaults(self, data):
