@@ -14,9 +14,6 @@ RUN apk add --no-cache \
     openblas-dev \
 && pip3 install gunicorn
 
-# Verify the Python version
-RUN python --version
-
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
 
