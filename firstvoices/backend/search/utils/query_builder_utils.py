@@ -172,7 +172,7 @@ def get_category_query(category_id):
 
 
 def get_import_job_query(import_job_id):
-    return Q("bool", filter=[Q("term", import_job=str(import_job_id))])
+    return Q("bool", filter=[Q("term", import_job_id=str(import_job_id))])
 
 
 def get_kids_query(kids):

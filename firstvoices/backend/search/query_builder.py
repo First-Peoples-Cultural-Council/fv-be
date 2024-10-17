@@ -40,7 +40,7 @@ def get_search_query(
     domain="both",
     starts_with_char="",
     category_id="",
-    import_job="",
+    import_job_id="",
     kids=None,
     games=None,
     visibility="",
@@ -101,8 +101,8 @@ def get_search_query(
     if category_id:
         search_query = search_query.query(get_category_query(category_id))
 
-    if import_job:
-        search_query = search_query.query(get_import_job_query(import_job))
+    if import_job_id:
+        search_query = search_query.query(get_import_job_query(import_job_id))
 
     if kids is not None:
         search_query = search_query.query(get_kids_query(kids))

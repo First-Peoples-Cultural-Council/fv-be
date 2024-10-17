@@ -86,7 +86,7 @@ def get_valid_category_id(site, input_category):
     return None
 
 
-def get_valid_import_job(site, import_job_input_str):
+def get_valid_import_job_id(site, import_job_input_str):
     # If import_job_input_str is empty, filter should not be added
     if import_job_input_str:
         try:

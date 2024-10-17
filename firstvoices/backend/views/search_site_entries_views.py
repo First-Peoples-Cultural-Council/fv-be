@@ -2,7 +2,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from backend.search.utils.validators import (
     get_valid_category_id,
-    get_valid_import_job,
+    get_valid_import_job_id,
     get_valid_starts_with_char,
 )
 from backend.views.api_doc_variables import site_slug_parameter
@@ -37,7 +37,7 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet)
 
         import_job_input_str = self.request.GET.get("importJob", "")
         if import_job_input_str:
-            import_job = get_valid_import_job(site, import_job_input_str)
-            search_params["import_job"] = import_job
+            import_job_id = get_valid_import_job_id(site, import_job_input_str)
+            search_params["import_job_id"] = import_job_id
 
         return search_params

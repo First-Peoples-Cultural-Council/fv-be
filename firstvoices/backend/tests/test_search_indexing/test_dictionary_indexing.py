@@ -57,7 +57,7 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert doc.created == instance.created
         assert doc.last_modified == instance.last_modified
 
-        assert not doc.import_job
+        assert not doc.import_job_id
 
     @pytest.mark.django_db
     def test_create_document_no_unknown_characters(self):
@@ -96,4 +96,4 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         )
         assert_list(instance.alternate_spellings, doc.alternate_spelling)
 
-        assert doc.import_job == instance.import_job.id
+        assert doc.import_job_id == instance.import_job.id

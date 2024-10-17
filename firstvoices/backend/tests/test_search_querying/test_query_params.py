@@ -543,11 +543,11 @@ class TestImportJob:
 
     def test_valid_import_job(self):
         search_query = get_search_query(
-            import_job=self.import_job, user=AnonymousUser()
+            import_job_id=self.import_job.id, user=AnonymousUser()
         )
         search_query = search_query.to_dict()
 
         filtered_term = search_query["query"]["bool"]["filter"][0]["term"]
-        assert "import_job" in filtered_term
+        assert "import_job_id" in filtered_term
 
-        assert str(self.import_job.id) in filtered_term["import_job"]
+        assert str(self.import_job.id) in filtered_term["import_job_id"]
