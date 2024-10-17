@@ -527,3 +527,27 @@ class TestStartsWithChar:
 
         expected_starts_with_query = "'prefix': {'title': 'red'}"
         assert expected_starts_with_query in str(search_query)
+
+
+@pytest.mark.django_db
+class TestImportJob:
+    def setup_method(self):
+        self.site = factories.SiteFactory()
+        self.import_job = factories.ImportJobFactory(site=self.site)
+
+    def test_default(self):  # default case
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "import_job" not in str(search_query)
+
+    def test_valid_import_job(self):
+        search_query = get_search_query(
+            import_job_id=self.import_job.id, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        filtered_term = search_query["query"]["bool"]["filter"][0]["term"]
+        assert "import_job_id" in filtered_term
+
+        assert str(self.import_job.id) in filtered_term["import_job_id"]

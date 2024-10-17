@@ -15,13 +15,13 @@ from .base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
 from .base_search_test import SearchMocksMixin
 
 
+@pytest.mark.django_db
 class TestSearchAPI(SearchMocksMixin, BaseApiTest):
     """Tests for base search views."""
 
     API_LIST_VIEW = "api:search-list"
     API_DETAIL_VIEW = "api:search-detail"
 
-    @pytest.mark.django_db
     def test_search_pagination(self, db, mock_search_query_execute, mock_get_page_size):
         """Test that the pagination works as expected."""
 
@@ -138,7 +138,6 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
         assert response_data["previous"] == 2
         assert response_data["previousUrl"] == "http://testserver/api/1.0/search?page=2"
 
-    @pytest.mark.django_db
     @pytest.mark.parametrize("page_number", [0, -1, 1.5, "octopus"])
     def test_invalid_page_numbers(self, page_number, db, mock_search_query_execute):
         """Test that invalid page numbers return an invalid page."""
@@ -155,7 +154,6 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
 
         assert response_data == {"detail": "Invalid page."}
 
-    @pytest.mark.django_db
     @pytest.mark.parametrize("page_size", [0, -1, 1.5, "octopus"])
     def test_invalid_page_sizes(self, page_size, db, mock_search_query_execute):
         """Test that invalid page sizes return an expected page with the default page size."""
@@ -172,21 +170,26 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
 
         assert response_data["pageSize"] == 25
 
-    @pytest.mark.django_db
     def test_invalid_types_passed(self):
         response = self.client.get(self.get_list_endpoint() + "?types=cars")
         response_data = json.loads(response.content)
 
         assert response_data == []
 
-    @pytest.mark.django_db
     def test_invalid_domains_passed(self):
         response = self.client.get(self.get_list_endpoint() + "?domain=creative")
         response_data = json.loads(response.content)
 
         assert response_data == []
 
-    @pytest.mark.django_db
+    def test_invalid_visibility(self):
+        response = self.client.get(
+            self.get_list_endpoint() + "?visibility=invalidVisibility"
+        )
+        response_data = json.loads(response.content)
+
+        assert response_data == []
+
     def test_connection_error(self, mock_search_query_execute):
         mock_search_query_execute.side_effect = ConnectionError()
 
@@ -197,7 +200,6 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
             == f'{{"detail":"{ElasticSearchConnectionError.default_detail}"}}'
         )
 
-    @pytest.mark.django_db
     def test_without_pagination_response(self, mock_search_query_execute):
         # Improbable scenario, but in case the paginator returns None for a page number,
         # Verifying the response contains a list of objects
@@ -239,7 +241,6 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
             )
             assert data[0]["entry"]["id"] == str(entry.id)
 
-    @pytest.mark.django_db
     def test_words_length_filter_invalid_combination(self, mock_search_query_execute):
         # Testing out scenario where a invalid combination of max and min words is supplied,
         # i.e. where maxWords < minWords
@@ -249,7 +250,6 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
         assert response.status_code == 400
         assert response_data["maxWords"] == ["maxWords cannot be lower than minWords."]
 
-    @pytest.mark.django_db
     def test_has_video_param_video_links(self, mock_search_query_execute):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)
         entry = factories.DictionaryEntryFactory.create(
@@ -327,6 +327,20 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
 
         response = self.client.get(
             self.get_list_endpoint(site_slug=site.slug) + "?category=xyzCategory"
+        )
+        response_data = json.loads(response.content)
+
+        assert response_data == []
+
+    def test_invalid_import_job_id(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug)
+            + "?importJobId=invalidImportJob"
         )
         response_data = json.loads(response.content)
 
