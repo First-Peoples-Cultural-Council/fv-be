@@ -57,6 +57,8 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert doc.created == instance.created
         assert doc.last_modified == instance.last_modified
 
+        assert not doc.import_job
+
     @pytest.mark.django_db
     def test_create_document_no_unknown_characters(self):
         site = factories.SiteFactory.create()
