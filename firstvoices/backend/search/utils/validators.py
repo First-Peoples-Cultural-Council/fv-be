@@ -86,6 +86,20 @@ def get_valid_category_id(site, input_category):
     return None
 
 
+def get_valid_import_job(site, import_job_input_str):
+    # If import_job_input_str is empty, filter should not be added
+    if import_job_input_str:
+        try:
+            # If import-job does not belong to the site specified, return empty result set
+            valid_import_job = site.importjob_set.filter(id=import_job_input_str)
+            if len(valid_import_job):
+                return valid_import_job[0].id
+        except exceptions.ValidationError:
+            return None
+
+    return None
+
+
 def get_valid_boolean(input_val):
     # Python treats bool("False") as true, thus manual verification
     cleaned_input = str(input_val).strip().lower()

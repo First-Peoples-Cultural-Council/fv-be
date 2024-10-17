@@ -13,6 +13,7 @@ from backend.search.utils.query_builder_utils import (
     get_has_translation_query,
     get_has_unrecognized_chars_query,
     get_has_video_query,
+    get_import_job_query,
     get_indices,
     get_kids_query,
     get_max_words_query,
@@ -39,6 +40,7 @@ def get_search_query(
     domain="both",
     starts_with_char="",
     category_id="",
+    import_job="",
     kids=None,
     games=None,
     visibility="",
@@ -98,6 +100,9 @@ def get_search_query(
 
     if category_id:
         search_query = search_query.query(get_category_query(category_id))
+
+    if import_job:
+        search_query = search_query.query(get_import_job_query(import_job))
 
     if kids is not None:
         search_query = search_query.query(get_kids_query(kids))
