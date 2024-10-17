@@ -35,7 +35,7 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet)
             )
             search_params["category_id"] = category_id
 
-        import_job_input_str = self.request.GET.get("importJob", "")
+        import_job_input_str = self.request.GET.get("importJobId", "")
         if import_job_input_str:
             import_job_id = get_valid_import_job_id(site, import_job_input_str)
             search_params["import_job_id"] = import_job_id
