@@ -20,7 +20,30 @@ class Command(BaseCommand):
         )
 
     @staticmethod
-    def convert_to_audio_model(model):
+    def convert_model_related_links(original_model, audio_model):
+        related_models = [
+            original_model.character_set,
+            original_model.dictionaryentry_set,
+            original_model.song_set,
+            original_model.story_set,
+            original_model.storypage_set,
+        ]
+
+        with transaction.atomic():
+            for related_model_set in related_models:
+                for related_item in related_model_set.all():
+                    # Only convert links to related models that do not have an equivalent audio model
+                    if not related_item.related_audio.filter(
+                        title=audio_model.title
+                    ).exists():
+                        related_item.related_audio.add(audio_model)
+                        if isinstance(original_model, Image):
+                            related_item.related_images.remove(original_model)
+                        elif isinstance(original_model, Video):
+                            related_item.related_videos.remove(original_model)
+                        related_item.save()
+
+    def convert_to_audio_model(self, model):
         with transaction.atomic():
             # convert ImageFile or VideoFile to File
             original_file = model.original
@@ -36,7 +59,7 @@ class Command(BaseCommand):
             )
 
             # create Audio model
-            Audio.objects.create(
+            audio_model = Audio.objects.create(
                 created_by=model.created_by,
                 created=model.created,
                 last_modified_by=model.last_modified_by,
@@ -50,6 +73,10 @@ class Command(BaseCommand):
                 exclude_from_kids=model.exclude_from_kids,
             )
 
+            # preserve related model links
+            self.convert_model_related_links(model, audio_model)
+
+            # delete original (mismatched) model
             model.delete()
 
     def handle(self, *args, **options):
