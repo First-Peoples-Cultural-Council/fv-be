@@ -28,6 +28,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             alternate_spelling=instance.alternate_spellings,
             note=instance.notes,
             categories=fields_as_list(instance.categories, "id"),
+            import_job_id=instance.import_job.id if instance.import_job else None,
             exclude_from_kids=instance.exclude_from_kids,
             exclude_from_games=instance.exclude_from_games,
             custom_order=instance.custom_order,

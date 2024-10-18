@@ -496,6 +496,26 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="importJobId",
+                description="Filter results based on the associated import-job.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add import-job filter.",
+                    ),
+                    OpenApiExample(
+                        "valid UUID",
+                        value="valid UUID",
+                        description="Return entries which are associated with "
+                        "the specified import-job.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -564,6 +584,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "site_id": "",  # used in site-search
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
+            "import_job_id": "",  # used in site-search
             "visibility": valid_visibility,
             "has_audio": has_audio,
             "has_video": has_video,
@@ -617,6 +638,10 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         if search_params["category_id"] is None:
             return Response(data=[])
 
+        # If invalid import-job, return empty list as a response
+        if search_params["import_job_id"] is None:
+            return Response(data=[])
+
         # If invalid visibility is passed, return empty list as a response
         if search_params["visibility"] is None:
             return Response(data=[])
@@ -642,6 +667,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             site_id=search_params["site_id"],
             starts_with_char=search_params["starts_with_char"],
             category_id=search_params["category_id"],
+            import_job_id=search_params["import_job_id"],
             visibility=search_params["visibility"],
             has_audio=search_params["has_audio"],
             has_video=search_params["has_video"],

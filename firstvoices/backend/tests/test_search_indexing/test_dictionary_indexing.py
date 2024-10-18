@@ -7,6 +7,7 @@ from backend.search.indexing.dictionary_index import (
 )
 from backend.search.utils.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 from backend.tests import factories
+from backend.tests.factories import ImportJobFactory
 from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseDocumentManagerTest,
     BaseIndexManagerTest,
@@ -56,6 +57,8 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert doc.created == instance.created
         assert doc.last_modified == instance.last_modified
 
+        assert not doc.import_job_id
+
     @pytest.mark.django_db
     def test_create_document_no_unknown_characters(self):
         site = factories.SiteFactory.create()
@@ -70,7 +73,8 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
 
     @pytest.mark.django_db
     def test_create_document_related_models(self):
-        instance = self.factory.create()
+        import_job_instance = ImportJobFactory()
+        instance = self.factory.create(import_job=import_job_instance)
 
         doc = self.manager.create_index_document(instance)
 
@@ -91,3 +95,5 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
             doc.categories,
         )
         assert_list(instance.alternate_spellings, doc.alternate_spelling)
+
+        assert doc.import_job_id == instance.import_job.id

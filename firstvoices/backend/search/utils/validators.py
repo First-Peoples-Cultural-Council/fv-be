@@ -72,18 +72,16 @@ def get_valid_starts_with_char(input_str):
     return valid_str
 
 
-def get_valid_category_id(site, input_category):
-    # If input_category is empty, category filter should not be added
-    if input_category:
-        try:
-            # If category does not belong to the site specified, return empty result set
-            valid_category = site.category_set.filter(id=input_category)
-            if len(valid_category):
-                return valid_category[0].id
-        except exceptions.ValidationError:
-            return None
+def get_valid_instance_id(site, model, instance_id):
+    if not instance_id:
+        return None
 
-    return None
+    try:
+        valid_instance = model.objects.filter(site=site, id=instance_id)
+        return valid_instance[0].id
+    except (exceptions.ValidationError, IndexError):
+        # invalid uuid or no entry found with provided id
+        return None
 
 
 def get_valid_boolean(input_val):
