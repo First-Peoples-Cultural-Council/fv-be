@@ -514,11 +514,6 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         description="Return entries which are associated with "
                         "the specified import-job.",
                     ),
-                    OpenApiExample(
-                        "invalid UUID",
-                        value="invalid UUID",
-                        description="Cannot validate given id, returns empty result set.",
-                    ),
                 ],
             ),
         ],

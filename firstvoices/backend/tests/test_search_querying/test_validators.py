@@ -10,10 +10,10 @@ from backend.search.utils.validators import (
     get_valid_count,
     get_valid_document_types,
     get_valid_domain,
+    get_valid_instance_id,
     get_valid_site_feature,
     get_valid_sort,
     get_valid_visibility,
-    validate_model_instance_id,
 )
 from backend.tests import factories
 
@@ -67,11 +67,11 @@ class TestValidCategory:
         self.category = factories.ParentCategoryFactory(site=self.site)
 
     def test_no_input(self):
-        assert validate_model_instance_id(self.site, Category, "") is None
+        assert get_valid_instance_id(self.site, Category, "") is None
 
     def test_valid_input(self):
         expected_category_id = self.category.id
-        actual_category_id = validate_model_instance_id(
+        actual_category_id = get_valid_instance_id(
             self.site, Category, self.category.id
         )
 
@@ -79,7 +79,7 @@ class TestValidCategory:
 
     @pytest.mark.parametrize("input_category_id", ["not_real_category", uuid.uuid4()])
     def test_invalid_input(self, input_category_id):
-        actual_category_id = validate_model_instance_id(
+        actual_category_id = get_valid_instance_id(
             self.site, Category, input_category_id
         )
         assert actual_category_id is None

@@ -72,7 +72,7 @@ def get_valid_starts_with_char(input_str):
     return valid_str
 
 
-def validate_model_instance_id(site, model, instance_id):
+def get_valid_instance_id(site, model, instance_id):
     if not instance_id:
         return None
 
