@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from backend.models import ImportJob
-from backend.models.media import File, ImageFile, VideoFile
+from backend.models.media import SUPPORTED_FILETYPES, File, ImageFile, VideoFile
 from backend.views.base_views import SiteContentViewSetMixin
 
 
@@ -35,23 +35,11 @@ class ImportJobMediaViewSet(
 
     def get_filetype(self, file):
         content_type = file.content_type
-
-        if content_type in ["image/jpeg", "image/gif", "image/png", "image/tiff"]:
+        if content_type in SUPPORTED_FILETYPES["image"]:
             filetype = ImageFile
-        elif content_type in ["video/mp4", "video/quicktime"]:
+        elif content_type in SUPPORTED_FILETYPES["video"]:
             filetype = VideoFile
-        elif content_type in [
-            "audio/wave",
-            "audio/wav",
-            "audio/x-wav",
-            "audio/x-pn-wav",
-            "audio/vnd.wav",
-            "audio/mpeg",
-            "audio/mp3",
-            "audio/mpeg3",
-            "audio/x-mpeg-3",
-            "application/octet-stream",
-        ]:
+        elif content_type in SUPPORTED_FILETYPES["audio"]:
             filetype = File
         else:
             raise ValidationError("Unsupported filetype.")
@@ -77,5 +65,7 @@ class ImportJobMediaViewSet(
                 last_modified_by=user,
             )
             new_file.save()
+
+        # Trigger update of validation-report for importJob
 
         return Response(status=202)

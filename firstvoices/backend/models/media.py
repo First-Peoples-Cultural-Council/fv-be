@@ -24,6 +24,24 @@ from .constants import MAX_DESCRIPTION_LENGTH, MAX_FILEFIELD_LENGTH
 from .files import File, FileBase, file_directory_path
 from .validators import validate_no_duplicate_urls
 
+SUPPORTED_FILETYPES = {
+    # octet-stream is fallback for weird mp3 files; see fw-4829
+    "audio": [
+        "audio/wave",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/x-pn-wav",
+        "audio/vnd.wav",
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/mpeg3",
+        "audio/x-mpeg-3",
+        "application/octet-stream",
+    ],
+    "image": ["image/jpeg", "image/gif", "image/png", "image/tiff"],
+    "video": ["video/mp4", "video/quicktime"],
+}
+
 
 class Person(BaseSiteContentModel):
     class Meta:
