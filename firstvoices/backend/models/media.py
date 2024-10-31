@@ -1,17 +1,14 @@
-import datetime
 import os.path
-import posixpath
 import sys
 import tempfile
 from io import BytesIO
 
 import ffmpeg
-import magic
 import rules
 from django.conf import settings
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import NotSupportedError, models
+from django.db import models
 from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
@@ -24,6 +21,7 @@ from firstvoices.celery import link_error_handler
 
 from .base import AudienceMixin, BaseModel, BaseSiteContentModel
 from .constants import MAX_DESCRIPTION_LENGTH, MAX_FILEFIELD_LENGTH
+from .files import File, FileBase, file_directory_path
 from .validators import validate_no_duplicate_urls
 
 
@@ -46,70 +44,6 @@ class Person(BaseSiteContentModel):
         return f"{self.name} ({self.site})"
 
 
-def media_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT/<site slug>/<datestamp>/<filename>
-    site_slug = instance.site.slug
-    dirname = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-    filename = posixpath.join(site_slug, dirname, filename)
-    return filename
-
-
-class FileBase(BaseSiteContentModel):
-    class Meta:
-        abstract = True
-
-    content = models.FileField(
-        upload_to=media_directory_path, max_length=MAX_FILEFIELD_LENGTH
-    )
-    mimetype = models.CharField(blank=True, null=True)
-    size = models.IntegerField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.content.name} ({self.site})"
-
-    def save(self, update_file_metadata=False, **kwargs):
-        if not self._state.adding and not update_file_metadata:
-            raise NotSupportedError(
-                "Editing existing files is not supported at this time. Please create a new file if you would like to "
-                "update a media file."
-            )
-
-        """
-        Sets mimetype and size based on the file contents
-        """
-        with self.content.file.open(mode="rb") as fb:
-            self.mimetype = magic.from_buffer(fb.read(2048), mime=True)
-            self.size = self.content.size
-            super().save(**kwargs)
-
-    def delete(self, using=None, keep_parents=False):
-        """
-        Deletes the associated files when the instance is deleted, to prevent orphans.
-        """
-        result = super().delete(using, keep_parents)
-        try:
-            self.content.delete(save=False)
-        except Exception as e:
-            # this will only happen for connection or permission errors, so it's a warning
-            self.logger.warning(
-                f"Failed to delete file from S3 when deleting [{str(self)}]. Error: {e} "
-            )
-
-        return result
-
-
-class File(FileBase):
-    class Meta:
-        verbose_name = _("File")
-        verbose_name_plural = _("Files")
-        rules_permissions = {
-            "view": predicates.has_visible_site,
-            "add": predicates.is_at_least_assistant_or_super,
-            "change": predicates.is_at_least_assistant_or_super,
-            "delete": predicates.can_delete_media,
-        }
-
-
 class VisualFileBase(FileBase):
     """A File model with additional height and width properties"""
 
@@ -122,7 +56,7 @@ class VisualFileBase(FileBase):
 
 class ImageFile(VisualFileBase):
     content = models.ImageField(
-        upload_to=media_directory_path,
+        upload_to=file_directory_path,
         max_length=MAX_FILEFIELD_LENGTH,
     )
 

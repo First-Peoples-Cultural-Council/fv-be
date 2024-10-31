@@ -4,13 +4,13 @@ from rest_framework import serializers
 from tablib import InvalidDimensions
 
 from backend.models.constants import AppRole
+from backend.models.files import File
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
 from backend.models.jobs import JobStatus
-from backend.models.media import File
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
+from backend.serializers.files_serializers import FileSerializer, FileUploadSerializer
 from backend.serializers.job_serializers import BaseJobSerializer
-from backend.serializers.media_serializers import FileSerializer, FileUploadSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
 from backend.serializers.utils.import_job_utils import (
     check_duplicate_headers,

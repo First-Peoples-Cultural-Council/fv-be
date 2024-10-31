@@ -21,6 +21,7 @@ from .base_serializers import (
     ValidateNonNullableCharFieldsMixin,
     base_id_fields,
 )
+from .files_serializers import FileSerializer, FileUploadSerializer
 from .validators import SupportedFileType
 
 
@@ -50,19 +51,6 @@ class WriteableRelatedPersonSerializer(serializers.PrimaryKeyRelatedField):
 
     def to_representation(self, value):
         return PersonSerializer(context=self.context).to_representation(value)
-
-
-class FileSerializer(serializers.ModelSerializer):
-    path = serializers.FileField(source="content")
-
-    class Meta:
-        model = media.File
-        fields = ("path", "mimetype", "size")
-
-
-class FileUploadSerializer(serializers.FileField):
-    def to_representation(self, value):
-        return FileSerializer(context=self.context).to_representation(value)
 
 
 class VideoFileSerializer(FileSerializer):

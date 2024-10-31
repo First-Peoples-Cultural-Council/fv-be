@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             model_name="imagefile",
             name="content",
             field=models.ImageField(
-                max_length=500, upload_to=backend.models.media.media_directory_path
+                max_length=500, upload_to=backend.models.files.file_directory_path
             ),
         ),
     ]

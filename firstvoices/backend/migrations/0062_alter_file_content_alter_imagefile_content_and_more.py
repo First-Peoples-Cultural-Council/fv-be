@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             model_name="file",
             name="content",
             field=models.FileField(
-                max_length=500, upload_to=backend.models.media.media_directory_path
+                max_length=500, upload_to=backend.models.files.file_directory_path
             ),
         ),
         migrations.AlterField(
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             field=models.ImageField(
                 height_field="height",
                 max_length=500,
-                upload_to=backend.models.media.media_directory_path,
+                upload_to=backend.models.files.file_directory_path,
                 width_field="width",
             ),
         ),
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             model_name="videofile",
             name="content",
             field=models.FileField(
-                max_length=500, upload_to=backend.models.media.media_directory_path
+                max_length=500, upload_to=backend.models.files.file_directory_path
             ),
         ),
     ]
