@@ -111,7 +111,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     @staticmethod
     def get_default_menu(site):
         try:
-            has_app_feature = SiteFeature.objects.get(site=site, key="has_app")
+            has_app_feature = SiteFeature.objects.get(site=site, key__iexact="has_app")
             default_menu_key = (
                 "has_app_site_menu"
                 if has_app_feature.is_enabled

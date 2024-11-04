@@ -271,12 +271,13 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert response_data["menu"] == menu.json
 
     @pytest.mark.django_db
-    def test_detail_app_site_menu(self):
+    @pytest.mark.parametrize("key", ["has_app", "HAS_APP", "Has_App"])
+    def test_detail_app_site_menu(self, key):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.SiteFeatureFactory.create(site=site, key="has_app", is_enabled=True)
+        factories.SiteFeatureFactory.create(site=site, key=key, is_enabled=True)
         menu = AppJson.objects.get(key="has_app_site_menu")
 
         response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
