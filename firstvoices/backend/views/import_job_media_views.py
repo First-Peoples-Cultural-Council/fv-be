@@ -65,6 +65,4 @@ class ImportJobMediaViewSet(
             )
             new_file.save()
 
-        # Trigger update of validation-report for importJob
-
         return Response(status=202)
