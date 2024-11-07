@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import pytest
@@ -89,6 +90,12 @@ class TestImportJobMediaEndpoint(
         )
 
         assert response.status_code == 403
+
+    def test_empty_response_for_list_view(self):
+        response = self.client.get(self.endpoint)
+
+        assert response.status_code == 200
+        assert json.loads(response.content) == []
 
     def test_invalid_file_type(self):
         data = {
