@@ -54,8 +54,7 @@ class ImportJobMediaViewSet(
         site = self.get_validated_site()
         import_job = self.get_validated_import_job()
 
-        for file in self.request.FILES.items():
-            file = file[1]
+        for file in self.request.FILES.getlist("file"):
             filetype = self.get_filetype(file)
             new_file = filetype(
                 content=file,
