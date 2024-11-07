@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -36,6 +38,73 @@ class TestImportJobMediaEndpoint(
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
+    def test_invalid_import_job(self):
+        endpoint = reverse(
+            self.UPLOAD_VIEW,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, uuid.uuid4()],
+        )
+        data = {
+            "file": [
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+            ]
+        }
+
+        response = self.client.post(
+            endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 404
+
+    def test_wrong_permissions(self):
+        site, user = get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.MEMBER
+        )
+
+        file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(site=site, data=file)
+
+        endpoint = reverse(
+            self.UPLOAD_VIEW,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, import_job.id],
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        data = {
+            "file": [
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+            ]
+        }
+
+        response = client.post(
+            endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 403
+
+    def test_invalid_file_type(self):
+        data = {
+            "file": [
+                get_sample_file("file.txt", "text/plain"),
+            ]
+        }
+
+        response = self.client.post(
+            self.endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
     def test_upload_valid_files(self):
         data = {
             "file": [
@@ -67,18 +136,3 @@ class TestImportJobMediaEndpoint(
         audio_file = File.objects.filter(mimetype="audio/mpeg").first()
         assert audio_file.import_job_id == self.import_job.id
         assert "sample-audio.mp3" in audio_file.content.name
-
-    def test_invalid_file_type(self):
-        data = {
-            "file": [
-                get_sample_file("file.txt", "text/plain"),
-            ]
-        }
-
-        response = self.client.post(
-            self.endpoint,
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 400
