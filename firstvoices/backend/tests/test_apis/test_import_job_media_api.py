@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import pytest
@@ -104,6 +105,8 @@ class TestImportJobMediaEndpoint(
         )
 
         assert response.status_code == 400
+        response = json.loads(response.content)
+        assert "Unsupported filetype. File: file.txt" in response
 
     def test_upload_valid_files(self):
         data = {

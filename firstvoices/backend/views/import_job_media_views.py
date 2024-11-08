@@ -63,7 +63,7 @@ class ImportJobMediaViewSet(
         elif content_type in SUPPORTED_FILETYPES["audio"]:
             filetype = File
         else:
-            raise ValidationError("Unsupported filetype.")
+            raise ValidationError(f"Unsupported filetype. File: {file}")
 
         return filetype
 
