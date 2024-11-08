@@ -718,7 +718,7 @@ class Migration(migrations.Migration):
                 (
                     "content",
                     models.FileField(
-                        upload_to=backend.models.files.file_directory_path
+                        upload_to=backend.models.media.media_directory_path
                     ),
                 ),
                 ("mimetype", models.CharField(blank=True, null=True)),
@@ -844,7 +844,7 @@ class Migration(migrations.Migration):
                     "content",
                     models.ImageField(
                         height_field="height",
-                        upload_to=backend.models.files.file_directory_path,
+                        upload_to=backend.models.media.media_directory_path,
                         width_field="width",
                     ),
                 ),
@@ -1562,7 +1562,7 @@ class Migration(migrations.Migration):
                 (
                     "content",
                     models.FileField(
-                        upload_to=backend.models.files.file_directory_path
+                        upload_to=backend.models.media.media_directory_path
                     ),
                 ),
                 ("mimetype", models.CharField(blank=True, null=True)),

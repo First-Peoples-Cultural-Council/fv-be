@@ -42,6 +42,10 @@ SUPPORTED_FILETYPES = {
     "video": ["video/mp4", "video/quicktime"],
 }
 
+# Alias so that migrations remain unedited
+# see PR-1110 for more details
+media_directory_path = file_directory_path
+
 
 class Person(BaseSiteContentModel):
     class Meta:
