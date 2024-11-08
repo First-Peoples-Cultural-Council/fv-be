@@ -5,6 +5,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework import mixins, parsers, viewsets
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
+from rest_framework.status import HTTP_202_ACCEPTED
 
 from backend.models import ImportJob
 from backend.models.media import SUPPORTED_FILETYPES, File, ImageFile, VideoFile
@@ -32,7 +33,7 @@ from . import doc_strings
 class ImportJobMediaViewSet(
     SiteContentViewSetMixin, mixins.CreateModelMixin, viewsets.GenericViewSet
 ):
-    http_method_names = ["get", "post"]
+    http_method_names = ["post"]
     queryset = ""
 
     parser_classes = [parsers.MultiPartParser]
@@ -66,9 +67,6 @@ class ImportJobMediaViewSet(
 
         return filetype
 
-    def list(self, request, **kwargs):
-        return Response([])
-
     def create(self, *args, **kwargs):
         user = self.request.user
         site = self.get_validated_site()
@@ -85,4 +83,4 @@ class ImportJobMediaViewSet(
             )
             new_file.save()
 
-        return Response(status=202)
+        return Response(status=HTTP_202_ACCEPTED)
