@@ -14,5 +14,5 @@ pre-commit==3.8.0  # https://github.com/pre-commit/pre-commit
 
 # Pytest --------------------------
 pytest-xdist==3.6.1  # https://github.com/pytest-dev/pytest-xdist
-pytest-split==0.9.0  # https://github.com/jerry-git/pytest-split
+pytest-split==0.10.0  # https://github.com/jerry-git/pytest-split
 pytest-cov==6.0.0  # https://github.com/pytest-dev/pytest-cov
