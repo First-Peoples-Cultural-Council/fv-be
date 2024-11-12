@@ -9,6 +9,7 @@ success_200_edit = _("Success. Updated resource in response.")
 success_201 = _("Created. New resource in response.")
 
 success_202_email = _("Success. Email sent.")
+success_202_import_job_media = _("Success. Media added to the import-job.")
 
 success_204_deleted = _("Success. Resource destroyed. No content in response.")
 

@@ -9,7 +9,16 @@ from embed_video.backends import (
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from backend.models import media
+from backend.models.files import File
+from backend.models.media import (
+    SUPPORTED_FILETYPES,
+    Audio,
+    Image,
+    ImageFile,
+    Person,
+    Video,
+    VideoFile,
+)
 from backend.models.validators import validate_no_duplicate_urls
 from backend.serializers.utils.context_utils import get_site_from_context
 
@@ -21,6 +30,7 @@ from .base_serializers import (
     ValidateNonNullableCharFieldsMixin,
     base_id_fields,
 )
+from .files_serializers import FileSerializer, FileUploadSerializer
 from .validators import SupportedFileType
 
 
@@ -35,7 +45,7 @@ class PersonSerializer(
     )
 
     class Meta:
-        model = media.Person
+        model = Person
         fields = (
             "id",
             "url",
@@ -52,22 +62,9 @@ class WriteableRelatedPersonSerializer(serializers.PrimaryKeyRelatedField):
         return PersonSerializer(context=self.context).to_representation(value)
 
 
-class FileSerializer(serializers.ModelSerializer):
-    path = serializers.FileField(source="content")
-
-    class Meta:
-        model = media.File
-        fields = ("path", "mimetype", "size")
-
-
-class FileUploadSerializer(serializers.FileField):
-    def to_representation(self, value):
-        return FileSerializer(context=self.context).to_representation(value)
-
-
 class VideoFileSerializer(FileSerializer):
     class Meta(FileSerializer.Meta):
-        model = media.VideoFile
+        model = VideoFile
         fields = FileSerializer.Meta.fields + ("height", "width")
 
 
@@ -75,7 +72,7 @@ class ImageFileSerializer(VideoFileSerializer):
     path = serializers.ImageField(source="content")
 
     class Meta(VideoFileSerializer.Meta):
-        model = media.ImageFile
+        model = ImageFile
 
 
 class ImageUploadSerializer(serializers.ImageField):
@@ -134,41 +131,26 @@ class AudioSerializer(
 
     speakers = WriteableRelatedPersonSerializer(
         many=True,
-        queryset=media.Person.objects.all(),
+        queryset=Person.objects.all(),
         style={
             "base_template": "input.html"
         },  # for local dev, settings for browseable api
     )
     original = FileUploadSerializer(
-        validators=[
-            SupportedFileType(
-                mimetypes=[
-                    "audio/wave",
-                    "audio/wav",
-                    "audio/x-wav",
-                    "audio/x-pn-wav",
-                    "audio/vnd.wav",
-                    "audio/mpeg",
-                    "audio/mp3",
-                    "audio/mpeg3",
-                    "audio/x-mpeg-3",
-                    "application/octet-stream",  # fallback for weird mp3 files; see fw-4829
-                ]
-            )
-        ],
+        validators=[SupportedFileType(mimetypes=SUPPORTED_FILETYPES["audio"])],
     )
 
     class Meta(MediaSerializer.Meta):
-        model = media.Audio
+        model = Audio
         fields = MediaSerializer.Meta.fields + ("speakers",)
 
     def create(self, validated_data):
-        validated_data["original"] = self.create_file(validated_data, media.File)
+        validated_data["original"] = self.create_file(validated_data, File)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         if "original" in validated_data:
-            validated_data["original"] = self.create_file(validated_data, media.File)
+            validated_data["original"] = self.create_file(validated_data, File)
 
         return super().update(instance, validated_data)
 
@@ -190,28 +172,22 @@ class ImageSerializer(
     """Serializer for Image objects. Supports image objects shared between different sites."""
 
     original = ImageUploadSerializer(
-        validators=[
-            SupportedFileType(
-                mimetypes=["image/jpeg", "image/gif", "image/png", "image/tiff"]
-            )
-        ],
+        validators=[SupportedFileType(mimetypes=SUPPORTED_FILETYPES["image"])],
     )
 
     def create(self, validated_data):
-        validated_data["original"] = self.create_file(validated_data, media.ImageFile)
+        validated_data["original"] = self.create_file(validated_data, ImageFile)
         created = super().create(validated_data)
         return created
 
     def update(self, instance, validated_data):
         if "original" in validated_data:
-            validated_data["original"] = self.create_file(
-                validated_data, media.ImageFile
-            )
+            validated_data["original"] = self.create_file(validated_data, ImageFile)
 
         return super().update(instance, validated_data)
 
     class Meta(MediaWithThumbnailsSerializer.Meta):
-        model = media.Image
+        model = Image
 
 
 class VideoSerializer(
@@ -222,22 +198,20 @@ class VideoSerializer(
     """Serializer for Video objects. Supports video objects shared between different sites."""
 
     original = VideoUploadSerializer(
-        validators=[SupportedFileType(mimetypes=["video/mp4", "video/quicktime"])],
+        validators=[SupportedFileType(mimetypes=SUPPORTED_FILETYPES["video"])],
     )
 
     class Meta(MediaWithThumbnailsSerializer.Meta):
-        model = media.Video
+        model = Video
 
     def create(self, validated_data):
-        validated_data["original"] = self.create_file(validated_data, media.VideoFile)
+        validated_data["original"] = self.create_file(validated_data, VideoFile)
         created = super().create(validated_data)
         return created
 
     def update(self, instance, validated_data):
         if "original" in validated_data:
-            validated_data["original"] = self.create_file(
-                validated_data, media.VideoFile
-            )
+            validated_data["original"] = self.create_file(validated_data, VideoFile)
 
         return super().update(instance, validated_data)
 
@@ -298,20 +272,20 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     related_audio = WriteableRelatedAudioSerializer(
         required=False,
         many=True,
-        queryset=media.Audio.objects.all(),
-        validators=[UniqueValidator(queryset=media.Audio.objects.all())],
+        queryset=Audio.objects.all(),
+        validators=[UniqueValidator(queryset=Audio.objects.all())],
     )
     related_images = WriteableRelatedImageSerializer(
         required=False,
         many=True,
-        queryset=media.Image.objects.all(),
-        validators=[UniqueValidator(queryset=media.Image.objects.all())],
+        queryset=Image.objects.all(),
+        validators=[UniqueValidator(queryset=Image.objects.all())],
     )
     related_videos = WriteableRelatedVideoSerializer(
         required=False,
         many=True,
-        queryset=media.Video.objects.all(),
-        validators=[UniqueValidator(queryset=media.Video.objects.all())],
+        queryset=Video.objects.all(),
+        validators=[UniqueValidator(queryset=Video.objects.all())],
     )
     related_video_links = serializers.SerializerMethodField()
 
@@ -386,7 +360,7 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
 
 class PersonMinimalSerializer(serializers.ModelSerializer):
     class Meta:
-        model = media.Person
+        model = Person
         fields = ("id", "name", "bio")
 
 
@@ -395,7 +369,7 @@ class AudioMinimalSerializer(serializers.ModelSerializer):
     speakers = PersonMinimalSerializer(many=True, read_only=True)
 
     class Meta:
-        model = media.Audio
+        model = Audio
         fields = (
             "id",
             "created",
@@ -413,7 +387,7 @@ class RelatedImageMinimalSerializer(serializers.ModelSerializer):
     original = ImageUploadSerializer(read_only=True)
 
     class Meta:
-        model = media.Image
+        model = Image
         fields = ("id", "original")
         read_only_fields = ("id", "original")
 
@@ -422,7 +396,7 @@ class RelatedVideoMinimalSerializer(RelatedImageMinimalSerializer):
     original = VideoUploadSerializer(read_only=True)
 
     class Meta(RelatedImageMinimalSerializer.Meta):
-        model = media.Video
+        model = Video
 
 
 class MediaMinimalSerializer(serializers.ModelSerializer):
@@ -443,7 +417,7 @@ class ImageMinimalSerializer(MediaMinimalSerializer):
     small = ImageFileSerializer(read_only=True)
 
     class Meta(MediaMinimalSerializer.Meta):
-        model = media.Image
+        model = Image
         fields = MediaMinimalSerializer.Meta.fields + ("small",)
         read_only_fields = MediaMinimalSerializer.Meta.read_only_fields + ("small",)
 
@@ -452,4 +426,4 @@ class VideoMinimalSerializer(ImageMinimalSerializer):
     original = VideoUploadSerializer(read_only=True)
 
     class Meta(ImageMinimalSerializer.Meta):
-        model = media.Video
+        model = Video

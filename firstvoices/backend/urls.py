@@ -15,6 +15,7 @@ from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
+from backend.views.import_job_media_views import ImportJobMediaViewSet
 from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
 from backend.views.mtd_data_views import MTDSitesDataViewSet
@@ -74,7 +75,6 @@ sites_router.register(r"images", ImageViewSet, basename="image")
 sites_router.register(
     r"immersion-labels", ImmersionLabelViewSet, basename="immersionlabel"
 )
-sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")
@@ -91,9 +91,16 @@ sites_router.register(r"stories", StoryViewSet, basename="story")
 stories_router = NestedSimpleRouter(sites_router, r"stories", lookup="story")
 stories_router.register(r"pages", StoryPageViewSet, basename="storypage")
 
+# import-jobs
+sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
+import_jobs_router = NestedSimpleRouter(
+    sites_router, r"import-jobs", lookup="importjob"
+)
+import_jobs_router.register(r"media", ImportJobMediaViewSet, basename="importjob-media")
+
 app_name = "api"
 
 urlpatterns = []
 
 urlpatterns += ROUTER.urls
-urlpatterns += sites_router.urls + stories_router.urls
+urlpatterns += sites_router.urls + stories_router.urls + import_jobs_router.urls

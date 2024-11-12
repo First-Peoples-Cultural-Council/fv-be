@@ -10,7 +10,6 @@ from backend.models.constants import (
     MAX_NOTE_LENGTH,
 )
 from backend.models.jobs import BaseJob, JobStatus
-from backend.models.media import File
 from backend.permissions import predicates
 
 
@@ -101,7 +100,7 @@ class ImportJob(BaseJob):
         get_user_model(), blank=True, null=True, on_delete=models.PROTECT
     )
 
-    data = models.ForeignKey(File, null=True, on_delete=models.SET_NULL)
+    data = models.ForeignKey("backend.File", null=True, on_delete=models.SET_NULL)
 
     # The following fields are for the dry-run and then presenting those results
     validation_task_id = models.CharField(max_length=255, null=True, blank=True)
@@ -117,7 +116,7 @@ class ImportJob(BaseJob):
     )
 
     failed_rows_csv = models.ForeignKey(
-        File,
+        "backend.File",
         null=True,
         on_delete=models.SET_NULL,
         related_name="import_job_failed_rows_csv_set",

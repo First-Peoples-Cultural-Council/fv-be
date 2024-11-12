@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from import_export.results import RowResult
 
+from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
     ImportJobReport,
@@ -15,7 +16,6 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
-from backend.models.media import File
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
