@@ -174,13 +174,15 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
         response = self.client.get(self.get_list_endpoint() + "?types=cars")
         response_data = json.loads(response.content)
 
-        assert response_data == []
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
 
     def test_invalid_domains_passed(self):
         response = self.client.get(self.get_list_endpoint() + "?domain=creative")
         response_data = json.loads(response.content)
 
-        assert response_data == []
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
 
     def test_invalid_visibility(self):
         response = self.client.get(
@@ -188,7 +190,8 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
         )
         response_data = json.loads(response.content)
 
-        assert response_data == []
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
 
     def test_connection_error(self, mock_search_query_execute):
         mock_search_query_execute.side_effect = ConnectionError()
@@ -330,7 +333,8 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
         )
         response_data = json.loads(response.content)
 
-        assert response_data == []
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
 
     def test_invalid_import_job_id(self):
         site, user = factories.get_site_with_member(
@@ -344,7 +348,8 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
         )
         response_data = json.loads(response.content)
 
-        assert response_data == []
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
 
     def test_starts_with_char_param(self):
         site, user = factories.get_site_with_member(
