@@ -110,6 +110,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
     permission_type_map = {
         **FVPermissionViewSetMixin.permission_type_map,
         "confirm": "change",
+        "validate": "change",
     }
 
     def get_queryset(self):
@@ -124,7 +125,11 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         # Dry-run to get validation results
         transaction.on_commit(
             lambda: batch_import.apply_async(
-                (str(instance.id),),
+                (
+                    str(instance.id),
+                    True,
+                    False,
+                ),  # parameters: import_job_id, dry_run, revalidate
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -143,7 +148,11 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
-                (str(import_job.id), False),
+                (
+                    str(import_job.id),
+                    False,
+                    False,
+                ),  # parameters: import_job_id, dry_run, revalidate
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -159,3 +168,24 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         return Response(
             serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
         )
+
+    @action(detail=True, methods=["post"])
+    def validate(self, request, site_slug=None, pk=None):
+        """
+        Method to start the validation process on a given import-job.
+        """
+        import_job_id = self.kwargs["pk"]
+
+        transaction.on_commit(
+            lambda: batch_import.apply_async(
+                (
+                    str(import_job_id),
+                    True,
+                    True,
+                ),  # parameters: import_job_id, dry_run, revalidate
+                link_error=link_error_handler.s(),
+                ignore_result=True,
+            )
+        )
+
+        return Response(status=status.HTTP_202_ACCEPTED)

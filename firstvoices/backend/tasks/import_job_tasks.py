@@ -202,7 +202,7 @@ def import_job(data, import_job_instance, logger):
         import_job_instance.status = JobStatus.FAILED
 
 
-def import_job_dry_run(data, import_job_instance, logger):
+def import_job_dry_run(data, import_job_instance, revalidate, logger):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
     resource = DictionaryEntryResource(
@@ -210,6 +210,17 @@ def import_job_dry_run(data, import_job_instance, logger):
         run_as_user=import_job_instance.run_as_user,
         import_job=import_job_instance.id,
     )
+
+    # Clearing out old report if revalidate
+    old_report = import_job_instance.validation_report
+    if revalidate and old_report:
+        try:
+            old_report = ImportJobReport.objects.filter(id=old_report.id)
+            old_report.delete()
+        except Exception as e:
+            logger.error(e)
+            import_job_instance.validation_status = JobStatus.FAILED
+            return
 
     try:
         report = import_resource(data, resource, import_job_instance, dry_run=True)
@@ -221,7 +232,7 @@ def import_job_dry_run(data, import_job_instance, logger):
 
 
 @shared_task
-def batch_import(import_job_instance_id, dry_run=True):
+def batch_import(import_job_instance_id, dry_run=True, revalidate=False):
     # This method passes the provided CSV file through the clean method,
     # does a dry-run or the import as per the dry_run flag provided,
     # then parses through the result to return a validation report.
@@ -292,7 +303,7 @@ def batch_import(import_job_instance_id, dry_run=True):
     data = tablib.Dataset().load(file, format="csv")
 
     if dry_run:
-        import_job_dry_run(data, import_job_instance, logger)
+        import_job_dry_run(data, import_job_instance, revalidate, logger)
     else:
         import_job(data, import_job_instance, logger)
 
