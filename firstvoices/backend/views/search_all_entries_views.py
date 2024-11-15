@@ -621,7 +621,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         }
         return pagination_params
 
-    def paginate_response(self, request, object_list, count):
+    def paginate_search_response(self, request, object_list, count):
         page = self.paginator.apply_search_pagination(
             request=request,
             object_list=object_list,
@@ -639,24 +639,24 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
 
         # If no valid types are passed, return emtpy list as a response
         if not search_params["types"]:
-            return self.paginate_response(request, [], 0)
+            return self.paginate_search_response(request, [], 0)
 
         # If invalid domain is passed, return emtpy list as a response
         if not search_params["domain"]:
-            return self.paginate_response(request, [], 0)
+            return self.paginate_search_response(request, [], 0)
 
         # If invalid category id, return empty list as a response
         # explicitly checking if its None since it can be empty in case of non site wide search
         if search_params["category_id"] is None:
-            return self.paginate_response(request, [], 0)
+            return self.paginate_search_response(request, [], 0)
 
         # If invalid import-job, return empty list as a response
         if search_params["import_job_id"] is None:
-            return self.paginate_response(request, [], 0)
+            return self.paginate_search_response(request, [], 0)
 
         # If invalid visibility is passed, return empty list as a response
         if search_params["visibility"] is None:
-            return self.paginate_response(request, [], 0)
+            return self.paginate_search_response(request, [], 0)
 
         # max cannot be lesser than min num of words
         if (
@@ -745,6 +745,6 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             search_results, games_flag=search_params["games"]
         )
 
-        return self.paginate_response(
+        return self.paginate_search_response(
             request, hydrated_objects, response["hits"]["total"]["value"]
         )
