@@ -29,7 +29,6 @@ class TestImportEndpoints(
 
     API_LIST_VIEW = "api:importjob-list"
     API_DETAIL_VIEW = "api:importjob-detail"
-    API_CONFIRM_ACTION = "api:importjob-confirm"
     model = ImportJob
 
     def create_minimal_instance(self, site, visibility=None):
@@ -83,6 +82,9 @@ class TestImportEndpoints(
             "title": "Test Title",
             "data": get_sample_file("import_job/minimal.csv", "text/csv"),
         }
+
+    def get_valid_data_with_null_optional_charfields(self, site=None):
+        pass
 
     def add_expected_defaults(self, data):
         return {
@@ -352,6 +354,29 @@ class TestImportEndpoints(
 
         assert response.status_code == 200
 
+    def test_failed_rows_csv_field_exists(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file(
+                "import_job/invalid_dictionary_entries.csv", "text/csv"
+            ),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        response_data = json.loads(response.content)
+
+        assert "failedRowsCsv" in response_data
+
+
+class TestImportJobConfirmAction(TestImportEndpoints):
+    API_CONFIRM_ACTION = "api:importjob-confirm"
+
     def test_confirm_action(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
@@ -395,21 +420,41 @@ class TestImportEndpoints(
 
         assert response.status_code == 404
 
-    def test_failed_rows_csv_field_exists(self):
+
+class TestImportJobValidateAction(TestImportEndpoints):
+    API_VALIDATE_ACTION = "api:importjob-validate"
+
+    @pytest.mark.django_db(transaction=True)
+    def test_validate_action(self):
         site = self.create_site_with_app_admin(Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
-            "data": get_sample_file(
-                "import_job/invalid_dictionary_entries.csv", "text/csv"
-            ),
+            "data": get_sample_file("import_job/minimal.csv", "text/csv"),
         }
 
+        # Initial run
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
+        assert response.status_code == 201
         response_data = json.loads(response.content)
 
-        assert "failedRowsCsv" in response_data
+        import_job = ImportJob.objects.filter(id=response_data["id"])[0]
+        old_validation_report_id = import_job.validation_report.id
+
+        # Validate endpoint
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[site.slug, str(import_job.id)],
+        )
+        response = self.client.post(validate_endpoint)
+        assert response.status_code == 202
+
+        import_job = ImportJob.objects.filter(id=response_data["id"])[0]
+        new_validation_report_id = import_job.validation_report.id
+
+        assert new_validation_report_id != old_validation_report_id
