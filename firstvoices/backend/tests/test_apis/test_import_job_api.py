@@ -1,13 +1,17 @@
 import json
+from unittest.mock import MagicMock, patch
 
 import pytest
+from django.utils.http import urlencode
 from rest_framework.reverse import reverse
+from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
+    BaseApiTest,
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
     WriteApiTestMixin,
@@ -84,6 +88,7 @@ class TestImportEndpoints(
         }
 
     def get_valid_data_with_null_optional_charfields(self, site=None):
+        # No optional char field
         pass
 
     def add_expected_defaults(self, data):
@@ -374,8 +379,20 @@ class TestImportEndpoints(
         assert "failedRowsCsv" in response_data
 
 
-class TestImportJobConfirmAction(TestImportEndpoints):
+@pytest.mark.django_db
+class TestImportJobConfirmAction(BaseApiTest):
     API_CONFIRM_ACTION = "api:importjob-confirm"
+
+    def create_minimal_instance(self, visibility):
+        # Not required for this endpoint
+        return {}
+
+    def get_expected_response(self, instance):
+        # Not required for this endpoint
+        return {}
+
+    def setup_method(self):
+        self.client = APIClient()
 
     def test_confirm_action(self):
         site, user = factories.get_site_with_member(
@@ -421,12 +438,35 @@ class TestImportJobConfirmAction(TestImportEndpoints):
         assert response.status_code == 404
 
 
-class TestImportJobValidateAction(TestImportEndpoints):
+class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
+    API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_validate_action(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+    def create_minimal_instance(self, visibility):
+        # Not required for this endpoint
+        return {}
+
+    def get_expected_response(self, instance):
+        # Not required for this endpoint
+        return {}
+
+    def get_list_endpoint(self, site_slug, query_kwargs=None):
+        """
+        query_kwargs accept query parameters e.g. query_kwargs={"contains": "WORD"}
+        """
+        url = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
+        if query_kwargs:
+            return f"{url}?{urlencode(query_kwargs)}"
+        return url
+
+    def setup_method(self):
+        super().setup_method()
+
+        user = factories.UserFactory.create()
+        factories.AppMembershipFactory.create(user=user, role=AppRole.SUPERADMIN)
+
+        self.client.force_authenticate(user=user)
+        self.site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -435,26 +475,53 @@ class TestImportJobValidateAction(TestImportEndpoints):
 
         # Initial run
         response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
+            self.get_list_endpoint(site_slug=self.site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
         assert response.status_code == 201
         response_data = json.loads(response.content)
 
-        import_job = ImportJob.objects.filter(id=response_data["id"])[0]
-        old_validation_report_id = import_job.validation_report.id
+        self.import_job = ImportJob.objects.filter(id=response_data["id"])[0]
+
+    @pytest.mark.django_db(transaction=True)
+    def test_exception_fetching_previous_report(self, caplog):
+        # Simulating a general exception when fetching/deleting a previous
+        # validation report
+
+        mock_report = MagicMock()
+        mock_report.delete.side_effect = Exception("General Exception")
+        with patch(
+            "backend.tasks.import_job_tasks.ImportJobReport.objects.filter",
+            return_value=mock_report,
+        ):
+            validate_endpoint = reverse(
+                self.API_VALIDATE_ACTION,
+                current_app=self.APP_NAME,
+                args=[self.site.slug, str(self.import_job.id)],
+            )
+
+            response = self.client.post(validate_endpoint)
+
+        assert (
+            response.status_code == 202
+        )  # Async task, so response code will always be accepted
+        assert "General Exception" in caplog.text
+
+    @pytest.mark.django_db(transaction=True)
+    def test_validate_action(self):
+        old_validation_report_id = self.import_job.validation_report.id
 
         # Validate endpoint
         validate_endpoint = reverse(
             self.API_VALIDATE_ACTION,
             current_app=self.APP_NAME,
-            args=[site.slug, str(import_job.id)],
+            args=[self.site.slug, str(self.import_job.id)],
         )
         response = self.client.post(validate_endpoint)
         assert response.status_code == 202
 
-        import_job = ImportJob.objects.filter(id=response_data["id"])[0]
+        import_job = ImportJob.objects.filter(id=self.import_job.id)[0]
         new_validation_report_id = import_job.validation_report.id
 
         assert new_validation_report_id != old_validation_report_id
