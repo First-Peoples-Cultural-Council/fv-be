@@ -503,9 +503,8 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
             response = self.client.post(validate_endpoint)
 
-        assert (
-            response.status_code == 202
-        )  # Async task, so response code will always be accepted
+        assert response.status_code == 202
+
         assert "General Exception" in caplog.text
 
     @pytest.mark.django_db(transaction=True)
