@@ -85,9 +85,26 @@ from firstvoices.celery import link_error_handler
             "for the site. When finished, the status will be 'COMPLETE'."
         ),
         responses={
-            201: OpenApiResponse(
-                description=doc_strings.success_201, response=ImportJobSerializer
+            202: OpenApiResponse(
+                description=doc_strings.success_202_job_accepted,
+                response=ImportJobSerializer,
             ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    validate=extend_schema(
+        description=_(
+            "Starts validating the data including any newly uploaded media. "
+            "When finished, the validationStatus and validationReport will be updated."
+        ),
+        responses={
+            202: OpenApiResponse(description=doc_strings.success_202_job_accepted),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
