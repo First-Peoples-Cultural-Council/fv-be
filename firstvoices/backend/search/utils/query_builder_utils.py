@@ -81,7 +81,7 @@ def get_site_filter_query(site_id):
 
 
 def get_site_slug_filter_query(site_slug):
-    return Q("bool", filter=[Q("term", site_slug=site_slug)])
+    return Q("bool", filter=[Q("terms", site_slug=site_slug)])
 
 
 def get_view_permissions_filter(user):

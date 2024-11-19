@@ -154,7 +154,7 @@ def get_valid_site_feature(input_site_feature_str):
 
 def get_valid_site_slugs(input_site_slug_str, user):
     if not input_site_slug_str:
-        return None
+        return ""
 
     input_site_slugs = input_site_slug_str.split(",")
     valid_site_slugs = filter_by_viewable(user, Site.objects.all()).values_list(
