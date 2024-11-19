@@ -2,7 +2,9 @@ from django.core import exceptions
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from backend.models import Site
 from backend.models.constants import Visibility
+from backend.permissions.utils import filter_by_viewable
 from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import SearchDomains
 
@@ -143,6 +145,26 @@ def get_valid_site_feature(input_site_feature_str):
     for value in input_site_feature:
         cleaned_value = value.strip().lower()
         if cleaned_value not in selected_values:
+            selected_values.append(cleaned_value)
+
+    if len(selected_values) == 0:
+        return None
+    return selected_values
+
+
+def get_valid_site_slugs(input_site_slug_str, user):
+    if not input_site_slug_str:
+        return None
+
+    input_site_slugs = input_site_slug_str.split(",")
+    valid_site_slugs = filter_by_viewable(user, Site.objects.all()).values_list(
+        "slug", flat=True
+    )
+    selected_values = []
+
+    for value in input_site_slugs:
+        cleaned_value = value.strip().lower()
+        if cleaned_value in valid_site_slugs and cleaned_value not in selected_values:
             selected_values.append(cleaned_value)
 
     if len(selected_values) == 0:

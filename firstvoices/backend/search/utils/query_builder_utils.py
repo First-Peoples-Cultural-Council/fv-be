@@ -80,6 +80,10 @@ def get_site_filter_query(site_id):
     return Q("bool", filter=[Q("term", site_id=site_id)])
 
 
+def get_site_slug_filter_query(site_slug):
+    return Q("bool", filter=[Q("term", site_slug=site_slug)])
+
+
 def get_view_permissions_filter(user):
     """
     Re-creation of the is_visible_object filter from backend/permissions/filters/view.py

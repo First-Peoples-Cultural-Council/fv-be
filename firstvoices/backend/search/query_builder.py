@@ -19,6 +19,7 @@ from backend.search.utils.query_builder_utils import (
     get_max_words_query,
     get_min_words_query,
     get_site_filter_query,
+    get_site_slug_filter_query,
     get_starts_with_query,
     get_types_query,
     get_view_permissions_filter,
@@ -36,6 +37,7 @@ def get_search_query(
     user=None,
     q=None,
     site_id=None,
+    sites=None,
     types=VALID_DOCUMENT_TYPES,
     domain="both",
     starts_with_char="",
@@ -88,6 +90,9 @@ def get_search_query(
     # Add site filter if parameter provided in url
     if site_id:
         search_query = search_query.query(get_site_filter_query(site_id))
+
+    if sites:
+        search_query = search_query.query(get_site_slug_filter_query(sites))
 
     types_query = get_types_query(types)
     if types_query:

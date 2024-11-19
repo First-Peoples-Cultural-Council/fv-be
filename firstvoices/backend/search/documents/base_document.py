@@ -11,6 +11,7 @@ class BaseDocument(Document):
 class BaseSiteEntryDocument(BaseDocument):
     # generic fields, present in all models required to be indexed
     site_id = Keyword()
+    site_slug = Keyword()
     site_visibility = Integer()
     visibility = Integer()
     exclude_from_games = Boolean()
