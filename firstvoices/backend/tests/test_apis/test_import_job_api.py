@@ -450,7 +450,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         # Not required for this endpoint
         return {}
 
-    def get_list_endpoint(self, site_slug, query_kwargs=None):
+    def get_list_endpoint(self, site_slug=None, query_kwargs=None):
         """
         query_kwargs accept query parameters e.g. query_kwargs={"contains": "WORD"}
         """
