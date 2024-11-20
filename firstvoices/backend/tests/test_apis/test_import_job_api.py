@@ -503,9 +503,13 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
             response = self.client.post(validate_endpoint)
 
+        # Updating import-job instance in memory
+        import_job = ImportJob.objects.filter(id=self.import_job.id).first()
+
         assert response.status_code == 202
 
         assert "General Exception" in caplog.text
+        assert import_job.validation_status == JobStatus.FAILED
 
     @pytest.mark.django_db(transaction=True)
     def test_validate_action(self):
