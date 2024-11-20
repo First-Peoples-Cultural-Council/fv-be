@@ -517,6 +517,25 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="sites",
+                description="Filter results based on slug. Multiple sites can be passed as a comma-separated list.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add sites filter.",
+                    ),
+                    OpenApiExample(
+                        "site1, site2",
+                        value="site1, site2",
+                        description="Return entries which are associated with the specified sites.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
