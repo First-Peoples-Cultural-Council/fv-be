@@ -32,6 +32,7 @@ class FileBase(BaseSiteContentModel):
     import_job = models.ForeignKey(
         ImportJob,
         null=True,
+        blank=True,
         on_delete=models.SET_NULL,
     )
 
