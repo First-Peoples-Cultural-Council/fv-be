@@ -20,7 +20,6 @@ class DictionaryEntryDocumentManager(DocumentManager):
             document_id=str(instance.id),
             document_type=type(instance).__name__,
             site_id=str(instance.site.id),
-            site_slug=instance.site.slug,
             site_visibility=instance.site.visibility,
             title=instance.title,
             type=instance.type,

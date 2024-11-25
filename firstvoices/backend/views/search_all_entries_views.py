@@ -21,7 +21,7 @@ from backend.search.utils.validators import (
     get_valid_document_types,
     get_valid_domain,
     get_valid_site_feature,
-    get_valid_site_slugs,
+    get_valid_site_ids_from_slugs,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -595,7 +595,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         valid_sort, descending = get_valid_sort(sort)
 
         sites = self.request.GET.get("sites", "")
-        valid_sites = get_valid_site_slugs(sites, user)
+        valid_site_ids = get_valid_site_ids_from_slugs(sites, user)
 
         search_params = {
             "q": input_q,
@@ -604,7 +604,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "domain": valid_domain,
             "kids": kids_flag,
             "games": games_flag,
-            "sites": valid_sites,
+            "sites": valid_site_ids,
             "site_id": "",  # used in site-search
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
