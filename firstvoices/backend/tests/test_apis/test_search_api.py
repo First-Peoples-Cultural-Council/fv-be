@@ -314,6 +314,78 @@ class TestSearchAPI(SearchMocksMixin, BaseApiTest):
         assert response_data["count"] == 3
         assert len(response_data["results"]) == 3
 
+    def test_site_slug_param_invalid(self):
+        response = self.client.get(self.get_list_endpoint() + "?sites=invalidSlug")
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 0
+        assert len(response_data["results"]) == 0
+
+    def test_site_slug_param_partial_invalid(self, mock_search_query_execute):
+        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=Visibility.PUBLIC
+        )
+        song = factories.SongFactory.create(site=site, visibility=Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=Visibility.PUBLIC)
+        image = factories.ImageFactory.create(site=site)
+
+        mock_es_results = {
+            "hits": {
+                "hits": [
+                    {
+                        "_index": "dictionary_entries_2023_06_23_06_11_22",
+                        "_id": str(entry.id),
+                        "_score": 0.0,
+                        "_source": {
+                            "document_id": entry.id,
+                            "site_id": site.id,
+                        },
+                    },
+                    {
+                        "_index": "songs_2023_06_23_06_11_22",
+                        "_id": str(song.id),
+                        "_score": 0.0,
+                        "_source": {
+                            "document_id": song.id,
+                            "site_id": site.id,
+                        },
+                    },
+                    {
+                        "_index": "stories_2023_06_23_06_11_22",
+                        "_id": str(story.id),
+                        "_score": 0.0,
+                        "_source": {
+                            "document_id": story.id,
+                            "site_id": site.id,
+                        },
+                    },
+                    {
+                        "_index": "images_2023_06_23_06_11_22",
+                        "_id": str(image.id),
+                        "_score": 0.0,
+                        "_source": {
+                            "document_id": image.id,
+                            "site_id": site.id,
+                        },
+                    },
+                ],
+                "total": {"value": 4, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
+        response = self.client.get(
+            self.get_list_endpoint() + f"?sites={site.slug},invalidSlug"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 4
+        assert len(response_data["results"]) == 4
+
 
 @pytest.mark.django_db
 class TestSiteSearchAPI(BaseSiteContentApiTest):

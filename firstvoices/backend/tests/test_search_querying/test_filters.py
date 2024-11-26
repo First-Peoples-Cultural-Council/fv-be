@@ -9,21 +9,21 @@ from backend.search.query_builder import get_search_query
 @pytest.mark.django_db
 class TestSearchFilters:
     def test_empty_site_id_allowed(self):
-        search_query = get_search_query(q="something", site_id="", user=AnonymousUser())
+        search_query = get_search_query(q="something", sites="", user=AnonymousUser())
         search_query = search_query.to_dict()
 
-        expected_site_filter = "'filter': [{'term': {'site_id': ''}}]"
+        expected_site_filter = "'filter': [{'terms': {'site_id': ['']}}]"
         assert expected_site_filter not in str(search_query)
 
     def test_valid_dialect(self):
         valid_site = factories.SiteFactory.create()
         search_query = get_search_query(
-            site_id=str(valid_site.id), user=AnonymousUser()
+            sites=[str(valid_site.id)], user=AnonymousUser()
         )
         search_query = search_query.to_dict()
 
         expected_site_filter = (
-            "'filter': [{'term': {'site_id': '" + str(valid_site.id) + "'}}]"
+            "'filter': [{'terms': {'site_id': ['" + str(valid_site.id) + "']}}]"
         )
 
         assert expected_site_filter in str(search_query)

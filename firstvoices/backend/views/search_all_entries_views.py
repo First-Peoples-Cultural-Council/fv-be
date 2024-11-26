@@ -21,6 +21,7 @@ from backend.search.utils.validators import (
     get_valid_document_types,
     get_valid_domain,
     get_valid_site_feature,
+    get_valid_site_ids_from_slugs,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -516,6 +517,25 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     ),
                 ],
             ),
+            OpenApiParameter(
+                name="sites",
+                description="Filter results based on slug. Multiple sites can be passed as a comma-separated list.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Default case. Do not add sites filter.",
+                    ),
+                    OpenApiExample(
+                        "site1, site2",
+                        value="site1, site2",
+                        description="Return entries which are associated with the specified sites.",
+                    ),
+                ],
+            ),
         ],
     ),
 )
@@ -574,6 +594,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
+        sites = self.request.GET.get("sites", "")
+        valid_site_ids = get_valid_site_ids_from_slugs(sites, user)
+
         search_params = {
             "q": input_q,
             "user": user,
@@ -581,7 +604,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "domain": valid_domain,
             "kids": kids_flag,
             "games": games_flag,
-            "site_id": "",  # used in site-search
+            "sites": valid_site_ids,
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
             "import_job_id": "",  # used in site-search
@@ -658,6 +681,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         if search_params["visibility"] is None:
             return self.paginate_search_response(request, [], 0)
 
+        if search_params["sites"] is None:
+            return self.paginate_search_response(request, [], 0)
+
         # max cannot be lesser than min num of words
         if (
             search_params["min_words"]
@@ -676,7 +702,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             domain=search_params["domain"],
             kids=search_params["kids"],
             games=search_params["games"],
-            site_id=search_params["site_id"],
+            sites=search_params["sites"],
             starts_with_char=search_params["starts_with_char"],
             category_id=search_params["category_id"],
             import_job_id=search_params["import_job_id"],

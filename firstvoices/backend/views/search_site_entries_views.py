@@ -20,7 +20,7 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, SearchAllEntriesViewSet)
         site_id = site.id
 
         search_params = super().get_search_params()
-        search_params["site_id"] = str(site_id)
+        search_params["sites"] = [str(site_id)]
 
         starts_with_input_str = self.request.GET.get("startsWithChar", "")
         starts_with_char = get_valid_starts_with_char(starts_with_input_str)

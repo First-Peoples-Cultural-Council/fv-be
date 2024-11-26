@@ -506,7 +506,7 @@ class TestStartsWithChar:
         custom_order = alphabet.get_custom_order(char_variant)
 
         search_query = get_search_query(
-            site_id=self.site.id, starts_with_char=char_variant, user=AnonymousUser()
+            sites=[self.site.id], starts_with_char=char_variant, user=AnonymousUser()
         )  # default
         search_query = search_query.to_dict()
 
@@ -521,7 +521,7 @@ class TestStartsWithChar:
         factories.AlphabetFactory.create(site=self.site)
 
         search_query = get_search_query(
-            site_id=self.site.id, starts_with_char="red", user=AnonymousUser()
+            sites=[self.site.id], starts_with_char="red", user=AnonymousUser()
         )  # default
         search_query = search_query.to_dict()
 

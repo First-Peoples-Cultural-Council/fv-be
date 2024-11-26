@@ -76,8 +76,8 @@ def get_types_query(types):
         return None
 
 
-def get_site_filter_query(site_id):
-    return Q("bool", filter=[Q("term", site_id=site_id)])
+def get_site_filter_query(site_ids):
+    return Q("bool", filter=[Q("terms", site_id=site_ids)])
 
 
 def get_view_permissions_filter(user):

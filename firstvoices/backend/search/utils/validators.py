@@ -2,6 +2,7 @@ from django.core import exceptions
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from backend.models import Site
 from backend.models.constants import Visibility
 from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
 from backend.search.utils.query_builder_utils import SearchDomains
@@ -144,6 +145,24 @@ def get_valid_site_feature(input_site_feature_str):
         cleaned_value = value.strip().lower()
         if cleaned_value not in selected_values:
             selected_values.append(cleaned_value)
+
+    if len(selected_values) == 0:
+        return None
+    return selected_values
+
+
+def get_valid_site_ids_from_slugs(input_site_slug_str, user):
+    if not input_site_slug_str:
+        return ""
+
+    input_site_slugs = [
+        value.strip().lower() for value in input_site_slug_str.split(",")
+    ]
+    selected_values = list(
+        Site.objects.visible(user)
+        .filter(slug__in=input_site_slugs)
+        .values_list("id", flat=True)
+    )
 
     if len(selected_values) == 0:
         return None
