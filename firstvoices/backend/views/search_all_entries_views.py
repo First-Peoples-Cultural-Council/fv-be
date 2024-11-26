@@ -605,7 +605,6 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "kids": kids_flag,
             "games": games_flag,
             "sites": valid_site_ids,
-            "site_id": "",  # used in site-search
             "starts_with_char": "",  # used in site-search
             "category_id": "",  # used in site-search
             "import_job_id": "",  # used in site-search
@@ -703,7 +702,6 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             domain=search_params["domain"],
             kids=search_params["kids"],
             games=search_params["games"],
-            site_id=search_params["site_id"],
             sites=search_params["sites"],
             starts_with_char=search_params["starts_with_char"],
             category_id=search_params["category_id"],

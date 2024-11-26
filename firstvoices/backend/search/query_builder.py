@@ -18,7 +18,6 @@ from backend.search.utils.query_builder_utils import (
     get_kids_query,
     get_max_words_query,
     get_min_words_query,
-    get_multi_site_filter_query,
     get_site_filter_query,
     get_starts_with_query,
     get_types_query,
@@ -36,7 +35,6 @@ def get_search_object(indices):
 def get_search_query(
     user=None,
     q=None,
-    site_id=None,
     sites=None,
     types=VALID_DOCUMENT_TYPES,
     domain="both",
@@ -88,11 +86,8 @@ def get_search_query(
             )
 
     # Add site filter if parameter provided in url
-    if site_id:
-        search_query = search_query.query(get_site_filter_query(site_id))
-
     if sites:
-        search_query = search_query.query(get_multi_site_filter_query(sites))
+        search_query = search_query.query(get_site_filter_query(sites))
 
     types_query = get_types_query(types)
     if types_query:
@@ -100,7 +95,7 @@ def get_search_query(
 
     if starts_with_char:
         search_query = search_query.query(
-            get_starts_with_query(site_id, starts_with_char)
+            get_starts_with_query(sites[0], starts_with_char)
         )
 
     if category_id:
