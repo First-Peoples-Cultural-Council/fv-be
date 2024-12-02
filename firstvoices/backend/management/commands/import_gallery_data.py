@@ -53,10 +53,8 @@ class Command(BaseCommand):
                     table = tablib.import_set(file, format="csv")
                     resource = GalleryResource()
 
-                    # Import the dataset
                     result = resource.import_data(table, dry_run=False)
 
-                    # Log results
                     self.log_results(result, file_name)
             except Exception as e:
                 logger.error(f"Error processing file {file_name}: {e}")
@@ -64,13 +62,25 @@ class Command(BaseCommand):
 
         logger.info("Gallery import completed.")
 
-    def log_results(self, result, file_name):
-        """
-        Log the results of the import process.
-        """
+    @staticmethod
+    def log_results(result, file_name):
+        logger = logging.getLogger(__name__)
+
+        # Log row errors
         if result.has_errors():
-            self.stdout.write(f"Errors encountered while importing {file_name}:")
-            for error in result.row_errors():
-                self.stdout.write(f"Row {error[0]}: {error[1]}")
+            logger.error(f"Errors encountered while importing {file_name}:")
+            for row_number, error_list in result.row_errors():
+                for error in error_list:
+                    logger.error(f"Row {row_number}: {error.error}")
+
+        # Log invalid rows (validation errors)
+        elif result.has_validation_errors():
+            logger.error(f"Validation errors encountered while importing {file_name}:")
+            for row_number, invalid_row in enumerate(result.invalid_rows):
+                logger.error(
+                    f"Row {row_number}: "
+                    f"Field Errors: {invalid_row.field_specific_errors}, "
+                    f"Non-Field Errors: {invalid_row.non_field_errors}"
+                )
         else:
-            self.stdout.write(f"File {file_name} imported successfully.")
+            logger.info(f"File {file_name} imported successfully.")
