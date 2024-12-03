@@ -9,6 +9,7 @@ from backend.search.utils.query_builder_utils import (
     get_games_query,
     get_has_audio_query,
     get_has_image_query,
+    get_has_related_entries_query,
     get_has_site_feature_query,
     get_has_translation_query,
     get_has_unrecognized_chars_query,
@@ -49,6 +50,7 @@ def get_search_query(
     has_image=None,
     has_translation=None,
     has_unrecognized_chars=None,
+    has_related_entries=None,
     has_site_feature=None,
     min_words=None,
     max_words=None,
@@ -128,6 +130,11 @@ def get_search_query(
     if has_unrecognized_chars is not None:
         search_query = search_query.query(
             get_has_unrecognized_chars_query(has_unrecognized_chars)
+        )
+
+    if has_related_entries is not None:
+        search_query = search_query.query(
+            get_has_related_entries_query(has_related_entries)
         )
 
     if has_site_feature is not None:

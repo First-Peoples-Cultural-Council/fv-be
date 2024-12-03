@@ -386,6 +386,30 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasRelatedEntries",
+                description="Filter dictionary entries that have related dictionary entries.",
+                required=False,
+                default=None,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Returns dictionary entries that have related dictionary entries.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="Returns dictionary entries that do not have related dictionary entries.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="hasSiteFeature",
                 description="Filter media documents base on site feature.",
                 required=False,
@@ -582,6 +606,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
         has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
 
+        has_related_entries = self.request.GET.get("hasRelatedEntries", None)
+        has_related_entries = get_valid_boolean(has_related_entries)
+
         has_site_feature = self.request.GET.get("hasSiteFeature", "")
         has_site_feature = get_valid_site_feature(has_site_feature)
 
@@ -614,6 +641,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "has_image": has_image,
             "has_translation": has_translation,
             "has_unrecognized_chars": has_unrecognized_chars,
+            "has_related_entries": has_related_entries,
             "has_site_feature": has_site_feature,
             "min_words": min_words,
             "max_words": max_words,
@@ -712,6 +740,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             has_image=search_params["has_image"],
             has_translation=search_params["has_translation"],
             has_unrecognized_chars=search_params["has_unrecognized_chars"],
+            has_related_entries=search_params["has_related_entries"],
             has_site_feature=search_params["has_site_feature"],
             min_words=search_params["min_words"],
             max_words=search_params["max_words"],
