@@ -1,6 +1,5 @@
 import logging
 
-from django.core.exceptions import ValidationError
 from import_export import fields
 
 from backend.models import Gallery, GalleryItem, Image
@@ -25,17 +24,7 @@ class GalleryResource(SiteContentResource):
                 img_id.strip() for img_id in related_images.split(",") if img_id.strip()
             ]
 
-            try:
-                gallery = Gallery.objects.get(id=row_result.object_id)
-            except Gallery.DoesNotExist:
-                row_result.errors.append(
-                    ValidationError(
-                        f"Gallery with id {row_result.object_id} not found. "
-                        f"This is likely due to the Gallery not being imported. "
-                        f"Check the result for other errors or validation errors."
-                    )
-                )
-                return  # Exit early if the Gallery is not found
+            gallery = Gallery.objects.get(id=row_result.object_id)
 
             for order, image_id in enumerate(image_ids):
                 try:

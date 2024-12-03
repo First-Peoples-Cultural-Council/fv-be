@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 import tablib
@@ -128,3 +129,22 @@ class TestImportGalleryData:
             in caplog.text
         )
         assert "Gallery import completed." in caplog.text
+
+    @pytest.mark.django_db
+    def test_import_gallery_data_exception(self, tmp_path, caplog):
+        site = factories.SiteFactory.create()
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,testuser@test.com,2023-02-02 21:21:39.864,testuser@test.com,"
+            f"Test Gallery 1,Description 1,Published,{site.id},,,"
+        ]
+        table = self.build_table(data)
+        filepath = tmp_path / "gallery.csv"
+        with open(filepath, "w") as file:
+            file.write(table.export("csv"))
+            with patch(
+                "backend.resources.gallery.GalleryResource.import_data",
+                side_effect=Exception("Mocked exception"),
+            ):
+                call_command("import_gallery_data", filepath=tmp_path)
+
+        assert "Error processing file gallery.csv: " in caplog.text
