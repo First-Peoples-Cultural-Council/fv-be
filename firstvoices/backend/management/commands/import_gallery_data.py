@@ -71,7 +71,7 @@ class Command(BaseCommand):
             logger.error(f"Errors encountered while importing {file_name}:")
             for row_number, error_list in result.row_errors():
                 for error in error_list:
-                    logger.error(f"Row {row_number}: {error.error}")
+                    logger.error(f"Row {row_number}: {error}")
 
         # Log invalid rows (validation errors)
         elif result.has_validation_errors():
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                 logger.error(
                     f"Row {row_number}: "
                     f"Field Errors: {invalid_row.field_specific_errors}, "
-                    f"Non-Field Errors: {invalid_row.non_field_errors}"
+                    f"Non-Field Errors: {invalid_row.non_field_specific_errors}"
                 )
         else:
             logger.info(f"File {file_name} imported successfully.")
