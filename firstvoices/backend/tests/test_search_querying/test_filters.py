@@ -391,6 +391,35 @@ class TestHasUnrecognizedCharsParam:
         )
 
 
+class TestHasCategoriesParam:
+    def test_has_categories_true(self):
+        expected_true_filter = "{'term': {'has_categories': True}}"
+        search_query = get_search_query(has_categories=True, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter in str(search_query)
+
+    def test_has_categories_false(self):
+        expected_false_filter = "{'term': {'has_categories': False}}"
+        search_query = get_search_query(has_categories=False, user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_false_filter in str(search_query)
+
+    def test_has_categories_default(self):
+        expected_true_filter = "{'term': {'has_categories': True}}"
+        expected_false_filter = "{'term': {'has_categories': False}}"
+
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert expected_true_filter not in str(search_query)
+        assert expected_false_filter not in str(search_query)
+        assert "filter" not in search_query["query"][
+            "bool"
+        ] or "has_categories" not in str(search_query["query"]["bool"]["filter"])
+
+
 class TestHasRelatedEntriesParam:
     def test_has_related_entries_true(self):
         expected_true_filter = "{'term': {'has_related_entries': True}}"

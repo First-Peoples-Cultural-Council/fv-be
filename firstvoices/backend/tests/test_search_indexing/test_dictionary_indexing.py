@@ -50,6 +50,7 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert not doc.has_audio
         assert not doc.has_video
         assert not doc.has_image
+        assert not doc.has_categories
         assert not doc.has_related_entries
 
         assert doc.exclude_from_games
@@ -125,3 +126,18 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         doc = self.manager.create_index_document(instance)
 
         assert doc.has_related_entries
+
+    @pytest.mark.django_db
+    def test_create_document_categories(self):
+        instance = self.factory.create()
+        category = factories.CategoryFactory.create()
+        instance.categories.add(category)
+        instance.save()
+
+        doc = self.manager.create_index_document(instance)
+
+        assert_list(
+            [str(uuid) for uuid in instance.categories.values_list("id", flat=True)],
+            doc.categories,
+        )
+        assert doc.has_categories

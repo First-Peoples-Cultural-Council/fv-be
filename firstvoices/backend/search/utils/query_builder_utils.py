@@ -207,6 +207,10 @@ def get_has_unrecognized_chars_query(has_unrecognized_chars):
     return Q("bool", filter=[Q("term", has_unrecognized_chars=has_unrecognized_chars)])
 
 
+def get_has_categories_query(has_categories):
+    return Q("bool", filter=[Q("term", has_categories=has_categories)])
+
+
 def get_has_related_entries_query(has_related_entries):
     return Q("bool", filter=[Q("term", has_related_entries=has_related_entries)])
 
