@@ -50,6 +50,7 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert not doc.has_audio
         assert not doc.has_video
         assert not doc.has_image
+        assert not doc.has_related_entries
 
         assert doc.exclude_from_games
         assert not doc.exclude_from_kids
@@ -97,3 +98,30 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert_list(instance.alternate_spellings, doc.alternate_spelling)
 
         assert doc.import_job_id == instance.import_job.id
+
+    @pytest.mark.django_db
+    def test_create_document_related_media(self):
+        audio = factories.AudioFactory.create()
+        video = factories.VideoFactory.create()
+        image = factories.ImageFactory.create()
+        instance = self.factory.create(
+            related_audio=[audio], related_videos=[video], related_images=[image]
+        )
+
+        doc = self.manager.create_index_document(instance)
+
+        assert doc.has_audio
+        assert doc.has_video
+        assert doc.has_image
+
+    @pytest.mark.django_db
+    def test_create_document_related_entries(self):
+        related_entry = factories.DictionaryEntryFactory.create()
+        instance = self.factory.create()
+        factories.DictionaryEntryLinkFactory(
+            from_dictionary_entry=instance, to_dictionary_entry=related_entry
+        )
+
+        doc = self.manager.create_index_document(instance)
+
+        assert doc.has_related_entries
