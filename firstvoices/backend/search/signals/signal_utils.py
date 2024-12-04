@@ -9,7 +9,7 @@ from backend.models import (
     Story,
     StoryPage,
 )
-from backend.models.dictionary import DictionaryEntryCategory
+from backend.models.dictionary import DictionaryEntryCategory, DictionaryEntryLink
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import LanguageFamily
 from backend.search.signals import (
@@ -23,12 +23,14 @@ from backend.search.signals import (
     remove_song_from_index,
     remove_story_from_index,
     remove_video_from_index,
+    request_update_dictionary_entry_m2m_index,
     sync_audio_in_index,
     sync_dictionary_entry_category_in_index,
     sync_dictionary_entry_in_index,
     sync_image_in_index,
     sync_language_family_in_index,
     sync_language_in_index,
+    sync_related_dictionary_entry_in_index,
     sync_site_in_language_index,
     sync_song_in_index,
     sync_song_lyrics_in_index,
@@ -46,6 +48,7 @@ signal_details = {
         (sync_language_in_index, Language),
         (sync_dictionary_entry_in_index, DictionaryEntry),
         (sync_dictionary_entry_category_in_index, DictionaryEntryCategory),
+        (sync_related_dictionary_entry_in_index, DictionaryEntryLink),
         (sync_song_in_index, Song),
         (sync_song_lyrics_in_index, Lyric),
         (sync_story_in_index, Story),
@@ -62,6 +65,7 @@ signal_details = {
     "post_delete": [
         (remove_dictionary_entry_from_index, DictionaryEntry),
         (sync_dictionary_entry_category_in_index, DictionaryEntryCategory),
+        (sync_related_dictionary_entry_in_index, DictionaryEntryLink),
         (remove_all_site_content, Site),
         (sync_song_lyrics_in_index, Lyric),
         (remove_story_from_index, Story),
@@ -69,6 +73,10 @@ signal_details = {
         (remove_audio_from_index, Audio),
         (remove_image_from_index, Image),
         (remove_video_from_index, Video),
+    ],
+    "m2m_changed": [
+        (request_update_dictionary_entry_m2m_index, DictionaryEntryCategory),
+        (request_update_dictionary_entry_m2m_index, DictionaryEntryLink),
     ],
 }
 

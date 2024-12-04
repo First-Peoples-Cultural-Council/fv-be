@@ -196,7 +196,7 @@ class TestDictionaryEntryIndexingSignals(
         mock_index_methods["mock_remove"].assert_not_called()
 
     @pytest.mark.django_db
-    def test_assign_related_entry_m2m_main_instance_is_synced(self, mock_index_methods):
+    def test_assign_related_entry_m2m_instance_is_synced(self, mock_index_methods):
         with self.capture_on_commit_callbacks(execute=True):
             instance = self.factory.create()
 
@@ -255,3 +255,61 @@ class TestDictionaryEntryIndexingSignals(
             related_entry.delete()
 
         mock_index_methods["mock_update"].assert_any_call(instance)
+
+    @pytest.mark.django_db
+    def test_assign_related_entry_instance_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            self.assign_new_related_entry(instance)
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_assign_related_entry_m2m_instance_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            self.assign_new_related_entry_via_manager(instance)
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_remove_related_entry_paused(self, mock_index_methods):
+        paused_site = factories.SiteFactory.create()
+        factories.SiteFeatureFactory.create(
+            site=paused_site, key="indexing_paused", is_enabled=True
+        )
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = factories.DictionaryEntryFactory.create()
+            related_entry = factories.DictionaryEntryFactory.create()
+            factories.DictionaryEntryLinkFactory.create(
+                from_dictionary_entry=instance, to_dictionary_entry=related_entry
+            )
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=False):
+            related_entry.delete()
+
+        mock_index_methods["mock_update"].assert_not_called()
+        mock_index_methods["mock_remove"].assert_not_called()
