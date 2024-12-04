@@ -29,6 +29,18 @@ class TestDictionaryEntryIndexingSignals(
         instance.save()
         return category
 
+    def assign_new_related_entry(self, instance):
+        related_entry = factories.DictionaryEntryFactory.create()
+        return factories.DictionaryEntryLinkFactory.create(
+            from_dictionary_entry=instance, to_dictionary_entry=related_entry
+        )
+
+    def assign_new_related_entry_via_manager(self, instance):
+        related_entry = factories.DictionaryEntryFactory.create()
+        instance.related_dictionary_entries.add(related_entry)
+        instance.save()
+        return related_entry
+
     @pytest.mark.django_db
     def test_deleted_instance_with_category_is_removed(self, mock_index_methods):
         with self.capture_on_commit_callbacks(execute=True):
@@ -168,3 +180,78 @@ class TestDictionaryEntryIndexingSignals(
 
         mock_index_methods["mock_update"].assert_not_called()
         mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_assign_related_entry_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            self.assign_new_related_entry(instance)
+
+        mock_index_methods["mock_update"].assert_any_call(instance)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_assign_related_entry_m2m_main_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            self.assign_new_related_entry_via_manager(instance)
+
+        mock_index_methods["mock_update"].assert_called_with(instance)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_remove_related_entry_link_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = factories.DictionaryEntryFactory.create()
+            related_entry = factories.DictionaryEntryFactory.create()
+            dictionary_entry_link = factories.DictionaryEntryLinkFactory.create(
+                from_dictionary_entry=instance, to_dictionary_entry=related_entry
+            )
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            dictionary_entry_link.delete()
+
+        mock_index_methods["mock_update"].assert_any_call(instance)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_remove_related_entry_m2m_main_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            related_entry = self.assign_new_related_entry_via_manager(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            instance.related_dictionary_entries.remove(related_entry)
+
+        mock_index_methods["mock_update"].assert_called_with(instance)
+        mock_index_methods["mock_remove"].assert_not_called()
+
+    @pytest.mark.django_db
+    def test_remove_related_entry_instance_is_synced(self, mock_index_methods):
+        with self.capture_on_commit_callbacks(execute=True):
+            instance = self.factory.create()
+            related_entry = self.assign_new_related_entry(instance)
+
+        mock_index_methods["mock_sync"].reset_mock()
+        mock_index_methods["mock_update"].reset_mock()
+
+        with self.capture_on_commit_callbacks(execute=True):
+            related_entry.delete()
+
+        mock_index_methods["mock_update"].assert_any_call(instance)
