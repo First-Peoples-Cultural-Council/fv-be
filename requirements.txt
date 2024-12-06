@@ -24,6 +24,7 @@ django-storages==1.14.4
 django-timezone-field==7.0
 djangorestframework==3.15.2
 djangorestframework-camel-case==1.4.2
+draftjs_exporter==5.0.0 # https://github.com/springload/draftjs_exporter
 drf-nested-routers==0.94.1  # https://github.com/alanjds/drf-nested-routers/
 drf-spectacular==0.28.0
 editdistance==0.8.1
@@ -49,6 +50,7 @@ kombu==5.4.2
 MarkupSafe==3.0.2
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
+nh3==0.2.19 # https://github.com/messense/nh3
 networkx==3.4.2
 numpy==1.26.4
 openpyxl==3.1.5

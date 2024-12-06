@@ -1,6 +1,7 @@
 import logging
 import uuid
 
+import nh3
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import pre_save
@@ -124,6 +125,19 @@ class TruncatingCharField(models.CharField):
         return value
 
 
+class HTMLCleanTextField(models.TextField):
+    """
+    Custom TextField that automatically cleans HTML content using the nh3 library.
+    Content that is not HTML remains unchanged.
+    """
+
+    def pre_save(self, model_instance, add):
+        value = getattr(model_instance, self.attname)
+        if value and nh3.is_html(value):
+            return nh3.clean(value)
+        return value
+
+
 class AudienceMixin(models.Model):
     class Meta:
         abstract = True
@@ -151,8 +165,8 @@ class TranslatedIntroMixin(models.Model):
     class Meta:
         abstract = True
 
-    introduction = models.TextField(blank=True, null=False)
-    introduction_translation = models.TextField(blank=True, null=False)
+    introduction = HTMLCleanTextField(blank=True, null=False)
+    introduction_translation = HTMLCleanTextField(blank=True, null=False)
 
     def save(self, *args, **kwargs):
         self.introduction = clean_input(self.introduction)
@@ -164,8 +178,8 @@ class TranslatedTextMixin(models.Model):
     class Meta:
         abstract = True
 
-    text = models.TextField(blank=False)
-    translation = models.TextField(blank=True)
+    text = HTMLCleanTextField(blank=False)
+    translation = HTMLCleanTextField(blank=True)
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)
