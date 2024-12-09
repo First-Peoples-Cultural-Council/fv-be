@@ -4,6 +4,21 @@ from django.db import IntegrityError
 from backend.tests import factories
 
 
+class TestWidgetSettingsModel:
+    @pytest.mark.django_db
+    def test_html_cleaning_fields(self):
+        site_widget = factories.SiteWidgetFactory.create()
+        widget_settings = factories.WidgetSettingsFactory.create(
+            widget=site_widget,
+            key="textWithFormtting",
+            value="<script src=example.com/malicious.js></script><strong>Arm</strong>",
+        )
+        widget_settings.save()
+        widget_settings.refresh_from_db()
+
+        assert widget_settings.value == "<strong>Arm</strong>"
+
+
 class TestSiteWidgetListModel:
     @pytest.mark.django_db
     def test_site_widget_unique_for_site_widget_list(self):

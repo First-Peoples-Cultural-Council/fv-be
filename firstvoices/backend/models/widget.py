@@ -6,7 +6,7 @@ from backend.models.base import (
     BaseControlledSiteContentModel,
     BaseModel,
     BaseSiteContentModel,
-    HTMLCleanTextField,
+    HTMLSanitizedTextField,
 )
 from backend.models.constants import WIDGET_TEXT
 from backend.permissions import predicates
@@ -56,7 +56,7 @@ class WidgetSettings(BaseModel):
         Widget, on_delete=models.CASCADE, related_name="%(class)s_set"
     )
     key = models.CharField(max_length=225)
-    value = HTMLCleanTextField(blank=True)
+    value = HTMLSanitizedTextField(blank=True)
 
     def __str__(self):
         return self.key
