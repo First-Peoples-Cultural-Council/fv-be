@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from draftjs_exporter.html import HTML
 
 from backend.models import Site, Song, Story, StoryPage
-from backend.models.widget import WidgetSettings
+from backend.models.widget import SiteWidget, WidgetSettings
 
 
 class Command(BaseCommand):
@@ -38,13 +38,17 @@ class Command(BaseCommand):
         return text
 
     def handle(self, *args, **options):
-        logger = logging.getLogger("draftjs_to_html")
+        logger = logging.getLogger("convert_draftjs_to_html")
         logger.setLevel(logging.INFO)
 
-        site_slug_list = options.get("site_slugs")
-        if site_slug_list:
-            site_slugs = site_slug_list.split(",").strip()
-            sites = Site.objects.filter(slug__in=site_slugs)
+        if options.get("site_slugs"):
+            site_slug_list = [
+                s.strip() for s in options.get("site_slugs", "").split(",")
+            ]
+            sites = Site.objects.filter(slug__in=site_slug_list)
+            if not sites:
+                logger.info("No sites with the provided slug(s) found.")
+                return
         else:
             sites = Site.objects.all()
 
@@ -53,8 +57,9 @@ class Command(BaseCommand):
             songs_to_convert = Song.objects.filter(site=site)
             stories_to_convert = Story.objects.filter(site=site)
             story_pages_to_convert = StoryPage.objects.filter(site=site)
+            site_widgets = SiteWidget.objects.filter(site=site)
             widget_settings_to_convert = WidgetSettings.objects.filter(
-                site=site, key="textWithFormtting"
+                widget__in=site_widgets, key="textWithFormtting"
             )
 
             for song in songs_to_convert:
@@ -80,8 +85,8 @@ class Command(BaseCommand):
                     f"Converting draftjs content to html for story page {story_page.id}..."
                 )
                 story_page.text = self.convert_draftjs_to_html(story_page.text)
-                story_page.text_translation = self.convert_draftjs_to_html(
-                    story_page.text_translation
+                story_page.translation = self.convert_draftjs_to_html(
+                    story_page.translation
                 )
                 story_page.save(set_modified_date=False)
 
