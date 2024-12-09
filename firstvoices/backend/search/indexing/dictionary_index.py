@@ -41,6 +41,8 @@ class DictionaryEntryDocumentManager(DocumentManager):
             last_modified=instance.last_modified,
             has_translation=(len(instance.translations) > 0),
             has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in instance.custom_order,
+            has_categories=instance.categories.exists(),
+            has_related_entries=instance.related_dictionary_entries.exists(),
         )
 
 

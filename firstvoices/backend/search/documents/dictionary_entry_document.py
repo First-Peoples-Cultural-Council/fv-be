@@ -27,6 +27,8 @@ class DictionaryEntryDocument(BaseSiteEntryWithMediaDocument):
     import_job_id = Keyword()
     has_translation = Boolean()
     has_unrecognized_chars = Boolean()
+    has_categories = Boolean()
+    has_related_entries = Boolean()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
