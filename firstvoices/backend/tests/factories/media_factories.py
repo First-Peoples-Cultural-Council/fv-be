@@ -26,12 +26,27 @@ class FileFactory(DjangoModelFactory):
     content = factory.django.FileField()
 
 
+def get_image_content(size="thumbnail"):
+    filename = f"image_example_{size}.png"
+    path = os.path.dirname(os.path.realpath(__file__)) + f"/resources/{filename}"
+    file = open(path, "rb")
+    content = InMemoryUploadedFile(
+        file,
+        "ImageField",
+        filename,
+        "video/mp4",
+        sys.getsizeof(file),
+        None,
+    )
+    return content
+
+
 class ImageFileFactory(DjangoModelFactory):
     class Meta:
         model = ImageFile
 
     site = factory.SubFactory(SiteFactory)
-    content = factory.django.ImageField()
+    content = factory.django.ImageField(from_func=get_image_content)
 
 
 class ImageFactory(DjangoModelFactory):

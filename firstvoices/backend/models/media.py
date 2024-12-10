@@ -423,16 +423,26 @@ class Image(ThumbnailMixin, MediaBase):
             original = self.original.content
             image_name = original.name.split(".")[0]
             thumbnail_name = f"{image_name}_{size_name}.jpg"
+            try:
+                with PILImage.open(original.file.open(mode="rb")) as img:
+                    output_size = get_output_dimensions(max_size, img.width, img.height)
 
-            with PILImage.open(original.file.open(mode="rb")) as img:
-                output_size = get_output_dimensions(max_size, img.width, img.height)
-                output_img = self.create_thumbnail(img, output_size)
+                    # add a white background in case there are transparent areas
+                    image_on_white = PILImage.new(
+                        "RGBA", img.size, "WHITE"
+                    )  # Create a white rgba background
+                    image_on_white.paste(
+                        img, (0, 0), img
+                    )  # Paste the image on the background
 
-            image_file_model = self.add_image_file(
-                thumbnail_name, output_img, output_size
-            )
-
-            setattr(self, size_name, image_file_model)
+                    output_img = self.create_thumbnail(image_on_white, output_size)
+                    image_file_model = self.add_image_file(
+                        thumbnail_name, output_img, output_size
+                    )
+                    setattr(self, size_name, image_file_model)
+            except Exception as e:
+                print(f"Error creating thumbnail for {image_name}")
+                print(e)
 
     def create_thumbnail(self, img, output_size):
         output_img = BytesIO()
