@@ -58,7 +58,7 @@ class Command(BaseCommand):
             story_pages_to_convert = StoryPage.objects.filter(site=site)
             site_widgets = SiteWidget.objects.filter(site=site)
             widget_settings_to_convert = WidgetSettings.objects.filter(
-                widget__in=site_widgets, key="textWithFormtting"
+                widget__in=site_widgets, key="textWithFormatting"
             )
 
             for song in songs_to_convert:

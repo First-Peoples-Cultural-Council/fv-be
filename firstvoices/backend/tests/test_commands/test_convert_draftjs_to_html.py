@@ -51,7 +51,7 @@ class TestConvertDraftjsToHtml:
 
         widget = factories.SiteWidgetFactory.create(site=site)
         widget_setting = factories.WidgetSettingsFactory.create(
-            widget=widget, key="textWithFormtting"
+            widget=widget, key="textWithFormatting"
         )
         widget_setting.value = "Widget setting value"
         widget_setting.save()
@@ -99,7 +99,7 @@ class TestConvertDraftjsToHtml:
 
         widget = factories.SiteWidgetFactory.create(site=site)
         widget_setting = factories.WidgetSettingsFactory.create(
-            widget=widget, key="textWithFormtting"
+            widget=widget, key="textWithFormatting"
         )
         widget_setting.value = self.make_draftjs_content("Widget setting value")
         widget_setting.save()
