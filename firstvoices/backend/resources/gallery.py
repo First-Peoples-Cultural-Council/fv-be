@@ -42,8 +42,8 @@ class GalleryResource(SiteContentResource):
 
             # Set cover image as the first image in the gallery
             if gallery.cover_image is None and gallery.galleryitem_set.exists():
-                gallery.cover_image = Image.objects.get(
-                    id=gallery.galleryitem_set.first().image_id
+                gallery.cover_image = (
+                    gallery.galleryitem_set.order_by("ordering").first().image
                 )
                 gallery.save(set_modified_date=False)
 
