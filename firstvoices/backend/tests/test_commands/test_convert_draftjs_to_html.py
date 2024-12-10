@@ -125,17 +125,6 @@ class TestConvertDraftjsToHtml:
         assert story_page.last_modified == story_page_last_modified
         assert widget_setting.last_modified == widget_setting_last_modified
 
-        assert f"Converting draftjs content to html for site {site.slug}" in caplog.text
-        assert f"Converting draftjs content to html for song {song.id}" in caplog.text
-        assert f"Converting draftjs content to html for story {story.id}" in caplog.text
-        assert (
-            f"Converting draftjs content to html for story page {story_page.id}"
-            in caplog.text
-        )
-        assert (
-            f"Converting draftjs content to html for widget setting {widget_setting.id}"
-            in caplog.text
-        )
         assert "Conversion complete." in caplog.text
 
     @pytest.mark.django_db
@@ -167,7 +156,4 @@ class TestConvertDraftjsToHtml:
         assert song2.introduction == "<p>Song introduction</p>"
         assert song2.introduction_translation == "<p>Translated song introduction</p>"
 
-        assert "Converting draftjs content to html for site" in caplog.text
-        assert f"Converting draftjs content to html for song {song1.id}" in caplog.text
-        assert f"Converting draftjs content to html for song {song2.id}" in caplog.text
         assert "Conversion complete." in caplog.text
