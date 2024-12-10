@@ -40,6 +40,13 @@ class GalleryResource(SiteContentResource):
                     )
                     continue
 
+            # Set cover image as the first image in the gallery
+            if gallery.cover_image is None and gallery.galleryitem_set.exists():
+                gallery.cover_image = Image.objects.get(
+                    id=gallery.galleryitem_set.first().image_id
+                )
+                gallery.save(set_modified_date=False)
+
     class Meta:
         model = Gallery
         clean_model_instances = True

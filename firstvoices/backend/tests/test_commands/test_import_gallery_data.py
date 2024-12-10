@@ -51,6 +51,7 @@ class TestImportGalleryData:
         assert gallery.title == "Test Gallery 1"
         assert gallery.introduction == "Description 1"
         assert GalleryItem.objects.filter(gallery=gallery).count() == 2
+        assert gallery.cover_image == image1
 
         assert "Found 1 gallery CSV files to process." in caplog.text
         assert f"Processing file: {filepath}" in caplog.text
@@ -77,6 +78,7 @@ class TestImportGalleryData:
         assert gallery.title == "Test Gallery 1"
         assert gallery.introduction == "Description 1"
         assert GalleryItem.objects.filter(gallery=gallery).count() == 1
+        assert gallery.cover_image == valid_image
 
         assert (
             f"Image with id {non_existent_image_id} not found. Skipping GalleryItem creation."
