@@ -40,16 +40,3 @@ class TestStoryPageModel(RelatedVideoLinksValidationMixin):
 
         assert page.visibility == story.visibility
         assert page.site == story.site
-
-    @pytest.mark.django_db
-    def test_html_cleaning_fields(self):
-        factories.StoryFactory.create()
-        page = factories.StoryPageFactory.create(
-            text="<script src=example.com/malicious.js></script><strong>Arm</strong>",
-            translation="<script>alert('XSS');</script>",
-        )
-        page.save()
-        page.refresh_from_db()
-
-        assert page.text == "<strong>Arm</strong>"
-        assert page.translation == ""

@@ -125,7 +125,7 @@ class TruncatingCharField(models.CharField):
         return value
 
 
-class HTMLSanitizedTextField(models.TextField):
+class SanitizedHtmlField(models.TextField):
     """
     Custom TextField that automatically cleans HTML content using the nh3 library.
     Content that is not HTML remains unchanged.
@@ -133,7 +133,7 @@ class HTMLSanitizedTextField(models.TextField):
 
     def to_python(self, value):
         value = super().to_python(value)
-        if value not in self.empty_values:
+        if value not in self.empty_values and nh3.is_html(value):
             value = nh3.clean(value)
         return value
 
@@ -165,8 +165,8 @@ class TranslatedIntroMixin(models.Model):
     class Meta:
         abstract = True
 
-    introduction = HTMLSanitizedTextField(blank=True, null=False)
-    introduction_translation = HTMLSanitizedTextField(blank=True, null=False)
+    introduction = SanitizedHtmlField(blank=True, null=False)
+    introduction_translation = SanitizedHtmlField(blank=True, null=False)
 
     def save(self, *args, **kwargs):
         self.introduction = clean_input(self.introduction)
@@ -178,8 +178,8 @@ class TranslatedTextMixin(models.Model):
     class Meta:
         abstract = True
 
-    text = HTMLSanitizedTextField(blank=False)
-    translation = HTMLSanitizedTextField(blank=True)
+    text = SanitizedHtmlField(blank=False)
+    translation = SanitizedHtmlField(blank=True)
 
     def save(self, *args, **kwargs):
         self.text = clean_input(self.text)

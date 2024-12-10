@@ -38,8 +38,7 @@ class Command(BaseCommand):
         return text
 
     def handle(self, *args, **options):
-        logger = logging.getLogger("convert_draftjs_to_html")
-        logger.setLevel(logging.INFO)
+        logger = logging.getLogger(__name__)
 
         if options.get("site_slugs"):
             site_slug_list = [
@@ -47,13 +46,13 @@ class Command(BaseCommand):
             ]
             sites = Site.objects.filter(slug__in=site_slug_list)
             if not sites:
-                logger.info("No sites with the provided slug(s) found.")
+                logger.warning("No sites with the provided slug(s) found.")
                 return
         else:
             sites = Site.objects.all()
 
         for site in sites:
-            logger.info(f"Converting draftjs content to html for site {site.slug}...")
+            logger.debug(f"Converting draftjs content to html for site {site.slug}...")
             songs_to_convert = Song.objects.filter(site=site)
             stories_to_convert = Story.objects.filter(site=site)
             story_pages_to_convert = StoryPage.objects.filter(site=site)
@@ -63,7 +62,9 @@ class Command(BaseCommand):
             )
 
             for song in songs_to_convert:
-                logger.info(f"Converting draftjs content to html for song {song.id}...")
+                logger.debug(
+                    f"Converting draftjs content to html for song {song.id}..."
+                )
                 song.introduction = self.convert_draftjs_to_html(song.introduction)
                 song.introduction_translation = self.convert_draftjs_to_html(
                     song.introduction_translation
@@ -71,7 +72,7 @@ class Command(BaseCommand):
                 song.save(set_modified_date=False)
 
             for story in stories_to_convert:
-                logger.info(
+                logger.debug(
                     f"Converting draftjs content to html for story {story.id}..."
                 )
                 story.introduction = self.convert_draftjs_to_html(story.introduction)
@@ -81,7 +82,7 @@ class Command(BaseCommand):
                 story.save(set_modified_date=False)
 
             for story_page in story_pages_to_convert:
-                logger.info(
+                logger.debug(
                     f"Converting draftjs content to html for story page {story_page.id}..."
                 )
                 story_page.text = self.convert_draftjs_to_html(story_page.text)
@@ -91,7 +92,7 @@ class Command(BaseCommand):
                 story_page.save(set_modified_date=False)
 
             for widget_setting in widget_settings_to_convert:
-                logger.info(
+                logger.debug(
                     f"Converting draftjs content to html for widget setting {widget_setting.id}..."
                 )
                 widget_setting.value = self.convert_draftjs_to_html(
