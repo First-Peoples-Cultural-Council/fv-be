@@ -427,22 +427,30 @@ class Image(ThumbnailMixin, MediaBase):
                 with PILImage.open(original.file.open(mode="rb")) as img:
                     output_size = get_output_dimensions(max_size, img.width, img.height)
 
-                    # add a white background in case there are transparent areas
-                    image_on_white = PILImage.new(
-                        "RGBA", img.size, "WHITE"
-                    )  # Create a white rgba background
-                    image_on_white.paste(
-                        img, (0, 0), img
-                    )  # Paste the image on the background
+                    if img.mode in ("RGBA", "LA") or (
+                        img.mode == "P" and "transparency" in img.info
+                    ):
+                        img = img.convert("RGBA")
 
-                    output_img = self.create_thumbnail(image_on_white, output_size)
+                        # add a white background in case there are transparent areas
+                        image_on_white = PILImage.new(
+                            "RGBA", img.size, "WHITE"
+                        )  # Create a white rgba background
+                        image_on_white.paste(
+                            img, (0, 0), img
+                        )  # Paste the image on the background
+                        image_on_white = image_on_white.convert("RGB")
+                        output_img = self.create_thumbnail(image_on_white, output_size)
+                    else:
+                        output_img = self.create_thumbnail(img, output_size)
+
                     image_file_model = self.add_image_file(
                         thumbnail_name, output_img, output_size
                     )
                     setattr(self, size_name, image_file_model)
             except Exception as e:
-                print(f"Error creating thumbnail for {image_name}")
-                print(e)
+                self.logger.warning(f"Error creating thumbnail for {image_name}")
+                self.logger.warning(e)
 
     def create_thumbnail(self, img, output_size):
         output_img = BytesIO()

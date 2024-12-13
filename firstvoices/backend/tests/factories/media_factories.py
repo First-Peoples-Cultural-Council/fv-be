@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import sys
 
@@ -6,6 +7,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from factory.django import DjangoModelFactory
 
 from backend.models.media import (
+    SUPPORTED_FILETYPES,
     Audio,
     AudioSpeaker,
     File,
@@ -26,15 +28,22 @@ class FileFactory(DjangoModelFactory):
     content = factory.django.FileField()
 
 
-def get_image_content(size="thumbnail"):
-    filename = f"image_example_{size}.png"
+def get_image_content(size="thumbnail", file_type="image/png"):
+    allowed_types = SUPPORTED_FILETYPES["image"]
+    if file_type not in allowed_types:
+        raise ValueError(
+            f"File type {file_type} not supported for images. Supported types are: {allowed_types}"
+        )
+
+    file_extension = mimetypes.guess_extension(file_type)
+    filename = f"image_example_{size}{file_extension}"
     path = os.path.dirname(os.path.realpath(__file__)) + f"/resources/{filename}"
     file = open(path, "rb")
     content = InMemoryUploadedFile(
         file,
         "ImageField",
         filename,
-        "video/mp4",
+        file_type,
         sys.getsizeof(file),
         None,
     )

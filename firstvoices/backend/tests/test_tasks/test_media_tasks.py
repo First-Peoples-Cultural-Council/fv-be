@@ -1,6 +1,7 @@
 import pytest
+from PIL import Image as PILImage
 
-from backend.models.media import Image, Video
+from backend.models.media import SUPPORTED_FILETYPES, Image, Video
 from backend.tasks.media_tasks import generate_media_thumbnails
 from backend.tests.factories import (
     ImageFactory,
@@ -8,6 +9,7 @@ from backend.tests.factories import (
     SiteFactory,
     VideoFactory,
     VideoFileFactory,
+    get_image_content,
 )
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
@@ -59,3 +61,26 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
         new_last_modified = media_item.last_modified
 
         assert new_last_modified == original_last_modified
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
+    @pytest.mark.parametrize("file_type", SUPPORTED_FILETYPES["image"])
+    def test_thumbnail_generation_adds_white_background(self, file_type):
+        site = SiteFactory()
+        image_file = ImageFileFactory.create(
+            content=get_image_content(file_type=file_type),
+            site=site,
+        )
+        image = ImageFactory.create(original=image_file, site=site)
+
+        image.generate_resized_images()
+        image.refresh_from_db()
+
+        with PILImage.open(image.medium.content) as img:
+            assert img.getpixel((0, 0)) >= (250, 250, 250)
+
+        with PILImage.open(image.small.content) as img:
+            assert img.getpixel((0, 0)) >= (250, 250, 250)
+
+        with PILImage.open(image.thumbnail.content) as img:
+            assert img.getpixel((0, 0)) >= (250, 250, 250)
