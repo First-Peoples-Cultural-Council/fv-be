@@ -2,6 +2,7 @@ import io
 import logging
 from unittest.mock import patch
 
+import factory
 import pytest
 from django.core.files.base import ContentFile
 from django.db import NotSupportedError
@@ -51,7 +52,9 @@ class TestFileModels:
     @pytest.mark.disable_thumbnail_mocks
     def test_imagefile_generated_properties(self):
         site = factories.SiteFactory.create()
-        instance = factories.ImageFileFactory.create(site=site)
+        instance = factories.ImageFileFactory.create(
+            site=site, content=factory.django.ImageField()
+        )
         assert instance.mimetype == "image/jpeg"
         assert instance.height == 100
         assert instance.width == 100

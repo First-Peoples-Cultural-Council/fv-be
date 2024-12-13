@@ -105,11 +105,11 @@ def assert_related_videos(hydrated_object_entry, video_instance):
         == video_instance.original.size
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["height"]
+        hydrated_object_entry["related_videos"][0]["original"]["height"]
         == video_instance.original.height
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["width"]
+        hydrated_object_entry["related_videos"][0]["original"]["width"]
         == video_instance.original.width
     )
 
