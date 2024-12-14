@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from PIL import Image as PILImage
 
@@ -84,3 +86,18 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
 
         with PILImage.open(image.thumbnail.content) as img:
             assert img.getpixel((0, 0)) >= (250, 250, 250)
+
+    @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
+    def test_thumbail_generation_error(self, caplog):
+        site = SiteFactory()
+        image = ImageFactory.create(site=site)
+
+        with patch(
+            "PIL.Image.open",
+            side_effect=Exception("test exception"),
+        ):
+            image._request_thumbnail_generation()
+
+        assert "Error creating thumbnail for " in caplog.text
+        assert "test exception" in caplog.text
