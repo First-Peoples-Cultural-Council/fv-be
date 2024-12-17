@@ -496,7 +496,7 @@ class Video(ThumbnailMixin, MediaBase):
         """
         if not self.original:
             self.logger.warning(
-                f"Thumbnail generation failed for video model [{self.id}].\n"
+                f"Thumbnail generation failed for video model {self.id}\n"
                 f"Error: Original video file not found.\n"
             )
             return

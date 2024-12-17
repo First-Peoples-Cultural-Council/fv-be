@@ -82,7 +82,7 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
         image.original.delete()
         image._request_thumbnail_generation()
 
-        assert f"Thumbnail generation failed for image model {image.id}"
+        assert f"Thumbnail generation failed for image model {image.id}" in caplog.text
         assert "Error: Original image file not found" in caplog.text
         assert "Task ended." in caplog.text
 
@@ -94,6 +94,6 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
         video.original.delete()
         video._request_thumbnail_generation()
 
-        assert f"Thumbnail generation failed for video model {video.id}"
+        assert f"Thumbnail generation failed for video model {video.id}" in caplog.text
         assert "Error: Original video file not found" in caplog.text
         assert "Task ended." in caplog.text
