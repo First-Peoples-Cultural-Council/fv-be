@@ -420,7 +420,15 @@ class Image(ThumbnailMixin, MediaBase):
         A function to generate a set of resized images when an Image model is saved
         """
         for size_name, max_size in settings.IMAGE_SIZES.items():
-            original = self.original.content
+            try:
+                original = self.original.content
+            except AttributeError as e:
+                self.logger.warning(
+                    f"Thumbnail generation failed for image model {self.id}\n"
+                    f"Error: Original image file not found: {e}\n"
+                )
+                return
+
             image_name = original.name.split(".")[0]
             thumbnail_name = f"{image_name}_{size_name}.jpg"
 
@@ -486,6 +494,13 @@ class Video(ThumbnailMixin, MediaBase):
         """
         A function to generate a set of resized images when a Video model is saved
         """
+        if not self.original:
+            self.logger.warning(
+                f"Thumbnail generation failed for video model {self.id}\n"
+                f"Error: Original video file not found.\n"
+            )
+            return
+
         width = self.original.width
         height = self.original.height
 
