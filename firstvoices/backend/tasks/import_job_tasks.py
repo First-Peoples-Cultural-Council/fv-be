@@ -6,6 +6,7 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.db.models import Q
 from import_export.results import RowResult
 
 from backend.models.files import File
@@ -40,16 +41,17 @@ VALID_HEADERS = [
 ]
 
 
-def get_import_jobs_queued_or_running(site):
+def get_import_jobs_queued_or_running(site, current_job_id):
     # Fetch list of all import-jobs that are already running or
     # are queued to run to prevent any consistency issues
+    # excluding the specified job
 
     # get all queued or started jobs
     return ImportJob.objects.filter(
-        site=site,
-        status__in=[JobStatus.ACCEPTED, JobStatus.STARTED],
-        validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED],
-    )
+        Q(site=site),
+        Q(status__in=[JobStatus.ACCEPTED, JobStatus.STARTED])
+        | Q(validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED]),
+    ).exclude(id=current_job_id)
 
 
 def is_valid_header_variation(input_header, all_headers):

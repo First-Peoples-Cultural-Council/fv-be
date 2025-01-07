@@ -205,7 +205,9 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         import_job_id = self.kwargs["pk"]
 
         # Verify that no other jobs are started or queued for the same site
-        existing_incomplete_jobs = get_import_jobs_queued_or_running(site)
+        existing_incomplete_jobs = get_import_jobs_queued_or_running(
+            site, import_job_id
+        )
 
         if len(existing_incomplete_jobs):
             logger = logging.getLogger(__name__)

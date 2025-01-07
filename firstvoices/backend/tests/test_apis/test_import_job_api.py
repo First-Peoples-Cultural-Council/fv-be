@@ -528,3 +528,25 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         new_validation_report_id = import_job.validation_report.id
 
         assert new_validation_report_id != old_validation_report_id
+
+    @pytest.mark.django_db(transaction=True)
+    def test_more_than_one_jobs_not_allowed(self, caplog):
+        ImportJobFactory(
+            site=self.site,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.STARTED,
+        )
+
+        # Validate endpoint
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(self.import_job.id)],
+        )
+        response = self.client.post(validate_endpoint)
+        assert response.status_code == 400
+
+        assert (
+            "There is at least 1 job on this site that is already running or queued to run soon."
+            in caplog.text
+        )
