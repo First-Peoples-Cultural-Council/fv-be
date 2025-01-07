@@ -40,6 +40,18 @@ VALID_HEADERS = [
 ]
 
 
+def get_import_jobs_queued_or_running(site):
+    # Fetch list of all import-jobs that are already running or
+    # are queued to run to prevent any consistency issues
+
+    # get all queued or started jobs
+    return ImportJob.objects.filter(
+        site=site,
+        status__in=[JobStatus.ACCEPTED, JobStatus.STARTED],
+        validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED],
+    )
+
+
 def is_valid_header_variation(input_header, all_headers):
     # The input header can have a _n variation from 2 to 5, e.g. 'note_5'
     # The original header also has to be present for the variation to be accepted,
@@ -276,7 +288,7 @@ def batch_import(import_job_instance_id, dry_run=True, revalidate=False):
         logger.info(ASYNC_TASK_END_TEMPLATE)
         return
 
-    # If dry-run has not been executed successfully, do not proceed
+    # If dry-run has not been executed successfully, do not proceed for the db import
     if (dry_run is False) and (
         import_job_instance.validation_status != JobStatus.COMPLETE
     ):
