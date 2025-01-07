@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.test.utils import tag
 from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -550,3 +551,36 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
             "There is at least 1 job on this site that is already running or queued to run soon."
             in caplog.text
         )
+
+    @tag("skip_setup")
+    @pytest.mark.django_db(transaction=True)
+    @pytest.mark.parametrize(
+        "validation_status", [JobStatus.ACCEPTED, JobStatus.ACCEPTED]
+    )
+    def test_validating_current_job_again_not_allowed(self, validation_status, caplog):
+        # Edge case if we hit the validate endpoint where a dry run is already
+        # running or queued
+
+        client = APIClient()
+        user = factories.UserFactory.create()
+        factories.AppMembershipFactory.create(user=user, role=AppRole.SUPERADMIN)
+
+        client.force_authenticate(user=user)
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        import_job = ImportJobFactory(
+            site=site,
+            validation_status=validation_status,
+        )
+
+        # Validate endpoint
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[site.slug, str(import_job.id)],
+        )
+
+        response = client.post(validate_endpoint)
+        assert response.status_code == 400
+
+        assert "The specified job is already running or queued." in caplog.text

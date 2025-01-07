@@ -203,6 +203,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         """
         site = self.get_validated_site()
         import_job_id = self.kwargs["pk"]
+        logger = logging.getLogger(__name__)
 
         # Verify that no other jobs are started or queued for the same site
         existing_incomplete_jobs = get_import_jobs_queued_or_running(
@@ -210,9 +211,19 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         )
 
         if len(existing_incomplete_jobs):
-            logger = logging.getLogger(__name__)
             logger.error(
                 "There is at least 1 job on this site that is already running or queued to run soon. "
+                "Please wait for it to finish before starting a new one."
+            )
+            logger.info(ASYNC_TASK_END_TEMPLATE)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # Edge case check to prevent running validation on the current job
+        # if its already running or queued for dry run
+        curr_job = ImportJob.objects.filter(id=import_job_id)[0]
+        if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+            logger.error(
+                "The specified job is already running or queued. "
                 "Please wait for it to finish before starting a new one."
             )
             logger.info(ASYNC_TASK_END_TEMPLATE)
