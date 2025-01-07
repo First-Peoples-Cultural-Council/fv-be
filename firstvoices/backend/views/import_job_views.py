@@ -155,8 +155,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 (
                     str(instance.id),
                     True,
-                    False,
-                ),  # parameters: import_job_id, dry_run, revalidate
+                ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -178,8 +177,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 (
                     str(import_job.id),
                     False,
-                    False,
-                ),  # parameters: import_job_id, dry_run, revalidate
+                ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -234,8 +232,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 (
                     str(import_job_id),
                     True,
-                    True,
-                ),  # parameters: import_job_id, dry_run, revalidate
+                ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
