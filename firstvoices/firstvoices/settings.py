@@ -321,7 +321,7 @@ sentry_sdk.init(
     ),  # The percentage of errors to send to sentry (min 0.0, max 1.0)
     send_default_pii=False,  # Disables the sending of personally identifiable information (see
     # https://docs.sentry.io/platforms/python/guides/django/data-collected/)
-    request_bodies="never",  # Disables the sending of request bodies
+    max_request_body_size="never",  # Disables the sending of request bodies
     include_local_variables=False,  # Disables the sending of local variables in the stack trace
     integrations=[
         sentry_logging,
