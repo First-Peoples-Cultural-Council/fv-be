@@ -341,7 +341,6 @@ class TestBulkImportDryRun:
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
-        # Mock that the task has already completed
         import_job_instance = ImportJobFactory(
             site=self.site, run_as_user=self.user, data=file
         )
@@ -548,86 +547,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             title="Empty include on kids site"
         )[0]
         assert empty_kids_flag.exclude_from_kids is False
-
-    def test_parallel_jobs_not_allowed(self, caplog):
-        file = FileFactory(
-            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
-        )
-        same_file = FileFactory(
-            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
-        )  # Since it's a OneToOne field, can't use a file again
-
-        ImportJobFactory(
-            site=self.site,
-            data=file,
-            run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.STARTED,
-        )
-        import_job_instance = ImportJobFactory(
-            site=self.site,
-            data=same_file,
-            run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-        )
-
-        batch_import(import_job_instance.id, dry_run=False)
-
-        # Updated import job instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
-        assert import_job_instance.status == JobStatus.CANCELLED
-        assert (
-            "There is at least 1 already on-going job on this site. "
-            "Please wait for it to finish before starting a new one." in caplog.text
-        )
-
-    @pytest.mark.parametrize("status", [JobStatus.COMPLETE, JobStatus.FAILED])
-    def test_task_already_completed(self, status, caplog):
-        file = FileFactory(
-            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
-        )
-
-        import_job_instance = ImportJobFactory(
-            site=self.site,
-            data=file,
-            run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=status,
-        )
-
-        batch_import(import_job_instance.id, dry_run=False)
-
-        assert (
-            "The job has already been executed once. "
-            "Please create another batch request to import the entries." in caplog.text
-        )
-
-    @pytest.mark.parametrize(
-        "validation_status",
-        [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
-    )
-    def test_confirm_not_allowed_for_invalid_dry_run(self, validation_status, caplog):
-        file = FileFactory(
-            content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
-        )
-
-        import_job_instance = ImportJobFactory(
-            site=self.site,
-            data=file,
-            run_as_user=self.user,
-            validation_status=validation_status,
-        )
-
-        batch_import(import_job_instance.id, dry_run=False)
-
-        # Updated import job instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
-        assert import_job_instance.status == JobStatus.CANCELLED
-        assert (
-            "A successful dry-run is required before doing the import. "
-            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
-            in caplog.text
-        )
 
     def test_import_job_failed(self, caplog):
         file = FileFactory(

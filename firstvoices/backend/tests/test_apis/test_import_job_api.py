@@ -2,7 +2,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.test.utils import tag
 from django.utils.http import urlencode
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -380,7 +379,7 @@ class TestImportEndpoints(
         assert "failedRowsCsv" in response_data
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestImportJobConfirmAction(BaseApiTest):
     API_CONFIRM_ACTION = "api:importjob-confirm"
 
@@ -394,25 +393,22 @@ class TestImportJobConfirmAction(BaseApiTest):
 
     def setup_method(self):
         self.client = APIClient()
-
-    def test_confirm_action(self):
-        site, user = factories.get_site_with_member(
+        self.site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
         )
-
         self.client.force_authenticate(user=user)
 
-        # Mock import-job with completed validation status
         file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
         file = factories.FileFactory(content=file_content)
-        import_job_instance = ImportJobFactory(
-            site=site, data=file, validation_status=JobStatus.COMPLETE
+        self.import_job_instance = ImportJobFactory(
+            site=self.site, data=file, validation_status=JobStatus.COMPLETE
         )
 
+    def test_confirm_action(self):
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[site.slug, str(import_job_instance.id)],
+            args=[self.site.slug, str(self.import_job_instance.id)],
         )
 
         response = self.client.post(confirm_endpoint)
@@ -422,21 +418,73 @@ class TestImportJobConfirmAction(BaseApiTest):
 
         assert response_data["status"] == JobStatus.STARTED
 
-    def test_confirm_action_404_unknown_key(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+    def test_more_than_one_jobs_not_allowed(self):
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.STARTED,
         )
-        self.client.force_authenticate(user=user)
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[site.slug, "fake-key"],
+            args=[self.site.slug, str(import_job_instance.id)],
+        )
+        response = self.client.post(confirm_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "There is at least 1 job on this site that is already running or queued to run soon. Please wait for "
+            "it to finish before starting a new one." in response
         )
 
-        response = self.client.post(confirm_endpoint)
+    @pytest.mark.parametrize("status", [JobStatus.COMPLETE, JobStatus.FAILED])
+    def test_reconfirming_a_completed_job_not_allowed(self, status):
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            validation_status=JobStatus.COMPLETE,
+            status=status,
+        )
 
-        assert response.status_code == 404
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(import_job_instance.id)],
+        )
+        response = self.client.post(confirm_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "The job has already been executed once. "
+            "Please create another batch request to import the entries." in response
+        )
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
+    )
+    def test_confirm_only_allowed_for_completed_dry_run(self, validation_status):
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            validation_status=validation_status,
+        )
+
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(import_job_instance.id)],
+        )
+        response = self.client.post(confirm_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "A successful dry-run is required before doing the import. "
+            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+            in response
+        )
 
 
 class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
@@ -516,7 +564,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
     def test_validate_action(self):
         old_validation_report_id = self.import_job.validation_report.id
 
-        # Validate endpoint
         validate_endpoint = reverse(
             self.API_VALIDATE_ACTION,
             current_app=self.APP_NAME,
@@ -531,14 +578,13 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         assert new_validation_report_id != old_validation_report_id
 
     @pytest.mark.django_db(transaction=True)
-    def test_more_than_one_jobs_not_allowed(self, caplog):
+    def test_more_than_one_jobs_not_allowed(self):
         ImportJobFactory(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.STARTED,
-        )
+        )  # second job
 
-        # Validate endpoint
         validate_endpoint = reverse(
             self.API_VALIDATE_ACTION,
             current_app=self.APP_NAME,
@@ -547,29 +593,22 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         response = self.client.post(validate_endpoint)
         assert response.status_code == 400
 
+        response = json.loads(response.content)
         assert (
-            "There is at least 1 job on this site that is already running or queued to run soon."
-            in caplog.text
+            "There is at least 1 job on this site that is already running or queued to run soon. Please wait for "
+            "it to finish before starting a new one." in response
         )
 
-    @tag("skip_setup")
     @pytest.mark.django_db(transaction=True)
     @pytest.mark.parametrize(
         "validation_status", [JobStatus.ACCEPTED, JobStatus.ACCEPTED]
     )
-    def test_validating_current_job_again_not_allowed(self, validation_status, caplog):
-        # Edge case if we hit the validate endpoint where a dry run is already
-        # running or queued
-
-        client = APIClient()
-        user = factories.UserFactory.create()
-        factories.AppMembershipFactory.create(user=user, role=AppRole.SUPERADMIN)
-
-        client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+    def test_validating_current_job_again_not_allowed(self, validation_status):
+        # removing the job created in setup method
+        ImportJob.objects.filter(id=self.import_job.id).delete()
 
         import_job = ImportJobFactory(
-            site=site,
+            site=self.site,
             validation_status=validation_status,
         )
 
@@ -577,10 +616,14 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         validate_endpoint = reverse(
             self.API_VALIDATE_ACTION,
             current_app=self.APP_NAME,
-            args=[site.slug, str(import_job.id)],
+            args=[self.site.slug, str(import_job.id)],
         )
 
-        response = client.post(validate_endpoint)
+        response = self.client.post(validate_endpoint)
         assert response.status_code == 400
 
-        assert "The specified job is already running or queued." in caplog.text
+        response = json.loads(response.content)
+        assert (
+            "The specified job is already running or queued. "
+            "Please wait for it to finish before starting a new one." in response
+        )
