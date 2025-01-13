@@ -257,8 +257,8 @@ class TestImportEndpoints(
         assert response.status_code == 400
         response_data = json.loads(response.content)
         assert (
-            "The provided CSV file's encoding is not supported. Please provide a file with one of the following "
-            "encodings: utf-8(or utf-8-sig), iso-8859-1, windows-1252(or cp-1252), macroman."
+            "The provided CSV file's encoding is not supported. Please provide a file with one of the "
+            "following encodings: utf-8(or utf-8-sig), ascii, iso-8859-1, windows-1252(or cp-1252), macroman(mac)."
             in response_data
         )
 
