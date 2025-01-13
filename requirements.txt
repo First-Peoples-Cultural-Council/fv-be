@@ -8,6 +8,7 @@ botocore>=1.29.139
 celery==5.4.0
 certifi==2024.8.30
 cffi==1.17.1
+chardet==5.2.0
 charset-normalizer==3.4.0
 coloredlogs==15.0.1
 cron-descriptor==1.4.5
