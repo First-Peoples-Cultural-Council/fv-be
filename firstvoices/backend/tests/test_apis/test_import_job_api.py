@@ -214,6 +214,54 @@ class TestImportEndpoints(
         response_data = json.loads(response.content)
         assert response_data["runAsUser"] == ["Invalid email."]
 
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "ascii.csv",
+            "windows1252.csv",
+            "macroman.csv",
+            "utf8.csv",
+            "iso8859.csv",
+        ],
+    )
+    def test_csv_with_valid_encodings_accepted(self, filename):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file(f"import_job/encodings/{filename}", "text/csv"),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+
+    def test_csv_with_invalid_encodings_not_accepted(self):
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file("import_job/encodings/utf32.csv", "text/csv"),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            "The provided CSV file's encoding is not supported. Please provide a file with one of the following "
+            "encodings: utf-8(or utf-8-sig), iso-8859-1, windows-1252(or cp-1252), macroman."
+            in response_data
+        )
+
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
     def test_run_as_user_field_non_superadmins_403(self, role):
         # run_as_user field can only be used by superadmins

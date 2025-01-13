@@ -1,3 +1,6 @@
+from io import BytesIO
+
+import chardet
 import tablib
 from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
@@ -88,6 +91,26 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
 
     def create_file(self, file_data, filetype, site):
         user = self.context["request"].user
+
+        # Check for encoding
+        file_data.seek(0)
+        encoding = chardet.detect(file_data.read())["encoding"]
+        if encoding.lower() not in [
+            "utf-8-sig",
+            "ascii",
+            "iso-8859-1",
+            "windows-1252",
+            "macroman",
+        ]:
+            raise serializers.ValidationError(
+                "The provided CSV file's encoding is not supported. Please provide a file with one of the "
+                "following encodings: utf-8(or utf-8-sig), ascii, iso-8859-1, windows-1252(or cp-1252), macroman(mac)."
+            )
+
+        # Re-encoding to utf-8 encoding before saving to AWS
+        file_data.seek(0)
+        file_data.file = BytesIO(file_data.read().decode(encoding).encode("utf-8-sig"))
+
         file = filetype(
             content=file_data,
             site=site,
