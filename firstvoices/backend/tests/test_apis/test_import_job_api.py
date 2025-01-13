@@ -219,7 +219,7 @@ class TestImportEndpoints(
         [
             "ascii.csv",
             "windows1252.csv",
-            "macroman.csv",
+            "MacRoman.csv",
             "utf8.csv",
             "iso8859.csv",
         ],
