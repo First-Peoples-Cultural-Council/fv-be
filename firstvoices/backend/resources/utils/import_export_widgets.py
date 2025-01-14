@@ -2,7 +2,10 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.shortcuts import get_object_or_404
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
+
+from backend.models import PartOfSpeech
 
 DUMMY_USER_EMAIL = "support@fpcc.ca"
 
@@ -117,18 +120,13 @@ class TextListWidget(Widget):
         ]
 
 
-class CleanForeignKeyWidget(ForeignKeyWidget):
-    def __init__(self, model, field, title_case=False, *args, **kwargs):
-        self.title_case = title_case
-        super().__init__(model=model, field=field, *args, **kwargs)
+class PartOfSpeechWidget(ForeignKeyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model=PartOfSpeech, field="title", *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
         value = value.strip().lower()
-
-        if self.title_case:
-            value = value.title()
-
-        return super().clean(value, row, **kwargs)
+        return get_object_or_404(PartOfSpeech, title__iexact=value)
 
 
 class CustomManyToManyWidget(ManyToManyWidget):

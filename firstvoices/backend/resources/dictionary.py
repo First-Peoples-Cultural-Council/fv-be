@@ -6,7 +6,7 @@ from import_export import fields
 from import_export.results import RowResult
 from import_export.widgets import ForeignKeyWidget
 
-from backend.models import Category, DictionaryEntry, ImportJob, PartOfSpeech
+from backend.models import Category, DictionaryEntry, ImportJob
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.resources.base import (
     AudienceMixin,
@@ -15,8 +15,8 @@ from backend.resources.base import (
 )
 from backend.resources.utils.import_export_widgets import (
     ChoicesWidget,
-    CleanForeignKeyWidget,
     CustomManyToManyWidget,
+    PartOfSpeechWidget,
     TextListWidget,
 )
 
@@ -34,7 +34,7 @@ class DictionaryEntryResource(
     part_of_speech = fields.Field(
         column_name="part_of_speech",
         attribute="part_of_speech",
-        widget=CleanForeignKeyWidget(PartOfSpeech, "title", title_case=True),
+        widget=PartOfSpeechWidget(),
     )
     categories = fields.Field(
         column_name="category",
