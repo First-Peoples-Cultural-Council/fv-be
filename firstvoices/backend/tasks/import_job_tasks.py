@@ -116,7 +116,7 @@ def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
     failed_row_dataset.headers = data.headers
 
     failed_row_export = failed_row_dataset.export("csv")
-    in_memory_csv_file = io.BytesIO(failed_row_export.encode("utf-8"))
+    in_memory_csv_file = io.BytesIO(failed_row_export.encode("utf-8-sig"))
     in_memory_csv_file = InMemoryUploadedFile(
         file=in_memory_csv_file,
         field_name="failed_rows_csv",
