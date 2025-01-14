@@ -257,9 +257,9 @@ class TestImportEndpoints(
         assert response.status_code == 400
         response_data = json.loads(response.content)
         assert (
-            "The provided CSV file's encoding is not supported. Please provide a file with one of the "
-            "following encodings: utf-8(or utf-8-sig), ascii, iso-8859-1, windows-1252(or cp-1252), macroman(mac)."
-            in response_data
+            "File encoding must be of supported type. - Encoding: [UTF-32]. Supported encodings: "
+            "['utf-8-sig', 'ascii', 'iso-8859-1', 'windows-1252', 'macroman']."
+            in response_data["data"]
         )
 
     @pytest.mark.parametrize("role", [Role.EDITOR, Role.LANGUAGE_ADMIN])
