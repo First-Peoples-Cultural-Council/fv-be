@@ -6,6 +6,7 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.db.models import Q
 from import_export.results import RowResult
 
 from backend.models.files import File
@@ -38,6 +39,19 @@ VALID_HEADERS = [
     "include_in_games",
     "related_entry",
 ]
+
+
+def get_import_jobs_queued_or_running(site, current_job_id):
+    # Fetch list of all import-jobs that are already running or
+    # are queued to run to prevent any consistency issues
+    # excluding the specified job
+
+    # get all queued or started jobs
+    return ImportJob.objects.filter(
+        Q(site=site),
+        Q(status__in=[JobStatus.ACCEPTED, JobStatus.STARTED])
+        | Q(validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED]),
+    ).exclude(id=current_job_id)
 
 
 def is_valid_header_variation(input_header, all_headers):
@@ -187,7 +201,9 @@ def import_resource(
     return report
 
 
-def import_job(data, import_job_instance, logger):
+def import_job(data, import_job_instance):
+    logger = get_task_logger(__name__)
+
     resource = DictionaryEntryResource(
         site=import_job_instance.site,
         run_as_user=import_job_instance.run_as_user,
@@ -202,14 +218,27 @@ def import_job(data, import_job_instance, logger):
         import_job_instance.status = JobStatus.FAILED
 
 
-def import_job_dry_run(data, import_job_instance, logger):
+def import_job_dry_run(data, import_job_instance):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
+    logger = get_task_logger(__name__)
+
     resource = DictionaryEntryResource(
         site=import_job_instance.site,
         run_as_user=import_job_instance.run_as_user,
         import_job=import_job_instance.id,
     )
+
+    # Clearing out old report if present
+    old_report = import_job_instance.validation_report
+    if old_report:
+        try:
+            old_report = ImportJobReport.objects.filter(id=old_report.id)
+            old_report.delete()
+        except Exception as e:
+            logger.error(e)
+            import_job_instance.validation_status = JobStatus.FAILED
+            return
 
     try:
         report = import_resource(data, resource, import_job_instance, dry_run=True)
@@ -235,50 +264,6 @@ def batch_import(import_job_instance_id, dry_run=True):
 
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
-    # Assert conditions to verify no other job is running.
-    # If any variation of an import job is currently running for the provided site,
-    # abort the task and provide an error message.
-
-    site = import_job_instance.site
-
-    # Get any incomplete jobs, except for the currently specified one.
-    existing_incomplete_import_jobs = ImportJob.objects.filter(
-        site=site, status=JobStatus.STARTED
-    ).exclude(id=import_job_instance.id)
-
-    if len(existing_incomplete_import_jobs):
-        logger.error(
-            "There is at least 1 already on-going job on this site. "
-            "Please wait for it to finish before starting a new one."
-        )
-        logger.info(ASYNC_TASK_END_TEMPLATE)
-        import_job_instance.status = JobStatus.CANCELLED
-        import_job_instance.save()
-        return
-
-    # If the job status is already completed, also abort the task
-    if import_job_instance.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
-        logger.error(
-            "The job has already been executed once. "
-            "Please create another batch request to import the entries."
-        )
-        logger.info(ASYNC_TASK_END_TEMPLATE)
-        return
-
-    # If dry-run has not been executed successfully, do not proceed
-    if (dry_run is False) and (
-        import_job_instance.validation_status != JobStatus.COMPLETE
-    ):
-        logger.error(
-            "A successful dry-run is required before doing the import. "
-            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
-        )
-        logger.info(ASYNC_TASK_END_TEMPLATE)
-
-        import_job_instance.status = JobStatus.CANCELLED
-        import_job_instance.save()
-        return
-
     if dry_run:
         import_job_instance.validation_status = JobStatus.STARTED
         import_job_instance.validation_task_id = task_id
@@ -292,9 +277,9 @@ def batch_import(import_job_instance_id, dry_run=True):
     data = tablib.Dataset().load(file, format="csv")
 
     if dry_run:
-        import_job_dry_run(data, import_job_instance, logger)
+        import_job_dry_run(data, import_job_instance)
     else:
-        import_job(data, import_job_instance, logger)
+        import_job(data, import_job_instance)
 
     import_job_instance.save()
     logger.info(ASYNC_TASK_END_TEMPLATE)

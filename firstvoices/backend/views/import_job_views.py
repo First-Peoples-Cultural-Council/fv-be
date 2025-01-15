@@ -3,12 +3,16 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import parsers, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.tasks.import_job_tasks import batch_import
+from backend.tasks.import_job_tasks import (
+    batch_import,
+    get_import_jobs_queued_or_running,
+)
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -85,9 +89,26 @@ from firstvoices.celery import link_error_handler
             "for the site. When finished, the status will be 'COMPLETE'."
         ),
         responses={
-            201: OpenApiResponse(
-                description=doc_strings.success_201, response=ImportJobSerializer
+            202: OpenApiResponse(
+                description=doc_strings.success_202_job_accepted,
+                response=ImportJobSerializer,
             ),
+            400: OpenApiResponse(description=doc_strings.error_400_validation),
+            403: OpenApiResponse(description=doc_strings.error_403),
+            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+        },
+        parameters=[
+            site_slug_parameter,
+            id_parameter,
+        ],
+    ),
+    validate=extend_schema(
+        description=_(
+            "Starts validating the data including any newly uploaded media. "
+            "When finished, the validationStatus and validationReport will be updated."
+        ),
+        responses={
+            202: OpenApiResponse(description=doc_strings.success_202_job_accepted),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
@@ -110,6 +131,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
     permission_type_map = {
         **FVPermissionViewSetMixin.permission_type_map,
         "confirm": "change",
+        "validate": "change",
     }
 
     def get_queryset(self):
@@ -121,10 +143,17 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
     def perform_create(self, serializer):
         instance = serializer.save()
 
+        # Accepting the job for validation
+        instance.validation_status = JobStatus.ACCEPTED
+        instance.save()
+
         # Dry-run to get validation results
         transaction.on_commit(
             lambda: batch_import.apply_async(
-                (str(instance.id),),
+                (
+                    str(instance.id),
+                    True,
+                ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -137,13 +166,41 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         site = self.get_validated_site()
         import_job = ImportJob.objects.get(id=import_job_id)
 
+        # If the job status is already completed, abort the task
+        if import_job.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
+            raise ValidationError(
+                "The job has already been executed once. "
+                "Please create another batch request to import the entries."
+            )
+
+        # If dry-run has not been executed successfully, do not proceed for the db import
+        if import_job.validation_status != JobStatus.COMPLETE:
+            raise ValidationError(
+                "A successful dry-run is required before doing the import. "
+                "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+            )
+
         import_job.status = JobStatus.STARTED
         import_job.save()
+
+        # Verify that no other jobs are started or queued for the same site
+        existing_incomplete_jobs = get_import_jobs_queued_or_running(
+            site, import_job_id
+        )
+
+        if len(existing_incomplete_jobs):
+            raise ValidationError(
+                "There is at least 1 job on this site that is already running or queued to run soon. "
+                "Please wait for it to finish before starting a new one."
+            )
 
         # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
-                (str(import_job.id), False),
+                (
+                    str(import_job.id),
+                    False,
+                ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -159,3 +216,44 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         return Response(
             serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
         )
+
+    @action(detail=True, methods=["post"])
+    def validate(self, request, site_slug=None, pk=None):
+        """
+        Method to start the validation process on a given import-job.
+        """
+        site = self.get_validated_site()
+        import_job_id = self.kwargs["pk"]
+
+        # Verify that no other jobs are started or queued for the same site
+        existing_incomplete_jobs = get_import_jobs_queued_or_running(
+            site, import_job_id
+        )
+
+        if len(existing_incomplete_jobs):
+            raise ValidationError(
+                "There is at least 1 job on this site that is already running or queued to run soon. "
+                "Please wait for it to finish before starting a new one."
+            )
+
+        # Another check to prevent running validation on the current job
+        # if its already running or queued for dry run
+        curr_job = ImportJob.objects.filter(id=import_job_id)[0]
+        if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+            raise ValidationError(
+                "The specified job is already running or queued. "
+                "Please wait for it to finish before starting a new one."
+            )
+
+        transaction.on_commit(
+            lambda: batch_import.apply_async(
+                (
+                    str(import_job_id),
+                    True,
+                ),
+                link_error=link_error_handler.s(),
+                ignore_result=True,
+            )
+        )
+
+        return Response(status=status.HTTP_202_ACCEPTED)
