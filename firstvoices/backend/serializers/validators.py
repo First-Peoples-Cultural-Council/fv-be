@@ -1,3 +1,4 @@
+import chardet
 import magic
 from django.utils.translation import gettext as _
 from rest_framework import serializers
@@ -90,4 +91,25 @@ class SupportedFileType:
 
         if mimetype not in self.mimetypes:
             message = f"{self.message} - Filetype: [{mimetype}] Supported types: {self.mimetypes}"
+            raise serializers.ValidationError(message)
+
+
+class SupportedFileEncodingValidator:
+    """
+    Validates that the file has one of the supported encodings.
+    """
+
+    message = _("File encoding must be of supported type.")
+    encodings = ["utf-8-sig", "ascii", "iso-8859-1", "windows-1252", "macroman"]
+
+    def __init__(self, encodings=None, message=None):
+        self.encodings = encodings or self.encodings
+        self.message = message or self.message
+
+    def __call__(self, value):
+        value.seek(0)
+        encoding = chardet.detect(value.read())["encoding"]
+
+        if encoding.lower() not in self.encodings:
+            message = f"{self.message} - Encoding: [{encoding}]. Supported encodings: {self.encodings}."
             raise serializers.ValidationError(message)

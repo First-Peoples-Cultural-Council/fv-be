@@ -1,3 +1,6 @@
+from io import BytesIO
+
+import chardet
 import tablib
 from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
@@ -17,7 +20,10 @@ from backend.serializers.utils.import_job_utils import (
     check_required_headers,
     validate_username,
 )
-from backend.serializers.validators import SupportedFileType
+from backend.serializers.validators import (
+    SupportedFileEncodingValidator,
+    SupportedFileType,
+)
 
 
 class ImportReportRowSerializer(serializers.ModelSerializer):
@@ -47,7 +53,10 @@ class ImportReportSerializer(serializers.ModelSerializer):
 class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     id = serializers.UUIDField(read_only=True)
     data = FileUploadSerializer(
-        validators=[SupportedFileType(mimetypes=["text/csv", "text/plain"])],
+        validators=[
+            SupportedFileType(mimetypes=["text/csv", "text/plain"]),
+            SupportedFileEncodingValidator(),
+        ],
     )
     run_as_user = serializers.CharField(required=False)
     validation_task_id = serializers.CharField(read_only=True)
@@ -88,6 +97,13 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
 
     def create_file(self, file_data, filetype, site):
         user = self.context["request"].user
+
+        # Re-encoding to utf-8 encoding before saving to AWS
+        file_data.seek(0)
+        encoding = chardet.detect(file_data.read())["encoding"]
+        file_data.seek(0)
+        file_data.file = BytesIO(file_data.read().decode(encoding).encode("utf-8-sig"))
+
         file = filetype(
             content=file_data,
             site=site,
