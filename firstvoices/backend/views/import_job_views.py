@@ -263,7 +263,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         # was imported or did not finish for any reason do not re-validate the job again
         if curr_job.status != JobStatus.ACCEPTED:
             raise ValidationError(
-                "The db import of this job has been started. It cannot be re-validated again."
+                "The db import of this job has been started. It cannot be re-validated again. "
                 "Please create another batch request to import the entries."
             )
 

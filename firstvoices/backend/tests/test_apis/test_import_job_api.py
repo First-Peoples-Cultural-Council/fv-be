@@ -509,6 +509,27 @@ class TestImportJobConfirmAction(BaseApiTest):
             "Please create another batch request to import the entries." in response
         )
 
+    def test_confirming_already_started_job_not_allowed(self):
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.STARTED,
+        )
+
+        confirm_endpoint = reverse(
+            self.API_CONFIRM_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(import_job_instance.id)],
+        )
+        response = self.client.post(confirm_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "The specified job is already running or queued. "
+            "It cannot be run again once the import is finished." in response
+        )
+
     @pytest.mark.parametrize(
         "validation_status",
         [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
@@ -545,6 +566,7 @@ class TestImportJobConfirmAction(BaseApiTest):
             )
 
 
+@pytest.mark.django_db(transaction=True)
 class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
     API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
@@ -591,7 +613,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
         self.import_job = ImportJob.objects.filter(id=response_data["id"])[0]
 
-    @pytest.mark.django_db(transaction=True)
     def test_exception_fetching_previous_report(self, caplog):
         # Simulating a general exception when fetching/deleting a previous
         # validation report
@@ -618,7 +639,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         assert "General Exception" in caplog.text
         assert import_job.validation_status == JobStatus.FAILED
 
-    @pytest.mark.django_db(transaction=True)
     def test_validate_action(self):
         old_validation_report_id = self.import_job.validation_report.id
 
@@ -635,7 +655,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
         assert new_validation_report_id != old_validation_report_id
 
-    @pytest.mark.django_db(transaction=True)
     def test_more_than_one_jobs_not_allowed(self):
         ImportJobFactory(
             site=self.site,
@@ -657,7 +676,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
             "it to finish before starting a new one." in response
         )
 
-    @pytest.mark.django_db(transaction=True)
     @pytest.mark.parametrize(
         "validation_status", [JobStatus.ACCEPTED, JobStatus.ACCEPTED]
     )
@@ -684,4 +702,29 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         assert (
             "The specified job is already running or queued. "
             "Please wait for it to finish before starting a new one." in response
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED, JobStatus.CANCELLED],
+    )
+    def test_confirmed_job_not_allowed_to_revalidate(self, status):
+        self.import_job.status = status
+        self.import_job.save()
+
+        # Validate endpoint
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(self.import_job.id)],
+        )
+
+        response = self.client.post(validate_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "The db import of this job has been started. "
+            "It cannot be re-validated again. Please create another batch request to import the entries."
+            in response
         )
