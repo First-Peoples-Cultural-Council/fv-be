@@ -164,28 +164,28 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         import_job_id = self.kwargs["pk"]
 
         site = self.get_validated_site()
-        import_job = ImportJob.objects.get(id=import_job_id)
+        curr_job = ImportJob.objects.get(id=import_job_id)
 
         # if its already started or queued, do not queue the job again
-        if import_job.status == JobStatus.STARTED:
+        if curr_job.status == JobStatus.STARTED:
             raise ValidationError(
                 "The specified job is already running or queued. It cannot be run again once the import is finished."
             )
 
         # If the job status is already completed, abort the task
-        if import_job.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
+        if curr_job.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
             raise ValidationError(
                 "The job has already been executed once. "
                 "Please create another batch request to import the entries."
             )
 
         # If dry-run has not been executed successfully, do not proceed for the db import
-        if import_job.validation_status == JobStatus.STARTED:
+        if curr_job.validation_status == JobStatus.STARTED:
             raise ValidationError(
                 "It seems a dry-run is still in progress. "
                 "Please wait for it to finish before proceeding with the import."
             )
-        if import_job.validation_status in [
+        if curr_job.validation_status in [
             JobStatus.ACCEPTED,
             JobStatus.FAILED,
             JobStatus.CANCELLED,
@@ -206,14 +206,14 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "Please wait for it to finish before starting a new one."
             )
 
-        import_job.status = JobStatus.STARTED
-        import_job.save()
+        curr_job.status = JobStatus.STARTED
+        curr_job.save()
 
         # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
                 (
-                    str(import_job.id),
+                    str(curr_job.id),
                     False,
                 ),
                 link_error=link_error_handler.s(),
@@ -221,16 +221,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             )
         )
 
-        # Update the in-memory instance and return the job
-        import_job = ImportJob.objects.get(id=import_job_id)
-        serializer = ImportJobSerializer(
-            import_job, context={"request": self.request, "site": site}
-        )
-        headers = self.get_success_headers(serializer.data)
-
-        return Response(
-            serializer.data, status=status.HTTP_202_ACCEPTED, headers=headers
-        )
+        return Response(status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):

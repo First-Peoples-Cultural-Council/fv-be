@@ -462,9 +462,6 @@ class TestImportJobConfirmAction(BaseApiTest):
         response = self.client.post(confirm_endpoint)
 
         assert response.status_code == 202
-        response_data = json.loads(response.content)
-
-        assert response_data["status"] == JobStatus.STARTED
 
     def test_more_than_one_jobs_not_allowed(self):
         import_job_instance = ImportJobFactory(
