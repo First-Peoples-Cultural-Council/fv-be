@@ -185,7 +185,11 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "It seems a dry-run is still in progress. "
                 "Please wait for it to finish before proceeding with the import."
             )
-        if import_job.validation_status == JobStatus.FAILED:
+        if import_job.validation_status in [
+            JobStatus.ACCEPTED,
+            JobStatus.FAILED,
+            JobStatus.CANCELLED,
+        ]:
             raise ValidationError(
                 "A successful dry-run is required before doing the import. "
                 "Please fix any issues found during the dry-run of the CSV file and re-validate or run a new batch."

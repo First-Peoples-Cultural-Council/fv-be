@@ -470,7 +470,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         import_job_instance = ImportJobFactory(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
-            status=JobStatus.STARTED,
+            status=JobStatus.ACCEPTED,
         )
 
         confirm_endpoint = reverse(
@@ -514,6 +514,9 @@ class TestImportJobConfirmAction(BaseApiTest):
         [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED, JobStatus.CANCELLED],
     )
     def test_confirm_only_allowed_for_completed_dry_run(self, validation_status):
+        # Cleaning up the job from setup_method
+        self.import_job_instance.delete()
+
         import_job_instance = ImportJobFactory(
             site=self.site,
             validation_status=validation_status,
@@ -528,11 +531,18 @@ class TestImportJobConfirmAction(BaseApiTest):
         assert response.status_code == 400
 
         response = json.loads(response.content)
-        assert (
-            "A successful dry-run is required before doing the import. "
-            "Please fix any issues found during the dry-run of the CSV file and run a new batch."
-            in response
-        )
+        if validation_status == JobStatus.STARTED:
+            assert (
+                "It seems a dry-run is still in progress. "
+                "Please wait for it to finish before proceeding with the import."
+                in response
+            )
+        else:
+            assert (
+                "A successful dry-run is required before doing the import. "
+                "Please fix any issues found during the dry-run of the CSV file and re-validate or run a new batch."
+                in response
+            )
 
 
 class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
