@@ -265,11 +265,8 @@ def batch_import(import_job_instance_id, dry_run=True):
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
     if dry_run:
-        import_job_instance.validation_status = JobStatus.STARTED
         import_job_instance.validation_task_id = task_id
     else:
-        # we don't need to set the import_job_instance primary task status here
-        # as that is assigned in the @confirm view
         import_job_instance.task_id = task_id
     import_job_instance.save()
 

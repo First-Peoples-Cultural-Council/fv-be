@@ -144,7 +144,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         instance = serializer.save()
 
         # Accepting the job for validation
-        instance.validation_status = JobStatus.ACCEPTED
+        instance.validation_status = JobStatus.STARTED
         instance.save()
 
         # Dry-run to get validation results
@@ -166,6 +166,12 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         site = self.get_validated_site()
         import_job = ImportJob.objects.get(id=import_job_id)
 
+        # if its already started or queued, do not queue the job again
+        if import_job.status == JobStatus.STARTED:
+            raise ValidationError(
+                "The specified job is already running or queued. It cannot be run again once the import is finished."
+            )
+
         # If the job status is already completed, abort the task
         if import_job.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
             raise ValidationError(
@@ -174,14 +180,16 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             )
 
         # If dry-run has not been executed successfully, do not proceed for the db import
-        if import_job.validation_status != JobStatus.COMPLETE:
+        if import_job.validation_status == JobStatus.STARTED:
+            raise ValidationError(
+                "It seems a dry-run is still in progress. "
+                "Please wait for it to finish before proceeding with the import."
+            )
+        if import_job.validation_status == JobStatus.FAILED:
             raise ValidationError(
                 "A successful dry-run is required before doing the import. "
-                "Please fix any issues found during the dry-run of the CSV file and run a new batch."
+                "Please fix any issues found during the dry-run of the CSV file and re-validate or run a new batch."
             )
-
-        import_job.status = JobStatus.STARTED
-        import_job.save()
 
         # Verify that no other jobs are started or queued for the same site
         existing_incomplete_jobs = get_import_jobs_queued_or_running(
@@ -193,6 +201,9 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "There is at least 1 job on this site that is already running or queued to run soon. "
                 "Please wait for it to finish before starting a new one."
             )
+
+        import_job.status = JobStatus.STARTED
+        import_job.save()
 
         # Start the task
         transaction.on_commit(
@@ -236,14 +247,24 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "Please wait for it to finish before starting a new one."
             )
 
-        # Another check to prevent running validation on the current job
-        # if its already running or queued for dry run
+        # if its already running or queued for dry run, do not queue the job again
         curr_job = ImportJob.objects.filter(id=import_job_id)[0]
         if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
             raise ValidationError(
                 "The specified job is already running or queued. "
                 "Please wait for it to finish before starting a new one."
             )
+
+        # If the DB import has any other status than accepted, i.e. it was started at least once and
+        # was imported or did not finish for any reason do not re-validate the job again
+        if curr_job.status != JobStatus.ACCEPTED:
+            raise ValidationError(
+                "The db import of this job has been started. It cannot be re-validated again."
+                "Please create another batch request to import the entries."
+            )
+
+        curr_job.validation_status = JobStatus.STARTED
+        curr_job.save()
 
         transaction.on_commit(
             lambda: batch_import.apply_async(
