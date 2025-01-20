@@ -53,7 +53,7 @@ mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
 nh3==0.2.20 # https://github.com/messense/nh3
 networkx==3.4.2
-numpy==1.26.4
+numpy==2.2.2
 openpyxl==3.1.5
 packaging==24.2
 panphon==0.21.2
