@@ -763,9 +763,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             data=file,
             run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
         )
-
         confirm_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)

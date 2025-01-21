@@ -12,6 +12,7 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.files import File
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
@@ -38,6 +39,14 @@ VALID_HEADERS = [
     "include_on_kids_site",
     "include_in_games",
     "related_entry",
+    # media
+    "audio_filename",
+    "audio_title",
+    "audio_description",
+    "audio_speaker",  # Add a new ticket for speaker support
+    "audio_acknowledgement",
+    "audio_include_in_kids_site",
+    "audio_include_in_games",
 ]
 
 
@@ -110,32 +119,52 @@ def import_resource(
     data,
     resource,
     import_job,
-    dry_run,
+    missing_media=None,
+    dry_run=True,
 ):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
-
-    # Method to import the cleaned data for the provided resource along with a dry-run flag.
-    result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(
         site=import_job.site,
         importjob=import_job,
-        new_rows=result.totals["new"],
-        error_rows=result.totals["error"]
-        + result.totals["invalid"]
-        + result.totals["skip"],
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
     )
     report.save()
 
-    # to keep track of row numbers of erroneous rows
-    error_row_numbers = []
+    # Method to import the cleaned data for the provided resource along with a dry-run flag.
+    result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
+
+    # Merge reports and keep track of erroneous rows
+    new_rows = 0
+    error_rows = []
+    if missing_media:
+        missing_media_row_numbers = [media["idx"] for media in missing_media]
+    else:
+        missing_media_row_numbers = []
 
     # Adding error messages to the report
     for row in result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+        if row.number in missing_media_row_numbers:
+            missing_media_filename = [
+                media_row
+                for media_row in missing_media
+                if media_row["idx"] == row.number
+            ]
+            error_row_instance = ImportJobReportRow(
+                site=import_job.site,
+                report=report,
+                status=RowStatus.ERROR,
+                row_number=row.number,
+                errors=[
+                    f"Media file not found in uploaded files: {missing_media_filename}. "
+                    "Please upload the required file to continue."
+                ],
+            )
+            error_row_instance.save()
+            error_rows.append(row.number)
+        elif row.import_type == RowResult.IMPORT_TYPE_SKIP:
             error_row_instance = ImportJobReportRow(
                 site=import_job.site,
                 report=report,
@@ -144,13 +173,23 @@ def import_resource(
                 errors=row.error_messages,
             )
             error_row_instance.save()
-            error_row_numbers.append(row.number)
+            error_rows.append(row.number)
+        elif row.import_type == RowResult.IMPORT_TYPE_NEW:
+            new_rows += 1
+
+    report.new_rows = new_rows
+    report.error_rows = (
+        len(error_rows)
+        + result.totals["invalid"]
+        + result.totals["error"]
+    )
+    report.save()
 
     # Sort rows and attach the csv
-    if error_row_numbers:
-        error_row_numbers.sort()
+    if error_rows:
+        error_rows.sort()
         failed_row_csv_file = get_failed_rows_csv_file(
-            import_job, data, error_row_numbers
+            import_job, data, error_rows
         )
         import_job.failed_rows_csv = failed_row_csv_file
         import_job.save()
@@ -185,6 +224,8 @@ def dry_run_import_job(data, import_job):
     Updates the validationReport and validationStatus instead of the job status."""
     logger = get_task_logger(__name__)
 
+    missing_media = get_missing_media(data, import_job)
+
     resource = DictionaryEntryResource(
         site=import_job.site,
         run_as_user=import_job.run_as_user,
@@ -203,12 +244,34 @@ def dry_run_import_job(data, import_job):
             return
 
     try:
-        report = import_resource(data, resource, import_job, dry_run=True)
+        report = import_resource(
+            data, resource, import_job, missing_media, dry_run=True
+        )
         import_job.validation_status = JobStatus.COMPLETE
         import_job.validation_report = report
     except Exception as e:
         logger.error(e)
         import_job.validation_status = JobStatus.FAILED
+    finally:
+        import_job.save()
+
+
+def get_missing_media(data, import_job_instance):
+    missing_media = []
+    associated_files = list(
+        File.objects.filter(import_job=import_job_instance).values_list(
+            "content", flat=True
+        )
+    )
+    associated_filenames = [file.split("/")[-1] for file in associated_files]
+
+    # Audio
+    if 'AUDIO_FILENAME' in data:
+        for idx, filename in enumerate(data["AUDIO_FILENAME"]):
+            if filename not in associated_filenames:
+                missing_media.append({"idx": idx + 1, "filename": filename})
+
+    return missing_media
 
 
 @shared_task
