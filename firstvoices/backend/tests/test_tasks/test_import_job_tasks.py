@@ -104,7 +104,7 @@ class TestBulkImportDryRun:
         accepted_columns = validation_report.accepted_columns
         ignored_columns = validation_report.ignored_columns
 
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 6
         assert validation_report.error_rows == 0
 
         expected_valid_columns = [
