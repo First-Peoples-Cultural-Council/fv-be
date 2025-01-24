@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
 from import_export.results import RowResult
+from rest_framework.exceptions import ValidationError
 
 from backend.models.files import File
 from backend.models.import_jobs import (
@@ -265,8 +266,52 @@ def batch_import(import_job_instance_id, dry_run=True):
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
     if dry_run:
+        # Checks to ensure consistency
+        if import_job_instance.validation_status != JobStatus.ACCEPTED:
+            raise ValidationError("No. ")
+
+        if import_job_instance.status in [
+            JobStatus.ACCEPTED,
+            JobStatus.STARTED,
+            JobStatus.COMPLETE,
+        ]:
+            raise ValidationError(
+                "The specified job is either queued, or running or completed. "
+                "Please create a new batch request to import the entries."
+            )
+
+        existing_incomplete_jobs = get_import_jobs_queued_or_running(
+            import_job_instance.site, import_job_instance_id
+        )
+        if len(existing_incomplete_jobs):
+            raise ValidationError(
+                "There is at least 1 job on this site that is already running or queued to run soon. "
+                "Please wait for it to finish before starting a new one."
+            )
+
+        import_job_instance.validation_status = JobStatus.STARTED
         import_job_instance.validation_task_id = task_id
     else:
+        # Checks to ensure consistency
+        if import_job_instance.status != JobStatus.ACCEPTED:
+            raise ValidationError("No. ")
+
+        if import_job_instance.validation_status != JobStatus.COMPLETE:
+            raise ValidationError(
+                "A successful dry-run is required before doing the import. "
+                "Please validate the job before confirming the import."
+            )
+
+        existing_incomplete_jobs = get_import_jobs_queued_or_running(
+            import_job_instance.site, import_job_instance_id
+        )
+        if len(existing_incomplete_jobs):
+            raise ValidationError(
+                "There is at least 1 job on this site that is already running or queued to run soon. "
+                "Please wait for it to finish before starting a new one."
+            )
+
+        import_job_instance.status = JobStatus.STARTED
         import_job_instance.task_id = task_id
     import_job_instance.save()
 

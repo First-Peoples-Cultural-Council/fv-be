@@ -102,13 +102,24 @@ class ImportJob(BaseJob):
 
     data = models.ForeignKey("backend.File", null=True, on_delete=models.SET_NULL)
 
+    # overriding BaseJob
+    status = models.CharField(
+        max_length=9,
+        choices=JobStatus.choices,
+        null=True,
+        blank=True,
+        default=None,
+    )
+
     # The following fields are for the dry-run and then presenting those results
     validation_task_id = models.CharField(max_length=255, null=True, blank=True)
 
     validation_status = models.CharField(
         max_length=9,
         choices=JobStatus.choices,
-        default=JobStatus.ACCEPTED,
+        null=True,
+        blank=True,
+        default=None,
     )
 
     validation_report = models.OneToOneField(

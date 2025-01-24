@@ -36,7 +36,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -50,7 +53,10 @@ class TestBulkImportDryRun:
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -73,7 +79,10 @@ class TestBulkImportDryRun:
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -93,7 +102,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -155,7 +167,10 @@ class TestBulkImportDryRun:
         file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -187,7 +202,10 @@ class TestBulkImportDryRun:
         )  # 1st row in the file a valid row for control
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -207,7 +225,10 @@ class TestBulkImportDryRun:
         file_content = get_sample_file("import_job/unknown_columns.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -230,7 +251,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -253,7 +277,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -288,7 +315,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -310,7 +340,10 @@ class TestBulkImportDryRun:
         )
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id)
@@ -342,7 +375,10 @@ class TestBulkImportDryRun:
         )
 
         import_job_instance = ImportJobFactory(
-            site=self.site, run_as_user=self.user, data=file
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
         )
 
         with patch(
@@ -417,6 +453,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -435,6 +472,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -461,6 +499,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -520,6 +559,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
         batch_import(import_job_instance.id, dry_run=False)
 
@@ -559,6 +599,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         with patch(
@@ -587,6 +628,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             data=file,
             run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -617,6 +659,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             data=file,
             run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -640,6 +683,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             data=file,
             run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -666,6 +710,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)
@@ -682,6 +727,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
         )
 
         batch_import(import_job_instance.id, dry_run=False)

@@ -52,9 +52,7 @@ from firstvoices.celery import link_error_handler
     ),
     create=extend_schema(
         description=_(
-            "Creates a new batch import job and automatically starts generating a validation report. "
-            "Once the validationStatus is 'COMPLETE', the validationReport will list how many rows can "
-            "be imported, ignored columns, rows or any errors. See the 'confirm' API to import the data."
+            "Creates a new batch import job. The job can be validated or confirmed using the relevant endpoints."
         ),
         responses={
             201: OpenApiResponse(
@@ -140,81 +138,55 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             "-created"
         )  # permissions are applied by the base view
 
-    def perform_create(self, serializer):
-        instance = serializer.save()
-
-        # Accepting the job for validation
-        instance.validation_status = JobStatus.STARTED
-        instance.save()
-
-        # Dry-run to get validation results
-        transaction.on_commit(
-            lambda: batch_import.apply_async(
-                (
-                    str(instance.id),
-                    True,
-                ),
-                link_error=link_error_handler.s(),
-                ignore_result=True,
-            )
-        )
-
     @action(detail=True, methods=["post"])
-    def confirm(self, request, site_slug=None, pk=None):
-        import_job_id = self.kwargs["pk"]
-
+    def validate(self, request, site_slug=None, pk=None):
+        """
+        Method to start the validation process on a given import-job.
+        """
         site = self.get_validated_site()
-        curr_job = ImportJob.objects.get(id=import_job_id)
+        import_job_id = self.kwargs["pk"]
+        curr_job = ImportJob.objects.filter(id=import_job_id)[0]
 
-        # if its already started or queued, do not queue the job again
-        if curr_job.status == JobStatus.STARTED:
+        # Checks to ensure consistency
+
+        # Verify the current job is not running or queued.
+        if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
             raise ValidationError(
-                "The specified job is already running or queued. It cannot be run again once the import is finished."
+                "The specified job is already running or queued. "
+                "Please wait for it to finish before queueing another job."
             )
 
-        # If the job status is already completed, abort the task
-        if curr_job.status in [JobStatus.COMPLETE, JobStatus.FAILED]:
-            raise ValidationError(
-                "The job has already been executed once. "
-                "Please create another batch request to import the entries."
-            )
-
-        # If dry-run has not been executed successfully, do not proceed for the db import
-        if curr_job.validation_status == JobStatus.STARTED:
-            raise ValidationError(
-                "It seems a dry-run is still in progress. "
-                "Please wait for it to finish before proceeding with the import."
-            )
-        if curr_job.validation_status in [
+        # todo: Think and verify again if we want to allow a failed job to be re-validated
+        # todo: Update the wording
+        if curr_job.status in [
             JobStatus.ACCEPTED,
-            JobStatus.FAILED,
-            JobStatus.CANCELLED,
+            JobStatus.STARTED,
+            JobStatus.COMPLETE,
         ]:
             raise ValidationError(
-                "A successful dry-run is required before doing the import. "
-                "Please fix any issues found during the dry-run of the CSV file and re-validate or run a new batch."
+                "The specified job is either queued, or running or completed. "
+                "Please create a new batch request to import the entries."
             )
 
-        # Verify that no other jobs are started or queued for the same site
+        # Verify no other job for the given site has validation_status/status of accepted or started
         existing_incomplete_jobs = get_import_jobs_queued_or_running(
             site, import_job_id
         )
-
         if len(existing_incomplete_jobs):
             raise ValidationError(
                 "There is at least 1 job on this site that is already running or queued to run soon. "
                 "Please wait for it to finish before starting a new one."
             )
 
-        curr_job.status = JobStatus.STARTED
+        # Queue the job for validation
+        curr_job.validation_status = JobStatus.ACCEPTED
         curr_job.save()
 
-        # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
                 (
-                    str(curr_job.id),
-                    False,
+                    str(import_job_id),
+                    True,
                 ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
@@ -224,48 +196,49 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         return Response(status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=["post"])
-    def validate(self, request, site_slug=None, pk=None):
-        """
-        Method to start the validation process on a given import-job.
-        """
-        site = self.get_validated_site()
+    def confirm(self, request, site_slug=None, pk=None):
         import_job_id = self.kwargs["pk"]
 
-        # Verify that no other jobs are started or queued for the same site
+        site = self.get_validated_site()
+        curr_job = ImportJob.objects.get(id=import_job_id)
+
+        if curr_job.validation_status != JobStatus.COMPLETE:
+            raise ValidationError(
+                "A successful dry-run is required before doing the import. "
+                "Please validate the job before confirming the import."
+            )
+
+        if curr_job.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+            raise ValidationError(
+                "The specified job is already running or queued for import. "
+                "It also cannot be run again once the import is finished."
+            )
+
+        if curr_job.status == JobStatus.COMPLETE:
+            raise ValidationError(
+                "The job has already been confirmed for import once. "
+                "Please create another batch request to import the entries."
+            )
+
+        # Verify no other job for the given site has validation_status/status of accepted or started
         existing_incomplete_jobs = get_import_jobs_queued_or_running(
             site, import_job_id
         )
-
         if len(existing_incomplete_jobs):
             raise ValidationError(
                 "There is at least 1 job on this site that is already running or queued to run soon. "
                 "Please wait for it to finish before starting a new one."
             )
 
-        # if its already running or queued for dry run, do not queue the job again
-        curr_job = ImportJob.objects.filter(id=import_job_id)[0]
-        if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
-            raise ValidationError(
-                "The specified job is already running or queued. "
-                "Please wait for it to finish before starting a new one."
-            )
-
-        # If the DB import has any other status than accepted, i.e. it was started at least once and
-        # was imported or did not finish for any reason do not re-validate the job again
-        if curr_job.status != JobStatus.ACCEPTED:
-            raise ValidationError(
-                "The db import of this job has been started. It cannot be re-validated again. "
-                "Please create another batch request to import the entries."
-            )
-
-        curr_job.validation_status = JobStatus.STARTED
+        curr_job.status = JobStatus.ACCEPTED
         curr_job.save()
 
+        # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
                 (
-                    str(import_job_id),
-                    True,
+                    str(curr_job.id),
+                    False,
                 ),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
