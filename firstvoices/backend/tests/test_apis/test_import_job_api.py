@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob, JobStatus
-from backend.tasks.import_job_tasks import batch_import
+from backend.tasks.import_job_tasks import batch_import_dry_run
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
@@ -596,7 +596,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         self.import_job = ImportJobFactory(
             site=self.site, data=file, validation_status=JobStatus.ACCEPTED
         )
-        batch_import(self.import_job.id)
+        batch_import_dry_run(self.import_job.id)
 
     def test_exception_fetching_previous_report(self, caplog):
         # Simulating a general exception when fetching/deleting a previous

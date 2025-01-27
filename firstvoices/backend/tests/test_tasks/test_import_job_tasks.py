@@ -9,7 +9,7 @@ from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.import_jobs import JobStatus
-from backend.tasks.import_job_tasks import batch_import
+from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
 from backend.tests.factories import (
     DictionaryEntryFactory,
     FileFactory,
@@ -42,7 +42,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -59,7 +59,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -85,7 +85,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -108,7 +108,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -173,7 +173,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -208,7 +208,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -231,7 +231,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -257,7 +257,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -283,7 +283,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -321,7 +321,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -346,7 +346,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        batch_import_dry_run(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -385,7 +385,7 @@ class TestBulkImportDryRun:
             "backend.tasks.import_job_tasks.import_resource",
             side_effect=Exception("Random exception."),
         ):
-            batch_import(import_job_instance.id)
+            batch_import_dry_run(import_job_instance.id)
 
             # Updated import job instance
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -456,7 +456,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         assert (
             f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: False."
@@ -475,7 +475,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         # word
         word = DictionaryEntry.objects.filter(title="abc")[0]
@@ -502,7 +502,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         # Verifying first entry
         first_entry = DictionaryEntry.objects.filter(title="Word 1")[0]
@@ -561,14 +561,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
         )
-        batch_import(import_job_instance.id, dry_run=False)
-
-        # Updated instance
-        import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
-        validation_report = import_job_instance.validation_report
-
-        assert validation_report.new_rows == 4
-        assert validation_report.error_rows == 0
+        batch_import(import_job_instance.id)
 
         # Verifying default type
         empty_type = DictionaryEntry.objects.filter(title="Empty type")[0]
@@ -606,7 +599,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             "backend.tasks.import_job_tasks.import_resource",
             side_effect=Exception("Random exception."),
         ):
-            batch_import(import_job_instance.id, dry_run=False)
+            batch_import(import_job_instance.id)
 
             # Updated import job instance
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -631,7 +624,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         new_entry = DictionaryEntry.objects.get(title="Word 1")
         related_entry = new_entry.dictionaryentrylink_set.first()
@@ -662,7 +655,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         related_entry = DictionaryEntry.objects.get(
             title="Word 2"
@@ -686,7 +679,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
@@ -713,7 +706,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         dictionary_entries_count = DictionaryEntry.objects.all().count()
         assert dictionary_entries_count == 1
@@ -730,7 +723,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id, dry_run=False)
+        batch_import(import_job_instance.id)
 
         # word
         word = DictionaryEntry.objects.filter(title="abc")[0]

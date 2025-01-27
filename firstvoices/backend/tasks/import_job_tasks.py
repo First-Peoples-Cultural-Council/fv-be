@@ -6,7 +6,6 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db.models import Q
 from import_export.results import RowResult
 from rest_framework.exceptions import ValidationError
 
@@ -19,7 +18,11 @@ from backend.models.import_jobs import (
     RowStatus,
 )
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.utils import (
+    ASYNC_TASK_END_TEMPLATE,
+    ASYNC_TASK_START_TEMPLATE,
+    verify_no_other_import_jobs_running,
+)
 
 VALID_HEADERS = [
     "title",
@@ -40,19 +43,6 @@ VALID_HEADERS = [
     "include_in_games",
     "related_entry",
 ]
-
-
-def get_import_jobs_queued_or_running(site, current_job_id):
-    # Fetch list of all import-jobs that are already running or
-    # are queued to run to prevent any consistency issues
-    # excluding the specified job
-
-    # get all queued or started jobs
-    return ImportJob.objects.filter(
-        Q(site=site),
-        Q(status__in=[JobStatus.ACCEPTED, JobStatus.STARTED])
-        | Q(validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED]),
-    ).exclude(id=current_job_id)
 
 
 def is_valid_header_variation(input_header, all_headers):
@@ -217,6 +207,8 @@ def import_job(data, import_job_instance):
     except Exception as e:
         logger.error(e)
         import_job_instance.status = JobStatus.FAILED
+    finally:
+        import_job_instance.save()
 
 
 def import_job_dry_run(data, import_job_instance):
@@ -251,77 +243,75 @@ def import_job_dry_run(data, import_job_instance):
 
 
 @shared_task
-def batch_import(import_job_instance_id, dry_run=True):
-    # This method passes the provided CSV file through the clean method,
-    # does a dry-run or the import as per the dry_run flag provided,
-    # then parses through the result to return a validation report.
-
+def batch_import_dry_run(import_job_instance_id):
+    # Validates a provided CSV before importing provided entries
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
     logger.info(
         ASYNC_TASK_START_TEMPLATE,
-        f"import_job_instance_id: {import_job_instance_id}, dry-run: {dry_run}",
+        f"import_job_instance_id: {import_job_instance_id}, dry-run: True",
     )
 
     import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
-    if dry_run:
-        # Checks to ensure consistency
-        if import_job_instance.validation_status != JobStatus.ACCEPTED:
-            raise ValidationError("No. ")
+    file = import_job_instance.data.content.open().read().decode("utf-8-sig")
+    data = tablib.Dataset().load(file, format="csv")
 
-        if import_job_instance.status in [
-            JobStatus.ACCEPTED,
-            JobStatus.STARTED,
-            JobStatus.COMPLETE,
-        ]:
-            raise ValidationError(
-                "The specified job is either queued, or running or completed. "
-                "Please create a new batch request to import the entries."
-            )
+    # Checks to ensure consistency
+    if import_job_instance.validation_status != JobStatus.ACCEPTED:
+        raise ValidationError("No. ")
 
-        existing_incomplete_jobs = get_import_jobs_queued_or_running(
-            import_job_instance.site, import_job_instance_id
+    if import_job_instance.status in [
+        JobStatus.ACCEPTED,
+        JobStatus.STARTED,
+        JobStatus.COMPLETE,
+    ]:
+        raise ValidationError(
+            "The specified job is either queued, or running or completed. "
+            "Please create a new batch request to import the entries."
         )
-        if len(existing_incomplete_jobs):
-            raise ValidationError(
-                "There is at least 1 job on this site that is already running or queued to run soon. "
-                "Please wait for it to finish before starting a new one."
-            )
 
-        import_job_instance.validation_status = JobStatus.STARTED
-        import_job_instance.validation_task_id = task_id
-    else:
-        # Checks to ensure consistency
-        if import_job_instance.status != JobStatus.ACCEPTED:
-            raise ValidationError("No. ")
+    verify_no_other_import_jobs_running(import_job_instance)
 
-        if import_job_instance.validation_status != JobStatus.COMPLETE:
-            raise ValidationError(
-                "A successful dry-run is required before doing the import. "
-                "Please validate the job before confirming the import."
-            )
+    import_job_instance.validation_status = JobStatus.STARTED
+    import_job_instance.validation_task_id = task_id
 
-        existing_incomplete_jobs = get_import_jobs_queued_or_running(
-            import_job_instance.site, import_job_instance_id
-        )
-        if len(existing_incomplete_jobs):
-            raise ValidationError(
-                "There is at least 1 job on this site that is already running or queued to run soon. "
-                "Please wait for it to finish before starting a new one."
-            )
-
-        import_job_instance.status = JobStatus.STARTED
-        import_job_instance.task_id = task_id
+    import_job_dry_run(data, import_job_instance)
     import_job_instance.save()
+
+    logger.info(ASYNC_TASK_END_TEMPLATE)
+
+
+@shared_task
+def batch_import(import_job_instance_id):
+    logger = get_task_logger(__name__)
+    task_id = current_task.request.id
+    logger.info(
+        ASYNC_TASK_START_TEMPLATE,
+        f"import_job_instance_id: {import_job_instance_id}, dry-run: False",
+    )
+
+    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
 
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
 
-    if dry_run:
-        import_job_dry_run(data, import_job_instance)
-    else:
-        import_job(data, import_job_instance)
+    # Checks to ensure consistency
+    if import_job_instance.status != JobStatus.ACCEPTED:
+        raise ValidationError("No. ")
 
+    if import_job_instance.validation_status != JobStatus.COMPLETE:
+        raise ValidationError(
+            "A successful dry-run is required before doing the import. "
+            "Please validate the job before confirming the import."
+        )
+
+    verify_no_other_import_jobs_running(import_job_instance)
+
+    import_job_instance.status = JobStatus.STARTED
+    import_job_instance.task_id = task_id
+
+    import_job(data, import_job_instance)
     import_job_instance.save()
+
     logger.info(ASYNC_TASK_END_TEMPLATE)

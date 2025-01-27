@@ -9,10 +9,8 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.tasks.import_job_tasks import (
-    batch_import,
-    get_import_jobs_queued_or_running,
-)
+from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
+from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
@@ -143,7 +141,6 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         """
         Method to start the validation process on a given import-job.
         """
-        site = self.get_validated_site()
         import_job_id = self.kwargs["pk"]
         curr_job = ImportJob.objects.filter(id=import_job_id)[0]
 
@@ -156,8 +153,6 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "Please wait for it to finish before queueing another job."
             )
 
-        # todo: Think and verify again if we want to allow a failed job to be re-validated
-        # todo: Update the wording
         if curr_job.status in [
             JobStatus.ACCEPTED,
             JobStatus.STARTED,
@@ -168,26 +163,15 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "Please create a new batch request to import the entries."
             )
 
-        # Verify no other job for the given site has validation_status/status of accepted or started
-        existing_incomplete_jobs = get_import_jobs_queued_or_running(
-            site, import_job_id
-        )
-        if len(existing_incomplete_jobs):
-            raise ValidationError(
-                "There is at least 1 job on this site that is already running or queued to run soon. "
-                "Please wait for it to finish before starting a new one."
-            )
+        verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for validation
         curr_job.validation_status = JobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
-            lambda: batch_import.apply_async(
-                (
-                    str(import_job_id),
-                    True,
-                ),
+            lambda: batch_import_dry_run.apply_async(
+                (str(import_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -199,7 +183,6 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
     def confirm(self, request, site_slug=None, pk=None):
         import_job_id = self.kwargs["pk"]
 
-        site = self.get_validated_site()
         curr_job = ImportJob.objects.get(id=import_job_id)
 
         if curr_job.validation_status != JobStatus.COMPLETE:
@@ -220,15 +203,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
                 "Please create another batch request to import the entries."
             )
 
-        # Verify no other job for the given site has validation_status/status of accepted or started
-        existing_incomplete_jobs = get_import_jobs_queued_or_running(
-            site, import_job_id
-        )
-        if len(existing_incomplete_jobs):
-            raise ValidationError(
-                "There is at least 1 job on this site that is already running or queued to run soon. "
-                "Please wait for it to finish before starting a new one."
-            )
+        verify_no_other_import_jobs_running(curr_job)
 
         curr_job.status = JobStatus.ACCEPTED
         curr_job.save()
@@ -236,10 +211,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         # Start the task
         transaction.on_commit(
             lambda: batch_import.apply_async(
-                (
-                    str(curr_job.id),
-                    False,
-                ),
+                (str(curr_job.id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
