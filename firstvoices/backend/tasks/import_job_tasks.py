@@ -296,7 +296,7 @@ def batch_import(import_job_instance_id):
     file = import_job_instance.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
 
-    # Checks to ensure consistency
+    # Do not start if the job is already queued
     if import_job_instance.status != JobStatus.ACCEPTED:
         raise ValidationError("No. ")
 

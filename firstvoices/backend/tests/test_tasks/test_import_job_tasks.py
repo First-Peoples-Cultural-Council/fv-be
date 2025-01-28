@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pytest
 import tablib
+from rest_framework.exceptions import ValidationError
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
@@ -432,6 +433,46 @@ class TestBulkImportDryRun:
         import_job_instance = self.import_minimal_dictionary_entries()
         assert import_job_instance.failed_rows_csv is None
 
+    @pytest.mark.parametrize(
+        "validation_status",
+        [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
+    )
+    def test_invalid_validation_status(self, validation_status):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=validation_status,
+        )
+
+        with pytest.raises(ValidationError) as e:
+            batch_import_dry_run(import_job_instance.id)
+        assert e.value.args[0] == "No. "
+
+    @pytest.mark.parametrize(
+        "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    )
+    def test_invalid_job_status(self, status):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            status=status,
+        )
+
+        with pytest.raises(ValidationError) as e:
+            batch_import_dry_run(import_job_instance.id)
+        assert (
+            e.value.args[0]
+            == "The specified job is either queued, or running or completed. "
+            "Please create a new batch request to import the entries."
+        )
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
@@ -732,3 +773,40 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         # phrase
         phrase = DictionaryEntry.objects.filter(title="xyz")[0]
         assert phrase.import_job == import_job_instance
+
+    @pytest.mark.parametrize(
+        "status", [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED]
+    )
+    def test_invalid_status(self, status):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site, run_as_user=self.user, data=file, status=status
+        )
+
+        with pytest.raises(ValidationError) as e:
+            batch_import(import_job_instance.id)
+        assert e.value.args[0] == "No. "
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [None, JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED],
+    )
+    def test_invalid_validation_status(self, validation_status):
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job_instance = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            status=JobStatus.ACCEPTED,
+            validation_status=validation_status,
+        )
+
+        with pytest.raises(ValidationError) as e:
+            batch_import(import_job_instance.id)
+        assert (
+            e.value.args[0]
+            == "A successful dry-run is required before doing the import. "
+            "Please validate the job before confirming the import."
+        )
