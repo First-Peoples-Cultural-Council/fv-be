@@ -449,7 +449,11 @@ class TestBulkImportDryRun:
 
         with pytest.raises(ValidationError) as e:
             batch_import_dry_run(import_job_instance.id)
-        assert e.value.args[0] == "No. "
+        assert (
+            e.value.args[0]
+            == "The specified job cannot be run due to consistency issues. "
+            "Please try using the validate endpoint to try again."
+        )
 
     @pytest.mark.parametrize(
         "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
@@ -786,7 +790,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         with pytest.raises(ValidationError) as e:
             batch_import(import_job_instance.id)
-        assert e.value.args[0] == "No. "
+        assert (
+            e.value.args[0]
+            == "The specified job cannot be run due to consistency issues. "
+            "Please try using the confirm endpoint to try again."
+        )
 
     @pytest.mark.parametrize(
         "validation_status",

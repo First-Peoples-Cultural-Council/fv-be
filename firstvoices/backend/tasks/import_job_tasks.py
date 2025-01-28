@@ -1,15 +1,11 @@
-import io
-import sys
 from copy import deepcopy
 
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from import_export.results import RowResult
 from rest_framework.exceptions import ValidationError
 
-from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
     ImportJobReport,
@@ -21,6 +17,7 @@ from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
+    get_failed_rows_csv_file,
     verify_no_other_import_jobs_running,
 )
 
@@ -108,36 +105,6 @@ def clean_csv(data):
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     return accepted_headers, invalid_headers, cleaned_data
-
-
-def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
-    # Generate a csv for the erroneous rows
-    failed_row_dataset = []
-    for row_num in error_row_numbers:
-        failed_row_dataset.append(
-            data[row_num - 1]
-        )  # -1 to subtract to account for headers
-    failed_row_dataset = tablib.Dataset(*failed_row_dataset)
-    failed_row_dataset.headers = data.headers
-
-    failed_row_export = failed_row_dataset.export("csv")
-    in_memory_csv_file = io.BytesIO(failed_row_export.encode("utf-8-sig"))
-    in_memory_csv_file = InMemoryUploadedFile(
-        file=in_memory_csv_file,
-        field_name="failed_rows_csv",
-        name="failed_rows.csv",
-        content_type="text/csv",
-        size=sys.getsizeof(in_memory_csv_file),
-        charset="utf-8",
-    )
-    failed_row_csv_file = File(
-        content=in_memory_csv_file,
-        site=import_job_instance.site,
-        created_by=import_job_instance.last_modified_by,
-        last_modified_by=import_job_instance.last_modified_by,
-    )
-    failed_row_csv_file.save()
-    return failed_row_csv_file
 
 
 def import_resource(
@@ -259,7 +226,10 @@ def batch_import_dry_run(import_job_instance_id):
 
     # Checks to ensure consistency
     if import_job_instance.validation_status != JobStatus.ACCEPTED:
-        raise ValidationError("No. ")
+        raise ValidationError(
+            "The specified job cannot be run due to consistency issues. "
+            "Please try using the validate endpoint to try again."
+        )
 
     if import_job_instance.status in [
         JobStatus.ACCEPTED,
@@ -298,7 +268,10 @@ def batch_import(import_job_instance_id):
 
     # Do not start if the job is already queued
     if import_job_instance.status != JobStatus.ACCEPTED:
-        raise ValidationError("No. ")
+        raise ValidationError(
+            "The specified job cannot be run due to consistency issues. "
+            "Please try using the confirm endpoint to try again."
+        )
 
     if import_job_instance.validation_status != JobStatus.COMPLETE:
         raise ValidationError(
