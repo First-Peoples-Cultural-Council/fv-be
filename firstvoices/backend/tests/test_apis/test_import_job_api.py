@@ -504,10 +504,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         assert response.status_code == 400
 
         response = json.loads(response.content)
-        assert (
-            "The job has already been confirmed for import once. "
-            "Please create another batch request to import the entries." in response
-        )
+        assert "This job has already finished importing." in response
 
     @pytest.mark.parametrize("status", [JobStatus.ACCEPTED, JobStatus.STARTED])
     def test_confirming_already_started_or_queued_job_not_allowed(self, status):
@@ -531,8 +528,8 @@ class TestImportJobConfirmAction(BaseApiTest):
 
         response = json.loads(response.content)
         assert (
-            "The specified job is already running or queued for import. "
-            "It also cannot be run again once the import is finished." in response
+            "This job has already been confirmed and is currently being imported."
+            in response
         )
 
     @pytest.mark.parametrize(
@@ -553,10 +550,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         assert response.status_code == 400
 
         response = json.loads(response.content)
-        assert (
-            "A successful dry-run is required before doing the import. "
-            "Please validate the job before confirming the import." in response
-        )
+        assert "Please validate the job before confirming the import." in response
 
 
 @pytest.mark.django_db(transaction=True)

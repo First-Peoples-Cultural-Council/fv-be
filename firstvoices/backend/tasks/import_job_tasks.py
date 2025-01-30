@@ -274,10 +274,7 @@ def batch_import(import_job_instance_id):
         )
 
     if import_job_instance.validation_status != JobStatus.COMPLETE:
-        raise ValidationError(
-            "A successful dry-run is required before doing the import. "
-            "Please validate the job before confirming the import."
-        )
+        raise ValidationError("Please validate the job before confirming the import.")
 
     verify_no_other_import_jobs_running(import_job_instance)
 

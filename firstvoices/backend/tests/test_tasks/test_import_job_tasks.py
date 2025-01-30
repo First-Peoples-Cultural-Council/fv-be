@@ -814,7 +814,5 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         with pytest.raises(ValidationError) as e:
             batch_import(import_job_instance.id)
         assert (
-            e.value.args[0]
-            == "A successful dry-run is required before doing the import. "
-            "Please validate the job before confirming the import."
+            e.value.args[0] == "Please validate the job before confirming the import."
         )

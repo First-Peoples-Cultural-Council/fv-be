@@ -187,21 +187,16 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
 
         if curr_job.validation_status != JobStatus.COMPLETE:
             raise ValidationError(
-                "A successful dry-run is required before doing the import. "
                 "Please validate the job before confirming the import."
             )
 
         if curr_job.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
             raise ValidationError(
-                "The specified job is already running or queued for import. "
-                "It also cannot be run again once the import is finished."
+                "This job has already been confirmed and is currently being imported."
             )
 
         if curr_job.status == JobStatus.COMPLETE:
-            raise ValidationError(
-                "The job has already been confirmed for import once. "
-                "Please create another batch request to import the entries."
-            )
+            raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
 
