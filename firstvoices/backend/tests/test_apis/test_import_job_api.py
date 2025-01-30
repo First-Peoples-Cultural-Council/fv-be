@@ -449,7 +449,7 @@ class TestImportJobConfirmAction(BaseApiTest):
 
         file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
         file = factories.FileFactory(content=file_content)
-        self.import_job_instance = ImportJobFactory(
+        self.import_job = ImportJobFactory(
             site=self.site, data=file, validation_status=JobStatus.COMPLETE
         )
 
@@ -457,7 +457,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[self.site.slug, str(self.import_job_instance.id)],
+            args=[self.site.slug, str(self.import_job.id)],
         )
 
         response = self.client.post(confirm_endpoint)
@@ -466,10 +466,10 @@ class TestImportJobConfirmAction(BaseApiTest):
 
     @pytest.mark.parametrize("status", [JobStatus.ACCEPTED, JobStatus.STARTED])
     def test_more_than_one_jobs_not_allowed(self, status):
-        self.import_job_instance.status = status
-        self.import_job_instance.save()
+        self.import_job.status = status
+        self.import_job.save()
 
-        import_job_instance = ImportJobFactory(
+        import_job = ImportJobFactory(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
         )
@@ -477,7 +477,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[self.site.slug, str(import_job_instance.id)],
+            args=[self.site.slug, str(import_job.id)],
         )
         response = self.client.post(confirm_endpoint)
         assert response.status_code == 400
@@ -489,7 +489,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         )
 
     def test_reconfirming_a_completed_job_not_allowed(self):
-        import_job_instance = ImportJobFactory(
+        import_job = ImportJobFactory(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.COMPLETE,
@@ -498,7 +498,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[self.site.slug, str(import_job_instance.id)],
+            args=[self.site.slug, str(import_job.id)],
         )
         response = self.client.post(confirm_endpoint)
         assert response.status_code == 400
@@ -509,10 +509,10 @@ class TestImportJobConfirmAction(BaseApiTest):
     @pytest.mark.parametrize("status", [JobStatus.ACCEPTED, JobStatus.STARTED])
     def test_confirming_already_started_or_queued_job_not_allowed(self, status):
         # Completing the initial job
-        self.import_job_instance.status = JobStatus.COMPLETE
-        self.import_job_instance.save()
+        self.import_job.status = JobStatus.COMPLETE
+        self.import_job.save()
 
-        import_job_instance = ImportJobFactory(
+        import_job = ImportJobFactory(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
             status=status,
@@ -521,7 +521,7 @@ class TestImportJobConfirmAction(BaseApiTest):
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[self.site.slug, str(import_job_instance.id)],
+            args=[self.site.slug, str(import_job.id)],
         )
         response = self.client.post(confirm_endpoint)
         assert response.status_code == 400
@@ -538,13 +538,13 @@ class TestImportJobConfirmAction(BaseApiTest):
     )
     def test_confirm_only_allowed_for_completed_dry_run(self, validation_status):
         # Cleaning up the job from setup_method
-        self.import_job_instance.validation_status = validation_status
-        self.import_job_instance.save()
+        self.import_job.validation_status = validation_status
+        self.import_job.save()
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
             current_app=self.APP_NAME,
-            args=[self.site.slug, str(self.import_job_instance.id)],
+            args=[self.site.slug, str(self.import_job.id)],
         )
         response = self.client.post(confirm_endpoint)
         assert response.status_code == 400
