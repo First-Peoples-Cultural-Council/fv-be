@@ -4,13 +4,12 @@ from uuid import UUID
 
 import pytest
 import tablib
-from rest_framework.exceptions import ValidationError
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.import_jobs import JobStatus
-from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
+from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tests.factories import (
     DictionaryEntryFactory,
     FileFactory,
@@ -43,7 +42,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -60,7 +59,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -71,7 +70,7 @@ class TestBulkImportDryRun:
         import_job_instance = self.import_minimal_dictionary_entries()
 
         assert (
-            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: True."
+            f"Task started. Additional info: ImportJob id: {import_job_instance.id}, dry-run: True."
             in caplog.text
         )
         assert "Task ended." in caplog.text
@@ -86,7 +85,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -109,7 +108,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -174,7 +173,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -209,7 +208,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -232,7 +231,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -258,7 +257,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -284,7 +283,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -322,7 +321,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -347,7 +346,7 @@ class TestBulkImportDryRun:
             validation_status=JobStatus.ACCEPTED,
         )
 
-        batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
 
         # Updated instance
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -386,7 +385,7 @@ class TestBulkImportDryRun:
             "backend.tasks.import_job_tasks.import_resource",
             side_effect=Exception("Random exception."),
         ):
-            batch_import_dry_run(import_job_instance.id)
+            validate_import_job(import_job_instance.id)
 
             # Updated import job instance
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -437,7 +436,7 @@ class TestBulkImportDryRun:
         "validation_status",
         [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
     )
-    def test_invalid_validation_status(self, validation_status):
+    def test_invalid_validation_status(self, validation_status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
@@ -447,18 +446,15 @@ class TestBulkImportDryRun:
             validation_status=validation_status,
         )
 
-        with pytest.raises(ValidationError) as e:
-            batch_import_dry_run(import_job_instance.id)
-        assert (
-            e.value.args[0]
-            == "The specified job cannot be run due to consistency issues. "
-            "Please try using the validate endpoint to try again."
-        )
+        validate_import_job(import_job_instance.id)
+        import_job_instance = ImportJob.objects.filter(id=import_job_instance.id)[0]
+        assert import_job_instance.validation_status == JobStatus.FAILED
+        assert "This job cannot be run due to consistency issues." in caplog.text
 
     @pytest.mark.parametrize(
         "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
     )
-    def test_invalid_job_status(self, status):
+    def test_invalid_job_status(self, status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
@@ -469,19 +465,19 @@ class TestBulkImportDryRun:
             status=status,
         )
 
-        with pytest.raises(ValidationError) as e:
-            batch_import_dry_run(import_job_instance.id)
+        validate_import_job(import_job_instance.id)
+        import_job_instance = ImportJob.objects.filter(id=import_job_instance.id)[0]
+        assert import_job_instance.validation_status == JobStatus.FAILED
         assert (
-            e.value.args[0]
-            == "The specified job is either queued, or running or completed. "
-            "Please create a new batch request to import the entries."
+            "This job could not be started as it is either queued, or already running or completed."
+            in caplog.text
         )
 
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
     MIMETYPE = "text/csv"
-    TASK = batch_import
+    TASK = confirm_import_job
 
     def get_valid_task_args(self):
         return (uuid.uuid4(),)
@@ -501,10 +497,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         assert (
-            f"Task started. Additional info: import_job_instance_id: {import_job_instance.id}, dry-run: False."
+            f"Task started. Additional info: ImportJob id: {import_job_instance.id}, dry-run: False."
             in caplog.text
         )
         assert "Task ended." in caplog.text
@@ -520,7 +516,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         # word
         word = DictionaryEntry.objects.filter(title="abc")[0]
@@ -547,7 +543,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         # Verifying first entry
         first_entry = DictionaryEntry.objects.filter(title="Word 1")[0]
@@ -606,7 +602,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
         )
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         # Verifying default type
         empty_type = DictionaryEntry.objects.filter(title="Empty type")[0]
@@ -644,7 +640,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             "backend.tasks.import_job_tasks.import_resource",
             side_effect=Exception("Random exception."),
         ):
-            batch_import(import_job_instance.id)
+            confirm_import_job(import_job_instance.id)
 
             # Updated import job instance
             import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
@@ -669,7 +665,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         new_entry = DictionaryEntry.objects.get(title="Word 1")
         related_entry = new_entry.dictionaryentrylink_set.first()
@@ -700,7 +696,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         related_entry = DictionaryEntry.objects.get(
             title="Word 2"
@@ -724,7 +720,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         import_job_instance = ImportJob.objects.get(id=import_job_instance.id)
         validation_report = import_job_instance.validation_report
@@ -751,7 +747,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         dictionary_entries_count = DictionaryEntry.objects.all().count()
         assert dictionary_entries_count == 1
@@ -768,7 +764,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        batch_import(import_job_instance.id)
+        confirm_import_job(import_job_instance.id)
 
         # word
         word = DictionaryEntry.objects.filter(title="abc")[0]
@@ -781,26 +777,23 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     @pytest.mark.parametrize(
         "status", [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED]
     )
-    def test_invalid_status(self, status):
+    def test_invalid_status(self, status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
             site=self.site, run_as_user=self.user, data=file, status=status
         )
 
-        with pytest.raises(ValidationError) as e:
-            batch_import(import_job_instance.id)
-        assert (
-            e.value.args[0]
-            == "The specified job cannot be run due to consistency issues. "
-            "Please try using the confirm endpoint to try again."
-        )
+        confirm_import_job(import_job_instance.id)
+        import_job_instance = ImportJob.objects.filter(id=import_job_instance.id)[0]
+        assert import_job_instance.validation_status == JobStatus.FAILED
+        assert "This job cannot be run due to consistency issues." in caplog.text
 
     @pytest.mark.parametrize(
         "validation_status",
         [None, JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED],
     )
-    def test_invalid_validation_status(self, validation_status):
+    def test_invalid_validation_status(self, validation_status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job_instance = ImportJobFactory(
@@ -811,8 +804,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             validation_status=validation_status,
         )
 
-        with pytest.raises(ValidationError) as e:
-            batch_import(import_job_instance.id)
-        assert (
-            e.value.args[0] == "Please validate the job before confirming the import."
-        )
+        confirm_import_job(import_job_instance.id)
+        import_job_instance = ImportJob.objects.filter(id=import_job_instance.id)[0]
+        assert import_job_instance.validation_status == JobStatus.FAILED
+        assert "Please validate the job before confirming the import." in caplog.text

@@ -4,7 +4,6 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from import_export.results import RowResult
-from rest_framework.exceptions import ValidationError
 
 from backend.models.import_jobs import (
     ImportJob,
@@ -110,7 +109,7 @@ def clean_csv(data):
 def import_resource(
     data,
     resource,
-    import_job_instance,
+    import_job,
     dry_run,
 ):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
@@ -120,8 +119,8 @@ def import_resource(
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(
-        site=import_job_instance.site,
-        importjob=import_job_instance,
+        site=import_job.site,
+        importjob=import_job,
         new_rows=result.totals["new"],
         error_rows=result.totals["error"]
         + result.totals["invalid"]
@@ -138,7 +137,7 @@ def import_resource(
     for row in result.rows:
         if row.import_type == RowResult.IMPORT_TYPE_SKIP:
             error_row_instance = ImportJobReportRow(
-                site=import_job_instance.site,
+                site=import_job.site,
                 report=report,
                 status=RowStatus.ERROR,
                 row_number=row.number,
@@ -151,137 +150,140 @@ def import_resource(
     if error_row_numbers:
         error_row_numbers.sort()
         failed_row_csv_file = get_failed_rows_csv_file(
-            import_job_instance, data, error_row_numbers
+            import_job, data, error_row_numbers
         )
-        import_job_instance.failed_rows_csv = failed_row_csv_file
-        import_job_instance.save()
+        import_job.failed_rows_csv = failed_row_csv_file
+        import_job.save()
 
     return report
 
 
-def import_job(data, import_job_instance):
+def run_import_job(data, import_job):
     logger = get_task_logger(__name__)
 
     resource = DictionaryEntryResource(
-        site=import_job_instance.site,
-        run_as_user=import_job_instance.run_as_user,
-        import_job=import_job_instance.id,
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
     )
 
     try:
-        import_resource(data, resource, import_job_instance, dry_run=False)
-        import_job_instance.status = JobStatus.COMPLETE
+        import_resource(data, resource, import_job, dry_run=False)
+        import_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
-        import_job_instance.status = JobStatus.FAILED
+        import_job.status = JobStatus.FAILED
     finally:
-        import_job_instance.save()
+        import_job.save()
 
 
-def import_job_dry_run(data, import_job_instance):
+def dry_run_import_job(data, import_job):
     """Variation of the import_job method above, for dry-run only.
     Updates the validationReport and validationStatus instead of the job status."""
     logger = get_task_logger(__name__)
 
     resource = DictionaryEntryResource(
-        site=import_job_instance.site,
-        run_as_user=import_job_instance.run_as_user,
-        import_job=import_job_instance.id,
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
     )
 
     # Clearing out old report if present
-    old_report = import_job_instance.validation_report
+    old_report = import_job.validation_report
     if old_report:
         try:
             old_report = ImportJobReport.objects.filter(id=old_report.id)
             old_report.delete()
         except Exception as e:
             logger.error(e)
-            import_job_instance.validation_status = JobStatus.FAILED
+            import_job.validation_status = JobStatus.FAILED
             return
 
     try:
-        report = import_resource(data, resource, import_job_instance, dry_run=True)
-        import_job_instance.validation_status = JobStatus.COMPLETE
-        import_job_instance.validation_report = report
+        report = import_resource(data, resource, import_job, dry_run=True)
+        import_job.validation_status = JobStatus.COMPLETE
+        import_job.validation_report = report
     except Exception as e:
         logger.error(e)
-        import_job_instance.validation_status = JobStatus.FAILED
+        import_job.validation_status = JobStatus.FAILED
 
 
 @shared_task
-def batch_import_dry_run(import_job_instance_id):
+def validate_import_job(import_job_id):
     # Validates a provided CSV before importing provided entries
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
     logger.info(
         ASYNC_TASK_START_TEMPLATE,
-        f"import_job_instance_id: {import_job_instance_id}, dry-run: True",
+        f"ImportJob id: {import_job_id}, dry-run: True",
     )
 
-    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
+    import_job = ImportJob.objects.get(id=import_job_id)
 
-    file = import_job_instance.data.content.open().read().decode("utf-8-sig")
+    file = import_job.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
 
     # Checks to ensure consistency
-    if import_job_instance.validation_status != JobStatus.ACCEPTED:
-        raise ValidationError(
-            "The specified job cannot be run due to consistency issues. "
-            "Please try using the validate endpoint to try again."
-        )
+    if import_job.validation_status != JobStatus.ACCEPTED:
+        logger.info("This job cannot be run due to consistency issues.")
+        import_job.validation_status = JobStatus.FAILED
+        import_job.save()
+        return
 
-    if import_job_instance.status in [
+    if import_job.status in [
         JobStatus.ACCEPTED,
         JobStatus.STARTED,
         JobStatus.COMPLETE,
     ]:
-        raise ValidationError(
-            "The specified job is either queued, or running or completed. "
-            "Please create a new batch request to import the entries."
+        logger.info(
+            "This job could not be started as it is either queued, or already running or completed."
         )
+        import_job.validation_status = JobStatus.FAILED
+        import_job.save()
+        return
 
-    verify_no_other_import_jobs_running(import_job_instance)
+    verify_no_other_import_jobs_running(import_job)
 
-    import_job_instance.validation_status = JobStatus.STARTED
-    import_job_instance.validation_task_id = task_id
+    import_job.validation_status = JobStatus.STARTED
+    import_job.validation_task_id = task_id
 
-    import_job_dry_run(data, import_job_instance)
-    import_job_instance.save()
+    dry_run_import_job(data, import_job)
+    import_job.save()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
 
 
 @shared_task
-def batch_import(import_job_instance_id):
+def confirm_import_job(import_job_id):
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
     logger.info(
         ASYNC_TASK_START_TEMPLATE,
-        f"import_job_instance_id: {import_job_instance_id}, dry-run: False",
+        f"ImportJob id: {import_job_id}, dry-run: False",
     )
 
-    import_job_instance = ImportJob.objects.get(id=import_job_instance_id)
+    import_job = ImportJob.objects.get(id=import_job_id)
 
-    file = import_job_instance.data.content.open().read().decode("utf-8-sig")
+    file = import_job.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
 
     # Do not start if the job is already queued
-    if import_job_instance.status != JobStatus.ACCEPTED:
-        raise ValidationError(
-            "The specified job cannot be run due to consistency issues. "
-            "Please try using the confirm endpoint to try again."
-        )
+    if import_job.status != JobStatus.ACCEPTED:
+        logger.info("This job cannot be run due to consistency issues.")
+        import_job.status = JobStatus.FAILED
+        import_job.save()
 
-    if import_job_instance.validation_status != JobStatus.COMPLETE:
-        raise ValidationError("Please validate the job before confirming the import.")
+    if import_job.validation_status != JobStatus.COMPLETE:
+        logger.info("Please validate the job before confirming the import.")
+        import_job.validation_status = JobStatus.FAILED
+        import_job.save()
 
-    verify_no_other_import_jobs_running(import_job_instance)
+    verify_no_other_import_jobs_running(import_job)
 
-    import_job_instance.status = JobStatus.STARTED
-    import_job_instance.task_id = task_id
+    import_job.status = JobStatus.STARTED
+    import_job.task_id = task_id
 
-    import_job(data, import_job_instance)
-    import_job_instance.save()
+    run_import_job(data, import_job)
+    import_job.save()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)

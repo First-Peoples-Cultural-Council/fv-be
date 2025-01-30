@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob, JobStatus
-from backend.tasks.import_job_tasks import batch_import_dry_run
+from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
@@ -590,7 +590,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
         self.import_job = ImportJobFactory(
             site=self.site, data=file, validation_status=JobStatus.ACCEPTED
         )
-        batch_import_dry_run(self.import_job.id)
+        validate_import_job(self.import_job.id)
 
     def test_exception_fetching_previous_report(self, caplog):
         # Simulating a general exception when fetching/deleting a previous
@@ -680,7 +680,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
         response = json.loads(response.content)
         assert (
-            "The specified job is already running or queued. Please wait for it to finish before queueing another job."
+            "This job has already been queued and is currently being validated."
             in response
         )
 
@@ -705,6 +705,6 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
 
         response = json.loads(response.content)
         assert (
-            "The specified job is either queued, or running or completed. "
-            "Please create a new batch request to import the entries." in response
+            "This job has already been confirmed and is currently being imported."
+            in response
         )

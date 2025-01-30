@@ -9,7 +9,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.tasks.import_job_tasks import batch_import, batch_import_dry_run
+from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -149,8 +149,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         # Verify the current job is not running or queued.
         if curr_job.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
             raise ValidationError(
-                "The specified job is already running or queued. "
-                "Please wait for it to finish before queueing another job."
+                "This job has already been queued and is currently being validated."
             )
 
         if curr_job.status in [
@@ -159,8 +158,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
             JobStatus.COMPLETE,
         ]:
             raise ValidationError(
-                "The specified job is either queued, or running or completed. "
-                "Please create a new batch request to import the entries."
+                "This job has already been confirmed and is currently being imported."
             )
 
         verify_no_other_import_jobs_running(curr_job)
@@ -170,7 +168,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
         curr_job.save()
 
         transaction.on_commit(
-            lambda: batch_import_dry_run.apply_async(
+            lambda: validate_import_job.apply_async(
                 (str(import_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
@@ -205,7 +203,7 @@ class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelV
 
         # Start the task
         transaction.on_commit(
-            lambda: batch_import.apply_async(
+            lambda: confirm_import_job.apply_async(
                 (str(curr_job.id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
