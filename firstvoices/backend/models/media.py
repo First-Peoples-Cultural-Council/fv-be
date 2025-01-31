@@ -270,6 +270,21 @@ class Audio(MediaBase):
         return f"{self.title} / {self.site} (Audio)"
 
 
+class Document(MediaBase):
+    class Meta:
+        verbose_name = _("Document")
+        verbose_name_plural = _("Document")
+        rules_permissions = {
+            "view": predicates.has_visible_site,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
+            "delete": predicates.can_delete_media,
+        }
+
+    def __str__(self):
+        return f"{self.title} / {self.site} (Document)"
+
+
 class AudioSpeaker(BaseModel):
     class Meta:
         verbose_name = _("Audio Speaker")
