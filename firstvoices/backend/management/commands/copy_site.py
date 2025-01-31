@@ -2,7 +2,7 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.core.management.base import BaseCommand
 
 from backend.models.category import Category
@@ -12,7 +12,8 @@ from backend.models.characters import (
     CharacterVariant,
     IgnoredCharacter,
 )
-from backend.models.media import Audio
+from backend.models.files import File
+from backend.models.media import Audio, Person
 from backend.models.sites import Site, SiteFeature, SiteMenu
 
 
@@ -58,21 +59,20 @@ class Command(BaseCommand):
         # todo: Read more about django's exceptions and maybe find a more appropriate for here
         source_site = Site.objects.filter(slug=source_slug)
         if len(source_site) == 0:
-            raise ValidationError(
-                "Provided source site does not exist. Please verify and try again."
-            )
+            raise AttributeError("Provided source site does not exist.")
         source_site = source_site[0]
 
         # Verify the target site does not exist
         if Site.objects.filter(slug=target_slug).exists():
-            raise ValidationError(
-                f"Site with slug {target_slug} already exists. Please use a different target slug."
-            )
+            # raise AttributeError(
+            #     f"Site with slug {target_slug} already exists. Please use a different target slug."
+            # )
+            Site.objects.filter(slug=target_slug).delete()
 
         # Verify if user exists with the provided email
         users = get_user_model().objects.filter(email=user_email)
         if len(users) == 0:
-            raise ValidationError("No user found with the provided email.")
+            raise AttributeError("No user found with the provided email.")
         user = users[0]
 
         logger.info(
@@ -179,35 +179,46 @@ class Command(BaseCommand):
             category.site = new_site
             category.save()
 
-        # Person
-        # person_list = Person.objects.filter(site=source_site)
-        # for person in person_list:
-        #     person.id = uuid.uuid4()
-        #     person.site = new_site
-        #     person.save()
-
         # Audio
         audio_files = Audio.objects.filter(site=source_site)
         for audio_file in audio_files:
-            # speakers need to be updated
-            current_speakers = audio_file.speakers.all()
+            # Content
+            new_file = File(
+                content=UploadedFile(audio_file.original.content.file),
+                site=new_site,
+            )
+            new_file.save()
+            audio_file.original = new_file
 
+            # Speakers
+            current_speakers = audio_file.speakers.all()
+            new_speakers = []
             for person in current_speakers:
                 person.id = uuid.uuid4()
                 person.site = new_site
                 person.save()
-                audio_file.speakers
+                new_speakers.append(person)
 
-            # original needs to be updated
+            audio_file.site = new_site
+            audio_file.id = uuid.uuid4()
+            # To circumvent checks added to media models to prevent modification of original file
+            audio_file._state.adding = True
+            audio_file.save()
 
-        # Copy over rest of the persons which are not linked to any audio file
+            audio_file.speakers.set(new_speakers)
+
+        # Copy over rest of the people who are not attached as speakers to any audio
+        person_list = Person.objects.filter(site=source_site, audio_set__isnull=True)
+        for person in person_list:
+            person.id = uuid.uuid4()
+            person.site = new_site
+            person.save()
 
         # List of stuff to be generated and/or copied over.
         """
             Required
             - Widget, WidgetSettings, SiteWidgetList, SiteWidgetListOrder
             - SitePage
-            - Audio, AudioSpeaker
             - File
             - Image, Video, Generate thumbnails, RelatedMediaMixin
             - Gallery, GalleryItem
