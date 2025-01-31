@@ -5,6 +5,7 @@ from backend.admin.base_admin import FilterAutocompleteBySiteMixin
 from backend.models.media import (
     Audio,
     AudioSpeaker,
+    Document,
     File,
     Image,
     ImageFile,
@@ -48,6 +49,32 @@ class VisualMediaFileAdmin(FileAdmin):
 
 @admin.register(Audio)
 class AudioAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
+    list_display = ("title",) + BaseSiteContentAdmin.list_display
+    search_fields = ("title", "site__title")
+    autocomplete_fields = ("original",)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("site", "created_by", "last_modified_by")
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset.all():
+            obj.delete()
+
+    def get_search_results(
+        self, request, queryset, search_term, referer_models_list=None
+    ):
+        queryset, use_distinct = super().get_search_results(
+            request,
+            queryset,
+            search_term,
+            ["site", "storypage", "song", "dictionaryentry", "character", "story"],
+        )
+        return queryset, use_distinct
+
+
+@admin.register(Document)
+class DocumentAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "site__title")
     autocomplete_fields = ("original",)
