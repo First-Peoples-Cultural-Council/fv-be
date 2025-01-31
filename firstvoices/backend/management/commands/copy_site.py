@@ -56,7 +56,6 @@ class Command(BaseCommand):
 
         logger.info("Verifying requirements.")
         # Verify if the original site exists
-        # todo: Read more about django's exceptions and maybe find a more appropriate for here
         source_site = Site.objects.filter(slug=source_slug)
         if len(source_site) == 0:
             raise AttributeError("Provided source site does not exist.")
