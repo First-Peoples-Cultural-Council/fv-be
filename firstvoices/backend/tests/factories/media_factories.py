@@ -10,6 +10,7 @@ from backend.models.media import (
     SUPPORTED_FILETYPES,
     Audio,
     AudioSpeaker,
+    Document,
     File,
     Image,
     ImageFile,
@@ -113,6 +114,15 @@ class AudioFactory(DjangoModelFactory):
 
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Audio-%03d" % n)
+    original = factory.SubFactory(FileFactory)
+
+
+class DocumentFactory(DjangoModelFactory):
+    class Meta:
+        model = Document
+
+    site = factory.SubFactory(SiteFactory)
+    title = factory.Sequence(lambda n: "Document-%03d" % n)
     original = factory.SubFactory(FileFactory)
 
 
