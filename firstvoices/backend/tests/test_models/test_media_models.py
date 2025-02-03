@@ -115,6 +115,29 @@ class TestAudioModel:
         assert File.objects.filter(pk=related_id).count() == 0
 
 
+class TestDocumentModel:
+    @pytest.mark.django_db
+    def test_related_file_removed_on_delete(self):
+        media_instance = factories.DocumentFactory.create()
+        related_id = media_instance.original.id
+        assert File.objects.filter(pk=related_id).count() == 1
+
+        media_instance.delete()
+
+        assert File.objects.filter(pk=related_id).count() == 0
+
+    @pytest.mark.django_db
+    def test_related_file_removed_on_update(self):
+        media_instance = factories.DocumentFactory.create()
+        related_id = media_instance.original.id
+        assert File.objects.filter(pk=related_id).count() == 1
+
+        media_instance.original = factories.FileFactory.create()
+        media_instance.save()
+
+        assert File.objects.filter(pk=related_id).count() == 0
+
+
 class TestThumbnailDimensions:
     original_dimensions = {
         "large-landscape": (1500, 1020),

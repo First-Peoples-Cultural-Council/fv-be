@@ -48,22 +48,23 @@ License: Apache Software License 2.0
 1. Install pre-commit hooks
    - `pre-commit install`
 1. Create a database in postgres, and note the name
-   - `createdb --username=postgres <db name>`
+   - `createdb --username=postgres <db name>` - use the name `fv_be` for local development (see Local Database Cleanup Script instructions below)
 1. Configure required environment variables for the database:
    - `DB_DATABASE`: `<db name>` when you created the database
    - `DB_USERNAME`: the database admin username (usually `postgres`)
    - `DB_PASSWORD`: the password for your database (can be blank if you have not set a password)
    - `DB_HOST`: the host address your database is running on (usually `127.0.0.1` if running locally)
    - `DB_PORT`: the port your database is running on (defaults to `5432` if you haven't changed it)
+   - Recommended:
+     - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
+     - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
+     - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
 1. Configure required environment variables for media file storage:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `MEDIA_UPLOAD_S3_BUCKET`
    - `MEDIA_UPLOAD_S3_REGION`
 1. Configure optional environment variables as needed (used for the reset-local-database.sh script, Sentry and Elasticsearch):
-   - `DJANGO_SUPERUSER_EMAIL`: an email for the app superuser account (used to log in to the admin panel).
-   - `DJANGO_SUPERUSER_USERNAME`: a username for the app superuser account.
-   - `DJANGO_SUPERUSER_PASSWORD`: a password for the app superuser account.
    - `SENTRY_DSN`: the data source name that tells the Sentry SDK where to send events (to upload to the dashboard). If this is not set then events will not be sent to a dashboard.
    - `SENTRY_ENVIRONMENT`: a string specifying the name of the environment to tag Sentry events with (defaults to `production` if not set).
    - `SENTRY_RELEASE`: a custom release version to tag Sentry events with (defaults to the commit SHA if not set).

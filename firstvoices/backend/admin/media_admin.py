@@ -5,6 +5,7 @@ from backend.admin.base_admin import FilterAutocompleteBySiteMixin
 from backend.models.media import (
     Audio,
     AudioSpeaker,
+    Document,
     File,
     Image,
     ImageFile,
@@ -47,7 +48,8 @@ class VisualMediaFileAdmin(FileAdmin):
 
 
 @admin.register(Audio)
-class AudioAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
+@admin.register(Document)
+class MediaAdmin(FilterAutocompleteBySiteMixin, BaseSiteContentAdmin):
     list_display = ("title",) + BaseSiteContentAdmin.list_display
     search_fields = ("title", "site__title")
     autocomplete_fields = ("original",)
