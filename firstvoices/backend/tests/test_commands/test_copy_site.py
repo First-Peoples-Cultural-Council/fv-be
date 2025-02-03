@@ -1,9 +1,22 @@
 import pytest
 from django.core.management import call_command
 
+from backend.models.category import Category
+from backend.models.characters import (
+    Alphabet,
+    Character,
+    CharacterVariant,
+    IgnoredCharacter,
+)
 from backend.models.constants import AppRole
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.tests.factories import (
+    AlphabetFactory,
+    CharacterFactory,
+    CharacterVariantFactory,
+    ChildCategoryFactory,
+    IgnoredCharacterFactory,
+    ParentCategoryFactory,
     SiteFactory,
     SiteFeatureFactory,
     SiteMenuFactory,
@@ -100,3 +113,75 @@ class TestCopySite:
         new_site_menu = SiteMenu.objects.get(site__slug=self.TARGET_SLUG)
 
         assert new_site_menu.json == old_site_menu.json
+
+    def test_characters_and_variants(self):
+        old_char = CharacterFactory(site=self.old_site)
+        old_char_variant = CharacterVariantFactory(
+            site=self.old_site, base_character=old_char
+        )
+
+        self.call_default_command()
+
+        new_char = Character.objects.get(site__slug=self.TARGET_SLUG)
+        new_char_variant = CharacterVariant.objects.get(site__slug=self.TARGET_SLUG)
+
+        assert new_char.title == old_char.title
+        assert new_char.sort_order == old_char.sort_order
+        assert new_char_variant.title == old_char_variant.title
+        assert new_char_variant.base_character == new_char
+
+    def test_ignored_characters(self):
+        old_char = IgnoredCharacterFactory(site=self.old_site)
+
+        self.call_default_command()
+
+        new_char = IgnoredCharacter.objects.get(site__slug=self.TARGET_SLUG)
+
+        assert new_char.title == old_char.title
+
+    def test_alphabet(self):
+        old_alphabet = AlphabetFactory(
+            site=self.old_site, input_to_canonical_map="[{'in': '2', 'out': 'two'}]"
+        )
+
+        self.call_default_command()
+
+        new_alphabet = Alphabet.objects.get(site__slug=self.TARGET_SLUG)
+
+        assert (
+            new_alphabet.input_to_canonical_map == old_alphabet.input_to_canonical_map
+        )
+
+    def test_category(self):
+        # Removing default categories from old site
+        Category.objects.filter(site=self.old_site).delete()
+
+        # Adding new categories
+        old_parent_category = ParentCategoryFactory(site=self.old_site)
+        old_child_category_1 = ChildCategoryFactory(
+            site=self.old_site, parent=old_parent_category
+        )
+        old_child_category_2 = ChildCategoryFactory(
+            site=self.old_site, parent=old_parent_category
+        )
+
+        old_extra_category = ParentCategoryFactory(site=self.old_site)
+
+        self.call_default_command()
+
+        assert Category.objects.filter(site__slug=self.TARGET_SLUG).count() == 4
+
+        # parent category
+        new_parent_category = Category.objects.filter(
+            site__slug=self.TARGET_SLUG, children__isnull=False
+        ).distinct()[0]
+        assert new_parent_category.title == old_parent_category.title
+        child_categories = new_parent_category.children.all()
+
+        assert child_categories.count() == 2
+        assert child_categories[0].title == old_child_category_1.title
+        assert child_categories[1].title == old_child_category_2.title
+
+        assert Category.objects.filter(
+            site__slug=self.TARGET_SLUG, title=old_extra_category.title
+        ).exists()

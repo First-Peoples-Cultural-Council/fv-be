@@ -153,14 +153,16 @@ class Command(BaseCommand):
         ).distinct()
         for category in categories:
             child_categories = category.children.all()
+            for child_category in child_categories:
+                child_category.id = uuid.uuid4()
+                child_category.site = new_site
+                child_category.save()
 
             category.id = uuid.uuid4()
             category.site = new_site
             category.save()
 
             for child_category in child_categories:
-                child_category.id = uuid.uuid4()
-                child_category.site = new_site
                 child_category.parent = category
                 child_category.save()
 
