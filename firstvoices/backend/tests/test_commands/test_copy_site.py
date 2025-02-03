@@ -35,7 +35,7 @@ class TestCopySite:
                 "copy_site",
                 source_slug="does_not_exist",
                 target_slug=self.TARGET_SLUG,
-                email=self.EMAIL,
+                email=self.user.email,
             )
         assert str(e.value) == "Provided source site does not exist."
 
@@ -50,7 +50,12 @@ class TestCopySite:
 
     def test_target_user_does_not_exist(self):
         with pytest.raises(AttributeError) as e:
-            self.call_default_command()
+            call_command(
+                "copy_site",
+                source_slug=self.SOURCE_SLUG,
+                target_slug=self.TARGET_SLUG,
+                email="notareal@email.com",
+            )
         assert str(e.value) == "No user found with the provided email."
 
     def test_new_site_attributes(self):

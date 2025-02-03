@@ -63,10 +63,10 @@ class Command(BaseCommand):
 
         # Verify the target site does not exist
         if Site.objects.filter(slug=target_slug).exists():
-            # raise AttributeError(
-            #     f"Site with slug {target_slug} already exists. Please use a different target slug."
-            # )
-            Site.objects.filter(slug=target_slug).delete()
+            raise AttributeError(
+                f"Site with slug {target_slug} already exists. Please use a different target slug."
+            )
+            # Site.objects.filter(slug=target_slug).delete()
 
         # Verify if user exists with the provided email
         users = get_user_model().objects.filter(email=user_email)
