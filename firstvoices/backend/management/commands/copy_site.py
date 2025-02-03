@@ -13,7 +13,7 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.files import File
-from backend.models.media import Audio, Person
+from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature, SiteMenu
 
 
@@ -215,13 +215,51 @@ class Command(BaseCommand):
             person.site = new_site
             person.save()
 
+        # Image
+        image_files = Image.objects.filter(site=source_site)
+        for image_file in image_files:
+            # Content
+            new_file = ImageFile(
+                content=UploadedFile(image_file.original.content.file),
+                site=new_site,
+            )
+            new_file.save()
+            image_file.original = new_file
+
+            image_file.thumbnail = None
+            image_file.small = None
+            image_file.medium = None
+            image_file.site = new_site
+            image_file.id = uuid.uuid4()
+            image_file._state.adding = True
+            image_file.save()
+
+        # Video
+        video_files = Video.objects.filter(site=source_site)
+        for video_file in video_files:
+            # Content
+            new_file = VideoFile(
+                content=UploadedFile(video_file.original.content.file),
+                site=new_site,
+            )
+            new_file.save()
+            video_file.original = new_file
+
+            video_file.thumbnail = None
+            video_file.small = None
+            video_file.medium = None
+            video_file.site = new_site
+            video_file.id = uuid.uuid4()
+            video_file._state.adding = True
+            video_file.save()
+
         # List of stuff to be generated and/or copied over.
         """
             Required
             - Widget, WidgetSettings, SiteWidgetList, SiteWidgetListOrder
             - SitePage
             - File
-            - Image, Video, Generate thumbnails, RelatedMediaMixin
+            - Generate thumbnails, RelatedMediaMixin
             - Gallery, GalleryItem
             - Song, Lyric
             - Story, StoryPage

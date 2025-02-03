@@ -9,17 +9,23 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.constants import AppRole
+from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.tests.factories import (
     AlphabetFactory,
+    AudioFactory,
+    AudioSpeakerFactory,
     CharacterFactory,
     CharacterVariantFactory,
     ChildCategoryFactory,
     IgnoredCharacterFactory,
+    ImageFactory,
     ParentCategoryFactory,
+    PersonFactory,
     SiteFactory,
     SiteFeatureFactory,
     SiteMenuFactory,
+    VideoFactory,
     get_app_admin,
 )
 
@@ -30,7 +36,7 @@ class TestCopySite:
     TARGET_SLUG = "new"
 
     def setup_method(self):
-        self.old_site = SiteFactory.create(slug=self.SOURCE_SLUG)
+        self.old_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="old")
         self.user = get_app_admin(AppRole.SUPERADMIN)
 
     def call_default_command(self):
@@ -185,3 +191,58 @@ class TestCopySite:
         assert Category.objects.filter(
             site__slug=self.TARGET_SLUG, title=old_extra_category.title
         ).exists()
+
+    def test_audio_and_speakers(self):
+        old_speaker = PersonFactory(site=self.old_site)
+        old_audio = AudioFactory(site=self.old_site)
+        AudioSpeakerFactory(audio=old_audio, speaker=old_speaker)
+        old_extra = PersonFactory(site=self.old_site)  # not a speaker
+
+        self.call_default_command()
+
+        new_audio = Audio.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_audio.original != old_audio.original
+        assert new_audio.title == old_audio.title
+
+        new_speaker = new_audio.speakers.first()
+        assert new_speaker.site.slug == self.TARGET_SLUG
+        assert new_speaker.name == old_speaker.name
+
+        assert Person.objects.filter(
+            site__slug=self.TARGET_SLUG, name=old_extra.name
+        ).exists()
+
+    def test_images(self):
+        old_image = ImageFactory(site=self.old_site)
+
+        self.call_default_command()
+
+        new_image = Image.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_image.original != old_image.original
+        assert new_image.title == old_image.title
+
+        assert new_image.original.height == old_image.original.height
+        assert new_image.original.width == old_image.original.width
+
+        assert new_image.thumbnail is None
+        assert new_image.small is None
+        assert new_image.medium is None
+
+    def test_videos(self):
+        old_video = VideoFactory(site=self.old_site)
+
+        self.call_default_command()
+
+        new_video = Video.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_video.original != old_video.original
+        assert new_video.title == old_video.title
+
+        assert new_video.original.height == old_video.original.height
+        assert new_video.original.width == old_video.original.width
+
+        assert old_video.thumbnail is None
+        assert old_video.small is None
+        assert old_video.medium is None
