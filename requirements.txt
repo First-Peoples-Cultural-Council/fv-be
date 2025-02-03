@@ -71,7 +71,7 @@ python-crontab==3.2.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-magic==0.4.27
-pytz==2024.2
+pytz==2025.1
 PyYAML==6.0.2
 redis==5.2.1
 regex==2024.11.6
