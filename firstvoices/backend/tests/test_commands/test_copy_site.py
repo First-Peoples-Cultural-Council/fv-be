@@ -70,7 +70,7 @@ class TestCopySite:
             self.call_default_command()
         assert (
             str(e.value)
-            == f"Site with slug {self.TARGET_SLUG} already exists. Please use a different target slug."
+            == f"Site with slug {self.TARGET_SLUG} already exists. Use --force-delete to override."
         )
 
     def test_target_user_does_not_exist(self):
