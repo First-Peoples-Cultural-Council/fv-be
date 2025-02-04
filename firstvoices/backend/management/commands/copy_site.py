@@ -16,6 +16,7 @@ from backend.models.files import File
 from backend.models.galleries import Gallery, GalleryItem
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature, SiteMenu
+from backend.models.song import Song
 
 
 class Command(BaseCommand):
@@ -101,23 +102,23 @@ class Command(BaseCommand):
         # Memberships ?
         # JoinRequest & JoinRequestReason ?
 
-        image_map = {}  # to keep track of copied over images
+        # to keep track of copied over media
+        image_map = {}
+        video_map = {}
+        audio_map = {}
 
-        # SiteFeature
         site_features = SiteFeature.objects.filter(site=source_site)
         for site_feature in site_features:
             site_feature.id = uuid.uuid4()
             site_feature.site = new_site
             site_feature.save()
 
-        # SiteMenu
         site_menu_list = SiteMenu.objects.filter(site=source_site)
         for site_menu in site_menu_list:
             site_menu.id = uuid.uuid4()
             site_menu.site = new_site
             site_menu.save()
 
-        # Character and variants
         characters = Character.objects.filter(site=source_site)
         for character in characters:
             variants = CharacterVariant.objects.filter(base_character=character)
@@ -133,21 +134,18 @@ class Command(BaseCommand):
                 variant.base_character = character
                 variant.save()
 
-        # IgnoredCharacter
         ignored_characters = IgnoredCharacter.objects.filter(site=source_site)
         for ignored_character in ignored_characters:
             ignored_character.id = uuid.uuid4()
             ignored_character.site = new_site
             ignored_character.save()
 
-        # Alphabet
         alphabets = Alphabet.objects.filter(site=source_site)
         for alphabet in alphabets:
             alphabet.id = uuid.uuid4()
             alphabet.site = new_site
             alphabet.save()
 
-        # Category
         # Removing auto-generated categories
         Category.objects.filter(site=new_site).delete()
         # Copy over all the parent categories
@@ -183,7 +181,6 @@ class Command(BaseCommand):
             category.site = new_site
             category.save()
 
-        # Audio
         audio_files = Audio.objects.filter(site=source_site)
         for audio_file in audio_files:
             # Content
@@ -204,7 +201,12 @@ class Command(BaseCommand):
                 new_speakers.append(person)
 
             audio_file.site = new_site
-            audio_file.id = uuid.uuid4()
+
+            old_audio_id = audio_file.id
+            new_audio_id = uuid.uuid4()
+            audio_map[old_audio_id] = new_audio_id
+
+            audio_file.id = new_audio_id
             # To circumvent checks added to media models to prevent modification of original file
             audio_file._state.adding = True
             audio_file.save()
@@ -218,7 +220,6 @@ class Command(BaseCommand):
             person.site = new_site
             person.save()
 
-        # Image
         image_files = Image.objects.filter(site=source_site)
         for image_file in image_files:
             # Content
@@ -242,7 +243,6 @@ class Command(BaseCommand):
             image_file._state.adding = True
             image_file.save()
 
-        # Video
         video_files = Video.objects.filter(site=source_site)
         for video_file in video_files:
             # Content
@@ -257,14 +257,18 @@ class Command(BaseCommand):
             video_file.small = None
             video_file.medium = None
             video_file.site = new_site
-            video_file.id = uuid.uuid4()
+
+            old_video_id = video_file.id
+            new_video_id = uuid.uuid4()
+            video_map[old_video_id] = new_video_id
+
+            video_file.id = new_video_id
             video_file._state.adding = True
             video_file.save()
 
-        # Gallery
         galleries = Gallery.objects.filter(site=source_site)
         for gallery in galleries:
-            gallery_items = gallery.galleryitem_set.all()
+            gallery_items = list(gallery.galleryitem_set.all())
 
             gallery.site = new_site
 
@@ -287,6 +291,40 @@ class Command(BaseCommand):
             gallery.galleryitem_set.set(updated_gallery_items)
             gallery.save()
 
+        songs = Song.objects.filter(site=source_site)
+        for song in songs:
+            old_lyrics = list(song.lyrics.all())
+            old_images = list(song.related_images.all())
+            old_videos = list(song.related_videos.all())
+            old_audio = list(song.related_audio.all())
+
+            song.id = uuid.uuid4()
+            song.site = new_site
+            song.save()
+
+            for lyric in old_lyrics:
+                lyric.id = uuid.uuid4()
+                lyric.song = song
+                lyric.save()
+
+            # related media
+            new_images = []
+            for image in old_images:
+                new_images.append(image_map[image.id])
+
+            new_videos = []
+            for video in old_videos:
+                new_videos.append(video_map[video.id])
+
+            new_audio = []
+            for audio in old_audio:
+                new_audio.append(audio_map[audio.id])
+
+            song.related_images.set(new_images)
+            song.related_videos.set(new_videos)
+            song.related_audio.set(new_audio)
+            song.save()
+
         # List of stuff to be generated and/or copied over.
         """
             Required
@@ -294,9 +332,7 @@ class Command(BaseCommand):
             - SitePage
             - File
             - Generate thumbnails, RelatedMediaMixin
-            - Song, Lyric
             - Story, StoryPage
-
             - DictionaryEntry, DictionaryEntryLink, DictionaryEntryRelatedCharacter, DictionaryEntryCategory
             - ImmersionLabel
 

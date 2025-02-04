@@ -12,6 +12,7 @@ from backend.models.constants import AppRole
 from backend.models.galleries import Gallery
 from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
+from backend.models.song import Song
 from backend.tests.factories import (
     AlphabetFactory,
     AudioFactory,
@@ -23,11 +24,13 @@ from backend.tests.factories import (
     GalleryItemFactory,
     IgnoredCharacterFactory,
     ImageFactory,
+    LyricsFactory,
     ParentCategoryFactory,
     PersonFactory,
     SiteFactory,
     SiteFeatureFactory,
     SiteMenuFactory,
+    SongFactory,
     VideoFactory,
     get_app_admin,
 )
@@ -250,7 +253,6 @@ class TestCopySite:
         assert old_video.small is None
         assert old_video.medium is None
 
-    @pytest.mark.skip("Flaky")
     def test_gallery(self):
         cover_img = ImageFactory(site=self.old_site)
         img_1 = ImageFactory(site=self.old_site)
@@ -274,3 +276,42 @@ class TestCopySite:
 
         assert gallery_item_1.image.title == img_1.title
         assert gallery_item_2.image.title == img_2.title
+
+    def test_song(self):
+        img_1 = ImageFactory(site=self.old_site)
+        img_2 = ImageFactory(site=self.old_site)
+        video_1 = VideoFactory(site=self.old_site)
+        video_2 = VideoFactory(site=self.old_site)
+        audio_1 = AudioFactory(site=self.old_site)
+        audio_2 = AudioFactory(site=self.old_site)
+
+        old_song = SongFactory(site=self.old_site)
+        old_lyric_1 = LyricsFactory(song=old_song)
+        old_lyric_2 = LyricsFactory(song=old_song)
+
+        old_song.related_images.add(img_1)
+        old_song.related_images.add(img_2)
+        old_song.related_videos.add(video_1)
+        old_song.related_videos.add(video_2)
+        old_song.related_audio.add(audio_1)
+        old_song.related_audio.add(audio_2)
+        old_song.related_video_links = ["https://test.com", "https://testing.com"]
+        old_song.save()
+
+        self.call_default_command()
+
+        new_song = Song.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_song.acknowledgements == old_song.acknowledgements
+        assert new_song.notes == old_song.notes
+        assert new_song.hide_overlay == old_song.hide_overlay
+
+        new_lyric_1 = new_song.lyrics.all()[0]
+        new_lyric_2 = new_song.lyrics.all()[1]
+
+        assert new_lyric_1.ordering == old_lyric_1.ordering
+        assert new_lyric_2.ordering == old_lyric_2.ordering
+
+        assert new_song.related_images.all().count() == 2
+        assert new_song.related_videos.all().count() == 2
+        assert new_song.related_audio.all().count() == 2
