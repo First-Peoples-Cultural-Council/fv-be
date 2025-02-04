@@ -13,6 +13,7 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.files import File
+from backend.models.galleries import Gallery, GalleryItem
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature, SiteMenu
 
@@ -63,10 +64,10 @@ class Command(BaseCommand):
 
         # Verify the target site does not exist
         if Site.objects.filter(slug=target_slug).exists():
-            raise AttributeError(
-                f"Site with slug {target_slug} already exists. Please use a different target slug."
-            )
-            # Site.objects.filter(slug=target_slug).delete()
+            # raise AttributeError(
+            #     f"Site with slug {target_slug} already exists. Please use a different target slug."
+            # )
+            Site.objects.filter(slug=target_slug).delete()
 
         # Verify if user exists with the provided email
         users = get_user_model().objects.filter(email=user_email)
@@ -99,6 +100,8 @@ class Command(BaseCommand):
 
         # Memberships ?
         # JoinRequest & JoinRequestReason ?
+
+        image_map = {}  # to keep track of copied over images
 
         # SiteFeature
         site_features = SiteFeature.objects.filter(site=source_site)
@@ -230,7 +233,12 @@ class Command(BaseCommand):
             image_file.small = None
             image_file.medium = None
             image_file.site = new_site
-            image_file.id = uuid.uuid4()
+
+            old_img_id = image_file.id
+            new_img_id = uuid.uuid4()
+            image_map[old_img_id] = new_img_id
+
+            image_file.id = new_img_id
             image_file._state.adding = True
             image_file.save()
 
@@ -253,6 +261,32 @@ class Command(BaseCommand):
             video_file._state.adding = True
             video_file.save()
 
+        # Gallery
+        galleries = Gallery.objects.filter(site=source_site)
+        for gallery in galleries:
+            gallery_items = gallery.galleryitem_set.all()
+
+            gallery.site = new_site
+
+            new_cover_img_id = image_map[gallery.cover_image.id]
+            gallery.cover_image = Image.objects.get(id=new_cover_img_id)
+
+            gallery.id = uuid.uuid4()
+            gallery.save()
+
+            updated_gallery_items = []
+            for gallery_item in gallery_items:
+                new_gallery_item = GalleryItem(
+                    gallery=gallery,
+                    image=Image.objects.get(id=image_map[gallery_item.image.id]),
+                    ordering=gallery_item.ordering,
+                )
+                new_gallery_item.save()
+                updated_gallery_items.append(new_gallery_item)
+
+            gallery.galleryitem_set.set(updated_gallery_items)
+            gallery.save()
+
         # List of stuff to be generated and/or copied over.
         """
             Required
@@ -260,7 +294,6 @@ class Command(BaseCommand):
             - SitePage
             - File
             - Generate thumbnails, RelatedMediaMixin
-            - Gallery, GalleryItem
             - Song, Lyric
             - Story, StoryPage
 

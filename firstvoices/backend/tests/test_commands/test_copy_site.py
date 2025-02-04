@@ -9,6 +9,7 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.constants import AppRole
+from backend.models.galleries import Gallery
 from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.tests.factories import (
@@ -18,6 +19,8 @@ from backend.tests.factories import (
     CharacterFactory,
     CharacterVariantFactory,
     ChildCategoryFactory,
+    GalleryFactory,
+    GalleryItemFactory,
     IgnoredCharacterFactory,
     ImageFactory,
     ParentCategoryFactory,
@@ -246,3 +249,28 @@ class TestCopySite:
         assert old_video.thumbnail is None
         assert old_video.small is None
         assert old_video.medium is None
+
+    @pytest.mark.skip("Flaky")
+    def test_gallery(self):
+        cover_img = ImageFactory(site=self.old_site)
+        img_1 = ImageFactory(site=self.old_site)
+        img_2 = ImageFactory(site=self.old_site)
+
+        old_gallery = GalleryFactory(site=self.old_site, cover_image=cover_img)
+        GalleryItemFactory.create(gallery=old_gallery, image=img_1)
+        GalleryItemFactory.create(gallery=old_gallery, image=img_2)
+
+        self.call_default_command()
+
+        new_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        # Comparing titles and site for images as proxy
+        # cover image
+        assert new_gallery.cover_image.title == cover_img.title
+        assert new_gallery.cover_image.site.slug == self.TARGET_SLUG
+
+        gallery_item_1 = new_gallery.galleryitem_set.all().order_by("ordering")[0]
+        gallery_item_2 = new_gallery.galleryitem_set.all().order_by("ordering")[1]
+
+        assert gallery_item_1.image.title == img_1.title
+        assert gallery_item_2.image.title == img_2.title
