@@ -9,6 +9,7 @@ from backend.models.characters import (
     IgnoredCharacter,
 )
 from backend.models.constants import AppRole
+from backend.models.dictionary import DictionaryEntry
 from backend.models.galleries import Gallery
 from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
@@ -21,10 +22,12 @@ from backend.tests.factories import (
     CharacterFactory,
     CharacterVariantFactory,
     ChildCategoryFactory,
+    DictionaryEntryFactory,
     GalleryFactory,
     GalleryItemFactory,
     IgnoredCharacterFactory,
     ImageFactory,
+    ImportJobFactory,
     LyricsFactory,
     ParentCategoryFactory,
     PersonFactory,
@@ -167,7 +170,7 @@ class TestCopySite:
             new_alphabet.input_to_canonical_map == old_alphabet.input_to_canonical_map
         )
 
-    def test_category(self):
+    def test_categories(self):
         # Removing default categories from old site
         Category.objects.filter(site=self.old_site).delete()
 
@@ -280,7 +283,7 @@ class TestCopySite:
         assert gallery_item_1.image.title == img_1.title
         assert gallery_item_2.image.title == img_2.title
 
-    def test_song(self):
+    def test_songs(self):
         img_1 = ImageFactory(site=self.old_site)
         img_2 = ImageFactory(site=self.old_site)
         video_1 = VideoFactory(site=self.old_site)
@@ -308,6 +311,9 @@ class TestCopySite:
         assert new_song.acknowledgements == old_song.acknowledgements
         assert new_song.notes == old_song.notes
         assert new_song.hide_overlay == old_song.hide_overlay
+        assert new_song.exclude_from_games == old_song.exclude_from_games
+        assert new_song.exclude_from_kids == old_song.exclude_from_kids
+        assert new_song.visibility == old_song.visibility
 
         new_lyric_1 = new_song.lyrics.all()[0]
         new_lyric_2 = new_song.lyrics.all()[1]
@@ -320,7 +326,7 @@ class TestCopySite:
         assert new_song.related_audio.all().count() == 2
         assert new_song.related_video_links == old_song.related_video_links
 
-    def test_story(self):
+    def test_stories(self):
         img_1 = ImageFactory(site=self.old_site)
         img_2 = ImageFactory(site=self.old_site)
         page_img_1 = ImageFactory(site=self.old_site)
@@ -362,6 +368,9 @@ class TestCopySite:
         assert new_story.author == old_story.author
         assert new_story.notes == old_story.notes
         assert new_story.hide_overlay == old_story.hide_overlay
+        assert new_story.exclude_from_games == old_story.exclude_from_games
+        assert new_story.exclude_from_kids == old_story.exclude_from_kids
+        assert new_story.visibility == old_story.visibility
 
         assert new_story.related_images.all().count() == 2
         assert new_story.related_videos.all().count() == 2
@@ -390,3 +399,84 @@ class TestCopySite:
         assert new_page_video_2.title == page_video_2.title
         assert new_page_audio_1.title == page_audio_1.title
         assert new_page_audio_2.title == page_audio_2.title
+
+    def test_dictionary_entries(self):
+        old_category_1 = ParentCategoryFactory(site=self.old_site)
+        old_category_2 = ParentCategoryFactory(site=self.old_site)
+        old_category_3 = ChildCategoryFactory(site=self.old_site, parent=old_category_2)
+        old_related_entry_1 = DictionaryEntryFactory(
+            site=self.old_site, title="related entry 1"
+        )
+        old_related_entry_2 = DictionaryEntryFactory(
+            site=self.old_site, title="related entry 2"
+        )
+        old_related_char_1 = CharacterFactory(site=self.old_site)
+        old_related_char_2 = CharacterFactory(site=self.old_site)
+        img_1 = ImageFactory(site=self.old_site)
+        img_2 = ImageFactory(site=self.old_site)
+        video_1 = VideoFactory(site=self.old_site)
+        video_2 = VideoFactory(site=self.old_site)
+        audio_1 = AudioFactory(site=self.old_site)
+        audio_2 = AudioFactory(site=self.old_site)
+        import_job = ImportJobFactory(site=self.old_site)
+
+        old_entry = DictionaryEntryFactory(
+            site=self.old_site,
+            title="Primary entry",
+            batch_id="validId",
+            import_job=import_job,
+        )
+
+        old_entry.categories.set([old_category_1, old_category_3])
+        old_entry.related_dictionary_entries.set(
+            [old_related_entry_1, old_related_entry_2]
+        )
+        old_entry.related_characters.set([old_related_char_1, old_related_char_2])
+        old_entry.related_images.set([img_1, img_2])
+        old_entry.related_videos.set([video_1, video_2])
+        old_entry.related_audio.set([audio_1, audio_2])
+        old_entry.related_video_links = ["https://test.com", "https://testing.com"]
+        old_entry.save()
+
+        self.call_default_command()
+
+        new_entry = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=old_entry.title
+        )
+
+        assert new_entry.type == old_entry.type
+        assert new_entry.custom_order == old_entry.custom_order
+        assert new_entry.exclude_from_wotd == old_entry.exclude_from_wotd
+        assert new_entry.part_of_speech == old_entry.part_of_speech
+        assert new_entry.split_chars_base == old_entry.split_chars_base
+        assert new_entry.notes == old_entry.notes
+        assert new_entry.acknowledgements == old_entry.acknowledgements
+        assert new_entry.translations == old_entry.translations
+        assert new_entry.alternate_spellings == old_entry.alternate_spellings
+        assert new_entry.pronunciations == old_entry.pronunciations
+        assert new_entry.batch_id == ""
+        assert new_entry.import_job is None
+        assert old_entry.exclude_from_games == old_entry.exclude_from_games
+        assert new_entry.exclude_from_kids == old_entry.exclude_from_kids
+        assert new_entry.visibility == old_entry.visibility
+
+        new_categories = new_entry.categories.order_by("created").all()
+        assert new_categories[0].title == old_category_1.title
+        assert new_categories[0].site.slug == self.TARGET_SLUG
+        assert new_categories[1].title == old_category_3.title
+        assert new_categories[1].site.slug == self.TARGET_SLUG
+        assert new_categories[1].parent.title == old_category_2.title
+
+        new_related_entries = new_entry.related_dictionary_entries.order_by(
+            "created"
+        ).all()
+        assert new_related_entries[0].title == old_related_entry_1.title
+        assert new_related_entries[1].title == old_related_entry_2.title
+
+        new_related_characters = new_entry.related_characters.order_by("created").all()
+        assert new_related_characters[0].title == old_related_char_1.title
+        assert new_related_characters[1].title == old_related_char_2.title
+
+        assert new_entry.related_images.all().count() == 2
+        assert new_entry.related_videos.all().count() == 2
+        assert new_entry.related_audio.all().count() == 2

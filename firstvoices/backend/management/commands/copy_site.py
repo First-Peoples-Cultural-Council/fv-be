@@ -12,6 +12,7 @@ from backend.models.characters import (
     CharacterVariant,
     IgnoredCharacter,
 )
+from backend.models.dictionary import DictionaryEntry
 from backend.models.files import File
 from backend.models.galleries import Gallery, GalleryItem
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
@@ -62,6 +63,9 @@ def copy_related_objects(source_site, new_site):
     image_map = {}
     video_map = {}
     audio_map = {}
+    category_map = {}
+    character_map = {}
+    dictionary_entry_map = {}
 
     site_features = SiteFeature.objects.filter(site=source_site)
     for site_feature in site_features:
@@ -79,7 +83,11 @@ def copy_related_objects(source_site, new_site):
     for character in characters:
         variants = CharacterVariant.objects.filter(base_character=character)
 
-        character.id = uuid.uuid4()
+        old_char_id = character.id
+        new_char_id = uuid.uuid4()
+        character_map[old_char_id] = new_char_id
+
+        character.id = new_char_id
         character.site = new_site
         character.save()
 
@@ -111,11 +119,19 @@ def copy_related_objects(source_site, new_site):
     for category in categories:
         child_categories = category.children.all()
         for child_category in child_categories:
-            child_category.id = uuid.uuid4()
+            old_category_id = child_category.id
+            new_category_id = uuid.uuid4()
+            category_map[old_category_id] = new_category_id
+
+            child_category.id = new_category_id
             child_category.site = new_site
             child_category.save()
 
-        category.id = uuid.uuid4()
+        old_category_id = category.id
+        new_category_id = uuid.uuid4()
+        category_map[old_category_id] = new_category_id
+
+        category.id = new_category_id
         category.site = new_site
         category.save()
 
@@ -133,7 +149,11 @@ def copy_related_objects(source_site, new_site):
         .distinct()
     )
     for category in categories:
-        category.id = uuid.uuid4()
+        old_category_id = category.id
+        new_category_id = uuid.uuid4()
+        category_map[old_category_id] = new_category_id
+
+        category.id = new_category_id
         category.site = new_site
         category.save()
 
@@ -336,6 +356,117 @@ def copy_related_objects(source_site, new_site):
             page.related_audio.set(new_audio)
             page.save()
 
+    # Copying over dictionary entries which don't have related_entries
+    dictionary_entries = DictionaryEntry.objects.filter(
+        site=source_site, related_dictionary_entries__isnull=True
+    ).distinct()
+    for entry in dictionary_entries:
+        old_categories = list(entry.categories.all())
+        old_related_characters = list(entry.related_characters.all())
+        old_images = list(entry.related_images.all())
+        old_videos = list(entry.related_videos.all())
+        old_audio = list(entry.related_audio.all())
+
+        old_entry_id = entry.id
+        new_entry_id = uuid.uuid4()
+        dictionary_entry_map[old_entry_id] = new_entry_id
+
+        entry.id = new_entry_id
+        entry.site = new_site
+        entry.batch_id = ""
+        entry.import_job = None
+        entry.save()
+
+        new_categories = []
+        for category in old_categories:
+            new_categories.append(Category.objects.get(id=category_map[category.id]))
+        entry.categories.set(new_categories)
+
+        new_related_characters = []
+        for char in old_related_characters:
+            new_related_characters.append(
+                Character.objects.get(id=character_map[char.id])
+            )
+        entry.related_characters.set(new_related_characters)
+
+        new_images = []
+        for image in old_images:
+            new_images.append(image_map[image.id])
+
+        new_videos = []
+        for video in old_videos:
+            new_videos.append(video_map[video.id])
+
+        new_audio = []
+        for audio in old_audio:
+            new_audio.append(audio_map[audio.id])
+
+        entry.related_images.set(new_images)
+        entry.related_videos.set(new_videos)
+        entry.related_audio.set(new_audio)
+        entry.save()
+
+    dictionary_entries = DictionaryEntry.objects.filter(
+        site=source_site, related_dictionary_entries__isnull=False
+    ).distinct()
+    for entry in dictionary_entries:
+        old_categories = list(entry.categories.all())
+        old_related_entries = list(entry.related_dictionary_entries.all())
+        old_related_characters = list(entry.related_characters.all())
+        old_images = list(entry.related_images.all())
+        old_videos = list(entry.related_videos.all())
+        old_audio = list(entry.related_audio.all())
+
+        old_entry_id = entry.id
+        new_entry_id = uuid.uuid4()
+        dictionary_entry_map[old_entry_id] = new_entry_id
+
+        entry.id = new_entry_id
+        entry.site = new_site
+        entry.batch_id = ""
+        entry.import_job = None
+        entry.save()
+
+        new_categories = []
+        for category in old_categories:
+            new_categories.append(Category.objects.get(id=category_map[category.id]))
+        entry.categories.set(new_categories)
+
+        new_related_entries = []
+        for related_entry in old_related_entries:
+            new_related_entries.append(
+                DictionaryEntry.objects.get(id=dictionary_entry_map[related_entry.id])
+            )
+        entry.related_dictionary_entries.set(new_related_entries)
+
+        new_related_characters = []
+        for char in old_related_characters:
+            new_related_characters.append(
+                Character.objects.get(id=character_map[char.id])
+            )
+        entry.related_characters.set(new_related_characters)
+
+        new_images = []
+        for image in old_images:
+            new_images.append(image_map[image.id])
+
+        new_videos = []
+        for video in old_videos:
+            new_videos.append(video_map[video.id])
+
+        new_audio = []
+        for audio in old_audio:
+            new_audio.append(audio_map[audio.id])
+
+        entry.related_images.set(new_images)
+        entry.related_videos.set(new_videos)
+        entry.related_audio.set(new_audio)
+        entry.save()
+
+    # Maybe try to sort these in a way so that all entries which don't have a related entry are copied
+    # over first so then we don't have to run 2 loops
+    # verify if we want to clear out batch_id and import_job field
+
     # List of stuff to be generated and/or copied over.
     """
         Required
@@ -343,7 +474,6 @@ def copy_related_objects(source_site, new_site):
         - SitePage
         - File
         - Generate thumbnails, RelatedMediaMixin
-        - DictionaryEntry, DictionaryEntryLink, DictionaryEntryRelatedCharacter, DictionaryEntryCategory
         - ImmersionLabel
     """
 
