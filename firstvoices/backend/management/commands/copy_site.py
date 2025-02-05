@@ -60,30 +60,26 @@ def create_new_site(source_site, target_slug, user):
     return new_site
 
 
-def copy_related_objects(source_site, new_site):
-    image_map = {}
-    video_map = {}
-    audio_map = {}
-    category_map = {}
-    character_map = {}
-    dictionary_entry_map = {}
-
+def copy_site_features(source_site, new_site):
     site_features = SiteFeature.objects.filter(site=source_site)
     for site_feature in site_features:
         site_feature.id = uuid.uuid4()
         site_feature.site = new_site
         site_feature.save()
 
+
+def copy_site_menu(source_site, new_site):
     site_menu_list = SiteMenu.objects.filter(site=source_site)
     for site_menu in site_menu_list:
         site_menu.id = uuid.uuid4()
         site_menu.site = new_site
         site_menu.save()
 
-    characters = Character.objects.filter(site=source_site)
-    for character in characters:
-        variants = CharacterVariant.objects.filter(base_character=character)
 
+def copy_all_characters(source_site, new_site, character_map):
+    characters = Character.objects.filter(site=source_site)
+
+    for character in characters:
         old_char_id = character.id
         new_char_id = uuid.uuid4()
         character_map[old_char_id] = new_char_id
@@ -92,12 +88,16 @@ def copy_related_objects(source_site, new_site):
         character.site = new_site
         character.save()
 
-        # Variants
-        for variant in variants:
-            variant.id = uuid.uuid4()
-            variant.site = new_site
-            variant.base_character = character
-            variant.save()
+    variants = CharacterVariant.objects.filter(site=source_site)
+    for variant in variants:
+        old_character = variant.base_character
+
+        variant.id = uuid.uuid4()
+        variant.site = new_site
+        variant.base_character = Character.objects.get(
+            id=character_map[old_character.id]
+        )
+        variant.save()
 
     ignored_characters = IgnoredCharacter.objects.filter(site=source_site)
     for ignored_character in ignored_characters:
@@ -105,12 +105,16 @@ def copy_related_objects(source_site, new_site):
         ignored_character.site = new_site
         ignored_character.save()
 
+
+def copy_alphabet(source_site, new_site):
     alphabets = Alphabet.objects.filter(site=source_site)
     for alphabet in alphabets:
         alphabet.id = uuid.uuid4()
         alphabet.site = new_site
         alphabet.save()
 
+
+def copy_categories(source_site, new_site, category_map):
     # Removing auto-generated categories
     Category.objects.filter(site=new_site).delete()
     # Copy over all the parent categories
@@ -158,6 +162,8 @@ def copy_related_objects(source_site, new_site):
         category.site = new_site
         category.save()
 
+
+def copy_audio_and_speakers(source_site, new_site, audio_map):
     audio_files = Audio.objects.filter(site=source_site)
     for audio_file in audio_files:
         # Content
@@ -169,7 +175,7 @@ def copy_related_objects(source_site, new_site):
         audio_file.original = new_file
 
         # Speakers
-        current_speakers = audio_file.speakers.all()
+        current_speakers = list(audio_file.speakers.all())
         new_speakers = []
         for person in current_speakers:
             person.id = uuid.uuid4()
@@ -197,6 +203,8 @@ def copy_related_objects(source_site, new_site):
         person.site = new_site
         person.save()
 
+
+def copy_images(source_site, new_site, image_map):
     image_files = Image.objects.filter(site=source_site)
     for image_file in image_files:
         # Content
@@ -220,6 +228,8 @@ def copy_related_objects(source_site, new_site):
         image_file._state.adding = True
         image_file.save()
 
+
+def copy_videos(source_site, new_site, video_map):
     video_files = Video.objects.filter(site=source_site)
     for video_file in video_files:
         # Content
@@ -243,6 +253,8 @@ def copy_related_objects(source_site, new_site):
         video_file._state.adding = True
         video_file.save()
 
+
+def copy_galleries(source_site, new_site, image_map):
     galleries = Gallery.objects.filter(site=source_site)
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
@@ -268,6 +280,8 @@ def copy_related_objects(source_site, new_site):
         gallery.galleryitem_set.set(updated_gallery_items)
         gallery.save()
 
+
+def copy_songs(source_site, new_site, audio_map, image_map, video_map):
     songs = Song.objects.filter(site=source_site)
     for song in songs:
         old_lyrics = list(song.lyrics.all())
@@ -302,6 +316,8 @@ def copy_related_objects(source_site, new_site):
         song.related_audio.set(new_audio)
         song.save()
 
+
+def copy_stories(source_site, new_site, audio_map, image_map, video_map):
     stories = Story.objects.filter(site=source_site)
     for story in stories:
         old_pages = list(story.pages.all())
@@ -357,6 +373,17 @@ def copy_related_objects(source_site, new_site):
             page.related_audio.set(new_audio)
             page.save()
 
+
+def copy_dictionary_entries(
+    source_site,
+    new_site,
+    dictionary_entry_map,
+    category_map,
+    character_map,
+    audio_map,
+    image_map,
+    video_map,
+):
     # Copying over dictionary entries which don't have related_entries
     dictionary_entries = DictionaryEntry.objects.filter(
         site=source_site, related_dictionary_entries__isnull=True
@@ -468,6 +495,8 @@ def copy_related_objects(source_site, new_site):
     # over first so then we don't have to run 2 loops
     # verify if we want to clear out batch_id and import_job field
 
+
+def copy_immersion_labels(source_site, new_site, dictionary_entry_map):
     imm_labels = ImmersionLabel.objects.filter(site=source_site)
     for imm_label in imm_labels:
         imm_label.id = uuid.uuid4()
@@ -480,6 +509,44 @@ def copy_related_objects(source_site, new_site):
         imm_label.dictionary_entry = new_dictionary_entry
 
         imm_label.save()
+
+
+def copy_related_objects(source_site, new_site):
+    image_map = {}
+    video_map = {}
+    audio_map = {}
+    category_map = {}
+    character_map = {}
+    dictionary_entry_map = {}
+
+    copy_site_features(source_site, new_site)
+    copy_site_menu(source_site, new_site)
+
+    copy_all_characters(source_site, new_site, character_map)
+    copy_alphabet(source_site, new_site)
+
+    copy_categories(source_site, new_site, category_map)
+
+    copy_audio_and_speakers(source_site, new_site, audio_map)
+    copy_images(source_site, new_site, image_map)
+    copy_videos(source_site, new_site, video_map)
+
+    copy_galleries(source_site, new_site, image_map)
+    copy_songs(source_site, new_site, audio_map, image_map, video_map)
+    copy_stories(source_site, new_site, audio_map, image_map, video_map)
+
+    copy_dictionary_entries(
+        source_site,
+        new_site,
+        dictionary_entry_map,
+        category_map,
+        character_map,
+        audio_map,
+        image_map,
+        video_map,
+    )
+
+    copy_immersion_labels(source_site, new_site, dictionary_entry_map)
 
     # List of stuff to be generated and/or copied over.
     """

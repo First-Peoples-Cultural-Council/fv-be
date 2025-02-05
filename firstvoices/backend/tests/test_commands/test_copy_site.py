@@ -458,7 +458,7 @@ class TestCopySite:
         assert new_entry.pronunciations == old_entry.pronunciations
         assert new_entry.batch_id == ""
         assert new_entry.import_job is None
-        assert old_entry.exclude_from_games == old_entry.exclude_from_games
+        assert new_entry.exclude_from_games == old_entry.exclude_from_games
         assert new_entry.exclude_from_kids == old_entry.exclude_from_kids
         assert new_entry.visibility == old_entry.visibility
 
