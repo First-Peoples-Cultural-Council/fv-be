@@ -4,6 +4,7 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import UploadedFile
 from django.core.management.base import BaseCommand
+from django.db.models import Count
 
 from backend.models.category import Category
 from backend.models.characters import (
@@ -357,13 +358,16 @@ def copy_dictionary_entries(
     image_map,
     video_map,
 ):
-    # Copying over dictionary entries which don't have related_entries
-    dictionary_entries = DictionaryEntry.objects.filter(
-        site=source_site, related_dictionary_entries__isnull=True
-    ).distinct()
+    dictionary_entries = (
+        DictionaryEntry.objects.filter(site=source_site)
+        .annotate(related_entry_count=Count("related_dictionary_entries"))
+        .order_by("related_entry_count")
+        .distinct()
+    )
     for entry in dictionary_entries:
         old_categories = list(entry.categories.all())
         old_related_characters = list(entry.related_characters.all())
+        old_related_entries = list(entry.related_dictionary_entries.all())
         old_media = {
             "audio": list(entry.related_audio.all()),
             "images": list(entry.related_images.all()),
@@ -391,38 +395,6 @@ def copy_dictionary_entries(
             for char in old_related_characters
         ]
         entry.related_characters.set(new_related_characters)
-
-        copy_related_media(entry, old_media, audio_map, image_map, video_map)
-        entry.save()
-
-    dictionary_entries = DictionaryEntry.objects.filter(
-        site=source_site, related_dictionary_entries__isnull=False
-    ).distinct()
-    for entry in dictionary_entries:
-        old_categories = list(entry.categories.all())
-        old_related_entries = list(entry.related_dictionary_entries.all())
-        old_related_characters = list(entry.related_characters.all())
-        old_media = {
-            "audio": list(entry.related_audio.all()),
-            "images": list(entry.related_images.all()),
-            "videos": list(entry.related_videos.all()),
-        }
-
-        old_entry_id = entry.id
-        new_entry_id = uuid.uuid4()
-        dictionary_entry_map[old_entry_id] = new_entry_id
-
-        entry.id = new_entry_id
-        entry.site = new_site
-        entry.batch_id = ""
-        entry.import_job = None
-        entry.save()
-
-        new_categories = [
-            Category.objects.get(id=category_map[category.id])
-            for category in old_categories
-        ]
-        entry.categories.set(new_categories)
 
         new_related_entries = [
             DictionaryEntry.objects.get(id=dictionary_entry_map[old_re_entry.id])
@@ -430,18 +402,8 @@ def copy_dictionary_entries(
         ]
         entry.related_dictionary_entries.set(new_related_entries)
 
-        new_related_characters = [
-            Character.objects.get(id=character_map[char.id])
-            for char in old_related_characters
-        ]
-        entry.related_characters.set(new_related_characters)
-
         copy_related_media(entry, old_media, audio_map, image_map, video_map)
         entry.save()
-
-    # Maybe try to sort these in a way so that all entries which don't have a related entry are copied
-    # over first so then we don't have to run 2 loops
-    # verify if we want to clear out batch_id and import_job field
 
 
 def copy_immersion_labels(source_site, new_site, dictionary_entry_map):
