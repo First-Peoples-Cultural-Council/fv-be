@@ -281,13 +281,26 @@ def copy_galleries(source_site, new_site, image_map):
         gallery.save()
 
 
+def copy_related_media(instance, old_media, audio_map, image_map, video_map):
+    new_images = [image_map[image.id] for image in old_media["images"]]
+    new_videos = [video_map[video.id] for video in old_media["videos"]]
+    new_audio = [audio_map[audio.id] for audio in old_media["audio"]]
+
+    instance.related_images.set(new_images)
+    instance.related_videos.set(new_videos)
+    instance.related_audio.set(new_audio)
+    instance.save()
+
+
 def copy_songs(source_site, new_site, audio_map, image_map, video_map):
     songs = Song.objects.filter(site=source_site)
     for song in songs:
         old_lyrics = list(song.lyrics.all())
-        old_images = list(song.related_images.all())
-        old_videos = list(song.related_videos.all())
-        old_audio = list(song.related_audio.all())
+        old_media = {
+            "audio": list(song.related_audio.all()),
+            "images": list(song.related_images.all()),
+            "videos": list(song.related_videos.all()),
+        }
 
         song.id = uuid.uuid4()
         song.site = new_site
@@ -298,22 +311,7 @@ def copy_songs(source_site, new_site, audio_map, image_map, video_map):
             lyric.song = song
             lyric.save()
 
-        # related media
-        new_images = []
-        for image in old_images:
-            new_images.append(image_map[image.id])
-
-        new_videos = []
-        for video in old_videos:
-            new_videos.append(video_map[video.id])
-
-        new_audio = []
-        for audio in old_audio:
-            new_audio.append(audio_map[audio.id])
-
-        song.related_images.set(new_images)
-        song.related_videos.set(new_videos)
-        song.related_audio.set(new_audio)
+        copy_related_media(song, old_media, audio_map, image_map, video_map)
         song.save()
 
 
@@ -321,56 +319,31 @@ def copy_stories(source_site, new_site, audio_map, image_map, video_map):
     stories = Story.objects.filter(site=source_site)
     for story in stories:
         old_pages = list(story.pages.all())
-        old_images = list(story.related_images.all())
-        old_videos = list(story.related_videos.all())
-        old_audio = list(story.related_audio.all())
+        old_media = {
+            "audio": list(story.related_audio.all()),
+            "images": list(story.related_images.all()),
+            "videos": list(story.related_videos.all()),
+        }
 
         story.id = uuid.uuid4()
         story.site = new_site
         story.save()
 
-        # Related media on story
-        new_images = []
-        for image in old_images:
-            new_images.append(image_map[image.id])
-
-        new_videos = []
-        for video in old_videos:
-            new_videos.append(video_map[video.id])
-
-        new_audio = []
-        for audio in old_audio:
-            new_audio.append(audio_map[audio.id])
-
-        story.related_images.set(new_images)
-        story.related_videos.set(new_videos)
-        story.related_audio.set(new_audio)
+        copy_related_media(story, old_media, audio_map, image_map, video_map)
         story.save()
 
         for page in old_pages:
-            old_images = list(page.related_images.all())
-            old_videos = list(page.related_videos.all())
-            old_audio = list(page.related_audio.all())
+            old_media = {
+                "audio": list(page.related_audio.all()),
+                "images": list(page.related_images.all()),
+                "videos": list(page.related_videos.all()),
+            }
             page.id = uuid.uuid4()
+            page.site = new_site
             page.story = story
             page.save()
 
-            # Related media on story page
-            new_images = []
-            for image in old_images:
-                new_images.append(image_map[image.id])
-
-            new_videos = []
-            for video in old_videos:
-                new_videos.append(video_map[video.id])
-
-            new_audio = []
-            for audio in old_audio:
-                new_audio.append(audio_map[audio.id])
-
-            page.related_images.set(new_images)
-            page.related_videos.set(new_videos)
-            page.related_audio.set(new_audio)
+            copy_related_media(page, old_media, audio_map, image_map, video_map)
             page.save()
 
 
@@ -391,9 +364,11 @@ def copy_dictionary_entries(
     for entry in dictionary_entries:
         old_categories = list(entry.categories.all())
         old_related_characters = list(entry.related_characters.all())
-        old_images = list(entry.related_images.all())
-        old_videos = list(entry.related_videos.all())
-        old_audio = list(entry.related_audio.all())
+        old_media = {
+            "audio": list(entry.related_audio.all()),
+            "images": list(entry.related_images.all()),
+            "videos": list(entry.related_videos.all()),
+        }
 
         old_entry_id = entry.id
         new_entry_id = uuid.uuid4()
@@ -405,33 +380,19 @@ def copy_dictionary_entries(
         entry.import_job = None
         entry.save()
 
-        new_categories = []
-        for category in old_categories:
-            new_categories.append(Category.objects.get(id=category_map[category.id]))
+        new_categories = [
+            Category.objects.get(id=category_map[category.id])
+            for category in old_categories
+        ]
         entry.categories.set(new_categories)
 
-        new_related_characters = []
-        for char in old_related_characters:
-            new_related_characters.append(
-                Character.objects.get(id=character_map[char.id])
-            )
+        new_related_characters = [
+            Character.objects.get(id=character_map[char.id])
+            for char in old_related_characters
+        ]
         entry.related_characters.set(new_related_characters)
 
-        new_images = []
-        for image in old_images:
-            new_images.append(image_map[image.id])
-
-        new_videos = []
-        for video in old_videos:
-            new_videos.append(video_map[video.id])
-
-        new_audio = []
-        for audio in old_audio:
-            new_audio.append(audio_map[audio.id])
-
-        entry.related_images.set(new_images)
-        entry.related_videos.set(new_videos)
-        entry.related_audio.set(new_audio)
+        copy_related_media(entry, old_media, audio_map, image_map, video_map)
         entry.save()
 
     dictionary_entries = DictionaryEntry.objects.filter(
@@ -441,9 +402,11 @@ def copy_dictionary_entries(
         old_categories = list(entry.categories.all())
         old_related_entries = list(entry.related_dictionary_entries.all())
         old_related_characters = list(entry.related_characters.all())
-        old_images = list(entry.related_images.all())
-        old_videos = list(entry.related_videos.all())
-        old_audio = list(entry.related_audio.all())
+        old_media = {
+            "audio": list(entry.related_audio.all()),
+            "images": list(entry.related_images.all()),
+            "videos": list(entry.related_videos.all()),
+        }
 
         old_entry_id = entry.id
         new_entry_id = uuid.uuid4()
@@ -455,40 +418,25 @@ def copy_dictionary_entries(
         entry.import_job = None
         entry.save()
 
-        new_categories = []
-        for category in old_categories:
-            new_categories.append(Category.objects.get(id=category_map[category.id]))
+        new_categories = [
+            Category.objects.get(id=category_map[category.id])
+            for category in old_categories
+        ]
         entry.categories.set(new_categories)
 
-        new_related_entries = []
-        for related_entry in old_related_entries:
-            new_related_entries.append(
-                DictionaryEntry.objects.get(id=dictionary_entry_map[related_entry.id])
-            )
+        new_related_entries = [
+            DictionaryEntry.objects.get(id=dictionary_entry_map[old_re_entry.id])
+            for old_re_entry in old_related_entries
+        ]
         entry.related_dictionary_entries.set(new_related_entries)
 
-        new_related_characters = []
-        for char in old_related_characters:
-            new_related_characters.append(
-                Character.objects.get(id=character_map[char.id])
-            )
+        new_related_characters = [
+            Character.objects.get(id=character_map[char.id])
+            for char in old_related_characters
+        ]
         entry.related_characters.set(new_related_characters)
 
-        new_images = []
-        for image in old_images:
-            new_images.append(image_map[image.id])
-
-        new_videos = []
-        for video in old_videos:
-            new_videos.append(video_map[video.id])
-
-        new_audio = []
-        for audio in old_audio:
-            new_audio.append(audio_map[audio.id])
-
-        entry.related_images.set(new_images)
-        entry.related_videos.set(new_videos)
-        entry.related_audio.set(new_audio)
+        copy_related_media(entry, old_media, audio_map, image_map, video_map)
         entry.save()
 
     # Maybe try to sort these in a way so that all entries which don't have a related entry are copied
