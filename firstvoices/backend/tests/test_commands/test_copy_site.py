@@ -72,6 +72,20 @@ class TestCopySite:
             )
         assert str(e.value) == "Provided source site does not exist."
 
+    def test_force_delete_flag(self):
+        # Since the title for target site is reset to slug, we can verify if force delete was called
+        SiteFactory.create(slug=self.TARGET_SLUG, title="Will be changed.")
+        call_command(
+            "copy_site",
+            source_slug=self.SOURCE_SLUG,
+            target_slug=self.TARGET_SLUG,
+            email=self.user.email,
+            force_delete=True,
+        )
+
+        new_target_site = Site.objects.get(slug=self.TARGET_SLUG)
+        assert new_target_site.title != "Will be changed."
+
     def test_target_site_does_not_exist(self):
         SiteFactory.create(slug=self.TARGET_SLUG)
         with pytest.raises(AttributeError) as e:

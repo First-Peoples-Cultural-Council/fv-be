@@ -23,7 +23,7 @@ from backend.models.song import Song
 from backend.models.story import Story
 
 
-def get_object_or_raise_attribute_error(model, error, **filters):
+def get_object_or_raise_error(model, error, **filters):
     obj = model.objects.filter(**filters).first()
     if not obj:
         raise AttributeError(error)
@@ -511,10 +511,10 @@ class Command(BaseCommand):
 
         logger.info("Verifying requirements.")
 
-        source_site = get_object_or_raise_attribute_error(
+        source_site = get_object_or_raise_error(
             Site, slug=source_slug, error="Provided source site does not exist."
         )
-        user = get_object_or_raise_attribute_error(
+        user = get_object_or_raise_error(
             get_user_model(),
             email=user_email,
             error="No user found with the provided email.",
