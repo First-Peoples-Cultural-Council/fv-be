@@ -9,6 +9,7 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.media_serializers import (
     AudioSerializer,
+    DocumentSerializer,
     ImageSerializer,
     VideoSerializer,
 )
@@ -93,6 +94,11 @@ class VisualMediaUsageFieldSerializer(BaseUsageFieldSerializer):
 class AudioDetailSerializer(BaseUsageFieldSerializer, AudioSerializer):
     class Meta(AudioSerializer.Meta):
         fields = AudioSerializer.Meta.fields + BaseUsageFieldSerializer.Meta.fields
+
+
+class DocumentDetailSerializer(BaseUsageFieldSerializer, DocumentSerializer):
+    class Meta(DocumentSerializer.Meta):
+        fields = DocumentSerializer.Meta.fields + BaseUsageFieldSerializer.Meta.fields
 
 
 class VideoDetailSerializer(VisualMediaUsageFieldSerializer, VideoSerializer):
