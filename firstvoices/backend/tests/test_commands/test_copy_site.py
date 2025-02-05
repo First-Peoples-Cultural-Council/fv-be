@@ -13,6 +13,7 @@ from backend.models.galleries import Gallery
 from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.models.song import Song
+from backend.models.story import Story
 from backend.tests.factories import (
     AlphabetFactory,
     AudioFactory,
@@ -31,6 +32,8 @@ from backend.tests.factories import (
     SiteFeatureFactory,
     SiteMenuFactory,
     SongFactory,
+    StoryFactory,
+    StoryPageFactory,
     VideoFactory,
     get_app_admin,
 )
@@ -315,3 +318,75 @@ class TestCopySite:
         assert new_song.related_images.all().count() == 2
         assert new_song.related_videos.all().count() == 2
         assert new_song.related_audio.all().count() == 2
+        assert new_song.related_video_links == old_song.related_video_links
+
+    def test_story(self):
+        img_1 = ImageFactory(site=self.old_site)
+        img_2 = ImageFactory(site=self.old_site)
+        page_img_1 = ImageFactory(site=self.old_site)
+        page_img_2 = ImageFactory(site=self.old_site)
+        video_1 = VideoFactory(site=self.old_site)
+        video_2 = VideoFactory(site=self.old_site)
+        page_video_1 = VideoFactory(site=self.old_site)
+        page_video_2 = VideoFactory(site=self.old_site)
+        audio_1 = AudioFactory(site=self.old_site)
+        audio_2 = AudioFactory(site=self.old_site)
+        page_audio_1 = AudioFactory(site=self.old_site)
+        page_audio_2 = AudioFactory(site=self.old_site)
+
+        old_story = StoryFactory(site=self.old_site)
+        old_page = StoryPageFactory(story=old_story)
+
+        old_story.related_images.add(img_1)
+        old_story.related_images.add(img_2)
+        old_story.related_videos.add(video_1)
+        old_story.related_videos.add(video_2)
+        old_story.related_audio.add(audio_1)
+        old_story.related_audio.add(audio_2)
+        old_story.related_video_links = ["https://test.com", "https://testing.com"]
+        old_story.save()
+
+        old_page.related_images.add(page_img_1)
+        old_page.related_images.add(page_img_2)
+        old_page.related_videos.add(page_video_1)
+        old_page.related_videos.add(page_video_2)
+        old_page.related_audio.add(page_audio_1)
+        old_page.related_audio.add(page_audio_2)
+        old_page.save()
+
+        self.call_default_command()
+
+        new_story = Story.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_story.acknowledgements == old_story.acknowledgements
+        assert new_story.author == old_story.author
+        assert new_story.notes == old_story.notes
+        assert new_story.hide_overlay == old_story.hide_overlay
+
+        assert new_story.related_images.all().count() == 2
+        assert new_story.related_videos.all().count() == 2
+        assert new_story.related_audio.all().count() == 2
+        assert new_story.related_video_links == old_story.related_video_links
+
+        new_page = new_story.pages.all()[0]
+
+        assert new_page.ordering == old_page.ordering
+        assert new_page.notes == old_page.notes
+
+        assert new_page.related_images.all().count() == 2
+        assert new_page.related_videos.all().count() == 2
+        assert new_page.related_audio.all().count() == 2
+
+        new_page_img_1 = new_page.related_images.all().order_by("created")[0]
+        new_page_img_2 = new_page.related_images.all().order_by("created")[1]
+        new_page_video_1 = new_page.related_videos.all().order_by("created")[0]
+        new_page_video_2 = new_page.related_videos.all().order_by("created")[1]
+        new_page_audio_1 = new_page.related_audio.all().order_by("created")[0]
+        new_page_audio_2 = new_page.related_audio.all().order_by("created")[1]
+
+        assert new_page_img_1.title == page_img_1.title
+        assert new_page_img_2.title == page_img_2.title
+        assert new_page_video_1.title == page_video_1.title
+        assert new_page_video_2.title == page_video_2.title
+        assert new_page_audio_1.title == page_audio_1.title
+        assert new_page_audio_2.title == page_audio_2.title

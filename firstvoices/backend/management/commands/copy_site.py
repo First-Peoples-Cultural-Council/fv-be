@@ -17,6 +17,7 @@ from backend.models.galleries import Gallery, GalleryItem
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.models.song import Song
+from backend.models.story import Story
 
 
 def get_object_or_raise_attribute_error(model, error, **filters):
@@ -57,7 +58,7 @@ def create_new_site(source_site, target_slug, user):
     return new_site
 
 
-def copy_related_objects(source_site, new_site, logger):
+def copy_related_objects(source_site, new_site):
     image_map = {}
     video_map = {}
     audio_map = {}
@@ -280,6 +281,61 @@ def copy_related_objects(source_site, new_site, logger):
         song.related_audio.set(new_audio)
         song.save()
 
+    stories = Story.objects.filter(site=source_site)
+    for story in stories:
+        old_pages = list(story.pages.all())
+        old_images = list(story.related_images.all())
+        old_videos = list(story.related_videos.all())
+        old_audio = list(story.related_audio.all())
+
+        story.id = uuid.uuid4()
+        story.site = new_site
+        story.save()
+
+        # Related media on story
+        new_images = []
+        for image in old_images:
+            new_images.append(image_map[image.id])
+
+        new_videos = []
+        for video in old_videos:
+            new_videos.append(video_map[video.id])
+
+        new_audio = []
+        for audio in old_audio:
+            new_audio.append(audio_map[audio.id])
+
+        story.related_images.set(new_images)
+        story.related_videos.set(new_videos)
+        story.related_audio.set(new_audio)
+        story.save()
+
+        for page in old_pages:
+            old_images = list(page.related_images.all())
+            old_videos = list(page.related_videos.all())
+            old_audio = list(page.related_audio.all())
+            page.id = uuid.uuid4()
+            page.story = story
+            page.save()
+
+            # Related media on story page
+            new_images = []
+            for image in old_images:
+                new_images.append(image_map[image.id])
+
+            new_videos = []
+            for video in old_videos:
+                new_videos.append(video_map[video.id])
+
+            new_audio = []
+            for audio in old_audio:
+                new_audio.append(audio_map[audio.id])
+
+            page.related_images.set(new_images)
+            page.related_videos.set(new_videos)
+            page.related_audio.set(new_audio)
+            page.save()
+
     # List of stuff to be generated and/or copied over.
     """
         Required
@@ -287,7 +343,6 @@ def copy_related_objects(source_site, new_site, logger):
         - SitePage
         - File
         - Generate thumbnails, RelatedMediaMixin
-        - Story, StoryPage
         - DictionaryEntry, DictionaryEntryLink, DictionaryEntryRelatedCharacter, DictionaryEntryCategory
         - ImmersionLabel
     """
@@ -354,7 +409,7 @@ class Command(BaseCommand):
 
         new_site = create_new_site(source_site, target_slug, user)
 
-        copy_related_objects(source_site, new_site, logger)
+        copy_related_objects(source_site, new_site)
         logger.info("Site copy completed successfully.")
 
         # Memberships ?
