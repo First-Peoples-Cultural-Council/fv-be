@@ -15,6 +15,7 @@ from backend.models.characters import (
 from backend.models.dictionary import DictionaryEntry
 from backend.models.files import File
 from backend.models.galleries import Gallery, GalleryItem
+from backend.models.immersion_labels import ImmersionLabel
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.models.song import Song
@@ -467,14 +468,24 @@ def copy_related_objects(source_site, new_site):
     # over first so then we don't have to run 2 loops
     # verify if we want to clear out batch_id and import_job field
 
+    imm_labels = ImmersionLabel.objects.filter(site=source_site)
+    for imm_label in imm_labels:
+        imm_label.id = uuid.uuid4()
+        imm_label.site = new_site
+
+        curr_dictionary_entry = imm_label.dictionary_entry
+        new_dictionary_entry = DictionaryEntry.objects.get(
+            id=dictionary_entry_map[curr_dictionary_entry.id]
+        )
+        imm_label.dictionary_entry = new_dictionary_entry
+
+        imm_label.save()
+
     # List of stuff to be generated and/or copied over.
     """
         Required
         - Widget, WidgetSettings, SiteWidgetList, SiteWidgetListOrder
         - SitePage
-        - File
-        - Generate thumbnails, RelatedMediaMixin
-        - ImmersionLabel
     """
 
 

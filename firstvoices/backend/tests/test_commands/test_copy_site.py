@@ -11,6 +11,7 @@ from backend.models.characters import (
 from backend.models.constants import AppRole
 from backend.models.dictionary import DictionaryEntry
 from backend.models.galleries import Gallery
+from backend.models.immersion_labels import ImmersionLabel
 from backend.models.media import Audio, Image, Person, Video
 from backend.models.sites import Site, SiteFeature, SiteMenu
 from backend.models.song import Song
@@ -27,6 +28,7 @@ from backend.tests.factories import (
     GalleryItemFactory,
     IgnoredCharacterFactory,
     ImageFactory,
+    ImmersionLabelFactory,
     ImportJobFactory,
     LyricsFactory,
     ParentCategoryFactory,
@@ -480,3 +482,18 @@ class TestCopySite:
         assert new_entry.related_images.all().count() == 2
         assert new_entry.related_videos.all().count() == 2
         assert new_entry.related_audio.all().count() == 2
+
+    def test_immersion_labels(self):
+        entry = DictionaryEntryFactory(site=self.old_site)
+        old_imm_label = ImmersionLabelFactory(
+            site=self.old_site, key="test key", dictionary_entry=entry
+        )
+
+        self.call_default_command()
+
+        new_imm_label = ImmersionLabel.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert new_imm_label.key == old_imm_label.key
+        assert (
+            new_imm_label.dictionary_entry.title == old_imm_label.dictionary_entry.title
+        )
