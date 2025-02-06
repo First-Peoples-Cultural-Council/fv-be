@@ -18,22 +18,8 @@ class TestDocumentEndpoint(BaseMediaApiTest):
     sample_filename = "sample-document.pdf"
     sample_filetype = "application/pdf"
     model = Document
+    model_factory = factories.DocumentFactory
     content_type_json = "application/json"
-
-    def create_minimal_instance(self, site, visibility):
-        return factories.DocumentFactory.create(site=site)
-
-    def create_original_instance_for_patch(self, site):
-        document = factories.DocumentFactory.create(
-            site=site,
-            title="Original title",
-            description="Original description",
-            acknowledgement="Original acknowledgement",
-            exclude_from_kids=True,
-            exclude_from_games=True,
-        )
-        document.save()
-        return document
 
     def get_expected_response(self, instance, site, detail_view=False):
         return self.get_expected_document_data(instance)

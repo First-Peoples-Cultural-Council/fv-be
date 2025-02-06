@@ -19,10 +19,8 @@ class TestAudioEndpoint(BaseMediaApiTest):
     sample_filename = "sample-audio.mp3"
     sample_filetype = "audio/mpeg"
     model = Audio
+    model_factory = factories.AudioFactory
     content_type_json = "application/json"
-
-    def create_minimal_instance(self, site, visibility):
-        return factories.AudioFactory.create(site=site)
 
     def create_original_instance_for_patch(self, site):
         speaker = factories.PersonFactory(site=site)
@@ -38,7 +36,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
         audio.save()
         return audio
 
-    def get_expected_response(self, instance, site, detail_view):
+    def get_expected_response(self, instance, site, detail_view=False):
         return self.get_expected_audio_data(
             instance, speaker=None, detail_view=detail_view
         )

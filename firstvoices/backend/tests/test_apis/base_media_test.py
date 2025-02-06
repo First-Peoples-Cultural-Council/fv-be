@@ -386,6 +386,22 @@ class BaseMediaApiTest(
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpeg"
     model = None
+    model_factory = None
+
+    def create_minimal_instance(self, site, visibility):
+        return self.model_factory.create(site=site)
+
+    def create_original_instance_for_patch(self, site):
+        instance = self.model_factory.create(
+            site=site,
+            title="Original title",
+            description="Original description",
+            acknowledgement="Original acknowledgement",
+            exclude_from_kids=True,
+            exclude_from_games=True,
+        )
+        instance.save()
+        return instance
 
     # Overriding methods to add in the detail_view parameter as that affects the response in case of media APIs
     def get_expected_detail_response(self, instance, site):

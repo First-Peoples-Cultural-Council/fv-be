@@ -19,23 +19,9 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
     sample_filename = "video_example_small.mp4"
     sample_filetype = "video/mp4"
     model = Video
+    model_factory = factories.VideoFactory
 
-    def create_minimal_instance(self, site, visibility):
-        return factories.VideoFactory.create(site=site)
-
-    def create_original_instance_for_patch(self, site):
-        video = factories.VideoFactory.create(
-            site=site,
-            title="Original title",
-            description="Original description",
-            acknowledgement="Original ack",
-            exclude_from_kids=True,
-            exclude_from_games=True,
-        )
-        video.save()
-        return video
-
-    def get_expected_response(self, instance, site, detail_view):
+    def get_expected_response(self, instance, site, detail_view=False):
         return self.get_expected_video_data(instance, detail_view)
 
     def assert_created_response(
