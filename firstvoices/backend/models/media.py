@@ -38,6 +38,7 @@ SUPPORTED_FILETYPES = {
         "audio/x-mpeg-3",
         "application/octet-stream",
     ],
+    "document": ["application/pdf", "application/rtf", "text/csv", "text/plain"],
     "image": ["image/jpeg", "image/gif", "image/png", "image/tiff"],
     "video": ["video/mp4", "video/quicktime"],
 }
