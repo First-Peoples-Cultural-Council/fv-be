@@ -96,9 +96,9 @@ class AudioDetailSerializer(BaseUsageFieldSerializer, AudioSerializer):
         fields = AudioSerializer.Meta.fields + BaseUsageFieldSerializer.Meta.fields
 
 
-class DocumentDetailSerializer(BaseUsageFieldSerializer, DocumentSerializer):
+class DocumentDetailSerializer(DocumentSerializer):
     class Meta(DocumentSerializer.Meta):
-        fields = DocumentSerializer.Meta.fields + BaseUsageFieldSerializer.Meta.fields
+        fields = DocumentSerializer.Meta.fields
 
 
 class VideoDetailSerializer(VisualMediaUsageFieldSerializer, VideoSerializer):

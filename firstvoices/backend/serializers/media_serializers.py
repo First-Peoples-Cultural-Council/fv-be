@@ -249,14 +249,6 @@ class WriteableRelatedAudioSerializer(serializers.PrimaryKeyRelatedField):
         return AudioSerializer(context=self.context).to_representation(value)
 
 
-class WriteableRelatedDocumentSerializer(serializers.PrimaryKeyRelatedField):
-    def use_pk_only_optimization(self):
-        return False
-
-    def to_representation(self, value):
-        return DocumentSerializer(context=self.context).to_representation(value)
-
-
 class WriteableRelatedVideoSerializer(serializers.PrimaryKeyRelatedField):
     def use_pk_only_optimization(self):
         return False
