@@ -40,10 +40,10 @@ def verify_target_site_does_not_exist(target_slug, force_delete):
             )
 
 
-def create_new_site(source_site, target_slug, user):
+def create_new_site(source_site, target_site_slug, user):
     new_site = Site(
-        slug=target_slug,
-        title=target_slug,
+        slug=target_site_slug,
+        title=target_site_slug,
         language=source_site.language,
         visibility=source_site.visibility,
         is_hidden=source_site.is_hidden,
@@ -61,63 +61,63 @@ def create_new_site(source_site, target_slug, user):
     return new_site
 
 
-def copy_site_features(source_site, new_site):
+def copy_site_features(source_site, target_site):
     site_features = SiteFeature.objects.filter(site=source_site)
     for site_feature in site_features:
         site_feature.id = uuid.uuid4()
-        site_feature.site = new_site
+        site_feature.site = target_site
         site_feature.save()
 
 
-def copy_site_menu(source_site, new_site):
+def copy_site_menu(source_site, target_site):
     site_menu_list = SiteMenu.objects.filter(site=source_site)
     for site_menu in site_menu_list:
         site_menu.id = uuid.uuid4()
-        site_menu.site = new_site
+        site_menu.site = target_site
         site_menu.save()
 
 
-def copy_all_characters(source_site, new_site, character_map):
+def copy_all_characters(source_site, target_site, character_map):
     characters = Character.objects.filter(site=source_site)
 
     for character in characters:
-        old_char_id = character.id
-        new_char_id = uuid.uuid4()
-        character_map[old_char_id] = new_char_id
+        source_char_id = character.id
+        target_char_id = uuid.uuid4()
+        character_map[source_char_id] = target_char_id
 
-        character.id = new_char_id
-        character.site = new_site
+        character.id = target_char_id
+        character.site = target_site
         character.save()
 
     variants = CharacterVariant.objects.filter(site=source_site)
     for variant in variants:
-        old_character = variant.base_character
+        source_base_character = variant.base_character
 
         variant.id = uuid.uuid4()
-        variant.site = new_site
+        variant.site = target_site
         variant.base_character = Character.objects.get(
-            id=character_map[old_character.id]
+            id=character_map[source_base_character.id]
         )
         variant.save()
 
     ignored_characters = IgnoredCharacter.objects.filter(site=source_site)
     for ignored_character in ignored_characters:
         ignored_character.id = uuid.uuid4()
-        ignored_character.site = new_site
+        ignored_character.site = target_site
         ignored_character.save()
 
 
-def copy_alphabet(source_site, new_site):
+def copy_alphabet(source_site, target_site):
     alphabets = Alphabet.objects.filter(site=source_site)
     for alphabet in alphabets:
         alphabet.id = uuid.uuid4()
-        alphabet.site = new_site
+        alphabet.site = target_site
         alphabet.save()
 
 
-def copy_categories(source_site, new_site, category_map):
+def copy_categories(source_site, target_site, category_map):
     # Removing auto-generated categories
-    Category.objects.filter(site=new_site).delete()
+    Category.objects.filter(site=target_site).delete()
     # Copy over all the parent categories
     categories = Category.objects.filter(
         site=source_site, children__isnull=False
@@ -125,20 +125,20 @@ def copy_categories(source_site, new_site, category_map):
     for category in categories:
         child_categories = category.children.all()
         for child_category in child_categories:
-            old_category_id = child_category.id
-            new_category_id = uuid.uuid4()
-            category_map[old_category_id] = new_category_id
+            source_category_id = child_category.id
+            target_category_id = uuid.uuid4()
+            category_map[source_category_id] = target_category_id
 
-            child_category.id = new_category_id
-            child_category.site = new_site
+            child_category.id = target_category_id
+            child_category.site = target_site
             child_category.save()
 
-        old_category_id = category.id
-        new_category_id = uuid.uuid4()
-        category_map[old_category_id] = new_category_id
+        source_category_id = category.id
+        target_category_id = uuid.uuid4()
+        category_map[source_category_id] = target_category_id
 
-        category.id = new_category_id
-        category.site = new_site
+        category.id = target_category_id
+        category.site = target_site
         category.save()
 
         for child_category in child_categories:
@@ -146,124 +146,124 @@ def copy_categories(source_site, new_site, category_map):
             child_category.save()
 
     # Updated category list, copying over rest of categories
-    new_site_categories = Category.objects.filter(site=new_site).values_list(
-        "title", flat=True
-    )
+    target_site_copied_over_categories = Category.objects.filter(
+        site=target_site
+    ).values_list("title", flat=True)
     categories = (
         Category.objects.filter(site=source_site)
-        .exclude(title__in=new_site_categories)
+        .exclude(title__in=target_site_copied_over_categories)
         .distinct()
     )
     for category in categories:
-        old_category_id = category.id
-        new_category_id = uuid.uuid4()
-        category_map[old_category_id] = new_category_id
+        source_category_id = category.id
+        target_category_id = uuid.uuid4()
+        category_map[source_category_id] = target_category_id
 
-        category.id = new_category_id
-        category.site = new_site
+        category.id = target_category_id
+        category.site = target_site
         category.save()
 
 
-def copy_audio_and_speakers(source_site, new_site, audio_map):
+def copy_audio_and_speakers(source_site, target_site, audio_map):
     audio_files = Audio.objects.filter(site=source_site)
     for audio_file in audio_files:
         # Content
-        new_file = File(
+        target_file = File(
             content=UploadedFile(audio_file.original.content.file),
-            site=new_site,
+            site=target_site,
         )
-        new_file.save()
-        audio_file.original = new_file
+        target_file.save()
+        audio_file.original = target_file
 
         # Speakers
         current_speakers = list(audio_file.speakers.all())
-        new_speakers = []
+        updated_speakers = []
         for person in current_speakers:
             person.id = uuid.uuid4()
-            person.site = new_site
+            person.site = target_site
             person.save()
-            new_speakers.append(person)
+            updated_speakers.append(person)
 
-        audio_file.site = new_site
+        audio_file.site = target_site
 
-        old_audio_id = audio_file.id
-        new_audio_id = uuid.uuid4()
-        audio_map[old_audio_id] = new_audio_id
+        source_audio_id = audio_file.id
+        target_audio_id = uuid.uuid4()
+        audio_map[source_audio_id] = target_audio_id
 
-        audio_file.id = new_audio_id
+        audio_file.id = target_audio_id
         # To circumvent checks added to media models to prevent modification of original file
         audio_file._state.adding = True
         audio_file.save()
 
-        audio_file.speakers.set(new_speakers)
+        audio_file.speakers.set(updated_speakers)
 
     # Copy over rest of the people who are not attached as speakers to any audio
     person_list = Person.objects.filter(site=source_site, audio_set__isnull=True)
     for person in person_list:
         person.id = uuid.uuid4()
-        person.site = new_site
+        person.site = target_site
         person.save()
 
 
-def copy_images(source_site, new_site, image_map):
+def copy_images(source_site, target_site, image_map):
     image_files = Image.objects.filter(site=source_site)
     for image_file in image_files:
         # Content
-        new_file = ImageFile(
+        target_file = ImageFile(
             content=UploadedFile(image_file.original.content.file),
-            site=new_site,
+            site=target_site,
         )
-        new_file.save()
-        image_file.original = new_file
+        target_file.save()
+        image_file.original = target_file
 
         image_file.thumbnail = None
         image_file.small = None
         image_file.medium = None
-        image_file.site = new_site
+        image_file.site = target_site
 
-        old_img_id = image_file.id
-        new_img_id = uuid.uuid4()
-        image_map[old_img_id] = new_img_id
+        source_img_id = image_file.id
+        target_img_id = uuid.uuid4()
+        image_map[source_img_id] = target_img_id
 
-        image_file.id = new_img_id
+        image_file.id = target_img_id
         image_file._state.adding = True
         image_file.save()
 
 
-def copy_videos(source_site, new_site, video_map):
+def copy_videos(source_site, target_site, video_map):
     video_files = Video.objects.filter(site=source_site)
     for video_file in video_files:
         # Content
-        new_file = VideoFile(
+        target_file = VideoFile(
             content=UploadedFile(video_file.original.content.file),
-            site=new_site,
+            site=target_site,
         )
-        new_file.save()
-        video_file.original = new_file
+        target_file.save()
+        video_file.original = target_file
 
         video_file.thumbnail = None
         video_file.small = None
         video_file.medium = None
-        video_file.site = new_site
+        video_file.site = target_site
 
-        old_video_id = video_file.id
-        new_video_id = uuid.uuid4()
-        video_map[old_video_id] = new_video_id
+        source_video_id = video_file.id
+        target_video_id = uuid.uuid4()
+        video_map[source_video_id] = target_video_id
 
-        video_file.id = new_video_id
+        video_file.id = target_video_id
         video_file._state.adding = True
         video_file.save()
 
 
-def copy_galleries(source_site, new_site, image_map):
+def copy_galleries(source_site, target_site, image_map):
     galleries = Gallery.objects.filter(site=source_site)
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
 
-        gallery.site = new_site
+        gallery.site = target_site
 
-        new_cover_img_id = image_map[gallery.cover_image.id]
-        gallery.cover_image = Image.objects.get(id=new_cover_img_id)
+        target_cover_img_id = image_map[gallery.cover_image.id]
+        gallery.cover_image = Image.objects.get(id=target_cover_img_id)
 
         gallery.id = uuid.uuid4()
         gallery.save()
@@ -282,75 +282,75 @@ def copy_galleries(source_site, new_site, image_map):
         gallery.save()
 
 
-def copy_related_media(instance, old_media, audio_map, image_map, video_map):
-    new_images = [image_map[image.id] for image in old_media["images"]]
-    new_videos = [video_map[video.id] for video in old_media["videos"]]
-    new_audio = [audio_map[audio.id] for audio in old_media["audio"]]
+def copy_related_media(instance, source_media, audio_map, image_map, video_map):
+    target_images = [image_map[image.id] for image in source_media["images"]]
+    target_videos = [video_map[video.id] for video in source_media["videos"]]
+    target_audio = [audio_map[audio.id] for audio in source_media["audio"]]
 
-    instance.related_images.set(new_images)
-    instance.related_videos.set(new_videos)
-    instance.related_audio.set(new_audio)
+    instance.related_images.set(target_images)
+    instance.related_videos.set(target_videos)
+    instance.related_audio.set(target_audio)
     instance.save()
 
 
-def copy_songs(source_site, new_site, audio_map, image_map, video_map):
+def copy_songs(source_site, target_site, audio_map, image_map, video_map):
     songs = Song.objects.filter(site=source_site)
     for song in songs:
-        old_lyrics = list(song.lyrics.all())
-        old_media = {
+        source_lyrics = list(song.lyrics.all())
+        source_media = {
             "audio": list(song.related_audio.all()),
             "images": list(song.related_images.all()),
             "videos": list(song.related_videos.all()),
         }
 
         song.id = uuid.uuid4()
-        song.site = new_site
+        song.site = target_site
         song.save()
 
-        for lyric in old_lyrics:
+        for lyric in source_lyrics:
             lyric.id = uuid.uuid4()
             lyric.song = song
             lyric.save()
 
-        copy_related_media(song, old_media, audio_map, image_map, video_map)
+        copy_related_media(song, source_media, audio_map, image_map, video_map)
         song.save()
 
 
-def copy_stories(source_site, new_site, audio_map, image_map, video_map):
+def copy_stories(source_site, target_site, audio_map, image_map, video_map):
     stories = Story.objects.filter(site=source_site)
     for story in stories:
-        old_pages = list(story.pages.all())
-        old_media = {
+        source_pages = list(story.pages.all())
+        source_media = {
             "audio": list(story.related_audio.all()),
             "images": list(story.related_images.all()),
             "videos": list(story.related_videos.all()),
         }
 
         story.id = uuid.uuid4()
-        story.site = new_site
+        story.site = target_site
         story.save()
 
-        copy_related_media(story, old_media, audio_map, image_map, video_map)
+        copy_related_media(story, source_media, audio_map, image_map, video_map)
         story.save()
 
-        for page in old_pages:
-            old_media = {
+        for page in source_pages:
+            source_media = {
                 "audio": list(page.related_audio.all()),
                 "images": list(page.related_images.all()),
                 "videos": list(page.related_videos.all()),
             }
             page.id = uuid.uuid4()
-            page.site = new_site
+            page.site = target_site
             page.story = story
             page.save()
 
-            copy_related_media(page, old_media, audio_map, image_map, video_map)
+            copy_related_media(page, source_media, audio_map, image_map, video_map)
             page.save()
 
 
 def copy_dictionary_entries(
     source_site,
-    new_site,
+    target_site,
     dictionary_entry_map,
     category_map,
     character_map,
@@ -365,63 +365,65 @@ def copy_dictionary_entries(
         .distinct()
     )
     for entry in dictionary_entries:
-        old_categories = list(entry.categories.all())
-        old_related_characters = list(entry.related_characters.all())
-        old_related_entries = list(entry.related_dictionary_entries.all())
-        old_media = {
+        source_categories = list(entry.categories.all())
+        source_related_characters = list(entry.related_characters.all())
+        source_related_entries = list(entry.related_dictionary_entries.all())
+        source_media = {
             "audio": list(entry.related_audio.all()),
             "images": list(entry.related_images.all()),
             "videos": list(entry.related_videos.all()),
         }
 
-        old_entry_id = entry.id
-        new_entry_id = uuid.uuid4()
-        dictionary_entry_map[old_entry_id] = new_entry_id
+        source_entry_id = entry.id
+        target_entry_id = uuid.uuid4()
+        dictionary_entry_map[source_entry_id] = target_entry_id
 
-        entry.id = new_entry_id
-        entry.site = new_site
+        entry.id = target_entry_id
+        entry.site = target_site
         entry.batch_id = ""
         entry.import_job = None
         entry.save()
 
-        new_categories = [
+        updated_categories = [
             Category.objects.get(id=category_map[category.id])
-            for category in old_categories
+            for category in source_categories
         ]
-        entry.categories.set(new_categories)
+        entry.categories.set(updated_categories)
 
-        new_related_characters = [
+        updated_related_characters = [
             Character.objects.get(id=character_map[char.id])
-            for char in old_related_characters
+            for char in source_related_characters
         ]
-        entry.related_characters.set(new_related_characters)
+        entry.related_characters.set(updated_related_characters)
 
-        new_related_entries = [
-            DictionaryEntry.objects.get(id=dictionary_entry_map[old_re_entry.id])
-            for old_re_entry in old_related_entries
+        updated_related_entries = [
+            DictionaryEntry.objects.get(
+                id=dictionary_entry_map[source_related_entry.id]
+            )
+            for source_related_entry in source_related_entries
         ]
-        entry.related_dictionary_entries.set(new_related_entries)
+        entry.related_dictionary_entries.set(updated_related_entries)
 
-        copy_related_media(entry, old_media, audio_map, image_map, video_map)
+        copy_related_media(entry, source_media, audio_map, image_map, video_map)
         entry.save()
 
 
-def copy_immersion_labels(source_site, new_site, dictionary_entry_map):
+def copy_immersion_labels(source_site, target_site, dictionary_entry_map):
     imm_labels = ImmersionLabel.objects.filter(site=source_site)
     for imm_label in imm_labels:
         imm_label.id = uuid.uuid4()
-        imm_label.site = new_site
+        imm_label.site = target_site
 
-        curr_dictionary_entry = imm_label.dictionary_entry
-        new_dictionary_entry = DictionaryEntry.objects.get(
-            id=dictionary_entry_map[curr_dictionary_entry.id]
+        source_dictionary_entry = imm_label.dictionary_entry
+        target_dictionary_entry = DictionaryEntry.objects.get(
+            id=dictionary_entry_map[source_dictionary_entry.id]
         )
-        imm_label.dictionary_entry = new_dictionary_entry
+        imm_label.dictionary_entry = target_dictionary_entry
 
         imm_label.save()
 
 
-def copy_related_objects(source_site, new_site):
+def copy_related_objects(source_site, target_site):
     image_map = {}
     video_map = {}
     audio_map = {}
@@ -429,25 +431,25 @@ def copy_related_objects(source_site, new_site):
     character_map = {}
     dictionary_entry_map = {}
 
-    copy_site_features(source_site, new_site)
-    copy_site_menu(source_site, new_site)
+    copy_site_features(source_site, target_site)
+    copy_site_menu(source_site, target_site)
 
-    copy_all_characters(source_site, new_site, character_map)
-    copy_alphabet(source_site, new_site)
+    copy_all_characters(source_site, target_site, character_map)
+    copy_alphabet(source_site, target_site)
 
-    copy_categories(source_site, new_site, category_map)
+    copy_categories(source_site, target_site, category_map)
 
-    copy_audio_and_speakers(source_site, new_site, audio_map)
-    copy_images(source_site, new_site, image_map)
-    copy_videos(source_site, new_site, video_map)
+    copy_audio_and_speakers(source_site, target_site, audio_map)
+    copy_images(source_site, target_site, image_map)
+    copy_videos(source_site, target_site, video_map)
 
-    copy_galleries(source_site, new_site, image_map)
-    copy_songs(source_site, new_site, audio_map, image_map, video_map)
-    copy_stories(source_site, new_site, audio_map, image_map, video_map)
+    copy_galleries(source_site, target_site, image_map)
+    copy_songs(source_site, target_site, audio_map, image_map, video_map)
+    copy_stories(source_site, target_site, audio_map, image_map, video_map)
 
     copy_dictionary_entries(
         source_site,
-        new_site,
+        target_site,
         dictionary_entry_map,
         category_map,
         character_map,
@@ -456,7 +458,7 @@ def copy_related_objects(source_site, new_site):
         video_map,
     )
 
-    copy_immersion_labels(source_site, new_site, dictionary_entry_map)
+    copy_immersion_labels(source_site, target_site, dictionary_entry_map)
 
     # List of stuff to be generated and/or copied over.
     """
@@ -525,9 +527,9 @@ class Command(BaseCommand):
             f"Creating new site: {target_slug} and copying content from {source_slug}."
         )
 
-        new_site = create_new_site(source_site, target_slug, user)
+        target_site = create_new_site(source_site, target_slug, user)
 
-        copy_related_objects(source_site, new_site)
+        copy_related_objects(source_site, target_site)
         logger.info("Site copy completed successfully.")
 
         # Memberships ?
