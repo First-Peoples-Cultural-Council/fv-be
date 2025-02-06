@@ -239,6 +239,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "dictionary": f"{site_url}/dictionary",
             "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
             "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "documents": f"{site_url}/documents",
             "features": f"{site_url}/features",
             "galleries": f"{site_url}/galleries",
             "ignoredCharacters": f"{site_url}/ignored-characters",
