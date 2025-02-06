@@ -49,14 +49,15 @@ def create_new_site(source_site, target_site_slug, user):
         is_hidden=source_site.is_hidden,
         created_by=user,
         last_modified_by=user,
-        # contact_email_old
-        # contact_emails
-        # contact_users
-        # homepage
-        # logo
-        # banner_image
-        # banner_video
+        contact_email_old=None,
+        contact_emails=[],
+        homepage=None,
+        logo=None,
+        banner_image=None,
+        banner_video=None,
     )
+
+    new_site.contact_users.clear()
     new_site.save()
     return new_site
 
@@ -496,12 +497,6 @@ class Command(BaseCommand):
             help="Delete target site if exists.",
             action="store_true",
         )
-        # parser.add_argument(
-        #     "--title",
-        #     dest="title",
-        #     help="Title of the newly created site.",
-        #     required=True,
-        # )
 
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
@@ -531,10 +526,3 @@ class Command(BaseCommand):
 
         copy_related_objects(source_site, target_site)
         logger.info("Site copy completed successfully.")
-
-        # Memberships ?
-        # JoinRequest & JoinRequestReason ?
-
-        # to keep track of copied over media
-
-        # Index the site and all the copied over stuff

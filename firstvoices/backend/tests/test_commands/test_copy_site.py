@@ -116,6 +116,12 @@ class TestCopySite:
         assert target_site.language == source_site.language
         assert target_site.visibility == source_site.visibility
         assert target_site.is_hidden == source_site.is_hidden
+        assert target_site.contact_email_old is None
+        assert len(target_site.contact_emails) == 0
+        assert target_site.homepage is None
+        assert target_site.logo is None
+        assert target_site.banner_image is None
+        assert target_site.banner_video is None
 
         assert target_site.created_by.email == self.superadmin_user.email
         assert target_site.last_modified_by.email == self.superadmin_user.email
