@@ -479,11 +479,7 @@ class BaseMediaApiTest(
         pass
 
     def assert_related_objects_deleted(self, instance):
-        """Default test is for visual media with thumbnails"""
         self.assert_instance_deleted(instance.original)
-        self.assert_instance_deleted(instance.medium)
-        self.assert_instance_deleted(instance.small)
-        self.assert_instance_deleted(instance.thumbnail)
 
     def assert_secondary_fields(self, expected_data, updated_instance):
         assert updated_instance.description == expected_data["description"]
@@ -763,13 +759,6 @@ class BaseMediaApiTest(
         # This test is skipped because the multipart form data encoder does not support null string values.
         pass
 
-
-class BaseVisualMediaAPITest(BaseMediaApiTest):
-    @pytest.fixture()
-    def disable_celery(self, settings):
-        # Sets the celery tasks to run synchronously for testing
-        settings.CELERY_TASK_ALWAYS_EAGER = True
-
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance
     ):
@@ -807,6 +796,13 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         self.assert_secondary_fields(expected_data, actual_instance)
         assert actual_instance.title == expected_data["title"]
 
+
+class BaseVisualMediaAPITest(BaseMediaApiTest):
+    @pytest.fixture()
+    def disable_celery(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
     @pytest.mark.django_db
     def test_patch_file_is_ignored(self):
         # PUT/PATCH requests updating the original file should be ignored,
@@ -830,8 +826,8 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         # Verifying the file does not change
         assert instance.original.content.name in response_data["original"]["path"]
 
-
-def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
-    self.assert_original_secondary_fields(original_instance, updated_instance)
-    assert updated_instance.title == original_instance.title
-    assert updated_instance.original.id == original_instance.original.id
+    def assert_related_objects_deleted(self, instance):
+        self.assert_instance_deleted(instance.original)
+        self.assert_instance_deleted(instance.medium)
+        self.assert_instance_deleted(instance.small)
+        self.assert_instance_deleted(instance.thumbnail)

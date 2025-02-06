@@ -37,9 +37,6 @@ class TestDocumentEndpoint(BaseMediaApiTest):
         response_data = json.loads(response.content)
         assert response_data == self.get_expected_document_data(instance)
 
-    def assert_related_objects_deleted(self, instance):
-        self.assert_instance_deleted(instance.original)
-
     def assert_created_response(
         self, expected_data, actual_response, detail_view=False
     ):
@@ -59,43 +56,6 @@ class TestDocumentEndpoint(BaseMediaApiTest):
 
         assert response.status_code == 201
 
-    def assert_patch_instance_original_fields(
-        self, original_instance, updated_instance
-    ):
-        self.assert_original_secondary_fields(original_instance, updated_instance)
-        assert updated_instance.original.id == original_instance.original.id
-
-    def assert_original_secondary_fields(self, original_instance, updated_instance):
-        # everything but title
-        self.assert_secondary_fields(
-            expected_data={
-                "description": original_instance.description,
-                "acknowledgement": original_instance.acknowledgement,
-                "excludeFromKids": original_instance.exclude_from_kids,
-                "excludeFromGames": original_instance.exclude_from_games,
-            },
-            updated_instance=updated_instance,
-        )
-
-    def assert_update_patch_response(self, original_instance, data, actual_response):
-        self.assert_response(
-            original_instance=original_instance,
-            actual_response=actual_response,
-            expected_data={
-                "id": str(original_instance.id),
-                "title": data["title"],
-                "description": original_instance.description,
-                "acknowledgement": original_instance.acknowledgement,
-                "excludeFromKids": original_instance.exclude_from_kids,
-                "excludeFromGames": original_instance.exclude_from_games,
-                "original": original_instance.original,
-            },
-        )
-
-    def assert_updated_instance(self, expected_data, actual_instance):
-        self.assert_secondary_fields(expected_data, actual_instance)
-        assert actual_instance.title == expected_data["title"]
-
     def assert_update_response_document(
         self, original_instance, expected_data, actual_response
     ):
@@ -103,24 +63,6 @@ class TestDocumentEndpoint(BaseMediaApiTest):
             original_instance=original_instance,
             actual_response=actual_response,
             expected_data={**expected_data},
-        )
-
-    def assert_update_patch_file_response(
-        self, original_instance, data, actual_response
-    ):
-        expected_data = {
-            "id": str(original_instance.id),
-            "title": original_instance.title,
-            "description": original_instance.description,
-            "acknowledgement": original_instance.acknowledgement,
-            "excludeFromKids": original_instance.exclude_from_kids,
-            "excludeFromGames": original_instance.exclude_from_games,
-            "original": data["original"],
-        }
-        self.assert_response(
-            original_instance=original_instance,
-            actual_response=actual_response,
-            expected_data=expected_data,
         )
 
     def assert_patch_file_original_fields(self, original_instance, updated_instance):
