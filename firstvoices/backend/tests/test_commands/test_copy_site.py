@@ -46,56 +46,57 @@ from backend.tests.factories import (
 
 @pytest.mark.django_db
 class TestCopySite:
-    SOURCE_SLUG = "old"
-    TARGET_SLUG = "new"
+    SOURCE_SLUG = "source"
+    TARGET_SLUG = "target"
 
     def setup_method(self):
-        self.old_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="old")
-        self.user = get_app_admin(AppRole.SUPERADMIN)
+        self.source_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="source")
+        self.superadmin_user = get_app_admin(AppRole.SUPERADMIN)
 
-    def call_default_command(self):
+    def call_copy_site_command(self):
         # helper function
         call_command(
             "copy_site",
             source_slug=self.SOURCE_SLUG,
             target_slug=self.TARGET_SLUG,
-            email=self.user.email,
+            email=self.superadmin_user.email,
         )
 
-    def test_source_site_exists(self):
+    def test_missing_source_site_raises_error(self):
         with pytest.raises(AttributeError) as e:
             call_command(
                 "copy_site",
                 source_slug="does_not_exist",
                 target_slug=self.TARGET_SLUG,
-                email=self.user.email,
+                email=self.superadmin_user.email,
             )
         assert str(e.value) == "Provided source site does not exist."
 
     def test_force_delete_flag(self):
-        # Since the title for target site is reset to slug, we can verify if force delete was called
-        SiteFactory.create(slug=self.TARGET_SLUG, title="Will be changed.")
+        old_target_site = SiteFactory.create(slug=self.TARGET_SLUG)
+        old_site_created_timestamp = old_target_site.created
+
         call_command(
             "copy_site",
             source_slug=self.SOURCE_SLUG,
             target_slug=self.TARGET_SLUG,
-            email=self.user.email,
+            email=self.superadmin_user.email,
             force_delete=True,
         )
 
         new_target_site = Site.objects.get(slug=self.TARGET_SLUG)
-        assert new_target_site.title != "Will be changed."
+        assert new_target_site.created != old_site_created_timestamp
 
-    def test_target_site_does_not_exist(self):
+    def test_existing_target_site_raises_error(self):
         SiteFactory.create(slug=self.TARGET_SLUG)
         with pytest.raises(AttributeError) as e:
-            self.call_default_command()
+            self.call_copy_site_command()
         assert (
             str(e.value)
             == f"Site with slug {self.TARGET_SLUG} already exists. Use --force-delete to override."
         )
 
-    def test_target_user_does_not_exist(self):
+    def test_invalid_target_user_raises_error(self):
         with pytest.raises(AttributeError) as e:
             call_command(
                 "copy_site",
@@ -105,409 +106,426 @@ class TestCopySite:
             )
         assert str(e.value) == "No user found with the provided email."
 
-    def test_new_site_attributes(self):
-        self.call_default_command()
+    def test_site_attributes(self):
+        self.call_copy_site_command()
 
-        old_site = Site.objects.get(slug=self.SOURCE_SLUG)
-        new_site = Site.objects.get(slug=self.TARGET_SLUG)
+        source_site = Site.objects.get(slug=self.SOURCE_SLUG)
+        target_site = Site.objects.get(slug=self.TARGET_SLUG)
 
-        assert new_site.title == self.TARGET_SLUG
-        assert new_site.language == old_site.language
-        assert new_site.visibility == old_site.visibility
-        assert new_site.is_hidden == old_site.is_hidden
+        assert target_site.title == self.TARGET_SLUG
+        assert target_site.language == source_site.language
+        assert target_site.visibility == source_site.visibility
+        assert target_site.is_hidden == source_site.is_hidden
 
-        assert new_site.created_by.email == self.user.email
-        assert new_site.last_modified_by.email == self.user.email
+        assert target_site.created_by.email == self.superadmin_user.email
+        assert target_site.last_modified_by.email == self.superadmin_user.email
 
     def test_site_features(self):
-        sf_1 = SiteFeatureFactory.create(
-            site=self.old_site, key="first_feature", is_enabled=True
+        source_feature_enabled = SiteFeatureFactory.create(
+            site=self.source_site, key="first_feature", is_enabled=True
         )
-        sf_2 = SiteFeatureFactory.create(
-            site=self.old_site, key="second_feature", is_enabled=False
+        source_feature_disabled = SiteFeatureFactory.create(
+            site=self.source_site, key="second_feature", is_enabled=False
         )
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        sf_1_new = SiteFeature.objects.get(
+        target_feature_enabled = SiteFeature.objects.get(
             site__slug=self.TARGET_SLUG, key="first_feature"
         )
-        sf_2_new = SiteFeature.objects.get(
+        target_feature_disabled = SiteFeature.objects.get(
             site__slug=self.TARGET_SLUG, key="second_feature"
         )
 
-        assert sf_1_new.is_enabled == sf_1.is_enabled
-        assert sf_2_new.is_enabled == sf_2.is_enabled
+        assert target_feature_enabled.is_enabled == source_feature_enabled.is_enabled
+        assert target_feature_disabled.is_enabled == source_feature_disabled.is_enabled
 
     def test_site_menu(self):
-        old_site_menu = SiteMenuFactory.create(site=self.old_site)
+        source_site_menu = SiteMenuFactory.create(site=self.source_site)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_site_menu = SiteMenu.objects.get(site__slug=self.TARGET_SLUG)
+        target_site_menu = SiteMenu.objects.get(site__slug=self.TARGET_SLUG)
 
-        assert new_site_menu.json == old_site_menu.json
+        assert target_site_menu.json == source_site_menu.json
 
     def test_characters_and_variants(self):
-        old_char = CharacterFactory(site=self.old_site)
-        old_char_variant = CharacterVariantFactory(
-            site=self.old_site, base_character=old_char
+        source_char = CharacterFactory(site=self.source_site)
+        source_char_variant = CharacterVariantFactory(
+            site=self.source_site, base_character=source_char
         )
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_char = Character.objects.get(site__slug=self.TARGET_SLUG)
-        new_char_variant = CharacterVariant.objects.get(site__slug=self.TARGET_SLUG)
+        target_char = Character.objects.get(site__slug=self.TARGET_SLUG)
+        target_char_variant = CharacterVariant.objects.get(site__slug=self.TARGET_SLUG)
 
-        assert new_char.title == old_char.title
-        assert new_char.sort_order == old_char.sort_order
-        assert new_char_variant.title == old_char_variant.title
-        assert new_char_variant.base_character == new_char
+        assert target_char.title == source_char.title
+        assert target_char.sort_order == source_char.sort_order
+        assert target_char_variant.title == source_char_variant.title
+        assert target_char_variant.base_character == target_char
 
     def test_ignored_characters(self):
-        old_char = IgnoredCharacterFactory(site=self.old_site)
+        source_ignored_char = IgnoredCharacterFactory(site=self.source_site)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_char = IgnoredCharacter.objects.get(site__slug=self.TARGET_SLUG)
+        target_ignored_char = IgnoredCharacter.objects.get(site__slug=self.TARGET_SLUG)
 
-        assert new_char.title == old_char.title
+        assert target_ignored_char.title == source_ignored_char.title
 
     def test_alphabet(self):
-        old_alphabet = AlphabetFactory(
-            site=self.old_site, input_to_canonical_map="[{'in': '2', 'out': 'two'}]"
+        source_alphabet = AlphabetFactory(
+            site=self.source_site, input_to_canonical_map="[{'in': '2', 'out': 'two'}]"
         )
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_alphabet = Alphabet.objects.get(site__slug=self.TARGET_SLUG)
+        target_alphabet = Alphabet.objects.get(site__slug=self.TARGET_SLUG)
 
         assert (
-            new_alphabet.input_to_canonical_map == old_alphabet.input_to_canonical_map
+            target_alphabet.input_to_canonical_map
+            == source_alphabet.input_to_canonical_map
         )
 
     def test_categories(self):
-        # Removing default categories from old site
-        Category.objects.filter(site=self.old_site).delete()
+        # Removing default categories from source site
+        Category.objects.filter(site=self.source_site).delete()
 
         # Adding new categories
-        old_parent_category = ParentCategoryFactory(site=self.old_site)
-        old_child_category_1 = ChildCategoryFactory(
-            site=self.old_site, parent=old_parent_category
+        source_parent_category = ParentCategoryFactory(site=self.source_site)
+        source_child_category_1 = ChildCategoryFactory(
+            site=self.source_site, parent=source_parent_category
         )
-        old_child_category_2 = ChildCategoryFactory(
-            site=self.old_site, parent=old_parent_category
+        source_child_category_2 = ChildCategoryFactory(
+            site=self.source_site, parent=source_parent_category
         )
 
-        old_extra_category = ParentCategoryFactory(site=self.old_site)
+        source_extra_category = ParentCategoryFactory(site=self.source_site)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
         assert Category.objects.filter(site__slug=self.TARGET_SLUG).count() == 4
 
         # parent category
-        new_parent_category = Category.objects.filter(
+        target_parent_category = Category.objects.filter(
             site__slug=self.TARGET_SLUG, children__isnull=False
         ).distinct()[0]
-        assert new_parent_category.title == old_parent_category.title
-        child_categories = new_parent_category.children.all()
+        assert target_parent_category.title == source_parent_category.title
+        child_categories = target_parent_category.children.all()
 
         assert child_categories.count() == 2
-        assert child_categories[0].title == old_child_category_1.title
-        assert child_categories[1].title == old_child_category_2.title
+        assert child_categories[0].title == source_child_category_1.title
+        assert child_categories[1].title == source_child_category_2.title
 
         assert Category.objects.filter(
-            site__slug=self.TARGET_SLUG, title=old_extra_category.title
+            site__slug=self.TARGET_SLUG, title=source_extra_category.title
         ).exists()
 
     def test_audio_and_speakers(self):
-        old_speaker = PersonFactory(site=self.old_site)
-        old_audio = AudioFactory(site=self.old_site)
-        AudioSpeakerFactory(audio=old_audio, speaker=old_speaker)
-        old_extra = PersonFactory(site=self.old_site)  # not a speaker
+        source_speaker = PersonFactory(site=self.source_site)
+        source_audio = AudioFactory(site=self.source_site)
+        AudioSpeakerFactory(audio=source_audio, speaker=source_speaker)
+        source_extra_person = PersonFactory(site=self.source_site)  # not a speaker
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_audio = Audio.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_audio = Audio.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_audio.original != old_audio.original
-        assert new_audio.title == old_audio.title
+        assert target_audio.original != source_audio.original
+        assert target_audio.title == source_audio.title
 
-        new_speaker = new_audio.speakers.first()
-        assert new_speaker.site.slug == self.TARGET_SLUG
-        assert new_speaker.name == old_speaker.name
+        target_speaker = target_audio.speakers.first()
+        assert target_speaker.site.slug == self.TARGET_SLUG
+        assert target_speaker.name == source_speaker.name
 
         assert Person.objects.filter(
-            site__slug=self.TARGET_SLUG, name=old_extra.name
+            site__slug=self.TARGET_SLUG, name=source_extra_person.name
         ).exists()
 
     def test_images(self):
-        old_image = ImageFactory(site=self.old_site)
+        source_image = ImageFactory(site=self.source_site)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_image = Image.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_image = Image.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_image.original != old_image.original
-        assert new_image.title == old_image.title
+        assert target_image.original != source_image.original
+        assert target_image.title == source_image.title
 
-        assert new_image.original.height == old_image.original.height
-        assert new_image.original.width == old_image.original.width
+        assert target_image.original.height == source_image.original.height
+        assert target_image.original.width == source_image.original.width
 
-        assert new_image.thumbnail is None
-        assert new_image.small is None
-        assert new_image.medium is None
+        assert target_image.thumbnail is None
+        assert target_image.small is None
+        assert target_image.medium is None
 
     def test_videos(self):
-        old_video = VideoFactory(site=self.old_site)
+        source_video = VideoFactory(site=self.source_site)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_video = Video.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_video = Video.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_video.original != old_video.original
-        assert new_video.title == old_video.title
+        assert target_video.original != source_video.original
+        assert target_video.title == source_video.title
 
-        assert new_video.original.height == old_video.original.height
-        assert new_video.original.width == old_video.original.width
+        assert target_video.original.height == source_video.original.height
+        assert target_video.original.width == source_video.original.width
 
-        assert old_video.thumbnail is None
-        assert old_video.small is None
-        assert old_video.medium is None
+        assert target_video.thumbnail is None
+        assert target_video.small is None
+        assert target_video.medium is None
 
     def test_gallery(self):
-        cover_img = ImageFactory(site=self.old_site)
-        img_1 = ImageFactory(site=self.old_site)
-        img_2 = ImageFactory(site=self.old_site)
+        source_cover_img = ImageFactory(site=self.source_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
 
-        old_gallery = GalleryFactory(site=self.old_site, cover_image=cover_img)
-        GalleryItemFactory.create(gallery=old_gallery, image=img_1)
-        GalleryItemFactory.create(gallery=old_gallery, image=img_2)
+        source_gallery = GalleryFactory(
+            site=self.source_site, cover_image=source_cover_img
+        )
+        GalleryItemFactory.create(gallery=source_gallery, image=source_img_1)
+        GalleryItemFactory.create(gallery=source_gallery, image=source_img_2)
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
         # Comparing titles and site for images as proxy
         # cover image
-        assert new_gallery.cover_image.title == cover_img.title
-        assert new_gallery.cover_image.site.slug == self.TARGET_SLUG
+        assert target_gallery.cover_image.title == source_cover_img.title
+        assert target_gallery.cover_image.site.slug == self.TARGET_SLUG
 
-        gallery_item_1 = new_gallery.galleryitem_set.all().order_by("ordering")[0]
-        gallery_item_2 = new_gallery.galleryitem_set.all().order_by("ordering")[1]
+        target_gallery_item_1 = target_gallery.galleryitem_set.all().order_by(
+            "ordering"
+        )[0]
+        target_gallery_item_2 = target_gallery.galleryitem_set.all().order_by(
+            "ordering"
+        )[1]
 
-        assert gallery_item_1.image.title == img_1.title
-        assert gallery_item_2.image.title == img_2.title
+        assert target_gallery_item_1.image.title == source_img_1.title
+        assert target_gallery_item_2.image.title == source_img_2.title
 
     def test_songs(self):
-        img_1 = ImageFactory(site=self.old_site)
-        img_2 = ImageFactory(site=self.old_site)
-        video_1 = VideoFactory(site=self.old_site)
-        video_2 = VideoFactory(site=self.old_site)
-        audio_1 = AudioFactory(site=self.old_site)
-        audio_2 = AudioFactory(site=self.old_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+        source_video_1 = VideoFactory(site=self.source_site)
+        source_video_2 = VideoFactory(site=self.source_site)
+        source_audio_1 = AudioFactory(site=self.source_site)
+        source_audio_2 = AudioFactory(site=self.source_site)
 
-        old_song = SongFactory(site=self.old_site)
-        old_lyric_1 = LyricsFactory(song=old_song)
-        old_lyric_2 = LyricsFactory(song=old_song)
+        source_song = SongFactory(site=self.source_site)
+        source_lyric_1 = LyricsFactory(song=source_song)
+        source_lyric_2 = LyricsFactory(song=source_song)
 
-        old_song.related_images.add(img_1)
-        old_song.related_images.add(img_2)
-        old_song.related_videos.add(video_1)
-        old_song.related_videos.add(video_2)
-        old_song.related_audio.add(audio_1)
-        old_song.related_audio.add(audio_2)
-        old_song.related_video_links = ["https://test.com", "https://testing.com"]
-        old_song.save()
+        source_song.related_images.set([source_img_1, source_img_2])
+        source_song.related_videos.set([source_video_1, source_video_2])
+        source_song.related_audio.set([source_audio_1, source_audio_2])
+        source_song.related_video_links = ["https://test.com", "https://testing.com"]
+        source_song.save()
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_song = Song.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_song = Song.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_song.acknowledgements == old_song.acknowledgements
-        assert new_song.notes == old_song.notes
-        assert new_song.hide_overlay == old_song.hide_overlay
-        assert new_song.exclude_from_games == old_song.exclude_from_games
-        assert new_song.exclude_from_kids == old_song.exclude_from_kids
-        assert new_song.visibility == old_song.visibility
+        assert target_song.acknowledgements == source_song.acknowledgements
+        assert target_song.notes == source_song.notes
+        assert target_song.hide_overlay == source_song.hide_overlay
+        assert target_song.exclude_from_games == source_song.exclude_from_games
+        assert target_song.exclude_from_kids == source_song.exclude_from_kids
+        assert target_song.visibility == source_song.visibility
 
-        new_lyric_1 = new_song.lyrics.all()[0]
-        new_lyric_2 = new_song.lyrics.all()[1]
+        target_lyric_1 = target_song.lyrics.all()[0]
+        target_lyric_2 = target_song.lyrics.all()[1]
 
-        assert new_lyric_1.ordering == old_lyric_1.ordering
-        assert new_lyric_2.ordering == old_lyric_2.ordering
+        assert target_lyric_1.ordering == source_lyric_1.ordering
+        assert target_lyric_2.ordering == source_lyric_2.ordering
 
-        assert new_song.related_images.all().count() == 2
-        assert new_song.related_videos.all().count() == 2
-        assert new_song.related_audio.all().count() == 2
-        assert new_song.related_video_links == old_song.related_video_links
+        assert target_song.related_images.count() == 2
+        assert target_song.related_videos.count() == 2
+        assert target_song.related_audio.count() == 2
+        assert target_song.related_video_links == source_song.related_video_links
 
     def test_stories(self):
-        img_1 = ImageFactory(site=self.old_site)
-        img_2 = ImageFactory(site=self.old_site)
-        page_img_1 = ImageFactory(site=self.old_site)
-        page_img_2 = ImageFactory(site=self.old_site)
-        video_1 = VideoFactory(site=self.old_site)
-        video_2 = VideoFactory(site=self.old_site)
-        page_video_1 = VideoFactory(site=self.old_site)
-        page_video_2 = VideoFactory(site=self.old_site)
-        audio_1 = AudioFactory(site=self.old_site)
-        audio_2 = AudioFactory(site=self.old_site)
-        page_audio_1 = AudioFactory(site=self.old_site)
-        page_audio_2 = AudioFactory(site=self.old_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+        source_page_img_1 = ImageFactory(site=self.source_site)
+        source_page_img_2 = ImageFactory(site=self.source_site)
+        source_video_1 = VideoFactory(site=self.source_site)
+        source_video_2 = VideoFactory(site=self.source_site)
+        source_page_video_1 = VideoFactory(site=self.source_site)
+        source_page_video_2 = VideoFactory(site=self.source_site)
+        source_audio_1 = AudioFactory(site=self.source_site)
+        source_audio_2 = AudioFactory(site=self.source_site)
+        source_page_audio_1 = AudioFactory(site=self.source_site)
+        source_page_audio_2 = AudioFactory(site=self.source_site)
 
-        old_story = StoryFactory(site=self.old_site)
-        old_page = StoryPageFactory(story=old_story)
+        source_story = StoryFactory(site=self.source_site)
+        source_story_page = StoryPageFactory(story=source_story)
 
-        old_story.related_images.add(img_1)
-        old_story.related_images.add(img_2)
-        old_story.related_videos.add(video_1)
-        old_story.related_videos.add(video_2)
-        old_story.related_audio.add(audio_1)
-        old_story.related_audio.add(audio_2)
-        old_story.related_video_links = ["https://test.com", "https://testing.com"]
-        old_story.save()
+        source_story.related_images.set([source_img_1, source_img_2])
+        source_story.related_videos.set([source_video_1, source_video_2])
+        source_story.related_audio.set([source_audio_1, source_audio_2])
+        source_story.related_video_links = ["https://test.com", "https://testing.com"]
+        source_story.save()
 
-        old_page.related_images.add(page_img_1)
-        old_page.related_images.add(page_img_2)
-        old_page.related_videos.add(page_video_1)
-        old_page.related_videos.add(page_video_2)
-        old_page.related_audio.add(page_audio_1)
-        old_page.related_audio.add(page_audio_2)
-        old_page.save()
+        source_story_page.related_images.set([source_page_img_1, source_page_img_2])
+        source_story_page.related_videos.set([source_page_video_1, source_page_video_2])
+        source_story_page.related_audio.set([source_page_audio_1, source_page_audio_2])
+        source_story_page.save()
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_story = Story.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_story = Story.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_story.acknowledgements == old_story.acknowledgements
-        assert new_story.author == old_story.author
-        assert new_story.notes == old_story.notes
-        assert new_story.hide_overlay == old_story.hide_overlay
-        assert new_story.exclude_from_games == old_story.exclude_from_games
-        assert new_story.exclude_from_kids == old_story.exclude_from_kids
-        assert new_story.visibility == old_story.visibility
+        assert target_story.acknowledgements == source_story.acknowledgements
+        assert target_story.author == source_story.author
+        assert target_story.notes == source_story.notes
+        assert target_story.hide_overlay == source_story.hide_overlay
+        assert target_story.exclude_from_games == source_story.exclude_from_games
+        assert target_story.exclude_from_kids == source_story.exclude_from_kids
+        assert target_story.visibility == source_story.visibility
 
-        assert new_story.related_images.all().count() == 2
-        assert new_story.related_videos.all().count() == 2
-        assert new_story.related_audio.all().count() == 2
-        assert new_story.related_video_links == old_story.related_video_links
+        assert target_story.related_images.count() == 2
+        assert target_story.related_videos.count() == 2
+        assert target_story.related_audio.count() == 2
+        assert target_story.related_video_links == source_story.related_video_links
 
-        new_page = new_story.pages.all()[0]
+        target_story_page = target_story.pages.all()[0]
 
-        assert new_page.ordering == old_page.ordering
-        assert new_page.notes == old_page.notes
+        assert target_story_page.ordering == source_story_page.ordering
+        assert target_story_page.notes == source_story_page.notes
 
-        assert new_page.related_images.all().count() == 2
-        assert new_page.related_videos.all().count() == 2
-        assert new_page.related_audio.all().count() == 2
+        assert target_story_page.related_images.count() == 2
+        assert target_story_page.related_videos.count() == 2
+        assert target_story_page.related_audio.count() == 2
 
-        new_page_img_1 = new_page.related_images.all().order_by("created")[0]
-        new_page_img_2 = new_page.related_images.all().order_by("created")[1]
-        new_page_video_1 = new_page.related_videos.all().order_by("created")[0]
-        new_page_video_2 = new_page.related_videos.all().order_by("created")[1]
-        new_page_audio_1 = new_page.related_audio.all().order_by("created")[0]
-        new_page_audio_2 = new_page.related_audio.all().order_by("created")[1]
+        target_story_page_img_1 = target_story_page.related_images.all().order_by(
+            "created"
+        )[0]
+        target_story_page_img_2 = target_story_page.related_images.all().order_by(
+            "created"
+        )[1]
+        target_story_page_video_1 = target_story_page.related_videos.all().order_by(
+            "created"
+        )[0]
+        target_story_page_video_2 = target_story_page.related_videos.all().order_by(
+            "created"
+        )[1]
+        target_story_page_audio_1 = target_story_page.related_audio.all().order_by(
+            "created"
+        )[0]
+        target_story_page_audio_2 = target_story_page.related_audio.all().order_by(
+            "created"
+        )[1]
 
-        assert new_page_img_1.title == page_img_1.title
-        assert new_page_img_2.title == page_img_2.title
-        assert new_page_video_1.title == page_video_1.title
-        assert new_page_video_2.title == page_video_2.title
-        assert new_page_audio_1.title == page_audio_1.title
-        assert new_page_audio_2.title == page_audio_2.title
+        assert target_story_page_img_1.title == source_page_img_1.title
+        assert target_story_page_img_2.title == source_page_img_2.title
+        assert target_story_page_video_1.title == source_page_video_1.title
+        assert target_story_page_video_2.title == source_page_video_2.title
+        assert target_story_page_audio_1.title == source_page_audio_1.title
+        assert target_story_page_audio_2.title == source_page_audio_2.title
 
     def test_dictionary_entries(self):
-        old_category_1 = ParentCategoryFactory(site=self.old_site)
-        old_category_2 = ParentCategoryFactory(site=self.old_site)
-        old_category_3 = ChildCategoryFactory(site=self.old_site, parent=old_category_2)
-        old_related_entry_1 = DictionaryEntryFactory(
-            site=self.old_site, title="related entry 1"
+        source_category_1 = ParentCategoryFactory(site=self.source_site)
+        source_category_2 = ParentCategoryFactory(site=self.source_site)
+        source_child_category = ChildCategoryFactory(
+            site=self.source_site, parent=source_category_2
         )
-        old_related_entry_2 = DictionaryEntryFactory(
-            site=self.old_site, title="related entry 2"
+        source_related_entry_1 = DictionaryEntryFactory(
+            site=self.source_site, title="related entry 1"
         )
-        old_related_char_1 = CharacterFactory(site=self.old_site)
-        old_related_char_2 = CharacterFactory(site=self.old_site)
-        img_1 = ImageFactory(site=self.old_site)
-        img_2 = ImageFactory(site=self.old_site)
-        video_1 = VideoFactory(site=self.old_site)
-        video_2 = VideoFactory(site=self.old_site)
-        audio_1 = AudioFactory(site=self.old_site)
-        audio_2 = AudioFactory(site=self.old_site)
-        import_job = ImportJobFactory(site=self.old_site)
+        source_related_entry_2 = DictionaryEntryFactory(
+            site=self.source_site, title="related entry 2"
+        )
+        source_related_char_1 = CharacterFactory(site=self.source_site)
+        source_related_char_2 = CharacterFactory(site=self.source_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+        source_video_1 = VideoFactory(site=self.source_site)
+        source_video_2 = VideoFactory(site=self.source_site)
+        source_audio_1 = AudioFactory(site=self.source_site)
+        source_audio_2 = AudioFactory(site=self.source_site)
+        source_import_job = ImportJobFactory(site=self.source_site)
 
-        old_entry = DictionaryEntryFactory(
-            site=self.old_site,
+        source_entry = DictionaryEntryFactory(
+            site=self.source_site,
             title="Primary entry",
             batch_id="validId",
-            import_job=import_job,
+            import_job=source_import_job,
         )
 
-        old_entry.categories.set([old_category_1, old_category_3])
-        old_entry.related_dictionary_entries.set(
-            [old_related_entry_1, old_related_entry_2]
+        source_entry.categories.set([source_category_1, source_child_category])
+        source_entry.related_dictionary_entries.set(
+            [source_related_entry_1, source_related_entry_2]
         )
-        old_entry.related_characters.set([old_related_char_1, old_related_char_2])
-        old_entry.related_images.set([img_1, img_2])
-        old_entry.related_videos.set([video_1, video_2])
-        old_entry.related_audio.set([audio_1, audio_2])
-        old_entry.related_video_links = ["https://test.com", "https://testing.com"]
-        old_entry.save()
+        source_entry.related_characters.set(
+            [source_related_char_1, source_related_char_2]
+        )
+        source_entry.related_images.set([source_img_1, source_img_2])
+        source_entry.related_videos.set([source_video_1, source_video_2])
+        source_entry.related_audio.set([source_audio_1, source_audio_2])
+        source_entry.related_video_links = ["https://test.com", "https://testing.com"]
+        source_entry.save()
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_entry = DictionaryEntry.objects.get(
-            site__slug=self.TARGET_SLUG, title=old_entry.title
+        target_entry = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=source_entry.title
         )
 
-        assert new_entry.type == old_entry.type
-        assert new_entry.custom_order == old_entry.custom_order
-        assert new_entry.exclude_from_wotd == old_entry.exclude_from_wotd
-        assert new_entry.part_of_speech == old_entry.part_of_speech
-        assert new_entry.split_chars_base == old_entry.split_chars_base
-        assert new_entry.notes == old_entry.notes
-        assert new_entry.acknowledgements == old_entry.acknowledgements
-        assert new_entry.translations == old_entry.translations
-        assert new_entry.alternate_spellings == old_entry.alternate_spellings
-        assert new_entry.pronunciations == old_entry.pronunciations
-        assert new_entry.batch_id == ""
-        assert new_entry.import_job is None
-        assert new_entry.exclude_from_games == old_entry.exclude_from_games
-        assert new_entry.exclude_from_kids == old_entry.exclude_from_kids
-        assert new_entry.visibility == old_entry.visibility
+        assert target_entry.type == source_entry.type
+        assert target_entry.custom_order == source_entry.custom_order
+        assert target_entry.exclude_from_wotd == source_entry.exclude_from_wotd
+        assert target_entry.part_of_speech == source_entry.part_of_speech
+        assert target_entry.split_chars_base == source_entry.split_chars_base
+        assert target_entry.notes == source_entry.notes
+        assert target_entry.acknowledgements == source_entry.acknowledgements
+        assert target_entry.translations == source_entry.translations
+        assert target_entry.alternate_spellings == source_entry.alternate_spellings
+        assert target_entry.pronunciations == source_entry.pronunciations
+        assert target_entry.batch_id == ""
+        assert target_entry.import_job is None
+        assert target_entry.exclude_from_games == source_entry.exclude_from_games
+        assert target_entry.exclude_from_kids == source_entry.exclude_from_kids
+        assert target_entry.visibility == source_entry.visibility
 
-        new_categories = new_entry.categories.order_by("created").all()
-        assert new_categories[0].title == old_category_1.title
-        assert new_categories[0].site.slug == self.TARGET_SLUG
-        assert new_categories[1].title == old_category_3.title
-        assert new_categories[1].site.slug == self.TARGET_SLUG
-        assert new_categories[1].parent.title == old_category_2.title
+        target_categories = target_entry.categories.order_by("created").all()
+        assert target_categories[0].title == source_category_1.title
+        assert target_categories[0].site.slug == self.TARGET_SLUG
+        assert target_categories[1].title == source_child_category.title
+        assert target_categories[1].site.slug == self.TARGET_SLUG
+        assert target_categories[1].parent.title == source_category_2.title
 
-        new_related_entries = new_entry.related_dictionary_entries.order_by(
+        target_related_entries = target_entry.related_dictionary_entries.order_by(
             "created"
         ).all()
-        assert new_related_entries[0].title == old_related_entry_1.title
-        assert new_related_entries[1].title == old_related_entry_2.title
+        assert target_related_entries[0].title == source_related_entry_1.title
+        assert target_related_entries[1].title == source_related_entry_2.title
 
-        new_related_characters = new_entry.related_characters.order_by("created").all()
-        assert new_related_characters[0].title == old_related_char_1.title
-        assert new_related_characters[1].title == old_related_char_2.title
+        target_related_characters = target_entry.related_characters.order_by(
+            "created"
+        ).all()
+        assert target_related_characters[0].title == source_related_char_1.title
+        assert target_related_characters[1].title == source_related_char_2.title
 
-        assert new_entry.related_images.all().count() == 2
-        assert new_entry.related_videos.all().count() == 2
-        assert new_entry.related_audio.all().count() == 2
+        assert target_entry.related_images.count() == 2
+        assert target_entry.related_videos.count() == 2
+        assert target_entry.related_audio.count() == 2
 
     def test_immersion_labels(self):
-        entry = DictionaryEntryFactory(site=self.old_site)
-        old_imm_label = ImmersionLabelFactory(
-            site=self.old_site, key="test key", dictionary_entry=entry
+        entry = DictionaryEntryFactory(site=self.source_site)
+        source_imm_label = ImmersionLabelFactory(
+            site=self.source_site, key="test key", dictionary_entry=entry
         )
 
-        self.call_default_command()
+        self.call_copy_site_command()
 
-        new_imm_label = ImmersionLabel.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        target_imm_label = ImmersionLabel.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        assert new_imm_label.key == old_imm_label.key
+        assert target_imm_label.key == source_imm_label.key
         assert (
-            new_imm_label.dictionary_entry.title == old_imm_label.dictionary_entry.title
+            target_imm_label.dictionary_entry.title
+            == source_imm_label.dictionary_entry.title
         )
