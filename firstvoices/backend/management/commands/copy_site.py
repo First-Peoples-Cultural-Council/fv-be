@@ -172,6 +172,7 @@ def copy_audio_and_speakers(source_site, target_site, audio_map):
         target_file = File(
             content=UploadedFile(audio_file.original.content.file),
             site=target_site,
+            import_job=None,
         )
         target_file.save()
         audio_file.original = target_file
@@ -213,6 +214,7 @@ def copy_images(source_site, target_site, image_map):
         target_file = ImageFile(
             content=UploadedFile(image_file.original.content.file),
             site=target_site,
+            import_job=None,
         )
         target_file.save()
         image_file.original = target_file
@@ -238,6 +240,7 @@ def copy_videos(source_site, target_site, video_map):
         target_file = VideoFile(
             content=UploadedFile(video_file.original.content.file),
             site=target_site,
+            import_job=None,
         )
         target_file.save()
         video_file.original = target_file
@@ -424,7 +427,7 @@ def copy_immersion_labels(source_site, target_site, dictionary_entry_map):
         imm_label.save()
 
 
-def copy_related_objects(source_site, target_site):
+def copy_related_objects(source_site, target_site, logger):
     image_map = {}
     video_map = {}
     audio_map = {}
@@ -434,19 +437,26 @@ def copy_related_objects(source_site, target_site):
 
     copy_site_features(source_site, target_site)
     copy_site_menu(source_site, target_site)
+    logger.info("Site features and menu copied.")
 
     copy_all_characters(source_site, target_site, character_map)
     copy_alphabet(source_site, target_site)
+    logger.info("Characters and alphabet copied.")
 
     copy_categories(source_site, target_site, category_map)
+    logger.info("Categories copied.")
 
     copy_audio_and_speakers(source_site, target_site, audio_map)
+    logger.info("Audio and speakers copied.")
     copy_images(source_site, target_site, image_map)
+    logger.info("Images copied.")
     copy_videos(source_site, target_site, video_map)
+    logger.info("Videos copied.")
 
     copy_galleries(source_site, target_site, image_map)
     copy_songs(source_site, target_site, audio_map, image_map, video_map)
     copy_stories(source_site, target_site, audio_map, image_map, video_map)
+    logger.info("Galleries, songs and stories copied.")
 
     copy_dictionary_entries(
         source_site,
@@ -460,13 +470,7 @@ def copy_related_objects(source_site, target_site):
     )
 
     copy_immersion_labels(source_site, target_site, dictionary_entry_map)
-
-    # List of stuff to be generated and/or copied over.
-    """
-        Required
-        - Widget, WidgetSettings, SiteWidgetList, SiteWidgetListOrder
-        - SitePage
-    """
+    logger.info("Dictionary entries and immersion labels copied.")
 
 
 class Command(BaseCommand):
@@ -524,5 +528,5 @@ class Command(BaseCommand):
 
         target_site = create_new_site(source_site, target_slug, user)
 
-        copy_related_objects(source_site, target_site)
+        copy_related_objects(source_site, target_site, logger)
         logger.info("Site copy completed successfully.")
