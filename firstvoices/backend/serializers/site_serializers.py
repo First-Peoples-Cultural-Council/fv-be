@@ -51,6 +51,7 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "dictionary",
         "dictionary_cleanup",
         "dictionary_cleanup_preview",
+        "documents",
         "features",
         "galleries",
         "ignored_characters",
@@ -88,6 +89,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     dictionary_cleanup_preview = SiteViewLinkField(
         view_name="api:dictionary-cleanup-preview-list"
     )
+    documents = SiteViewLinkField(view_name="api:document-list")
     features = SiteViewLinkField(view_name="api:sitefeature-list")
     galleries = SiteViewLinkField(view_name="api:gallery-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
@@ -136,6 +138,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "dictionary",
             "dictionary_cleanup",
             "dictionary_cleanup_preview",
+            "documents",
             "features",
             "galleries",
             "ignored_characters",

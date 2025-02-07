@@ -19,23 +19,9 @@ class TestImagesEndpoint(BaseVisualMediaAPITest):
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpg"
     model = Image
+    model_factory = factories.ImageFactory
 
-    def create_minimal_instance(self, site, visibility):
-        return factories.ImageFactory.create(site=site)
-
-    def create_original_instance_for_patch(self, site):
-        image = factories.ImageFactory.create(
-            site=site,
-            title="Original title",
-            description="Original description",
-            acknowledgement="Original ack",
-            exclude_from_kids=True,
-            exclude_from_games=True,
-        )
-        image.save()
-        return image
-
-    def get_expected_response(self, instance, site, detail_view):
+    def get_expected_response(self, instance, site, detail_view=False):
         return self.get_expected_image_data(instance, detail_view)
 
     def assert_created_response(

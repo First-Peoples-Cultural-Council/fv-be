@@ -11,6 +11,7 @@ from backend.views.dictionary_cleanup_views import (
     DictionaryCleanupPreviewViewSet,
 )
 from backend.views.dictionary_views import DictionaryViewSet
+from backend.views.document_views import DocumentViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
@@ -66,6 +67,7 @@ sites_router.register(
     DictionaryCleanupJobViewSet,
     basename="dictionary-cleanup",
 )
+sites_router.register(r"documents", DocumentViewSet, basename="document")
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
 sites_router.register(r"galleries", GalleryViewSet, basename="gallery")
 sites_router.register(

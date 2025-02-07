@@ -5,6 +5,7 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Role, Visibility
+from backend.models.media import Document
 from backend.tests import factories
 from backend.tests.factories import (
     get_site_with_anonymous_user,
@@ -35,7 +36,7 @@ class MediaTestMixin:
     Utilities for testing media APIs
     """
 
-    def get_basic_media_data(self, instance, view_name, detail_view):
+    def get_basic_media_data(self, instance, view_name):
         url = reverse(
             view_name, current_app=self.APP_NAME, args=[instance.site.slug, instance.id]
         )
@@ -49,15 +50,34 @@ class MediaTestMixin:
             "excludeFromGames": instance.exclude_from_games,
             "excludeFromKids": instance.exclude_from_kids,
         }
-        if detail_view:
-            data["usage"] = {
-                "characters": [],
-                "dictionaryEntries": [],
-                "songs": [],
-                "stories": [],
-                "total": 0,
-            }
         return data
+
+    def get_usage_data(self):
+        return {
+            "characters": [],
+            "dictionaryEntries": [],
+            "songs": [],
+            "stories": [],
+            "total": 0,
+        }
+
+    def get_video_usage_data(self):
+        usage = {
+            **self.get_usage_data(),
+            "customPages": [],
+        }
+
+        return usage
+
+    def get_image_usage_data(self):
+        usage = {
+            **self.get_video_usage_data(),
+            "gallery": [],
+            "siteBanner": {},
+            "siteLogo": {},
+        }
+
+        return usage
 
     def get_file_data(self, file):
         return {
@@ -83,10 +103,8 @@ class MediaTestMixin:
             "medium": self.get_visual_file_data(instance.medium),
         }
 
-    def get_visual_media_data(self, instance, view_name, detail_view):
-        data = self.get_basic_media_data(
-            instance, view_name=view_name, detail_view=detail_view
-        )
+    def get_visual_media_data(self, instance, view_name):
+        data = self.get_basic_media_data(instance, view_name=view_name)
         thumbnail_data = self.get_media_thumbnail_data(instance)
 
         data = {
@@ -95,33 +113,30 @@ class MediaTestMixin:
             "original": self.get_visual_file_data(instance.original),
         }
 
-        if detail_view:
-            data["usage"]["customPages"] = []
-
         return data
 
     def get_expected_image_data(self, instance, detail_view=False):
-        data = self.get_visual_media_data(
-            instance, view_name="api:image-detail", detail_view=detail_view
-        )
+        data = self.get_visual_media_data(instance, view_name="api:image-detail")
 
         if detail_view:
-            data["usage"]["gallery"] = []
-            data["usage"]["siteBanner"] = {}
-            data["usage"]["siteLogo"] = {}
+            data["usage"] = self.get_image_usage_data()
 
         return data
 
     def get_expected_video_data(self, instance, detail_view=False):
-        return self.get_visual_media_data(
-            instance, view_name="api:video-detail", detail_view=detail_view
-        )
+        data = self.get_visual_media_data(instance, view_name="api:video-detail")
+
+        if detail_view:
+            data["usage"] = self.get_video_usage_data()
+
+        return data
 
     def get_expected_audio_data(self, instance, speaker, detail_view=False):
-        data = self.get_basic_media_data(
-            instance, view_name="api:audio-detail", detail_view=detail_view
-        )
+        data = self.get_basic_media_data(instance, view_name="api:audio-detail")
         data["original"] = self.get_file_data(instance.original)
+
+        if detail_view:
+            data["usage"] = self.get_usage_data()
 
         if speaker:
             speaker_url = reverse(
@@ -140,6 +155,12 @@ class MediaTestMixin:
             ]
         else:
             data["speakers"] = []
+
+        return data
+
+    def get_expected_document_data(self, instance):
+        data = self.get_basic_media_data(instance, view_name="api:document-detail")
+        data["original"] = self.get_file_data(instance.original)
 
         return data
 
@@ -365,6 +386,22 @@ class BaseMediaApiTest(
     sample_filename = "sample-image.jpg"
     sample_filetype = "image/jpeg"
     model = None
+    model_factory = None
+
+    def create_minimal_instance(self, site, visibility):
+        return self.model_factory.create(site=site)
+
+    def create_original_instance_for_patch(self, site):
+        instance = self.model_factory.create(
+            site=site,
+            title="Original title",
+            description="Original description",
+            acknowledgement="Original acknowledgement",
+            exclude_from_kids=True,
+            exclude_from_games=True,
+        )
+        instance.save()
+        return instance
 
     # Overriding methods to add in the detail_view parameter as that affects the response in case of media APIs
     def get_expected_detail_response(self, instance, site):
@@ -442,11 +479,7 @@ class BaseMediaApiTest(
         pass
 
     def assert_related_objects_deleted(self, instance):
-        """Default test is for visual media with thumbnails"""
         self.assert_instance_deleted(instance.original)
-        self.assert_instance_deleted(instance.medium)
-        self.assert_instance_deleted(instance.small)
-        self.assert_instance_deleted(instance.thumbnail)
 
     def assert_secondary_fields(self, expected_data, updated_instance):
         assert updated_instance.description == expected_data["description"]
@@ -644,6 +677,9 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
+        if self.model == Document:
+            pytest.skip("Documents don't currently have usages.")
+
         expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -687,6 +723,8 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_usages_field_permissions(self):
+        if self.model == Document:
+            pytest.skip("Documents don't currently have usages.")
         expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
 
         response = self.client.get(
@@ -720,13 +758,6 @@ class BaseMediaApiTest(
     def test_update_with_null_optional_charfields_success_200(self):
         # This test is skipped because the multipart form data encoder does not support null string values.
         pass
-
-
-class BaseVisualMediaAPITest(BaseMediaApiTest):
-    @pytest.fixture()
-    def disable_celery(self, settings):
-        # Sets the celery tasks to run synchronously for testing
-        settings.CELERY_TASK_ALWAYS_EAGER = True
 
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance
@@ -765,6 +796,13 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         self.assert_secondary_fields(expected_data, actual_instance)
         assert actual_instance.title == expected_data["title"]
 
+
+class BaseVisualMediaAPITest(BaseMediaApiTest):
+    @pytest.fixture()
+    def disable_celery(self, settings):
+        # Sets the celery tasks to run synchronously for testing
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
     @pytest.mark.django_db
     def test_patch_file_is_ignored(self):
         # PUT/PATCH requests updating the original file should be ignored,
@@ -788,8 +826,8 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
         # Verifying the file does not change
         assert instance.original.content.name in response_data["original"]["path"]
 
-
-def assert_patch_speaker_original_fields(self, original_instance, updated_instance):
-    self.assert_original_secondary_fields(original_instance, updated_instance)
-    assert updated_instance.title == original_instance.title
-    assert updated_instance.original.id == original_instance.original.id
+    def assert_related_objects_deleted(self, instance):
+        self.assert_instance_deleted(instance.original)
+        self.assert_instance_deleted(instance.medium)
+        self.assert_instance_deleted(instance.small)
+        self.assert_instance_deleted(instance.thumbnail)

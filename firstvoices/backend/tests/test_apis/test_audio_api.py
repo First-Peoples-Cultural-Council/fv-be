@@ -19,10 +19,8 @@ class TestAudioEndpoint(BaseMediaApiTest):
     sample_filename = "sample-audio.mp3"
     sample_filetype = "audio/mpeg"
     model = Audio
+    model_factory = factories.AudioFactory
     content_type_json = "application/json"
-
-    def create_minimal_instance(self, site, visibility):
-        return factories.AudioFactory.create(site=site)
 
     def create_original_instance_for_patch(self, site):
         speaker = factories.PersonFactory(site=site)
@@ -38,7 +36,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
         audio.save()
         return audio
 
-    def get_expected_response(self, instance, site, detail_view):
+    def get_expected_response(self, instance, site, detail_view=False):
         return self.get_expected_audio_data(
             instance, speaker=None, detail_view=detail_view
         )
@@ -57,9 +55,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data == self.get_expected_audio_data(instance, speaker, True)
-
-    def assert_related_objects_deleted(self, instance):
-        self.assert_instance_deleted(instance.original)
 
     def assert_created_response(
         self, expected_data, actual_response, detail_view=False
@@ -91,19 +86,6 @@ class TestAudioEndpoint(BaseMediaApiTest):
         self.assert_original_secondary_fields(original_instance, updated_instance)
         assert updated_instance.original.id == original_instance.original.id
         assert updated_instance.speakers.count() == original_instance.speakers.count()
-
-    def assert_original_secondary_fields(self, original_instance, updated_instance):
-        # everything but title
-        self.assert_secondary_fields(
-            expected_data={
-                "description": original_instance.description,
-                "acknowledgement": original_instance.acknowledgement,
-                "excludeFromKids": original_instance.exclude_from_kids,
-                "excludeFromGames": original_instance.exclude_from_games,
-                "speakers": original_instance.speakers,
-            },
-            updated_instance=updated_instance,
-        )
 
     def assert_response(self, original_instance, expected_data, actual_response):
         super().assert_response(original_instance, expected_data, actual_response)

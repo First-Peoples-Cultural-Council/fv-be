@@ -13,6 +13,7 @@ from backend.models.files import File
 from backend.models.media import (
     SUPPORTED_FILETYPES,
     Audio,
+    Document,
     Image,
     ImageFile,
     Person,
@@ -143,6 +144,30 @@ class AudioSerializer(
     class Meta(MediaSerializer.Meta):
         model = Audio
         fields = MediaSerializer.Meta.fields + ("speakers",)
+
+    def create(self, validated_data):
+        validated_data["original"] = self.create_file(validated_data, File)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if "original" in validated_data:
+            validated_data["original"] = self.create_file(validated_data, File)
+
+        return super().update(instance, validated_data)
+
+
+class DocumentSerializer(
+    UpdateSerializerMixin, CreateSiteContentSerializerMixin, MediaSerializer
+):
+    """Serializer for Document objects. Supports document objects shared between different sites."""
+
+    original = FileUploadSerializer(
+        validators=[SupportedFileType(mimetypes=SUPPORTED_FILETYPES["document"])],
+    )
+
+    class Meta(MediaSerializer.Meta):
+        model = Document
+        fields = MediaSerializer.Meta.fields
 
     def create(self, validated_data):
         validated_data["original"] = self.create_file(validated_data, File)
