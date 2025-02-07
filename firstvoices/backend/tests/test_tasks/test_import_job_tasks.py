@@ -469,8 +469,8 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.filter(id=import_job.id)[0]
         assert import_job.validation_status == JobStatus.FAILED
         assert (
-            "This job could not be started as it is either queued, or already running or completed."
-            in caplog.text
+            "This job could not be started as it is either queued, or already running or completed. "
+            f"ImportJob id: {import_job.id}." in caplog.text
         )
 
 
@@ -787,7 +787,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         import_job = ImportJob.objects.filter(id=import_job.id)[0]
         assert import_job.validation_status == JobStatus.FAILED
-        assert "This job cannot be run due to consistency issues." in caplog.text
+        assert (
+            f"This job cannot be run due to consistency issues. ImportJob id: {import_job.id}."
+            in caplog.text
+        )
 
     @pytest.mark.parametrize(
         "validation_status",
@@ -807,4 +810,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         import_job = ImportJob.objects.filter(id=import_job.id)[0]
         assert import_job.validation_status == JobStatus.FAILED
-        assert "Please validate the job before confirming the import." in caplog.text
+        assert (
+            f"Please validate the job before confirming the import. ImportJob id: {import_job.id}."
+            in caplog.text
+        )

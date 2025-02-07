@@ -236,7 +236,8 @@ def validate_import_job(import_job_id):
         JobStatus.COMPLETE,
     ]:
         logger.info(
-            "This job could not be started as it is either queued, or already running or completed."
+            "This job could not be started as it is either queued, or already running or completed. "
+            f"ImportJob id: {import_job_id}."
         )
         import_job.validation_status = JobStatus.FAILED
         import_job.save()
@@ -269,12 +270,16 @@ def confirm_import_job(import_job_id):
 
     # Do not start if the job is already queued
     if import_job.status != JobStatus.ACCEPTED:
-        logger.info("This job cannot be run due to consistency issues.")
+        logger.info(
+            f"This job cannot be run due to consistency issues. ImportJob id: {import_job_id}."
+        )
         import_job.status = JobStatus.FAILED
         import_job.save()
 
     if import_job.validation_status != JobStatus.COMPLETE:
-        logger.info("Please validate the job before confirming the import.")
+        logger.info(
+            f"Please validate the job before confirming the import. ImportJob id: {import_job_id}."
+        )
         import_job.validation_status = JobStatus.FAILED
         import_job.save()
 
