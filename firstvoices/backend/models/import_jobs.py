@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -132,3 +133,18 @@ class ImportJob(BaseJob):
         on_delete=models.SET_NULL,
         related_name="import_job_failed_rows_csv_set",
     )
+
+    def _delete_report(self):
+        import_job_report = self.validation_report
+        if import_job_report:
+            import_job_report.delete()
+
+    def delete(self, using=None, keep_parents=False):
+        """
+        Does not allow deleting on an instance if the job has been completed, i.e. status="completed".
+        """
+        if self.status == JobStatus.COMPLETE:
+            raise ValidationError("A job that has been completed cannot be deleted.")
+
+        self._delete_report()
+        return super().delete(using, keep_parents)
