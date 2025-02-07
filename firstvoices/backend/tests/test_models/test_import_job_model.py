@@ -14,10 +14,14 @@ class TestImportJobModel:
             import_job.delete()
         assert "A job that has been completed cannot be deleted." in e.value
 
-    def test_report_is_deleted_when_import_job_is_deleted(self):
-        import_job_report = ImportJobReportFactory()
-        import_job = ImportJobFactory(validation_report=import_job_report)
+    @pytest.mark.parametrize("add_report", [True, False])
+    def test_report_is_deleted_if_exists_with_import_job_deletion(self, add_report):
+        import_job = ImportJobFactory()
+
+        if add_report:
+            import_job.validation_report = ImportJobReportFactory()
+            import_job.save()
 
         import_job.delete()
 
-        assert len(ImportJobReport.objects.filter(id=import_job_report.id)) == 0
+        assert ImportJobReport.objects.count() == 0
