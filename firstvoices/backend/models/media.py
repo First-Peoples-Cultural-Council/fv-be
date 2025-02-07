@@ -604,6 +604,7 @@ class RelatedMediaMixin(models.Model):
         abstract = True
 
     related_audio = models.ManyToManyField(Audio, blank=True)
+    related_documents = models.ManyToManyField(Document, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
     related_video_links = ArrayField(
