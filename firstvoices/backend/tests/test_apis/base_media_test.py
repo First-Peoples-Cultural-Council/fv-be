@@ -5,7 +5,6 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Role, Visibility
-from backend.models.media import Document
 from backend.tests import factories
 from backend.tests.factories import (
     get_site_with_anonymous_user,
@@ -387,6 +386,7 @@ class BaseMediaApiTest(
     sample_filetype = "image/jpeg"
     model = None
     model_factory = None
+    related_key = None
 
     def create_minimal_instance(self, site, visibility):
         return self.model_factory.create(site=site)
@@ -670,16 +670,54 @@ class BaseMediaApiTest(
         )
         assert response.status_code == 403
 
-    def add_related_media_to_objects(self, visibility):
-        # Add media file as related media to objects to verify that they show up correctly
-        # in usage field when a media item is requested via detail view
-        raise NotImplementedError
+    def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
+        if visibility == Visibility.TEAM:
+            site = self.create_site_with_non_member(Visibility.PUBLIC)
+        else:
+            site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
+
+        def add_item(target):
+            related_list = getattr(target, self.related_key)
+            related_list.add(instance)
+
+        character = factories.CharacterFactory(site=site, title="a", sort_order=1)
+        add_item(character)
+
+        dict_entry = factories.DictionaryEntryFactory(site=site, visibility=visibility)
+        add_item(dict_entry)
+
+        song = factories.SongFactory(site=site, visibility=visibility)
+        add_item(song)
+
+        story_1 = factories.StoryFactory(site=site, visibility=visibility)
+        add_item(story_1)
+
+        story_page_1 = factories.StoryPageFactory(
+            site=site, story=story_1, visibility=visibility
+        )
+        add_item(story_page_1)
+
+        story_2 = factories.StoryFactory(site=site, visibility=visibility)
+        story_page_2 = factories.StoryPageFactory(
+            site=site, story=story_2, visibility=visibility
+        )
+        add_item(story_page_2)
+
+        total = 5
+
+        return {
+            "site": site,
+            "media_instance": instance,
+            "character": character,
+            "dict_entry": dict_entry,
+            "song": song,
+            "stories": [story_1, story_2],
+            "total": total,
+        }
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
-        if self.model == Document:
-            pytest.skip("Documents don't currently have usages.")
-
         expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -723,8 +761,6 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_usages_field_permissions(self):
-        if self.model == Document:
-            pytest.skip("Documents don't currently have usages.")
         expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
 
         response = self.client.get(
