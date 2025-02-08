@@ -19,6 +19,7 @@ class TestDocumentEndpoint(BaseMediaApiTest):
     sample_filetype = "application/pdf"
     model = Document
     model_factory = factories.DocumentFactory
+    related_key = "related_documents"
     content_type_json = "application/json"
 
     def get_expected_response(self, instance, site, detail_view=False):
