@@ -34,7 +34,7 @@ elasticsearch==7.17.2
 elasticsearch-dsl==7.4.1
 et-xmlfile==2.0.0
 eventlet==0.39.0
-factory-boy==3.3.1
+factory-boy==3.3.3
 Faker==33.1.0
 ffmpeg-python==0.2.0
 g2p==2.2.0 # https://github.com/roedoejet/g2p
