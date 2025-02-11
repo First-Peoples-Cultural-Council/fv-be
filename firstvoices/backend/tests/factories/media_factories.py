@@ -149,6 +149,16 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
                 self.related_audio.add(e)
 
     @factory.post_generation
+    def related_documents(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+        if extracted:
+            # A list of documents were passed in, use them
+            for e in extracted:
+                self.related_documents.add(e)
+
+    @factory.post_generation
     def related_images(self, create, extracted, **kwargs):
         if not create:
             # Simple build, do nothing.
