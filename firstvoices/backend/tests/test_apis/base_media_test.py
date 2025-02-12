@@ -157,9 +157,12 @@ class MediaTestMixin:
 
         return data
 
-    def get_expected_document_data(self, instance):
+    def get_expected_document_data(self, instance, detail_view=False):
         data = self.get_basic_media_data(instance, view_name="api:document-detail")
         data["original"] = self.get_file_data(instance.original)
+
+        if detail_view:
+            data["usage"] = self.get_usage_data()
 
         return data
 
@@ -169,25 +172,78 @@ class RelatedMediaTestMixin(MediaTestMixin):
     For APIs that use the RelatedMediaSerializerMixin.
     """
 
+    RELATED_MEDIA_DEFAULTS = {
+        "relatedAudio": [],
+        "relatedDocuments": [],
+        "relatedImages": [],
+        "relatedVideos": [],
+        "relatedVideoLinks": [],
+    }
+
     model = None
+    model_factory = None
 
     def create_instance_with_media(
         self,
         site,
         visibility,
-        related_images=None,
         related_audio=None,
+        related_documents=None,
+        related_images=None,
         related_videos=None,
         related_video_links=None,
     ):
-        raise NotImplementedError
+        if related_video_links is None:
+            related_video_links = []
+        return self.model_factory.create(
+            site=site,
+            visibility=visibility,
+            related_audio=related_audio,
+            related_documents=related_documents,
+            related_images=related_images,
+            related_videos=related_videos,
+            related_video_links=related_video_links,
+        )
+
+    def get_valid_related_media_data(self, site=None):
+        audio = factories.AudioFactory.create(site=site)
+        document = factories.DocumentFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+
+        return {
+            "relatedAudio": [str(audio.id)],
+            "relatedDocuments": [str(document.id)],
+            "relatedImages": [str(image.id)],
+            "relatedVideos": [str(video.id)],
+            "relatedVideoLinks": [],
+        }
+
+    def get_related_media_for_patch(self, site=None):
+        audio = factories.AudioFactory.create(site=site)
+        document = factories.DocumentFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+
+        return {
+            "related_audio": (audio,),
+            "related_documents": (document,),
+            "related_images": (image,),
+            "related_videos": (video,),
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        }
 
     def assert_patch_instance_original_fields_related_media(
         self, original_instance, updated_instance
     ):
         assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_documents == original_instance.related_documents
         assert updated_instance.related_images == original_instance.related_images
         assert updated_instance.related_videos == original_instance.related_videos
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_update_patch_response_related_media(
         self, original_instance, actual_response
@@ -195,12 +251,27 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert actual_response["relatedAudio"][0]["id"] == str(
             original_instance.related_audio.first().id
         )
+        assert actual_response["relatedDocuments"][0]["id"] == str(
+            original_instance.related_documents.first().id
+        )
         assert actual_response["relatedImages"][0]["id"] == str(
             original_instance.related_images.first().id
         )
         assert actual_response["relatedVideos"][0]["id"] == str(
             original_instance.related_videos.first().id
         )
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
     def assert_update_response_related_media(self, expected_data, actual_response):
         assert len(actual_response["relatedAudio"]) == len(
@@ -209,11 +280,11 @@ class RelatedMediaTestMixin(MediaTestMixin):
         for i, a in enumerate(expected_data["relatedAudio"]):
             assert actual_response["relatedAudio"][i]["id"] == a
 
-        assert len(actual_response["relatedVideos"]) == len(
-            expected_data["relatedVideos"]
+        assert len(actual_response["relatedDocuments"]) == len(
+            expected_data["relatedDocuments"]
         )
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
+        for i, img in enumerate(expected_data["relatedDocuments"]):
+            assert actual_response["relatedDocuments"][i]["id"] == img
 
         assert len(actual_response["relatedImages"]) == len(
             expected_data["relatedImages"]
@@ -221,9 +292,42 @@ class RelatedMediaTestMixin(MediaTestMixin):
         for i, img in enumerate(expected_data["relatedImages"]):
             assert actual_response["relatedImages"][i]["id"] == img
 
+        assert len(actual_response["relatedVideos"]) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, v in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == v
+
         assert (
             actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
         )
+
+    def assert_updated_instance_related_media(self, expected_data, actual_instance):
+        assert len(actual_instance.related_audio.all()) == len(
+            expected_data["relatedAudio"]
+        )
+        for i, item in enumerate(expected_data["relatedAudio"]):
+            assert str(actual_instance.related_audio.all()[i].id) == item
+
+        assert len(actual_instance.related_documents.all()) == len(
+            expected_data["relatedDocuments"]
+        )
+        for i, item in enumerate(expected_data["relatedDocuments"]):
+            assert str(actual_instance.related_documents.all()[i].id) == item
+
+        assert len(actual_instance.related_images.all()) == len(
+            expected_data["relatedImages"]
+        )
+        for i, item in enumerate(expected_data["relatedImages"]):
+            assert str(actual_instance.related_images.all()[i].id) == item
+
+        assert len(actual_instance.related_videos.all()) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, item in enumerate(expected_data["relatedVideos"]):
+            assert str(actual_instance.related_videos.all()[i].id) == item
+
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
     @pytest.mark.django_db
     def test_detail_related_audio_with_speaker(self):

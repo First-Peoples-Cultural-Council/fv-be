@@ -5,15 +5,8 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.models.song import Lyric, Song
 from backend.tests import factories
-
-from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import (
-    MOCK_EMBED_LINK,
-    MOCK_THUMBNAIL_LINK,
-    VIMEO_VIDEO_LINK,
-    YOUTUBE_VIDEO_LINK,
-    RelatedMediaTestMixin,
-)
+from backend.tests.test_apis.base_api_test import BaseControlledSiteContentApiTest
+from backend.tests.test_apis.base_media_test import RelatedMediaTestMixin
 
 
 class TestSongEndpoint(
@@ -28,20 +21,16 @@ class TestSongEndpoint(
     API_DETAIL_VIEW = "api:song-detail"
 
     model = Song
+    model_factory = factories.SongFactory
 
     def create_minimal_instance(self, site, visibility):
         return factories.SongFactory.create(site=site, visibility=visibility)
 
     def get_valid_data(self, site=None):
-        related_image = factories.ImageFactory.create(site=site)
-        related_video = factories.VideoFactory.create(site=site)
-        related_audio = factories.AudioFactory.create(site=site)
+        related_media = self.get_valid_related_media_data(site=site)
 
         return {
-            "relatedAudio": [str(related_audio.id)],
-            "relatedImages": [str(related_image.id)],
-            "relatedVideos": [str(related_video.id)],
-            "relatedVideoLinks": [],
+            **related_media,
             "hideOverlay": False,
             "title": "Title",
             "visibility": "Public",
@@ -121,10 +110,7 @@ class TestSongEndpoint(
             "acknowledgements": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     def assert_updated_instance(self, expected_data, actual_instance: Song):
@@ -157,7 +143,7 @@ class TestSongEndpoint(
             assert lyric["text"] == actual_lyrics[index].text
             assert lyric["translation"] == actual_lyrics[index].translation
 
-        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
+        self.assert_updated_instance_related_media(expected_data, actual_instance)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
@@ -183,26 +169,6 @@ class TestSongEndpoint(
     def assert_related_objects_deleted(self, instance):
         for lyric in instance.lyrics.all():
             self.assert_instance_deleted(lyric)
-
-    def create_instance_with_media(
-        self,
-        site,
-        visibility,
-        related_images=None,
-        related_audio=None,
-        related_videos=None,
-        related_video_links=None,
-    ):
-        if related_video_links is None:
-            related_video_links = []
-        return factories.SongFactory.create(
-            site=site,
-            visibility=visibility,
-            related_images=related_images,
-            related_audio=related_audio,
-            related_videos=related_videos,
-            related_video_links=related_video_links,
-        )
 
     def get_expected_list_response_item_summary(self, song, site):
         return {
@@ -234,16 +200,11 @@ class TestSongEndpoint(
             "acknowledgements": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     def create_original_instance_for_patch(self, site):
-        audio = factories.AudioFactory.create(site=site)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
+        related_media = self.get_related_media_for_patch(site=site)
         song = factories.SongFactory.create(
             site=site,
             title="Title",
@@ -255,10 +216,7 @@ class TestSongEndpoint(
             hide_overlay=True,
             exclude_from_games=True,
             exclude_from_kids=True,
-            related_audio=(audio,),
-            related_images=(image,),
-            related_videos=(video,),
-            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+            **related_media,
         )
         factories.LyricsFactory.create(song=song)
         return song
@@ -287,10 +245,6 @@ class TestSongEndpoint(
             == original_instance.introduction_translation
         )
         assert updated_instance.lyrics.first() == original_instance.lyrics.first()
-        assert (
-            updated_instance.related_video_links
-            == original_instance.related_video_links
-        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Song):
         assert updated_instance.title == data["title"]
@@ -327,18 +281,6 @@ class TestSongEndpoint(
             actual_response["acknowledgements"][0]["text"]
             == original_instance.acknowledgements[0]
         )
-        assert actual_response["relatedVideoLinks"] == [
-            {
-                "videoLink": original_instance.related_video_links[0],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": original_instance.related_video_links[1],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
 
     @pytest.mark.django_db
     def test_lyrics_order(self):
