@@ -429,8 +429,9 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
             "original",
             "title",
             "description",
+            "acknowledgement",
         )
-        read_only_fields = ("id", "original", "title", "description")
+        read_only_fields = ("id", "original", "title", "description", "acknowledgement")
 
 
 class AudioMinimalSerializer(MediaMinimalSerializer):
