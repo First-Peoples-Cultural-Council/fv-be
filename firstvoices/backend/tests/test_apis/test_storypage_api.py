@@ -8,13 +8,7 @@ from backend.models.story import StoryPage
 from backend.tests import factories
 
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import (
-    MOCK_EMBED_LINK,
-    MOCK_THUMBNAIL_LINK,
-    VIMEO_VIDEO_LINK,
-    YOUTUBE_VIDEO_LINK,
-    RelatedMediaTestMixin,
-)
+from .base_media_test import RelatedMediaTestMixin
 
 
 class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiTest):
@@ -25,7 +19,9 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     API_LIST_VIEW = "api:storypage-list"
     API_DETAIL_VIEW = "api:storypage-detail"
+
     model = StoryPage
+    model_factory = factories.StoryPageFactory
 
     def get_list_endpoint(self, site_slug, story_id):
         # nested url needs both site and story
@@ -59,8 +55,9 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         self,
         site,
         visibility,
-        related_images=None,
         related_audio=None,
+        related_documents=None,
+        related_images=None,
         related_videos=None,
         related_video_links=None,
     ):
@@ -70,18 +67,17 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         return factories.StoryPageFactory.create(
             site=site,
             story=story,
-            related_images=related_images,
             related_audio=related_audio,
+            related_documents=related_documents,
+            related_images=related_images,
             related_videos=related_videos,
             related_video_links=related_video_links,
         )
 
     def get_valid_data(self, site=None):
+        related_media = self.get_valid_related_media_data(site=site)
         return {
-            "relatedAudio": [str(factories.AudioFactory.create(site=site).id)],
-            "relatedImages": [str(factories.ImageFactory.create(site=site).id)],
-            "relatedVideos": [str(factories.VideoFactory.create(site=site).id)],
-            "relatedVideoLinks": [],
+            **related_media,
             "text": "Title",
             "translation": "A translation of the title",
             "notes": [
@@ -108,18 +104,13 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
     def add_expected_defaults(self, data):
         return {
             **data,
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
             "translation": "",
             "notes": [],
         }
 
     def create_original_instance_for_patch(self, site):
-        audio = factories.AudioFactory.create(site=site)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
+        related_media = self.get_related_media_for_patch(site=site)
         story = factories.StoryFactory.create(site=site)
         return factories.StoryPageFactory.create(
             site=site,
@@ -128,10 +119,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             text="Text",
             translation="Translation",
             notes=["Note"],
-            related_audio=(audio,),
-            related_images=(image,),
-            related_videos=(video,),
-            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+            **related_media,
         )
 
     def get_valid_patch_data(self, site=None):
@@ -148,10 +136,6 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             original_instance, updated_instance
         )
         assert updated_instance.story == original_instance.story
-        assert (
-            updated_instance.related_video_links
-            == original_instance.related_video_links
-        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: StoryPage):
         assert updated_instance.text == data["text"]
@@ -165,18 +149,6 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert actual_response["notes"][0]["text"] == original_instance.notes[0]
         assert actual_response["ordering"] == original_instance.ordering
         assert actual_response["story"]["id"] == str(original_instance.story.id)
-        assert actual_response["relatedVideoLinks"] == [
-            {
-                "videoLink": original_instance.related_video_links[0],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": original_instance.related_video_links[1],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
@@ -437,25 +409,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         for i, n in enumerate(expected_data["notes"]):
             assert actual_instance.notes[i] == n["text"]
 
-        assert len(actual_instance.related_audio.all()) == len(
-            expected_data["relatedAudio"]
-        )
-        for i, item in enumerate(expected_data["relatedAudio"]):
-            assert str(actual_instance.related_audio.all()[i].id) == item
-
-        assert len(actual_instance.related_images.all()) == len(
-            expected_data["relatedImages"]
-        )
-        for i, item in enumerate(expected_data["relatedImages"]):
-            assert str(actual_instance.related_images.all()[i].id) == item
-
-        assert len(actual_instance.related_videos.all()) == len(
-            expected_data["relatedVideos"]
-        )
-        for i, item in enumerate(expected_data["relatedVideos"]):
-            assert str(actual_instance.related_videos.all()[i].id) == item
-
-        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
+        self.assert_updated_instance_related_media(expected_data, actual_instance)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["text"] == expected_data["text"]
@@ -505,10 +459,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
                 "visibility": instance.site.get_visibility_display().lower(),
                 "language": site.language.title,
             },
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     @pytest.mark.django_db
