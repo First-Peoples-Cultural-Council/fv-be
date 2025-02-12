@@ -143,6 +143,14 @@ class ImportJob(BaseJob):
         """
         Does not allow deleting on an instance if the job has been completed, i.e. status="completed".
         """
+        if self.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+            raise ValidationError(
+                "This job cannot be deleted as it is being validated."
+            )
+
+        if self.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+            raise ValidationError("This job cannot be deleted as it is being imported.")
+
         if self.status == JobStatus.COMPLETE:
             raise ValidationError("A job that has been completed cannot be deleted.")
 
