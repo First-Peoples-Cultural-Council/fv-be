@@ -7,12 +7,13 @@ from backend.models import Story, StoryPage
 from backend.serializers.base_serializers import (
     ArbitraryIdSerializer,
     BaseControlledSiteContentSerializer,
-    CreateControlledSiteContentSerializerMixin,
+    CreateSiteContentSerializerMixin,
     LinkedSiteMinimalSerializer,
     LinkedSiteSerializer,
     ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
+    ValidateAssistantWritePermissionMixin,
     ValidateNonNullableCharFieldsMixin,
     WritableControlledSiteContentSerializer,
     WritableVisibilityField,
@@ -60,8 +61,9 @@ class StoryPageSummarySerializer(
 
 
 class StoryPageDetailSerializer(
-    CreateControlledSiteContentSerializerMixin,
+    ValidateAssistantWritePermissionMixin,
     ValidateNonNullableCharFieldsMixin,
+    CreateSiteContentSerializerMixin,
     StoryPageSummarySerializer,
 ):
     created = serializers.DateTimeField(read_only=True)

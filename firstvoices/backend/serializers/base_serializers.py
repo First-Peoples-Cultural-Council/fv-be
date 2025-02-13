@@ -97,26 +97,29 @@ class CreateSiteContentSerializerMixin(CreateSerializerMixin):
         return super().create(validated_data)
 
 
-class CreateControlledSiteContentSerializerMixin(CreateSiteContentSerializerMixin):
+class ValidateAssistantWritePermissionMixin:
     """
-    A mixin for ModelSerializers that sets the required fields for subclasses of BaseControlledModel
+    A mixin for ModelSerializers that validates the Assistant write permission based on the submitted
+    visibility level. Compatible with POST, PUT, and PATCH style writes.
     """
 
     def validate(self, attrs):
+        attrs = super().validate(attrs)
+
         site = get_site_from_context(self)
         user = self.context["request"].user
         memberships = Membership.objects.filter(user=user)
-
-        visibility = attrs.get("visibility")
-
         site_membership = memberships.filter(site=site).first()
-        if site_membership:
-            if site_membership.role == Role.ASSISTANT and visibility > Visibility.TEAM:
+
+        if site_membership and site_membership.role == Role.ASSISTANT:
+            visibility = attrs.get("visibility")
+            # This condition is written to allow PATCH to send an empty visibility value
+            if visibility == Visibility.MEMBERS or visibility == Visibility.PUBLIC:
                 raise PermissionDenied(
                     "Assistants cannot create or edit published content."
                 )
 
-        return super().validate(attrs)
+        return attrs
 
 
 class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
@@ -223,9 +226,10 @@ class BaseControlledSiteContentSerializer(
 
 
 class WritableControlledSiteContentSerializer(
-    CreateControlledSiteContentSerializerMixin,
-    UpdateSerializerMixin,
+    ValidateAssistantWritePermissionMixin,
     ValidateNonNullableCharFieldsMixin,
+    UpdateSerializerMixin,
+    CreateSiteContentSerializerMixin,
     BaseControlledSiteContentSerializer,
 ):
     """
