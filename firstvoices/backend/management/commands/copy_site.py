@@ -18,12 +18,12 @@ from backend.models.files import File
 from backend.models.galleries import Gallery, GalleryItem
 from backend.models.immersion_labels import ImmersionLabel
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
-from backend.models.sites import Site, SiteFeature, SiteMenu
+from backend.models.sites import Site, SiteFeature
 from backend.models.song import Song
 from backend.models.story import Story
 
 
-def get_object_or_raise_error(model, error, **filters):
+def get_valid_object(model, error, **filters):
     obj = model.objects.filter(**filters).first()
     if not obj:
         raise AttributeError(error)
@@ -64,25 +64,28 @@ def copy_site_features(source_site, target_site):
         site_feature.save()
 
 
-def copy_site_menu(source_site, target_site):
-    site_menu_list = SiteMenu.objects.filter(site=source_site)
-    for site_menu in site_menu_list:
-        site_menu.id = uuid.uuid4()
-        site_menu.site = target_site
-        site_menu.save()
-
-
-def copy_all_characters_and_return_map(source_site, target_site):
+def copy_all_characters_and_return_map(
+    source_site, target_site, audio_map, image_map, video_map
+):
     character_map = {}
     characters = Character.objects.filter(site=source_site)
 
     for character in characters:
+        source_media = {
+            "audio": list(character.related_audio.all()),
+            "images": list(character.related_images.all()),
+            "videos": list(character.related_videos.all()),
+        }
+
         source_char_id = character.id
         target_char_id = uuid.uuid4()
         character_map[source_char_id] = target_char_id
 
         character.id = target_char_id
         character.site = target_site
+        character.save()
+
+        copy_related_media(character, source_media, audio_map, image_map, video_map)
         character.save()
 
     variants = CharacterVariant.objects.filter(site=source_site)
@@ -304,6 +307,8 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
 
 
 def copy_songs(source_site, target_site, audio_map, image_map, video_map):
+    # todo: reduce db queries
+
     songs = Song.objects.filter(site=source_site)
     for song in songs:
         source_lyrics = list(song.lyrics.all())
@@ -431,12 +436,7 @@ def copy_immersion_labels(source_site, target_site, dictionary_entry_map):
 
 def copy_related_objects(source_site, target_site, logger):
     copy_site_features(source_site, target_site)
-    copy_site_menu(source_site, target_site)
-    logger.info("Site features and menu copied.")
-
-    character_map = copy_all_characters_and_return_map(source_site, target_site)
-    copy_alphabet(source_site, target_site)
-    logger.info("Characters and alphabet copied.")
+    logger.info("Site features copied.")
 
     category_map = copy_categories_and_return_map(source_site, target_site)
     logger.info("Categories copied.")
@@ -447,6 +447,12 @@ def copy_related_objects(source_site, target_site, logger):
     logger.info("Images copied.")
     video_map = copy_videos_and_return_map(source_site, target_site)
     logger.info("Videos copied.")
+
+    character_map = copy_all_characters_and_return_map(
+        source_site, target_site, audio_map, image_map, video_map
+    )
+    copy_alphabet(source_site, target_site)
+    logger.info("Characters and alphabet copied.")
 
     copy_galleries(source_site, target_site, image_map)
     copy_songs(source_site, target_site, audio_map, image_map, video_map)
@@ -506,10 +512,10 @@ class Command(BaseCommand):
 
         logger.info("Verifying requirements.")
 
-        source_site = get_object_or_raise_error(
+        source_site = get_valid_object(
             Site, slug=source_slug, error="Provided source site does not exist."
         )
-        user = get_object_or_raise_error(
+        user = get_valid_object(
             get_user_model(),
             email=user_email,
             error="No user found with the provided email.",

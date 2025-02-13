@@ -13,7 +13,7 @@ from backend.models.dictionary import DictionaryEntry
 from backend.models.galleries import Gallery
 from backend.models.immersion_labels import ImmersionLabel
 from backend.models.media import Audio, Image, Person, Video
-from backend.models.sites import Site, SiteFeature, SiteMenu
+from backend.models.sites import Site, SiteFeature
 from backend.models.song import Song
 from backend.models.story import Story
 from backend.tests.factories import (
@@ -35,7 +35,6 @@ from backend.tests.factories import (
     PersonFactory,
     SiteFactory,
     SiteFeatureFactory,
-    SiteMenuFactory,
     SongFactory,
     StoryFactory,
     StoryPageFactory,
@@ -146,20 +145,24 @@ class TestCopySite:
         assert target_feature_enabled.is_enabled == source_feature_enabled.is_enabled
         assert target_feature_disabled.is_enabled == source_feature_disabled.is_enabled
 
-    def test_site_menu(self):
-        source_site_menu = SiteMenuFactory.create(site=self.source_site)
-
-        self.call_copy_site_command()
-
-        target_site_menu = SiteMenu.objects.get(site__slug=self.TARGET_SLUG)
-
-        assert target_site_menu.json == source_site_menu.json
-
     def test_characters_and_variants(self):
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+        source_video_1 = VideoFactory(site=self.source_site)
+        source_video_2 = VideoFactory(site=self.source_site)
+        source_audio_1 = AudioFactory(site=self.source_site)
+        source_audio_2 = AudioFactory(site=self.source_site)
+
         source_char = CharacterFactory(site=self.source_site)
         source_char_variant = CharacterVariantFactory(
             site=self.source_site, base_character=source_char
         )
+
+        source_char.related_images.set([source_img_1, source_img_2])
+        source_char.related_videos.set([source_video_1, source_video_2])
+        source_char.related_audio.set([source_audio_1, source_audio_2])
+        source_char.related_video_links = ["https://test.com", "https://testing.com"]
+        source_char.save()
 
         self.call_copy_site_command()
 
@@ -170,6 +173,10 @@ class TestCopySite:
         assert target_char.sort_order == source_char.sort_order
         assert target_char_variant.title == source_char_variant.title
         assert target_char_variant.base_character == target_char
+
+        assert target_char.related_images.count() == 2
+        assert target_char.related_videos.count() == 2
+        assert target_char.related_audio.count() == 2
 
     def test_ignored_characters(self):
         source_ignored_char = IgnoredCharacterFactory(site=self.source_site)
