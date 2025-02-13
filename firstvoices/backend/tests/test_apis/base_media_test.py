@@ -277,26 +277,26 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert len(actual_response["relatedAudio"]) == len(
             expected_data["relatedAudio"]
         )
-        for i, a in enumerate(expected_data["relatedAudio"]):
-            assert actual_response["relatedAudio"][i]["id"] == a
+        for i, item in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == item
 
         assert len(actual_response["relatedDocuments"]) == len(
             expected_data["relatedDocuments"]
         )
-        for i, img in enumerate(expected_data["relatedDocuments"]):
-            assert actual_response["relatedDocuments"][i]["id"] == img
+        for i, item in enumerate(expected_data["relatedDocuments"]):
+            assert actual_response["relatedDocuments"][i]["id"] == item
 
         assert len(actual_response["relatedImages"]) == len(
             expected_data["relatedImages"]
         )
-        for i, img in enumerate(expected_data["relatedImages"]):
-            assert actual_response["relatedImages"][i]["id"] == img
+        for i, item in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == item
 
         assert len(actual_response["relatedVideos"]) == len(
             expected_data["relatedVideos"]
         )
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
+        for i, item in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == item
 
         assert (
             actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
