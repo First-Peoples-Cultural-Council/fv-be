@@ -50,6 +50,7 @@ class DictionaryEntryAdmin(
         "exclude_from_games",
         "exclude_from_kids",
         "related_audio",
+        "related_documents",
         "related_images",
         "related_videos",
         "batch_id",
