@@ -274,7 +274,7 @@ class Audio(MediaBase):
 class Document(MediaBase):
     class Meta:
         verbose_name = _("Document")
-        verbose_name_plural = _("Document")
+        verbose_name_plural = _("Documents")
         rules_permissions = {
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
