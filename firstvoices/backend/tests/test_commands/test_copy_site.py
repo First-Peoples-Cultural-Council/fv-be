@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from django.core.management import call_command
 
@@ -541,4 +543,50 @@ class TestCopySite:
         assert (
             target_imm_label.dictionary_entry.title
             == source_imm_label.dictionary_entry.title
+        )
+
+    def test_missing_audio_original(self, caplog):
+        src_audio = AudioFactory(site=self.source_site)
+
+        with patch("django.core.files.storage.Storage.open") as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            self.call_copy_site_command()
+
+        assert f"Couldn't copy audio file with id: {src_audio.id}" in caplog.text
+
+    def test_missing_image_original(self, caplog):
+        src_image = ImageFactory(site=self.source_site)
+
+        with patch("django.core.files.storage.Storage.open") as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            self.call_copy_site_command()
+
+        assert f"Couldn't copy image file with id: {src_image.id}" in caplog.text
+
+    def test_missing_video_original(self, caplog):
+        src_video = VideoFactory(site=self.source_site)
+
+        with patch("django.core.files.storage.Storage.open") as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            self.call_copy_site_command()
+
+        assert f"Couldn't copy video file with id: {src_video.id}" in caplog.text
+
+    def test_gallery_associated_images_missing_original(self, caplog):
+        src_image = ImageFactory(site=self.source_site)
+
+        src_gallery = GalleryFactory(site=self.source_site, cover_image=src_image)
+        GalleryItemFactory.create(gallery=src_gallery, image=src_image)
+
+        with patch("django.core.files.storage.Storage.open") as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            self.call_copy_site_command()
+
+        assert (
+            f"Missing gallery.cover.image in image map with id: {src_image.id}"
+            in caplog.text
+        )
+        assert (
+            f"Missing gallery_item.image in image map with id: {src_image.id}"
+            in caplog.text
         )

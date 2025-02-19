@@ -210,7 +210,9 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
 
             audio_file.speakers.set(updated_speakers)
         except Exception as e:
-            logger.warning(f"Couldn't copy audio file with id: {audio_file.id}", e)
+            logger.warning(
+                f"Couldn't copy audio file with id: {audio_file.id}", exc_info=e
+            )
 
     # Copy over rest of the people who are not attached as speakers to any audio
     person_list = list(Person.objects.filter(site=source_site, audio_set__isnull=True))
@@ -249,7 +251,9 @@ def copy_images_and_return_map(source_site, target_site, logger):
             image_file._state.adding = True
             image_file.save()
         except Exception as e:
-            logger.warning(f"Couldn't copy image file with id: {image_file.id}", e)
+            logger.warning(
+                f"Couldn't copy image file with id: {image_file.id}", exc_info=e
+            )
 
     return image_map
 
@@ -281,7 +285,9 @@ def copy_videos_and_return_map(source_site, target_site, logger):
             video_file._state.adding = True
             video_file.save()
         except Exception as e:
-            logger.warning(f"Couldn't copy video file with id: {video_file.id}", e)
+            logger.warning(
+                f"Couldn't copy video file with id: {video_file.id}", exc_info=e
+            )
 
     return video_map
 
@@ -292,11 +298,12 @@ def copy_galleries(source_site, target_site, image_map, logger):
         gallery_items = list(gallery.galleryitem_set.all())
 
         gallery.site = target_site
-        if gallery.cover_image.id not in image_map:
+        if gallery.cover_image.id in image_map:
+            gallery.cover_image_id = image_map[gallery.cover_image.id]
+        else:
             logger.warning(
                 f"Missing gallery.cover.image in image map with id: {gallery.cover_image.id}"
             )
-        gallery.cover_image_id = image_map[gallery.cover_image.id]
 
         gallery.id = uuid.uuid4()
         gallery.save()
