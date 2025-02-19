@@ -10,6 +10,7 @@ from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
+from backend.tests.factories import CategoryFactory
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base_api_test import (
     BaseApiTest,
@@ -708,3 +709,55 @@ class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
             "This job has already been confirmed and is currently being imported."
             in response
         )
+
+    def test_validate_action_clears_failed_rows_csv_if_applicable(self):
+        # If the last validation is successful, the failed rows csv should
+        # be updated or deleted
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file("import_job/invalid_m2m.csv", "text/csv"),
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=self.site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        response = json.loads(response.content)
+        import_job_id = response["id"]
+
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, import_job_id],
+        )
+        response = self.client.post(validate_endpoint)
+        assert response.status_code == 202
+
+        # Testing that we get the errors and a failed rows CSV with respective rows
+        import_job = ImportJob.objects.filter(id=import_job_id)[0]
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 1
+        assert error_rows_numbers == [2]  # corresponds to "invalid" category in the csv
+
+        # Adding invalid_category as a category to the site
+        CategoryFactory(title="invalid", site=self.site)
+
+        # Validating again
+        self.client.post(validate_endpoint)
+        import_job = ImportJob.objects.get(id=import_job_id)
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 0
+        assert error_rows_numbers == []
+        assert import_job.failed_rows_csv is None

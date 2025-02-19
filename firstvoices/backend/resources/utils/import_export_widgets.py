@@ -126,6 +126,8 @@ class PartOfSpeechWidget(ForeignKeyWidget):
 
     def clean(self, value, row=None, **kwargs):
         value = value.strip().lower()
+        if not value:
+            return None
         return get_object_or_404(PartOfSpeech, title__iexact=value)
 
 

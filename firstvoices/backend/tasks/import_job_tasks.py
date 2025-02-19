@@ -154,6 +154,9 @@ def import_resource(
         )
         import_job.failed_rows_csv = failed_row_csv_file
         import_job.save()
+    else:
+        # Clearing up failed rows csv, incase it exists, and there are no errors present
+        import_job.failed_rows_csv = None
 
     return report
 
