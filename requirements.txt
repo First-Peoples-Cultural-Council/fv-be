@@ -16,7 +16,7 @@ cryptography==44.0.0
 Django==5.1.6
 django-admin-env-notice==1.0.1
 django-celery-beat==2.7.0
-django-cors-headers==4.6.0
+django-cors-headers==4.7.0
 django-coverage-plugin==3.1.0
 django-debug-toolbar==5.0.1
 django-embed-video==1.4.10
