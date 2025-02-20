@@ -11,6 +11,7 @@ from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tests.factories import (
+    CategoryFactory,
     DictionaryEntryFactory,
     FileFactory,
     ImportJobFactory,
@@ -472,6 +473,51 @@ class TestBulkImportDryRun:
             "This job could not be started as it is either queued, or already running or completed. "
             f"ImportJob id: {import_job.id}." in caplog.text
         )
+
+    def test_failed_rows_csv_is_updated_or_cleared_after_revalidation(self):
+        # If the last validation is successful, the failed rows csv should
+        # be updated or deleted
+        file_content = get_sample_file("import_job/invalid_m2m.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+
+        assert validation_report.error_rows == 1
+        assert error_rows_numbers == [2]
+        assert import_job.failed_rows_csv is not None
+
+        # Adding invalid_category as a category to the site
+        CategoryFactory.create(title="invalid", site=self.site)
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+
+        assert validation_report.error_rows == 0
+        assert error_rows_numbers == []
+        assert import_job.failed_rows_csv is None
 
 
 @pytest.mark.django_db
