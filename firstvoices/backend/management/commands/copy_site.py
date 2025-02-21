@@ -119,49 +119,16 @@ def copy_categories_and_return_map(source_site, target_site, user):
 
     # Removing auto-generated categories
     Category.objects.filter(site=target_site).delete()
-    # Copy over all the parent categories
-    categories = list(
-        Category.objects.filter(site=source_site, children__isnull=False).distinct()
-    )
-    for category in categories:
-        child_categories = list(category.children.all())
-        for child_category in child_categories:
-            source_category_id = child_category.id
-            target_category_id = uuid.uuid4()
-            category_map[source_category_id] = target_category_id
 
-            child_category.id = target_category_id
-            child_category.site = target_site
-            child_category.created_by = user
-            child_category.last_modified_by = user
-            child_category.save()
-
-        source_category_id = category.id
-        target_category_id = uuid.uuid4()
-        category_map[source_category_id] = target_category_id
-
-        category.id = target_category_id
-        category.site = target_site
-        category.created_by = user
-        category.last_modified_by = user
-        category.save()
-
-        for child_category in child_categories:
-            child_category.parent = category
-            child_category.created_by = user
-            child_category.last_modified_by = user
-            child_category.save()
-
-    # Updated category list, copying over rest of categories
-    target_site_copied_over_categories = list(
-        Category.objects.filter(site=target_site).values_list("title", flat=True)
-    )
+    # Copying over parent categories first, then rest
     categories = list(
         Category.objects.filter(site=source_site)
-        .exclude(title__in=target_site_copied_over_categories)
+        .annotate(children_count=Count("children"))
+        .order_by("-children_count")
         .distinct()
     )
     for category in categories:
+        current_parent_id = category.parent.id if category.parent else None
         source_category_id = category.id
         target_category_id = uuid.uuid4()
         category_map[source_category_id] = target_category_id
@@ -170,6 +137,10 @@ def copy_categories_and_return_map(source_site, target_site, user):
         category.site = target_site
         category.created_by = user
         category.last_modified_by = user
+
+        if current_parent_id:
+            category.parent_id = category_map[current_parent_id]
+
         category.save()
 
     return category_map
@@ -178,18 +149,18 @@ def copy_categories_and_return_map(source_site, target_site, user):
 def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
     audio_map = {}
 
-    audio_files = list(Audio.objects.filter(site=source_site))
-    for audio_file in audio_files:
+    audio_instances = list(Audio.objects.filter(site=source_site))
+    for audio in audio_instances:
         try:
             target_file = File(
-                content=UploadedFile(audio_file.original.content.file),
+                content=UploadedFile(audio.original.content.file),
                 site=target_site,
             )
             target_file.save()
-            audio_file.original = target_file
+            audio.original = target_file
 
             # Speakers
-            current_speakers = list(audio_file.speakers.all())
+            current_speakers = list(audio.speakers.all())
             updated_speakers = []
             for person in current_speakers:
                 person.id = uuid.uuid4()
@@ -197,22 +168,20 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
                 person.save()
                 updated_speakers.append(person)
 
-            audio_file.site = target_site
+            audio.site = target_site
 
-            source_audio_id = audio_file.id
+            source_audio_id = audio.id
             target_audio_id = uuid.uuid4()
             audio_map[source_audio_id] = target_audio_id
 
-            audio_file.id = target_audio_id
+            audio.id = target_audio_id
             # To circumvent checks added to media models to prevent modification of original file
-            audio_file._state.adding = True
-            audio_file.save()
+            audio._state.adding = True
+            audio.save()
 
-            audio_file.speakers.set(updated_speakers)
+            audio.speakers.set(updated_speakers)
         except Exception as e:
-            logger.warning(
-                f"Couldn't copy audio file with id: {audio_file.id}", exc_info=e
-            )
+            logger.warning(f"Couldn't copy audio file with id: {audio.id}", exc_info=e)
 
     # Copy over rest of the people who are not attached as speakers to any audio
     person_list = list(Person.objects.filter(site=source_site, audio_set__isnull=True))
@@ -227,33 +196,31 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
 def copy_images_and_return_map(source_site, target_site, logger):
     image_map = {}
 
-    image_files = list(Image.objects.filter(site=source_site))
-    for image_file in image_files:
+    images = list(Image.objects.filter(site=source_site))
+    for image in images:
         try:
             # Content
             target_file = ImageFile(
-                content=UploadedFile(image_file.original.content.file),
+                content=UploadedFile(image.original.content.file),
                 site=target_site,
             )
             target_file.save()
-            image_file.original = target_file
+            image.original = target_file
 
-            image_file.thumbnail = None
-            image_file.small = None
-            image_file.medium = None
-            image_file.site = target_site
+            image.thumbnail = None
+            image.small = None
+            image.medium = None
+            image.site = target_site
 
-            source_img_id = image_file.id
+            source_img_id = image.id
             target_img_id = uuid.uuid4()
             image_map[source_img_id] = target_img_id
 
-            image_file.id = target_img_id
-            image_file._state.adding = True
-            image_file.save()
+            image.id = target_img_id
+            image._state.adding = True
+            image.save()
         except Exception as e:
-            logger.warning(
-                f"Couldn't copy image file with id: {image_file.id}", exc_info=e
-            )
+            logger.warning(f"Couldn't copy image file with id: {image.id}", exc_info=e)
 
     return image_map
 
@@ -261,33 +228,31 @@ def copy_images_and_return_map(source_site, target_site, logger):
 def copy_videos_and_return_map(source_site, target_site, logger):
     video_map = {}
 
-    video_files = list(Video.objects.filter(site=source_site))
-    for video_file in video_files:
+    videos = list(Video.objects.filter(site=source_site))
+    for video in videos:
         try:
             # Content
             target_file = VideoFile(
-                content=UploadedFile(video_file.original.content.file),
+                content=UploadedFile(video.original.content.file),
                 site=target_site,
             )
             target_file.save()
-            video_file.original = target_file
+            video.original = target_file
 
-            video_file.thumbnail = None
-            video_file.small = None
-            video_file.medium = None
-            video_file.site = target_site
+            video.thumbnail = None
+            video.small = None
+            video.medium = None
+            video.site = target_site
 
-            source_video_id = video_file.id
+            source_video_id = video.id
             target_video_id = uuid.uuid4()
             video_map[source_video_id] = target_video_id
 
-            video_file.id = target_video_id
-            video_file._state.adding = True
-            video_file.save()
+            video.id = target_video_id
+            video._state.adding = True
+            video.save()
         except Exception as e:
-            logger.warning(
-                f"Couldn't copy video file with id: {video_file.id}", exc_info=e
-            )
+            logger.warning(f"Couldn't copy video file with id: {video.id}", exc_info=e)
 
     return video_map
 

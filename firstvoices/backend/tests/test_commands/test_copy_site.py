@@ -208,15 +208,19 @@ class TestCopySite:
         Category.objects.filter(site=self.source_site).delete()
 
         # Adding new categories
-        source_parent_category = ParentCategoryFactory(site=self.source_site)
+        source_parent_category = ParentCategoryFactory(
+            site=self.source_site, title="parent_1"
+        )
         source_child_category_1 = ChildCategoryFactory(
-            site=self.source_site, parent=source_parent_category
+            site=self.source_site, parent=source_parent_category, title="child_1"
         )
         source_child_category_2 = ChildCategoryFactory(
-            site=self.source_site, parent=source_parent_category
+            site=self.source_site, parent=source_parent_category, title="child_2"
         )
 
-        source_extra_category = ParentCategoryFactory(site=self.source_site)
+        source_extra_category = ParentCategoryFactory(
+            site=self.source_site, title="without_children"
+        )
 
         self.call_copy_site_command()
 
