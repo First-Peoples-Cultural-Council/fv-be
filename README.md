@@ -376,8 +376,10 @@ virtual environment setup, execute `celery -A firstvoices worker -B` in the `./f
 
 ## Management Commands
 The following management commands are available to run from the `firstvoices` directory:
+Note: use `python manage.py {command} -h` to list all the args and their use.
 - `python manage.py convert_lyrics_draftjs_to_text` - Converts all lyric text and translations from draftjs to plain text.
 - `python manage.py update_missing_media_metadata` - Queues up asynchronous Celery workers which will update the metadata on any ImageFile, VideoFile, and File (audio) instances that are missing metadata.
+- `python manage.py copy_site` - Copies all content (except for widgets and pages) over to a new site.
 
 ## Useful Local URLs On Startup
 
