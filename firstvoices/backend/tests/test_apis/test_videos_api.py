@@ -41,16 +41,17 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
 
     @pytest.mark.django_db
     def test_usages_field_extra_fields(self):
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
-
-        custom_page = factories.SitePageFactory(
-            site=expected_data["site"], banner_video=expected_data["media_instance"]
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        media_instance = self.create_minimal_instance(
+            site, visibility=Visibility.PUBLIC
         )
+
+        custom_page = factories.SitePageFactory(site=site, banner_video=media_instance)
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 
@@ -61,22 +62,25 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
         assert len(custom_pages) == 1
         assert custom_pages[0]["id"] == str(custom_page.id)
 
-        assert response_data["usage"]["total"] == expected_data["total"] + 1
+        assert response_data["usage"]["total"] == 1
 
     @pytest.mark.django_db
     def test_usages_field_permissions_extra_fields(self):
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        media_instance = self.create_minimal_instance(
+            site, visibility=Visibility.PUBLIC
+        )
 
         factories.SitePageFactory(
-            site=expected_data["site"],
-            banner_video=expected_data["media_instance"],
+            site=site,
+            banner_video=media_instance,
             visibility=Visibility.TEAM,
         )
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 
