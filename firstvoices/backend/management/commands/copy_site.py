@@ -56,16 +56,17 @@ def create_new_site(source_site, target_site_slug, user):
     return new_site
 
 
-def copy_site_features(source_site, target_site):
+def copy_site_features(source_site, target_site, user):
     site_features = list(SiteFeature.objects.filter(site=source_site))
     for site_feature in site_features:
         site_feature.id = uuid.uuid4()
         site_feature.site = target_site
+        site_feature.last_modified_by = user
         site_feature.save()
 
 
 def copy_all_characters_and_return_map(
-    source_site, target_site, audio_map, image_map, video_map
+    source_site, target_site, user, audio_map, image_map, video_map
 ):
     character_map = {}
     characters = list(Character.objects.filter(site=source_site))
@@ -83,6 +84,7 @@ def copy_all_characters_and_return_map(
 
         character.id = target_char_id
         character.site = target_site
+        character.last_modified_by = user
         character.save()
 
         copy_related_media(character, source_media, audio_map, image_map, video_map)
@@ -95,22 +97,25 @@ def copy_all_characters_and_return_map(
         variant.id = uuid.uuid4()
         variant.site = target_site
         variant.base_character_id = character_map[source_base_character.id]
+        variant.last_modified_by = user
         variant.save()
 
     ignored_characters = list(IgnoredCharacter.objects.filter(site=source_site))
     for ignored_character in ignored_characters:
         ignored_character.id = uuid.uuid4()
         ignored_character.site = target_site
+        ignored_character.last_modified_by = user
         ignored_character.save()
 
     return character_map
 
 
-def copy_alphabet(source_site, target_site):
+def copy_alphabet(source_site, target_site, user):
     alphabets = list(Alphabet.objects.filter(site=source_site))
     for alphabet in alphabets:
         alphabet.id = uuid.uuid4()
         alphabet.site = target_site
+        alphabet.last_modified_by = user
         alphabet.save()
 
 
@@ -146,7 +151,7 @@ def copy_categories_and_return_map(source_site, target_site, user):
     return category_map
 
 
-def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
+def copy_audio_and_speakers_and_return_map(source_site, target_site, user, logger):
     audio_map = {}
 
     audio_instances = list(Audio.objects.filter(site=source_site))
@@ -155,6 +160,8 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
             target_file = File(
                 content=UploadedFile(audio.original.content.file),
                 site=target_site,
+                created_by=user,
+                last_modified_by=user,
             )
             target_file.save()
             audio.original = target_file
@@ -165,6 +172,7 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
             for person in current_speakers:
                 person.id = uuid.uuid4()
                 person.site = target_site
+                person.last_modified_by = user
                 person.save()
                 updated_speakers.append(person)
 
@@ -177,6 +185,7 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
             audio.id = target_audio_id
             # To circumvent checks added to media models to prevent modification of original file
             audio._state.adding = True
+            audio.last_modified_by = user
             audio.save()
 
             audio.speakers.set(updated_speakers)
@@ -188,12 +197,13 @@ def copy_audio_and_speakers_and_return_map(source_site, target_site, logger):
     for person in person_list:
         person.id = uuid.uuid4()
         person.site = target_site
+        person.last_modified_by = user
         person.save()
 
     return audio_map
 
 
-def copy_images_and_return_map(source_site, target_site, logger):
+def copy_images_and_return_map(source_site, target_site, user, logger):
     image_map = {}
 
     images = list(Image.objects.filter(site=source_site))
@@ -203,6 +213,8 @@ def copy_images_and_return_map(source_site, target_site, logger):
             target_file = ImageFile(
                 content=UploadedFile(image.original.content.file),
                 site=target_site,
+                created_by=user,
+                last_modified_by=user,
             )
             target_file.save()
             image.original = target_file
@@ -218,6 +230,7 @@ def copy_images_and_return_map(source_site, target_site, logger):
 
             image.id = target_img_id
             image._state.adding = True
+            image.last_modified_by = user
             image.save()
         except Exception as e:
             logger.warning(f"Couldn't copy image file with id: {image.id}", exc_info=e)
@@ -225,7 +238,7 @@ def copy_images_and_return_map(source_site, target_site, logger):
     return image_map
 
 
-def copy_videos_and_return_map(source_site, target_site, logger):
+def copy_videos_and_return_map(source_site, target_site, user, logger):
     video_map = {}
 
     videos = list(Video.objects.filter(site=source_site))
@@ -235,6 +248,8 @@ def copy_videos_and_return_map(source_site, target_site, logger):
             target_file = VideoFile(
                 content=UploadedFile(video.original.content.file),
                 site=target_site,
+                created_by=user,
+                last_modified_by=user,
             )
             target_file.save()
             video.original = target_file
@@ -250,6 +265,7 @@ def copy_videos_and_return_map(source_site, target_site, logger):
 
             video.id = target_video_id
             video._state.adding = True
+            video.last_modified_by = user
             video.save()
         except Exception as e:
             logger.warning(f"Couldn't copy video file with id: {video.id}", exc_info=e)
@@ -257,7 +273,7 @@ def copy_videos_and_return_map(source_site, target_site, logger):
     return video_map
 
 
-def copy_galleries(source_site, target_site, image_map, logger):
+def copy_galleries(source_site, target_site, user, image_map, logger):
     galleries = list(Gallery.objects.filter(site=source_site))
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
@@ -271,6 +287,7 @@ def copy_galleries(source_site, target_site, image_map, logger):
             )
 
         gallery.id = uuid.uuid4()
+        gallery.last_modified_by = user
         gallery.save()
 
         updated_gallery_items = []
@@ -285,6 +302,8 @@ def copy_galleries(source_site, target_site, image_map, logger):
                 gallery=gallery,
                 image_id=image_map[gallery_item.image.id],
                 ordering=gallery_item.ordering,
+                created_by=user,
+                last_modified_by=user,
             )
             new_gallery_item.save()
             updated_gallery_items.append(new_gallery_item)
@@ -321,7 +340,7 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
     instance.save()
 
 
-def copy_songs(source_site, target_site, audio_map, image_map, video_map):
+def copy_songs(source_site, target_site, user, audio_map, image_map, video_map):
     songs = list(Song.objects.filter(site=source_site))
     for song in songs:
         source_lyrics = list(song.lyrics.all())
@@ -333,18 +352,20 @@ def copy_songs(source_site, target_site, audio_map, image_map, video_map):
 
         song.id = uuid.uuid4()
         song.site = target_site
+        song.last_modified_by = user
         song.save()
 
         for lyric in source_lyrics:
             lyric.id = uuid.uuid4()
             lyric.song = song
+            lyric.last_modified_by = user
             lyric.save()
 
         copy_related_media(song, source_media, audio_map, image_map, video_map)
         song.save()
 
 
-def copy_stories(source_site, target_site, audio_map, image_map, video_map):
+def copy_stories(source_site, target_site, user, audio_map, image_map, video_map):
     stories = list(Story.objects.filter(site=source_site))
     for story in stories:
         source_pages = list(story.pages.all())
@@ -356,6 +377,7 @@ def copy_stories(source_site, target_site, audio_map, image_map, video_map):
 
         story.id = uuid.uuid4()
         story.site = target_site
+        story.last_modified_by = user
         story.save()
 
         copy_related_media(story, source_media, audio_map, image_map, video_map)
@@ -370,6 +392,7 @@ def copy_stories(source_site, target_site, audio_map, image_map, video_map):
             page.id = uuid.uuid4()
             page.site = target_site
             page.story = story
+            page.last_modified_by = user
             page.save()
 
             copy_related_media(page, source_media, audio_map, image_map, video_map)
@@ -379,6 +402,7 @@ def copy_stories(source_site, target_site, audio_map, image_map, video_map):
 def copy_dictionary_entries_and_return_map(
     source_site,
     target_site,
+    user,
     category_map,
     character_map,
     audio_map,
@@ -411,6 +435,7 @@ def copy_dictionary_entries_and_return_map(
         entry.site = target_site
         entry.batch_id = ""
         entry.import_job = None
+        entry.last_modified_by = user
         entry.save()
 
         updated_categories = [
@@ -436,7 +461,7 @@ def copy_dictionary_entries_and_return_map(
     return dictionary_entry_map
 
 
-def copy_immersion_labels(source_site, target_site, dictionary_entry_map):
+def copy_immersion_labels(source_site, target_site, user, dictionary_entry_map):
     imm_labels = list(ImmersionLabel.objects.filter(site=source_site))
     for imm_label in imm_labels:
         imm_label.id = uuid.uuid4()
@@ -445,37 +470,41 @@ def copy_immersion_labels(source_site, target_site, dictionary_entry_map):
         source_dictionary_entry = imm_label.dictionary_entry
         imm_label.dictionary_entry_id = dictionary_entry_map[source_dictionary_entry.id]
 
+        imm_label.last_modified_by = user
         imm_label.save()
 
 
 def copy_related_objects(source_site, target_site, user, logger):
-    copy_site_features(source_site, target_site)
+    copy_site_features(source_site, target_site, user)
     logger.info("Site features copied.")
 
     category_map = copy_categories_and_return_map(source_site, target_site, user)
     logger.info("Categories copied.")
 
-    audio_map = copy_audio_and_speakers_and_return_map(source_site, target_site, logger)
+    audio_map = copy_audio_and_speakers_and_return_map(
+        source_site, target_site, user, logger
+    )
     logger.info("Audio and speakers copied.")
-    image_map = copy_images_and_return_map(source_site, target_site, logger)
+    image_map = copy_images_and_return_map(source_site, target_site, user, logger)
     logger.info("Images copied.")
-    video_map = copy_videos_and_return_map(source_site, target_site, logger)
+    video_map = copy_videos_and_return_map(source_site, target_site, user, logger)
     logger.info("Videos copied.")
 
     character_map = copy_all_characters_and_return_map(
-        source_site, target_site, audio_map, image_map, video_map
+        source_site, target_site, user, audio_map, image_map, video_map
     )
-    copy_alphabet(source_site, target_site)
+    copy_alphabet(source_site, target_site, user)
     logger.info("Characters and alphabet copied.")
 
-    copy_galleries(source_site, target_site, image_map, logger)
-    copy_songs(source_site, target_site, audio_map, image_map, video_map)
-    copy_stories(source_site, target_site, audio_map, image_map, video_map)
+    copy_galleries(source_site, target_site, user, image_map, logger)
+    copy_songs(source_site, target_site, user, audio_map, image_map, video_map)
+    copy_stories(source_site, target_site, user, audio_map, image_map, video_map)
     logger.info("Galleries, songs and stories copied.")
 
     dictionary_entry_map = copy_dictionary_entries_and_return_map(
         source_site,
         target_site,
+        user,
         category_map,
         character_map,
         audio_map,
@@ -483,7 +512,7 @@ def copy_related_objects(source_site, target_site, user, logger):
         video_map,
     )
 
-    copy_immersion_labels(source_site, target_site, dictionary_entry_map)
+    copy_immersion_labels(source_site, target_site, user, dictionary_entry_map)
     logger.info("Dictionary entries and immersion labels copied.")
 
 
