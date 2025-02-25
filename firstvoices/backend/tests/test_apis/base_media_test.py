@@ -774,60 +774,53 @@ class BaseMediaApiTest(
         )
         assert response.status_code == 403
 
-    def add_related_media_to_objects(self, visibility=Visibility.PUBLIC):
-        if visibility == Visibility.TEAM:
-            site = self.create_site_with_non_member(Visibility.PUBLIC)
-        else:
-            site = self.create_site_with_app_admin(Visibility.PUBLIC)
-        instance = self.create_minimal_instance(site, visibility=Visibility.PUBLIC)
+    def get_media_instance_that_has_usages(self, site, visibility=Visibility.PUBLIC):
+        """Create a media instance and add that instance to 5 separate entries
+        Returns: media instance e.g. Video, Image, Audio, or Document
+        """
+        media_instance = self.create_minimal_instance(
+            site, visibility=Visibility.PUBLIC
+        )
 
-        def add_item(target):
+        def add_media_instance_to(target):
             related_list = getattr(target, self.related_key)
-            related_list.add(instance)
+            related_list.add(media_instance)
 
         character = factories.CharacterFactory(site=site, title="a", sort_order=1)
-        add_item(character)
+        add_media_instance_to(character)
 
         dict_entry = factories.DictionaryEntryFactory(site=site, visibility=visibility)
-        add_item(dict_entry)
+        add_media_instance_to(dict_entry)
 
         song = factories.SongFactory(site=site, visibility=visibility)
-        add_item(song)
+        add_media_instance_to(song)
 
         story_1 = factories.StoryFactory(site=site, visibility=visibility)
-        add_item(story_1)
-
-        story_page_1 = factories.StoryPageFactory(
+        story_1_page = factories.StoryPageFactory(
             site=site, story=story_1, visibility=visibility
         )
-        add_item(story_page_1)
+        add_media_instance_to(story_1)
+        add_media_instance_to(story_1_page)
 
         story_2 = factories.StoryFactory(site=site, visibility=visibility)
-        story_page_2 = factories.StoryPageFactory(
+        story_2_page = factories.StoryPageFactory(
             site=site, story=story_2, visibility=visibility
         )
-        add_item(story_page_2)
+        add_media_instance_to(story_2_page)
 
-        total = 5
-
-        return {
-            "site": site,
-            "media_instance": instance,
-            "character": character,
-            "dict_entry": dict_entry,
-            "song": song,
-            "stories": [story_1, story_2],
-            "total": total,
-        }
+        return media_instance
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        media_instance = self.get_media_instance_that_has_usages(
+            site, visibility=Visibility.PUBLIC
+        )
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 
@@ -837,40 +830,48 @@ class BaseMediaApiTest(
         # usage in characters
         character_usage = response_data["usage"]["characters"]
         assert len(character_usage) == 1
-        assert character_usage[0]["id"] == str(expected_data["character"].id)
+        assert character_usage[0]["id"] == str(media_instance.character_set.first().id)
 
         # usage in dictionary entries
         dict_entry_usage = response_data["usage"]["dictionaryEntries"]
         assert len(dict_entry_usage) == 1
-        assert dict_entry_usage[0]["id"] == str(expected_data["dict_entry"].id)
+        assert dict_entry_usage[0]["id"] == str(
+            media_instance.dictionaryentry_set.first().id
+        )
 
         # usage in songs
         song_usage = response_data["usage"]["songs"]
         assert len(song_usage) == 1
-        assert song_usage[0]["id"] == str(expected_data["song"].id)
+        assert song_usage[0]["id"] == str(media_instance.song_set.first().id)
 
         # usage in stories
         # Story pages point to the story, so the response here should only contain id's of both stories exactly once
         story_usage = response_data["usage"]["stories"]
-        expected_stories_ids = [
-            str(expected_data["stories"][0].id),
-            str(expected_data["stories"][1].id),
-        ]
+        expected_stories_ids = set()
 
-        assert len(story_usage) == len(expected_data["stories"])
+        for e in media_instance.story_set.all():
+            expected_stories_ids.add(str(e.id))
+
+        for e in media_instance.storypage_set.all():
+            expected_stories_ids.add(str(e.story_id))
+
+        assert len(story_usage) == len(expected_stories_ids)
         assert story_usage[0]["id"] in expected_stories_ids
         assert story_usage[1]["id"] in expected_stories_ids
 
-        assert response_data["usage"]["total"] == expected_data["total"]
+        assert response_data["usage"]["total"] == 5
 
     @pytest.mark.django_db
     def test_usages_field_permissions(self):
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        media_instance = self.get_media_instance_that_has_usages(
+            site, visibility=Visibility.TEAM
+        )
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 
