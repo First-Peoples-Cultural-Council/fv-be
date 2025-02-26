@@ -760,7 +760,7 @@ class ControlledSiteContentUpdateApiTestMixin:
         self.client.force_authenticate(user=user)
 
         data = self.get_valid_data(site)
-        data["visibility"] = "team"
+        data["visibility"] = Visibility.TEAM.name
 
         response = self.client.put(
             self.get_detail_endpoint(
@@ -773,7 +773,10 @@ class ControlledSiteContentUpdateApiTestMixin:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_update_assistant_permissions_invalid(self):
+    @pytest.mark.parametrize(
+        "visibility", [Visibility.MEMBERS.name, Visibility.PUBLIC.name]
+    )
+    def test_update_assistant_permissions_invalid(self, visibility):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
         )
@@ -783,7 +786,7 @@ class ControlledSiteContentUpdateApiTestMixin:
         self.client.force_authenticate(user=user)
 
         data = self.get_valid_data(site)
-        data["visibility"] = "public"
+        data["visibility"] = visibility
 
         response = self.client.put(
             self.get_detail_endpoint(
@@ -794,6 +797,32 @@ class ControlledSiteContentUpdateApiTestMixin:
         )
 
         assert response.status_code == 403
+
+        @pytest.mark.django_db
+        @pytest.mark.parametrize("visibility", [None, Visibility.TEAM.name])
+        def test_patch_assistant_permissions_valid(self, visibility):
+            site, user = factories.get_site_with_member(
+                site_visibility=Visibility.PUBLIC, user_role=Role.ASSISTANT
+            )
+
+            instance = self.create_minimal_instance(
+                site=site, visibility=Visibility.TEAM
+            )
+
+            self.client.force_authenticate(user=user)
+
+            data = self.get_valid_data(site)
+            data["visibility"] = visibility
+
+            response = self.client.patch(
+                self.get_detail_endpoint(
+                    key=self.get_lookup_key(instance), site_slug=site.slug
+                ),
+                data=self.format_upload_data(data),
+                content_type=self.content_type,
+            )
+
+            assert response.status_code == 200
 
 
 class SiteContentDestroyApiTestMixin:
