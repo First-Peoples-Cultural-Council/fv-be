@@ -19,10 +19,11 @@ class TestDocumentEndpoint(BaseMediaApiTest):
     sample_filetype = "application/pdf"
     model = Document
     model_factory = factories.DocumentFactory
+    related_key = "related_documents"
     content_type_json = "application/json"
 
     def get_expected_response(self, instance, site, detail_view=False):
-        return self.get_expected_document_data(instance)
+        return self.get_expected_document_data(instance, detail_view=detail_view)
 
     @pytest.mark.django_db
     def test_detail(self):
@@ -35,7 +36,7 @@ class TestDocumentEndpoint(BaseMediaApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data == self.get_expected_document_data(instance)
+        assert response_data == self.get_expected_document_data(instance, True)
 
     def assert_created_response(
         self, expected_data, actual_response, detail_view=False
