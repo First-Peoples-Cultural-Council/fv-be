@@ -25,6 +25,30 @@ class TestConvertDraftjsToHtml:
         }
         return json.dumps(draftjs_data)
 
+    @staticmethod
+    def make_draftjs_content_with_entity(text, entity_type, entity_data):
+        draftjs_data = {
+            "blocks": [
+                {
+                    "key": "1",
+                    "text": text,
+                    "type": "unstyled",
+                    "depth": 0,
+                    "inlineStyleRanges": [],
+                    "entityRanges": [],
+                    "data": {},
+                }
+            ],
+            "entityMap": {
+                "0": {
+                    "type": entity_type,
+                    "mutability": "MUTABLE",
+                    "data": entity_data,
+                }
+            },
+        }
+        return json.dumps(draftjs_data)
+
     @pytest.mark.django_db
     def test_convert_draftjs_to_html_invalid_sites(self, caplog):
         call_command("convert_draftjs_to_html", site_slugs="invalid-site")
@@ -156,4 +180,64 @@ class TestConvertDraftjsToHtml:
         assert song2.introduction == "<p>Song introduction</p>"
         assert song2.introduction_translation == "<p>Translated song introduction</p>"
 
+        assert "Conversion complete." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_draftjs_to_html_with_entities(self, caplog):
+        site = factories.SiteFactory.create()
+
+        song = factories.SongFactory.create(site=site)
+        song.introduction = self.make_draftjs_content_with_entity(
+            "Song introduction",
+            "LINK",
+            {"url": "https://www.firstvoices.com"},
+        )
+        song.introduction_translation = self.make_draftjs_content_with_entity(
+            "Translated song introduction",
+            "IMAGE",
+            {"src": "https://www.firstvoices.com/image.jpg"},
+        )
+        song.save()
+
+        call_command("convert_draftjs_to_html", site_slugs=site.slug)
+
+        song.refresh_from_db()
+
+        assert song.introduction == "<p>Song introduction</p>"
+        assert song.introduction_translation == "<p>Translated song introduction</p>"
+        assert song.notes == [
+            "https://www.firstvoices.com",
+            "https://www.firstvoices.com/image.jpg",
+        ]
+
+        assert "Conversion complete." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_draftjs_to_html_with_entities_widget(self, caplog):
+        site = factories.SiteFactory.create()
+
+        widget = factories.SiteWidgetFactory.create(site=site)
+        widget_setting = factories.WidgetSettingsFactory.create(
+            widget=widget, key="textWithFormatting"
+        )
+        widget_setting.value = self.make_draftjs_content_with_entity(
+            "Widget setting value",
+            "LINK",
+            {"url": "https://www.firstvoices.com"},
+        )
+
+        widget_setting.save()
+
+        call_command("convert_draftjs_to_html", site_slugs=site.slug)
+
+        widget_setting.refresh_from_db()
+
+        assert widget_setting.value == "<p>Widget setting value</p>"
+
+        assert (
+            f"Widget setting {widget_setting.id} for widget {widget.id} "
+            f"contains entities: ['https://www.firstvoices.com']"
+            f"\nPlease check to see if these URLs have content that needs to be migrated."
+            in caplog.text
+        )
         assert "Conversion complete." in caplog.text

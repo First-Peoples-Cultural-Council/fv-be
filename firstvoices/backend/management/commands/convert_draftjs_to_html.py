@@ -81,7 +81,7 @@ class Command(BaseCommand):
                 logger = logging.getLogger(__name__)
                 logger.warning(
                     f"Widget setting {setting.id} for widget {setting.widget.id} contains entities: {entity_urls}"
-                    "Please check to see if these URLs have content that needs to be migrated."
+                    "\nPlease check to see if these URLs have content that needs to be migrated."
                 )
             setting.value = self.convert_draftjs_to_html(value)
             setting.save(set_modified_date=False)
