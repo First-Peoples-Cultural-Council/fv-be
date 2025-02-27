@@ -48,8 +48,9 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         assert doc.type == instance.type
 
         assert not doc.has_audio
-        assert not doc.has_video
+        assert not doc.has_document
         assert not doc.has_image
+        assert not doc.has_video
         assert not doc.has_categories
         assert not doc.has_related_entries
 
@@ -103,17 +104,22 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
     @pytest.mark.django_db
     def test_create_document_related_media(self):
         audio = factories.AudioFactory.create()
-        video = factories.VideoFactory.create()
+        document = factories.DocumentFactory.create()
         image = factories.ImageFactory.create()
+        video = factories.VideoFactory.create()
         instance = self.factory.create(
-            related_audio=[audio], related_videos=[video], related_images=[image]
+            related_audio=[audio],
+            related_documents=[document],
+            related_images=[image],
+            related_videos=[video],
         )
 
         doc = self.manager.create_index_document(instance)
 
         assert doc.has_audio
-        assert doc.has_video
+        assert doc.has_document
         assert doc.has_image
+        assert doc.has_video
 
     @pytest.mark.django_db
     def test_create_document_related_entries(self):

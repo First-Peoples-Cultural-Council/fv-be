@@ -36,39 +36,43 @@ class TestTypesFilter:
         [
             (
                 ["word"],
-                "'must_not': [{'terms': {'type': ['audio', 'image', 'video', 'phrase']}}]}",
+                "'must_not': [{'terms': {'type': ['audio', 'document', 'image', 'video', 'phrase']}}]}",
             ),
             (
                 ["phrase"],
-                "'must_not': [{'terms': {'type': ['audio', 'image', 'video', 'word']}}]}",
-            ),
-            (
-                ["image"],
-                "'must_not': [{'terms': {'type': ['audio', 'video', 'word', 'phrase']}}]}",
+                "'must_not': [{'terms': {'type': ['audio', 'document', 'image', 'video', 'word']}}]}",
             ),
             (
                 ["audio"],
-                "'must_not': [{'terms': {'type': ['image', 'video', 'word', 'phrase']}}]}",
+                "'must_not': [{'terms': {'type': ['document', 'image', 'video', 'word', 'phrase']}}]}",
+            ),
+            (
+                ["document"],
+                "'must_not': [{'terms': {'type': ['audio', 'image', 'video', 'word', 'phrase']}}]}",
+            ),
+            (
+                ["image"],
+                "'must_not': [{'terms': {'type': ['audio', 'document', 'video', 'word', 'phrase']}}]}",
             ),
             (
                 ["video"],
-                "'must_not': [{'terms': {'type': ['audio', 'image', 'word', 'phrase']}}]}",
+                "'must_not': [{'terms': {'type': ['audio', 'document', 'image', 'word', 'phrase']}}]}",
             ),
             (
                 ["word", "audio"],
-                "'must_not': [{'terms': {'type': ['image', 'video', 'phrase']}}]}",
+                "'must_not': [{'terms': {'type': ['document', 'image', 'video', 'phrase']}}]}",
             ),
             (
                 ["word", "phrase"],
-                "'must_not': [{'terms': {'type': ['audio', 'image', 'video']}}]}",
+                "'must_not': [{'terms': {'type': ['audio', 'document', 'image', 'video']}}]}",
             ),
             (
-                ["audio", "image", "video"],
+                ["audio", "document", "image", "video"],
                 "'must_not': [{'terms': {'type': ['word', 'phrase']}}]}",
             ),
             (
                 ["audio", "phrase"],
-                "'must_not': [{'terms': {'type': ['image', 'video', 'word']}}]}",
+                "'must_not': [{'terms': {'type': ['document', 'image', 'video', 'word']}}]}",
             ),
         ],
     )
@@ -80,7 +84,8 @@ class TestTypesFilter:
 
     def test_all_types_supplied(self):
         search_query = get_search_query(
-            types=["audio", "image", "video", "word", "phrase"], user=AnonymousUser()
+            types=["audio", "document", "image", "video", "word", "phrase"],
+            user=AnonymousUser(),
         )
         search_query = search_query.to_dict()
 
@@ -254,7 +259,10 @@ class TestVisibilityParam:
 
 
 class TestHasMediaParams:
-    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    HAS_MEDIA = "has_media"
+    HAS_MEDIA_LIST = ["has_audio", "has_document", "has_image", "has_video"]
+
+    @pytest.mark.parametrize(HAS_MEDIA, HAS_MEDIA_LIST)
     def test_default(self, has_media):
         search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
@@ -263,7 +271,7 @@ class TestHasMediaParams:
             search_query["query"]["bool"]["filter"]
         )
 
-    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    @pytest.mark.parametrize(HAS_MEDIA, HAS_MEDIA_LIST)
     def test_has_media_true(self, has_media):
         expected_true_filter = f"{{'term': {{'{has_media}': True}}}}"
         search_query = get_search_query(**{has_media: True}, user=AnonymousUser())
@@ -271,7 +279,7 @@ class TestHasMediaParams:
 
         assert expected_true_filter in str(search_query)
 
-    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    @pytest.mark.parametrize(HAS_MEDIA, HAS_MEDIA_LIST)
     def test_has_media_false(self, has_media):
         expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
         search_query = get_search_query(**{has_media: False}, user=AnonymousUser())
@@ -279,7 +287,7 @@ class TestHasMediaParams:
 
         assert expected_false_filter in str(search_query)
 
-    @pytest.mark.parametrize("has_media", ["has_video", "has_audio", "has_image"])
+    @pytest.mark.parametrize(HAS_MEDIA, HAS_MEDIA_LIST)
     def test_has_media_default(self, has_media):
         expected_true_filter = f"{{'term': {{'{has_media}': True}}}}"
         expected_false_filter = f"{{'term': {{'{has_media}': False}}}}"
