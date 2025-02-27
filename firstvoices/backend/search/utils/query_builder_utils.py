@@ -204,6 +204,10 @@ def get_has_audio_query(has_audio):
     return Q("bool", filter=[Q("term", has_audio=has_audio)])
 
 
+def get_has_document_query(has_document):
+    return Q("bool", filter=[Q("term", has_document=has_document)])
+
+
 def get_has_image_query(has_image):
     return Q("bool", filter=[Q("term", has_image=has_image)])
 

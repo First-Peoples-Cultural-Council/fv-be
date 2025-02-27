@@ -9,6 +9,7 @@ from backend.search.utils.query_builder_utils import (
     get_games_query,
     get_has_audio_query,
     get_has_categories_query,
+    get_has_document_query,
     get_has_image_query,
     get_has_related_entries_query,
     get_has_site_feature_query,
@@ -47,8 +48,9 @@ def get_search_query(
     games=None,
     visibility="",
     has_audio=None,
-    has_video=None,
+    has_document=None,
     has_image=None,
+    has_video=None,
     has_translation=None,
     has_unrecognized_chars=None,
     has_categories=None,
@@ -120,11 +122,14 @@ def get_search_query(
     if has_audio is not None:
         search_query = search_query.query(get_has_audio_query(has_audio))
 
-    if has_video is not None:
-        search_query = search_query.query(get_has_video_query(has_video))
+    if has_document is not None:
+        search_query = search_query.query(get_has_document_query(has_document))
 
     if has_image is not None:
         search_query = search_query.query(get_has_image_query(has_image))
+
+    if has_video is not None:
+        search_query = search_query.query(get_has_video_query(has_video))
 
     if has_translation is not None:
         search_query = search_query.query(get_has_translation_query(has_translation))
