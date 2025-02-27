@@ -6,6 +6,7 @@ from backend.models import Site
 from backend.search.indexing import (
     AudioDocumentManager,
     DictionaryEntryDocumentManager,
+    DocumentDocumentManager,
     ImageDocumentManager,
     SongDocumentManager,
     StoryDocumentManager,
@@ -30,6 +31,7 @@ def remove_all_site_content_from_indexes(site_title, site_content_ids):
     remove_all(SongDocumentManager, site_content_ids["song_set"])
     remove_all(StoryDocumentManager, site_content_ids["story_set"])
     remove_all(AudioDocumentManager, site_content_ids["audio_set"])
+    remove_all(DocumentDocumentManager, site_content_ids["document_set"])
     remove_all(ImageDocumentManager, site_content_ids["image_set"])
     remove_all(VideoDocumentManager, site_content_ids["video_set"])
 
@@ -62,6 +64,7 @@ def sync_all_media_site_content_in_indexes(site_id):
     logger.info(ASYNC_TASK_START_TEMPLATE, f"site: {site}")
 
     sync_all(AudioDocumentManager, site.audio_set.all())
+    sync_all(DocumentDocumentManager, site.document_set.all())
     sync_all(ImageDocumentManager, site.image_set.all())
     sync_all(VideoDocumentManager, site.video_set.all())
 

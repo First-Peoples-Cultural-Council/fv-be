@@ -1,5 +1,5 @@
 from backend.models.constants import Visibility
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 from backend.search.documents import MediaDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
 from backend.search.utils.constants import ELASTICSEARCH_MEDIA_INDEX
@@ -46,6 +46,10 @@ class AudioDocumentManager(MediaDocumentManager):
     model = Audio
 
 
+class DocumentDocumentManager(MediaDocumentManager):
+    model = Document
+
+
 class ImageDocumentManager(MediaDocumentManager):
     model = Image
 
@@ -59,5 +63,6 @@ class MediaIndexManager(IndexManager):
     document_managers = [
         VideoDocumentManager,
         ImageDocumentManager,
+        DocumentDocumentManager,
         AudioDocumentManager,
     ]
