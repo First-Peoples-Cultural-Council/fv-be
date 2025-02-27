@@ -5,6 +5,7 @@ from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from import_export.results import RowResult
 
+from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
     ImportJobReport,
@@ -12,7 +13,6 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
-from backend.models.files import File
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
@@ -115,14 +115,12 @@ def clean_csv(data):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def import_resource(
-    data,
-    resource,
-    import_job,
-    missing_media=None,
-    dry_run=True,
-):
+def import_resource(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
+    # Remove rows that have missing media
+    # todo: Can this go into the clean_csv method ?
+    for missing_media_row in missing_media:
+        del cleaned_data[missing_media_row["idx"] - 1]
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(
@@ -133,38 +131,30 @@ def import_resource(
     )
     report.save()
 
-    # Method to import the cleaned data for the provided resource along with a dry-run flag.
-    result = resource.import_data(dataset=cleaned_data, dry_run=dry_run)
+    # media_import_result = MediaResources.import_data(dataset=cleaned_data, dry_run=dry_run)
+    # Add media errors to report
+    for missing_media_row in missing_media:
+        error_row_instance = ImportJobReportRow(
+            site=import_job.site,
+            report=report,
+            status=RowStatus.ERROR,
+            row_number=missing_media_row["idx"],
+            errors=[
+                f"Media file not found in uploaded files: {missing_media_row['filename']}."
+            ],
+        )
+        error_row_instance.save()
 
-    # Merge reports and keep track of erroneous rows
-    new_rows = 0
-    error_rows = []
-    if missing_media:
-        missing_media_row_numbers = [media["idx"] for media in missing_media]
-    else:
-        missing_media_row_numbers = []
+    # Import dictionary_entries
+    dictionary_entry_import_result = DictionaryEntryResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=cleaned_data, dry_run=dry_run)
 
     # Adding error messages to the report
-    for row in result.rows:
-        if row.number in missing_media_row_numbers:
-            missing_media_filename = [
-                media_row
-                for media_row in missing_media
-                if media_row["idx"] == row.number
-            ]
-            error_row_instance = ImportJobReportRow(
-                site=import_job.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=[
-                    f"Media file not found in uploaded files: {missing_media_filename}. "
-                    "Please upload the required file to continue."
-                ],
-            )
-            error_row_instance.save()
-            error_rows.append(row.number)
-        elif row.import_type == RowResult.IMPORT_TYPE_SKIP:
+    for row in dictionary_entry_import_result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
             error_row_instance = ImportJobReportRow(
                 site=import_job.site,
                 report=report,
@@ -173,24 +163,22 @@ def import_resource(
                 errors=row.error_messages,
             )
             error_row_instance.save()
-            error_rows.append(row.number)
-        elif row.import_type == RowResult.IMPORT_TYPE_NEW:
-            new_rows += 1
 
-    report.new_rows = new_rows
-    report.error_rows = (
-        len(error_rows)
-        + result.totals["invalid"]
-        + result.totals["error"]
-    )
+    report.new_rows = dictionary_entry_import_result.totals[
+        "new"
+    ]  # + media_import_result.new_rows
+    report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
     # Sort rows and attach the csv
-    if error_rows:
-        error_rows.sort()
-        failed_row_csv_file = get_failed_rows_csv_file(
-            import_job, data, error_rows
+    if report.error_rows:
+        error_rows = list(
+            ImportJobReportRow.objects.filter(report=report).values_list(
+                "row_number", flat=True
+            )
         )
+        error_rows.sort()
+        failed_row_csv_file = get_failed_rows_csv_file(import_job, data, error_rows)
         import_job.failed_rows_csv = failed_row_csv_file
         import_job.save()
     else:
@@ -203,14 +191,8 @@ def import_resource(
 def run_import_job(data, import_job):
     logger = get_task_logger(__name__)
 
-    resource = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    )
-
     try:
-        import_resource(data, resource, import_job, dry_run=False)
+        import_resource(data, import_job, dry_run=False)
         import_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -226,12 +208,6 @@ def dry_run_import_job(data, import_job):
 
     missing_media = get_missing_media(data, import_job)
 
-    resource = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    )
-
     # Clearing out old report if present
     old_report = import_job.validation_report
     if old_report:
@@ -244,9 +220,7 @@ def dry_run_import_job(data, import_job):
             return
 
     try:
-        report = import_resource(
-            data, resource, import_job, missing_media, dry_run=True
-        )
+        report = import_resource(data, import_job, missing_media, dry_run=True)
         import_job.validation_status = JobStatus.COMPLETE
         import_job.validation_report = report
     except Exception as e:
@@ -266,7 +240,7 @@ def get_missing_media(data, import_job_instance):
     associated_filenames = [file.split("/")[-1] for file in associated_files]
 
     # Audio
-    if 'AUDIO_FILENAME' in data:
+    if "AUDIO_FILENAME" in data.df:
         for idx, filename in enumerate(data["AUDIO_FILENAME"]):
             if filename not in associated_filenames:
                 missing_media.append({"idx": idx + 1, "filename": filename})

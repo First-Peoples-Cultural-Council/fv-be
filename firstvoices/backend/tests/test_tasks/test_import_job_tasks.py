@@ -519,6 +519,66 @@ class TestBulkImportDryRun:
         assert error_rows_numbers == []
         assert import_job.failed_rows_csv is None
 
+    def test_missing_media(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Media should be missing initially
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all().order_by("row_number")
+        error_rows_numbers = error_rows.values_list("row_number", flat=True)
+
+        assert validation_report.error_rows == 1
+        assert list(error_rows_numbers) == [1]
+
+        assert (
+            "Media file not found in uploaded files: sample-audio.mp3."
+            in error_rows[0].errors
+        )
+        # todo: Test what happens if a row has missing media, but also some other issue
+
+    def test_all_media_present(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Media should be missing initially
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 1
+
+        # Adding media to db
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        # Verifying all missing media errors are resolved now
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.rows.count() == 0
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
