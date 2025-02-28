@@ -240,7 +240,7 @@ def get_missing_media(data, import_job_instance):
     associated_filenames = [file.split("/")[-1] for file in associated_files]
 
     # Audio
-    if "AUDIO_FILENAME" in data.df:
+    if "AUDIO_FILENAME" in data.headers:
         for idx, filename in enumerate(data["AUDIO_FILENAME"]):
             if filename not in associated_filenames:
                 missing_media.append({"idx": idx + 1, "filename": filename})
