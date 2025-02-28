@@ -85,9 +85,7 @@ def copy_all_characters_and_return_map(
         character.site = target_site
         character.save(set_modified_date=set_modified_date)
 
-        copy_related_media(
-            character, source_media, audio_map, image_map, video_map, set_modified_date
-        )
+        copy_related_media(character, source_media, audio_map, image_map, video_map)
 
     variants = list(CharacterVariant.objects.filter(site=source_site))
     for variant in variants:
@@ -295,9 +293,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         gallery.galleryitem_set.set(updated_gallery_items)
 
 
-def copy_related_media(
-    instance, source_media, audio_map, image_map, video_map, set_modified_date
-):
+def copy_related_media(instance, source_media, audio_map, image_map, video_map):
     # If the media is missing the original, that media file is not copied, and thus
     # also not added to the m2m for an instance
     target_images = [
@@ -345,9 +341,7 @@ def copy_songs(
             lyric.song = song
             lyric.save(set_modified_date=set_modified_date)
 
-        copy_related_media(
-            song, source_media, audio_map, image_map, video_map, set_modified_date
-        )
+        copy_related_media(song, source_media, audio_map, image_map, video_map)
 
 
 def copy_stories(
@@ -366,9 +360,7 @@ def copy_stories(
         story.site = target_site
         story.save(set_modified_date=set_modified_date)
 
-        copy_related_media(
-            story, source_media, audio_map, image_map, video_map, set_modified_date
-        )
+        copy_related_media(story, source_media, audio_map, image_map, video_map)
 
         for page in source_pages:
             source_media = {
@@ -381,9 +373,7 @@ def copy_stories(
             page.story = story
             page.save(set_modified_date=set_modified_date)
 
-            copy_related_media(
-                page, source_media, audio_map, image_map, video_map, set_modified_date
-            )
+            copy_related_media(page, source_media, audio_map, image_map, video_map)
 
 
 def copy_dictionary_entries_and_return_map(
@@ -448,7 +438,6 @@ def copy_dictionary_entries_and_return_map(
             audio_map,
             image_map,
             video_map,
-            set_modified_date,
         )
 
     return dictionary_entry_map
