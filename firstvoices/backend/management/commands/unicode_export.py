@@ -41,7 +41,6 @@ class Command(BaseCommand):
     def export_language_metadata(self, output_dir):
         languages = Language.objects.all().order_by("title")
 
-        # todo: dynamic year
         filename = os.path.join(output_dir, "bc_language_metadata_2025.csv")
 
         with open(filename, "w") as f:
