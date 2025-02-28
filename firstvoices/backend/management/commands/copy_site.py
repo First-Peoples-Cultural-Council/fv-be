@@ -398,22 +398,9 @@ def copy_dictionary_entries_and_return_map(
 ):
     dictionary_entry_map = {}
 
-    dictionary_entries = list(
-        DictionaryEntry.objects.filter(site=source_site)
-        .annotate(related_entry_count=Count("related_dictionary_entries"))
-        .order_by("related_entry_count")
-        .distinct()
-    )
+    dictionary_entries = list(DictionaryEntry.objects.filter(site=source_site))
+    # First pass to create new entries and fill up the map
     for entry in dictionary_entries:
-        source_categories = list(entry.categories.all())
-        source_related_characters = list(entry.related_characters.all())
-        source_related_entries = list(entry.related_dictionary_entries.all())
-        source_media = {
-            "audio": list(entry.related_audio.values_list("id", flat=True)),
-            "images": list(entry.related_images.values_list("id", flat=True)),
-            "videos": list(entry.related_videos.values_list("id", flat=True)),
-        }
-
         source_entry_id = entry.id
         target_entry_id = uuid.uuid4()
         dictionary_entry_map[source_entry_id] = target_entry_id
@@ -424,25 +411,44 @@ def copy_dictionary_entries_and_return_map(
         entry.import_job = None
         entry.save(set_modified_date=set_modified_date)
 
+    dictionary_entries = list(DictionaryEntry.objects.filter(site=source_site))
+    # Second pass to set all the relationships
+    for source_entry in dictionary_entries:
+        target_entry_id = dictionary_entry_map[source_entry.id]
+        target_entry = DictionaryEntry.objects.get(id=target_entry_id)
+
+        source_categories = list(source_entry.categories.all())
         updated_categories = [
             category_map[category.id] for category in source_categories
         ]
-        entry.categories.set(updated_categories)
+        target_entry.categories.set(updated_categories)
 
+        source_related_characters = list(source_entry.related_characters.all())
         updated_related_characters = [
             character_map[char.id] for char in source_related_characters
         ]
-        entry.related_characters.set(updated_related_characters)
+        target_entry.related_characters.set(updated_related_characters)
 
+        source_related_entries = list(source_entry.related_dictionary_entries.all())
         updated_related_entries = [
             dictionary_entry_map[source_related_entry.id]
             for source_related_entry in source_related_entries
             if source_related_entry.id in dictionary_entry_map
         ]
-        entry.related_dictionary_entries.set(updated_related_entries)
+        target_entry.related_dictionary_entries.set(updated_related_entries)
 
+        source_media = {
+            "audio": list(source_entry.related_audio.values_list("id", flat=True)),
+            "images": list(source_entry.related_images.values_list("id", flat=True)),
+            "videos": list(source_entry.related_videos.values_list("id", flat=True)),
+        }
         copy_related_media(
-            entry, source_media, audio_map, image_map, video_map, set_modified_date
+            target_entry,
+            source_media,
+            audio_map,
+            image_map,
+            video_map,
+            set_modified_date,
         )
 
     return dictionary_entry_map
