@@ -46,12 +46,7 @@ def get_indices(types):
             indices.add(ELASTICSEARCH_SONG_INDEX)
         elif doc_type == TYPE_STORY:
             indices.add(ELASTICSEARCH_STORY_INDEX)
-        elif (
-            doc_type == TYPE_AUDIO
-            or doc_type == TYPE_DOCUMENT
-            or doc_type == TYPE_IMAGE
-            or doc_type == TYPE_VIDEO
-        ):
+        elif doc_type in [TYPE_AUDIO, TYPE_DOCUMENT, TYPE_IMAGE, TYPE_VIDEO]:
             indices.add(ELASTICSEARCH_MEDIA_INDEX)
 
     return list(indices)
