@@ -1,13 +1,14 @@
 import logging
 
-from backend.models import DictionaryEntry, Image, Song, Story
-from backend.models.media import Audio, Video
+from backend.models import DictionaryEntry, Song, Story
+from backend.models.media import Audio, Document, Image, Video
 from backend.search.utils.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
     TYPE_AUDIO,
+    TYPE_DOCUMENT,
     TYPE_IMAGE,
     TYPE_VIDEO,
 )
@@ -15,6 +16,7 @@ from backend.search.utils.object_utils import get_object_by_id
 from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
 from backend.serializers.media_serializers import (
     AudioMinimalSerializer,
+    DocumentMinimalSerializer,
     ImageMinimalSerializer,
     VideoMinimalSerializer,
 )
@@ -31,6 +33,7 @@ def separate_object_ids(search_results):
         ELASTICSEARCH_STORY_INDEX: [],
         ELASTICSEARCH_MEDIA_INDEX: {
             TYPE_AUDIO: [],
+            TYPE_DOCUMENT: [],
             TYPE_IMAGE: [],
             TYPE_VIDEO: [],
         },
@@ -124,6 +127,11 @@ def hydrate_objects(search_results, games_flag=None):
         defer_fields=["created_by_id", "last_modified_by_id", "last_modified"],
     )
 
+    document_objects = fetch_objects_from_database(
+        search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_DOCUMENT],
+        Document,
+    )
+
     image_objects = fetch_objects_from_database(
         search_results_dict[ELASTICSEARCH_MEDIA_INDEX][TYPE_IMAGE],
         Image,
@@ -167,6 +175,16 @@ def hydrate_objects(search_results, games_flag=None):
                 audio = get_object_by_id(audio_objects, obj["_source"]["document_id"])
                 complete_object["type"] = TYPE_AUDIO
                 complete_object["entry"] = AudioMinimalSerializer(audio).data
+
+            elif (
+                ELASTICSEARCH_MEDIA_INDEX in obj["_index"]
+                and obj["_source"]["type"] == TYPE_DOCUMENT
+            ):
+                document = get_object_by_id(
+                    document_objects, obj["_source"]["document_id"]
+                )
+                complete_object["type"] = TYPE_DOCUMENT
+                complete_object["entry"] = DocumentMinimalSerializer(document).data
 
             elif (
                 ELASTICSEARCH_MEDIA_INDEX in obj["_index"]

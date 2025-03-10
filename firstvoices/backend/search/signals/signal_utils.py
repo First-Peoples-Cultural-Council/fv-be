@@ -10,13 +10,14 @@ from backend.models import (
     StoryPage,
 )
 from backend.models.dictionary import DictionaryEntryCategory, DictionaryEntryLink
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 from backend.models.sites import LanguageFamily
 from backend.search.signals import (
     change_site_visibility,
     remove_all_site_content,
     remove_audio_from_index,
     remove_dictionary_entry_from_index,
+    remove_document_from_index,
     remove_image_from_index,
     remove_language_from_index,
     remove_site_from_language_index,
@@ -27,6 +28,7 @@ from backend.search.signals import (
     sync_audio_in_index,
     sync_dictionary_entry_category_in_index,
     sync_dictionary_entry_in_index,
+    sync_document_in_index,
     sync_image_in_index,
     sync_language_family_in_index,
     sync_language_in_index,
@@ -54,6 +56,7 @@ signal_details = {
         (sync_story_in_index, Story),
         (sync_story_pages_in_index, StoryPage),
         (sync_audio_in_index, Audio),
+        (sync_document_in_index, Document),
         (sync_image_in_index, Image),
         (sync_video_in_index, Video),
     ],
@@ -71,6 +74,7 @@ signal_details = {
         (remove_story_from_index, Story),
         (sync_story_pages_in_index, StoryPage),
         (remove_audio_from_index, Audio),
+        (remove_document_from_index, Document),
         (remove_image_from_index, Image),
         (remove_video_from_index, Video),
     ],

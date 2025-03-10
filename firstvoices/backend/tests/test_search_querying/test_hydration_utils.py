@@ -33,7 +33,12 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: [1],
             ELASTICSEARCH_SONG_INDEX: [2],
             ELASTICSEARCH_STORY_INDEX: [3],
-            ELASTICSEARCH_MEDIA_INDEX: {"audio": [4], "image": [], "video": []},
+            ELASTICSEARCH_MEDIA_INDEX: {
+                "audio": [4],
+                "document": [],
+                "image": [],
+                "video": [],
+            },
         }
         assert separate_object_ids(search_results) == expected_output
 
@@ -42,6 +47,10 @@ class TestSeparateObjectIds:
             {
                 "_index": self.TEST_MEDIA_INDEX_NAME,
                 "_source": {"document_id": 4, "type": "image"},
+            },
+            {
+                "_index": self.TEST_MEDIA_INDEX_NAME,
+                "_source": {"document_id": 3, "type": "document"},
             },
             {
                 "_index": self.TEST_MEDIA_INDEX_NAME,
@@ -56,7 +65,12 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: [],
             ELASTICSEARCH_SONG_INDEX: [],
             ELASTICSEARCH_STORY_INDEX: [],
-            ELASTICSEARCH_MEDIA_INDEX: {"audio": [6], "image": [4], "video": [5]},
+            ELASTICSEARCH_MEDIA_INDEX: {
+                "audio": [6],
+                "document": [3],
+                "image": [4],
+                "video": [5],
+            },
         }
         assert separate_object_ids(search_results) == expected_output
 
@@ -70,7 +84,12 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: [],
             ELASTICSEARCH_SONG_INDEX: [13, 14, 15],
             ELASTICSEARCH_STORY_INDEX: [],
-            ELASTICSEARCH_MEDIA_INDEX: {"audio": [], "image": [], "video": []},
+            ELASTICSEARCH_MEDIA_INDEX: {
+                "audio": [],
+                "document": [],
+                "image": [],
+                "video": [],
+            },
         }
         assert separate_object_ids(search_results) == expected_output
 
@@ -83,7 +102,12 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: [],
             ELASTICSEARCH_SONG_INDEX: [8],
             ELASTICSEARCH_STORY_INDEX: [],
-            ELASTICSEARCH_MEDIA_INDEX: {"audio": [], "image": [], "video": []},
+            ELASTICSEARCH_MEDIA_INDEX: {
+                "audio": [],
+                "document": [],
+                "image": [],
+                "video": [],
+            },
         }
         assert separate_object_ids(search_results) == expected_output
 
@@ -93,7 +117,12 @@ class TestSeparateObjectIds:
             ELASTICSEARCH_DICTIONARY_ENTRY_INDEX: [],
             ELASTICSEARCH_SONG_INDEX: [],
             ELASTICSEARCH_STORY_INDEX: [],
-            ELASTICSEARCH_MEDIA_INDEX: {"audio": [], "image": [], "video": []},
+            ELASTICSEARCH_MEDIA_INDEX: {
+                "audio": [],
+                "document": [],
+                "image": [],
+                "video": [],
+            },
         }
         assert separate_object_ids(search_results) == expected_output
 

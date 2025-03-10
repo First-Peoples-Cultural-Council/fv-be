@@ -13,6 +13,7 @@ from backend.search.utils.constants import (
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
     TYPE_AUDIO,
+    TYPE_DOCUMENT,
     TYPE_IMAGE,
     TYPE_PHRASE,
     TYPE_SONG,
@@ -45,7 +46,7 @@ def get_indices(types):
             indices.add(ELASTICSEARCH_SONG_INDEX)
         elif doc_type == TYPE_STORY:
             indices.add(ELASTICSEARCH_STORY_INDEX)
-        elif doc_type == TYPE_AUDIO or doc_type == TYPE_IMAGE or doc_type == TYPE_VIDEO:
+        elif doc_type in [TYPE_AUDIO, TYPE_DOCUMENT, TYPE_IMAGE, TYPE_VIDEO]:
             indices.add(ELASTICSEARCH_MEDIA_INDEX)
 
     return list(indices)
@@ -66,7 +67,14 @@ def get_types_query(types):
     # Adding type filters using a negation list
     exclude_list = [
         input_type
-        for input_type in [TYPE_AUDIO, TYPE_IMAGE, TYPE_VIDEO, TYPE_WORD, TYPE_PHRASE]
+        for input_type in [
+            TYPE_AUDIO,
+            TYPE_DOCUMENT,
+            TYPE_IMAGE,
+            TYPE_VIDEO,
+            TYPE_WORD,
+            TYPE_PHRASE,
+        ]
         if input_type not in types
     ]
 
@@ -191,12 +199,16 @@ def get_has_audio_query(has_audio):
     return Q("bool", filter=[Q("term", has_audio=has_audio)])
 
 
-def get_has_video_query(has_video):
-    return Q("bool", filter=[Q("term", has_video=has_video)])
+def get_has_document_query(has_document):
+    return Q("bool", filter=[Q("term", has_document=has_document)])
 
 
 def get_has_image_query(has_image):
     return Q("bool", filter=[Q("term", has_image=has_image)])
+
+
+def get_has_video_query(has_video):
+    return Q("bool", filter=[Q("term", has_video=has_video)])
 
 
 def get_has_translation_query(has_translation):

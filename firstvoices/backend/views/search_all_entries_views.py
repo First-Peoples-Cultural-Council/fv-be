@@ -288,6 +288,30 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 ],
             ),
             OpenApiParameter(
+                name="hasDocument",
+                description="Filter index documents that have related documents.",
+                required=False,
+                default=None,
+                type=bool,
+                examples=[
+                    OpenApiExample(
+                        "True",
+                        value=True,
+                        description="Returns index documents that have related documents.",
+                    ),
+                    OpenApiExample(
+                        "False",
+                        value=False,
+                        description="Returns index documents that do not have related documents.",
+                    ),
+                    OpenApiExample(
+                        "Oranges",
+                        value=None,
+                        description="Invalid input, defaults to all entries.",
+                    ),
+                ],
+            ),
+            OpenApiParameter(
                 name="hasImage",
                 description="Filter documents that have related images.",
                 required=False,
@@ -618,11 +642,14 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_audio = self.request.GET.get("hasAudio", None)
         has_audio = get_valid_boolean(has_audio)
 
-        has_video = self.request.GET.get("hasVideo", None)
-        has_video = get_valid_boolean(has_video)
+        has_document = self.request.GET.get("hasDocument", None)
+        has_document = get_valid_boolean(has_document)
 
         has_image = self.request.GET.get("hasImage", None)
         has_image = get_valid_boolean(has_image)
+
+        has_video = self.request.GET.get("hasVideo", None)
+        has_video = get_valid_boolean(has_video)
 
         has_translation = self.request.GET.get("hasTranslation", None)
         has_translation = get_valid_boolean(has_translation)
@@ -664,8 +691,9 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             "import_job_id": "",  # used in site-search
             "visibility": valid_visibility,
             "has_audio": has_audio,
-            "has_video": has_video,
+            "has_document": has_document,
             "has_image": has_image,
+            "has_video": has_video,
             "has_translation": has_translation,
             "has_unrecognized_chars": has_unrecognized_chars,
             "has_categories": has_categories,

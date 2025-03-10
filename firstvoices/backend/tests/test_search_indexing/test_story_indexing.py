@@ -52,8 +52,9 @@ class TestSongDocumentManager(BaseDocumentManagerTest):
         )
 
         assert not doc.has_audio
-        assert not doc.has_video
+        assert not doc.has_document
         assert not doc.has_image
+        assert not doc.has_video
 
         assert doc.exclude_from_games
         assert not doc.exclude_from_kids

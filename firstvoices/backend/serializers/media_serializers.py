@@ -443,6 +443,13 @@ class AudioMinimalSerializer(MediaMinimalSerializer):
         fields = MediaMinimalSerializer.Meta.fields + ("speakers",)
 
 
+class DocumentMinimalSerializer(MediaMinimalSerializer):
+    original = FileSerializer(read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = Document
+
+
 class ImageMinimalSerializer(MediaMinimalSerializer):
     original = ImageUploadSerializer(read_only=True)
     small = ImageFileSerializer(read_only=True)

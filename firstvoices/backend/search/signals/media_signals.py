@@ -1,9 +1,10 @@
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 from backend.search.indexing import (
     AudioDocumentManager,
+    DocumentDocumentManager,
     ImageDocumentManager,
     VideoDocumentManager,
 )
@@ -21,6 +22,16 @@ def sync_audio_in_index(sender, instance, **kwargs):
 @receiver(post_delete, sender=Audio)
 def remove_audio_from_index(sender, instance, **kwargs):
     request_remove_from_index(AudioDocumentManager, instance)
+
+
+@receiver(post_save, sender=Document)
+def sync_document_in_index(sender, instance, **kwargs):
+    request_sync_in_index(DocumentDocumentManager, instance)
+
+
+@receiver(post_delete, sender=Document)
+def remove_document_from_index(sender, instance, **kwargs):
+    request_remove_from_index(DocumentDocumentManager, instance)
 
 
 @receiver(post_save, sender=Image)
