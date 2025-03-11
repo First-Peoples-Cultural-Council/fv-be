@@ -176,9 +176,9 @@ def copy_audio_and_speakers_and_return_map(
             audio_map[source_audio_id] = target_audio_id
 
             audio.id = target_audio_id
-            # To circumvent checks added to media models to prevent modification of original file
+            # To circumvent certain conditionals that were originally added to prevent modification of the original file
             audio._state.adding = True
-            audio.save()
+            audio.save(set_modified_date=set_modified_date)
 
             audio.speakers.set(updated_speakers)
         except Exception as e:
@@ -194,7 +194,7 @@ def copy_audio_and_speakers_and_return_map(
     return audio_map
 
 
-def copy_images_and_return_map(source_site, target_site, logger):
+def copy_images_and_return_map(source_site, target_site, set_modified_date, logger):
     image_map = {}
 
     images = list(Image.objects.filter(site=source_site))
@@ -218,15 +218,16 @@ def copy_images_and_return_map(source_site, target_site, logger):
             image_map[source_img_id] = target_img_id
 
             image.id = target_img_id
+            # To circumvent certain conditionals that were originally added to prevent modification of the original file
             image._state.adding = True
-            image.save()
+            image.save(set_modified_date=set_modified_date)
         except Exception as e:
             logger.warning(f"Couldn't copy image file with id: {image.id}", exc_info=e)
 
     return image_map
 
 
-def copy_videos_and_return_map(source_site, target_site, logger):
+def copy_videos_and_return_map(source_site, target_site, set_modified_date, logger):
     video_map = {}
 
     videos = list(Video.objects.filter(site=source_site))
@@ -250,8 +251,9 @@ def copy_videos_and_return_map(source_site, target_site, logger):
             video_map[source_video_id] = target_video_id
 
             video.id = target_video_id
+            # To circumvent certain conditionals that were originally added to prevent modification of the original file
             video._state.adding = True
-            video.save()
+            video.save(set_modified_date=set_modified_date)
         except Exception as e:
             logger.warning(f"Couldn't copy video file with id: {video.id}", exc_info=e)
 
@@ -470,9 +472,13 @@ def copy_related_objects(source_site, target_site, user, set_modified_date, logg
         source_site, target_site, set_modified_date, logger
     )
     logger.info("Audio and speakers copied.")
-    image_map = copy_images_and_return_map(source_site, target_site, logger)
+    image_map = copy_images_and_return_map(
+        source_site, target_site, set_modified_date, logger
+    )
     logger.info("Images copied.")
-    video_map = copy_videos_and_return_map(source_site, target_site, logger)
+    video_map = copy_videos_and_return_map(
+        source_site, target_site, set_modified_date, logger
+    )
     logger.info("Videos copied.")
 
     character_map = copy_all_characters_and_return_map(
