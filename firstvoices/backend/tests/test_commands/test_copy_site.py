@@ -594,3 +594,33 @@ class TestCopySite:
             f"Missing gallery_item.image in image map with id: {src_image.id}"
             in caplog.text
         )
+
+    def test_cyclically_related_dictionary_entries(self):
+        # Entries that are both related to each other
+        entry_1 = DictionaryEntryFactory.create(
+            site=self.source_site,
+            title="Entry 1",
+        )
+        entry_2 = DictionaryEntryFactory.create(
+            site=self.source_site,
+            title="Entry 2",
+        )
+        entry_1.related_dictionary_entries.set([entry_2])
+        entry_2.related_dictionary_entries.set([entry_1])
+
+        self.call_copy_site_command()
+
+        target_entry_1 = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=entry_1.title
+        )
+        target_entry_2 = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=entry_2.title
+        )
+
+        related_entries_for_entry_1 = target_entry_1.related_dictionary_entries.all()
+        assert related_entries_for_entry_1.count() == 1
+        assert related_entries_for_entry_1[0].id == target_entry_2.id
+
+        related_entries_for_entry_2 = target_entry_2.related_dictionary_entries.all()
+        assert related_entries_for_entry_2.count() == 1
+        assert related_entries_for_entry_2[0].id == target_entry_1.id
