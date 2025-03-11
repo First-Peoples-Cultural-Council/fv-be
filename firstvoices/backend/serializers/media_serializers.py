@@ -249,6 +249,14 @@ class WriteableRelatedAudioSerializer(serializers.PrimaryKeyRelatedField):
         return AudioSerializer(context=self.context).to_representation(value)
 
 
+class WriteableRelatedDocumentSerializer(serializers.PrimaryKeyRelatedField):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        return DocumentSerializer(context=self.context).to_representation(value)
+
+
 class WriteableRelatedVideoSerializer(serializers.PrimaryKeyRelatedField):
     def use_pk_only_optimization(self):
         return False
@@ -299,6 +307,12 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
         many=True,
         queryset=Audio.objects.all(),
         validators=[UniqueValidator(queryset=Audio.objects.all())],
+    )
+    related_documents = WriteableRelatedDocumentSerializer(
+        required=False,
+        many=True,
+        queryset=Document.objects.all(),
+        validators=[UniqueValidator(queryset=Document.objects.all())],
     )
     related_images = WriteableRelatedImageSerializer(
         required=False,
@@ -377,35 +391,11 @@ class RelatedMediaSerializerMixin(metaclass=serializers.SerializerMetaclass):
     class Meta:
         fields = (
             "related_audio",
+            "related_documents",
             "related_images",
             "related_videos",
             "related_video_links",
         )
-
-
-class PersonMinimalSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Person
-        fields = ("id", "name", "bio")
-
-
-class AudioMinimalSerializer(serializers.ModelSerializer):
-    original = FileSerializer(read_only=True)
-    speakers = PersonMinimalSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Audio
-        fields = (
-            "id",
-            "created",
-            "last_modified",
-            "title",
-            "description",
-            "acknowledgement",
-            "speakers",
-            "original",
-        )
-        read_only_fields = ("id", "original")
 
 
 class RelatedImageMinimalSerializer(serializers.ModelSerializer):
@@ -424,6 +414,12 @@ class RelatedVideoMinimalSerializer(RelatedImageMinimalSerializer):
         model = Video
 
 
+class PersonMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ("id", "name", "bio")
+
+
 class MediaMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         fields = (
@@ -433,8 +429,25 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
             "original",
             "title",
             "description",
+            "acknowledgement",
         )
-        read_only_fields = ("id", "original", "title", "description")
+        read_only_fields = ("id", "original", "title", "description", "acknowledgement")
+
+
+class AudioMinimalSerializer(MediaMinimalSerializer):
+    original = FileSerializer(read_only=True)
+    speakers = PersonMinimalSerializer(many=True, read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = Audio
+        fields = MediaMinimalSerializer.Meta.fields + ("speakers",)
+
+
+class DocumentMinimalSerializer(MediaMinimalSerializer):
+    original = FileSerializer(read_only=True)
+
+    class Meta(MediaMinimalSerializer.Meta):
+        model = Document
 
 
 class ImageMinimalSerializer(MediaMinimalSerializer):

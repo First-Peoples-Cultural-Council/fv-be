@@ -3,6 +3,7 @@ import pytest
 from backend.models.constants import Visibility
 from backend.search.indexing import (
     AudioDocumentManager,
+    DocumentDocumentManager,
     ImageDocumentManager,
     MediaIndexManager,
     VideoDocumentManager,
@@ -79,6 +80,12 @@ class TestAudioDocumentManager(BaseMediaDocumentManagerTest):
     manager = AudioDocumentManager
     factory = factories.AudioFactory
     expected_type = "Audio"
+
+
+class TestDocumentDocumentManager(BaseMediaDocumentManagerTest):
+    manager = DocumentDocumentManager
+    factory = factories.DocumentFactory
+    expected_type = "Document"
 
 
 class TestImageDocumentManager(BaseMediaDocumentManagerTest):

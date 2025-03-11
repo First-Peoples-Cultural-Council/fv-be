@@ -274,7 +274,7 @@ class Audio(MediaBase):
 class Document(MediaBase):
     class Meta:
         verbose_name = _("Document")
-        verbose_name_plural = _("Document")
+        verbose_name_plural = _("Documents")
         rules_permissions = {
             "view": predicates.has_visible_site,
             "add": predicates.is_at_least_assistant_or_super,
@@ -604,6 +604,7 @@ class RelatedMediaMixin(models.Model):
         abstract = True
 
     related_audio = models.ManyToManyField(Audio, blank=True)
+    related_documents = models.ManyToManyField(Document, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
     related_video_links = ArrayField(

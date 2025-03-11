@@ -1,5 +1,6 @@
 from backend.search.indexing import (
     AudioDocumentManager,
+    DocumentDocumentManager,
     ImageDocumentManager,
     VideoDocumentManager,
 )
@@ -10,6 +11,11 @@ from backend.tests.test_search_indexing.base_indexing_tests import BaseSignalTes
 class TestAudioIndexingSignals(BaseSignalTest):
     manager = AudioDocumentManager
     factory = factories.AudioFactory
+
+
+class TestDocumentIndexingSignals(BaseSignalTest):
+    manager = DocumentDocumentManager
+    factory = factories.DocumentFactory
 
 
 class TestImageIndexingSignals(BaseSignalTest):

@@ -7,13 +7,7 @@ from backend.models.story import Story, StoryPage
 from backend.tests import factories
 
 from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import (
-    MOCK_EMBED_LINK,
-    MOCK_THUMBNAIL_LINK,
-    VIMEO_VIDEO_LINK,
-    YOUTUBE_VIDEO_LINK,
-    RelatedMediaTestMixin,
-)
+from .base_media_test import RelatedMediaTestMixin
 
 
 class TestStoryEndpoint(
@@ -28,25 +22,16 @@ class TestStoryEndpoint(
     API_DETAIL_VIEW = "api:story-detail"
 
     model = Story
+    model_factory = factories.StoryFactory
 
     def create_minimal_instance(self, site, visibility):
         return factories.StoryFactory.create(site=site, visibility=visibility)
 
     def get_valid_data(self, site=None):
-        images = []
-        videos = []
-        audio = []
-
-        for _ in range(3):
-            images.append(factories.ImageFactory.create(site=site))
-            videos.append(factories.VideoFactory.create(site=site))
-            audio.append(factories.AudioFactory.create(site=site))
+        related_media = self.get_valid_related_media_data(site=site)
 
         return {
-            "relatedAudio": [str(x.id) for x in audio],
-            "relatedImages": [str(x.id) for x in images],
-            "relatedVideos": [str(x.id) for x in videos],
-            "relatedVideoLinks": [],
+            **related_media,
             "visibility": "Public",
             "title": "Title",
             "titleTranslation": "A translation of the title",
@@ -95,6 +80,7 @@ class TestStoryEndpoint(
             "notes": page.notes,
             "ordering": page.ordering,
             "relatedAudio": list(page.related_audio.all()),
+            "relatedDocuments": list(page.related_documents.all()),
             "relatedImages": list(page.related_images.all()),
             "relatedVideos": list(page.related_videos.all()),
             "relatedVideoLinks": page.related_video_links,
@@ -112,10 +98,7 @@ class TestStoryEndpoint(
             "acknowledgements": [],
             "excludeFromGames": False,
             "excludeFromKids": False,
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     def assert_updated_instance(self, expected_data, actual_instance: Story):
@@ -139,30 +122,12 @@ class TestStoryEndpoint(
         for i, ack in enumerate(expected_data["acknowledgements"]):
             assert actual_instance.acknowledgements[i] == ack["text"]
 
-        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
+        self.assert_updated_instance_related_media(expected_data, actual_instance)
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["title"] == expected_data["title"]
 
-        response_related_audio_ids = [i["id"] for i in actual_response["relatedAudio"]]
-        response_related_image_ids = [i["id"] for i in actual_response["relatedImages"]]
-        response_related_video_ids = [i["id"] for i in actual_response["relatedVideos"]]
-
-        assert sorted(response_related_audio_ids) == sorted(
-            expected_data["relatedAudio"]
-        )
-        assert sorted(response_related_image_ids) == sorted(
-            expected_data["relatedImages"]
-        )
-        assert sorted(response_related_video_ids) == sorted(
-            expected_data["relatedVideos"]
-        )
-
-        assert actual_response["pages"] == []  # unchanged
-
-        assert (
-            actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
-        )
+        self.assert_update_response_related_media(expected_data, actual_response)
 
     def assert_created_instance(self, pk, data):
         instance = Story.objects.get(pk=pk)
@@ -177,26 +142,6 @@ class TestStoryEndpoint(
 
     def assert_related_objects_deleted(self, instance):
         assert instance.pages.count() == 0
-
-    def create_instance_with_media(
-        self,
-        site,
-        visibility,
-        related_images=None,
-        related_audio=None,
-        related_videos=None,
-        related_video_links=None,
-    ):
-        if related_video_links is None:
-            related_video_links = []
-        return factories.StoryFactory.create(
-            site=site,
-            visibility=visibility,
-            related_images=related_images,
-            related_audio=related_audio,
-            related_videos=related_videos,
-            related_video_links=related_video_links,
-        )
 
     def get_expected_list_response_item(self, instance, site):
         controlled_standard_fields = self.get_expected_controlled_standard_fields(
@@ -226,16 +171,11 @@ class TestStoryEndpoint(
             "excludeFromKids": instance.exclude_from_kids,
             "author": instance.author,
             "hideOverlay": instance.hide_overlay,
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     def create_original_instance_for_patch(self, site):
-        audio = factories.AudioFactory.create(site=site)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
+        related_media = self.get_related_media_for_patch(site=site)
         story = factories.StoryFactory.create(
             site=site,
             author="Author",
@@ -248,10 +188,7 @@ class TestStoryEndpoint(
             hide_overlay=True,
             exclude_from_games=True,
             exclude_from_kids=True,
-            related_audio=(audio,),
-            related_images=(image,),
-            related_videos=(video,),
-            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+            **related_media,
         )
         factories.StoryPageFactory.create(site=site, story=story)
         return story
@@ -320,18 +257,6 @@ class TestStoryEndpoint(
             actual_response["excludeFromGames"] == original_instance.exclude_from_games
         )
         assert actual_response["excludeFromKids"] == original_instance.exclude_from_kids
-        assert actual_response["relatedVideoLinks"] == [
-            {
-                "videoLink": original_instance.related_video_links[0],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": original_instance.related_video_links[1],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
 
     @pytest.mark.django_db
     def test_pages_order(self):
@@ -388,10 +313,7 @@ class TestStoryEndpoint(
             "hide_overlay": False,
             "exclude_from_games": False,
             "exclude_from_kids": False,
-            "related_audio": [],
-            "related_images": [],
-            "related_videos": [],
-            "related_video_links": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
         response = self.client.put(

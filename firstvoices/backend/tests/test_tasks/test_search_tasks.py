@@ -47,6 +47,7 @@ class TestRemoveAllSiteContentFromIndexes(IgnoreTaskResultsMixin):
                 "song_set": [],
                 "story_set": [],
                 "audio_set": [],
+                "document_set": [],
                 "image_set": [],
                 "video_set": [],
             },

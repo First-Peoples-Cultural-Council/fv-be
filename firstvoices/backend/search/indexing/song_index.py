@@ -29,9 +29,10 @@ class SongDocumentManager(DocumentManager):
             note=instance.notes,
             acknowledgement=instance.acknowledgements,
             has_audio=instance.related_audio.exists(),
+            has_document=instance.related_documents.exists(),
+            has_image=instance.related_images.exists(),
             has_video=instance.related_videos.exists()
             or bool(instance.related_video_links),
-            has_image=instance.related_images.exists(),
             exclude_from_games=instance.exclude_from_games,
             exclude_from_kids=instance.exclude_from_kids,
             created=instance.created,

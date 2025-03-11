@@ -37,6 +37,7 @@ def remove_all_site_content(sender, instance, **kwargs):
         "song_set": list(instance.song_set.values_list("id", flat=True)),
         "story_set": list(instance.story_set.values_list("id", flat=True)),
         "audio_set": list(instance.audio_set.values_list("id", flat=True)),
+        "document_set": list(instance.document_set.values_list("id", flat=True)),
         "image_set": list(instance.image_set.values_list("id", flat=True)),
         "video_set": list(instance.video_set.values_list("id", flat=True)),
     }

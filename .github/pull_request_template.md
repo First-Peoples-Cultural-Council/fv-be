@@ -8,6 +8,7 @@ Please briefly explain the changes here.
 - [ ] Admin Panel has been updated if models have been added or modified
 - [ ] Migrations have been updated and committed if applicable
 - [ ] Insomnia workspace has been updated if applicable
+- [ ] Signal and Task inventories have been updated if applicable
 
 ### Reviewers Should Do The Following:
 - [ ] Review the code changes here

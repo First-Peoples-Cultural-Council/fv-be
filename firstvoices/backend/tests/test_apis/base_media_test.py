@@ -5,7 +5,6 @@ from django.test.client import encode_multipart
 from rest_framework.reverse import reverse
 
 from backend.models.constants import Role, Visibility
-from backend.models.media import Document
 from backend.tests import factories
 from backend.tests.factories import (
     get_site_with_anonymous_user,
@@ -158,9 +157,12 @@ class MediaTestMixin:
 
         return data
 
-    def get_expected_document_data(self, instance):
+    def get_expected_document_data(self, instance, detail_view=False):
         data = self.get_basic_media_data(instance, view_name="api:document-detail")
         data["original"] = self.get_file_data(instance.original)
+
+        if detail_view:
+            data["usage"] = self.get_usage_data()
 
         return data
 
@@ -170,25 +172,78 @@ class RelatedMediaTestMixin(MediaTestMixin):
     For APIs that use the RelatedMediaSerializerMixin.
     """
 
+    RELATED_MEDIA_DEFAULTS = {
+        "relatedAudio": [],
+        "relatedDocuments": [],
+        "relatedImages": [],
+        "relatedVideos": [],
+        "relatedVideoLinks": [],
+    }
+
     model = None
+    model_factory = None
 
     def create_instance_with_media(
         self,
         site,
         visibility,
-        related_images=None,
         related_audio=None,
+        related_documents=None,
+        related_images=None,
         related_videos=None,
         related_video_links=None,
     ):
-        raise NotImplementedError
+        if related_video_links is None:
+            related_video_links = []
+        return self.model_factory.create(
+            site=site,
+            visibility=visibility,
+            related_audio=related_audio,
+            related_documents=related_documents,
+            related_images=related_images,
+            related_videos=related_videos,
+            related_video_links=related_video_links,
+        )
+
+    def get_valid_related_media_data(self, site=None):
+        audio = factories.AudioFactory.create(site=site)
+        document = factories.DocumentFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+
+        return {
+            "relatedAudio": [str(audio.id)],
+            "relatedDocuments": [str(document.id)],
+            "relatedImages": [str(image.id)],
+            "relatedVideos": [str(video.id)],
+            "relatedVideoLinks": [],
+        }
+
+    def get_related_media_for_patch(self, site=None):
+        audio = factories.AudioFactory.create(site=site)
+        document = factories.DocumentFactory.create(site=site)
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+
+        return {
+            "related_audio": (audio,),
+            "related_documents": (document,),
+            "related_images": (image,),
+            "related_videos": (video,),
+            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+        }
 
     def assert_patch_instance_original_fields_related_media(
         self, original_instance, updated_instance
     ):
         assert updated_instance.related_audio == original_instance.related_audio
+        assert updated_instance.related_documents == original_instance.related_documents
         assert updated_instance.related_images == original_instance.related_images
         assert updated_instance.related_videos == original_instance.related_videos
+        assert (
+            updated_instance.related_video_links
+            == original_instance.related_video_links
+        )
 
     def assert_update_patch_response_related_media(
         self, original_instance, actual_response
@@ -196,35 +251,83 @@ class RelatedMediaTestMixin(MediaTestMixin):
         assert actual_response["relatedAudio"][0]["id"] == str(
             original_instance.related_audio.first().id
         )
+        assert actual_response["relatedDocuments"][0]["id"] == str(
+            original_instance.related_documents.first().id
+        )
         assert actual_response["relatedImages"][0]["id"] == str(
             original_instance.related_images.first().id
         )
         assert actual_response["relatedVideos"][0]["id"] == str(
             original_instance.related_videos.first().id
         )
+        assert actual_response["relatedVideoLinks"] == [
+            {
+                "videoLink": original_instance.related_video_links[0],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+            {
+                "videoLink": original_instance.related_video_links[1],
+                "embedLink": MOCK_EMBED_LINK,
+                "thumbnail": MOCK_THUMBNAIL_LINK,
+            },
+        ]
 
     def assert_update_response_related_media(self, expected_data, actual_response):
         assert len(actual_response["relatedAudio"]) == len(
             expected_data["relatedAudio"]
         )
-        for i, a in enumerate(expected_data["relatedAudio"]):
-            assert actual_response["relatedAudio"][i]["id"] == a
+        for i, item in enumerate(expected_data["relatedAudio"]):
+            assert actual_response["relatedAudio"][i]["id"] == item
 
-        assert len(actual_response["relatedVideos"]) == len(
-            expected_data["relatedVideos"]
+        assert len(actual_response["relatedDocuments"]) == len(
+            expected_data["relatedDocuments"]
         )
-        for i, v in enumerate(expected_data["relatedVideos"]):
-            assert actual_response["relatedVideos"][i]["id"] == v
+        for i, item in enumerate(expected_data["relatedDocuments"]):
+            assert actual_response["relatedDocuments"][i]["id"] == item
 
         assert len(actual_response["relatedImages"]) == len(
             expected_data["relatedImages"]
         )
-        for i, img in enumerate(expected_data["relatedImages"]):
-            assert actual_response["relatedImages"][i]["id"] == img
+        for i, item in enumerate(expected_data["relatedImages"]):
+            assert actual_response["relatedImages"][i]["id"] == item
+
+        assert len(actual_response["relatedVideos"]) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, item in enumerate(expected_data["relatedVideos"]):
+            assert actual_response["relatedVideos"][i]["id"] == item
 
         assert (
             actual_response["relatedVideoLinks"] == expected_data["relatedVideoLinks"]
         )
+
+    def assert_updated_instance_related_media(self, expected_data, actual_instance):
+        assert len(actual_instance.related_audio.all()) == len(
+            expected_data["relatedAudio"]
+        )
+        for i, item in enumerate(expected_data["relatedAudio"]):
+            assert str(actual_instance.related_audio.all()[i].id) == item
+
+        assert len(actual_instance.related_documents.all()) == len(
+            expected_data["relatedDocuments"]
+        )
+        for i, item in enumerate(expected_data["relatedDocuments"]):
+            assert str(actual_instance.related_documents.all()[i].id) == item
+
+        assert len(actual_instance.related_images.all()) == len(
+            expected_data["relatedImages"]
+        )
+        for i, item in enumerate(expected_data["relatedImages"]):
+            assert str(actual_instance.related_images.all()[i].id) == item
+
+        assert len(actual_instance.related_videos.all()) == len(
+            expected_data["relatedVideos"]
+        )
+        for i, item in enumerate(expected_data["relatedVideos"]):
+            assert str(actual_instance.related_videos.all()[i].id) == item
+
+        assert actual_instance.related_video_links == expected_data["relatedVideoLinks"]
 
     @pytest.mark.django_db
     def test_detail_related_audio_with_speaker(self):
@@ -387,6 +490,7 @@ class BaseMediaApiTest(
     sample_filetype = "image/jpeg"
     model = None
     model_factory = None
+    related_key = None
 
     def create_minimal_instance(self, site, visibility):
         return self.model_factory.create(site=site)
@@ -670,22 +774,53 @@ class BaseMediaApiTest(
         )
         assert response.status_code == 403
 
-    def add_related_media_to_objects(self, visibility):
-        # Add media file as related media to objects to verify that they show up correctly
-        # in usage field when a media item is requested via detail view
-        raise NotImplementedError
+    def get_media_instance_that_has_usages(self, site, visibility=Visibility.PUBLIC):
+        """Create a media instance and add that instance to 5 separate entries
+        Returns: media instance e.g. Video, Image, Audio, or Document
+        """
+        media_instance = self.create_minimal_instance(
+            site, visibility=Visibility.PUBLIC
+        )
+
+        def add_media_instance_to(target):
+            related_list = getattr(target, self.related_key)
+            related_list.add(media_instance)
+
+        character = factories.CharacterFactory(site=site, title="a", sort_order=1)
+        add_media_instance_to(character)
+
+        dict_entry = factories.DictionaryEntryFactory(site=site, visibility=visibility)
+        add_media_instance_to(dict_entry)
+
+        song = factories.SongFactory(site=site, visibility=visibility)
+        add_media_instance_to(song)
+
+        story_1 = factories.StoryFactory(site=site, visibility=visibility)
+        story_1_page = factories.StoryPageFactory(
+            site=site, story=story_1, visibility=visibility
+        )
+        add_media_instance_to(story_1)
+        add_media_instance_to(story_1_page)
+
+        story_2 = factories.StoryFactory(site=site, visibility=visibility)
+        story_2_page = factories.StoryPageFactory(
+            site=site, story=story_2, visibility=visibility
+        )
+        add_media_instance_to(story_2_page)
+
+        return media_instance
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
-        if self.model == Document:
-            pytest.skip("Documents don't currently have usages.")
-
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.PUBLIC)
+        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        media_instance = self.get_media_instance_that_has_usages(
+            site, visibility=Visibility.PUBLIC
+        )
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 
@@ -695,42 +830,48 @@ class BaseMediaApiTest(
         # usage in characters
         character_usage = response_data["usage"]["characters"]
         assert len(character_usage) == 1
-        assert character_usage[0]["id"] == str(expected_data["character"].id)
+        assert character_usage[0]["id"] == str(media_instance.character_set.first().id)
 
         # usage in dictionary entries
         dict_entry_usage = response_data["usage"]["dictionaryEntries"]
         assert len(dict_entry_usage) == 1
-        assert dict_entry_usage[0]["id"] == str(expected_data["dict_entry"].id)
+        assert dict_entry_usage[0]["id"] == str(
+            media_instance.dictionaryentry_set.first().id
+        )
 
         # usage in songs
         song_usage = response_data["usage"]["songs"]
         assert len(song_usage) == 1
-        assert song_usage[0]["id"] == str(expected_data["song"].id)
+        assert song_usage[0]["id"] == str(media_instance.song_set.first().id)
 
         # usage in stories
         # Story pages point to the story, so the response here should only contain id's of both stories exactly once
         story_usage = response_data["usage"]["stories"]
-        expected_stories_ids = [
-            str(expected_data["stories"][0].id),
-            str(expected_data["stories"][1].id),
-        ]
+        expected_stories_ids = set()
 
-        assert len(story_usage) == len(expected_data["stories"])
+        for e in media_instance.story_set.all():
+            expected_stories_ids.add(str(e.id))
+
+        for e in media_instance.storypage_set.all():
+            expected_stories_ids.add(str(e.story_id))
+
+        assert len(story_usage) == len(expected_stories_ids)
         assert story_usage[0]["id"] in expected_stories_ids
         assert story_usage[1]["id"] in expected_stories_ids
 
-        assert response_data["usage"]["total"] == expected_data["total"]
+        assert response_data["usage"]["total"] == 5
 
     @pytest.mark.django_db
     def test_usages_field_permissions(self):
-        if self.model == Document:
-            pytest.skip("Documents don't currently have usages.")
-        expected_data = self.add_related_media_to_objects(visibility=Visibility.TEAM)
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        media_instance = self.get_media_instance_that_has_usages(
+            site, visibility=Visibility.TEAM
+        )
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=expected_data["media_instance"].id,
-                site_slug=expected_data["site"].slug,
+                key=media_instance.id,
+                site_slug=site.slug,
             )
         )
 

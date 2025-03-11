@@ -8,7 +8,7 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
 
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 from backend.models.sites import Site
 
 
@@ -70,6 +70,10 @@ class BaseSiteContentAdmin(BaseAdmin):
         # prefetch the media models' site info (it is used for their display name)
         if db_field.name == "related_audio":
             kwargs["queryset"] = Audio.objects.filter(
+                site=self.get_site_from_object(request)
+            ).select_related("site")
+        if db_field.name == "related_documents":
+            kwargs["queryset"] = Document.objects.filter(
                 site=self.get_site_from_object(request)
             ).select_related("site")
         if db_field.name == "related_images":

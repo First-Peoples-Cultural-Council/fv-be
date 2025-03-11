@@ -27,6 +27,7 @@ TYPE_STORY = "story"
 
 # Media types
 TYPE_AUDIO = "audio"
+TYPE_DOCUMENT = "document"
 TYPE_IMAGE = "image"
 TYPE_VIDEO = "video"
 
@@ -36,6 +37,7 @@ VALID_DOCUMENT_TYPES = [
     TYPE_SONG,
     TYPE_STORY,
     TYPE_AUDIO,
+    TYPE_DOCUMENT,
     TYPE_IMAGE,
     TYPE_VIDEO,
 ]

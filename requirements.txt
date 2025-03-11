@@ -3,7 +3,7 @@ aniso8601==10.0.0
 asgiref==3.8.1
 async-timeout==5.0.1
 attrs==25.1.0
-boto3==1.36.6
+boto3==1.37.9
 botocore>=1.29.139
 celery==5.4.0
 certifi==2025.1.31
@@ -12,7 +12,7 @@ chardet==5.2.0
 charset-normalizer==3.4.1
 coloredlogs==15.0.1
 cron-descriptor==1.4.5
-cryptography==44.0.0
+cryptography==44.0.2
 Django==5.1.6
 django-admin-env-notice==1.0.1
 django-celery-beat==2.7.0
@@ -20,12 +20,12 @@ django-cors-headers==4.7.0
 django-coverage-plugin==3.1.0
 django-debug-toolbar==5.0.1
 django-embed-video==1.4.10
-django-import-export==4.3.5
+django-import-export==4.3.7
 django-storages==1.14.4
 django-timezone-field==7.1
 djangorestframework==3.15.2
 djangorestframework-camel-case==1.4.2
-draftjs_exporter==5.0.0 # https://github.com/springload/draftjs_exporter
+draftjs_exporter==5.1.0 # https://github.com/springload/draftjs_exporter
 drf-nested-routers==0.94.1  # https://github.com/alanjds/drf-nested-routers/
 drf-spectacular==0.28.0
 editdistance==0.8.1
@@ -53,18 +53,18 @@ mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
 nh3==0.2.20 # https://github.com/messense/nh3
 networkx==3.4.2
-numpy==2.2.2
+numpy==2.2.3
 openpyxl==3.1.5
 packaging==24.2
 panphon==0.21.2
 Pillow==11.1.0
 pluggy==1.5.0
-prompt-toolkit==3.0.36
+prompt-toolkit==3.0.50
 psycopg2-binary==2.9.10
 pycparser==2.22
 PyJWT==2.10.1
 pyrsistent==0.20.0
-pytest==8.3.4
+pytest==8.3.5
 pytest-django==4.10.0  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.14.0 #https://github.com/pytest-dev/pytest-mock
 python-crontab==3.2.0
@@ -77,7 +77,7 @@ redis==5.2.1
 regex==2024.11.6
 requests==2.32.3
 rules==3.5
-sentry-sdk==2.20.0
+sentry-sdk==2.22.0
 six==1.17.0
 sqlparse==0.5.3
 tablib==3.8.0

@@ -37,6 +37,7 @@ class TestCharactersEndpoints(
     CHARACTER_NOTE = "Test note"
 
     model = Character
+    model_factory = factories.CharacterFactory
 
     def create_minimal_instance(self, site, visibility=None):
         return factories.CharacterFactory.create(
@@ -47,8 +48,9 @@ class TestCharactersEndpoints(
         self,
         site,
         visibility,
-        related_images=None,
         related_audio=None,
+        related_documents=None,
+        related_images=None,
         related_videos=None,
         related_video_links=None,
     ):
@@ -56,8 +58,9 @@ class TestCharactersEndpoints(
             related_video_links = []
         return factories.CharacterFactory.create(
             site=site,
-            related_images=related_images,
             related_audio=related_audio,
+            related_documents=related_documents,
+            related_images=related_images,
             related_videos=related_videos,
             related_video_links=related_video_links,
         )
@@ -71,26 +74,18 @@ class TestCharactersEndpoints(
             "note": instance.note,
             "variants": [],
             "relatedDictionaryEntries": [],
-            "relatedAudio": [],
-            "relatedImages": [],
-            "relatedVideos": [],
-            "relatedVideoLinks": [],
+            **self.RELATED_MEDIA_DEFAULTS,
         }
 
     def create_original_instance_for_patch(self, site):
-        audio = factories.AudioFactory.create(site=site)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
+        related_media = self.get_related_media_for_patch(site=site)
         character = factories.CharacterFactory.create(
             site=site,
             title="Title",
             sort_order=2,
             approximate_form="test",
             note="Note",
-            related_audio=(audio,),
-            related_images=(image,),
-            related_videos=(video,),
-            related_video_links=[YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
+            **related_media,
         )
         dictionary_entry = factories.DictionaryEntryFactory.create(site=site)
         factories.DictionaryEntryRelatedCharacterFactory.create(
@@ -112,10 +107,6 @@ class TestCharactersEndpoints(
         self.assert_patch_instance_original_fields_related_media(
             original_instance, updated_instance
         )
-        assert (
-            updated_instance.related_video_links
-            == original_instance.related_video_links
-        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Character):
         assert updated_instance.note == data["note"]
@@ -132,18 +123,6 @@ class TestCharactersEndpoints(
         assert actual_response["relatedDictionaryEntries"][0]["id"] == str(
             original_instance.related_dictionary_entries.first().id
         )
-        assert actual_response["relatedVideoLinks"] == [
-            {
-                "videoLink": original_instance.related_video_links[0],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": original_instance.related_video_links[1],
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
 
     @pytest.mark.django_db
     def test_detail_variants(self):
@@ -448,6 +427,7 @@ class TestCharactersEndpoints(
         "invalid_data_key, invalid_data_value",
         [
             ("related_audio", [1234]),
+            ("related_documents", [1234]),
             ("related_images", [1234]),
             ("related_videos", [1234]),
             (

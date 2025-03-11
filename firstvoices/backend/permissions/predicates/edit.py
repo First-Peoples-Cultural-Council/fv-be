@@ -40,7 +40,7 @@ can_delete_media = Predicate(
     name="can_edit_core_uncontrolled_data",
 )
 
-# This predicate must be combined with the CreateControlledSiteContentSerializerMixin in
+# This predicate must be combined with the ValidateAssistantWritePermissionMixin in
 # backend/serializers/base_serializers.py
 can_add_controlled_data = Predicate(
     is_at_least_assistant_or_super,

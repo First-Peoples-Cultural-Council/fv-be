@@ -34,9 +34,10 @@ class DictionaryEntryDocumentManager(DocumentManager):
             custom_order=instance.custom_order,
             visibility=instance.visibility,
             has_audio=instance.related_audio.exists(),
+            has_document=instance.related_documents.exists(),
+            has_image=instance.related_images.exists(),
             has_video=instance.related_videos.exists()
             or bool(instance.related_video_links),
-            has_image=instance.related_images.exists(),
             created=instance.created,
             last_modified=instance.last_modified,
             has_translation=(len(instance.translations) > 0),
