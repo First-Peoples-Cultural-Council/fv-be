@@ -2,10 +2,20 @@ import json
 import logging
 
 from django.core.management.base import BaseCommand
+from draftjs_exporter.defaults import BLOCK_MAP, STYLE_MAP
 from draftjs_exporter.html import HTML
 
 from backend.models import Site, Song, Story, StoryPage
 from backend.models.widget import SiteWidget, WidgetSettings
+
+DRAFTJS_EXPORTER_CONFIG = {
+    "block_map": BLOCK_MAP,
+    "style_map": STYLE_MAP,
+    "entity_decorators": {
+        "FALLBACK": lambda props: props.get("children", ""),
+    },
+    "composite_decorators": [],
+}
 
 
 class Command(BaseCommand):
@@ -31,60 +41,23 @@ class Command(BaseCommand):
         except json.JSONDecodeError:
             return False
 
+    @staticmethod
+    def log_entity(entity_map):
+        logger = logging.getLogger(__name__)
+
+        entity = entity_map["0"]
+        logger.debug("Ignored entity with the following info:")
+        logger.debug(f"Entity type: {entity['type']}")
+        logger.debug(f"Entity data: {entity['data']}")
+
     def convert_draftjs_to_html(self, text):
         if self.is_draftjs_content(text):
-            exporter = HTML()
+            exporter = HTML(DRAFTJS_EXPORTER_CONFIG)
+            draftjs_data = json.loads(text)
+            if draftjs_data["entityMap"]:
+                self.log_entity(draftjs_data["entityMap"])
             return exporter.render(json.loads(text))
         return text
-
-    def extract_entities(self, draftjs_data):
-        # analyze draftjs content and extract a list of src urls for LINK, DOCUMENT, IMAGE and EMBED entities
-        entity_map = draftjs_data.get("entityMap", {})
-        entity_urls = []
-
-        for entity_key, entity in entity_map.items():
-            entity_type = entity.get("type")
-            entity_data = entity.get("data")
-            if entity_type in ["LINK", "DOCUMENT"]:
-                entity_urls.append(entity_data.get("url"))
-            elif entity_type in ["IMAGE", "EMBED"]:
-                entity_urls.append(entity_data.get("src"))
-
-        return entity_urls
-
-    def process_draftjs_fields(self, instance, fields):
-        # convert draftjs content in instance fields to html
-        # if LINK, DOCUMENT, IMAGE or EMBED entities are present:
-        # save them to the notes of the instance
-        notes = instance.notes
-        for field in fields:
-            value = getattr(instance, field)
-            if self.is_draftjs_content(value):
-                draftjs_data = json.loads(value)
-                entity_urls = self.extract_entities(draftjs_data)
-                if entity_urls:
-                    notes.extend(entity_urls)
-
-                setattr(instance, field, self.convert_draftjs_to_html(value))
-        instance.notes = notes
-        instance.save(set_modified_date=False)
-
-    def process_draftjs_widgets(self, setting):
-        # convert draftjs content in widget settings to html
-        # if LINK, DOCUMENT, IMAGE or EMBED entities are present:
-        # warn in the logger and print there source urls if applicable
-        value = setting.value
-        if self.is_draftjs_content(value):
-            draftjs_data = json.loads(value)
-            entity_urls = self.extract_entities(draftjs_data)
-            if entity_urls:
-                logger = logging.getLogger(__name__)
-                logger.warning(
-                    f"Widget setting {setting.id} for widget {setting.widget.id} contains entities: {entity_urls}"
-                    "\nPlease check to see if these URLs have content that needs to be migrated."
-                )
-            setting.value = self.convert_draftjs_to_html(value)
-            setting.save(set_modified_date=False)
 
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
@@ -114,28 +87,39 @@ class Command(BaseCommand):
                 logger.debug(
                     f"Converting draftjs content to html for song {song.id}..."
                 )
-                self.process_draftjs_fields(
-                    song, ["introduction", "introduction_translation"]
+                song.introduction = self.convert_draftjs_to_html(song.introduction)
+                song.introduction_translation = self.convert_draftjs_to_html(
+                    song.introduction_translation
                 )
+                song.save(set_modified_date=False)
 
             for story in stories_to_convert:
                 logger.debug(
                     f"Converting draftjs content to html for story {story.id}..."
                 )
-                self.process_draftjs_fields(
-                    story, ["introduction", "introduction_translation"]
+                story.introduction = self.convert_draftjs_to_html(story.introduction)
+                story.introduction_translation = self.convert_draftjs_to_html(
+                    story.introduction_translation
                 )
+                story.save(set_modified_date=False)
 
             for story_page in story_pages_to_convert:
                 logger.debug(
                     f"Converting draftjs content to html for story page {story_page.id}..."
                 )
-                self.process_draftjs_fields(story_page, ["text", "translation"])
+                story_page.text = self.convert_draftjs_to_html(story_page.text)
+                story_page.translation = self.convert_draftjs_to_html(
+                    story_page.translation
+                )
+                story_page.save(set_modified_date=False)
 
             for widget_setting in widget_settings_to_convert:
                 logger.debug(
                     f"Converting draftjs content to html for widget setting {widget_setting.id}..."
                 )
-                self.process_draftjs_widgets(widget_setting)
+                widget_setting.value = self.convert_draftjs_to_html(
+                    widget_setting.value
+                )
+                widget_setting.save(set_modified_date=False)
 
         logger.info("Conversion complete.")

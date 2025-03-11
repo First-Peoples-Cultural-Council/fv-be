@@ -1,4 +1,5 @@
 import json
+import logging
 
 import pytest
 from django.core.management import call_command
@@ -183,7 +184,8 @@ class TestConvertDraftjsToHtml:
         assert "Conversion complete." in caplog.text
 
     @pytest.mark.django_db
-    def test_convert_draftjs_to_html_with_entities(self, caplog):
+    def test_convert_draftjs_to_html_with_entities_logged(self, caplog):
+        caplog.set_level(logging.DEBUG)
         site = factories.SiteFactory.create()
 
         song = factories.SongFactory.create(site=site)
@@ -205,39 +207,21 @@ class TestConvertDraftjsToHtml:
 
         assert song.introduction == "<p>Song introduction</p>"
         assert song.introduction_translation == "<p>Translated song introduction</p>"
-        assert song.notes == [
-            "https://www.firstvoices.com",
-            "https://www.firstvoices.com/image.jpg",
-        ]
-
-        assert "Conversion complete." in caplog.text
-
-    @pytest.mark.django_db
-    def test_convert_draftjs_to_html_with_entities_widget(self, caplog):
-        site = factories.SiteFactory.create()
-
-        widget = factories.SiteWidgetFactory.create(site=site)
-        widget_setting = factories.WidgetSettingsFactory.create(
-            widget=widget, key="textWithFormatting"
-        )
-        widget_setting.value = self.make_draftjs_content_with_entity(
-            "Widget setting value",
-            "LINK",
-            {"url": "https://www.firstvoices.com"},
-        )
-
-        widget_setting.save()
-
-        call_command("convert_draftjs_to_html", site_slugs=site.slug)
-
-        widget_setting.refresh_from_db()
-
-        assert widget_setting.value == "<p>Widget setting value</p>"
 
         assert (
-            f"Widget setting {widget_setting.id} for widget {widget.id} "
-            f"contains entities: ['https://www.firstvoices.com']"
-            f"\nPlease check to see if these URLs have content that needs to be migrated."
+            f"Converting draftjs content to html for site {site.slug}..." in caplog.text
+        )
+        assert f"Converting draftjs content to html for song {song.id}..."
+
+        assert "Ignored entity with the following info:" in caplog.text
+        assert "Entity type: LINK" in caplog.text
+        assert "Entity data: {'url': 'https://www.firstvoices.com'}" in caplog.text
+
+        assert "Entity type: IMAGE" in caplog.text
+        assert (
+            "Entity data: {'src': 'https://www.firstvoices.com/image.jpg'}"
             in caplog.text
         )
+
         assert "Conversion complete." in caplog.text
+        assert "draftjs_exporter.error.ConfigException" not in caplog.text
