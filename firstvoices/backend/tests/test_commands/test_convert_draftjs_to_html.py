@@ -211,7 +211,9 @@ class TestConvertDraftjsToHtml:
         assert (
             f"Converting draftjs content to html for site {site.slug}..." in caplog.text
         )
-        assert f"Converting draftjs content to html for song {song.id}..."
+        assert (
+            f"Converting draftjs content to html for song {song.id}..." in caplog.text
+        )
 
         assert "Ignored entity with the following info:" in caplog.text
         assert "Entity type: LINK" in caplog.text
