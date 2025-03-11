@@ -176,7 +176,7 @@ def copy_audio_and_speakers_and_return_map(
             audio_map[source_audio_id] = target_audio_id
 
             audio.id = target_audio_id
-            # To circumvent certain conditionals that were originally added to prevent modification of the original file
+            # To skip conditionals in the base media models and copy audio instance
             audio._state.adding = True
             audio.save(set_modified_date=set_modified_date)
 
@@ -218,7 +218,7 @@ def copy_images_and_return_map(source_site, target_site, set_modified_date, logg
             image_map[source_img_id] = target_img_id
 
             image.id = target_img_id
-            # To circumvent certain conditionals that were originally added to prevent modification of the original file
+            # To skip conditionals in the base media models and copy image instance
             image._state.adding = True
             image.save(set_modified_date=set_modified_date)
         except Exception as e:
@@ -251,7 +251,7 @@ def copy_videos_and_return_map(source_site, target_site, set_modified_date, logg
             video_map[source_video_id] = target_video_id
 
             video.id = target_video_id
-            # To circumvent certain conditionals that were originally added to prevent modification of the original file
+            # To skip conditionals in the base media models and copy video instance
             video._state.adding = True
             video.save(set_modified_date=set_modified_date)
         except Exception as e:
