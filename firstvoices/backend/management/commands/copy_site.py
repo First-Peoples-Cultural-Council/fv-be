@@ -93,7 +93,8 @@ def copy_all_characters_and_return_map(
 
         variant.id = uuid.uuid4()
         variant.site = target_site
-        variant.base_character_id = character_map[source_base_character.id]
+        if source_base_character:
+            variant.base_character_id = character_map[source_base_character.id]
         variant.save(set_modified_date=set_modified_date)
 
     ignored_characters = list(IgnoredCharacter.objects.filter(site=source_site))
@@ -266,7 +267,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         gallery_items = list(gallery.galleryitem_set.all())
 
         gallery.site = target_site
-        if gallery.cover_image.id in image_map:
+        if gallery.cover_image and gallery.cover_image.id in image_map:
             gallery.cover_image_id = image_map[gallery.cover_image.id]
         else:
             logger.warning(
@@ -278,7 +279,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
         updated_gallery_items = []
         for gallery_item in gallery_items:
-            if gallery_item.image.id not in image_map:
+            if gallery_item.image and gallery_item.image.id not in image_map:
                 logger.warning(
                     f"Missing gallery_item.image in image map with id: {gallery_item.image.id}"
                 )
@@ -454,7 +455,10 @@ def copy_immersion_labels(
         imm_label.site = target_site
 
         source_dictionary_entry = imm_label.dictionary_entry
-        imm_label.dictionary_entry_id = dictionary_entry_map[source_dictionary_entry.id]
+        if source_dictionary_entry:
+            imm_label.dictionary_entry_id = dictionary_entry_map[
+                source_dictionary_entry.id
+            ]
 
         imm_label.save(set_modified_date=set_modified_date)
 
