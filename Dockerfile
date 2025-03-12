@@ -5,8 +5,13 @@ FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
 
 WORKDIR /app
-# Update apk package manager
-RUN apk update && apk upgrade
+# Switch APK to use the Edge repository instead of v3.20 (Temporary until 3.20 has non vulnerable packages)
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories \
+    && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+    && apk update
+
+# Now you can proceed with upgrading all packages
+RUN apk upgrade
 RUN apk add --no-cache \
     build-base \
     ffmpeg \
