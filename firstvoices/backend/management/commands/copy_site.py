@@ -271,7 +271,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
             gallery.cover_image_id = image_map[gallery.cover_image.id]
         else:
             logger.warning(
-                f"Missing gallery.cover.image in image map with id: {gallery.cover_image.id}"
+                f"No cover_image or gallery.cover_image not present in image map. Gallery Id: {gallery.id}."
             )
 
         gallery.id = uuid.uuid4()
@@ -281,7 +281,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         for gallery_item in gallery_items:
             if gallery_item.image.id not in image_map:
                 logger.warning(
-                    f"Missing gallery_item.image in image map with id: {gallery_item.image.id}"
+                    f"Missing gallery_item.image in image map with id: {gallery_item.image.id}."
                 )
                 continue
 

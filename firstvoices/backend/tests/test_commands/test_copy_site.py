@@ -587,7 +587,7 @@ class TestCopySite:
             self.call_copy_site_command()
 
         assert (
-            f"Missing gallery.cover.image in image map with id: {src_image.id}"
+            f"No cover_image or gallery.cover_image not present in image map. Gallery Id: {src_gallery.id}."
             in caplog.text
         )
         assert (
