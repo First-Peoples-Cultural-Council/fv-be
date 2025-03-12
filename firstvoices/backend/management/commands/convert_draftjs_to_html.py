@@ -2,10 +2,20 @@ import json
 import logging
 
 from django.core.management.base import BaseCommand
+from draftjs_exporter.defaults import BLOCK_MAP, STYLE_MAP
 from draftjs_exporter.html import HTML
 
 from backend.models import Site, Song, Story, StoryPage
 from backend.models.widget import SiteWidget, WidgetSettings
+
+DRAFTJS_EXPORTER_CONFIG = {
+    "block_map": BLOCK_MAP,
+    "style_map": STYLE_MAP,
+    "entity_decorators": {
+        "FALLBACK": lambda props: props.get("children", ""),
+    },
+    "composite_decorators": [],
+}
 
 
 class Command(BaseCommand):
@@ -31,9 +41,21 @@ class Command(BaseCommand):
         except json.JSONDecodeError:
             return False
 
+    @staticmethod
+    def log_entity(entity_map):
+        logger = logging.getLogger(__name__)
+
+        entity = entity_map["0"]
+        logger.debug("Ignored entity with the following info:")
+        logger.debug(f"Entity type: {entity['type']}")
+        logger.debug(f"Entity data: {entity['data']}")
+
     def convert_draftjs_to_html(self, text):
         if self.is_draftjs_content(text):
-            exporter = HTML()
+            exporter = HTML(DRAFTJS_EXPORTER_CONFIG)
+            draftjs_data = json.loads(text)
+            if draftjs_data["entityMap"]:
+                self.log_entity(draftjs_data["entityMap"])
             return exporter.render(json.loads(text))
         return text
 

@@ -1,4 +1,5 @@
 import json
+import logging
 
 import pytest
 from django.core.management import call_command
@@ -22,6 +23,30 @@ class TestConvertDraftjsToHtml:
                 }
             ],
             "entityMap": {},
+        }
+        return json.dumps(draftjs_data)
+
+    @staticmethod
+    def make_draftjs_content_with_entity(text, entity_type, entity_data):
+        draftjs_data = {
+            "blocks": [
+                {
+                    "key": "1",
+                    "text": text,
+                    "type": "unstyled",
+                    "depth": 0,
+                    "inlineStyleRanges": [],
+                    "entityRanges": [],
+                    "data": {},
+                }
+            ],
+            "entityMap": {
+                "0": {
+                    "type": entity_type,
+                    "mutability": "MUTABLE",
+                    "data": entity_data,
+                }
+            },
         }
         return json.dumps(draftjs_data)
 
@@ -157,3 +182,48 @@ class TestConvertDraftjsToHtml:
         assert song2.introduction_translation == "<p>Translated song introduction</p>"
 
         assert "Conversion complete." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_draftjs_to_html_with_entities_logged(self, caplog):
+        caplog.set_level(logging.DEBUG)
+        site = factories.SiteFactory.create()
+
+        song = factories.SongFactory.create(site=site)
+        song.introduction = self.make_draftjs_content_with_entity(
+            "Song introduction",
+            "LINK",
+            {"url": "https://www.firstvoices.com"},
+        )
+        song.introduction_translation = self.make_draftjs_content_with_entity(
+            "Translated song introduction",
+            "IMAGE",
+            {"src": "https://www.firstvoices.com/image.jpg"},
+        )
+        song.save()
+
+        call_command("convert_draftjs_to_html", site_slugs=site.slug)
+
+        song.refresh_from_db()
+
+        assert song.introduction == "<p>Song introduction</p>"
+        assert song.introduction_translation == "<p>Translated song introduction</p>"
+
+        assert (
+            f"Converting draftjs content to html for site {site.slug}..." in caplog.text
+        )
+        assert (
+            f"Converting draftjs content to html for song {song.id}..." in caplog.text
+        )
+
+        assert "Ignored entity with the following info:" in caplog.text
+        assert "Entity type: LINK" in caplog.text
+        assert "Entity data: {'url': 'https://www.firstvoices.com'}" in caplog.text
+
+        assert "Entity type: IMAGE" in caplog.text
+        assert (
+            "Entity data: {'src': 'https://www.firstvoices.com/image.jpg'}"
+            in caplog.text
+        )
+
+        assert "Conversion complete." in caplog.text
+        assert "draftjs_exporter.error.ConfigException" not in caplog.text
