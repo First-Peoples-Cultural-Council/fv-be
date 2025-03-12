@@ -5,15 +5,16 @@ FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
 
 WORKDIR /app
-RUN apk add --no-cache \
-    build-base \
+RUN apt-get update && apt-get install -y \
+    build-essential \
     ffmpeg \
     git \
     libffi-dev \
-    libmagic \
-    openblas-dev \
-&& pip3 install gunicorn \
-&& pip3 install pipdeptree
+    libmagic-dev \
+    libopenblas-dev && \
+    rm -rf /var/lib/apt/lists/*
+RUN pip3 install gunicorn
+RUN pip3 install pipdeptree
 
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
