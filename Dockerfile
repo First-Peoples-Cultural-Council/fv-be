@@ -6,7 +6,7 @@ ENV DEBUG_DISABLE=True
 
 WORKDIR /app
 # Update apk package manager
-RUN apk update && apk upgrade apk
+RUN apk update && apk upgrade
 RUN apk add --no-cache \
     build-base \
     ffmpeg \
