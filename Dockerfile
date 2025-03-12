@@ -1,18 +1,19 @@
-ARG python_image=python:3.12.7-slim
+ARG python_image=python:3.12.7-alpine
 ARG caddy_image=caddy:2.7.6-alpine
 
 FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
 
 WORKDIR /app
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# Update apk package manager
+RUN apk update && apk upgrade apk
+RUN apk add --no-cache \
+    build-base \
     ffmpeg \
     git \
     libffi-dev \
-    libmagic-dev \
-    libopenblas-dev && \
-    rm -rf /var/lib/apt/lists/*
+    libmagic \
+    openblas-dev
 RUN pip3 install gunicorn
 RUN pip3 install pipdeptree
 
