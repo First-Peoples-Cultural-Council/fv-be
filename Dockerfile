@@ -1,4 +1,4 @@
-ARG python_image=python:3.12.7-alpine3.19
+ARG python_image=python:3.12.7-slim
 ARG caddy_image=caddy:2.7.6-alpine
 
 FROM $python_image AS django-common
@@ -12,7 +12,8 @@ RUN apk add --no-cache \
     libffi-dev \
     libmagic \
     openblas-dev \
-&& pip3 install gunicorn
+&& pip3 install gunicorn \
+&& pip3 install pipdeptree
 
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
