@@ -279,7 +279,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
         updated_gallery_items = []
         for gallery_item in gallery_items:
-            if gallery_item.image and gallery_item.image.id not in image_map:
+            if gallery_item.image.id not in image_map:
                 logger.warning(
                     f"Missing gallery_item.image in image map with id: {gallery_item.image.id}"
                 )
