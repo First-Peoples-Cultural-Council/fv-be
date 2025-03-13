@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 
@@ -182,7 +183,9 @@ class TestUnicodeExport:
         site = factories.SiteFactory.create(
             language=language, visibility=Visibility.MEMBERS
         )
-        confusables_map = '[{"in": "k̒ʷ", "out": "k̓ʷ"}, {"in": "k̍ʷ", "out": "k̓ʷ"}]'
+        confusables_map = json.loads(
+            '[{"in": "k̒ʷ", "out": "k̓ʷ"}, {"in": "k̍ʷ", "out": "k̓ʷ"}]'
+        )
         factories.AlphabetFactory.create(
             site=site, input_to_canonical_map=confusables_map
         )
@@ -207,8 +210,24 @@ class TestUnicodeExport:
             language=language, visibility=Visibility.MEMBERS
         )
 
+        call_command("unicode_export")
+
         subfolder = os.path.join(get_tmp_output_dir, site.slug)
+        assert os.path.exists(os.path.join(subfolder))
         assert not os.path.exists(os.path.join(subfolder, "alphabet_ordering.csv"))
         assert not os.path.exists(os.path.join(subfolder, "character_variants.csv"))
         assert not os.path.exists(os.path.join(subfolder, "ignored_characters.csv"))
+        assert not os.path.exists(os.path.join(subfolder, "confusable_characters.csv"))
+
+    def test_empty_confusables(self, get_tmp_output_dir):
+        language = Language.objects.first()
+        site = factories.SiteFactory.create(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        factories.AlphabetFactory.create(site=site)
+
+        call_command("unicode_export")
+
+        subfolder = os.path.join(get_tmp_output_dir, site.slug)
+        assert os.path.exists(os.path.join(subfolder))
         assert not os.path.exists(os.path.join(subfolder, "confusable_characters.csv"))
