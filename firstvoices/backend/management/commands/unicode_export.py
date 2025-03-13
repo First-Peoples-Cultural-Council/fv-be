@@ -1,4 +1,3 @@
-import json
 import os
 
 from django.core.management import BaseCommand
@@ -128,10 +127,13 @@ class Command(BaseCommand):
 
     def export_confusable_characters(self, output_dir, site):
         alphabet = site.alphabet_set.first()
-        if alphabet is None:
+        if alphabet is None or alphabet.input_to_canonical_map is None:
             return
 
-        confusables = json.loads(alphabet.input_to_canonical_map)
+        confusables = alphabet.input_to_canonical_map
+
+        if len(confusables) == 0:
+            return
 
         filename = os.path.join(output_dir, "confusable_characters.csv")
         with open(filename, "w") as f:
