@@ -54,13 +54,14 @@ class TestCopySite:
         self.source_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="source")
         self.superadmin_user = get_app_admin(AppRole.SUPERADMIN)
 
-    def call_copy_site_command(self):
+    def call_copy_site_command(self, print_counts=False):
         # helper function
         call_command(
             "copy_site",
             source_slug=self.SOURCE_SLUG,
             target_slug=self.TARGET_SLUG,
             email=self.superadmin_user.email,
+            print_counts=print_counts,
         )
 
     def test_missing_source_site_raises_error(self):
@@ -106,6 +107,27 @@ class TestCopySite:
                 email="notareal@email.com",
             )
         assert str(e.value) == "No user found with the provided email."
+
+    def test_print_counts_flag(self, caplog):
+        self.call_copy_site_command(print_counts=True)
+
+        # Since the initial site is empty, all values should be 0 except for category
+        assert "Category count:: source: 38, target: 38, map: 38" in caplog.text
+        assert "Site feature count:: source: 0, target: 0" in caplog.text
+        assert "Speakers count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Audio count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Image count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Video count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Character count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Alphabet count:: source: 0, target: 0" in caplog.text
+        assert "Gallery count:: source: 0, target: 0" in caplog.text
+        assert "GalleryItem count:: source: 0, target: 0" in caplog.text
+        assert "Song count:: source: 0, target: 0" in caplog.text
+        assert "SongLyrics count:: source: 0, target: 0" in caplog.text
+        assert "Story count:: source: 0, target: 0" in caplog.text
+        assert "StoryPages count:: source: 0, target: 0" in caplog.text
+        assert "DictionaryEntry count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "ImmersionLabels count:: source: 0, target: 0" in caplog.text
 
     def test_site_attributes(self):
         self.call_copy_site_command()
@@ -624,3 +646,32 @@ class TestCopySite:
         related_entries_for_entry_2 = target_entry_2.related_dictionary_entries.all()
         assert related_entries_for_entry_2.count() == 1
         assert related_entries_for_entry_2[0].id == target_entry_1.id
+
+    def test_shared_image_library(self):
+        shared_image_site = SiteFactory.create(slug="library")
+        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+
+        shared_image_1 = ImageFactory(site=shared_image_site)
+        shared_image_2 = ImageFactory(site=shared_image_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+
+        source_entry = DictionaryEntryFactory(
+            site=self.source_site,
+        )
+        source_entry.related_images.set(
+            [shared_image_1, shared_image_2, source_img_1, source_img_2]
+        )
+
+        self.call_copy_site_command()
+
+        target_entry = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=source_entry.title
+        )
+        assert target_entry.related_images.count() == 4
+        target_related_images_ids = list(
+            target_entry.related_images.all().values_list(flat=True)
+        )
+
+        assert shared_image_1.id in target_related_images_ids
+        assert shared_image_2.id in target_related_images_ids

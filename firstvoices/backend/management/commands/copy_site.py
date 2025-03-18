@@ -304,11 +304,6 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 def copy_related_media(instance, source_media, audio_map, image_map, video_map):
     # If the media is missing the original, that media file is not copied, and thus
     # also not added to the m2m for an instance
-    target_images = [
-        image_map[image_id]
-        for image_id in source_media["images"]
-        if image_id in image_map
-    ]
     target_videos = [
         video_map[video_id]
         for video_id in source_media["videos"]
@@ -319,6 +314,20 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
         for audio_id in source_media["audio"]
         if audio_id in audio_map
     ]
+
+    # If the image is present in the shared images library, refer to it directly
+    shared_media_sites_ids = list(
+        SiteFeature.objects.filter(key="shared_media").values_list("site", flat=True)
+    )
+    shared_images_library = list(
+        Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
+    )
+    target_images = []
+    for image_id in source_media["images"]:
+        if image_id in shared_images_library:
+            target_images.append(image_id)
+        elif image_id in image_map:
+            target_images.append(image_map[image_id])
 
     if target_images:
         instance.related_images.set(target_images)
