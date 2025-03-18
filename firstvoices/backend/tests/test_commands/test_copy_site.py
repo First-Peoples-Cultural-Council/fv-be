@@ -169,7 +169,8 @@ class TestCopySite:
         assert target_feature_enabled.is_enabled == source_feature_enabled.is_enabled
         assert target_feature_disabled.is_enabled == source_feature_disabled.is_enabled
 
-    def test_characters_and_variants(self):
+    @pytest.mark.parametrize("char_variant_present", [True, False])
+    def test_characters_and_variants(self, char_variant_present):
         source_img_1 = ImageFactory(site=self.source_site)
         source_img_2 = ImageFactory(site=self.source_site)
         source_video_1 = VideoFactory(site=self.source_site)
@@ -178,9 +179,11 @@ class TestCopySite:
         source_audio_2 = AudioFactory(site=self.source_site)
 
         source_char = CharacterFactory(site=self.source_site)
-        source_char_variant = CharacterVariantFactory(
-            site=self.source_site, base_character=source_char
-        )
+        source_char_variant = None
+        if char_variant_present:
+            source_char_variant = CharacterVariantFactory(
+                site=self.source_site, base_character=source_char
+            )
 
         source_char.related_images.set([source_img_1, source_img_2])
         source_char.related_videos.set([source_video_1, source_video_2])
@@ -191,16 +194,20 @@ class TestCopySite:
         self.call_copy_site_command()
 
         target_char = Character.objects.get(site__slug=self.TARGET_SLUG)
-        target_char_variant = CharacterVariant.objects.get(site__slug=self.TARGET_SLUG)
 
         assert target_char.title == source_char.title
         assert target_char.sort_order == source_char.sort_order
-        assert target_char_variant.title == source_char_variant.title
-        assert target_char_variant.base_character == target_char
 
         assert target_char.related_images.count() == 2
         assert target_char.related_videos.count() == 2
         assert target_char.related_audio.count() == 2
+
+        if char_variant_present:
+            target_char_variant = CharacterVariant.objects.get(
+                site__slug=self.TARGET_SLUG
+            )
+            assert target_char_variant.title == source_char_variant.title
+            assert target_char_variant.base_character == target_char
 
     def test_ignored_characters(self):
         source_ignored_char = IgnoredCharacterFactory(site=self.source_site)
@@ -318,10 +325,14 @@ class TestCopySite:
         assert target_video.small is None
         assert target_video.medium is None
 
-    def test_gallery(self):
-        source_cover_img = ImageFactory(site=self.source_site)
+    @pytest.mark.parametrize("cover_image_present", [True, False])
+    def test_gallery(self, cover_image_present):
         source_img_1 = ImageFactory(site=self.source_site)
         source_img_2 = ImageFactory(site=self.source_site)
+
+        source_cover_img = (
+            ImageFactory(site=self.source_site) if cover_image_present else None
+        )
 
         source_gallery = GalleryFactory(
             site=self.source_site, cover_image=source_cover_img
@@ -333,10 +344,10 @@ class TestCopySite:
 
         target_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        # Comparing titles and site for images as proxy
-        # cover image
-        assert target_gallery.cover_image.title == source_cover_img.title
-        assert target_gallery.cover_image.site.slug == self.TARGET_SLUG
+        # Comparing titles and site for images as proxy for image content
+        if cover_image_present:
+            assert target_gallery.cover_image.title == source_cover_img.title
+            assert target_gallery.cover_image.site.slug == self.TARGET_SLUG
 
         target_gallery_item_1 = target_gallery.galleryitem_set.all().order_by(
             "ordering"

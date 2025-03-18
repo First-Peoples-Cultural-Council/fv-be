@@ -267,7 +267,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
     galleries = list(Gallery.objects.filter(site=source_site))
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
-        source_cover_img_id = gallery.cover_image.id
+        source_cover_img_id = gallery.cover_image.id if gallery.cover_image else None
 
         gallery.site = target_site
 
