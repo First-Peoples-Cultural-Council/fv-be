@@ -93,8 +93,7 @@ def copy_all_characters_and_return_map(
 
         variant.id = uuid.uuid4()
         variant.site = target_site
-        if source_base_character:
-            variant.base_character_id = character_map[source_base_character.id]
+        variant.base_character_id = character_map[source_base_character.id]
         variant.save(set_modified_date=set_modified_date)
 
     ignored_characters = list(IgnoredCharacter.objects.filter(site=source_site))
