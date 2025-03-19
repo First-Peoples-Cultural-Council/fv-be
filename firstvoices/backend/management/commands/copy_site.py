@@ -264,6 +264,14 @@ def copy_videos_and_return_map(source_site, target_site, set_modified_date, logg
 
 def copy_galleries(source_site, target_site, image_map, set_modified_date, logger):
     galleries = list(Gallery.objects.filter(site=source_site))
+
+    shared_media_sites_ids = list(
+        SiteFeature.objects.filter(key="shared_media").values_list("site", flat=True)
+    )
+    shared_images_library = list(
+        Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
+    )
+
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
         source_cover_img_id = gallery.cover_image.id if gallery.cover_image else None
@@ -271,7 +279,9 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         gallery.site = target_site
 
         if source_cover_img_id:
-            if source_cover_img_id in image_map:
+            if source_cover_img_id in shared_images_library:
+                gallery.cover_image_id = source_cover_img_id
+            elif source_cover_img_id in image_map:
                 gallery.cover_image_id = image_map[source_cover_img_id]
             else:
                 logger.warning(
@@ -283,7 +293,11 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
         updated_gallery_items = []
         for gallery_item in gallery_items:
-            if gallery_item.image.id not in image_map:
+            if gallery_item.image.id in shared_images_library:
+                new_gallery_item_image_id = gallery_item.image.id
+            elif gallery_item.image.id in image_map:
+                new_gallery_item_image_id = image_map[gallery_item.image.id]
+            else:
                 logger.warning(
                     f"Missing gallery_item.image in image map with id: {gallery_item.image.id}."
                 )
@@ -291,7 +305,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
             new_gallery_item = GalleryItem(
                 gallery=gallery,
-                image_id=image_map[gallery_item.image.id],
+                image_id=new_gallery_item_image_id,
                 ordering=gallery_item.ordering,
             )
             new_gallery_item.save()
@@ -314,7 +328,7 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
         if audio_id in audio_map
     ]
 
-    # If the image is present in the shared images library, refer to it directly
+    # If the image is present in the shared image library, refer to it directly
     shared_media_sites_ids = list(
         SiteFeature.objects.filter(key="shared_media").values_list("site", flat=True)
     )

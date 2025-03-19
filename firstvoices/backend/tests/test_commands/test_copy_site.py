@@ -658,7 +658,7 @@ class TestCopySite:
         assert related_entries_for_entry_2.count() == 1
         assert related_entries_for_entry_2[0].id == target_entry_1.id
 
-    def test_shared_image_library(self):
+    def test_shared_images_used_as_related_media(self):
         shared_image_site = SiteFactory.create(slug="library")
         SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
 
@@ -686,3 +686,21 @@ class TestCopySite:
 
         assert shared_image_1.id in target_related_images_ids
         assert shared_image_2.id in target_related_images_ids
+
+    def test_shared_images_used_in_gallery(self):
+        shared_image_site = SiteFactory.create(slug="library")
+        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+
+        shared_image_1 = ImageFactory(site=shared_image_site)
+        shared_image_2 = ImageFactory(site=shared_image_site)
+
+        src_gallery = GalleryFactory(site=self.source_site, cover_image=shared_image_1)
+        GalleryItemFactory.create(gallery=src_gallery, image=shared_image_2)
+
+        self.call_copy_site_command()
+
+        target_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        assert target_gallery.cover_image == shared_image_1
+
+        target_gallery_item = target_gallery.galleryitem_set.all()[0]
+        assert target_gallery_item.image == shared_image_2
