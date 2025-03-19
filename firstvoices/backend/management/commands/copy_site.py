@@ -279,10 +279,11 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         gallery.site = target_site
 
         if source_cover_img_id:
-            if source_cover_img_id in shared_images_library:
-                gallery.cover_image_id = source_cover_img_id
-            elif source_cover_img_id in image_map:
-                gallery.cover_image_id = image_map[source_cover_img_id]
+            new_cover_img_id = get_target_image_id(
+                source_cover_img_id, image_map, shared_images_library
+            )
+            if new_cover_img_id:
+                gallery.cover_image_id = new_cover_img_id
             else:
                 logger.warning(
                     f"Gallery.cover_image is not present in image map. Gallery Id: {gallery.id}."
@@ -293,11 +294,10 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
         updated_gallery_items = []
         for gallery_item in gallery_items:
-            if gallery_item.image.id in shared_images_library:
-                new_gallery_item_image_id = gallery_item.image.id
-            elif gallery_item.image.id in image_map:
-                new_gallery_item_image_id = image_map[gallery_item.image.id]
-            else:
+            target_img_id = get_target_image_id(
+                gallery_item.image.id, image_map, shared_images_library
+            )
+            if not target_img_id:
                 logger.warning(
                     f"Missing gallery_item.image in image map with id: {gallery_item.image.id}."
                 )
@@ -305,13 +305,22 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
             new_gallery_item = GalleryItem(
                 gallery=gallery,
-                image_id=new_gallery_item_image_id,
+                image_id=target_img_id,
                 ordering=gallery_item.ordering,
             )
             new_gallery_item.save()
             updated_gallery_items.append(new_gallery_item)
 
         gallery.galleryitem_set.set(updated_gallery_items)
+
+
+def get_target_image_id(source_image_id, image_map, shared_images_library):
+    # helper method to get image id if its present in the image_map, or in the shared images library
+    if source_image_id in shared_images_library:
+        return source_image_id
+    elif source_image_id in image_map:
+        return image_map[source_image_id]
+    return None
 
 
 def copy_related_media(instance, source_media, audio_map, image_map, video_map):
@@ -335,12 +344,10 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
     shared_images_library = list(
         Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
     )
-    target_images = []
-    for image_id in source_media["images"]:
-        if image_id in shared_images_library:
-            target_images.append(image_id)
-        elif image_id in image_map:
-            target_images.append(image_map[image_id])
+    target_images = [
+        get_target_image_id(image_id, image_map, shared_images_library)
+        for image_id in source_media["images"]
+    ]
 
     if target_images:
         instance.related_images.set(target_images)
