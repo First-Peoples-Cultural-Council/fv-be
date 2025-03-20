@@ -30,7 +30,7 @@ drf-nested-routers==0.94.1  # https://github.com/alanjds/drf-nested-routers/
 drf-spectacular==0.28.0
 editdistance==0.8.1
 elastic-transport==8.17.1
-elasticsearch==7.17.2
+elasticsearch==7.13.4
 elasticsearch-dsl==7.4.1
 et-xmlfile==2.0.0
 eventlet==0.39.0
@@ -53,7 +53,7 @@ mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
 munkres==1.1.4
 nh3==0.2.20 # https://github.com/messense/nh3
 networkx==3.4.2
-numpy==2.2.3
+numpy==1.26.4
 openpyxl==3.1.5
 packaging==24.2
 panphon==0.21.2
