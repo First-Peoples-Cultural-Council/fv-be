@@ -83,7 +83,7 @@ def is_valid_header_variation(input_header, all_headers):
     return True
 
 
-def clean_csv(data):
+def clean_csv(data, missing_media):
     """
     Method to run validations on a csv file and returns a list of
     accepted columns, ignored columns and a cleaned csv for importing.
@@ -112,15 +112,15 @@ def clean_csv(data):
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
+    for missing_media_row in missing_media:
+        del cleaned_data[missing_media_row["idx"] - 1]
+
     return accepted_headers, invalid_headers, cleaned_data
 
 
 def import_resource(data, import_job, missing_media=[], dry_run=True):
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
     # Remove rows that have missing media
-    # todo: Can this go into the clean_csv method ?
-    for missing_media_row in missing_media:
-        del cleaned_data[missing_media_row["idx"] - 1]
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(

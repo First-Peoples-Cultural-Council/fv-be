@@ -543,7 +543,6 @@ class TestBulkImportDryRun:
             "Media file not found in uploaded files: sample-audio.mp3."
             in error_rows[0].errors
         )
-        # todo: Test what happens if a row has missing media, but also some other issue
 
     def test_all_media_present(self):
         file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
