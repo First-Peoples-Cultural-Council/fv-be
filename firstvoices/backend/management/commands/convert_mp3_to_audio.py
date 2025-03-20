@@ -1,5 +1,6 @@
 import logging
 
+from django.core.files.uploadedfile import UploadedFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -47,13 +48,14 @@ class Command(BaseCommand):
         with transaction.atomic():
             # convert ImageFile or VideoFile to File
             original_file = model.original
+
             file = File.objects.create(
                 created_by=original_file.created_by,
                 created=original_file.created,
                 last_modified_by=original_file.last_modified_by,
                 last_modified=original_file.last_modified,
                 site=original_file.site,
-                content=original_file.content,
+                content=UploadedFile(original_file.content.file),
                 mimetype=original_file.mimetype,
                 size=original_file.size,
             )
