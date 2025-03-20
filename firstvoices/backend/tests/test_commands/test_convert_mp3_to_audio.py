@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from django.core.management import call_command
 
@@ -199,3 +201,19 @@ class TestConvertMP3ToAudio:
 
         # duplicate models will be created but will not be linked to related models
         assert Audio.objects.filter(site=site).count() == 4
+
+    @pytest.mark.django_db
+    def test_new_file_exists(self):
+        site = factories.SiteFactory.create()
+        image = self.create_image_model_with_mp3(site, self.IMAGE_TITLE)
+        word = factories.DictionaryEntryFactory.create(site=site)
+        word.related_images.add(image)
+
+        source_file = image.original.content
+        assert os.path.isfile(source_file.path)
+
+        call_command("convert_mp3_to_audio", site_slug=site.slug)
+
+        word.refresh_from_db()
+        destination_file = word.related_audio.first().original.content
+        assert os.path.isfile(destination_file.path)
