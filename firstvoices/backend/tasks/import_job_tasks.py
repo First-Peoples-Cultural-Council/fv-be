@@ -83,7 +83,7 @@ def is_valid_header_variation(input_header, all_headers):
     return True
 
 
-def clean_csv(data, missing_media):
+def clean_csv(data, missing_media=[]):
     """
     Method to run validations on a csv file and returns a list of
     accepted columns, ignored columns and a cleaned csv for importing.
