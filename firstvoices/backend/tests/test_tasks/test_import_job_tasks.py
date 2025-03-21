@@ -536,12 +536,16 @@ class TestBulkImportDryRun:
         error_rows = validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
-        assert validation_report.error_rows == 1
-        assert list(error_rows_numbers) == [1]
+        assert validation_report.error_rows == 2
+        assert list(error_rows_numbers) == [1, 2]
 
         assert (
             "Media file not found in uploaded files: sample-audio.mp3."
             in error_rows[0].errors
+        )
+        assert (
+            "Media file not found in uploaded files: sample-image.jpg."
+            in error_rows[1].errors
         )
 
     def test_all_media_present(self):

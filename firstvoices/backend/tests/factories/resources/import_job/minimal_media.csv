@@ -1,2 +1,3 @@
-TITLE,TYPE,AUDIO_FILENAME
+TITLE,TYPE,AUDIO_FILENAME,IMAGE_FILENAME
 abc,word,sample-audio.mp3
+abc,word,,sample-image.jpg

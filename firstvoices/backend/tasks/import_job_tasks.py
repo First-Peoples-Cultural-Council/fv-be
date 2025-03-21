@@ -39,7 +39,7 @@ VALID_HEADERS = [
     "include_on_kids_site",
     "include_in_games",
     "related_entry",
-    # media
+    # audio
     "audio_filename",
     "audio_title",
     "audio_description",
@@ -47,6 +47,12 @@ VALID_HEADERS = [
     "audio_acknowledgement",
     "audio_include_in_kids_site",
     "audio_include_in_games",
+    # image
+    "img_filename",
+    "img_title",
+    "img_description",
+    "img_acknowledgement",
+    "img_include_in_kids_site",
 ]
 
 
@@ -112,15 +118,17 @@ def clean_csv(data, missing_media=[]):
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
-    for missing_media_row in missing_media:
-        del cleaned_data[missing_media_row["idx"] - 1]
+    # Remove rows that have missing media
+    rows_to_delete = [(obj["idx"] - 1) for obj in missing_media]
+    rows_to_delete.sort(reverse=True)
+    for row_index in rows_to_delete:
+        del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
 
 
 def import_resource(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
-    # Remove rows that have missing media
 
     # Create an ImportJobReport for the run
     report = ImportJobReport(
@@ -242,7 +250,13 @@ def get_missing_media(data, import_job_instance):
     # Audio
     if "AUDIO_FILENAME" in data.headers:
         for idx, filename in enumerate(data["AUDIO_FILENAME"]):
-            if filename not in associated_filenames:
+            if filename and filename not in associated_filenames:
+                missing_media.append({"idx": idx + 1, "filename": filename})
+
+    # Image
+    if "IMAGE_FILENAME" in data.headers:
+        for idx, filename in enumerate(data["IMAGE_FILENAME"]):
+            if filename and filename not in associated_filenames:
                 missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
