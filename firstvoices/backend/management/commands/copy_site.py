@@ -266,7 +266,9 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
     galleries = list(Gallery.objects.filter(site=source_site))
 
     shared_media_sites_ids = list(
-        SiteFeature.objects.filter(key="shared_media").values_list("site", flat=True)
+        SiteFeature.objects.filter(key="shared_media", is_enabled=True).values_list(
+            "site", flat=True
+        )
     )
     shared_images_library = list(
         Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
@@ -339,7 +341,9 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
 
     # If the image is present in the shared image library, refer to it directly
     shared_media_sites_ids = list(
-        SiteFeature.objects.filter(key="shared_media").values_list("site", flat=True)
+        SiteFeature.objects.filter(key="shared_media", is_enabled=True).values_list(
+            "site", flat=True
+        )
     )
     shared_images_library = list(
         Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
