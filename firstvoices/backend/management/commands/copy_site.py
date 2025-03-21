@@ -19,8 +19,8 @@ from backend.models.galleries import Gallery, GalleryItem
 from backend.models.immersion_labels import ImmersionLabel
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
 from backend.models.sites import Site, SiteFeature
-from backend.models.song import Song
-from backend.models.story import Story
+from backend.models.song import Lyric, Song
+from backend.models.story import Story, StoryPage
 
 
 def get_valid_object(model, error, **filters):
@@ -93,8 +93,7 @@ def copy_all_characters_and_return_map(
 
         variant.id = uuid.uuid4()
         variant.site = target_site
-        if source_base_character:
-            variant.base_character_id = character_map[source_base_character.id]
+        variant.base_character_id = character_map[source_base_character.id]
         variant.save(set_modified_date=set_modified_date)
 
     ignored_characters = list(IgnoredCharacter.objects.filter(site=source_site))
@@ -146,8 +145,23 @@ def copy_categories_and_return_map(source_site, target_site, user, set_modified_
     return category_map
 
 
+def copy_speakers_and_return_map(source_site, target_site, set_modified_date):
+    speaker_map = {}
+    source_speakers = list(Person.objects.filter(site=source_site))
+    for speaker in source_speakers:
+        source_speaker_id = speaker.id
+        target_speaker_id = uuid.uuid4()
+        speaker_map[source_speaker_id] = target_speaker_id
+
+        speaker.id = target_speaker_id
+        speaker.site = target_site
+        speaker.save(set_modified_date=set_modified_date)
+
+    return speaker_map
+
+
 def copy_audio_and_speakers_and_return_map(
-    source_site, target_site, set_modified_date, logger
+    source_site, target_site, speaker_map, set_modified_date, logger
 ):
     audio_map = {}
 
@@ -163,15 +177,8 @@ def copy_audio_and_speakers_and_return_map(
 
             # Speakers
             current_speakers = list(audio.speakers.all())
-            updated_speakers = []
-            for person in current_speakers:
-                person.id = uuid.uuid4()
-                person.site = target_site
-                person.save(set_modified_date=set_modified_date)
-                updated_speakers.append(person)
 
             audio.site = target_site
-
             source_audio_id = audio.id
             target_audio_id = uuid.uuid4()
             audio_map[source_audio_id] = target_audio_id
@@ -181,16 +188,10 @@ def copy_audio_and_speakers_and_return_map(
             audio._state.adding = True
             audio.save(set_modified_date=set_modified_date)
 
+            updated_speakers = [speaker_map[speaker.id] for speaker in current_speakers]
             audio.speakers.set(updated_speakers)
         except Exception as e:
             logger.warning(f"Couldn't copy audio file with id: {audio.id}", exc_info=e)
-
-    # Copy over rest of the people who are not attached as speakers to any audio
-    person_list = list(Person.objects.filter(site=source_site, audio_set__isnull=True))
-    for person in person_list:
-        person.id = uuid.uuid4()
-        person.site = target_site
-        person.save(set_modified_date=set_modified_date)
 
     return audio_map
 
@@ -263,24 +264,42 @@ def copy_videos_and_return_map(source_site, target_site, set_modified_date, logg
 
 def copy_galleries(source_site, target_site, image_map, set_modified_date, logger):
     galleries = list(Gallery.objects.filter(site=source_site))
+
+    shared_media_sites_ids = list(
+        SiteFeature.objects.filter(key="shared_media", is_enabled=True).values_list(
+            "site", flat=True
+        )
+    )
+    shared_images_library = list(
+        Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
+    )
+
     for gallery in galleries:
         gallery_items = list(gallery.galleryitem_set.all())
+        source_cover_img_id = gallery.cover_image.id if gallery.cover_image else None
 
         gallery.site = target_site
-        if gallery.cover_image and gallery.cover_image.id in image_map:
-            gallery.cover_image_id = image_map[gallery.cover_image.id]
-        else:
-            logger.warning(
-                f"Missing gallery.cover_image, or gallery.cover_image is not present in image map. "
-                f"Gallery Id: {gallery.id}."
+
+        if source_cover_img_id:
+            new_cover_img_id = get_target_image_id(
+                source_cover_img_id, image_map, shared_images_library
             )
+            if new_cover_img_id:
+                gallery.cover_image_id = new_cover_img_id
+            else:
+                logger.warning(
+                    f"Gallery.cover_image is not present in image map. Gallery Id: {gallery.id}."
+                )
 
         gallery.id = uuid.uuid4()
         gallery.save(set_modified_date=set_modified_date)
 
         updated_gallery_items = []
         for gallery_item in gallery_items:
-            if gallery_item.image.id not in image_map:
+            target_img_id = get_target_image_id(
+                gallery_item.image.id, image_map, shared_images_library
+            )
+            if not target_img_id:
                 logger.warning(
                     f"Missing gallery_item.image in image map with id: {gallery_item.image.id}."
                 )
@@ -288,7 +307,7 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
 
             new_gallery_item = GalleryItem(
                 gallery=gallery,
-                image_id=image_map[gallery_item.image.id],
+                image_id=target_img_id,
                 ordering=gallery_item.ordering,
             )
             new_gallery_item.save()
@@ -297,14 +316,18 @@ def copy_galleries(source_site, target_site, image_map, set_modified_date, logge
         gallery.galleryitem_set.set(updated_gallery_items)
 
 
+def get_target_image_id(source_image_id, image_map, shared_images_library):
+    # helper method to get image id if its present in the image_map, or in the shared images library
+    if source_image_id in shared_images_library:
+        return source_image_id
+    elif source_image_id in image_map:
+        return image_map[source_image_id]
+    return None
+
+
 def copy_related_media(instance, source_media, audio_map, image_map, video_map):
     # If the media is missing the original, that media file is not copied, and thus
     # also not added to the m2m for an instance
-    target_images = [
-        image_map[image_id]
-        for image_id in source_media["images"]
-        if image_id in image_map
-    ]
     target_videos = [
         video_map[video_id]
         for video_id in source_media["videos"]
@@ -314,6 +337,20 @@ def copy_related_media(instance, source_media, audio_map, image_map, video_map):
         audio_map[audio_id]
         for audio_id in source_media["audio"]
         if audio_id in audio_map
+    ]
+
+    # If the image is present in the shared image library, refer to it directly
+    shared_media_sites_ids = list(
+        SiteFeature.objects.filter(key="shared_media", is_enabled=True).values_list(
+            "site", flat=True
+        )
+    )
+    shared_images_library = list(
+        Image.objects.filter(site__id__in=shared_media_sites_ids).values_list(flat=True)
+    )
+    target_images = [
+        get_target_image_id(image_id, image_map, shared_images_library)
+        for image_id in source_media["images"]
     ]
 
     if target_images:
@@ -464,7 +501,9 @@ def copy_immersion_labels(
         imm_label.save(set_modified_date=set_modified_date)
 
 
-def copy_related_objects(source_site, target_site, user, set_modified_date, logger):
+def copy_related_objects(
+    source_site, target_site, user, set_modified_date, print_counts, logger
+):
     copy_site_features(source_site, target_site, set_modified_date)
     logger.info("Site features copied.")
 
@@ -473,8 +512,13 @@ def copy_related_objects(source_site, target_site, user, set_modified_date, logg
     )
     logger.info("Categories copied.")
 
+    speaker_map = copy_speakers_and_return_map(
+        source_site, target_site, set_modified_date
+    )
+    logger.info("Speakers copied.")
+
     audio_map = copy_audio_and_speakers_and_return_map(
-        source_site, target_site, set_modified_date, logger
+        source_site, target_site, speaker_map, set_modified_date, logger
     )
     logger.info("Audio and speakers copied.")
     image_map = copy_images_and_return_map(
@@ -517,6 +561,140 @@ def copy_related_objects(source_site, target_site, user, set_modified_date, logg
     )
     logger.info("Dictionary entries and immersion labels copied.")
 
+    if print_counts:
+        log_objects_count(
+            source_site,
+            target_site,
+            category_map,
+            speaker_map,
+            audio_map,
+            image_map,
+            video_map,
+            character_map,
+            dictionary_entry_map,
+            logger,
+        )
+
+
+def log_objects_count(
+    source_site,
+    target_site,
+    category_map,
+    speaker_map,
+    audio_map,
+    image_map,
+    video_map,
+    character_map,
+    dictionary_entry_map,
+    logger,
+):
+    # Method to log count of all objects present in the source site, and in the target site
+    source_site_feature_count = SiteFeature.objects.filter(site=source_site).count()
+    target_site_feature_count = SiteFeature.objects.filter(site=target_site).count()
+    logger.info(
+        f"Site feature count:: source: {source_site_feature_count}, target: {target_site_feature_count}"
+    )
+
+    source_category_count = Category.objects.filter(site=source_site).count()
+    target_category_count = Category.objects.filter(site=target_site).count()
+    logger.info(
+        f"Category count:: source: {source_category_count}, target: {target_category_count}, map: {len(category_map)}"
+    )
+
+    source_speakers_count = Person.objects.filter(site=source_site).count()
+    target_speakers_count = Person.objects.filter(site=target_site).count()
+    logger.info(
+        f"Speakers count:: source: {source_speakers_count}, target: {target_speakers_count}, map: {len(speaker_map)}"
+    )
+
+    source_audio_count = Audio.objects.filter(site=source_site).count()
+    target_audio_count = Audio.objects.filter(site=target_site).count()
+    logger.info(
+        f"Audio count:: source: {source_audio_count}, target: {target_audio_count}, map: {len(audio_map)}"
+    )
+
+    source_image_count = Image.objects.filter(site=source_site).count()
+    target_image_count = Image.objects.filter(site=target_site).count()
+    logger.info(
+        f"Image count:: source: {source_image_count}, target: {target_image_count}, map: {len(image_map)}"
+    )
+
+    source_video_count = Video.objects.filter(site=source_site).count()
+    target_video_count = Video.objects.filter(site=target_site).count()
+    logger.info(
+        f"Video count:: source: {source_video_count}, target: {target_video_count}, map: {len(video_map)}"
+    )
+
+    source_char_count = Character.objects.filter(site=source_site).count()
+    target_char_count = Character.objects.filter(site=target_site).count()
+    logger.info(
+        f"Character count:: source: {source_char_count}, target: {target_char_count}, map: {len(character_map)}"
+    )
+
+    source_alphabet_count = Alphabet.objects.filter(site=source_site).count()
+    target_alphabet_count = Alphabet.objects.filter(site=target_site).count()
+    logger.info(
+        f"Alphabet count:: source: {source_alphabet_count}, target: {target_alphabet_count}"
+    )
+
+    source_gallery_count = Gallery.objects.filter(site=source_site).count()
+    target_gallery_count = Gallery.objects.filter(site=target_site).count()
+    logger.info(
+        f"Gallery count:: source: {source_gallery_count}, target: {target_gallery_count}"
+    )
+    source_gallery_item_count = GalleryItem.objects.filter(
+        gallery__site=source_site
+    ).count()
+    target_gallery_item_count = GalleryItem.objects.filter(
+        gallery__site=target_site
+    ).count()
+    logger.info(
+        f"GalleryItem count:: source: {source_gallery_item_count}, target: {target_gallery_item_count}"
+    )
+
+    source_song_count = Song.objects.filter(site=source_site).count()
+    target_song_count = Song.objects.filter(site=target_site).count()
+    logger.info(
+        f"Song count:: source: {source_song_count}, target: {target_song_count}"
+    )
+    source_song_lyrics_count = Lyric.objects.filter(song__site=source_site).count()
+    target_song_lyrics_count = Lyric.objects.filter(song__site=target_site).count()
+    logger.info(
+        f"SongLyrics count:: source: {source_song_lyrics_count}, target: {target_song_lyrics_count}"
+    )
+
+    source_story_count = Story.objects.filter(site=source_site).count()
+    target_story_count = Story.objects.filter(site=target_site).count()
+    logger.info(
+        f"Story count:: source: {source_story_count}, target: {target_story_count}"
+    )
+    source_story_pages_count = StoryPage.objects.filter(site=source_site).count()
+    target_story_pages_count = StoryPage.objects.filter(site=target_site).count()
+    logger.info(
+        f"StoryPages count:: source: {source_story_pages_count}, target: {target_story_pages_count}"
+    )
+
+    source_dictionary_entry_count = DictionaryEntry.objects.filter(
+        site=source_site
+    ).count()
+    target_dictionary_entry_count = DictionaryEntry.objects.filter(
+        site=target_site
+    ).count()
+    logger.info(
+        f"DictionaryEntry count:: source: {source_dictionary_entry_count}, "
+        f"target: {target_dictionary_entry_count}, map: {len(dictionary_entry_map)}"
+    )
+
+    source_immersion_labels_count = ImmersionLabel.objects.filter(
+        site=source_site
+    ).count()
+    target_immersion_labels_count = ImmersionLabel.objects.filter(
+        site=target_site
+    ).count()
+    logger.info(
+        f"ImmersionLabels count:: source: {source_immersion_labels_count}, target: {target_immersion_labels_count}"
+    )
+
 
 class Command(BaseCommand):
     help = "Copy a Site and all its contents from a source slug to a target slug."
@@ -552,6 +730,13 @@ class Command(BaseCommand):
             help="Delete target site if exists.",
             action="store_true",
         )
+        parser.add_argument(
+            "--print-counts",
+            dest="print_counts",
+            help="Helpful for debugging. Prints counts of all model instances that were copied in the "
+            "format: source, target, and map(if present) .",
+            action="store_true",
+        )
 
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
@@ -561,6 +746,7 @@ class Command(BaseCommand):
         user_email = options["email"]
         set_modified_date = options["reset_last_modified"]
         force_delete = options["force_delete"]
+        print_counts = options["print_counts"]
 
         logger.info("Verifying requirements.")
 
@@ -580,5 +766,7 @@ class Command(BaseCommand):
 
         target_site = create_new_site(source_site, target_slug, user)
 
-        copy_related_objects(source_site, target_site, user, set_modified_date, logger)
+        copy_related_objects(
+            source_site, target_site, user, set_modified_date, print_counts, logger
+        )
         logger.info("Site copy completed successfully.")

@@ -54,13 +54,14 @@ class TestCopySite:
         self.source_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="source")
         self.superadmin_user = get_app_admin(AppRole.SUPERADMIN)
 
-    def call_copy_site_command(self):
+    def call_copy_site_command(self, print_counts=False):
         # helper function
         call_command(
             "copy_site",
             source_slug=self.SOURCE_SLUG,
             target_slug=self.TARGET_SLUG,
             email=self.superadmin_user.email,
+            print_counts=print_counts,
         )
 
     def test_missing_source_site_raises_error(self):
@@ -107,6 +108,27 @@ class TestCopySite:
             )
         assert str(e.value) == "No user found with the provided email."
 
+    def test_print_counts_flag(self, caplog):
+        self.call_copy_site_command(print_counts=True)
+
+        # Since the initial site is empty, all values should be 0 except for category
+        assert "Category count:: source: 38, target: 38, map: 38" in caplog.text
+        assert "Site feature count:: source: 0, target: 0" in caplog.text
+        assert "Speakers count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Audio count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Image count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Video count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Character count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Alphabet count:: source: 0, target: 0" in caplog.text
+        assert "Gallery count:: source: 0, target: 0" in caplog.text
+        assert "GalleryItem count:: source: 0, target: 0" in caplog.text
+        assert "Song count:: source: 0, target: 0" in caplog.text
+        assert "SongLyrics count:: source: 0, target: 0" in caplog.text
+        assert "Story count:: source: 0, target: 0" in caplog.text
+        assert "StoryPages count:: source: 0, target: 0" in caplog.text
+        assert "DictionaryEntry count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "ImmersionLabels count:: source: 0, target: 0" in caplog.text
+
     def test_site_attributes(self):
         self.call_copy_site_command()
 
@@ -147,7 +169,8 @@ class TestCopySite:
         assert target_feature_enabled.is_enabled == source_feature_enabled.is_enabled
         assert target_feature_disabled.is_enabled == source_feature_disabled.is_enabled
 
-    def test_characters_and_variants(self):
+    @pytest.mark.parametrize("char_variant_present", [True, False])
+    def test_characters_and_variants(self, char_variant_present):
         source_img_1 = ImageFactory(site=self.source_site)
         source_img_2 = ImageFactory(site=self.source_site)
         source_video_1 = VideoFactory(site=self.source_site)
@@ -156,9 +179,11 @@ class TestCopySite:
         source_audio_2 = AudioFactory(site=self.source_site)
 
         source_char = CharacterFactory(site=self.source_site)
-        source_char_variant = CharacterVariantFactory(
-            site=self.source_site, base_character=source_char
-        )
+        source_char_variant = None
+        if char_variant_present:
+            source_char_variant = CharacterVariantFactory(
+                site=self.source_site, base_character=source_char
+            )
 
         source_char.related_images.set([source_img_1, source_img_2])
         source_char.related_videos.set([source_video_1, source_video_2])
@@ -169,16 +194,20 @@ class TestCopySite:
         self.call_copy_site_command()
 
         target_char = Character.objects.get(site__slug=self.TARGET_SLUG)
-        target_char_variant = CharacterVariant.objects.get(site__slug=self.TARGET_SLUG)
 
         assert target_char.title == source_char.title
         assert target_char.sort_order == source_char.sort_order
-        assert target_char_variant.title == source_char_variant.title
-        assert target_char_variant.base_character == target_char
 
         assert target_char.related_images.count() == 2
         assert target_char.related_videos.count() == 2
         assert target_char.related_audio.count() == 2
+
+        if char_variant_present:
+            target_char_variant = CharacterVariant.objects.get(
+                site__slug=self.TARGET_SLUG
+            )
+            assert target_char_variant.title == source_char_variant.title
+            assert target_char_variant.base_character == target_char
 
     def test_ignored_characters(self):
         source_ignored_char = IgnoredCharacterFactory(site=self.source_site)
@@ -296,10 +325,14 @@ class TestCopySite:
         assert target_video.small is None
         assert target_video.medium is None
 
-    def test_gallery(self):
-        source_cover_img = ImageFactory(site=self.source_site)
+    @pytest.mark.parametrize("cover_image_present", [True, False])
+    def test_gallery(self, cover_image_present):
         source_img_1 = ImageFactory(site=self.source_site)
         source_img_2 = ImageFactory(site=self.source_site)
+
+        source_cover_img = (
+            ImageFactory(site=self.source_site) if cover_image_present else None
+        )
 
         source_gallery = GalleryFactory(
             site=self.source_site, cover_image=source_cover_img
@@ -311,10 +344,10 @@ class TestCopySite:
 
         target_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
 
-        # Comparing titles and site for images as proxy
-        # cover image
-        assert target_gallery.cover_image.title == source_cover_img.title
-        assert target_gallery.cover_image.site.slug == self.TARGET_SLUG
+        # Comparing titles and site for images as proxy for image content
+        if cover_image_present:
+            assert target_gallery.cover_image.title == source_cover_img.title
+            assert target_gallery.cover_image.site.slug == self.TARGET_SLUG
 
         target_gallery_item_1 = target_gallery.galleryitem_set.all().order_by(
             "ordering"
@@ -587,8 +620,8 @@ class TestCopySite:
             self.call_copy_site_command()
 
         assert (
-            f"Missing gallery.cover_image, or gallery.cover_image is not present in image map. "
-            f"Gallery Id: {src_gallery.id}." in caplog.text
+            f"Gallery.cover_image is not present in image map. Gallery Id: {src_gallery.id}."
+            in caplog.text
         )
         assert (
             f"Missing gallery_item.image in image map with id: {src_image.id}"
@@ -624,3 +657,50 @@ class TestCopySite:
         related_entries_for_entry_2 = target_entry_2.related_dictionary_entries.all()
         assert related_entries_for_entry_2.count() == 1
         assert related_entries_for_entry_2[0].id == target_entry_1.id
+
+    def test_shared_images_used_as_related_media(self):
+        shared_image_site = SiteFactory.create(slug="library")
+        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+
+        shared_image_1 = ImageFactory(site=shared_image_site)
+        shared_image_2 = ImageFactory(site=shared_image_site)
+        source_img_1 = ImageFactory(site=self.source_site)
+        source_img_2 = ImageFactory(site=self.source_site)
+
+        source_entry = DictionaryEntryFactory(
+            site=self.source_site,
+        )
+        source_entry.related_images.set(
+            [shared_image_1, shared_image_2, source_img_1, source_img_2]
+        )
+
+        self.call_copy_site_command()
+
+        target_entry = DictionaryEntry.objects.get(
+            site__slug=self.TARGET_SLUG, title=source_entry.title
+        )
+        assert target_entry.related_images.count() == 4
+        target_related_images_ids = list(
+            target_entry.related_images.all().values_list(flat=True)
+        )
+
+        assert shared_image_1.id in target_related_images_ids
+        assert shared_image_2.id in target_related_images_ids
+
+    def test_shared_images_used_in_gallery(self):
+        shared_image_site = SiteFactory.create(slug="library")
+        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+
+        shared_image_1 = ImageFactory(site=shared_image_site)
+        shared_image_2 = ImageFactory(site=shared_image_site)
+
+        src_gallery = GalleryFactory(site=self.source_site, cover_image=shared_image_1)
+        GalleryItemFactory.create(gallery=src_gallery, image=shared_image_2)
+
+        self.call_copy_site_command()
+
+        target_gallery = Gallery.objects.filter(site__slug=self.TARGET_SLUG)[0]
+        assert target_gallery.cover_image == shared_image_1
+
+        target_gallery_item = target_gallery.galleryitem_set.all()[0]
+        assert target_gallery_item.image == shared_image_2
