@@ -9,7 +9,6 @@ class Command(BaseCommand):
     help = "Merge duplicate speakers for all sites."
 
     def handle(self, *args, **options):
-        # Setting logger level to get all logs
         logger = logging.getLogger(__name__)
 
         placeholder_bio = "---"
