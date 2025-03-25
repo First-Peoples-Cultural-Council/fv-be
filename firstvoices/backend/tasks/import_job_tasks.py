@@ -43,7 +43,6 @@ VALID_HEADERS = [
     "audio_filename",
     "audio_title",
     "audio_description",
-    "audio_speaker",  # Add a new ticket for speaker support
     "audio_acknowledgement",
     "audio_include_in_kids_site",
     "audio_include_in_games",
@@ -59,7 +58,6 @@ VALID_HEADERS = [
     "video_description",
     "video_acknowledgement",
     "video_include_in_kids_site",
-    # video_embed_link to be added
 ]
 
 
@@ -146,7 +144,6 @@ def import_resource(data, import_job, missing_media=[], dry_run=True):
     )
     report.save()
 
-    # media_import_result = MediaResources.import_data(dataset=cleaned_data, dry_run=dry_run)
     # Add media errors to report
     for missing_media_row in missing_media:
         error_row_instance = ImportJobReportRow(
@@ -179,9 +176,7 @@ def import_resource(data, import_job, missing_media=[], dry_run=True):
             )
             error_row_instance.save()
 
-    report.new_rows = dictionary_entry_import_result.totals[
-        "new"
-    ]  # + media_import_result.new_rows
+    report.new_rows = dictionary_entry_import_result.totals["new"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
