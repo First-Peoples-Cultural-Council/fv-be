@@ -53,6 +53,13 @@ VALID_HEADERS = [
     "img_description",
     "img_acknowledgement",
     "img_include_in_kids_site",
+    # video
+    "video_filename",
+    "video_title",
+    "video_description",
+    "video_acknowledgement",
+    "video_include_in_kids_site",
+    # video_embed_link to be added
 ]
 
 
@@ -254,8 +261,14 @@ def get_missing_media(data, import_job_instance):
                 missing_media.append({"idx": idx + 1, "filename": filename})
 
     # Image
-    if "IMAGE_FILENAME" in data.headers:
-        for idx, filename in enumerate(data["IMAGE_FILENAME"]):
+    if "IMG_FILENAME" in data.headers:
+        for idx, filename in enumerate(data["IMG_FILENAME"]):
+            if filename and filename not in associated_filenames:
+                missing_media.append({"idx": idx + 1, "filename": filename})
+
+    # Video
+    if "VIDEO_FILENAME" in data.headers:
+        for idx, filename in enumerate(data["VIDEO_FILENAME"]):
             if filename and filename not in associated_filenames:
                 missing_media.append({"idx": idx + 1, "filename": filename})
 

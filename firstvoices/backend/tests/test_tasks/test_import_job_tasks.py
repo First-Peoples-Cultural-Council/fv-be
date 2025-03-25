@@ -536,8 +536,8 @@ class TestBulkImportDryRun:
         error_rows = validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
-        assert validation_report.error_rows == 2
-        assert list(error_rows_numbers) == [1, 2]
+        assert validation_report.error_rows == 3
+        assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
             "Media file not found in uploaded files: sample-audio.mp3."
@@ -546,6 +546,10 @@ class TestBulkImportDryRun:
         assert (
             "Media file not found in uploaded files: sample-image.jpg."
             in error_rows[1].errors
+        )
+        assert (
+            "Media file not found in uploaded files: video_example_small.mp4."
+            in error_rows[2].errors
         )
 
     def test_all_media_present(self):
@@ -562,12 +566,22 @@ class TestBulkImportDryRun:
         # Media should be missing initially
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 1
+        assert validation_report.error_rows == 3
 
         # Adding media to db
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
 
