@@ -246,7 +246,6 @@ def dry_run_import_job(data, import_job):
 
 
 def get_missing_media(data, import_job_instance):
-    missing_media = []
     associated_files = list(
         File.objects.filter(import_job=import_job_instance).values_list(
             "content", flat=True
@@ -254,23 +253,13 @@ def get_missing_media(data, import_job_instance):
     )
     associated_filenames = [file.split("/")[-1] for file in associated_files]
 
-    # Audio
-    if "AUDIO_FILENAME" in data.headers:
-        for idx, filename in enumerate(data["AUDIO_FILENAME"]):
-            if filename and filename not in associated_filenames:
-                missing_media.append({"idx": idx + 1, "filename": filename})
-
-    # Image
-    if "IMG_FILENAME" in data.headers:
-        for idx, filename in enumerate(data["IMG_FILENAME"]):
-            if filename and filename not in associated_filenames:
-                missing_media.append({"idx": idx + 1, "filename": filename})
-
-    # Video
-    if "VIDEO_FILENAME" in data.headers:
-        for idx, filename in enumerate(data["VIDEO_FILENAME"]):
-            if filename and filename not in associated_filenames:
-                missing_media.append({"idx": idx + 1, "filename": filename})
+    missing_media = []
+    media_filename_list = ["AUDIO_FILENAME", "IMG_FILENAME", "VIDEO_FILENAME"]
+    for media_filename in media_filename_list:
+        if media_filename in data.headers:
+            for idx, filename in enumerate(data[media_filename]):
+                if filename and filename not in associated_filenames:
+                    missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
 
