@@ -18,8 +18,8 @@ from backend.search.utils.hydration_utils import hydrate_objects
 from backend.search.utils.validators import (
     get_valid_boolean,
     get_valid_count,
-    get_valid_document_types,
     get_valid_domain,
+    get_valid_search_types,
     get_valid_site_feature,
     get_valid_site_ids_from_slugs,
     get_valid_sort,
@@ -61,7 +61,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="types",
-                description="filter by document types. possible options are word, phrase, song",
+                description="Filter by type of content. Options are word, phrase, song, story.",
                 required=False,
                 default="",
                 type=str,
@@ -69,29 +69,17 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "",
                         value="",
-                        description="Retrieves results from all types of documents.",
+                        description="Retrieves all types of results.",
                     ),
                     OpenApiExample(
-                        "word, phrase, song, story",
-                        value="word, phrase, song, story",
-                        description="Searches for documents in words, phrases, songs and stories.",
+                        "word, phrase",
+                        value="word,phrase",
+                        description="Searches for word and phrase results.",
                     ),
                     OpenApiExample(
-                        "word",
-                        value="word",
-                        description="Specifically looks for documents in the Words document type.",
-                    ),
-                    OpenApiExample(
-                        "word, invalid_type",
-                        value="word",
-                        description="Ignores invalid document types and returns results "
-                        "only for the valid types, such as words.",
-                    ),
-                    OpenApiExample(
-                        "invalid_type",
-                        value="None",
-                        description="If no valid document types are provided, "
-                        "the API returns an empty set of results.",
+                        "song",
+                        value="song",
+                        description="Searches for song results only.",
                     ),
                 ],
             ),
@@ -225,7 +213,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
             ),
             OpenApiParameter(
                 name="visibility",
-                description="Filter by document visibility. Possible options are Team, Members, Public",
+                description="Filter by visibility. Options are team, members, public",
                 required=False,
                 default="",
                 type=str,
@@ -233,39 +221,23 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "",
                         value="",
-                        description="Retrieves results from documents with any visibility.",
+                        description="Returns results with any visibility.",
                     ),
                     OpenApiExample(
                         "Team",
-                        value="Team",
-                        description="Searches for documents that are visible to team users on a site.",
+                        value="team",
+                        description="Returns results with team-only visibility.",
                     ),
                     OpenApiExample(
-                        "Members",
-                        value="Members",
-                        description="Searches for documents that are visible to members of a site.",
-                    ),
-                    OpenApiExample(
-                        "Public",
-                        value="Public",
-                        description="Searches for documents that are visible to the public.",
-                    ),
-                    OpenApiExample(
-                        "Team, Members",
-                        value="Team, Members",
-                        description="Searches for documents that are visible to team users and members of a site.",
-                    ),
-                    OpenApiExample(
-                        "invalid_type",
-                        value="None",
-                        description="If no valid document types are provided, "
-                        "the API returns an empty set of results.",
+                        "Public, Members",
+                        value="public,members",
+                        description="Returns results that have been published with Public or Members-only visibility.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasAudio",
-                description="Filter documents that have related audio.",
+                description="Filter results that have related audio.",
                 required=False,
                 default=None,
                 type=bool,
@@ -273,23 +245,18 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns documents that have related audio.",
+                        description="Returns results that have related audio.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns documents that do not have related audio.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns results that do not have related audio.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasDocument",
-                description="Filter index documents that have related documents.",
+                description="Filter results that have related documents.",
                 required=False,
                 default=None,
                 type=bool,
@@ -297,23 +264,18 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns index documents that have related documents.",
+                        description="Returns results that have related documents.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns index documents that do not have related documents.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns results that do not have related documents.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasImage",
-                description="Filter documents that have related images.",
+                description="Filter results that have related images.",
                 required=False,
                 default=None,
                 type=bool,
@@ -321,23 +283,18 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns documents that have related images.",
+                        description="Returns results that have related images.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns documents that do not have related images.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns results that do not have related images.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasVideo",
-                description="Filter documents that have related videos.",
+                description="Filter results that have related videos.",
                 required=False,
                 default=False,
                 type=bool,
@@ -345,23 +302,18 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns documents that have related videos.",
+                        description="Returns results that have related videos.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns documents that do not have related videos.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=False,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns results that do not have related videos.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasTranslation",
-                description="Filter documents that have a related translation or title translation.",
+                description="Filter results that have a translation or title translation.",
                 required=False,
                 default=None,
                 type=bool,
@@ -369,23 +321,19 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns documents that have a related translation or title translation.",
+                        description="Returns results that have a translation or title translation.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns documents that do not have a related translation or title translation.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns results that do not have a translation or title translation.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="hasUnrecognizedChars",
-                description="Filter dictionary entries that have an unrecognized character present in their title.",
+                description="Filter dictionary entries that contain at least one character in their title that is not "
+                "present in the alphabet configuration.",
                 required=False,
                 default=None,
                 type=bool,
@@ -393,19 +341,12 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "True",
                         value=True,
-                        description="Returns dictionary entries that have an unrecognized character "
-                        "present in their title.",
+                        description="Returns dictionary entries that have unrecognized characters.",
                     ),
                     OpenApiExample(
                         "False",
                         value=False,
-                        description="Returns dictionary entries that do not have an unrecognized character "
-                        "present in their title.",
-                    ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
+                        description="Returns dictionary entries that do not have any unrecognized characters.",
                     ),
                 ],
             ),
@@ -426,11 +367,6 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value=False,
                         description="Returns dictionary entries that do not have categories.",
                     ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
-                    ),
                 ],
             ),
             OpenApiParameter(
@@ -450,46 +386,32 @@ from backend.views.exceptions import ElasticSearchConnectionError
                         value=False,
                         description="Returns dictionary entries that do not have related dictionary entries.",
                     ),
-                    OpenApiExample(
-                        "Oranges",
-                        value=None,
-                        description="Invalid input, defaults to all entries.",
-                    ),
                 ],
             ),
             OpenApiParameter(
                 name="hasSiteFeature",
-                description="Filter media documents base on site feature.",
+                description="Filter results based on site features.",
                 required=False,
                 default="",
                 type=str,
                 examples=[
                     OpenApiExample(
-                        "",
-                        value="",
-                        description="Default case. Do not add hasSiteFeature filter.",
-                    ),
-                    OpenApiExample(
                         "valid site feature key",
                         value="EXAMPLE_KEY",
-                        description="Retrieves media documents from sites with the EXAMPLE_KEY feature enabled.",
+                        description="Retrieves results from sites with the EXAMPLE_KEY feature enabled.",
                     ),
                     OpenApiExample(
                         "multiple valid site feature keys",
-                        value="KEY, SHARED_MEDIA",
-                        description="Retrieves media docs from sites with KEY, SHARED_MEDIA or both features enabled.",
-                    ),
-                    OpenApiExample(
-                        "invalid site feature key",
-                        value="None",
-                        description="If invalid site feature key is passed, the API returns an empty set of results.",
+                        value="KEY,another_key",
+                        description="Retrieves results from sites with KEY, another_key or both features enabled.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="minWords",
                 description="Filter dictionary entries on the minimum number of words in their title."
-                " Only non-negative integer values are allowed.",
+                " Only non-negative integer values are allowed."
+                " If maxWords is less than minWords, no results will be returned.",
                 required=False,
                 default="",
                 type=int,
@@ -497,7 +419,7 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "2",
                         value="2",
-                        description="Only return dictionary entries which have at least 2 words in their title.",
+                        description="Returns dictionary entries with at least 2 words in their title.",
                     ),
                 ],
             ),
@@ -505,8 +427,8 @@ from backend.views.exceptions import ElasticSearchConnectionError
                 name="maxWords",
                 description="Filter dictionary entries on the maximum number of words in their title. "
                 "Only non-negative integer values are allowed. "
-                f"The maximum value is capped at {LENGTH_FILTER_MAX}. "
-                "The value in maxWords should always be greater than or equal to the minWords filter.",
+                f"The maximum value is {LENGTH_FILTER_MAX}. "
+                "If maxWords is less than minWords, no results will be returned.",
                 required=False,
                 default="",
                 type=int,
@@ -514,29 +436,19 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "5",
                         value="5",
-                        description="Only return dictionary entries which have at the most 5 words in their title.",
-                    ),
-                    OpenApiExample(
-                        "1000",
-                        value=str(LENGTH_FILTER_MAX),
-                        description="If any value greater than the max value is supplied, "
-                        "the maxWords filter scales back to the maximum value to filter.",
-                    ),
+                        description="Returns dictionary entries which have at the most 5 words in their title.",
+                    )
                 ],
             ),
             OpenApiParameter(
                 name="sort",
-                description="Sort results by date created, date last modified or title. Results can be optionally "
-                'returned in descending order by adding "_desc" to the parameter. (eg: "sort=created_desc")',
+                description="Sort results by something other than relevance. Options are: date created, date last "
+                "modified, title, or random. Results can be returned in descending order by adding '_desc' to the "
+                "parameter. (eg: 'sort=created_desc')",
                 required=False,
                 default="",
                 type=str,
                 examples=[
-                    OpenApiExample(
-                        "",
-                        value="",
-                        description="Retrieves results from documents with the default ordering by score.",
-                    ),
                     OpenApiExample(
                         "Date Created",
                         value="created",
@@ -565,46 +477,41 @@ from backend.views.exceptions import ElasticSearchConnectionError
                     OpenApiExample(
                         "Random",
                         value="random",
-                        description="Returns results in random order.",
+                        description="Returns results in random order (e.g., for games).",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="importJobId",
-                description="Filter results based on the associated import-job.",
+                description="Filter results based on the associated batch import job.",
                 required=False,
                 default="",
                 type=str,
                 examples=[
                     OpenApiExample(
-                        "",
-                        value="",
-                        description="Default case. Do not add import-job filter.",
-                    ),
-                    OpenApiExample(
                         "valid UUID",
-                        value="valid UUID",
-                        description="Return entries which are associated with "
-                        "the specified import-job.",
+                        value="6cdb161a-2ce7-4197-813d-1683448128a2",
+                        description="Return entries which were imported by the specified job.",
                     ),
                 ],
             ),
             OpenApiParameter(
                 name="sites",
-                description="Filter results based on slug. Multiple sites can be passed as a comma-separated list.",
+                description="Filter results based on site. Multiple site slugs can be passed as a comma-separated "
+                "list. For searching a single site, see also the site-level search API.",
                 required=False,
                 default="",
                 type=str,
                 examples=[
                     OpenApiExample(
-                        "",
-                        value="",
-                        description="Default case. Do not add sites filter.",
+                        "One Site",
+                        value="site1",
+                        description="Return results from site1.",
                     ),
                     OpenApiExample(
-                        "site1, site2",
-                        value="site1, site2",
-                        description="Return entries which are associated with the specified sites.",
+                        "Multiple Sites",
+                        value="site1,site2",
+                        description="Return results from site1 and site2.",
                     ),
                 ],
             ),
@@ -625,7 +532,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         user = self.request.user
 
         input_types_str = self.request.GET.get("types", "")
-        valid_types_list = get_valid_document_types(input_types_str)
+        valid_types_list = get_valid_search_types(input_types_str)
 
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str)

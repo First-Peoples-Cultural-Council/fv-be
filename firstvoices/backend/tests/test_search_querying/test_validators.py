@@ -5,12 +5,12 @@ from rest_framework.serializers import ValidationError
 
 from backend.models import Category
 from backend.models.constants import Visibility
-from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
+from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_SEARCH_TYPES
 from backend.search.utils.validators import (
     get_valid_count,
-    get_valid_document_types,
     get_valid_domain,
     get_valid_instance_id,
+    get_valid_search_types,
     get_valid_site_feature,
     get_valid_sort,
     get_valid_visibility,
@@ -33,12 +33,12 @@ class TestValidDocumentTypes:
     )
     def test_mixed_input_doc_types(self, input_types, expected_types):
         # test for all caps, mixed cases, invalid types, and combination of invalid and valid types
-        actual_types = get_valid_document_types(input_types)
+        actual_types = get_valid_search_types(input_types)
         assert expected_types == actual_types
 
     def test_empty_input_return_all_types(self):
-        actual_types = get_valid_document_types("")
-        assert VALID_DOCUMENT_TYPES == actual_types
+        actual_types = get_valid_search_types("")
+        assert VALID_SEARCH_TYPES == actual_types
 
 
 class TestValidDomains:
