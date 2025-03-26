@@ -6,26 +6,13 @@ from backend.models.constants import AppRole, Role, Visibility
 from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentCreateApiTestMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    WriteApiTestMixin,
-)
 from backend.tests.test_apis.test_async_apis.base_async_api_test import BaseAsyncApiTest
 from backend.tests.test_search_indexing.base_indexing_tests import (
     TransactionOnCommitMixin,
 )
 
 
-class TestDictionaryCleanupAPI(
-    BaseAsyncApiTest,
-    WriteApiTestMixin,
-    SiteContentCreateApiTestMixin,
-    TransactionOnCommitMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-):
+class TestDictionaryCleanupAPI(TransactionOnCommitMixin, BaseAsyncApiTest):
     API_LIST_VIEW = "api:dictionary-cleanup-list"
     API_DETAIL_VIEW = "api:dictionary-cleanup-detail"
     CLEAR = "/clear"
