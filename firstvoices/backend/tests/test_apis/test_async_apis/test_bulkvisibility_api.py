@@ -5,23 +5,13 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
-
-from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
-from .base_api_test import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentCreateApiTestMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    WriteApiTestMixin,
+from backend.tests.test_apis.test_async_apis.base_async_api_test import BaseAsyncApiTest
+from backend.tests.test_search_indexing.base_indexing_tests import (
+    TransactionOnCommitMixin,
 )
 
 
-class TestBulkVisibilityEndpoints(
-    WriteApiTestMixin,
-    SiteContentCreateApiTestMixin,
-    TransactionOnCommitMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-):
+class TestBulkVisibilityEndpoints(TransactionOnCommitMixin, BaseAsyncApiTest):
     """
     End-to-end tests that the bulk visibility endpoints have the expected behaviour.
     """

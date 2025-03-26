@@ -12,12 +12,14 @@ from backend.tests.test_apis.base_api_test import (
     SuperAdminAsyncJobPermissionsMixin,
     WriteApiTestMixin,
 )
+from backend.tests.test_apis.test_async_apis.base_async_api_test import BaseAsyncApiTest
 from backend.tests.test_search_indexing.base_indexing_tests import (
     TransactionOnCommitMixin,
 )
 
 
 class TestDictionaryCleanupAPI(
+    BaseAsyncApiTest,
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     TransactionOnCommitMixin,
