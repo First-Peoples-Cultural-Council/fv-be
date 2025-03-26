@@ -2,7 +2,7 @@ import random
 
 from elasticsearch_dsl import Search
 
-from backend.search.utils.constants import VALID_DOCUMENT_TYPES
+from backend.search.utils.constants import VALID_SEARCH_TYPES
 from backend.search.utils.query_builder_utils import (
     get_category_query,
     get_cleaned_search_term,
@@ -39,7 +39,7 @@ def get_search_query(
     user=None,
     q=None,
     sites=None,
-    types=VALID_DOCUMENT_TYPES,
+    types=VALID_SEARCH_TYPES,
     domain="both",
     starts_with_char="",
     category_id="",

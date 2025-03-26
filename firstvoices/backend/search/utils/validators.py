@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from backend.models import Site
 from backend.models.constants import Visibility
-from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_DOCUMENT_TYPES
+from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_SEARCH_TYPES
 from backend.search.utils.query_builder_utils import SearchDomains
 
 
@@ -32,7 +32,7 @@ def get_valid_count(count, property_name):
     return count
 
 
-def get_valid_document_types(input_types, allowed_values=VALID_DOCUMENT_TYPES):
+def get_valid_search_types(input_types, allowed_values=VALID_SEARCH_TYPES):
     if not input_types:
         return allowed_values
 
