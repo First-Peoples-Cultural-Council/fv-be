@@ -59,6 +59,33 @@ class TestImportGalleryData:
         assert "File gallery.csv imported successfully." in caplog.text
 
     @pytest.mark.django_db
+    def test_import_duplicates(self, tmp_path, caplog):
+        site = factories.SiteFactory.create()
+        image1 = factories.ImageFactory.create(site=site)
+        data = [
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,testuser@test.com,2023-02-02 21:21:39.864,testuser@test.com,"
+            f'Test Gallery 1,Description 1,Published,{site.id},,"{image1.id},{image1.id},{image1.id}",'
+        ]
+        table = self.build_table(data)
+        filepath = tmp_path / "gallery.csv"
+        with open(filepath, "w") as file:
+            file.write(table.export("csv"))
+
+        call_command("import_gallery_data", filepath=tmp_path)
+
+        assert Gallery.objects.filter(site=site).count() == 1
+        gallery = Gallery.objects.first()
+        assert gallery.title == "Test Gallery 1"
+        assert gallery.introduction == "Description 1"
+        assert GalleryItem.objects.filter(gallery=gallery).count() == 1
+        assert gallery.cover_image == image1
+
+        assert "Found 1 gallery CSV files to process." in caplog.text
+        assert f"Processing file: {filepath}" in caplog.text
+        assert "Gallery import completed." in caplog.text
+        assert "File gallery.csv imported successfully." in caplog.text
+
+    @pytest.mark.django_db
     def test_import_gallery_data_with_missing_image(self, tmp_path, caplog):
         site = factories.SiteFactory.create()
         non_existent_image_id = uuid.uuid4()

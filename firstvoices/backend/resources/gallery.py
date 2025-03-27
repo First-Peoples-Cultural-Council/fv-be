@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 
 from import_export import fields
 
@@ -23,10 +24,11 @@ class GalleryResource(SiteContentResource):
             image_ids = [
                 img_id.strip() for img_id in related_images.split(",") if img_id.strip()
             ]
+            unique_image_ids = list(OrderedDict.fromkeys(image_ids))
 
             gallery = Gallery.objects.get(id=row_result.object_id)
 
-            for order, image_id in enumerate(image_ids):
+            for order, image_id in enumerate(unique_image_ids):
                 try:
                     image = Image.objects.get(id=image_id)
                     GalleryItem.objects.create(
