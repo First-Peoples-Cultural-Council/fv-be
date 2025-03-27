@@ -7,7 +7,7 @@ from drf_spectacular.utils import (
 )
 from elasticsearch_dsl import Q, Search
 
-from backend.models.sites import Language, Site
+from backend.models.sites import Site
 from backend.search.queries.text_matching import (
     exact_match,
     fuzzy_match,
@@ -72,7 +72,6 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         "Language": LanguageSerializer,
         "Site": LanguagePlaceholderSerializer,
     }
-    model = Language
 
     def build_query(self, q, **kwargs):
         """
