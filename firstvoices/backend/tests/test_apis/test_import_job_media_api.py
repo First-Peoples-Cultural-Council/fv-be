@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
 from backend.models.files import File
+from backend.models.jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tests.factories import FileFactory, ImportJobFactory, get_site_with_member
 from backend.tests.test_apis.base_media_test import FormDataMixin
@@ -107,6 +108,30 @@ class TestImportJobMediaEndpoint(
         assert response.status_code == 400
         response = json.loads(response.content)
         assert "Unsupported filetype. File: file.txt" in response
+
+    @pytest.mark.parametrize("job_status", JobStatus.names)
+    def test_already_confirmed(self, job_status):
+        data = {
+            "file": [
+                get_sample_file("sample-audio.mp3", "audio/mp3"),
+            ]
+        }
+
+        self.import_job.status = job_status
+        self.import_job.save()
+
+        response = self.client.post(
+            self.endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_content = json.loads(response.content)
+        assert (
+            f"Can't add media after an import job has started. This job already has status: {job_status}."
+            in response_content
+        )
 
     def test_upload_valid_files(self):
         data = {
