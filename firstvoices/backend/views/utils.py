@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 from rest_framework.throttling import UserRateThrottle
 
 from backend.models import AppJson
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 
 
 def get_select_related_media_fields(media_field_name):
@@ -35,6 +35,10 @@ def get_media_prefetch_list(user):
             .prefetch_related("speakers"),
         ),
         Prefetch(
+            "related_documents",
+            queryset=Document.objects.visible(user).select_related("original", "site"),
+        ),
+        Prefetch(
             "related_images",
             queryset=Image.objects.visible(user).select_related(
                 *get_select_related_media_fields(None)
@@ -57,6 +61,12 @@ def get_created_ordered_media_prefetch_list(user):
             .order_by("created")
             .select_related("original", "site")
             .prefetch_related("speakers"),
+        ),
+        Prefetch(
+            "related_documents",
+            queryset=Document.objects.visible(user)
+            .order_by("created")
+            .select_related("original", "site"),
         ),
         Prefetch(
             "related_images",
