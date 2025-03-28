@@ -519,6 +519,83 @@ class TestBulkImportDryRun:
         assert error_rows_numbers == []
         assert import_job.failed_rows_csv is None
 
+    def test_missing_media(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Media should be missing initially
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all().order_by("row_number")
+        error_rows_numbers = error_rows.values_list("row_number", flat=True)
+
+        assert validation_report.error_rows == 3
+        assert list(error_rows_numbers) == [1, 2, 3]
+
+        assert (
+            "Media file not found in uploaded files: sample-audio.mp3."
+            in error_rows[0].errors
+        )
+        assert (
+            "Media file not found in uploaded files: sample-image.jpg."
+            in error_rows[1].errors
+        )
+        assert (
+            "Media file not found in uploaded files: video_example_small.mp4."
+            in error_rows[2].errors
+        )
+
+    def test_all_media_present(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Media should be missing initially
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 3
+
+        # Adding media to db
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        # Verifying all missing media errors are resolved now
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.rows.count() == 0
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
@@ -763,9 +840,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             data=file,
             run_as_user=self.user,
             validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
         )
-
         confirm_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
