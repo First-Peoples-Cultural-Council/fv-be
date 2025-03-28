@@ -37,7 +37,7 @@ class TestValidDocumentTypes:
         assert expected_types == actual_types
 
     def test_default_types(self):
-        default_types = ["custom", "audio"]
+        default_types = ["word", "audio"]
         actual_types = get_valid_search_types("", default_types)
         assert actual_types == default_types
 
