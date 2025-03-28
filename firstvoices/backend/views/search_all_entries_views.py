@@ -668,6 +668,30 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
                 {"maxWords": [_("maxWords cannot be lower than minWords.")]}
             )
 
+        search_query = self.build_search_query(search_params, pagination_params)
+
+        # Get search results
+        try:
+            response = search_query.execute()
+        except ConnectionError:
+            raise ElasticSearchConnectionError()
+
+        search_results = response["hits"]["hits"]
+
+        hydrated_objects = self.hydrate_results(search_params, search_results)
+
+        return self.paginate_search_response(
+            request, hydrated_objects, response["hits"]["total"]["value"]
+        )
+
+    def hydrate_results(self, search_params, search_results):
+        # Adding data to objects
+        hydrated_objects = hydrate_objects(
+            search_results, games_flag=search_params["games"]
+        )
+        return hydrated_objects
+
+    def build_search_query(self, search_params, pagination_params):
         # Get search query
         search_query = get_search_query(
             user=search_params["user"],
@@ -694,18 +718,15 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             max_words=search_params["max_words"],
             random_sort=search_params["sort"] == "random",
         )
-
         # Pagination
         search_query = search_query.extra(
             from_=pagination_params["start"], size=pagination_params["page_size"]
         )
-
         sort_direction = "desc" if search_params["descending"] else "asc"
         custom_order_sort = {
             "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }
         title_order_sort = {"title.raw": {"order": sort_direction}}
-
         match search_params["sort"]:
             case "created":
                 # Sort by created, then by custom sort order, and finally title. Allows descending order.
@@ -734,23 +755,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
                     custom_order_sort,
                     title_order_sort,
                 )
-
-        # Get search results
-        try:
-            response = search_query.execute()
-        except ConnectionError:
-            raise ElasticSearchConnectionError()
-
-        search_results = response["hits"]["hits"]
-
-        # Adding data to objects
-        hydrated_objects = hydrate_objects(
-            search_results, games_flag=search_params["games"]
-        )
-
-        return self.paginate_search_response(
-            request, hydrated_objects, response["hits"]["total"]["value"]
-        )
+        return search_query
 
     def has_invalid_input(self, search_params):
         return (
