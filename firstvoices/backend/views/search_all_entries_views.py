@@ -13,14 +13,18 @@ from rest_framework.response import Response
 
 from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
+from backend.search.utils.constants import (
+    ENTRY_SEARCH_TYPES,
+    LENGTH_FILTER_MAX,
+    SearchIndexEntryTypes,
+)
 from backend.search.utils.hydration_utils import hydrate_objects
 from backend.search.utils.validators import (
     get_valid_boolean,
     get_valid_count,
     get_valid_domain,
     get_valid_search_types,
-    get_valid_site_feature,
+    get_valid_site_features,
     get_valid_site_ids_from_slugs,
     get_valid_sort,
     get_valid_visibility,
@@ -532,10 +536,10 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         user = self.request.user
 
         input_types_str = self.request.GET.get("types", "")
-        valid_types_list = get_valid_search_types(input_types_str)
+        valid_types_list = get_valid_search_types(input_types_str, ENTRY_SEARCH_TYPES)
 
         input_domain_str = self.request.GET.get("domain", "")
-        valid_domain = get_valid_domain(input_domain_str)
+        valid_domain = get_valid_domain(input_domain_str, "both")
 
         kids_flag = self.request.GET.get("kids", None)
         kids_flag = get_valid_boolean(kids_flag)
@@ -544,7 +548,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         games_flag = get_valid_boolean(games_flag)
 
         visibility = self.request.GET.get("visibility", "")
-        valid_visibility = get_valid_visibility(visibility)
+        valid_visibility = get_valid_visibility(visibility, "")
 
         has_audio = self.request.GET.get("hasAudio", None)
         has_audio = get_valid_boolean(has_audio)
@@ -571,7 +575,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         has_related_entries = get_valid_boolean(has_related_entries)
 
         has_site_feature = self.request.GET.get("hasSiteFeature", "")
-        has_site_feature = get_valid_site_feature(has_site_feature)
+        has_site_feature = get_valid_site_features(has_site_feature)
 
         min_words = self.request.GET.get("minWords", None)
         min_words = get_valid_count(min_words, "minWords")
@@ -651,28 +655,7 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
         search_params = self.get_search_params()
         pagination_params = self.get_pagination_params()
 
-        # If no valid types are passed, return emtpy list as a response
-        if not search_params["types"]:
-            return self.paginate_search_response(request, [], 0)
-
-        # If invalid domain is passed, return emtpy list as a response
-        if not search_params["domain"]:
-            return self.paginate_search_response(request, [], 0)
-
-        # If invalid category id, return empty list as a response
-        # explicitly checking if its None since it can be empty in case of non site wide search
-        if search_params["category_id"] is None:
-            return self.paginate_search_response(request, [], 0)
-
-        # If invalid import-job, return empty list as a response
-        if search_params["import_job_id"] is None:
-            return self.paginate_search_response(request, [], 0)
-
-        # If invalid visibility is passed, return empty list as a response
-        if search_params["visibility"] is None:
-            return self.paginate_search_response(request, [], 0)
-
-        if search_params["sites"] is None:
+        if self.has_invalid_input(search_params):
             return self.paginate_search_response(request, [], 0)
 
         # max cannot be lesser than min num of words
@@ -767,4 +750,14 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
 
         return self.paginate_search_response(
             request, hydrated_objects, response["hits"]["total"]["value"]
+        )
+
+    def has_invalid_input(self, search_params):
+        return (
+            not search_params["types"]
+            or not search_params["domain"]
+            or search_params["category_id"] is None
+            or search_params["import_job_id"] is None
+            or search_params["visibility"] is None
+            or search_params["sites"] is None
         )

@@ -5,13 +5,13 @@ from rest_framework.serializers import ValidationError
 
 from backend.models import Category
 from backend.models.constants import Visibility
-from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_SEARCH_TYPES
+from backend.search.utils.constants import LENGTH_FILTER_MAX
 from backend.search.utils.validators import (
     get_valid_count,
     get_valid_domain,
     get_valid_instance_id,
     get_valid_search_types,
-    get_valid_site_feature,
+    get_valid_site_features,
     get_valid_sort,
     get_valid_visibility,
 )
@@ -36,9 +36,10 @@ class TestValidDocumentTypes:
         actual_types = get_valid_search_types(input_types)
         assert expected_types == actual_types
 
-    def test_empty_input_return_all_types(self):
-        actual_types = get_valid_search_types("")
-        assert VALID_SEARCH_TYPES == actual_types
+    def test_default_types(self):
+        default_types = ["word", "audio"]
+        actual_types = get_valid_search_types("", default_types)
+        assert actual_types == default_types
 
 
 class TestValidDomains:
@@ -165,5 +166,5 @@ class TestValidSiteFeatures:
         [("VALID_KEY, SHARED_MEDIA", ["valid_key", "shared_media"]), ("", None)],
     )
     def test_valid_input(self, valid_input, expected_output):
-        valid_site_features = get_valid_site_feature(valid_input)
+        valid_site_features = get_valid_site_features(valid_input)
         assert valid_site_features == expected_output

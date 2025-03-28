@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from backend.models import Site
 from backend.models.constants import Visibility
-from backend.search.utils.constants import LENGTH_FILTER_MAX, VALID_SEARCH_TYPES
+from backend.search.utils.constants import ALL_SEARCH_TYPES, LENGTH_FILTER_MAX
 from backend.search.utils.query_builder_utils import SearchDomains
 
 
@@ -32,16 +32,16 @@ def get_valid_count(count, property_name):
     return count
 
 
-def get_valid_search_types(input_types, allowed_values=VALID_SEARCH_TYPES):
-    if not input_types:
-        return allowed_values
+def get_valid_search_types(input_types, default_value=ALL_SEARCH_TYPES):
+    if input_types is None or input_types == "":
+        return default_value
 
     values = input_types.split(",")
     selected_values = []
 
     for value in values:
         stripped_value = value.strip().lower()
-        if stripped_value in allowed_values and stripped_value not in selected_values:
+        if stripped_value in ALL_SEARCH_TYPES and stripped_value not in selected_values:
             selected_values.append(stripped_value)
 
     if len(selected_values) == 0:
@@ -50,11 +50,11 @@ def get_valid_search_types(input_types, allowed_values=VALID_SEARCH_TYPES):
     return selected_values
 
 
-def get_valid_domain(input_domain_str):
+def get_valid_domain(input_domain_str, default_value="both"):
     string_lower = input_domain_str.strip().lower()
 
     if not string_lower:
-        return "both"
+        return default_value
 
     if (
         string_lower == SearchDomains.BOTH.value
@@ -97,9 +97,9 @@ def get_valid_boolean(input_val):
         return None
 
 
-def get_valid_visibility(input_visibility_str):
+def get_valid_visibility(input_visibility_str, default_value=""):
     if not input_visibility_str:
-        return ""
+        return default_value
 
     input_visibility = input_visibility_str.split(",")
     selected_values = []
@@ -134,7 +134,7 @@ def get_valid_sort(input_sort_by_str):
         return None, None
 
 
-def get_valid_site_feature(input_site_feature_str):
+def get_valid_site_features(input_site_feature_str):
     if not input_site_feature_str:
         return None
 
