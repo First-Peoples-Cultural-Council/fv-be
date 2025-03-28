@@ -70,7 +70,12 @@ class ImportJobMediaViewSet(
     def create(self, *args, **kwargs):
         user = self.request.user
         site = self.get_validated_site()
+
         import_job = self.get_validated_import_job()
+        if import_job.status is not None:
+            raise ValidationError(
+                f"Can't add media after an import job has started. This job already has status: {import_job.status}."
+            )
 
         for file in self.request.FILES.getlist("file"):
             filetype = self.get_filetype(file)
