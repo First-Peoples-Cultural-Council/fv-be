@@ -668,7 +668,11 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
                 {"maxWords": [_("maxWords cannot be lower than minWords.")]}
             )
 
-        search_query = self.build_search_query(search_params, pagination_params)
+        search_query = self.build_search_query(**search_params)
+        # Pagination
+        search_query = search_query.extra(
+            from_=pagination_params["start"], size=pagination_params["page_size"]
+        )
 
         # Get search results
         try:
@@ -686,48 +690,42 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
 
     def hydrate_results(self, search_params, search_results):
         # Adding data to objects
-        hydrated_objects = hydrate_objects(
-            search_results, games_flag=search_params["games"]
-        )
-        return hydrated_objects
+        return hydrate_objects(search_results, games_flag=search_params["games"])
 
-    def build_search_query(self, search_params, pagination_params):
+    def build_search_query(self, **kwargs):
         # Get search query
         search_query = get_search_query(
-            user=search_params["user"],
-            q=search_params["q"],
-            types=search_params["types"],
-            domain=search_params["domain"],
-            kids=search_params["kids"],
-            games=search_params["games"],
-            sites=search_params["sites"],
-            starts_with_char=search_params["starts_with_char"],
-            category_id=search_params["category_id"],
-            import_job_id=search_params["import_job_id"],
-            visibility=search_params["visibility"],
-            has_audio=search_params["has_audio"],
-            has_document=search_params["has_document"],
-            has_image=search_params["has_image"],
-            has_video=search_params["has_video"],
-            has_translation=search_params["has_translation"],
-            has_unrecognized_chars=search_params["has_unrecognized_chars"],
-            has_related_entries=search_params["has_related_entries"],
-            has_categories=search_params["has_categories"],
-            has_site_feature=search_params["has_site_feature"],
-            min_words=search_params["min_words"],
-            max_words=search_params["max_words"],
-            random_sort=search_params["sort"] == "random",
+            user=kwargs["user"],
+            q=kwargs["q"],
+            types=kwargs["types"],
+            domain=kwargs["domain"],
+            kids=kwargs["kids"],
+            games=kwargs["games"],
+            sites=kwargs["sites"],
+            starts_with_char=kwargs["starts_with_char"],
+            category_id=kwargs["category_id"],
+            import_job_id=kwargs["import_job_id"],
+            visibility=kwargs["visibility"],
+            has_audio=kwargs["has_audio"],
+            has_document=kwargs["has_document"],
+            has_image=kwargs["has_image"],
+            has_video=kwargs["has_video"],
+            has_translation=kwargs["has_translation"],
+            has_unrecognized_chars=kwargs["has_unrecognized_chars"],
+            has_related_entries=kwargs["has_related_entries"],
+            has_categories=kwargs["has_categories"],
+            has_site_feature=kwargs["has_site_feature"],
+            min_words=kwargs["min_words"],
+            max_words=kwargs["max_words"],
+            random_sort=kwargs["sort"] == "random",
         )
-        # Pagination
-        search_query = search_query.extra(
-            from_=pagination_params["start"], size=pagination_params["page_size"]
-        )
-        sort_direction = "desc" if search_params["descending"] else "asc"
+
+        sort_direction = "desc" if kwargs["descending"] else "asc"
         custom_order_sort = {
             "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }
         title_order_sort = {"title.raw": {"order": sort_direction}}
-        match search_params["sort"]:
+        match kwargs["sort"]:
             case "created":
                 # Sort by created, then by custom sort order, and finally title. Allows descending order.
                 search_query = search_query.sort(
