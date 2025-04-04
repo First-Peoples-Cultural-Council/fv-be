@@ -670,9 +670,8 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
 
         search_query = self.build_search_query(**search_params)
         # Pagination
-        search_query = search_query.extra(
-            from_=pagination_params["start"], size=pagination_params["page_size"]
-        )
+        search_query = self.paginate_search_query(search_query, pagination_params)
+        search_query = self.sort_search_query(search_query, search_params)
 
         # Get search results
         try:
@@ -688,72 +687,63 @@ class SearchAllEntriesViewSet(ThrottlingMixin, viewsets.GenericViewSet):
             request, hydrated_objects, response["hits"]["total"]["value"]
         )
 
+    def paginate_search_query(self, search_query, pagination_params):
+        search_query = search_query.extra(
+            from_=pagination_params["start"], size=pagination_params["page_size"]
+        )
+        return search_query
+
     def hydrate_results(self, search_params, search_results):
         # Adding data to objects
         return hydrate_objects(search_results, games_flag=search_params["games"])
 
     def build_search_query(self, **kwargs):
         # Get search query
-        search_query = get_search_query(
-            user=kwargs["user"],
-            q=kwargs["q"],
-            types=kwargs["types"],
-            domain=kwargs["domain"],
-            kids=kwargs["kids"],
-            games=kwargs["games"],
-            sites=kwargs["sites"],
-            starts_with_char=kwargs["starts_with_char"],
-            category_id=kwargs["category_id"],
-            import_job_id=kwargs["import_job_id"],
-            visibility=kwargs["visibility"],
-            has_audio=kwargs["has_audio"],
-            has_document=kwargs["has_document"],
-            has_image=kwargs["has_image"],
-            has_video=kwargs["has_video"],
-            has_translation=kwargs["has_translation"],
-            has_unrecognized_chars=kwargs["has_unrecognized_chars"],
-            has_related_entries=kwargs["has_related_entries"],
-            has_categories=kwargs["has_categories"],
-            has_site_feature=kwargs["has_site_feature"],
-            min_words=kwargs["min_words"],
-            max_words=kwargs["max_words"],
-            random_sort=kwargs["sort"] == "random",
-        )
+        search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
 
-        sort_direction = "desc" if kwargs["descending"] else "asc"
+        if "sort" in search_params:
+            del search_params["sort"]
+
+        if "descending" in search_params:
+            del search_params["descending"]
+
+        return get_search_query(**search_params)
+
+    def sort_search_query(self, search_query, search_params):
+        sort_direction = "desc" if search_params.get("descending", False) else "asc"
         custom_order_sort = {
             "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }
         title_order_sort = {"title.raw": {"order": sort_direction}}
-        match kwargs["sort"]:
+
+        match search_params.get("sort", ""):
             case "created":
                 # Sort by created, then by custom sort order, and finally title. Allows descending order.
-                search_query = search_query.sort(
+                return search_query.sort(
                     {"created": {"order": sort_direction}},
                     custom_order_sort,
                     title_order_sort,
                 )
             case "modified":
                 # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
-                search_query = search_query.sort(
+                return search_query.sort(
                     {"last_modified": {"order": sort_direction}},
                     custom_order_sort,
                     title_order_sort,
                 )
             case "title":
                 # Sort by custom sort order, and finally title. Allows descending order.
-                search_query = search_query.sort(
+                return search_query.sort(
                     custom_order_sort,
                     title_order_sort,
                 )
             case _:
                 # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
-                search_query = search_query.sort(
+                return search_query.sort(
                     "_score",
                     custom_order_sort,
                     title_order_sort,
                 )
-        return search_query
 
     def has_invalid_input(self, search_params):
         return (

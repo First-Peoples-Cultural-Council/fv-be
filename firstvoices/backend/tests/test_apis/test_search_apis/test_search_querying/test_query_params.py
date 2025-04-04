@@ -2,7 +2,6 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import FUZZY_SEARCH_CUTOFF
 from backend.search.utils.search_term_query import (
     EXACT_MATCH_OTHER_BOOST,
@@ -14,6 +13,7 @@ from backend.search.utils.search_term_query import (
 )
 from backend.tests import factories
 from backend.tests.utils import generate_string
+from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 
 
 def get_match_query(field_name, query, boost):
@@ -22,6 +22,11 @@ def get_match_query(field_name, query, boost):
 
 def get_fuzzy_query(field_name, query, boost):
     return f"'fuzzy': {{'{field_name}': {{'value': '{query}', 'fuzziness': '2', 'boost': {boost}}}}}"
+
+
+def get_search_query(**kwargs):
+    view = SearchAllEntriesViewSet()
+    return view.build_search_query(**kwargs)  # .to_dict()
 
 
 @pytest.mark.django_db
