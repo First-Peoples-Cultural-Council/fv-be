@@ -76,6 +76,7 @@ class DocumentViewSet(
     parser_classes = [
         parsers.FormParser,
         parsers.MultiPartParser,
+        parsers.JSONParser,
     ]  # to support file uploads
 
     def get_queryset(self):
