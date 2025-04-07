@@ -52,7 +52,7 @@ class TestSiteSearchAPI(BaseSiteContentApiTest):
         self.client.force_authenticate(user=user)
 
         with patch(
-            "backend.views.search_all_entries_views.get_search_query",
+            "backend.views.base_search_entries_views.get_search_query",
             return_value=Search(),
         ) as mock_get_search_query:
             self.client.get(
