@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import AppRole, Visibility
 from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tests import factories
@@ -26,7 +26,6 @@ class TestDictionaryCleanupAPI(
 ):
     API_LIST_VIEW = "api:dictionary-cleanup-list"
     API_DETAIL_VIEW = "api:dictionary-cleanup-detail"
-    CLEAR = "/clear"
 
     model = DictionaryCleanupJob
 
@@ -214,65 +213,6 @@ class TestDictionaryCleanupAPI(
         }
 
     @pytest.mark.django_db
-    def test_clear(self, is_preview=False):
-        site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
-        factories.AlphabetFactory.create(site=site)
-
-        user = factories.get_app_admin(role=AppRole.SUPERADMIN)
-        self.client.force_authenticate(user=user)
-
-        factories.DictionaryCleanupJobFactory.create(
-            site=site, is_preview=is_preview, status=JobStatus.COMPLETE
-        )
-        factories.DictionaryCleanupJobFactory.create(
-            site=site, is_preview=is_preview, status=JobStatus.FAILED
-        )
-        factories.DictionaryCleanupJobFactory.create(
-            site=site, is_preview=is_preview, status=JobStatus.CANCELLED
-        )
-
-        response_post = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
-        assert response_post.status_code == 204
-
-        response_get = self.client.get(self.get_list_endpoint(site.slug))
-        response_get_data = json.loads(response_get.content)
-        assert response_get.status_code == 200
-        assert response_get_data["results"] == []
-
-    @pytest.mark.django_db
-    def test_clear_403_non_member(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        self.client.force_authenticate(user=user)
-
-        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "role",
-        [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN],
-    )
-    def test_clear_403_non_superuser(self, role):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
-    def test_clear_403_staff(self):
-        site = factories.SiteFactory.create()
-        user = factories.UserFactory.create()
-        factories.AppMembershipFactory.create(user=user, role=AppRole.STAFF)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.post(self.get_list_endpoint(site.slug) + self.CLEAR)
-        assert response.status_code == 403
-
-    @pytest.mark.django_db
     def test_dictionary_cleanup_called(self, mock_dictionary_cleanup_task):
         site = factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
         factories.AlphabetFactory.create(site=site)
@@ -297,7 +237,3 @@ class TestDictionaryCleanupPreviewAPI(TestDictionaryCleanupAPI):
 
     def create_minimal_instance(self, site, visibility):
         return factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
-
-    @pytest.mark.django_db
-    def test_clear(self, is_preview=True):
-        super().test_clear(is_preview=is_preview)
