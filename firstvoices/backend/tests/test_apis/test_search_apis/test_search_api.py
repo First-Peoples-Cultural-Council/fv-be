@@ -10,11 +10,14 @@ from backend.tests import factories
 from backend.tests.test_apis.base_api_test import BaseApiTest
 from backend.tests.test_apis.base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
 from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
+from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_entry_results import (
+    SearchEntryResultsTestMixin,
+)
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
 @pytest.mark.django_db
-class TestSearchAPI(SearchMocksMixin, BaseApiTest):
+class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
     """Tests for base search views."""
 
     API_LIST_VIEW = "api:search-list"
