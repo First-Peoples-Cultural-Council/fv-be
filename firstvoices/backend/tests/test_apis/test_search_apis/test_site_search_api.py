@@ -22,7 +22,7 @@ class TestSiteSearchAPI(
     API_LIST_VIEW = "api:site-search-list"
     API_DETAIL_VIEW = "api:site-search-detail"
 
-    def get_search_endpoint(self, site):
+    def get_search_endpoint(self, site=None):
         return f"{self.get_list_endpoint(site_slug=site.slug)}?q=what"
 
     def test_invalid_category_id(self):
