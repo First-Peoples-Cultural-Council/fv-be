@@ -13,6 +13,7 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
@@ -237,11 +238,25 @@ def dry_run_import_job(data, import_job):
 
 
 def get_missing_media(data, import_job_instance):
-    associated_files = list(
+    associated_audio_files = list(
         File.objects.filter(import_job=import_job_instance).values_list(
             "content", flat=True
         )
     )
+    associated_video_files = list(
+        VideoFile.objects.filter(import_job=import_job_instance).values_list(
+            "content", flat=True
+        )
+    )
+    associated_image_files = list(
+        ImageFile.objects.filter(import_job=import_job_instance).values_list(
+            "content", flat=True
+        )
+    )
+    associated_files = (
+        associated_image_files + associated_video_files + associated_audio_files
+    )
+
     associated_filenames = [file.split("/")[-1] for file in associated_files]
 
     missing_media = []
