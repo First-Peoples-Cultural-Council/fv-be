@@ -1,4 +1,3 @@
-from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -7,18 +6,14 @@ from drf_spectacular.utils import (
     extend_schema_view,
     inline_serializer,
 )
-from elasticsearch.exceptions import ConnectionError
-from rest_framework import serializers, viewsets
-from rest_framework.response import Response
+from rest_framework import serializers
 
-from backend.pagination import SearchPageNumberPagination
 from backend.search.query_builder import get_search_query
 from backend.search.utils.constants import (
     ENTRY_SEARCH_TYPES,
     LENGTH_FILTER_MAX,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.hydration_utils import hydrate_objects
 from backend.search.utils.validators import (
     get_valid_boolean,
     get_valid_count,
@@ -28,9 +23,17 @@ from backend.search.utils.validators import (
     get_valid_sort,
     get_valid_visibility,
 )
+from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
+from backend.serializers.media_serializers import (
+    AudioMinimalSerializer,
+    DocumentMinimalSerializer,
+    ImageMinimalSerializer,
+    VideoMinimalSerializer,
+)
+from backend.serializers.song_serializers import SongMinimalSerializer
+from backend.serializers.story_serializers import StoryMinimalSerializer
 from backend.views import doc_strings
-from backend.views.base_views import ThrottlingMixin
-from backend.views.exceptions import ElasticSearchConnectionError
+from backend.views.base_search_views import BaseSearchViewSet
 
 
 @extend_schema_view(
@@ -443,20 +446,24 @@ from backend.views.exceptions import ElasticSearchConnectionError
         ],
     ),
 )
-class BaseSearchEntriesViewset(ThrottlingMixin, viewsets.GenericViewSet):
+class BaseSearchEntriesViewSet(BaseSearchViewSet):
     """A base viewset for searching language content, including dictionary entries, songs, stories, and media."""
 
-    http_method_names = ["get"]
-    queryset = ""
-    pagination_class = SearchPageNumberPagination
+    serializer_classes = {
+        "DictionaryEntry": DictionaryEntryMinimalSerializer,
+        "Song": SongMinimalSerializer,
+        "Story": StoryMinimalSerializer,
+        "Audio": AudioMinimalSerializer,
+        "Document": DocumentMinimalSerializer,
+        "Image": ImageMinimalSerializer,
+        "Video": VideoMinimalSerializer,
+    }
 
     def get_search_params(self):
         """
         Function to return search params in a structured format.
         """
-        input_q = self.request.GET.get("q", "")
-
-        user = self.request.user
+        base_search_params = super().get_search_params()
 
         input_types_str = self.request.GET.get("types", "")
         valid_types_list = get_valid_search_types(input_types_str, ENTRY_SEARCH_TYPES)
@@ -509,9 +516,8 @@ class BaseSearchEntriesViewset(ThrottlingMixin, viewsets.GenericViewSet):
         sort = self.request.GET.get("sort", "")
         valid_sort, descending = get_valid_sort(sort)
 
-        search_params = {
-            "q": input_q,
-            "user": user,
+        return {
+            **base_search_params,
             "types": valid_types_list,
             "domain": valid_domain,
             "kids": kids_flag,
@@ -532,88 +538,7 @@ class BaseSearchEntriesViewset(ThrottlingMixin, viewsets.GenericViewSet):
             "descending": descending,
         }
 
-        return search_params
-
-    def get_pagination_params(self):
-        """
-        Function to return pagination params
-        """
-        default_page_size = self.paginator.get_page_size(self.request)
-
-        page = self.paginator.override_invalid_number(self.request.GET.get("page", 1))
-
-        page_size = self.paginator.override_invalid_number(
-            self.request.GET.get("pageSize", default_page_size), default_page_size
-        )
-
-        start = (page - 1) * page_size
-
-        pagination_params = {
-            "page_size": page_size,
-            "page": page,
-            "start": start,
-        }
-        return pagination_params
-
-    def paginate_search_response(self, request, object_list, count):
-        page = self.paginator.apply_search_pagination(
-            request=request,
-            object_list=object_list,
-            count=count,
-        )
-
-        if page is not None:
-            return self.get_paginated_response(page)
-
-        return Response(data=object_list)
-
-    def list(self, request, **kwargs):
-        search_params = self.get_search_params()
-        pagination_params = self.get_pagination_params()
-
-        if self.has_invalid_input(search_params):
-            return self.paginate_search_response(request, [], 0)
-
-        # max cannot be lesser than min num of words
-        if (
-            search_params["min_words"]
-            and search_params["max_words"]
-            and search_params["max_words"] < search_params["min_words"]
-        ):
-            raise serializers.ValidationError(
-                {"maxWords": [_("maxWords cannot be lower than minWords.")]}
-            )
-
-        search_query = self.build_search_query(**search_params)
-        # Pagination
-        search_query = self.paginate_search_query(search_query, pagination_params)
-        search_query = self.sort_search_query(search_query, search_params)
-
-        # Get search results
-        try:
-            response = search_query.execute()
-        except ConnectionError:
-            raise ElasticSearchConnectionError()
-
-        search_results = response["hits"]["hits"]
-
-        hydrated_objects = self.hydrate_results(search_params, search_results)
-
-        return self.paginate_search_response(
-            request, hydrated_objects, response["hits"]["total"]["value"]
-        )
-
-    def paginate_search_query(self, search_query, pagination_params):
-        search_query = search_query.extra(
-            from_=pagination_params["start"], size=pagination_params["page_size"]
-        )
-        return search_query
-
-    def hydrate_results(self, search_params, search_results):
-        # Adding data to objects
-        return hydrate_objects(search_results, games_flag=search_params["games"])
-
-    def build_search_query(self, **kwargs):
+    def build_query(self, **kwargs):
         # Get search query
         search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
 
@@ -625,14 +550,14 @@ class BaseSearchEntriesViewset(ThrottlingMixin, viewsets.GenericViewSet):
 
         return get_search_query(**search_params)
 
-    def sort_search_query(self, search_query, search_params):
-        sort_direction = "desc" if search_params.get("descending", False) else "asc"
+    def sort_query(self, search_query, **kwargs):
+        sort_direction = "desc" if kwargs.get("descending", False) else "asc"
         custom_order_sort = {
             "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
         }
         title_order_sort = {"title.raw": {"order": sort_direction}}
 
-        match search_params.get("sort", ""):
+        match kwargs.get("sort", ""):
             case "created":
                 # Sort by created, then by custom sort order, and finally title. Allows descending order.
                 return search_query.sort(
@@ -666,4 +591,9 @@ class BaseSearchEntriesViewset(ThrottlingMixin, viewsets.GenericViewSet):
             not search_params["types"]
             or not search_params["domain"]
             or search_params["visibility"] is None
+            or (
+                search_params["min_words"]
+                and search_params["max_words"]
+                and search_params["max_words"] < search_params["min_words"]
+            )
         )

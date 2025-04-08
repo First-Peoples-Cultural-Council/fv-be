@@ -134,6 +134,7 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": invalid_uuid,
+                "document_type": "DictionaryEntry",
                 "site_id": site.id,
             },
         }
@@ -187,6 +188,7 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": entry.id,
+                "document_type": "DictionaryEntry",
                 "site_id": site.id,
             },
         }
@@ -261,6 +263,7 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": entry.id,
+                "document_type": "DictionaryEntry",
                 "site_id": site.id,
             },
         }
@@ -328,6 +331,7 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": song.id,
+                "document_type": "Song",
                 "site_id": site.id,
             },
         }
@@ -388,6 +392,7 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": story.id,
+                "document_type": "Story",
                 "site_id": site.id,
             },
         }
@@ -447,8 +452,9 @@ class SearchEntryResultsTestMixin:
             "_score": 1.0,
             "_source": {
                 "document_id": audio.id,
-                "site_id": site.id,
+                "document_type": "Audio",
                 "type": "audio",
+                "site_id": site.id,
             },
         }
 
@@ -478,12 +484,12 @@ class SearchEntryResultsTestMixin:
         assert hydrated_object_entry["speakers"][0]["name"] == speaker.name
         assert hydrated_object_entry["speakers"][0]["bio"] == speaker.bio
 
-    @pytest.mark.parametrize("media_type", ["image", "video"])
+    @pytest.mark.parametrize("media_type", ["Image", "Video"])
     def test_image_video_hydration(self, media_type):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         small = ImageFileFactory.create(site=site)
 
-        if media_type == "video":
+        if media_type == "Video":
             entry = VideoFactory.create(site=site, description="test desc", small=small)
         else:
             entry = ImageFactory.create(site=site, description="test desc", small=small)
@@ -497,7 +503,8 @@ class SearchEntryResultsTestMixin:
             "_source": {
                 "document_id": entry.id,
                 "site_id": site.id,
-                "type": media_type,
+                "document_type": media_type,
+                "type": media_type.lower(),
             },
         }
 
