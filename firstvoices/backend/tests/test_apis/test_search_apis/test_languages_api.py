@@ -10,10 +10,9 @@ from backend.tests.factories.access import (
     get_non_member_user,
     get_superadmin,
 )
-
-from .base_api_test import BaseApiTest
-from .base_media_test import MediaTestMixin
-from .base_search_test import SearchMocksMixin
+from backend.tests.test_apis.base_api_test import BaseApiTest
+from backend.tests.test_apis.base_media_test import MediaTestMixin
+from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 
 
 class TestLanguagesEndpoints(MediaTestMixin, SearchMocksMixin, BaseApiTest):
