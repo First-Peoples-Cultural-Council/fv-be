@@ -150,17 +150,7 @@ class SearchEntryResultsTestMixin:
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 1
-
-        actual_hydrated_object = response_data["results"][0]
-
-        assert (
-            actual_hydrated_object["searchResultId"]
-            == search_result_with_invalid_id["_id"]
-        )
-
-        assert "entry" not in actual_hydrated_object
-        assert "type" not in actual_hydrated_object
+        assert len(response_data["results"]) == 0
 
     @pytest.mark.parametrize(
         "entry_type", [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
