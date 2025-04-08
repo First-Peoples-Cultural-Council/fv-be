@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import pytest
@@ -31,85 +32,83 @@ def assert_site_object(hydrated_object_entry, site_instance):
 
 
 def assert_related_audio(hydrated_object_entry, audio_instance, speaker):
-    assert hydrated_object_entry["related_audio"][0]["id"] == str(audio_instance.id)
-    assert hydrated_object_entry["related_audio"][0]["title"] == audio_instance.title
+    assert hydrated_object_entry["relatedAudio"][0]["id"] == str(audio_instance.id)
+    assert hydrated_object_entry["relatedAudio"][0]["title"] == audio_instance.title
     assert (
-        hydrated_object_entry["related_audio"][0]["description"]
+        hydrated_object_entry["relatedAudio"][0]["description"]
         == audio_instance.description
     )
     assert (
-        hydrated_object_entry["related_audio"][0]["acknowledgement"]
+        hydrated_object_entry["relatedAudio"][0]["acknowledgement"]
         == audio_instance.acknowledgement
     )
     # speakers
-    assert hydrated_object_entry["related_audio"][0]["speakers"][0]["id"] == str(
+    assert hydrated_object_entry["relatedAudio"][0]["speakers"][0]["id"] == str(
         speaker.id
     )
     assert (
-        hydrated_object_entry["related_audio"][0]["speakers"][0]["name"] == speaker.name
+        hydrated_object_entry["relatedAudio"][0]["speakers"][0]["name"] == speaker.name
     )
-    assert (
-        hydrated_object_entry["related_audio"][0]["speakers"][0]["bio"] == speaker.bio
-    )
+    assert hydrated_object_entry["relatedAudio"][0]["speakers"][0]["bio"] == speaker.bio
     # original
     assert (
-        hydrated_object_entry["related_audio"][0]["original"]["path"]
+        hydrated_object_entry["relatedAudio"][0]["original"]["path"]
         == audio_instance.original.content.url
     )
     assert (
-        hydrated_object_entry["related_audio"][0]["original"]["mimetype"]
+        hydrated_object_entry["relatedAudio"][0]["original"]["mimetype"]
         == audio_instance.original.mimetype
     )
     assert (
-        hydrated_object_entry["related_audio"][0]["original"]["size"]
+        hydrated_object_entry["relatedAudio"][0]["original"]["size"]
         == audio_instance.original.size
     )
 
 
 def assert_related_images(hydrated_object_entry, image_instance):
-    assert hydrated_object_entry["related_images"][0]["id"] == str(image_instance.id)
+    assert hydrated_object_entry["relatedImages"][0]["id"] == str(image_instance.id)
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["path"]
+        hydrated_object_entry["relatedImages"][0]["original"]["path"]
         == image_instance.original.content.url
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["mimetype"]
+        hydrated_object_entry["relatedImages"][0]["original"]["mimetype"]
         == image_instance.original.mimetype
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["size"]
+        hydrated_object_entry["relatedImages"][0]["original"]["size"]
         == image_instance.original.size
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["height"]
+        hydrated_object_entry["relatedImages"][0]["original"]["height"]
         == image_instance.original.height
     )
     assert (
-        hydrated_object_entry["related_images"][0]["original"]["width"]
+        hydrated_object_entry["relatedImages"][0]["original"]["width"]
         == image_instance.original.width
     )
 
 
 def assert_related_videos(hydrated_object_entry, video_instance):
-    assert hydrated_object_entry["related_videos"][0]["id"] == str(video_instance.id)
+    assert hydrated_object_entry["relatedVideos"][0]["id"] == str(video_instance.id)
     assert (
-        hydrated_object_entry["related_videos"][0]["original"]["path"]
+        hydrated_object_entry["relatedVideos"][0]["original"]["path"]
         == video_instance.original.content.url
     )
     assert (
-        hydrated_object_entry["related_videos"][0]["original"]["mimetype"]
+        hydrated_object_entry["relatedVideos"][0]["original"]["mimetype"]
         == video_instance.original.mimetype
     )
     assert (
-        hydrated_object_entry["related_videos"][0]["original"]["size"]
+        hydrated_object_entry["relatedVideos"][0]["original"]["size"]
         == video_instance.original.size
     )
     assert (
-        hydrated_object_entry["related_videos"][0]["original"]["height"]
+        hydrated_object_entry["relatedVideos"][0]["original"]["height"]
         == video_instance.original.height
     )
     assert (
-        hydrated_object_entry["related_videos"][0]["original"]["width"]
+        hydrated_object_entry["relatedVideos"][0]["original"]["width"]
         == video_instance.original.width
     )
 
@@ -119,8 +118,14 @@ def assert_translations(hydrated_object_entry, translation_text):
 
 
 @pytest.mark.django_db
-class TestHydrateObjects:
-    def test_hydrate_exception_case(self, caplog):
+class SearchEntryResultsTestMixin:
+    """Test cases for the formatting of search results for different content types returned by the
+    BaseSearchEntryViewset. Use with SearchMocksMixin."""
+
+    def get_search_endpoint(self, site=None):
+        return f"{self.get_list_endpoint()}?q=what"
+
+    def test_missing_result(self, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         invalid_uuid = uuid.uuid4()
         search_result_with_invalid_id = {
@@ -132,14 +137,34 @@ class TestHydrateObjects:
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [search_result_with_invalid_id],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint(site=site))
 
-        hydrate_objects([search_result_with_invalid_id])
-        assert f"Object not found in database with id: {invalid_uuid}" in caplog.text
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
+
+        actual_hydrated_object = response_data["results"][0]
+
+        assert (
+            actual_hydrated_object["searchResultId"]
+            == search_result_with_invalid_id["_id"]
+        )
+
+        assert "entry" not in actual_hydrated_object
+        assert "type" not in actual_hydrated_object
 
     @pytest.mark.parametrize(
         "entry_type", [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
     )
-    def test_dictionary_entry_hydration(self, entry_type):
+    def test_dictionary_entry_result(self, entry_type, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         entry = DictionaryEntryFactory.create(
             site=site,
@@ -155,8 +180,7 @@ class TestHydrateObjects:
         image = ImageFactory.create(site=site)
         entry.related_images.add(image)
 
-        # Only adding the fields required for hydarate_objects method to work,
-        # the rest should be fetched from the db
+        # Minimal search result
         minimal_dictionary_search_result = {
             "_index": "dictionary_entries_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -166,9 +190,22 @@ class TestHydrateObjects:
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_dictionary_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint(site=site))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
 
         # Verifying the structure for only one word with all fields present
-        actual_hydrated_object = hydrate_objects([minimal_dictionary_search_result])[0]
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
@@ -203,8 +240,12 @@ class TestHydrateObjects:
             (None, False),
         ],
     )
-    def test_dictionary_entry_games_hydration(
-        self, entry_type, games_flag, should_have_split_chars_base
+    def test_dictionary_entry_games_result(
+        self,
+        entry_type,
+        games_flag,
+        should_have_split_chars_base,
+        mock_search_query_execute,
     ):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         factories.CharacterFactory.create(title="üü", site=site)
@@ -213,8 +254,7 @@ class TestHydrateObjects:
             site=site, visibility=Visibility.PUBLIC, type=entry_type, title="aüüa"
         )
 
-        # Only adding the fields required for hydarate_objects method to work,
-        # the rest should be fetched from the db
+        # Minimal search result
         minimal_dictionary_search_result = {
             "_index": "dictionary_entries_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -224,11 +264,25 @@ class TestHydrateObjects:
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_dictionary_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        game_search_endpoint = (
+            f"{self.get_search_endpoint(site=site)}&games={games_flag}"
+        )
+        response = self.client.get(game_search_endpoint)
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
 
         # Verifying the structure for only one word with all fields present
-        actual_hydrated_object = hydrate_objects(
-            [minimal_dictionary_search_result], games_flag=games_flag
-        )[0]
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
@@ -249,12 +303,12 @@ class TestHydrateObjects:
         assert_site_object(hydrated_object_entry, site)
 
         if should_have_split_chars_base:
-            assert "split_chars_base" in hydrated_object_entry
-            assert hydrated_object_entry["split_chars_base"] == ["a", "üü", "a"]
+            assert "splitCharsBase" in hydrated_object_entry
+            assert hydrated_object_entry["splitCharsBase"] == ["a", "üü", "a"]
         else:
-            assert "split_chars_base" not in hydrated_object_entry
+            assert "splitCharsBase" not in hydrated_object_entry
 
-    def test_song_hydration(self):
+    def test_song_result(self, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         image = ImageFactory.create(site=site)
@@ -277,8 +331,22 @@ class TestHydrateObjects:
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_song_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint(site=site))
 
-        actual_hydrated_object = hydrate_objects([minimal_song_search_result])[0]
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
+
+        # Verifying the structure for only one word with all fields present
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
@@ -290,8 +358,8 @@ class TestHydrateObjects:
         # entry
         assert hydrated_object_entry["id"] == str(song.id)
         assert hydrated_object_entry["title"] == song.title
-        assert hydrated_object_entry["title_translation"] == song.title_translation
-        assert hydrated_object_entry["hide_overlay"] == song.hide_overlay
+        assert hydrated_object_entry["titleTranslation"] == song.title_translation
+        assert hydrated_object_entry["hideOverlay"] == song.hide_overlay
         assert (
             hydrated_object_entry["visibility"] == song.get_visibility_display().lower()
         )
@@ -300,7 +368,7 @@ class TestHydrateObjects:
         assert_related_images(hydrated_object_entry, image)
         assert_related_videos(hydrated_object_entry, video)
 
-    def test_story_hydration(self):
+    def test_story_result(self, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         image = ImageFactory.create(site=site)
@@ -323,8 +391,22 @@ class TestHydrateObjects:
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_story_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint(site=site))
 
-        actual_hydrated_object = hydrate_objects([minimal_story_search_result])[0]
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
+
+        # Verifying the structure for only one word with all fields present
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
@@ -336,8 +418,8 @@ class TestHydrateObjects:
         # entry
         assert hydrated_object_entry["id"] == str(story.id)
         assert hydrated_object_entry["title"] == story.title
-        assert hydrated_object_entry["title_translation"] == story.title_translation
-        assert hydrated_object_entry["hide_overlay"] == story.hide_overlay
+        assert hydrated_object_entry["titleTranslation"] == story.title_translation
+        assert hydrated_object_entry["hideOverlay"] == story.hide_overlay
         assert hydrated_object_entry["author"] == story.author
         assert (
             hydrated_object_entry["visibility"]
