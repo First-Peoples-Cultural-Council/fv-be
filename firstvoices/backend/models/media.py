@@ -35,6 +35,8 @@ SUPPORTED_FILETYPES = {
         "audio/mpeg",
         "audio/mp3",
         "audio/mpeg3",
+        "audio/ogg",
+        "audio/webm",
         "audio/x-mpeg-3",
         "application/octet-stream",
     ],
