@@ -13,7 +13,7 @@ from backend.search.constants import (
     LENGTH_FILTER_MAX,
     SearchIndexEntryTypes,
 )
-from backend.search.query_builder import get_search_query
+from backend.search.queries.query_builder import get_search_query
 from backend.search.validators import (
     get_valid_boolean,
     get_valid_count,

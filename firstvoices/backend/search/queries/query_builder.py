@@ -3,7 +3,7 @@ import random
 from elasticsearch_dsl import Search
 
 from backend.search.constants import ALL_SEARCH_TYPES
-from backend.search.utils.query_builder_utils import (
+from backend.search.queries.query_builder_utils import (
     get_category_query,
     get_cleaned_search_term,
     get_games_query,
@@ -27,7 +27,7 @@ from backend.search.utils.query_builder_utils import (
     get_view_permissions_filter,
     get_visibility_query,
 )
-from backend.search.utils.search_term_query import get_search_term_query
+from backend.search.queries.search_term_query import get_search_term_query
 
 
 def get_search_object(indices):
