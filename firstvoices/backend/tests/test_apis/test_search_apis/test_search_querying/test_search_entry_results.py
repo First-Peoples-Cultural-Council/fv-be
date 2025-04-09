@@ -5,7 +5,6 @@ import pytest
 
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.search.utils.hydration_utils import hydrate_objects
 from backend.tests import factories
 from backend.tests.factories import (
     AudioFactory,
@@ -53,7 +52,7 @@ def assert_related_audio(hydrated_object_entry, audio_instance, speaker):
     # original
     assert (
         hydrated_object_entry["relatedAudio"][0]["original"]["path"]
-        == audio_instance.original.content.url
+        == f"http://testserver{audio_instance.original.content.url}"
     )
     assert (
         hydrated_object_entry["relatedAudio"][0]["original"]["mimetype"]
@@ -69,7 +68,7 @@ def assert_related_images(hydrated_object_entry, image_instance):
     assert hydrated_object_entry["relatedImages"][0]["id"] == str(image_instance.id)
     assert (
         hydrated_object_entry["relatedImages"][0]["original"]["path"]
-        == image_instance.original.content.url
+        == f"http://testserver{image_instance.original.content.url}"
     )
     assert (
         hydrated_object_entry["relatedImages"][0]["original"]["mimetype"]
@@ -93,7 +92,7 @@ def assert_related_videos(hydrated_object_entry, video_instance):
     assert hydrated_object_entry["relatedVideos"][0]["id"] == str(video_instance.id)
     assert (
         hydrated_object_entry["relatedVideos"][0]["original"]["path"]
-        == video_instance.original.content.url
+        == f"http://testserver{video_instance.original.content.url}"
     )
     assert (
         hydrated_object_entry["relatedVideos"][0]["original"]["mimetype"]
@@ -171,7 +170,6 @@ class SearchEntryResultsTestMixin:
         image = ImageFactory.create(site=site)
         entry.related_images.add(image)
 
-        # Minimal search result
         minimal_dictionary_search_result = {
             "_index": "dictionary_entries_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -246,7 +244,6 @@ class SearchEntryResultsTestMixin:
             site=site, visibility=Visibility.PUBLIC, type=entry_type, title="aüüa"
         )
 
-        # Minimal search result
         minimal_dictionary_search_result = {
             "_index": "dictionary_entries_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -313,8 +310,6 @@ class SearchEntryResultsTestMixin:
             related_videos=(video,),
         )
 
-        # Only adding the fields required for hydrate_objects method to work,
-        # the rest should be fetched from the db
         minimal_song_search_result = {
             "_index": "songs_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -374,8 +369,6 @@ class SearchEntryResultsTestMixin:
             related_videos=(video,),
         )
 
-        # Only adding the fields required for hydrate_objects method to work,
-        # the rest should be fetched from the db
         minimal_story_search_result = {
             "_index": "stories_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -425,7 +418,7 @@ class SearchEntryResultsTestMixin:
         assert_related_images(hydrated_object_entry, image)
         assert_related_videos(hydrated_object_entry, video)
 
-    def test_audio_hydration(self):
+    def test_audio_hydration(self, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
 
         speaker = PersonFactory.create(site=site)
@@ -434,8 +427,6 @@ class SearchEntryResultsTestMixin:
         )
         AudioSpeakerFactory.create(speaker=speaker, audio=audio)
 
-        # Only adding the fields required for hydrate_objects method to work,
-        # the rest should be fetched from the db
         minimal_audio_search_result = {
             "_index": "media_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -443,13 +434,25 @@ class SearchEntryResultsTestMixin:
             "_source": {
                 "document_id": audio.id,
                 "document_type": "Audio",
-                "type": "audio",
                 "site_id": site.id,
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_audio_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(f"{self.get_search_endpoint(site=site)}&types=audio")
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
 
         # Verifying the structure for only one word with all fields present
-        actual_hydrated_object = hydrate_objects([minimal_audio_search_result])[0]
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
@@ -465,7 +468,10 @@ class SearchEntryResultsTestMixin:
         assert hydrated_object_entry["acknowledgement"] == audio.acknowledgement
 
         # original
-        assert hydrated_object_entry["original"]["path"] == audio.original.content.url
+        assert (
+            hydrated_object_entry["original"]["path"]
+            == f"http://testserver{audio.original.content.url}"
+        )
         assert hydrated_object_entry["original"]["mimetype"] == audio.original.mimetype
         assert hydrated_object_entry["original"]["size"] == audio.original.size
 
@@ -475,7 +481,7 @@ class SearchEntryResultsTestMixin:
         assert hydrated_object_entry["speakers"][0]["bio"] == speaker.bio
 
     @pytest.mark.parametrize("media_type", ["Image", "Video"])
-    def test_image_video_hydration(self, media_type):
+    def test_image_video_hydration(self, media_type, mock_search_query_execute):
         site = SiteFactory(visibility=Visibility.PUBLIC)
         small = ImageFileFactory.create(site=site)
 
@@ -484,8 +490,6 @@ class SearchEntryResultsTestMixin:
         else:
             entry = ImageFactory.create(site=site, description="test desc", small=small)
 
-        # Only adding the fields required for hydrate_objects method to work,
-        # the rest should be fetched from the db
         minimal_audio_search_result = {
             "_index": "media_2023_11_01_21_32_51",
             "_id": "searchId123",
@@ -497,16 +501,29 @@ class SearchEntryResultsTestMixin:
                 "type": media_type.lower(),
             },
         }
+        mock_results = {
+            "hits": {
+                "hits": [minimal_audio_search_result],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_results
+        response = self.client.get(self.get_search_endpoint(site=site))
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) == 1
 
         # Verifying the structure for only one word with all fields present
-        actual_hydrated_object = hydrate_objects([minimal_audio_search_result])[0]
+        actual_hydrated_object = response_data["results"][0]
         hydrated_object_entry = actual_hydrated_object["entry"]
 
         assert (
             actual_hydrated_object["searchResultId"]
             == minimal_audio_search_result["_id"]
         )
-        assert actual_hydrated_object["type"] == media_type
+        assert actual_hydrated_object["type"] == media_type.lower()
 
         # entry
         assert hydrated_object_entry["id"] == str(entry.id)
@@ -514,11 +531,17 @@ class SearchEntryResultsTestMixin:
         assert hydrated_object_entry["description"] == entry.description
 
         # original
-        assert hydrated_object_entry["original"]["path"] == entry.original.content.url
+        assert (
+            hydrated_object_entry["original"]["path"]
+            == f"http://testserver{entry.original.content.url}"
+        )
         assert hydrated_object_entry["original"]["mimetype"] == entry.original.mimetype
         assert hydrated_object_entry["original"]["size"] == entry.original.size
         assert hydrated_object_entry["original"]["height"] == entry.original.height
         assert hydrated_object_entry["original"]["width"] == entry.original.width
 
         # small
-        assert hydrated_object_entry["small"]["path"] == entry.small.content.url
+        assert (
+            hydrated_object_entry["small"]["path"]
+            == f"http://testserver{entry.small.content.url}"
+        )

@@ -78,12 +78,17 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         serialized_data = self.serialize_search_results(
             search_results, data, **search_params, **pagination_params
         )
+
+        return self.paginate_search_response(
+            request, serialized_data, response["hits"]["total"]["value"]
+        )
+
+    def paginate_search_response(self, request, serialized_data, result_count):
         page = self.paginator.apply_search_pagination(
             request=request,
             object_list=serialized_data,
-            count=response["hits"]["total"]["value"],
+            count=result_count,
         )
-
         if page is not None:
             return self.get_paginated_response(page)
 

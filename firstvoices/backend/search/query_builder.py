@@ -59,6 +59,7 @@ def get_search_query(
     min_words=None,
     max_words=None,
     random_sort=False,
+    **kwargs
 ):
     # Building initial query
     indices = get_indices(types)

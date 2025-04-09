@@ -23,15 +23,15 @@ from backend.search.utils.validators import (
     get_valid_sort,
     get_valid_visibility,
 )
-from backend.serializers.dictionary_serializers import DictionaryEntryMinimalSerializer
-from backend.serializers.media_serializers import (
-    AudioMinimalSerializer,
-    DocumentMinimalSerializer,
-    ImageMinimalSerializer,
-    VideoMinimalSerializer,
+from backend.serializers.search_result_serializers import (
+    AudioSearchResultSerializer,
+    DictionaryEntrySearchResultSerializer,
+    DocumentSearchResultSerializer,
+    ImageSearchResultSerializer,
+    SongSearchResultSerializer,
+    StorySearchResultSerializer,
+    VideoSearchResultSerializer,
 )
-from backend.serializers.song_serializers import SongMinimalSerializer
-from backend.serializers.story_serializers import StoryMinimalSerializer
 from backend.views import doc_strings
 from backend.views.base_search_views import BaseSearchViewSet
 
@@ -450,13 +450,13 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
     """A base viewset for searching language content, including dictionary entries, songs, stories, and media."""
 
     serializer_classes = {
-        "DictionaryEntry": DictionaryEntryMinimalSerializer,
-        "Song": SongMinimalSerializer,
-        "Story": StoryMinimalSerializer,
-        "Audio": AudioMinimalSerializer,
-        "Document": DocumentMinimalSerializer,
-        "Image": ImageMinimalSerializer,
-        "Video": VideoMinimalSerializer,
+        "DictionaryEntry": DictionaryEntrySearchResultSerializer,
+        "Song": SongSearchResultSerializer,
+        "Story": StorySearchResultSerializer,
+        "Audio": AudioSearchResultSerializer,
+        "Document": DocumentSearchResultSerializer,
+        "Image": ImageSearchResultSerializer,
+        "Video": VideoSearchResultSerializer,
     }
 
     def get_search_params(self):
@@ -542,12 +542,6 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         # Get search query
         search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
 
-        if "sort" in search_params:
-            del search_params["sort"]
-
-        if "descending" in search_params:
-            del search_params["descending"]
-
         return get_search_query(**search_params)
 
     def sort_query(self, search_query, **kwargs):
@@ -597,3 +591,17 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
                 and search_params["max_words"] < search_params["min_words"]
             )
         )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        games_flag = self.request.GET.get("games", None)
+        games_flag = get_valid_boolean(games_flag)
+        context["games_flag"] = games_flag
+        return context
+
+    def get_data_to_serialize(self, result, data):
+        entry_data = super().get_data_to_serialize(result, data)
+        if entry_data is None:
+            return None
+
+        return {"search_result_id": result["_id"], "entry": entry_data}
