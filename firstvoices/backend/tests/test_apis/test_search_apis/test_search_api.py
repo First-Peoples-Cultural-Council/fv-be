@@ -240,7 +240,7 @@ class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
             return_value=None,
         ):
             response = self.client.get(self.get_list_endpoint())
-            data = response.data
+            data = json.loads(response.content)
 
             assert response.status_code == 200
             assert type(data) is list
@@ -255,8 +255,8 @@ class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
         response = self.client.get(self.get_list_endpoint() + "?minWords=5&maxWords=2")
         response_data = json.loads(response.content)
 
-        assert response.status_code == 400
-        assert response_data["maxWords"] == ["maxWords cannot be lower than minWords."]
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 0
 
     def test_has_video_param_video_links(self, mock_search_query_execute):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)

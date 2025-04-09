@@ -26,7 +26,7 @@ def get_fuzzy_query(field_name, query, boost):
 
 def get_search_query(**kwargs):
     view = SearchAllEntriesViewSet()
-    return view.build_search_query(**kwargs)  # .to_dict()
+    return view.build_query(**kwargs)  # .to_dict()
 
 
 @pytest.mark.django_db

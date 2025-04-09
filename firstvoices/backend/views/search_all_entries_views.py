@@ -6,7 +6,7 @@ from drf_spectacular.utils import (
 )
 
 from backend.search.utils.validators import get_valid_site_ids_from_slugs
-from backend.views.base_search_entries_views import BaseSearchEntriesViewset
+from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
 
 
 @extend_schema_view(
@@ -36,7 +36,7 @@ from backend.views.base_search_entries_views import BaseSearchEntriesViewset
         ],
     ),
 )
-class SearchAllEntriesViewSet(BaseSearchEntriesViewset):
+class SearchAllEntriesViewSet(BaseSearchEntriesViewSet):
     def get_search_params(self):
         """
         Function to return search params in a structured format.

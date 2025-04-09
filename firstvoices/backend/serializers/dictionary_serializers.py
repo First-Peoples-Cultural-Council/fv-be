@@ -6,19 +6,13 @@ from rest_framework import serializers
 
 from backend.models import ImmersionLabel, category, dictionary, part_of_speech
 from backend.serializers.base_serializers import (
-    LinkedSiteMinimalSerializer,
-    ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
     audience_fields,
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
 from backend.serializers.fields import TextListField
-from backend.serializers.media_serializers import (
-    AudioMinimalSerializer,
-    RelatedImageMinimalSerializer,
-    RelatedMediaSerializerMixin,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.parts_of_speech_serializers import (
     PartsOfSpeechSerializer,
     WritablePartsOfSpeechSerializer,
@@ -262,38 +256,3 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
             "related_videos",
             "related_video_links",
         ) + audience_fields
-
-
-class DictionaryEntryMinimalSerializer(
-    ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
-):
-    site = LinkedSiteMinimalSerializer(read_only=True)
-    translations = TextListField(required=False, allow_empty=True)
-    related_audio = AudioMinimalSerializer(many=True, required=False, read_only=True)
-    related_images = RelatedImageMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Remove the split_chars_base field from the serializer if the games_flag is not set to True
-        if not self.context.get("games_flag"):
-            self.fields.pop("split_chars_base")
-
-    class Meta:
-        model = dictionary.DictionaryEntry
-        fields = (
-            "id",
-            "created",
-            "last_modified",
-            "visibility",
-            "title",
-            "type",
-            "site",
-            "translations",
-            "related_audio",
-            "related_images",
-            "split_chars_base",
-        )
-        read_only_fields = ("id", "title", "type")

@@ -61,8 +61,12 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         search_params = self.get_search_params()
         pagination_params = self.get_pagination_params()
 
+        if self.has_invalid_input(search_params):
+            return self.paginate_search_response(request, [], 0)
+
         search_query = self.build_query(**search_params)
         search_query = self.paginate_query(search_query, **pagination_params)
+        search_query = self.sort_query(search_query, **search_params)
 
         try:
             response = search_query.execute()
@@ -74,16 +78,25 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         serialized_data = self.serialize_search_results(
             search_results, data, **search_params, **pagination_params
         )
+
+        return self.paginate_search_response(
+            request, serialized_data, response["hits"]["total"]["value"]
+        )
+
+    def paginate_search_response(self, request, serialized_data, result_count):
         page = self.paginator.apply_search_pagination(
             request=request,
             object_list=serialized_data,
-            count=response["hits"]["total"]["value"],
+            count=result_count,
         )
-
         if page is not None:
             return self.get_paginated_response(page)
 
         return Response(data=serialized_data)
+
+    def has_invalid_input(self, search_params):
+        """Subclasses can override to define cases where response should be an empty list."""
+        return False
 
     def build_query(self, **kwargs):
         """Subclasses should implement.
@@ -94,6 +107,10 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
     def paginate_query(self, search_query, **kwargs):
         return search_query.extra(from_=kwargs["start"], size=kwargs["page_size"])
+
+    def sort_query(self, search_query, **kwargs):
+        """Subclasses can implement to add sort parameters."""
+        return search_query
 
     def hydrate(self, search_results):
         """Retrieves data for each item in the search results, grouped by type. If a serializer is defined for the type,
