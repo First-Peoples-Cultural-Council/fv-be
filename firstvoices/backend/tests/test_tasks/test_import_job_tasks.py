@@ -14,9 +14,11 @@ from backend.tests.factories import (
     CategoryFactory,
     DictionaryEntryFactory,
     FileFactory,
+    ImageFileFactory,
     ImportJobFactory,
     SiteFactory,
     SongFactory,
+    VideoFileFactory,
     get_superadmin,
 )
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
@@ -574,12 +576,12 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        FileFactory(
+        ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        FileFactory(
+        VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
