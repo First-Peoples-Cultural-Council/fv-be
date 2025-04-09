@@ -1,6 +1,7 @@
 import pytest
 
 from backend.models.constants import Visibility
+from backend.search.constants import ELASTICSEARCH_MEDIA_INDEX
 from backend.search.indexing import (
     AudioDocumentManager,
     DocumentDocumentManager,
@@ -8,7 +9,6 @@ from backend.search.indexing import (
     MediaIndexManager,
     VideoDocumentManager,
 )
-from backend.search.utils.constants import ELASTICSEARCH_MEDIA_INDEX
 from backend.tests import factories
 from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseDocumentManagerTest,

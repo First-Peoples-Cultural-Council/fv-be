@@ -2,7 +2,7 @@ import random
 
 from elasticsearch_dsl import Search
 
-from backend.search.utils.constants import ALL_SEARCH_TYPES
+from backend.search.constants import ALL_SEARCH_TYPES
 from backend.search.utils.query_builder_utils import (
     get_category_query,
     get_cleaned_search_term,

@@ -5,8 +5,8 @@ from rest_framework.serializers import ValidationError
 
 from backend.models import Category
 from backend.models.constants import Visibility
-from backend.search.utils.constants import LENGTH_FILTER_MAX
-from backend.search.utils.validators import (
+from backend.search.constants import LENGTH_FILTER_MAX
+from backend.search.validators import (
     get_valid_count,
     get_valid_domain,
     get_valid_instance_id,

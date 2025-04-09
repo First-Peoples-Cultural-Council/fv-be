@@ -8,7 +8,7 @@ from rest_framework import pagination
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from backend.search.utils.constants import ES_MAX_RESULTS, ES_PAGE_SIZE
+from backend.search.constants import ES_MAX_RESULTS, ES_PAGE_SIZE
 
 
 class FasterCountPagination(Paginator):

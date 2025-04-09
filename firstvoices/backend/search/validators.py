@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from backend.models import Site
 from backend.models.constants import Visibility
-from backend.search.utils.constants import ALL_SEARCH_TYPES, LENGTH_FILTER_MAX
+from backend.search.constants import ALL_SEARCH_TYPES, LENGTH_FILTER_MAX
 from backend.search.utils.query_builder_utils import SearchDomains
 
 

@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 
-from backend.search.utils.validators import get_valid_site_ids_from_slugs
+from backend.search.validators import get_valid_site_ids_from_slugs
 from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
 
 

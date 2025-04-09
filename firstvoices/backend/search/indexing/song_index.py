@@ -1,8 +1,8 @@
 from backend.models import Song
+from backend.search.constants import ELASTICSEARCH_SONG_INDEX
 from backend.search.documents import SongDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
-from backend.search.utils.constants import ELASTICSEARCH_SONG_INDEX
-from backend.search.utils.get_index_documents import fields_as_list
+from backend.utils.as_list import fields_as_list
 
 
 class SongDocumentManager(DocumentManager):

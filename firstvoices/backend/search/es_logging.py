@@ -1,6 +1,6 @@
 import logging
 
-from backend.search.utils.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
+from backend.search.constants import ES_CONNECTION_ERROR, ES_NOT_FOUND_ERROR
 
 ES_NOT_FOUND_INFO = (
     "Tried to find a document that doesn't exist in the index. [%s] id [%s]"

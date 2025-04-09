@@ -1,8 +1,8 @@
 import pytest
 
 from backend.models.constants import Visibility
+from backend.search.constants import ELASTICSEARCH_STORY_INDEX
 from backend.search.indexing.story_index import StoryDocumentManager, StoryIndexManager
-from backend.search.utils.constants import ELASTICSEARCH_STORY_INDEX
 from backend.tests import factories
 from backend.tests.test_search_indexing.base_indexing_tests import (
     BaseDocumentManagerTest,

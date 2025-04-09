@@ -1,7 +1,7 @@
 from elasticsearch_dsl import Keyword, Text
 
+from backend.search.constants import ELASTICSEARCH_MEDIA_INDEX
 from backend.search.documents.base_document import BaseSiteEntryDocument
-from backend.search.utils.constants import ELASTICSEARCH_MEDIA_INDEX
 
 
 class MediaDocument(BaseSiteEntryDocument):

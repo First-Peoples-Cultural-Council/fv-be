@@ -8,12 +8,12 @@ from drf_spectacular.utils import (
 from elasticsearch_dsl import Q, Search
 
 from backend.models.sites import Site
+from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.search.queries.text_matching import (
     exact_match,
     fuzzy_match,
     substring_match,
 )
-from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.serializers.language_serializers import (
     LanguagePlaceholderSerializer,
     LanguageSerializer,
