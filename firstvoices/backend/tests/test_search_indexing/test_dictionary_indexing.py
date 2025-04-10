@@ -1,11 +1,11 @@
 import pytest
 
 from backend.models.constants import Visibility
+from backend.search.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 from backend.search.indexing.dictionary_index import (
     DictionaryEntryDocumentManager,
     DictionaryIndexManager,
 )
-from backend.search.utils.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 from backend.tests import factories
 from backend.tests.factories import ImportJobFactory
 from backend.tests.test_search_indexing.base_indexing_tests import (

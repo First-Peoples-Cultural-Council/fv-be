@@ -2,12 +2,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch.helpers import actions
+from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.index import Index
 
 from backend.search import es_logging
-from backend.search.utils.object_utils import search_by_id
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
+
+
+def search_by_id(document_id, index):
+    s = Search(index=index).params(request_timeout=10)
+    response = s.query("match", document_id=document_id).execute()
+    hits = response["hits"]["hits"]
+    return hits[0] if hits else None
 
 
 class IndexManager:

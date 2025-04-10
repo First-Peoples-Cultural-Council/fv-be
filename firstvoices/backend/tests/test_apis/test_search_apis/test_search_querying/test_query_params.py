@@ -2,8 +2,8 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.search.utils.constants import FUZZY_SEARCH_CUTOFF
-from backend.search.utils.search_term_query import (
+from backend.search.constants import FUZZY_SEARCH_CUTOFF
+from backend.search.queries.search_term_query import (
     EXACT_MATCH_OTHER_BOOST,
     EXACT_MATCH_PRIMARY_BOOST,
     EXACT_MATCH_SECONDARY_BOOST,

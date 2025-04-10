@@ -8,13 +8,13 @@ from drf_spectacular.utils import (
 )
 from rest_framework import serializers
 
-from backend.search.query_builder import get_search_query
-from backend.search.utils.constants import (
+from backend.search.constants import (
     ENTRY_SEARCH_TYPES,
     LENGTH_FILTER_MAX,
     SearchIndexEntryTypes,
 )
-from backend.search.utils.validators import (
+from backend.search.queries.query_builder import get_search_query
+from backend.search.validators import (
     get_valid_boolean,
     get_valid_count,
     get_valid_domain,
