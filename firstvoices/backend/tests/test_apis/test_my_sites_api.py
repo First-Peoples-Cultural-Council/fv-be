@@ -4,7 +4,7 @@ import pytest
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import ReadOnlyApiTests
+from backend.tests.test_apis.base.base_non_site_api import ReadOnlyApiTests
 
 
 class TestMySitesEndpoint(ReadOnlyApiTests):
