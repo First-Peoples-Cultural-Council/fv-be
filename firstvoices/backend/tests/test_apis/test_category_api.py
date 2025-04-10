@@ -17,7 +17,7 @@ from backend.tests.factories import (
     get_app_admin,
     get_non_member_user,
 )
-from backend.tests.test_apis.base.base_api_test import (
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseUncontrolledSiteContentApiTest,
 )
 from backend.tests.utils import find_object_by_id

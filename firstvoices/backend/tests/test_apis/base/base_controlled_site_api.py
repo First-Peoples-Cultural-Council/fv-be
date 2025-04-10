@@ -4,7 +4,7 @@ import pytest
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import (
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     BaseUncontrolledSiteContentApiTest,
 )

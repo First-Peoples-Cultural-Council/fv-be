@@ -13,7 +13,9 @@ from backend.tests.factories import (
     get_non_member_user,
     get_site_with_member,
 )
-from backend.tests.test_apis.base.base_api_test import BaseSiteContentApiTest
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseSiteContentApiTest,
+)
 
 
 class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):

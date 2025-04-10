@@ -11,13 +11,12 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
-from backend.tests.test_apis.base.base_api_test import (
-    BaseApiTest,
+from backend.tests.test_apis.base.base_api_test import BaseApiTest, WriteApiTestMixin
+from backend.tests.test_apis.base.base_media_test import FormDataMixin
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
-    WriteApiTestMixin,
 )
-from backend.tests.test_apis.base.base_media_test import FormDataMixin
 from backend.tests.utils import get_sample_file
 
 
