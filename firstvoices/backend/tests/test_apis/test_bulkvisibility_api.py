@@ -5,14 +5,14 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
-
-from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
-from .base_api_test import (
+from backend.tests.test_apis.base.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
     SuperAdminAsyncJobPermissionsMixin,
     WriteApiTestMixin,
 )
+
+from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
 
 
 class TestBulkVisibilityEndpoints(

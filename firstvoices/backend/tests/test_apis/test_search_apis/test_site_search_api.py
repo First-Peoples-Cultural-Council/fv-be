@@ -6,7 +6,7 @@ from elasticsearch_dsl import Search
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.test_apis.base.base_api_test import BaseSiteContentApiTest
 from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_entry_results import (
     SearchEntryResultsTestMixin,

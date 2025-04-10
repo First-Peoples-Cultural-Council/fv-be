@@ -5,8 +5,8 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.models.song import Lyric, Song
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseControlledSiteContentApiTest
-from backend.tests.test_apis.base_media_test import RelatedMediaTestMixin
+from backend.tests.test_apis.base.base_api_test import BaseControlledSiteContentApiTest
+from backend.tests.test_apis.base.base_media_test import RelatedMediaTestMixin
 
 
 class TestSongEndpoint(

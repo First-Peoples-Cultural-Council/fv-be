@@ -6,7 +6,7 @@ from backend.models.constants import AppRole, Visibility
 from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import (
+from backend.tests.test_apis.base.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
     SuperAdminAsyncJobPermissionsMixin,

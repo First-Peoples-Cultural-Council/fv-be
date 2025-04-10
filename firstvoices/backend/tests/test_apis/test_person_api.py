@@ -1,7 +1,9 @@
 from backend.models.media import Person
 from backend.tests import factories
 from backend.tests.factories import PersonFactory
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base.base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+)
 
 
 class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):

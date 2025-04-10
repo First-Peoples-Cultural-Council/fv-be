@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import Role
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest
+from backend.tests.test_apis.base.base_api_test import BaseApiTest
 
 
 class TestThrottling(BaseApiTest):

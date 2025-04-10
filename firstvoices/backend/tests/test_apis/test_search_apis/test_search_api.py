@@ -7,8 +7,11 @@ from elasticsearch.exceptions import ConnectionError
 from backend.models.constants import AppRole, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest
-from backend.tests.test_apis.base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
+from backend.tests.test_apis.base.base_api_test import BaseApiTest
+from backend.tests.test_apis.base.base_media_test import (
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+)
 from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_entry_results import (
     SearchEntryResultsTestMixin,

@@ -12,7 +12,7 @@ from backend.tests.factories import (
     get_site_with_authenticated_nonmember,
     get_site_with_staff_user,
 )
-from backend.tests.test_apis import base_api_test
+from backend.tests.test_apis.base import base_api_test
 from backend.tests.utils import get_sample_file
 
 VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"

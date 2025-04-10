@@ -1,6 +1,7 @@
 from backend.tests import factories
-
-from .base_api_test import BaseReadOnlyUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base.base_api_test import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+)
 
 
 class TestIgnoredCharactersEndpoints(BaseReadOnlyUncontrolledSiteContentApiTest):

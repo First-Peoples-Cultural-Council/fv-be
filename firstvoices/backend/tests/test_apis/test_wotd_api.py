@@ -13,7 +13,7 @@ from backend.tests.factories import (
     get_non_member_user,
     get_site_with_member,
 )
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.test_apis.base.base_api_test import BaseSiteContentApiTest
 
 
 class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):

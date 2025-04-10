@@ -8,14 +8,13 @@ from backend.models.constants import AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, SiteWidgetListOrder
 from backend.tests import factories
 from backend.tests.factories.access import get_anonymous_user, get_non_member_user
+from backend.tests.test_apis.base.base_api_test import BaseApiTest
+from backend.tests.test_apis.base.base_media_test import MediaTestMixin
 from backend.tests.utils import (
     setup_widget_list,
     update_widget_list_order,
     update_widget_sites,
 )
-
-from .base_api_test import BaseApiTest
-from .base_media_test import MediaTestMixin
 
 
 class TestSitesEndpoints(MediaTestMixin, BaseApiTest):

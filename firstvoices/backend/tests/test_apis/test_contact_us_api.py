@@ -10,7 +10,7 @@ from django.urls import reverse
 from backend.models import Site
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
+from backend.tests.test_apis.base.base_api_test import BaseApiTest, WriteApiTestMixin
 
 
 class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):

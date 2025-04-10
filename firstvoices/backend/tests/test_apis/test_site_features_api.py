@@ -3,8 +3,9 @@ import pytest
 from backend.models.constants import AppRole, Visibility
 from backend.models.sites import SiteFeature
 from backend.tests import factories
-
-from .base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base.base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+)
 
 
 class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):

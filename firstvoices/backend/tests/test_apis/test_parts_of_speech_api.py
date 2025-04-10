@@ -2,8 +2,7 @@ import json
 
 from backend.models.constants import AppRole
 from backend.tests.factories import get_app_admin
-
-from .base_api_test import BaseApiTest
+from backend.tests.test_apis.base.base_api_test import BaseApiTest
 
 
 class TestPartsOfSpeechAPI(BaseApiTest):

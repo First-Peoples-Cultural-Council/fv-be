@@ -6,6 +6,14 @@ import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.tests import factories
+from backend.tests.test_apis.base.base_api_test import BaseControlledSiteContentApiTest
+from backend.tests.test_apis.base.base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+    RelatedMediaTestMixin,
+)
 from backend.tests.utils import format_dictionary_entry_related_field, is_valid_uuid
 
 from ...models import ImmersionLabel
@@ -19,14 +27,6 @@ from ...serializers.media_serializers import (
     VideoSerializer,
 )
 from ...serializers.parts_of_speech_serializers import PartsOfSpeechSerializer
-from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import (
-    MOCK_EMBED_LINK,
-    MOCK_THUMBNAIL_LINK,
-    VIMEO_VIDEO_LINK,
-    YOUTUBE_VIDEO_LINK,
-    RelatedMediaTestMixin,
-)
 
 
 class TestDictionaryEndpoint(

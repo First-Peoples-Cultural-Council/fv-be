@@ -3,9 +3,10 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.models.galleries import Gallery, GalleryItem
 from backend.tests import factories
-
-from .base_api_test import BaseUncontrolledSiteContentApiTest
-from .base_media_test import MediaTestMixin
+from backend.tests.test_apis.base.base_api_test import (
+    BaseUncontrolledSiteContentApiTest,
+)
+from backend.tests.test_apis.base.base_media_test import MediaTestMixin
 
 
 class TestGalleryEndpoints(MediaTestMixin, BaseUncontrolledSiteContentApiTest):

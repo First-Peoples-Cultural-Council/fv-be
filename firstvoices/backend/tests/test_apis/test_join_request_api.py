@@ -9,7 +9,7 @@ from backend.models import JoinRequest, Membership
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.join_request import JoinRequestReasonChoices, JoinRequestStatus
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import (
+from backend.tests.test_apis.base.base_api_test import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
     SiteContentCreateApiTestMixin,
     SiteContentDestroyApiTestMixin,
