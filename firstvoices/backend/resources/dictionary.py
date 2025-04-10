@@ -86,7 +86,8 @@ class DictionaryEntryResource(
         widget=ForeignKeyWidget(ImportJob),
     )
 
-    def __init__(self, site=None, run_as_user=None, import_job=None):
+    def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
+        super().__init__(**kwargs)
         self.site = site
         self.run_as_user = run_as_user
         self.import_job = import_job
