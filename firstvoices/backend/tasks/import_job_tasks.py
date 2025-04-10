@@ -172,6 +172,47 @@ def separate_data(data):
     return dictionary_entries_data, filtered_audio_data
 
 
+def import_media_resources(import_job, audio_data, dictionary_entry_data, dry_run):
+    # Import audio items
+    # audio_import_result = AudioResource(
+    AudioResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=audio_data, dry_run=dry_run)
+
+    # Adding audio ids
+    if len(audio_data):
+        audio_lookup = {
+            row["audio_filename"]: row["id"]
+            for row in audio_data.dict
+            if row.get("audio_filename")
+        }
+        dictionary_entry_data.append_col(
+            [""] * len(dictionary_entry_data), header="related_audio"
+        )
+        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
+        for i, row in enumerate(dictionary_entry_data.dict):
+            audio_filename = row.get("audio_filename")
+            related_id = audio_lookup.get(audio_filename, "")
+            row_list = list(dictionary_entry_data[i])
+            row_list[related_audio_col_index] = related_id  # comma separated string
+            dictionary_entry_data[i] = tuple(row_list)
+
+    return dictionary_entry_data
+
+
+def import_dictionary_entry_resources(import_job, dictionary_entry_data, dry_run):
+    # Import dictionary entries
+    dictionary_entry_import_result = DictionaryEntryResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=dictionary_entry_data, dry_run=dry_run)
+
+    return dictionary_entry_import_result
+
+
 def import_resources(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
@@ -200,38 +241,12 @@ def import_resources(data, import_job, missing_media=[], dry_run=True):
         )
         error_row_instance.save()
 
-    # Import audio items
-    # audio_import_result = AudioResource(
-    AudioResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=audio_data, dry_run=dry_run)
-
-    # Adding audio ids
-    if len(audio_data):
-        audio_lookup = {
-            row["audio_filename"]: row["id"]
-            for row in audio_data.dict
-            if row.get("audio_filename")
-        }
-        dictionary_entry_data.append_col(
-            [""] * len(dictionary_entry_data), header="related_audio"
-        )
-        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
-        for i, row in enumerate(dictionary_entry_data.dict):
-            audio_filename = row.get("audio_filename")
-            related_id = audio_lookup.get(audio_filename, "")
-            row_list = list(dictionary_entry_data[i])
-            row_list[related_audio_col_index] = related_id  # comma separated string
-            dictionary_entry_data[i] = tuple(row_list)
-
-    # Import dictionary entries
-    dictionary_entry_import_result = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=dictionary_entry_data, dry_run=dry_run)
+    dictionary_entry_data = import_media_resources(
+        import_job, audio_data, dictionary_entry_data, dry_run
+    )
+    dictionary_entry_import_result = import_dictionary_entry_resources(
+        import_job, dictionary_entry_data, dry_run
+    )
 
     # Adding error messages to the report
     for row in dictionary_entry_import_result.rows:
