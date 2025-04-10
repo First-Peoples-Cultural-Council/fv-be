@@ -6,7 +6,6 @@ import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import BaseControlledSiteContentApiTest
 from backend.tests.test_apis.base.base_media_test import (
     MOCK_EMBED_LINK,
     MOCK_THUMBNAIL_LINK,
@@ -27,6 +26,7 @@ from ...serializers.media_serializers import (
     VideoSerializer,
 )
 from ...serializers.parts_of_speech_serializers import PartsOfSpeechSerializer
+from .base.base_controlled_site_api import BaseControlledSiteContentApiTest
 
 
 class TestDictionaryEndpoint(

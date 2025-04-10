@@ -5,7 +5,7 @@ import pytest
 from backend.models.constants import WIDGET_TEXT, AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, WidgetFormats, WidgetSettings
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import (
+from backend.tests.test_apis.base.base_controlled_site_api import (
     BaseControlledLanguageAdminOnlySiteContentAPITest,
 )
 
