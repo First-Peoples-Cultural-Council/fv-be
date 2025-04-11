@@ -432,11 +432,11 @@ class TestImportEndpoints(
 class TestImportJobConfirmAction(BaseSiteContentApiTest):
     API_CONFIRM_ACTION = "api:importjob-confirm"
 
-    def create_minimal_instance(self, visibility):
+    def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
         return {}
 
-    def get_expected_response(self, instance):
+    def get_expected_response(self, instance, site):
         # Not required for this endpoint
         return {}
 
