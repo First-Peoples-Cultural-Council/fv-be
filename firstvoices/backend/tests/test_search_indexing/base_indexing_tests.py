@@ -1,13 +1,11 @@
-import logging
-from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.db import DEFAULT_DB_ALIAS, connections
 from elasticsearch import ConnectionError, NotFoundError
 
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
+from backend.tests.utils import TransactionOnCommitMixin
 
 TEST_SEARCH_INDEX_ID = "test search index id"
 
@@ -581,43 +579,6 @@ class BaseDocumentManagerTest:
         mock_document = MagicMock()
         mock_document.save.side_effect = ConnectionError("Uh oh!")
         return mock_document
-
-
-class TransactionOnCommitMixin:
-    @classmethod
-    @contextmanager
-    def capture_on_commit_callbacks(cls, *, using=DEFAULT_DB_ALIAS, execute=False):
-        """Context manager to capture transaction.on_commit() callbacks."""
-        callbacks = []
-        commit_handlers = connections[using].run_on_commit
-        start_count = len(commit_handlers)
-        try:
-            yield callbacks
-        finally:
-            while True:
-                callback_count = len(commit_handlers)
-                for _, callback, robust in commit_handlers[start_count:]:
-                    callbacks.append(callback)
-                    if execute:
-                        cls._execute_callback(callback, robust)
-
-                if callback_count == len(commit_handlers):
-                    break
-                start_count = callback_count
-
-    @classmethod
-    def _execute_callback(cls, callback, robust):
-        if robust:
-            try:
-                callback()
-            except Exception as e:
-                logging.error(
-                    f"Error calling {callback.__qualname__} in on_commit() (%s).",
-                    e,
-                    exc_info=True,
-                )
-        else:
-            callback()
 
 
 class PauseIndexingSignalMixin:

@@ -15,9 +15,7 @@ from backend.search.indexing import (
 )
 from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
-from backend.tests.test_search_indexing.base_indexing_tests import (
-    TransactionOnCommitMixin,
-)
+from backend.tests.utils import TransactionOnCommitMixin
 
 
 class TestSiteSignals(TransactionOnCommitMixin):

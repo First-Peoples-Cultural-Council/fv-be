@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import string
@@ -8,6 +9,7 @@ from contextlib import contextmanager
 import pytest
 import tablib
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.db import DEFAULT_DB_ALIAS, connections
 
 from backend.models.constants import Visibility
 from backend.models.widget import SiteWidgetListOrder
@@ -159,3 +161,40 @@ def get_batch_import_test_dataset(filename):
     file = open(path, "rb").read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
     return data
+
+
+class TransactionOnCommitMixin:
+    @classmethod
+    @contextmanager
+    def capture_on_commit_callbacks(cls, *, using=DEFAULT_DB_ALIAS, execute=False):
+        """Context manager to capture transaction.on_commit() callbacks."""
+        callbacks = []
+        commit_handlers = connections[using].run_on_commit
+        start_count = len(commit_handlers)
+        try:
+            yield callbacks
+        finally:
+            while True:
+                callback_count = len(commit_handlers)
+                for _, callback, robust in commit_handlers[start_count:]:
+                    callbacks.append(callback)
+                    if execute:
+                        cls._execute_callback(callback, robust)
+
+                if callback_count == len(commit_handlers):
+                    break
+                start_count = callback_count
+
+    @classmethod
+    def _execute_callback(cls, callback, robust):
+        if robust:
+            try:
+                callback()
+            except Exception as e:
+                logging.error(
+                    f"Error calling {callback.__qualname__} in on_commit() (%s).",
+                    e,
+                    exc_info=True,
+                )
+        else:
+            callback()

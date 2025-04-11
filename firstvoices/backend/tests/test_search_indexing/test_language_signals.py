@@ -5,9 +5,7 @@ from backend.search.indexing.language_index import (
     SiteDocumentManager,
 )
 from backend.tests import factories
-from backend.tests.test_search_indexing.base_indexing_tests import (
-    TransactionOnCommitMixin,
-)
+from backend.tests.utils import TransactionOnCommitMixin
 
 
 @pytest.fixture

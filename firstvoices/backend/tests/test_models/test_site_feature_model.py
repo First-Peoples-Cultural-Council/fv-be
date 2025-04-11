@@ -2,9 +2,7 @@ import pytest
 
 from backend.models.sites import SiteFeature
 from backend.tests.factories import SiteFactory
-from backend.tests.test_search_indexing.base_indexing_tests import (
-    TransactionOnCommitMixin,
-)
+from backend.tests.utils import TransactionOnCommitMixin
 
 
 class TestSiteFeatureModel(TransactionOnCommitMixin):
