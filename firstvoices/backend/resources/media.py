@@ -51,7 +51,7 @@ class AudioResource(
 
     def before_import_row(self, row, **kwargs):
         # title will be same as filename if not given
-        if "title" not in row:
+        if "audio_title" not in row:
             row["audio_title"] = row["audio_filename"]
 
         # Adding original

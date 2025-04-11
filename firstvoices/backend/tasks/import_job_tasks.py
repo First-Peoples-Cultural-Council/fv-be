@@ -213,7 +213,9 @@ def import_dictionary_entry_resources(import_job, dictionary_entry_data, dry_run
     return dictionary_entry_import_result
 
 
-def import_resources(data, import_job, missing_media=[], dry_run=True):
+def import_resources_and_generate_report(
+    data, import_job, missing_media=[], dry_run=True
+):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
     # get a separate table for each type
@@ -286,7 +288,7 @@ def run_import_job(data, import_job):
     logger = get_task_logger(__name__)
 
     try:
-        import_resources(data, import_job, dry_run=False)
+        import_resources_and_generate_report(data, import_job, dry_run=False)
         import_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -314,7 +316,9 @@ def dry_run_import_job(data, import_job):
             return
 
     try:
-        report = import_resources(data, import_job, missing_media, dry_run=True)
+        report = import_resources_and_generate_report(
+            data, import_job, missing_media, dry_run=True
+        )
         import_job.validation_status = JobStatus.COMPLETE
         import_job.validation_report = report
     except Exception as e:
