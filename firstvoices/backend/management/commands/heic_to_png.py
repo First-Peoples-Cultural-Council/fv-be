@@ -50,7 +50,7 @@ class Command(BaseCommand):
             file=output_image,
             field_name="ImageField",
             name=original_image.name.replace(".heic", ".png"),
-            content_type="image/jpeg",
+            content_type="image/png",
             size=sys.getsizeof(output_image),
             charset=None,
         )
@@ -80,18 +80,27 @@ class Command(BaseCommand):
         else:
             sites = Site.objects.all()
 
+        logger.info(f"Converting HEIC files to PNG for {len(sites)} sites.")
+
         for site in sites:
             logger.debug(f"Converting heic content to png for site {site.slug}...")
             images = Image.objects.filter(
                 site=site, original__content__endswith=".heic"
             )
+
+            if not images:
+                logger.warning(f"No HEIC images found for site {site.slug}.")
+                continue
+
             for image in images:
                 logger.debug(f"Converting image {image.id} to png...")
+                heic_image = image.original
+
                 with transaction.atomic():
-                    heic_image = image.original
                     converted_image = self.convert_heic_to_png(heic_image)
                     image.original = converted_image
                     image.save(set_modified_date=False)
-                heic_image.delete()
 
-        logger.debug("HEIC to PNG conversion completed.")
+                    transaction.on_commit(lambda: heic_image.delete())
+
+        logger.info("HEIC to PNG conversion completed.")
