@@ -558,11 +558,11 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
 
-    def create_minimal_instance(self, visibility):
+    def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
         return {}
 
-    def get_expected_response(self, instance):
+    def get_expected_response(self, instance, site):
         # Not required for this endpoint
         return {}
 
