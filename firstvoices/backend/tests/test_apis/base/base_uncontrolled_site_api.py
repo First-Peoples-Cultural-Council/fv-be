@@ -718,6 +718,8 @@ class BaseUncontrolledSiteContentApiTest(
     SiteContentUpdateApiTestMixin,
     SiteContentPatchApiTestMixin,
     SiteContentDestroyApiTestMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentDetailApiTestMixin,
+    SiteContentListApiTestMixin,
+    BaseSiteContentApiTest,
 ):
     pass

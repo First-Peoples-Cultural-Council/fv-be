@@ -4,13 +4,19 @@ import pytest
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
+from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    BaseUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    SiteContentDetailApiTestMixin,
+    SiteContentListApiTestMixin,
+    SiteContentPatchApiTestMixin,
+    SiteContentUpdateApiTestMixin,
 )
 
 
-class ControlledListApiTestMixin:
+class ControlledListApiTestMixin(SiteContentListApiTestMixin):
     """
     For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
     for testing APIs related to BaseControlledSiteContentModel.
@@ -37,7 +43,7 @@ class ControlledListApiTestMixin:
         )
 
 
-class ControlledDetailApiTestMixin:
+class ControlledDetailApiTestMixin(SiteContentDetailApiTestMixin):
     """
     For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
     for testing APIs related to BaseControlledSiteContentModel.
@@ -65,9 +71,10 @@ class ControlledDetailApiTestMixin:
         assert response.status_code == 403
 
 
-class ControlledSiteContentCreateApiTestMixin:
+class ControlledSiteContentCreateApiTestMixin(SiteContentCreateApiTestMixin):
     """
-    For use with ControlledBaseSiteContentApiTest
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
     """
 
     @pytest.mark.django_db
@@ -109,9 +116,10 @@ class ControlledSiteContentCreateApiTestMixin:
         assert response.status_code == 403
 
 
-class ControlledSiteContentUpdateApiTestMixin:
+class ControlledSiteContentUpdateApiTestMixin(SiteContentUpdateApiTestMixin):
     """
-    For use with ControlledBaseSiteContentApiTest
+    For use with BaseSiteContentApiTest. Additional test cases for items with their own visibility settings, suitable
+    for testing APIs related to BaseControlledSiteContentModel.
     """
 
     @pytest.mark.django_db
@@ -193,7 +201,7 @@ class ControlledSiteContentUpdateApiTestMixin:
 class BaseReadOnlyControlledSiteContentApiTest(
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
 ):
     pass
 
@@ -201,16 +209,19 @@ class BaseReadOnlyControlledSiteContentApiTest(
 class BaseControlledLanguageAdminOnlySiteContentAPITest(
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
-    BaseUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
 ):
     pass
 
 
 class BaseControlledSiteContentApiTest(
+    WriteApiTestMixin,
     ControlledSiteContentCreateApiTestMixin,
     ControlledSiteContentUpdateApiTestMixin,
+    SiteContentPatchApiTestMixin,
+    SiteContentDestroyApiTestMixin,
     ControlledListApiTestMixin,
     ControlledDetailApiTestMixin,
-    BaseUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
 ):
     pass
