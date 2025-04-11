@@ -12,10 +12,13 @@ from backend.tests import factories
 from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseSiteContentApiTest,
+    SiteContentListEndpointMixin,
 )
 
 
-class TestContactUsEndpoint(WriteApiTestMixin, BaseSiteContentApiTest):
+class TestContactUsEndpoint(
+    WriteApiTestMixin, SiteContentListEndpointMixin, BaseSiteContentApiTest
+):
     API_LIST_VIEW = "api:contact-us-list"
     content_type = "application/json"
     contact_emails = "contact@email.com"

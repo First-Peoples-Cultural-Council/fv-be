@@ -15,10 +15,11 @@ from backend.tests.factories import (
 )
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseSiteContentApiTest,
+    SiteContentListEndpointMixin,
 )
 
 
-class TestWordOfTheDayEndpoint(BaseSiteContentApiTest):
+class TestWordOfTheDayEndpoint(SiteContentListEndpointMixin, BaseSiteContentApiTest):
     """
     Tests for the word-of-the-day API
     """

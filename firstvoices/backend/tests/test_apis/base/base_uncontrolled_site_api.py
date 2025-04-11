@@ -16,25 +16,8 @@ class BaseSiteContentApiTest:
     Minimal setup for site content api integration testing.
     """
 
-    API_LIST_VIEW = ""  # E.g., "api:site-list"
-    API_DETAIL_VIEW = ""  # E.g., "api:site-detail"
     APP_NAME = "backend"
-
     client = None
-
-    def get_list_endpoint(self, site_slug, query_kwargs=None):
-        """
-        query_kwargs accept query parameters e.g. query_kwargs={"contains": "WORD"}
-        """
-        url = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
-        if query_kwargs:
-            return f"{url}?{urlencode(query_kwargs)}"
-        return url
-
-    def get_detail_endpoint(self, key, site_slug):
-        return reverse(
-            self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[site_slug, str(key)]
-        )
 
     def setup_method(self):
         self.client = APIClient()
@@ -56,7 +39,20 @@ class BaseSiteContentApiTest:
         return instance.id
 
 
-class SiteContentListApiTestMixin:
+class SiteContentListEndpointMixin:
+    API_LIST_VIEW = ""  # E.g., "api:site-list"
+
+    def get_list_endpoint(self, site_slug, query_kwargs=None):
+        """
+        query_kwargs accept query parameters e.g. query_kwargs={"contains": "WORD"}
+        """
+        url = reverse(self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug])
+        if query_kwargs:
+            return f"{url}?{urlencode(query_kwargs)}"
+        return url
+
+
+class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
     """
     For use with BaseSiteContentApiTest
     """
@@ -143,7 +139,16 @@ class SiteContentListApiTestMixin:
         )
 
 
-class SiteContentDetailApiTestMixin:
+class SiteContentDetailEndpointMixin:
+    API_DETAIL_VIEW = ""  # E.g., "api:site-detail"
+
+    def get_detail_endpoint(self, key, site_slug):
+        return reverse(
+            self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[site_slug, str(key)]
+        )
+
+
+class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
     """
     For use with BaseSiteContentApiTest
     """
