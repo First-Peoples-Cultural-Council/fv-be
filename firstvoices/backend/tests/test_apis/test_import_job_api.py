@@ -11,10 +11,11 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
-from backend.tests.test_apis.base.base_api_test import BaseApiTest, WriteApiTestMixin
+from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
 from backend.tests.test_apis.base.base_media_test import FormDataMixin
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
     SiteContentCreateApiTestMixin,
 )
 from backend.tests.utils import get_sample_file
@@ -428,7 +429,7 @@ class TestImportEndpoints(
 
 
 @pytest.mark.django_db(transaction=True)
-class TestImportJobConfirmAction(BaseApiTest):
+class TestImportJobConfirmAction(BaseSiteContentApiTest):
     API_CONFIRM_ACTION = "api:importjob-confirm"
 
     def create_minimal_instance(self, visibility):
@@ -553,7 +554,7 @@ class TestImportJobConfirmAction(BaseApiTest):
 
 
 @pytest.mark.django_db(transaction=True)
-class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
+class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
 
