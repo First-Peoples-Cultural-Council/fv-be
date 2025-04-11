@@ -209,6 +209,8 @@ class BaseControlledLanguageAdminOnlySiteContentAPITest(
 class BaseControlledSiteContentApiTest(
     ControlledSiteContentCreateApiTestMixin,
     ControlledSiteContentUpdateApiTestMixin,
-    BaseControlledLanguageAdminOnlySiteContentAPITest,
+    ControlledListApiTestMixin,
+    ControlledDetailApiTestMixin,
+    BaseUncontrolledSiteContentApiTest,
 ):
     pass
