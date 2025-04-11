@@ -5,24 +5,15 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.jobs import BulkVisibilityJob
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import (
-    SuperAdminAsyncJobPermissionsMixin,
-    WriteApiTestMixin,
-)
 
-from ..test_search_indexing.base_indexing_tests import TransactionOnCommitMixin
-from .base.base_uncontrolled_site_api import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentCreateApiTestMixin,
+from .base.base_async_api_test import (
+    BaseAsyncSiteContentApiTest,
+    SuperAdminAsyncJobPermissionsMixin,
 )
 
 
 class TestBulkVisibilityEndpoints(
-    WriteApiTestMixin,
-    SiteContentCreateApiTestMixin,
-    TransactionOnCommitMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SuperAdminAsyncJobPermissionsMixin, BaseAsyncSiteContentApiTest
 ):
     """
     End-to-end tests that the bulk visibility endpoints have the expected behaviour.
@@ -74,16 +65,6 @@ class TestBulkVisibilityEndpoints(
         assert actual_response["fromVisibility"] == expected_data["from_visibility"]
         assert actual_response["toVisibility"] == expected_data["to_visibility"]
 
-    @pytest.mark.skip(reason="Bulk visibility jobs can only be accessed by superusers.")
-    def test_detail_member_access(self, role):
-        # Bulk visibility jobs can only be accessed by superusers.
-        pass
-
-    @pytest.mark.skip(reason="Bulk visibility jobs can only be accessed by superusers.")
-    def test_detail_team_access(self, role):
-        # Bulk visibility jobs can only be accessed by superusers.
-        pass
-
     @pytest.mark.skip(reason="Bulk visibility jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):
         # Bulk visibility jobs have no eligible nulls.
@@ -102,45 +83,6 @@ class TestBulkVisibilityEndpoints(
     def test_update_with_null_optional_charfields_success_200(self):
         # Bulk visibility jobs have no eligible optional charfields..
         pass
-
-    @pytest.mark.django_db
-    def test_list_minimal(self):
-        site = factories.SiteFactory.create()
-        user = factories.get_superadmin()
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
-
-    @pytest.mark.django_db
-    def test_detail_minimal(self):
-        site = factories.SiteFactory.create()
-        user = factories.get_superadmin()
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data == self.get_expected_detail_response(instance, site)
 
     @pytest.mark.django_db
     def test_more_than_1_visibility_bad_request_400(self):

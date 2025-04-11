@@ -23,10 +23,9 @@ class BaseSiteContentApiTest:
         self.client = APIClient()
 
     def create_site_with_non_member(self, site_visibility):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=site_visibility)
-
+        site, _ = factories.get_site_with_authenticated_nonmember(
+            self.client, visibility=site_visibility
+        )
         return site
 
     def create_minimal_instance(self, site, visibility):
@@ -62,9 +61,6 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
 
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
         response = self.client.get(self.get_list_endpoint(site_slug="missing-site"))
         assert response.status_code == 404
 
@@ -73,7 +69,7 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         [Visibility.MEMBERS, Visibility.TEAM],
     )
     @pytest.mark.django_db
-    def test_list_403_site_not_visible(self, visibility):
+    def test_list_403_when_site_not_visible(self, visibility):
         site = self.create_site_with_non_member(visibility)
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
@@ -88,33 +84,6 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         response_data = json.loads(response.content)
         assert len(response_data["results"]) == 0
         assert response_data["count"] == 0
-
-    @pytest.mark.parametrize("role", Role)
-    @pytest.mark.django_db
-    def test_list_member_access(self, role):
-        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["results"] == []
-
-    @pytest.mark.django_db
-    def test_list_team_access(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
-        self.client.force_authenticate(user=user)
-
-        response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["results"] == []
 
     @pytest.mark.django_db
     def test_list_minimal(self):
@@ -132,6 +101,61 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         assert response_data["results"][0] == self.get_expected_list_response_item(
             instance, site
         )
+
+
+class SiteContentListPermissionTestMixin:
+    """Test cases for view permissions by site and content visibility."""
+
+    @pytest.mark.parametrize("role", Role)
+    @pytest.mark.django_db
+    def test_list_member_access_success(self, role):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.MEMBERS, role=role
+        )
+        self.create_minimal_instance(site=site, visibility=Visibility.MEMBERS)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+    @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    @pytest.mark.django_db
+    def test_list_nonpublic_access_denied_for_non_member(self, visibility):
+        site, user = factories.get_site_with_authenticated_nonmember(
+            self.client, visibility=visibility
+        )
+        self.create_minimal_instance(site=site, visibility=visibility)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.django_db
+    def test_list_team_access_success(self, role):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.TEAM, role=role
+        )
+        self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+    @pytest.mark.django_db
+    def test_list_team_access_denied_for_member(self):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.TEAM, role=Role.MEMBER
+        )
+        self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 403
 
 
 class SiteContentDetailEndpointMixin:
@@ -212,50 +236,9 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
 
         assert response.status_code == 403
 
-    @pytest.mark.parametrize("role", Role)
-    @pytest.mark.django_db
-    def test_detail_member_access(self, role):
-        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(
-            site=site, visibility=Visibility.MEMBERS
-        )
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.django_db
-    def test_detail_team_access(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 200
-
     @pytest.mark.django_db
     def test_detail_minimal(self):
-        site, user = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
-        )
-        self.client.force_authenticate(user=user)
-
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -268,6 +251,89 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
 
         response_data = json.loads(response.content)
         assert response_data == self.get_expected_detail_response(instance, site)
+
+
+class SiteContentDetailPermissionTestMixin:
+    """Test cases for view permissions by site and content visibility."""
+
+    @pytest.mark.parametrize("role", Role)
+    @pytest.mark.django_db
+    def test_detail_member_access_success(self, role):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.MEMBERS, role=role
+        )
+        instance = self.create_minimal_instance(
+            site=site, visibility=Visibility.MEMBERS
+        )
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    @pytest.mark.django_db
+    def test_detail_nonpublic_access_denied_for_non_member(self, visibility):
+        site, user = factories.get_site_with_authenticated_nonmember(
+            self.client, visibility
+        )
+        instance = self.create_minimal_instance(site=site, visibility=visibility)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    @pytest.mark.django_db
+    def test_detail_nonpublic_access_denied_for_guest(self, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        instance = self.create_minimal_instance(site=site, visibility=visibility)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.django_db
+    def test_detail_team_access_success(self, role):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.TEAM, role=role
+        )
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_detail_team_access_denied_for_member(self):
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, visibility=Visibility.TEAM, role=Role.MEMBER
+        )
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 403
 
 
 class SiteContentCreateApiTestMixin:
@@ -702,7 +768,11 @@ class SiteContentPatchApiTestMixin:
 
 
 class BaseReadOnlyUncontrolledSiteContentApiTest(
-    SiteContentListApiTestMixin, SiteContentDetailApiTestMixin, BaseSiteContentApiTest
+    SiteContentListApiTestMixin,
+    SiteContentListPermissionTestMixin,
+    SiteContentDetailApiTestMixin,
+    SiteContentDetailPermissionTestMixin,
+    BaseSiteContentApiTest,
 ):
     pass
 
@@ -713,8 +783,10 @@ class BaseUncontrolledSiteContentApiTest(
     SiteContentUpdateApiTestMixin,
     SiteContentPatchApiTestMixin,
     SiteContentDestroyApiTestMixin,
-    SiteContentDetailApiTestMixin,
     SiteContentListApiTestMixin,
+    SiteContentListPermissionTestMixin,
+    SiteContentDetailApiTestMixin,
+    SiteContentDetailPermissionTestMixin,
     BaseSiteContentApiTest,
 ):
     pass

@@ -6,25 +6,14 @@ from backend.models.constants import AppRole, Visibility
 from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import (
+from backend.tests.test_apis.base.base_async_api_test import (
+    BaseAsyncSiteContentApiTest,
     SuperAdminAsyncJobPermissionsMixin,
-    WriteApiTestMixin,
-)
-from backend.tests.test_apis.base.base_uncontrolled_site_api import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentCreateApiTestMixin,
-)
-from backend.tests.test_search_indexing.base_indexing_tests import (
-    TransactionOnCommitMixin,
 )
 
 
 class TestDictionaryCleanupAPI(
-    WriteApiTestMixin,
-    SiteContentCreateApiTestMixin,
-    TransactionOnCommitMixin,
-    SuperAdminAsyncJobPermissionsMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SuperAdminAsyncJobPermissionsMixin, BaseAsyncSiteContentApiTest
 ):
     API_LIST_VIEW = "api:dictionary-cleanup-list"
     API_DETAIL_VIEW = "api:dictionary-cleanup-detail"
@@ -101,45 +90,6 @@ class TestDictionaryCleanupAPI(
     def test_update_with_null_optional_charfields_success_200(self):
         # Dictionary cleanup jobs have no eligible optional charfields..
         pass
-
-    @pytest.mark.django_db
-    def test_list_minimal(self):
-        site = factories.SiteFactory.create()
-        user = factories.get_superadmin()
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
-
-    @pytest.mark.django_db
-    def test_detail_minimal(self):
-        site = factories.SiteFactory.create()
-        user = factories.get_superadmin()
-        self.client.force_authenticate(user=user)
-
-        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
-
-        response = self.client.get(
-            self.get_detail_endpoint(
-                key=self.get_lookup_key(instance), site_slug=site.slug
-            )
-        )
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data == self.get_expected_detail_response(instance, site)
 
     @pytest.mark.django_db
     def test_create_success_201(self):
@@ -231,11 +181,3 @@ class TestDictionaryCleanupAPI(
 
         assert response.status_code == 201
         assert self.mocked_func.call_count == 1
-
-
-class TestDictionaryCleanupPreviewAPI(TestDictionaryCleanupAPI):
-    API_LIST_VIEW = "api:dictionary-cleanup-preview-list"
-    API_DETAIL_VIEW = "api:dictionary-cleanup-preview-detail"
-
-    def create_minimal_instance(self, site, visibility):
-        return factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
