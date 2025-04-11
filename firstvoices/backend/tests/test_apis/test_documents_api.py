@@ -46,7 +46,7 @@ class TestDocumentEndpoint(BaseMediaApiTest):
 
     @pytest.mark.django_db
     def test_create(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
         response = self.client.post(

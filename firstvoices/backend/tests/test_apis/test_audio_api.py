@@ -66,7 +66,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
 
     @pytest.mark.django_db
     def test_create_with_speakers(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         speaker1 = factories.PersonFactory.create(site=site)
         speaker2 = factories.PersonFactory.create(site=site)
         data = self.get_valid_data(site)
@@ -199,7 +199,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     # Setting it to an empty list is tested below using content-type application/json
     @pytest.mark.django_db
     def test_patch_speakers_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
         data = self.get_valid_patch_speaker_data(site)
 
@@ -226,7 +226,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     # Setting speakers list to an empty array
     @pytest.mark.django_db
     def test_patch_speakers_success_200_empty(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
         data = {"speakers": []}
 
@@ -253,7 +253,7 @@ class TestAudioEndpoint(BaseMediaApiTest):
     # Setting speakers list to an empty array
     @pytest.mark.django_db
     def test_update_speakers_success_200_empty(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 

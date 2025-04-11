@@ -66,7 +66,6 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         self.client.force_authenticate(user=user)
 
         response = self.client.get(self.get_list_endpoint(site_slug="missing-site"))
-
         assert response.status_code == 404
 
     @pytest.mark.parametrize(
@@ -119,11 +118,7 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
 
     @pytest.mark.django_db
     def test_list_minimal(self):
-        site, user = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
-        )
-        self.client.force_authenticate(user=user)
-
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
@@ -282,7 +277,7 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_invalid_400(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug),
@@ -318,7 +313,7 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = self.get_valid_data(site)
 
@@ -338,7 +333,7 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = self.get_valid_data_with_nulls(site)
 
@@ -359,7 +354,7 @@ class SiteContentCreateApiTestMixin:
 
     @pytest.mark.django_db
     def test_create_with_null_optional_charfields_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = self.get_valid_data_with_null_optional_charfields(site)
 
@@ -403,7 +398,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_invalid_400(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
@@ -433,7 +428,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_site_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.put(
@@ -448,7 +443,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_instance_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.put(
             self.get_detail_endpoint(key="missing-instance", site_slug=site.slug),
@@ -487,7 +482,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
@@ -497,7 +492,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data_with_nulls(site)
         expected_data = self.add_expected_defaults(data)
@@ -508,7 +503,7 @@ class SiteContentUpdateApiTestMixin:
 
     @pytest.mark.django_db
     def test_update_with_null_optional_charfields_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data_with_null_optional_charfields(site)
         expected_data = self.add_expected_defaults(data)
@@ -536,7 +531,7 @@ class SiteContentDestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_success_204(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         self.add_related_objects(instance)
@@ -567,7 +562,7 @@ class SiteContentDestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.delete(
             self.get_detail_endpoint(key="missing-instance", site_slug=site.slug)
@@ -577,7 +572,7 @@ class SiteContentDestroyApiTestMixin:
 
     @pytest.mark.django_db
     def test_destroy_site_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
@@ -624,7 +619,7 @@ class SiteContentPatchApiTestMixin:
 
     @pytest.mark.django_db
     def test_patch_invalid_400(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.patch(
@@ -654,7 +649,7 @@ class SiteContentPatchApiTestMixin:
 
     @pytest.mark.django_db
     def test_patch_site_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.patch(
@@ -669,7 +664,7 @@ class SiteContentPatchApiTestMixin:
 
     @pytest.mark.django_db
     def test_patch_instance_missing_404(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.patch(
             self.get_detail_endpoint(key="missing-instance", site_slug=site.slug),
@@ -681,7 +676,7 @@ class SiteContentPatchApiTestMixin:
 
     @pytest.mark.django_db
     def test_patch_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
         data = self.get_valid_patch_data(site)
 

@@ -230,7 +230,7 @@ class TestJoinRequestEndpoints(
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db
     def test_detail_app_admin_access(self, visibility, app_role):
-        site = self.create_site_with_app_admin(visibility, app_role)
+        site, _ = factories.get_site_with_app_admin(self.client, visibility, app_role)
 
         instance = self.create_minimal_instance(site=site, visibility=visibility)
 
@@ -276,7 +276,7 @@ class TestJoinRequestEndpoints(
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db
     def test_list_app_admin_access(self, visibility, app_role):
-        site = self.create_site_with_app_admin(visibility, app_role)
+        site, _ = factories.get_site_with_app_admin(self.client, visibility, app_role)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
@@ -318,7 +318,7 @@ class TestJoinRequestEndpoints(
     )
     @pytest.mark.django_db
     def test_actions_404_invalid_join_request(self, viewname):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.post(
             self.get_action_endpoint(viewname, key="fake-key", site_slug=site.slug)
@@ -331,7 +331,7 @@ class TestJoinRequestEndpoints(
     )
     @pytest.mark.django_db
     def test_actions_404_missing_join_request(self, viewname):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         response = self.client.post(
             self.get_action_endpoint(viewname, key=str(site.id), site_slug=site.slug)
@@ -379,7 +379,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_approve_400_missing_role(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
@@ -393,7 +395,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_approve_400_invalid_role(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
@@ -407,7 +411,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_approve_400_already_a_member(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
         factories.MembershipFactory(user=join_request.user, site=join_request.site)
@@ -452,7 +458,9 @@ class TestJoinRequestEndpoints(
     @pytest.mark.parametrize("app_role", AppRole)
     @pytest.mark.django_db
     def test_approve_success_superadmin(self, app_role):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, app_role)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, app_role
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
@@ -496,7 +504,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_ignore_success_superadmin(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 
@@ -536,7 +546,9 @@ class TestJoinRequestEndpoints(
 
     @pytest.mark.django_db
     def test_reject_success_superadmin(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
 
         join_request = factories.JoinRequestFactory.create(site=site)
 

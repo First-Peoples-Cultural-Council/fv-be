@@ -122,7 +122,7 @@ class TestImportEndpoints(
         assert expected_file_name == actual_file_name
 
     def test_invalid_dimensions(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -143,7 +143,7 @@ class TestImportEndpoints(
         ]
 
     def test_required_headers_missing(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -166,7 +166,7 @@ class TestImportEndpoints(
         ]
 
     def test_duplicate_headers(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -233,7 +233,7 @@ class TestImportEndpoints(
         ],
     )
     def test_csv_with_valid_encodings_accepted(self, filename):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -249,7 +249,7 @@ class TestImportEndpoints(
         assert response.status_code == 201
 
     def test_csv_with_invalid_encodings_not_accepted(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",
@@ -361,7 +361,9 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("visibility", Visibility)
     def test_detail_superadmin_access(self, visibility):
-        site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility, AppRole.SUPERADMIN
+        )
 
         instance = self.create_minimal_instance(site=site)
 
@@ -402,14 +404,16 @@ class TestImportEndpoints(
 
     @pytest.mark.parametrize("visibility", Visibility)
     def test_list_app_admin_access(self, visibility):
-        site = self.create_site_with_app_admin(visibility, AppRole.SUPERADMIN)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility, AppRole.SUPERADMIN
+        )
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
 
     def test_failed_rows_csv_field_exists(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
             "title": "Test Title",

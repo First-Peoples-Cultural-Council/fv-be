@@ -127,3 +127,12 @@ def get_site_with_anonymous_user(client=None, visibility=Visibility.PUBLIC):
     site = factories.SiteFactory.create(visibility=visibility)
     user = factories.get_anonymous_user()
     return site, user
+
+
+def get_site_with_app_admin(
+    client=None, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+):
+    user = factories.get_app_admin(role)
+    client.force_authenticate(user=user)
+    site = factories.SiteFactory.create(visibility=visibility)
+    return site, user

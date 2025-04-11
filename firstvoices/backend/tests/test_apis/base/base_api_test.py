@@ -183,10 +183,3 @@ class WriteApiTestMixin:
     def format_upload_data(self, data):
         """Subclasses can override this to support something other than json"""
         return json.dumps(data)
-
-    def create_site_with_app_admin(self, site_visibility, role=AppRole.SUPERADMIN):
-        user = factories.get_app_admin(role)
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory.create(visibility=site_visibility)
-
-        return site

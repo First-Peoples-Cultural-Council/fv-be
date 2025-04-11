@@ -625,7 +625,7 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_update_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data(site)
 
@@ -635,7 +635,7 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
         data = self.get_valid_data_with_nulls(site)
         expected_data = self.add_expected_defaults(data)
@@ -666,7 +666,7 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_create_400_invalid_filetype(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         data = self.get_valid_data(site)
         data["original"] = (get_sample_file("file.txt", self.sample_filetype),)
 
@@ -814,7 +814,7 @@ class BaseMediaApiTest(
 
     @pytest.mark.django_db
     def test_usages_field_base(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         media_instance = self.get_media_instance_that_has_usages(
             site, visibility=Visibility.PUBLIC
         )
@@ -950,7 +950,7 @@ class BaseVisualMediaAPITest(BaseMediaApiTest):
     def test_patch_file_is_ignored(self):
         # PUT/PATCH requests updating the original file should be ignored,
         # i.e. there will be no validation error but the file will also not be updated.
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_original_instance_for_patch(site=site)
         data = self.get_valid_patch_file_data(site)
 

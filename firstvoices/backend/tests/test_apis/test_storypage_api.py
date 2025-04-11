@@ -284,7 +284,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_invalid_400(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
 
         response = self.client.post(
@@ -334,7 +334,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data(site)
 
@@ -354,7 +354,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data_with_nulls(site)
 
@@ -375,7 +375,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_with_null_optional_charfields_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data_with_null_optional_charfields(site)
 

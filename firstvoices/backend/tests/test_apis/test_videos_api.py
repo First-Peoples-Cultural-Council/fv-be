@@ -40,7 +40,7 @@ class TestVideosEndpoint(BaseVisualMediaAPITest):
 
     @pytest.mark.django_db
     def test_usages_field_extra_fields(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         media_instance = self.create_minimal_instance(
             site, visibility=Visibility.PUBLIC
         )
