@@ -1,38 +1,9 @@
 import json
 
 import pytest
-from rest_framework.reverse import reverse
-from rest_framework.test import APIClient
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
-
-
-class BaseApiTest:
-    """
-    Minimal setup for api integration testing.
-    """
-
-    API_LIST_VIEW = ""  # E.g., "api:site-list"
-    API_DETAIL_VIEW = ""  # E.g., "api:site-detail"
-    APP_NAME = "backend"
-
-    client = None
-
-    def get_list_endpoint(self):
-        return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
-
-    def get_detail_endpoint(self, key):
-        return reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
-
-    def setup_method(self):
-        self.client = APIClient()
-
-    def create_minimal_instance(self, visibility):
-        raise NotImplementedError()
-
-    def get_expected_response(self, instance):
-        raise NotImplementedError()
 
 
 class SuperAdminAsyncJobPermissionsMixin:
@@ -184,7 +155,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
 
 class WriteApiTestMixin:
-    """Common functions for Create and Update tests"""
+    """Common functions for Create and Update API tests"""
 
     content_type = "application/json"
 

@@ -1,12 +1,38 @@
 import json
 
 import pytest
+from rest_framework.reverse import reverse
+from rest_framework.test import APIClient
 
 from backend.models.constants import Visibility
-from backend.tests.test_apis.base.base_api_test import BaseApiTest
 
 
-class ListApiTestMixin:
+class BaseNonSiteApiTest:
+    """
+    Minimal setup for api integration testing.
+    """
+
+    APP_NAME = "backend"
+    client = None
+
+    def setup_method(self):
+        self.client = APIClient()
+
+    def create_minimal_instance(self, visibility):
+        raise NotImplementedError()
+
+    def get_expected_response(self, instance):
+        raise NotImplementedError()
+
+
+class NonSiteListEndpointTestMixin:
+    API_LIST_VIEW = ""  # E.g., "api:site-list"
+
+    def get_list_endpoint(self):
+        return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
+
+
+class NonSiteListApiTestMixin(NonSiteListEndpointTestMixin):
     """
     Basic tests for non-site-content list APIs. Use with BaseApiTest.
 
@@ -42,7 +68,14 @@ class ListApiTestMixin:
         )
 
 
-class DetailApiTestMixin:
+class NonSiteDetailEndpointTestMixin:
+    API_DETAIL_VIEW = ""  # E.g., "api:site-detail"
+
+    def get_detail_endpoint(self, key):
+        return reverse(self.API_DETAIL_VIEW, current_app=self.APP_NAME, args=[key])
+
+
+class DetailApiTestMixin(NonSiteDetailEndpointTestMixin):
     """
     Basic tests for non-site-content detail APIs. Use with BaseApiTest.
 
@@ -70,5 +103,7 @@ class DetailApiTestMixin:
         assert response_data == self.get_expected_detail_response(instance)
 
 
-class ReadOnlyApiTests(ListApiTestMixin, DetailApiTestMixin, BaseApiTest):
+class ReadOnlyNonSiteApiTest(
+    NonSiteListApiTestMixin, DetailApiTestMixin, BaseNonSiteApiTest
+):
     pass

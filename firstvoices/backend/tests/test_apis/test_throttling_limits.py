@@ -1,15 +1,19 @@
 import pytest
 from django.conf import settings
 from django.core.cache import caches
+from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import Role
 from backend.tests import factories
-from backend.tests.test_apis.base.base_api_test import BaseApiTest
+from backend.tests.test_apis.base.base_non_site_api import BaseNonSiteApiTest
 
 
-class TestThrottling(BaseApiTest):
+class TestThrottling(BaseNonSiteApiTest):
     API_LIST_VIEW = "api:site-list"
+
+    def get_list_endpoint(self):
+        return reverse(self.API_LIST_VIEW, current_app=self.APP_NAME)
 
     def setup_method(self):
         self.client = APIClient()
