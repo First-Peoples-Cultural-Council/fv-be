@@ -217,14 +217,14 @@ def import_dictionary_entry_resources(import_job, dictionary_entry_data, dry_run
     return dictionary_entry_import_result
 
 
-def import_resources_and_generate_report(
-    data, import_job, missing_media=[], dry_run=True
+def generate_report(
+    import_job,
+    accepted_columns,
+    ignored_columns,
+    missing_media,
+    audio_import_result,
+    dictionary_entry_import_result,
 ):
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
-
-    # get a separate table for each type
-    dictionary_entry_data, audio_data = separate_data(cleaned_data)
-
     # Create an ImportJobReport for the run
     report = ImportJobReport(
         site=import_job.site,
@@ -246,13 +246,6 @@ def import_resources_and_generate_report(
             ],
         )
         error_row_instance.save()
-
-    audio_import_result, dictionary_entry_data = import_media_resources(
-        import_job, audio_data, dictionary_entry_data, dry_run
-    )
-    dictionary_entry_import_result = import_dictionary_entry_resources(
-        import_job, dictionary_entry_data, dry_run
-    )
 
     # Adding error messages to the report
     # If the row already exists, add message to the errors list.
@@ -305,6 +298,10 @@ def import_resources_and_generate_report(
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
+    return report
+
+
+def attach_csv_to_report(data, import_job, report):
     # Sort rows and attach the csv
     if report.error_rows:
         error_rows = list(
@@ -319,6 +316,32 @@ def import_resources_and_generate_report(
     else:
         # Clearing up failed rows csv, incase it exists, and there are no errors present
         import_job.failed_rows_csv = None
+
+
+def import_resources_and_generate_report(
+    data, import_job, missing_media=[], dry_run=True
+):
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
+
+    # get a separate table for each model
+    dictionary_entry_data, audio_data = separate_data(cleaned_data)
+
+    audio_import_result, dictionary_entry_data = import_media_resources(
+        import_job, audio_data, dictionary_entry_data, dry_run
+    )
+    dictionary_entry_import_result = import_dictionary_entry_resources(
+        import_job, dictionary_entry_data, dry_run
+    )
+
+    report = generate_report(
+        import_job,
+        accepted_columns,
+        ignored_columns,
+        missing_media,
+        audio_import_result,
+        dictionary_entry_import_result,
+    )
+    attach_csv_to_report(data, import_job, report)
 
     return report
 
