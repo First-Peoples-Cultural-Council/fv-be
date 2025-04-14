@@ -101,6 +101,8 @@ class Command(BaseCommand):
                     image.original = converted_image
                     image.save(set_modified_date=False)
 
-                    transaction.on_commit(lambda: heic_image.delete())
+                    transaction.on_commit(
+                        lambda heic_image=heic_image: heic_image.delete()
+                    )
 
         logger.info("HEIC to PNG conversion completed.")

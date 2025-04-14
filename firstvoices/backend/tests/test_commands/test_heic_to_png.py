@@ -37,7 +37,23 @@ class TestHEICToPNG:
         )
 
     @pytest.mark.django_db
-    def test_convert_heic_image_models_single_site(self):
+    def test_convert_heic_image_models_invalid_sites(self, caplog):
+        call_command("heic_to_png", site_slugs="invalid-site")
+        assert "No sites with the provided slug(s) found." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_heic_image_models_no_heic_content(self, caplog):
+        site = factories.SiteFactory.create()
+        factories.ImageFactory.create(site=site)
+
+        call_command("heic_to_png", site_slugs=site.slug)
+
+        assert "Converting HEIC files to PNG for 1 sites." in caplog.text
+        assert f"No HEIC images found for site {site.slug}" in caplog.text
+        assert "HEIC to PNG conversion completed."
+
+    @pytest.mark.django_db
+    def test_convert_heic_image_models_single_site(self, caplog):
         site = factories.SiteFactory.create()
         heic_image = self.create_heic_image_model(site, self.IMAGE_TITLE)
 
@@ -54,8 +70,11 @@ class TestHEICToPNG:
         assert converted_image.original.content.name.endswith(".png")
         assert converted_image.original.mimetype == "image/png"
 
+        assert "Converting HEIC files to PNG for 1 sites." in caplog.text
+        assert "HEIC to PNG conversion completed."
+
     @pytest.mark.django_db
-    def test_convert_heic_image_models_multiple_sites(self):
+    def test_convert_heic_image_models_multiple_sites(self, caplog):
         site1 = factories.SiteFactory.create()
         site2 = factories.SiteFactory.create()
         heic_image1 = self.create_heic_image_model(site1, self.IMAGE_TITLE)
@@ -80,3 +99,6 @@ class TestHEICToPNG:
         assert converted_image1.original.mimetype == "image/png"
         assert converted_image2.original.content.name.endswith(".png")
         assert converted_image2.original.mimetype == "image/png"
+
+        assert "Converting HEIC files to PNG for 2 sites." in caplog.text
+        assert "HEIC to PNG conversion completed." in caplog.text
