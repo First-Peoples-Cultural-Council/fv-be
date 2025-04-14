@@ -50,7 +50,7 @@ class TestHEICToPNG:
 
         assert "Converting HEIC files to PNG for 1 sites." in caplog.text
         assert f"No HEIC images found for site {site.slug}" in caplog.text
-        assert "HEIC to PNG conversion completed."
+        assert "HEIC to PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
     def test_convert_heic_image_models_single_site(self, caplog):
@@ -71,7 +71,7 @@ class TestHEICToPNG:
         assert converted_image.original.mimetype == "image/png"
 
         assert "Converting HEIC files to PNG for 1 sites." in caplog.text
-        assert "HEIC to PNG conversion completed."
+        assert "HEIC to PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
     def test_convert_heic_image_models_multiple_sites(self, caplog):

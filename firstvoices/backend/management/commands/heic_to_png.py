@@ -1,5 +1,4 @@
 import logging
-import sys
 from io import BytesIO
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -51,7 +50,7 @@ class Command(BaseCommand):
             field_name="ImageField",
             name=original_image.name.replace(".heic", ".png"),
             content_type="image/png",
-            size=sys.getsizeof(output_image),
+            size=output_image.getbuffer().nbytes,
             charset=None,
         )
 
