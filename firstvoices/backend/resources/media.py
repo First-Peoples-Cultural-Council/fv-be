@@ -2,20 +2,21 @@ from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
-from backend.models.media import Audio
+from backend.models.media import Audio, Person
 from backend.resources.base import (
     AudienceMixin,
     BaseImportWorkflowResource,
     ControlledSiteContentResource,
 )
-from backend.resources.utils.import_export_widgets import InvertedBooleanFieldWidget
+from backend.resources.utils.import_export_widgets import (
+    CustomManyToManyWidget,
+    InvertedBooleanFieldWidget,
+)
 
 
 class AudioResource(
     AudienceMixin, ControlledSiteContentResource, BaseImportWorkflowResource
 ):
-    # ["audio_speaker",]
-
     original = fields.Field(
         column_name="audio_original",
         attribute="original",
@@ -46,6 +47,15 @@ class AudioResource(
         attribute="exclude_from_kids",
         widget=InvertedBooleanFieldWidget(
             column="audio_include_on_kids_site", default=False
+        ),
+    )
+
+    speakers = fields.Field(
+        column_name="audio_speaker",
+        attribute="speakers",
+        m2m_add=True,
+        widget=CustomManyToManyWidget(
+            model=Person, field="name", column_name="audio_speaker"
         ),
     )
 

@@ -16,6 +16,7 @@ from backend.tests.factories import (
     FileFactory,
     ImageFileFactory,
     ImportJobFactory,
+    PersonFactory,
     SiteFactory,
     SongFactory,
     VideoFileFactory,
@@ -298,7 +299,7 @@ class TestBulkImportDryRun:
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
         assert (
-            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            "__all__: Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
             in validation_error_row.errors
         )
 
@@ -598,6 +599,40 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 0
         assert validation_report.rows.count() == 0
 
+    def test_related_audio_speakers(self):
+        file_content = get_sample_file("import_job/related_audio.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 1
+        assert (
+            "No Person found with the provided name in column audio_speaker."
+            in validation_report.rows.all()[0].errors
+        )
+
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
+
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
@@ -622,6 +657,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
@@ -958,7 +995,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio(self):
-        self.upload_media(filename="audio_all_columns.csv")
+        self.upload_media("related_audio.csv")
 
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
@@ -973,7 +1010,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.exclude_from_games is True
 
     def test_media_title_defaults_to_filename(self):
-        self.upload_media()
+        self.upload_media("minimal_media.csv")
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
         assert related_audio[0].title == "sample-audio.mp3"

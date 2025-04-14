@@ -44,6 +44,7 @@ VALID_HEADERS = [
     "audio_acknowledgement",
     "audio_include_in_kids_site",
     "audio_include_in_games",
+    "audio_speaker",
     # image
     "img_filename",
     "img_title",
@@ -136,6 +137,10 @@ def separate_data(data):
         "audio_title",
         "audio_description",
         "audio_speaker",
+        "audio_speaker_2",
+        "audio_speaker_3",
+        "audio_speaker_4",
+        "audio_speaker_5",
         "audio_acknowledgement",
         "audio_include_in_kids_site",
         "audio_include_in_games",
@@ -174,8 +179,7 @@ def separate_data(data):
 
 def import_media_resources(import_job, audio_data, dictionary_entry_data, dry_run):
     # Import audio items
-    # audio_import_result = AudioResource(
-    AudioResource(
+    audio_import_result = AudioResource(
         site=import_job.site,
         run_as_user=import_job.run_as_user,
         import_job=import_job.id,
@@ -199,7 +203,7 @@ def import_media_resources(import_job, audio_data, dictionary_entry_data, dry_ru
             row_list[related_audio_col_index] = related_id  # comma separated string
             dictionary_entry_data[i] = tuple(row_list)
 
-    return dictionary_entry_data
+    return audio_import_result, dictionary_entry_data
 
 
 def import_dictionary_entry_resources(import_job, dictionary_entry_data, dry_run):
@@ -243,7 +247,7 @@ def import_resources_and_generate_report(
         )
         error_row_instance.save()
 
-    dictionary_entry_data = import_media_resources(
+    audio_import_result, dictionary_entry_data = import_media_resources(
         import_job, audio_data, dictionary_entry_data, dry_run
     )
     dictionary_entry_import_result = import_dictionary_entry_resources(
@@ -251,15 +255,50 @@ def import_resources_and_generate_report(
     )
 
     # Adding error messages to the report
+    # If the row already exists, add message to the errors list.
+    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
+        "row_number", flat=True
+    )
     for row in dictionary_entry_import_result.rows:
         if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            error_row_instance = ImportJobReportRow(
-                site=import_job.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=row.error_messages,
-            )
+            if row.number in existing_error_rows:
+                error_row_instance = ImportJobReportRow.objects.get(
+                    report=report, row_number=row.number
+                )
+                error_row_instance.errors = (
+                    error_row_instance.errors + row.error_messages
+                )
+            else:
+                error_row_instance = ImportJobReportRow(
+                    site=import_job.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=row.error_messages,
+                )
+            error_row_instance.save()
+
+    # If the row already exists, add message to the errors list.
+    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
+        "row_number", flat=True
+    )
+    for row in audio_import_result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+            if row.number in existing_error_rows:
+                error_row_instance = ImportJobReportRow.objects.get(
+                    report=report, row_number=row.number
+                )
+                error_row_instance.errors = (
+                    error_row_instance.errors + row.error_messages
+                )
+            else:
+                error_row_instance = ImportJobReportRow(
+                    site=import_job.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=row.error_messages,
+                )
             error_row_instance.save()
 
     report.new_rows = dictionary_entry_import_result.totals["new"]

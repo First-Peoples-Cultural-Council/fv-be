@@ -89,9 +89,13 @@ class BaseImportWorkflowResource(resources.ModelResource):
 
         except ValidationError:
             if import_result.import_type == RowResult.IMPORT_TYPE_INVALID:
-                import_result.error_messages = [
-                    err for err in import_result.validation_error.messages
-                ]
+                validation_error_messages = []
+                for (
+                    attribute,
+                    error,
+                ) in import_result.validation_error.message_dict.items():
+                    validation_error_messages.append(f"{attribute}: {error[0]}")
+                import_result.error_messages = validation_error_messages
                 import_result.validation_error = None
             else:
                 import_result.error_messages = [
