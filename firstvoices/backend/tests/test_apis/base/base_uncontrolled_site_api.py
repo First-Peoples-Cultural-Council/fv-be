@@ -59,6 +59,15 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
     def get_expected_list_response_item(self, instance, site):
         return self.get_expected_response(instance, site)
 
+    def assert_minimal_list_response(self, response, instance):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+        assert response_data["results"][0] == self.get_expected_list_response_item(
+            instance, instance.site
+        )
+
     @pytest.mark.django_db
     def test_list_404_site_not_found(self):
         response = self.client.get(self.get_list_endpoint(site_slug="missing-site"))
@@ -91,20 +100,11 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
+        self.assert_minimal_list_response(response, instance)
 
 
 class SiteContentListPermissionTestMixin:
-    """Test cases for view permissions by site and content visibility."""
+    """Test cases for view permissions by site and content visibility. Use with SiteContentListApiTestMixin"""
 
     @pytest.mark.parametrize("role", Role)
     @pytest.mark.django_db
@@ -112,13 +112,12 @@ class SiteContentListPermissionTestMixin:
         site, user = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.MEMBERS, role=role
         )
-        self.create_minimal_instance(site=site, visibility=Visibility.MEMBERS)
+        instance = self.create_minimal_instance(
+            site=site, visibility=Visibility.MEMBERS
+        )
 
         response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
+        self.assert_minimal_list_response(response, instance)
 
     @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
     @pytest.mark.django_db
@@ -138,13 +137,10 @@ class SiteContentListPermissionTestMixin:
         site, user = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.TEAM, role=role
         )
-        self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
+        self.assert_minimal_list_response(response, instance)
 
     @pytest.mark.django_db
     def test_list_team_access_denied_for_member(self):
