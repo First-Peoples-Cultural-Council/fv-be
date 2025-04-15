@@ -83,9 +83,7 @@ class Command(BaseCommand):
 
         for site in sites:
             logger.debug(f"Converting heic content to png for site {site.slug}...")
-            images = Image.objects.filter(
-                site=site, original__content__endswith=".heic"
-            )
+            images = Image.objects.filter(site=site, original__mimetype="image/heic")
 
             if not images:
                 logger.warning(f"No HEIC images found for site {site.slug}.")
@@ -100,8 +98,6 @@ class Command(BaseCommand):
                     image.original = converted_image
                     image.save(set_modified_date=False)
 
-                    transaction.on_commit(
-                        lambda heic_image=heic_image: heic_image.delete()
-                    )
+                    transaction.on_commit(lambda img=heic_image: img.delete())
 
         logger.info("HEIC to PNG conversion completed.")
