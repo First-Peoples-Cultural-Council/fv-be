@@ -34,7 +34,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def setup_method(self):
         self.client = APIClient()
-        self.site = SiteFactory.create()
+        self.site = SiteFactory.create(visibility=Visibility.PUBLIC)
 
     def create_minimal_instance(self, site, visibility=None):
         return CategoryFactory(site=site)
