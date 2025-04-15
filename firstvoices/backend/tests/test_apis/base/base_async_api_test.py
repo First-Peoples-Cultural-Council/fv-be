@@ -22,7 +22,7 @@ class SuperAdminAsyncJobPermissionsMixin:
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", Role)
     def test_list_empty_for_non_app_admins(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.PUBLIC, role=role
         )
         self.create_minimal_instance(site=site, visibility=None)
@@ -36,7 +36,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
     @pytest.mark.django_db
     def test_list_empty_for_staff(self):
-        site, user = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.STAFF
         )
         self.create_minimal_instance(site=site, visibility=None)
@@ -50,7 +50,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
     @pytest.mark.django_db
     def test_get_403_non_member(self):
-        site, user = factories.get_site_with_authenticated_nonmember(
+        site, _ = factories.get_site_with_authenticated_nonmember(
             self.client, visibility=Visibility.PUBLIC
         )
         instance = self.create_minimal_instance(site=site, visibility=None)
@@ -66,7 +66,7 @@ class SuperAdminAsyncJobPermissionsMixin:
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", Role)
     def test_get_403_non_superuser(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.PUBLIC, role=role
         )
         instance = self.create_minimal_instance(site=site, visibility=None)
@@ -81,7 +81,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
     @pytest.mark.django_db
     def test_get_403_staff(self):
-        site, user = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.STAFF
         )
         instance = self.create_minimal_instance(site=site, visibility=None)
@@ -96,7 +96,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
     @pytest.mark.django_db
     def test_post_403_non_member(self):
-        site, user = factories.get_site_with_authenticated_nonmember(
+        site, _ = factories.get_site_with_authenticated_nonmember(
             self.client, visibility=Visibility.PUBLIC
         )
 
@@ -109,7 +109,7 @@ class SuperAdminAsyncJobPermissionsMixin:
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", Role)
     def test_post_403_non_superuser(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.PUBLIC, role=role
         )
 
@@ -121,7 +121,7 @@ class SuperAdminAsyncJobPermissionsMixin:
 
     @pytest.mark.django_db
     def test_post_403_staff(self):
-        site, user = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.STAFF
         )
 

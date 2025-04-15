@@ -109,7 +109,7 @@ class SiteContentListPermissionTestMixin:
     @pytest.mark.parametrize("role", Role)
     @pytest.mark.django_db
     def test_list_member_access_success(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.MEMBERS, role=role
         )
         instance = self.create_minimal_instance(
@@ -122,7 +122,7 @@ class SiteContentListPermissionTestMixin:
     @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
     @pytest.mark.django_db
     def test_list_nonpublic_access_denied_for_non_member(self, visibility):
-        site, user = factories.get_site_with_authenticated_nonmember(
+        site, _ = factories.get_site_with_authenticated_nonmember(
             self.client, visibility=visibility
         )
         self.create_minimal_instance(site=site, visibility=visibility)
@@ -134,7 +134,7 @@ class SiteContentListPermissionTestMixin:
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
     def test_list_team_access_success(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.TEAM, role=role
         )
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
@@ -144,7 +144,7 @@ class SiteContentListPermissionTestMixin:
 
     @pytest.mark.django_db
     def test_list_team_access_denied_for_member(self):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.TEAM, role=Role.MEMBER
         )
         self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
@@ -234,7 +234,7 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
 
     @pytest.mark.django_db
     def test_detail_minimal(self):
-        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -255,7 +255,7 @@ class SiteContentDetailPermissionTestMixin:
     @pytest.mark.parametrize("role", Role)
     @pytest.mark.django_db
     def test_detail_member_access_success(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.MEMBERS, role=role
         )
         instance = self.create_minimal_instance(
@@ -273,7 +273,7 @@ class SiteContentDetailPermissionTestMixin:
     @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
     @pytest.mark.django_db
     def test_detail_nonpublic_access_denied_for_non_member(self, visibility):
-        site, user = factories.get_site_with_authenticated_nonmember(
+        site, _ = factories.get_site_with_authenticated_nonmember(
             self.client, visibility
         )
         instance = self.create_minimal_instance(site=site, visibility=visibility)
@@ -303,7 +303,7 @@ class SiteContentDetailPermissionTestMixin:
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
     def test_detail_team_access_success(self, role):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.TEAM, role=role
         )
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
@@ -318,7 +318,7 @@ class SiteContentDetailPermissionTestMixin:
 
     @pytest.mark.django_db
     def test_detail_team_access_denied_for_member(self):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, visibility=Visibility.TEAM, role=Role.MEMBER
         )
         instance = self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
