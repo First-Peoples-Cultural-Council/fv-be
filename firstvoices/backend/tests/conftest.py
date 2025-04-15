@@ -2,7 +2,10 @@ import pytest
 
 from backend.models.media import Image, ImageFile, Video, VideoFile
 from backend.serializers.media_serializers import RelatedVideoLinksSerializer
-from backend.tests.test_apis.base_media_test import MOCK_EMBED_LINK, MOCK_THUMBNAIL_LINK
+from backend.tests.test_apis.base.base_media_test import (
+    MOCK_EMBED_LINK,
+    MOCK_THUMBNAIL_LINK,
+)
 
 MOCK_MEDIA_DIMENSIONS = {"width": 100, "height": 100}
 

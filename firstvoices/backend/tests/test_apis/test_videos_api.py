@@ -5,8 +5,7 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.media import Video
 from backend.tests import factories
-
-from .base_media_test import BaseVisualMediaAPITest
+from backend.tests.test_apis.base.base_media_test import BaseVisualMediaAPITest
 
 
 class TestVideosEndpoint(BaseVisualMediaAPITest):

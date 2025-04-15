@@ -5,7 +5,9 @@ import pytest
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.immersion_labels import ImmersionLabel
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseUncontrolledSiteContentApiTest
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseUncontrolledSiteContentApiTest,
+)
 from backend.tests.test_apis.test_dictionary_api import (
     assert_dictionary_entry_summary_response,
 )

@@ -5,15 +5,21 @@ from unittest.mock import patch
 import pytest
 from django.core import mail
 from django.core.exceptions import ImproperlyConfigured
-from django.urls import reverse
 
 from backend.models import Site
 from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest, WriteApiTestMixin
+from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseSiteContentApiTest,
+    SiteContentListEndpointMixin,
+)
 
 
-class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
+class TestContactUsEndpoint(
+    WriteApiTestMixin, SiteContentListEndpointMixin, BaseSiteContentApiTest
+):
+    API_LIST_VIEW = "api:contact-us-list"
     content_type = "application/json"
     contact_emails = "contact@email.com"
     contact_email_list = ["contactemailone@email.com", "contactemailtwo@email.com"]
@@ -22,11 +28,6 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
     def configure_settings(self, settings):
         # Sets the celery tasks to run synchronously for testing
         settings.CELERY_TASK_ALWAYS_EAGER = True
-
-    def get_endpoint(self, site_slug):
-        return reverse(
-            "api:contact-us-list", current_app=self.APP_NAME, args=[site_slug]
-        )
 
     def get_valid_data(self, site=None):
         return json.dumps(
@@ -42,7 +43,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
-        response = self.client.post(self.get_endpoint("missing-slug"))
+        response = self.client.post(self.get_list_endpoint("missing-slug"))
         assert response.status_code == 404
         assert len(mail.outbox) == 0
 
@@ -53,7 +54,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.post(self.get_endpoint(site.slug))
+        response = self.client.post(self.get_list_endpoint(site.slug))
         assert response.status_code == 403
         assert len(mail.outbox) == 0
 
@@ -64,7 +65,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         user = factories.get_anonymous_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.post(self.get_endpoint(site.slug))
+        response = self.client.post(self.get_list_endpoint(site.slug))
         assert response.status_code == 403
         assert len(mail.outbox) == 0
 
@@ -82,7 +83,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -111,7 +112,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
             mocked_mail.side_effect = exception
 
             response = self.client.post(
-                self.get_endpoint(site.slug),
+                self.get_list_endpoint(site.slug),
                 data=self.get_valid_data(),
                 content_type=self.content_type,
             )
@@ -140,7 +141,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -184,7 +185,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -237,7 +238,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -261,7 +262,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -288,7 +289,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         }
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
@@ -313,7 +314,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -330,7 +331,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -356,7 +357,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         assert len(mail.outbox) == 0
 
         response = self.client.post(
-            self.get_endpoint(site.slug),
+            self.get_list_endpoint(site.slug),
             data=self.get_valid_data(),
             content_type=self.content_type,
         )
@@ -393,7 +394,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         self.client.force_authenticate(user=user_one)
 
-        response = self.client.get(self.get_endpoint(site.slug))
+        response = self.client.get(self.get_list_endpoint(site.slug))
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -410,7 +411,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         user = factories.get_app_admin(role=AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.get_endpoint("missing-slug"))
+        response = self.client.get(self.get_list_endpoint("missing-slug"))
         assert response.status_code == 404
 
     @pytest.mark.django_db
@@ -420,7 +421,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(self.get_endpoint(site.slug))
+        response = self.client.get(self.get_list_endpoint(site.slug))
         assert response.status_code == 403
 
     @pytest.mark.parametrize(
@@ -455,7 +456,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         self.client.force_authenticate(user=user_one)
 
-        response = self.client.get(self.get_endpoint(site.slug))
+        response = self.client.get(self.get_list_endpoint(site.slug))
         assert response.status_code == expected_response_status_code
 
     @pytest.mark.django_db
@@ -480,7 +481,7 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
 
         self.client.force_authenticate(user=user_one)
 
-        response = self.client.get(self.get_endpoint(site.slug))
+        response = self.client.get(self.get_list_endpoint(site.slug))
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -510,4 +511,4 @@ class TestContactUsEndpoint(WriteApiTestMixin, BaseApiTest):
         self.client.force_authenticate(user=user_one)
 
         with pytest.raises(ImproperlyConfigured):
-            self.client.get(self.get_endpoint(site.slug))
+            self.client.get(self.get_list_endpoint(site.slug))

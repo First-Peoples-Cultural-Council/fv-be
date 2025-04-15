@@ -6,7 +6,10 @@ from elasticsearch_dsl import Search
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseSiteContentApiTest,
+    SiteContentListEndpointMixin,
+)
 from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_entry_results import (
     SearchEntryResultsTestMixin,
@@ -15,7 +18,10 @@ from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_e
 
 @pytest.mark.django_db
 class TestSiteSearchAPI(
-    SearchEntryResultsTestMixin, SearchMocksMixin, BaseSiteContentApiTest
+    SearchEntryResultsTestMixin,
+    SearchMocksMixin,
+    SiteContentListEndpointMixin,
+    BaseSiteContentApiTest,
 ):
     """Remaining tests that cover the site search."""
 

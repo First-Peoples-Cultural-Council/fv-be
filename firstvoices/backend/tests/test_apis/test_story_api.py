@@ -5,9 +5,10 @@ import pytest
 from backend.models.constants import Role, Visibility
 from backend.models.story import Story, StoryPage
 from backend.tests import factories
-
-from .base_api_test import BaseControlledSiteContentApiTest
-from .base_media_test import RelatedMediaTestMixin
+from backend.tests.test_apis.base.base_controlled_site_api import (
+    BaseControlledSiteContentApiTest,
+)
+from backend.tests.test_apis.base.base_media_test import RelatedMediaTestMixin
 
 
 class TestStoryEndpoint(
