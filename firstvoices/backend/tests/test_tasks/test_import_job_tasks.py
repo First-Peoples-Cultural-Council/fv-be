@@ -386,7 +386,7 @@ class TestBulkImportDryRun:
         )
 
         with patch(
-            "backend.tasks.import_job_tasks.import_resources_and_generate_report",
+            "backend.tasks.import_job_tasks.process_import_job_data",
             side_effect=Exception("Random exception."),
         ):
             validate_import_job(import_job.id)
@@ -851,7 +851,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         with patch(
-            "backend.tasks.import_job_tasks.import_resources_and_generate_report",
+            "backend.tasks.import_job_tasks.process_import_job_data",
             side_effect=Exception("Random exception."),
         ):
             confirm_import_job(import_job.id)
