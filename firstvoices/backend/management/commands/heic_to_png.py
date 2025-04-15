@@ -86,7 +86,7 @@ class Command(BaseCommand):
             images = Image.objects.filter(site=site, original__mimetype="image/heic")
 
             if not images:
-                logger.warning(f"No HEIC images found for site {site.slug}.")
+                logger.info(f"No HEIC images found for site {site.slug}.")
                 continue
 
             for image in images:
