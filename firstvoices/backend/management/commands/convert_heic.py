@@ -14,6 +14,7 @@ from backend.models.media import Image, ImageFile
 
 class Command(BaseCommand):
     help = "Converts heic files within image models to jpeg or png files"
+    HEIC_EXTENSION = ".heic"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -33,8 +34,7 @@ class Command(BaseCommand):
             img.mode == "P" and "transparency" in img.info
         )
 
-    @staticmethod
-    def convert_heic_to_png(image: ImageFile) -> ImageFile:
+    def convert_heic_to_png(self, image: ImageFile) -> ImageFile:
         # get original image content
         original_image = image.content
         img = PILImage.open(original_image.file)
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         content = InMemoryUploadedFile(
             file=output_image,
             field_name="ImageField",
-            name=original_image.name.replace(".heic", ".png"),
+            name=original_image.name.replace(self.HEIC_EXTENSION, ".png"),
             content_type="image/png",
             size=output_image.getbuffer().nbytes,
             charset=None,
@@ -66,8 +66,7 @@ class Command(BaseCommand):
 
         return converted_image
 
-    @staticmethod
-    def convert_heic_to_jpeg(image: ImageFile) -> ImageFile:
+    def convert_heic_to_jpeg(self, image: ImageFile) -> ImageFile:
         # get original image content
         original_image = image.content
         img = PILImage.open(original_image.file)
@@ -82,7 +81,7 @@ class Command(BaseCommand):
         content = InMemoryUploadedFile(
             file=output_image,
             field_name="ImageField",
-            name=original_image.name.replace(".heic", ".jpg"),
+            name=original_image.name.replace(self.HEIC_EXTENSION, ".jpg"),
             content_type="image/jpeg",
             size=output_image.getbuffer().nbytes,
             charset=None,
@@ -122,7 +121,7 @@ class Command(BaseCommand):
             logger.debug(f"Converting heic content to jpeg/png for site {site.slug}...")
             images = Image.objects.filter(
                 Q(original__mimetype="image/heic")
-                | Q(original__content__endswith=".heic"),
+                | Q(original__content__endswith=self.HEIC_EXTENSION),
                 site=site,
             )
 
