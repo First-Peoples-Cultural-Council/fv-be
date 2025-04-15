@@ -33,7 +33,7 @@ elastic-transport==8.17.1
 elasticsearch==7.13.4
 elasticsearch-dsl==7.4.1
 et-xmlfile==2.0.0
-eventlet==0.39.0
+eventlet==0.39.1
 factory-boy==3.3.3
 Faker==37.1.0
 ffmpeg-python==0.2.0
@@ -43,7 +43,7 @@ gunicorn==23.0.0
 humanfriendly==10.0
 idna==3.10
 inflection==0.5.1
-iniconfig==2.0.0
+iniconfig==2.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 jsonschema==4.23.0
@@ -78,7 +78,7 @@ redis==5.2.1
 regex==2024.11.6
 requests==2.32.3
 rules==3.5
-sentry-sdk==2.25.1
+sentry-sdk==2.26.0
 six==1.17.0
 sqlparse==0.5.3
 tablib==3.8.0

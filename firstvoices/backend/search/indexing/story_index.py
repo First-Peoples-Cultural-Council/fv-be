@@ -1,8 +1,8 @@
 from backend.models import Story
+from backend.search.constants import ELASTICSEARCH_STORY_INDEX
 from backend.search.documents import StoryDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
-from backend.search.utils.constants import ELASTICSEARCH_STORY_INDEX
-from backend.search.utils.get_index_documents import fields_as_list
+from backend.utils.as_list import fields_as_list
 
 
 class StoryDocumentManager(DocumentManager):

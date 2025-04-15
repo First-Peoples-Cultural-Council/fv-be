@@ -5,8 +5,7 @@ import pytest
 from backend.models.constants import Visibility
 from backend.models.media import Audio
 from backend.tests import factories
-
-from .base_media_test import BaseMediaApiTest
+from backend.tests.test_apis.base.base_media_test import BaseMediaApiTest
 
 
 class TestAudioEndpoint(BaseMediaApiTest):

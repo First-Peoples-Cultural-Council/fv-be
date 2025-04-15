@@ -6,12 +6,9 @@ from drf_spectacular.utils import (
 )
 
 from backend.models import Category, ImportJob
-from backend.search.utils.validators import (
-    get_valid_instance_id,
-    get_valid_starts_with_char,
-)
+from backend.search.validators import get_valid_instance_id, get_valid_starts_with_char
 from backend.views.api_doc_variables import site_slug_parameter
-from backend.views.base_search_entries_views import BaseSearchEntriesViewset
+from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
 from backend.views.base_views import SiteContentViewSetMixin
 
 
@@ -81,7 +78,7 @@ from backend.views.base_views import SiteContentViewSetMixin
         ],
     )
 )
-class SearchSiteEntriesViewSet(SiteContentViewSetMixin, BaseSearchEntriesViewset):
+class SearchSiteEntriesViewSet(SiteContentViewSetMixin, BaseSearchEntriesViewSet):
     def get_search_params(self):
         """
         Add site_slug to search params

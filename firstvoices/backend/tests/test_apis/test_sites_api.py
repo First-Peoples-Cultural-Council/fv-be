@@ -1,24 +1,23 @@
 import json
 
 import pytest
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
-import backend.tests.factories.access
 from backend.models import AppJson, Site
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, SiteWidgetListOrder
 from backend.tests import factories
 from backend.tests.factories.access import get_anonymous_user, get_non_member_user
+from backend.tests.test_apis.base.base_media_test import MediaTestMixin
+from backend.tests.test_apis.base.base_non_site_api import ReadOnlyNonSiteApiTest
 from backend.tests.utils import (
     setup_widget_list,
     update_widget_list_order,
     update_widget_sites,
 )
 
-from .base_api_test import BaseApiTest
-from .base_media_test import MediaTestMixin
 
-
-class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
+class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
     """
     End-to-end tests that the sites endpoints have the expected behaviour.
     """
@@ -30,33 +29,24 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
 
     content_type = "application/json"
 
-    @pytest.mark.django_db
-    def test_list_empty(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
+    def get_detail_endpoint(self, key):
+        """Override to get urls based on site slugs instead of IDs"""
+        try:
+            site = Site.objects.all().filter(pk=key)
 
-        response = self.client.get(self.get_list_endpoint())
+            if site.count() > 0:
+                return super().get_detail_endpoint(site.first().slug)
+        except ValidationError:
+            # Allows creating malformed or fake URLs for testing
+            pass
 
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 0
+        return super().get_detail_endpoint(key)
 
-    @pytest.mark.django_db
-    def test_list_full(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
+    def create_minimal_instance(self, visibility=Visibility.PUBLIC):
+        return factories.SiteFactory.create(visibility=visibility)
 
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        response = self.client.get(self.get_list_endpoint())
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 1
-
-        site_json = response_data["results"][0]
-        assert site_json == {
+    def get_expected_list_response_item(self, site):
+        return {
             "id": str(site.id),
             "title": site.title,
             "slug": site.slug,
@@ -66,6 +56,54 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "url": f"http://testserver/api/1.0/sites/{site.slug}",
             "enabledFeatures": [],
             "isHidden": False,
+        }
+
+    def get_site_menu(self, site):
+        try:
+            return site.menu
+        except ObjectDoesNotExist:
+            return AppJson.objects.get(key="default_site_menu")
+
+    def get_expected_detail_response(self, site):
+        site_url = f"http://testserver/api/1.0/sites/{site.slug}"
+
+        return {
+            "id": str(site.id),
+            "title": site.title,
+            "slug": site.slug,
+            "language": site.language.title,
+            "visibility": "public",
+            "url": site_url,
+            "menu": self.get_site_menu(site).json,
+            "enabledFeatures": [],
+            "isHidden": False,
+            "logo": None,
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": None,
+            "audio": f"{site_url}/audio",
+            "bulkVisibility": f"{site_url}/bulk-visibility",
+            "categories": f"{site_url}/categories",
+            "characters": f"{site_url}/characters",
+            "dictionary": f"{site_url}/dictionary",
+            "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
+            "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
+            "documents": f"{site_url}/documents",
+            "features": f"{site_url}/features",
+            "galleries": f"{site_url}/galleries",
+            "ignoredCharacters": f"{site_url}/ignored-characters",
+            "images": f"{site_url}/images",
+            "immersionLabels": f"{site_url}/immersion-labels",
+            "joinRequests": f"{site_url}/join-requests",
+            "mtdData": f"{site_url}/mtd-data",
+            "pages": f"{site_url}/pages",
+            "people": f"{site_url}/people",
+            "songs": f"{site_url}/songs",
+            "stats": f"{site_url}/stats",
+            "stories": f"{site_url}/stories",
+            "videos": f"{site_url}/videos",
+            "widgets": f"{site_url}/widgets",
+            "wordOfTheDay": f"{site_url}/word-of-the-day",
         }
 
     def generate_test_sites(self):
@@ -202,62 +240,6 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
 
     @pytest.mark.django_db
-    def test_detail(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        language = backend.tests.factories.access.LanguageFactory.create()
-        site = factories.SiteFactory.create(
-            language=language, visibility=Visibility.PUBLIC
-        )
-        menu = factories.SiteMenuFactory.create(site=site, json='{"some": "json"}')
-
-        response = self.client.get(self.get_detail_endpoint(site.slug))
-
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-
-        site_url = f"http://testserver/api/1.0/sites/{site.slug}"
-        assert response_data == {
-            "id": str(site.id),
-            "title": site.title,
-            "slug": site.slug,
-            "language": language.title,
-            "visibility": "public",
-            "url": site_url,
-            "menu": menu.json,
-            "enabledFeatures": [],
-            "isHidden": False,
-            "logo": None,
-            "bannerImage": None,
-            "bannerVideo": None,
-            "homepage": None,
-            "audio": f"{site_url}/audio",
-            "bulkVisibility": f"{site_url}/bulk-visibility",
-            "categories": f"{site_url}/categories",
-            "characters": f"{site_url}/characters",
-            "dictionary": f"{site_url}/dictionary",
-            "dictionaryCleanup": f"{site_url}/dictionary-cleanup",
-            "dictionaryCleanupPreview": f"{site_url}/dictionary-cleanup/preview",
-            "documents": f"{site_url}/documents",
-            "features": f"{site_url}/features",
-            "galleries": f"{site_url}/galleries",
-            "ignoredCharacters": f"{site_url}/ignored-characters",
-            "images": f"{site_url}/images",
-            "immersionLabels": f"{site_url}/immersion-labels",
-            "joinRequests": f"{site_url}/join-requests",
-            "mtdData": f"{site_url}/mtd-data",
-            "pages": f"{site_url}/pages",
-            "people": f"{site_url}/people",
-            "songs": f"{site_url}/songs",
-            "stats": f"{site_url}/stats",
-            "stories": f"{site_url}/stories",
-            "videos": f"{site_url}/videos",
-            "widgets": f"{site_url}/widgets",
-            "wordOfTheDay": f"{site_url}/word-of-the-day",
-        }
-
-    @pytest.mark.django_db
     def test_detail_default_site_menu(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
@@ -265,7 +247,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         menu = AppJson.objects.get(key="default_site_menu")
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -281,7 +263,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         factories.SiteFeatureFactory.create(site=site, key=key, is_enabled=True)
         menu = AppJson.objects.get(key="has_app_site_menu")
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -298,7 +280,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         )
         factories.SiteFeatureFactory.create(site=site, key="key2", is_enabled=False)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -318,7 +300,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         image = factories.ImageFactory()
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC, logo=image)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -334,7 +316,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             visibility=Visibility.PUBLIC, banner_image=image
         )
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -350,7 +332,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             visibility=Visibility.PUBLIC, banner_video=video
         )
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -379,7 +361,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         site.homepage = widget_list
         site.save()
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -494,7 +476,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         assert list_order_two == 0
         assert list_order_three == 1
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -519,7 +501,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         # Check the widget list orders and add a widget from widget_list_one to widget_list_two with a different order
         update_widget_list_order(widgets, widget_list_two)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -535,7 +517,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         site.homepage = widget_list_one
         site.save()
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -576,7 +558,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         site.homepage = widget_list
         site.save()
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
@@ -589,7 +571,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         factories.MembershipFactory.create(user=user, site=site, role=Role.MEMBER)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -602,7 +584,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         factories.MembershipFactory.create(user=user, site=site, role=Role.ASSISTANT)
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -614,7 +596,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+        response = self.client.get(f"{self.get_detail_endpoint(site.id)}")
 
         assert response.status_code == 403
 
@@ -645,7 +627,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "homepage": [],
         }
         response = self.client.put(
-            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+            f"{self.get_detail_endpoint(site.id)}", format="json", data=req_body
         )
         response_data = json.loads(response.content)
 
@@ -704,7 +686,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "homepage": [str(widget_two.id), str(widget_one.id)],
         }
         response = self.client.put(
-            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+            f"{self.get_detail_endpoint(site.id)}", format="json", data=req_body
         )
         response_data = json.loads(response.content)
 
@@ -760,7 +742,7 @@ class TestSitesEndpoints(MediaTestMixin, BaseApiTest):
             "homepage": [str(widget_one.id)],
         }
         response = self.client.put(
-            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+            f"{self.get_detail_endpoint(site.id)}", format="json", data=req_body
         )
 
         assert response.status_code == 200

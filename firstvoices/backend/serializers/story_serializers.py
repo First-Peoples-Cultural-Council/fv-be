@@ -8,9 +8,7 @@ from backend.serializers.base_serializers import (
     ArbitraryIdSerializer,
     BaseControlledSiteContentSerializer,
     CreateSiteContentSerializerMixin,
-    LinkedSiteMinimalSerializer,
     LinkedSiteSerializer,
-    ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
     SiteContentUrlMixin,
     ValidateAssistantWritePermissionMixin,
@@ -21,11 +19,7 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import (
-    RelatedImageMinimalSerializer,
-    RelatedMediaSerializerMixin,
-    RelatedVideoMinimalSerializer,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 from backend.serializers.utils.context_utils import get_story_from_context
 from backend.serializers.validators import SameSite
 
@@ -214,30 +208,4 @@ class StoryListSerializer(BaseControlledSiteContentSerializer):
             BaseControlledSiteContentSerializer.Meta.fields
             + ("title_translation", "hide_overlay")
             + audience_fields
-        )
-
-
-class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
-    site = LinkedSiteMinimalSerializer(read_only=True)
-    related_images = RelatedImageMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
-    related_videos = RelatedVideoMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
-
-    class Meta:
-        model = Story
-        fields = (
-            "id",
-            "created",
-            "last_modified",
-            "visibility",
-            "title",
-            "title_translation",
-            "author",
-            "hide_overlay",
-            "site",
-            "related_images",
-            "related_videos",
         )

@@ -6,7 +6,7 @@ from backend.models import SitePage
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.widget import SiteWidget, SiteWidgetList, SiteWidgetListOrder
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import (
+from backend.tests.test_apis.base.base_controlled_site_api import (
     BaseControlledLanguageAdminOnlySiteContentAPITest,
 )
 from backend.tests.utils import (

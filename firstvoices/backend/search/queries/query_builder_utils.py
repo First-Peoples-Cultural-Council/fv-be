@@ -7,7 +7,7 @@ from backend.models.category import Category
 from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
 from backend.permissions.utils import get_app_role
-from backend.search.utils.constants import (
+from backend.search.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,

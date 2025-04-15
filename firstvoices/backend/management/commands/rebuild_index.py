@@ -2,18 +2,18 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from backend.search.indexing.dictionary_index import DictionaryIndexManager
-from backend.search.indexing.language_index import LanguageIndexManager
-from backend.search.indexing.media_index import MediaIndexManager
-from backend.search.indexing.song_index import SongIndexManager
-from backend.search.indexing.story_index import StoryIndexManager
-from backend.search.utils.constants import (
+from backend.search.constants import (
     ELASTICSEARCH_DICTIONARY_ENTRY_INDEX,
     ELASTICSEARCH_LANGUAGE_INDEX,
     ELASTICSEARCH_MEDIA_INDEX,
     ELASTICSEARCH_SONG_INDEX,
     ELASTICSEARCH_STORY_INDEX,
 )
+from backend.search.indexing.dictionary_index import DictionaryIndexManager
+from backend.search.indexing.language_index import LanguageIndexManager
+from backend.search.indexing.media_index import MediaIndexManager
+from backend.search.indexing.song_index import SongIndexManager
+from backend.search.indexing.story_index import StoryIndexManager
 
 
 class Command(BaseCommand):

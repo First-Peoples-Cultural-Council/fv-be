@@ -4,7 +4,6 @@ from rest_framework.serializers import ModelSerializer
 from backend.models import Lyric, Song
 from backend.serializers.base_serializers import (
     ArbitraryIdSerializer,
-    LinkedSiteMinimalSerializer,
     LinkedSiteSerializer,
     ReadOnlyVisibilityFieldMixin,
     SiteContentLinkedTitleSerializer,
@@ -14,11 +13,7 @@ from backend.serializers.base_serializers import (
     base_id_fields,
     base_timestamp_fields,
 )
-from backend.serializers.media_serializers import (
-    RelatedImageMinimalSerializer,
-    RelatedMediaSerializerMixin,
-    RelatedVideoMinimalSerializer,
-)
+from backend.serializers.media_serializers import RelatedMediaSerializerMixin
 
 
 class LyricSerializer(ModelSerializer):
@@ -108,29 +103,3 @@ class SongListSerializer(
                 "hide_overlay",
             )
         )
-
-
-class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
-    site = LinkedSiteMinimalSerializer(read_only=True)
-    related_images = RelatedImageMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
-    related_videos = RelatedVideoMinimalSerializer(
-        many=True, required=False, read_only=True
-    )
-
-    class Meta:
-        model = Song
-        fields = (
-            "id",
-            "created",
-            "last_modified",
-            "visibility",
-            "title",
-            "title_translation",
-            "hide_overlay",
-            "site",
-            "related_images",
-            "related_videos",
-        )
-        read_only_fields = ("id", "title", "title_translation", "hide_overlay")

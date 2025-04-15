@@ -2,8 +2,8 @@ from elasticsearch_dsl import Boolean, Keyword, Text
 from elasticsearch_dsl.analysis import analyzer
 from elasticsearch_dsl.field import TokenCount
 
+from backend.search.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 from backend.search.documents.base_document import BaseSiteEntryWithMediaDocument
-from backend.search.utils.constants import ELASTICSEARCH_DICTIONARY_ENTRY_INDEX
 
 
 class DictionaryEntryDocument(BaseSiteEntryWithMediaDocument):

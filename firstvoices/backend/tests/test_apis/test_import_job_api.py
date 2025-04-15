@@ -11,13 +11,13 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
-from backend.tests.test_apis.base_api_test import (
-    BaseApiTest,
+from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
+from backend.tests.test_apis.base.base_media_test import FormDataMixin
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
     SiteContentCreateApiTestMixin,
-    WriteApiTestMixin,
 )
-from backend.tests.test_apis.base_media_test import FormDataMixin
 from backend.tests.utils import get_sample_file
 
 
@@ -429,14 +429,14 @@ class TestImportEndpoints(
 
 
 @pytest.mark.django_db(transaction=True)
-class TestImportJobConfirmAction(BaseApiTest):
+class TestImportJobConfirmAction(BaseSiteContentApiTest):
     API_CONFIRM_ACTION = "api:importjob-confirm"
 
-    def create_minimal_instance(self, visibility):
+    def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
         return {}
 
-    def get_expected_response(self, instance):
+    def get_expected_response(self, instance, site):
         # Not required for this endpoint
         return {}
 
@@ -554,15 +554,15 @@ class TestImportJobConfirmAction(BaseApiTest):
 
 
 @pytest.mark.django_db(transaction=True)
-class TestImportJobValidateAction(FormDataMixin, BaseApiTest):
+class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
 
-    def create_minimal_instance(self, visibility):
+    def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
         return {}
 
-    def get_expected_response(self, instance):
+    def get_expected_response(self, instance, site):
         # Not required for this endpoint
         return {}
 

@@ -5,17 +5,17 @@ import pytest
 from backend.models import Character
 from backend.models.constants import Role, Visibility
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
-    SiteContentPatchApiTestMixin,
-    WriteApiTestMixin,
-)
-from backend.tests.test_apis.base_media_test import (
+from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
+from backend.tests.test_apis.base.base_media_test import (
     MOCK_EMBED_LINK,
     MOCK_THUMBNAIL_LINK,
     VIMEO_VIDEO_LINK,
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
+)
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentPatchApiTestMixin,
 )
 from backend.tests.test_apis.test_dictionary_api import (
     assert_dictionary_entry_summary_response,

@@ -10,7 +10,7 @@ from backend.models.files import File
 from backend.models.jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tests.factories import FileFactory, ImportJobFactory, get_site_with_member
-from backend.tests.test_apis.base_media_test import FormDataMixin
+from backend.tests.test_apis.base.base_media_test import FormDataMixin
 from backend.tests.utils import get_sample_file
 
 

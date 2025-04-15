@@ -1,9 +1,9 @@
 from backend.models.constants import Visibility
 from backend.models.sites import Language, Site
+from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.search.documents.language_document import LanguageDocument
 from backend.search.indexing.base import DocumentManager, IndexManager
-from backend.search.utils.constants import ELASTICSEARCH_LANGUAGE_INDEX
-from backend.search.utils.get_index_documents import fields_as_list, text_as_list
+from backend.utils.as_list import fields_as_list, text_as_list
 
 
 class LanguageDocumentManager(DocumentManager):

@@ -7,8 +7,14 @@ from elasticsearch.exceptions import ConnectionError
 from backend.models.constants import AppRole, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.base_api_test import BaseApiTest
-from backend.tests.test_apis.base_media_test import VIMEO_VIDEO_LINK, YOUTUBE_VIDEO_LINK
+from backend.tests.test_apis.base.base_media_test import (
+    VIMEO_VIDEO_LINK,
+    YOUTUBE_VIDEO_LINK,
+)
+from backend.tests.test_apis.base.base_non_site_api import (
+    BaseNonSiteApiTest,
+    NonSiteListEndpointTestMixin,
+)
 from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.tests.test_apis.test_search_apis.test_search_querying.test_search_entry_results import (
     SearchEntryResultsTestMixin,
@@ -17,11 +23,15 @@ from backend.views.exceptions import ElasticSearchConnectionError
 
 
 @pytest.mark.django_db
-class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
+class TestSearchAPI(
+    SearchEntryResultsTestMixin,
+    SearchMocksMixin,
+    NonSiteListEndpointTestMixin,
+    BaseNonSiteApiTest,
+):
     """Tests for base search views."""
 
     API_LIST_VIEW = "api:search-list"
-    API_DETAIL_VIEW = "api:search-detail"
 
     def test_search_pagination(self, db, mock_search_query_execute, mock_get_page_size):
         """Test that the pagination works as expected."""
@@ -240,7 +250,7 @@ class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
             return_value=None,
         ):
             response = self.client.get(self.get_list_endpoint())
-            data = response.data
+            data = json.loads(response.content)
 
             assert response.status_code == 200
             assert type(data) is list
@@ -255,8 +265,8 @@ class TestSearchAPI(SearchEntryResultsTestMixin, SearchMocksMixin, BaseApiTest):
         response = self.client.get(self.get_list_endpoint() + "?minWords=5&maxWords=2")
         response_data = json.loads(response.content)
 
-        assert response.status_code == 400
-        assert response_data["maxWords"] == ["maxWords cannot be lower than minWords."]
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 0
 
     def test_has_video_param_video_links(self, mock_search_query_execute):
         site = factories.SiteFactory(visibility=Visibility.PUBLIC)

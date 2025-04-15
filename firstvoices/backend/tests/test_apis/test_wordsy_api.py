@@ -11,12 +11,15 @@ from backend.tests.factories import (
     DictionaryEntryFactory,
     get_site_with_member,
 )
-from backend.tests.test_apis.base_api_test import BaseSiteContentApiTest
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    BaseSiteContentApiTest,
+    SiteContentListEndpointMixin,
+)
 from backend.tests.utils import equate_list_content_without_order
 from backend.views.games_views import CACHE_KEY_WORDSY
 
 
-class TestWordsyEndpoint(BaseSiteContentApiTest):
+class TestWordsyEndpoint(SiteContentListEndpointMixin, BaseSiteContentApiTest):
     """
     Tests for wordsy endpoint
     """
