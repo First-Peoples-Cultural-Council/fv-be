@@ -4,6 +4,7 @@ from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 from PIL import Image as PILImage
 from pillow_heif import register_heif_opener
 
@@ -12,7 +13,7 @@ from backend.models.media import Image, ImageFile
 
 
 class Command(BaseCommand):
-    help = "Converts heic files within image models to png files"
+    help = "Converts heic files within image models to jpeg or png files"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,23 +24,23 @@ class Command(BaseCommand):
         )
 
     @staticmethod
-    def convert_heic_to_png(image: ImageFile) -> ImageFile:
-        # Activate pillow_heif plugin
-        register_heif_opener(thumbnails=False)
+    def is_transparent(image: ImageFile) -> bool:
+        """
+        Check if the image has transparency.
+        """
+        img = PILImage.open(image.content.file)
+        return img.mode in ("RGBA", "LA") or (
+            img.mode == "P" and "transparency" in img.info
+        )
 
+    @staticmethod
+    def convert_heic_to_png(image: ImageFile) -> ImageFile:
         # get original image content
         original_image = image.content
         img = PILImage.open(original_image.file)
 
-        # check for transparency
-        if img.mode in ("RGBA", "LA") or (
-            img.mode == "P" and "transparency" in img.info
-        ):
-            img = img.convert("RGBA")
-        else:
-            img = img.convert("RGB")
-
         # convert to png
+        img = img.convert("RGBA")
         output_image = BytesIO()
         img.save(output_image, format="PNG", optimize=True)
         output_image.seek(0)
@@ -65,8 +66,44 @@ class Command(BaseCommand):
 
         return converted_image
 
+    @staticmethod
+    def convert_heic_to_jpeg(image: ImageFile) -> ImageFile:
+        # get original image content
+        original_image = image.content
+        img = PILImage.open(original_image.file)
+
+        # convert to jpeg
+        img = img.convert("RGB")
+        output_image = BytesIO()
+        img.save(output_image, format="JPEG", optimize=True)
+        output_image.seek(0)
+
+        # Create a new ImageField instance
+        content = InMemoryUploadedFile(
+            file=output_image,
+            field_name="ImageField",
+            name=original_image.name.replace(".heic", ".jpg"),
+            content_type="image/jpeg",
+            size=output_image.getbuffer().nbytes,
+            charset=None,
+        )
+
+        # Create a new ImageFile instance
+        converted_image = ImageFile(
+            content=content,
+            site=image.site,
+            created_by=image.created_by,
+            last_modified_by=image.last_modified_by,
+        )
+        converted_image.save()
+
+        return converted_image
+
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
+
+        # Activate pillow_heif plugin
+        register_heif_opener(thumbnails=False)
 
         if options.get("site_slugs"):
             site_slug_list = [
@@ -79,25 +116,34 @@ class Command(BaseCommand):
         else:
             sites = Site.objects.all()
 
-        logger.info(f"Converting HEIC files to PNG for {len(sites)} sites.")
+        logger.info(f"Converting HEIC files to JPEG/PNG for {len(sites)} sites.")
 
         for site in sites:
-            logger.debug(f"Converting heic content to png for site {site.slug}...")
-            images = Image.objects.filter(site=site, original__mimetype="image/heic")
+            logger.debug(f"Converting heic content to jpeg/png for site {site.slug}...")
+            images = Image.objects.filter(
+                Q(original__mimetype="image/heic")
+                | Q(original__content__endswith=".heic"),
+                site=site,
+            )
 
             if not images:
                 logger.info(f"No HEIC images found for site {site.slug}.")
                 continue
 
             for image in images:
-                logger.debug(f"Converting image {image.id} to png...")
                 heic_image = image.original
 
-                with transaction.atomic():
+                if self.is_transparent(heic_image):
+                    logger.debug(f"Converting image {image.id} to png...")
                     converted_image = self.convert_heic_to_png(heic_image)
+                else:
+                    logger.debug(f"Converting image {image.id} to jpeg...")
+                    converted_image = self.convert_heic_to_jpeg(heic_image)
+
+                with transaction.atomic():
                     image.original = converted_image
                     image.save(set_modified_date=False)
 
                     transaction.on_commit(lambda img=heic_image: img.delete())
 
-        logger.info("HEIC to PNG conversion completed.")
+        logger.info("HEIC to JPEG/PNG conversion completed.")

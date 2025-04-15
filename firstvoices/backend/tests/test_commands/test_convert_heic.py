@@ -6,14 +6,20 @@ from backend.tests import factories
 from backend.tests.utils import get_sample_file
 
 
-class TestHEICToPNG:
+class TestConvertHEIC:
     SAMPLE_FILETYPE = "image/heic"
     SAMPLE_FILENAME = "sample-image.heic"
+    SAMPLE_FILENAME_TRANSPARENT = "sample-image-transparent.heic"
     IMAGE_TITLE = "HEIC Image"
 
-    def create_heic_image_model(self, site, title):
+    def create_heic_image_model(self, site, title, transparent=False):
+        if transparent:
+            sample_filename = self.SAMPLE_FILENAME_TRANSPARENT
+        else:
+            sample_filename = self.SAMPLE_FILENAME
+
         heic = ImageFile.objects.create(
-            content=get_sample_file(self.SAMPLE_FILENAME, self.SAMPLE_FILETYPE),
+            content=get_sample_file(sample_filename, self.SAMPLE_FILETYPE),
             site=site,
         )
         return factories.ImageFactory.create(original=heic, site=site, title=title)
@@ -38,7 +44,7 @@ class TestHEICToPNG:
 
     @pytest.mark.django_db
     def test_convert_heic_image_models_invalid_sites(self, caplog):
-        call_command("heic_to_png", site_slugs="invalid-site")
+        call_command("convert_heic", site_slugs="invalid-site")
         assert "No sites with the provided slug(s) found." in caplog.text
 
     @pytest.mark.django_db
@@ -46,11 +52,11 @@ class TestHEICToPNG:
         site = factories.SiteFactory.create()
         factories.ImageFactory.create(site=site)
 
-        call_command("heic_to_png", site_slugs=site.slug)
+        call_command("convert_heic", site_slugs=site.slug)
 
-        assert "Converting HEIC files to PNG for 1 sites." in caplog.text
+        assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
         assert f"No HEIC images found for site {site.slug}" in caplog.text
-        assert "HEIC to PNG conversion completed." in caplog.text
+        assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
     def test_convert_heic_image_models_single_site(self, caplog):
@@ -59,7 +65,30 @@ class TestHEICToPNG:
 
         assert Image.objects.filter(site=site).count() == 1
 
-        call_command("heic_to_png", site_slugs=site.slug)
+        call_command("convert_heic", site_slugs=site.slug)
+
+        assert Image.objects.filter(site=site).count() == 1
+        assert ImageFile.objects.filter(site=site).count() == 1
+
+        converted_image = Image.objects.filter(site=site).first()
+
+        self.confirm_model_data(heic_image, converted_image)
+        assert converted_image.original.content.name.endswith(".jpg")
+        assert converted_image.original.mimetype == "image/jpeg"
+
+        assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
+        assert "HEIC to JPEG/PNG conversion completed." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_heic_image_models_single_site_transparent(self, caplog):
+        site = factories.SiteFactory.create()
+        heic_image = self.create_heic_image_model(
+            site, self.IMAGE_TITLE, transparent=True
+        )
+
+        assert Image.objects.filter(site=site).count() == 1
+
+        call_command("convert_heic", site_slugs=site.slug)
 
         assert Image.objects.filter(site=site).count() == 1
         assert ImageFile.objects.filter(site=site).count() == 1
@@ -70,20 +99,22 @@ class TestHEICToPNG:
         assert converted_image.original.content.name.endswith(".png")
         assert converted_image.original.mimetype == "image/png"
 
-        assert "Converting HEIC files to PNG for 1 sites." in caplog.text
-        assert "HEIC to PNG conversion completed." in caplog.text
+        assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
+        assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
     def test_convert_heic_image_models_multiple_sites(self, caplog):
         site1 = factories.SiteFactory.create()
         site2 = factories.SiteFactory.create()
         heic_image1 = self.create_heic_image_model(site1, self.IMAGE_TITLE)
-        heic_image2 = self.create_heic_image_model(site2, self.IMAGE_TITLE)
+        heic_image2 = self.create_heic_image_model(
+            site2, self.IMAGE_TITLE, transparent=True
+        )
 
         assert Image.objects.filter(site=site1).count() == 1
         assert Image.objects.filter(site=site2).count() == 1
 
-        call_command("heic_to_png")
+        call_command("convert_heic")
 
         assert Image.objects.filter(site=site1).count() == 1
         assert Image.objects.filter(site=site2).count() == 1
@@ -95,10 +126,10 @@ class TestHEICToPNG:
 
         self.confirm_model_data(heic_image1, converted_image1)
         self.confirm_model_data(heic_image2, converted_image2)
-        assert converted_image1.original.content.name.endswith(".png")
-        assert converted_image1.original.mimetype == "image/png"
+        assert converted_image1.original.content.name.endswith(".jpg")
+        assert converted_image1.original.mimetype == "image/jpeg"
         assert converted_image2.original.content.name.endswith(".png")
         assert converted_image2.original.mimetype == "image/png"
 
-        assert "Converting HEIC files to PNG for 2 sites." in caplog.text
-        assert "HEIC to PNG conversion completed." in caplog.text
+        assert "Converting HEIC files to JPEG/PNG for 2 sites." in caplog.text
+        assert "HEIC to JPEG/PNG conversion completed." in caplog.text
