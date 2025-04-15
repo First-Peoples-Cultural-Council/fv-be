@@ -248,27 +248,15 @@ def generate_report(
         error_row_instance.save()
 
     # Adding error messages to the report
-    # If the row already exists, add message to the errors list.
-    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
-        "row_number", flat=True
-    )
     for row in dictionary_entry_import_result.rows:
         if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            if row.number in existing_error_rows:
-                error_row_instance = ImportJobReportRow.objects.get(
-                    report=report, row_number=row.number
-                )
-                error_row_instance.errors = (
-                    error_row_instance.errors + row.error_messages
-                )
-            else:
-                error_row_instance = ImportJobReportRow(
-                    site=import_job.site,
-                    report=report,
-                    status=RowStatus.ERROR,
-                    row_number=row.number,
-                    errors=row.error_messages,
-                )
+            error_row_instance = ImportJobReportRow(
+                site=import_job.site,
+                report=report,
+                status=RowStatus.ERROR,
+                row_number=row.number,
+                errors=row.error_messages,
+            )
             error_row_instance.save()
 
     # If the row already exists, add message to the errors list.

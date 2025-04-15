@@ -633,6 +633,39 @@ class TestBulkImportDryRun:
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
 
+    def test_multiple_errors_in_single_row(self):
+        # If there are multiple issues present in one row, all issues should be displayed
+        # along with their column name
+        file_content = get_sample_file("import_job/mixed_errors.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 1
+
+        error_row = validation_report.rows.get(row_number=1)
+        assert len(error_row.errors) == 2
+        assert (
+            "Invalid value in include_in_games column. Expected 'true' or 'false'."
+            in error_row.errors
+        )
+        assert (
+            "No Person found with the provided name in column audio_speaker."
+            in error_row.errors
+        )
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):

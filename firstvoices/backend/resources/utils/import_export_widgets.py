@@ -100,7 +100,7 @@ class InvertedBooleanFieldWidget(Widget):
         elif cleaned_input in ["false", "no", "n", "0"]:
             return True
         else:
-            raise ValidationError(
+            raise ImportError(
                 f"Invalid value in {self.column_name} column. Expected 'true' or 'false'."
             )
 
