@@ -3,14 +3,14 @@ from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
 from backend.models.media import Audio, Person
-from backend.resources.base import AudienceMixin, ControlledSiteContentResource
+from backend.resources.base import ControlledSiteContentResource
 from backend.resources.utils.import_export_widgets import (
     CustomManyToManyWidget,
     InvertedBooleanFieldWidget,
 )
 
 
-class AudioResource(AudienceMixin, ControlledSiteContentResource):
+class AudioResource(ControlledSiteContentResource):
     original = fields.Field(
         column_name="audio_original",
         attribute="original",
@@ -28,7 +28,15 @@ class AudioResource(AudienceMixin, ControlledSiteContentResource):
         column_name="audio_acknowledgement", attribute="acknowledgement"
     )
 
-    # To be used from audience mixin instead
+    speakers = fields.Field(
+        column_name="audio_speaker",
+        attribute="speakers",
+        m2m_add=True,
+        widget=CustomManyToManyWidget(
+            model=Person, field="name", column_name="audio_speaker"
+        ),
+    )
+
     exclude_from_games = fields.Field(
         column_name="audio_include_in_games",
         attribute="exclude_from_games",
@@ -44,17 +52,8 @@ class AudioResource(AudienceMixin, ControlledSiteContentResource):
         ),
     )
 
-    speakers = fields.Field(
-        column_name="audio_speaker",
-        attribute="speakers",
-        m2m_add=True,
-        widget=CustomManyToManyWidget(
-            model=Person, field="name", column_name="audio_speaker"
-        ),
-    )
-
     def before_import_row(self, row, **kwargs):
-        # title will be same as filename if not given
+        # Filename to be used as title if not provided
         if "audio_title" not in row:
             row["audio_title"] = row["audio_filename"]
 

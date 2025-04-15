@@ -23,10 +23,10 @@ class ChoicesWidget(Widget):
         - choices: iterable of choices containing (dbvalue, label)
             e.g. [(20, "Public"), ...]
         """
+        super().__init__(*args, **kwargs)
         self.choice_labels = dict(choices)
         self.choice_values = {v: k for k, v in choices}
         self.default = default
-        super().__init__(*args, **kwargs)
 
     def clean(self, value, row=None, *args, **kwargs):
         """Returns the db value given the display value"""
@@ -42,8 +42,8 @@ class ArrayOfStringsWidget(Widget):
     """Import/export widget to split strings on custom separator."""
 
     def __init__(self, sep: str = ",", *args, **kwargs) -> None:
-        self.sep = sep
         super().__init__(*args, **kwargs)
+        self.sep = sep
 
     def clean(self, value: str, row=None, *args, **kwargs) -> list:
         """Converts the display value (string with separator) into array on sep"""

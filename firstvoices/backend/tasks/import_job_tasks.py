@@ -160,6 +160,7 @@ def separate_data(data):
         for row in data.dict:
             audio_row = [row[col] for col in audio_columns if col in data.headers]
             audio_data.append(audio_row)
+
     # Filtering audio data to remove rows not containing require column, i.e. audio_filename
     filtered_audio_data = tablib.Dataset(headers=audio_data.headers)
     for row in audio_data.dict:
