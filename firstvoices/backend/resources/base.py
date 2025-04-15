@@ -27,35 +27,6 @@ class BaseResource(resources.ModelResource):
         widget=UserForeignKeyWidget(),
     )
 
-    class Meta:
-        abstract = True
-
-
-class SiteContentResource(BaseResource):
-    site = fields.Field(
-        column_name="site",
-        attribute="site",
-        widget=(widgets.ForeignKeyWidget(Site, "id")),
-    )
-
-    class Meta:
-        abstract = True
-
-
-class ControlledSiteContentResource(SiteContentResource):
-    visibility = fields.Field(
-        column_name="visibility",
-        widget=ChoicesWidget(Visibility.choices, default=Visibility.TEAM),
-        attribute="visibility",
-    )
-
-    class Meta:
-        abstract = True
-
-
-class BaseImportWorkflowResource(resources.ModelResource):
-    # Contains methods required for data manipulation for batch import
-
     def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
         super().__init__(**kwargs)
         self.site = site
@@ -105,6 +76,28 @@ class BaseImportWorkflowResource(resources.ModelResource):
             import_result.import_type = RowResult.IMPORT_TYPE_SKIP
 
         return import_result
+
+    class Meta:
+        abstract = True
+
+
+class SiteContentResource(BaseResource):
+    site = fields.Field(
+        column_name="site",
+        attribute="site",
+        widget=(widgets.ForeignKeyWidget(Site, "id")),
+    )
+
+    class Meta:
+        abstract = True
+
+
+class ControlledSiteContentResource(SiteContentResource):
+    visibility = fields.Field(
+        column_name="visibility",
+        widget=ChoicesWidget(Visibility.choices, default=Visibility.TEAM),
+        attribute="visibility",
+    )
 
     class Meta:
         abstract = True

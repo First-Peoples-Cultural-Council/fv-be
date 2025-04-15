@@ -3,20 +3,14 @@ from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
 from backend.models.media import Audio, Person
-from backend.resources.base import (
-    AudienceMixin,
-    BaseImportWorkflowResource,
-    ControlledSiteContentResource,
-)
+from backend.resources.base import AudienceMixin, ControlledSiteContentResource
 from backend.resources.utils.import_export_widgets import (
     CustomManyToManyWidget,
     InvertedBooleanFieldWidget,
 )
 
 
-class AudioResource(
-    AudienceMixin, ControlledSiteContentResource, BaseImportWorkflowResource
-):
+class AudioResource(AudienceMixin, ControlledSiteContentResource):
     original = fields.Field(
         column_name="audio_original",
         attribute="original",

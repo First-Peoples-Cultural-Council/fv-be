@@ -5,7 +5,6 @@ from backend.models import Category, DictionaryEntry, ImportJob
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.resources.base import (
     AudienceMixin,
-    BaseImportWorkflowResource,
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
 )
@@ -21,7 +20,6 @@ class DictionaryEntryResource(
     AudienceMixin,
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
-    BaseImportWorkflowResource,
 ):
     type = fields.Field(
         column_name="type",
