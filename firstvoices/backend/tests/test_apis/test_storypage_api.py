@@ -169,7 +169,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         [Visibility.MEMBERS, Visibility.TEAM],
     )
     @pytest.mark.django_db
-    def test_list_403_site_not_visible(self, visibility):
+    def test_list_403_when_site_not_visible(self, visibility):
         site = self.create_site_with_non_member(visibility)
         response = self.client.get(
             self.get_list_endpoint(site_slug=site.slug, story_id="missing-story-id")
@@ -284,7 +284,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_invalid_400(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
 
         response = self.client.post(
@@ -334,7 +334,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data(site)
 
@@ -354,7 +354,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data_with_nulls(site)
 
@@ -375,7 +375,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
 
     @pytest.mark.django_db
     def test_create_with_null_optional_charfields_success_201(self):
-        site = self.create_site_with_app_admin(Visibility.PUBLIC)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
         data = self.get_valid_data_with_null_optional_charfields(site)
 

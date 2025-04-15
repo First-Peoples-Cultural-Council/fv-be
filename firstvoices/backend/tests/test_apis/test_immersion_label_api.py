@@ -36,7 +36,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
             ),
         )
 
-    def get_expected_detail_response(self, instance, site):
+    def get_expected_response(self, instance, site):
         standard_fields = self.get_expected_standard_fields(instance, site)
         standard_fields[
             "url"
@@ -51,16 +51,28 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
                 "translations": format_dictionary_entry_related_field(
                     instance.dictionary_entry.translations
                 ),
-                "relatedImages": [],
                 "relatedAudio": [],
+                "relatedDocuments": [],
+                "relatedImages": [],
                 "relatedVideos": [],
                 "relatedVideoLinks": [],
             },
             "key": str(instance.key),
         }
 
-    def get_expected_response(self, instance, site):
-        return self.get_expected_detail_response(instance, site)
+    def assert_minimal_list_response(self, response, instance):
+        """Customized to handle dynamically added stub IDs from the serializers."""
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+        response_item = response_data["results"][0]
+        assert "id" in response_item["dictionaryEntry"]["translations"][0]
+        del response_item["dictionaryEntry"]["translations"][0]["id"]
+
+        assert response_item == self.get_expected_list_response_item(
+            instance, instance.site
+        )
 
     def get_valid_data(self, site=None):
         entry = factories.DictionaryEntryFactory(

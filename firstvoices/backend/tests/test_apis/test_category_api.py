@@ -4,7 +4,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from backend.models.category import Category
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.tests.factories import (
@@ -14,7 +14,6 @@ from backend.tests.factories import (
     MembershipFactory,
     ParentCategoryFactory,
     SiteFactory,
-    get_app_admin,
     get_non_member_user,
 )
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -35,9 +34,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def setup_method(self):
         self.client = APIClient()
-        self.user = get_app_admin(AppRole.STAFF)
-        self.client.force_authenticate(user=self.user)
-        self.site = SiteFactory.create()
+        self.site = SiteFactory.create(visibility=Visibility.PUBLIC)
 
     def create_minimal_instance(self, site, visibility=None):
         return CategoryFactory(site=site)
@@ -50,6 +47,15 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
             "children": [],
             "parent": None,
         }
+
+    def assert_minimal_list_response(self, response, instance):
+        """Override to assert the expected default number of categories"""
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        expected_count = Category.objects.filter(
+            site=instance.site, parent__isnull=True
+        ).count()
+        assert response_data["count"] == expected_count
 
     def get_valid_data(self, site=None):
         parent = CategoryFactory.create(site=site)
@@ -105,18 +111,15 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         # no related objects to delete
         pass
 
-    def get_categories_with_word_phrase(self):
-        word_entry = DictionaryEntryFactory(site=self.site)
-        category_word = ParentCategoryFactory(site=self.site)
-        category_word.dictionary_entries.add(word_entry)
-
-        phrase_entry = DictionaryEntryFactory(
-            site=self.site, type=TypeOfDictionaryEntry.PHRASE
+    def create_dictionary_entry_with_category(
+        self, site, entry_type=TypeOfDictionaryEntry.WORD, visibility=Visibility.PUBLIC
+    ):
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=visibility, type=entry_type
         )
-        category_phrase = ParentCategoryFactory(site=self.site)
-        category_phrase.dictionary_entries.add(phrase_entry)
-
-        return word_entry, phrase_entry, category_word, category_phrase
+        category = ParentCategoryFactory.create(site=site)
+        category.dictionary_entries.add(entry)
+        return entry, category
 
     def create_original_instance_for_patch(self, site):
         parent = factories.CategoryFactory.create(site=site, title="Title - Parent")
@@ -194,7 +197,6 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     @pytest.mark.django_db
     def test_category_list_full(self):
         """Assuming a new site will have at least 1 category."""
-
         response = self.client.get(self.get_list_endpoint(self.site.slug))
         response_data = json.loads(response.content)
 
@@ -224,7 +226,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         response_data = json.loads(response.content)
         assert response_data["children"] == [
             {
-                "url": f"http://testserver{self.get_detail_endpoint(child_category.id, child_category.site.slug)}",
+                "url": f"http://testserver{self.get_detail_endpoint(child_category.id, self.site.slug)}",
                 "id": str(child_category.id),
                 "title": child_category.title,
                 "description": child_category.description,
@@ -294,8 +296,16 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     def test_contains_word(self, flag, expected_count):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the word associated with it
-
-        _, _, category_word, _ = self.get_categories_with_word_phrase()
+        self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.PHRASE,
+            visibility=Visibility.PUBLIC,
+        )
+        _, category_word = self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+        )
 
         response = self.client.get(
             self.get_list_endpoint(self.site.slug, query_kwargs={"contains": flag})
@@ -313,8 +323,16 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     def test_contains_phrase(self, flag, expected_count):
         # One category is added for a word and one for a phrase
         # Test should return only that entry which has the phrase associated with it
-
-        _, _, _, category_phrase = self.get_categories_with_word_phrase()
+        _, category_phrase = self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.PHRASE,
+            visibility=Visibility.PUBLIC,
+        )
+        self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+        )
 
         # Testing for PHRASE flag
         response = self.client.get(
@@ -328,12 +346,16 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
     @pytest.mark.django_db
     def test_contains_multiple(self):
-        (
-            word_entry,
-            phrase_entry,
-            category_word,
-            category_phrase,
-        ) = self.get_categories_with_word_phrase()
+        phrase_entry, category_phrase = self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.PHRASE,
+            visibility=Visibility.PUBLIC,
+        )
+        word_entry, category_word = self.create_dictionary_entry_with_category(
+            self.site,
+            entry_type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+        )
         category_both = ParentCategoryFactory(site=self.site)
         category_both.dictionary_entries.add(word_entry, phrase_entry)
 
