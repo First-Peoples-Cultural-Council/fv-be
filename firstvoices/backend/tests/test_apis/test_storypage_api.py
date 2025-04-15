@@ -169,7 +169,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         [Visibility.MEMBERS, Visibility.TEAM],
     )
     @pytest.mark.django_db
-    def test_list_403_site_not_visible(self, visibility):
+    def test_list_403_when_site_not_visible(self, visibility):
         site = self.create_site_with_non_member(visibility)
         response = self.client.get(
             self.get_list_endpoint(site_slug=site.slug, story_id="missing-story-id")

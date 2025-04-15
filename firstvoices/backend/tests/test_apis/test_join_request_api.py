@@ -11,9 +11,11 @@ from backend.models.join_request import JoinRequestReasonChoices, JoinRequestSta
 from backend.tests import factories
 from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    BaseSiteContentApiTest,
     SiteContentCreateApiTestMixin,
     SiteContentDestroyApiTestMixin,
+    SiteContentDetailApiTestMixin,
+    SiteContentListApiTestMixin,
 )
 from backend.views.utils import get_site_url_from_appjson
 
@@ -28,10 +30,12 @@ class TestJoinRequestEndpoints(
     WriteApiTestMixin,
     SiteContentCreateApiTestMixin,
     SiteContentDestroyApiTestMixin,
-    BaseReadOnlyUncontrolledSiteContentApiTest,
+    SiteContentListApiTestMixin,
+    SiteContentDetailApiTestMixin,
+    BaseSiteContentApiTest,
 ):
     """
-    End-to-end tests that the join request endpoints have the expected behaviour.
+    End-to-end tests that the join request endpoints have the expected behaviour. Includes custom permission tests.
     """
 
     API_LIST_VIEW = "api:joinrequest-list"
