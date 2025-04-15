@@ -1,6 +1,5 @@
 import uuid
 
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from import_export import fields, resources, widgets
 from import_export.results import RowResult
@@ -85,9 +84,9 @@ class BaseImportWorkflowResource(resources.ModelResource):
                     RowResult.IMPORT_TYPE_ERROR,
                     RowResult.IMPORT_TYPE_INVALID,
                 ]:
-                    raise ValidationError("Row level error.")
+                    raise ImportError("Row level error.")
 
-        except ValidationError:
+        except ImportError:
             if import_result.import_type == RowResult.IMPORT_TYPE_INVALID:
                 validation_error_messages = []
                 for (

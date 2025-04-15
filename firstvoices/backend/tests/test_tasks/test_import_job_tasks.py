@@ -299,7 +299,7 @@ class TestBulkImportDryRun:
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
         assert (
-            "__all__: Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
             in validation_error_row.errors
         )
 
