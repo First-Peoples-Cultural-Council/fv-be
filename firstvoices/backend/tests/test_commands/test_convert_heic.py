@@ -42,6 +42,16 @@ class TestConvertHEIC:
             original_model.exclude_from_kids == converted_image_model.exclude_from_kids
         )
 
+    @staticmethod
+    def confirm_image_thumbnail_data(converted_image):
+        converted_image.refresh_from_db()
+        assert converted_image.thumbnail.content.name.endswith(".jpg")
+        assert converted_image.thumbnail.mimetype == "image/jpeg"
+        assert converted_image.small.content.name.endswith(".jpg")
+        assert converted_image.small.mimetype == "image/jpeg"
+        assert converted_image.medium.content.name.endswith(".jpg")
+        assert converted_image.medium.mimetype == "image/jpeg"
+
     @pytest.mark.django_db
     def test_convert_heic_image_models_invalid_sites(self, caplog):
         call_command("convert_heic", site_slugs="invalid-site")
@@ -59,6 +69,7 @@ class TestConvertHEIC:
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
     def test_convert_heic_image_models_single_site(self, caplog):
         site = factories.SiteFactory.create()
         heic_image = self.create_heic_image_model(site, self.IMAGE_TITLE)
@@ -68,7 +79,9 @@ class TestConvertHEIC:
         call_command("convert_heic", site_slugs=site.slug)
 
         assert Image.objects.filter(site=site).count() == 1
-        assert ImageFile.objects.filter(site=site).count() == 1
+
+        # 3 image thumbnails are created + 1 original image
+        assert ImageFile.objects.filter(site=site).count() == 4
 
         converted_image = Image.objects.filter(site=site).first()
 
@@ -76,10 +89,13 @@ class TestConvertHEIC:
         assert converted_image.original.content.name.endswith(".jpg")
         assert converted_image.original.mimetype == "image/jpeg"
 
+        self.confirm_image_thumbnail_data(converted_image)
+
         assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
     def test_convert_heic_image_models_single_site_transparent(self, caplog):
         site = factories.SiteFactory.create()
         heic_image = self.create_heic_image_model(
@@ -91,7 +107,9 @@ class TestConvertHEIC:
         call_command("convert_heic", site_slugs=site.slug)
 
         assert Image.objects.filter(site=site).count() == 1
-        assert ImageFile.objects.filter(site=site).count() == 1
+
+        # 3 image thumbnails are created + 1 original image
+        assert ImageFile.objects.filter(site=site).count() == 4
 
         converted_image = Image.objects.filter(site=site).first()
 
@@ -99,10 +117,13 @@ class TestConvertHEIC:
         assert converted_image.original.content.name.endswith(".png")
         assert converted_image.original.mimetype == "image/png"
 
+        self.confirm_image_thumbnail_data(converted_image)
+
         assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
     def test_convert_heic_image_models_multiple_sites(self, caplog):
         site1 = factories.SiteFactory.create()
         site2 = factories.SiteFactory.create()
@@ -118,8 +139,10 @@ class TestConvertHEIC:
 
         assert Image.objects.filter(site=site1).count() == 1
         assert Image.objects.filter(site=site2).count() == 1
-        assert ImageFile.objects.filter(site=site1).count() == 1
-        assert ImageFile.objects.filter(site=site2).count() == 1
+
+        # 3 image thumbnails are created + 1 original image
+        assert ImageFile.objects.filter(site=site1).count() == 4
+        assert ImageFile.objects.filter(site=site2).count() == 4
 
         converted_image1 = Image.objects.filter(site=site1).first()
         converted_image2 = Image.objects.filter(site=site2).first()
@@ -130,6 +153,9 @@ class TestConvertHEIC:
         assert converted_image1.original.mimetype == "image/jpeg"
         assert converted_image2.original.content.name.endswith(".png")
         assert converted_image2.original.mimetype == "image/png"
+
+        self.confirm_image_thumbnail_data(converted_image1)
+        self.confirm_image_thumbnail_data(converted_image2)
 
         assert "Converting HEIC files to JPEG/PNG for 2 sites." in caplog.text
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
