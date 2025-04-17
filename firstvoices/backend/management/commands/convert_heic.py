@@ -98,6 +98,30 @@ class Command(BaseCommand):
 
         return converted_image
 
+    def convert_images(self, images, logger):
+        for image in images:
+            heic_image = image.original
+
+            try:
+                if self.is_transparent(heic_image):
+                    logger.debug(f"Converting image {image.id} to png...")
+                    converted_image = self.convert_heic_to_png(heic_image)
+                else:
+                    logger.debug(f"Converting image {image.id} to jpeg...")
+                    converted_image = self.convert_heic_to_jpeg(heic_image)
+
+                with transaction.atomic():
+                    image.original = converted_image
+                    image.save(set_modified_date=False)
+
+                    transaction.on_commit(lambda img=heic_image: img.delete())
+
+            except Exception as e:
+                logger.error(
+                    f"Error converting HEIC image {image.id} for site {image.site.slug}: {e}"
+                )
+                continue
+
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
 
@@ -129,27 +153,6 @@ class Command(BaseCommand):
                 logger.info(f"No HEIC images found for site {site.slug}.")
                 continue
 
-            for image in images:
-                heic_image = image.original
-
-                try:
-                    if self.is_transparent(heic_image):
-                        logger.debug(f"Converting image {image.id} to png...")
-                        converted_image = self.convert_heic_to_png(heic_image)
-                    else:
-                        logger.debug(f"Converting image {image.id} to jpeg...")
-                        converted_image = self.convert_heic_to_jpeg(heic_image)
-
-                    with transaction.atomic():
-                        image.original = converted_image
-                        image.save(set_modified_date=False)
-
-                        transaction.on_commit(lambda img=heic_image: img.delete())
-
-                except Exception as e:
-                    logger.error(
-                        f"Error converting HEIC image {image.id} for site {site.slug}: {e}"
-                    )
-                    continue
+            self.convert_images(images, logger)
 
         logger.info("HEIC to JPEG/PNG conversion completed.")
