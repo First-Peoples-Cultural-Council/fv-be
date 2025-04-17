@@ -1,4 +1,4 @@
 TITLE,TYPE,AUDIO_FILENAME,IMG_FILENAME,VIDEO_FILENAME
-abc,word,sample-audio.mp3
-abc,word,,sample-image.jpg
-abc,word,,,video_example_small.mp4
+Word 1,word,sample-audio.mp3
+Phrase 1,phrase,,sample-image.jpg
+Word 2,word,,,video_example_small.mp4

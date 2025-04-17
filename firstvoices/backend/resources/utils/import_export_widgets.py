@@ -3,6 +3,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.shortcuts import get_object_or_404
+from import_export.exceptions import ImportError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
 from backend.models import PartOfSpeech
@@ -22,6 +23,7 @@ class ChoicesWidget(Widget):
         - choices: iterable of choices containing (dbvalue, label)
             e.g. [(20, "Public"), ...]
         """
+        super().__init__(*args, **kwargs)
         self.choice_labels = dict(choices)
         self.choice_values = {v: k for k, v in choices}
         self.default = default
@@ -31,7 +33,7 @@ class ChoicesWidget(Widget):
         value = value.strip().lower().title()
         return self.choice_values.get(value) if value else self.default
 
-    def render(self, value, obj=None):
+    def render(self, value, obj=None, **kwargs):
         """Returns the display value given the db value"""
         return self.choice_labels.get(value)
 
@@ -40,7 +42,7 @@ class ArrayOfStringsWidget(Widget):
     """Import/export widget to split strings on custom separator."""
 
     def __init__(self, sep: str = ",", *args, **kwargs) -> None:
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.sep = sep
 
     def clean(self, value: str, row=None, *args, **kwargs) -> list:
@@ -49,7 +51,7 @@ class ArrayOfStringsWidget(Widget):
             string.strip() for string in value.split(sep=self.sep) if string.strip()
         ]
 
-    def render(self, value: list, obj=None) -> str:
+    def render(self, value: list, obj=None, **kwargs) -> str:
         """Converts the db value (array) into a single string for display, using separator"""
         if value:
             return self.sep.join(value)
@@ -98,7 +100,7 @@ class InvertedBooleanFieldWidget(Widget):
         elif cleaned_input in ["false", "no", "n", "0"]:
             return True
         else:
-            raise ValidationError(
+            raise ImportError(
                 f"Invalid value in {self.column_name} column. Expected 'true' or 'false'."
             )
 
@@ -173,12 +175,12 @@ class CustomManyToManyWidget(ManyToManyWidget):
                     raise ObjectDoesNotExist()
             except ValidationError:
                 # Also catches "invalid uuid" validation error
-                raise ValidationError(
+                raise ImportError(
                     f"Invalid {self.model.__name__} supplied in column: {column}. "
                     f"Expected field: {error_message_field}"
                 )
             except ObjectDoesNotExist:
-                raise ValidationError(
+                raise ImportError(
                     f"No {self.model.__name__} found with the provided {error_message_field} in column {column}."
                 )
 

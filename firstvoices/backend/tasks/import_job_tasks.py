@@ -15,6 +15,7 @@ from backend.models.import_jobs import (
 )
 from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
+from backend.resources.media import AudioResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
@@ -43,6 +44,7 @@ VALID_HEADERS = [
     "audio_acknowledgement",
     "audio_include_in_kids_site",
     "audio_include_in_games",
+    "audio_speaker",
     # image
     "img_filename",
     "img_title",
@@ -129,10 +131,115 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def import_resource(data, import_job, missing_media=[], dry_run=True):
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
+def separate_data(data):
+    """
+    Splits the cleaned CSV data into two separate datasets, one to be used for dictionary entry resource,
+    and one for audio resource.
+    """
+    audio_preset_columns = [
+        "audio_filename",
+        "audio_title",
+        "audio_description",
+        "audio_speaker",
+        "audio_speaker_2",
+        "audio_speaker_3",
+        "audio_speaker_4",
+        "audio_speaker_5",
+        "audio_acknowledgement",
+        "audio_include_in_kids_site",
+        "audio_include_in_games",
+    ]
 
-    # Create an ImportJobReport for the run
+    audio_columns = [col for col in audio_preset_columns if col in data.headers]
+    audio_data = tablib.Dataset(headers=audio_columns)
+    dictionary_entries_data = tablib.Dataset(
+        headers=[
+            col
+            for col in data.headers
+            if col not in audio_columns or col == "audio_filename"
+        ]
+    )
+
+    if "audio_filename" in data.headers:
+        for row in data.dict:
+            audio_row = [row[col] for col in audio_columns if col in data.headers]
+            audio_data.append(audio_row)
+
+    # Filtering audio data to remove rows not containing require column, i.e. audio_filename
+    filtered_audio_data = tablib.Dataset(headers=audio_data.headers)
+    for row in audio_data.dict:
+        if row.get("audio_filename") not in ["", None]:
+            filtered_audio_data.append([row.get(col) for col in audio_data.headers])
+
+    for row in data.dict:
+        dictionary_entries_row = [
+            row[col]
+            for col in data.headers
+            if col not in audio_columns or col == "audio_filename"
+        ]
+        dictionary_entries_data.append(dictionary_entries_row)
+
+    return dictionary_entries_data, filtered_audio_data
+
+
+def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run):
+    """
+    Imports audio files and appends IDs of the imported files as related_audio in dictionary_entry_data.
+    Returns updated dictionary_entry_data and result from audio import.
+    """
+
+    audio_import_result = AudioResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=audio_data, dry_run=dry_run)
+
+    # Adding audio ids
+    if len(audio_data):
+        audio_lookup = {
+            row["audio_filename"]: row["id"]
+            for row in audio_data.dict
+            if row.get("audio_filename")
+        }
+        dictionary_entry_data.append_col(
+            [""] * len(dictionary_entry_data), header="related_audio"
+        )
+        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
+        for i, row in enumerate(dictionary_entry_data.dict):
+            audio_filename = row.get("audio_filename")
+            related_id = audio_lookup.get(audio_filename, "")
+            row_list = list(dictionary_entry_data[i])
+            row_list[related_audio_col_index] = related_id  # comma separated string
+            dictionary_entry_data[i] = tuple(row_list)
+
+    return audio_import_result, dictionary_entry_data
+
+
+def import_dictionary_entry_resource(import_job, dictionary_entry_data, dry_run):
+    """
+    Imports dictionary entries and returns the import result.
+    """
+    dictionary_entry_import_result = DictionaryEntryResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=dictionary_entry_data, dry_run=dry_run)
+
+    return dictionary_entry_import_result
+
+
+def generate_report(
+    import_job,
+    accepted_columns,
+    ignored_columns,
+    missing_media,
+    audio_import_result,
+    dictionary_entry_import_result,
+):
+    """
+    Creates an ImportJobReport to summarize the results.
+    Also combines rows from missing_media, audio import and dictionary entries import.
+    """
     report = ImportJobReport(
         site=import_job.site,
         importjob=import_job,
@@ -154,13 +261,6 @@ def import_resource(data, import_job, missing_media=[], dry_run=True):
         )
         error_row_instance.save()
 
-    # Import dictionary_entries
-    dictionary_entry_import_result = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=cleaned_data, dry_run=dry_run)
-
     # Adding error messages to the report
     for row in dictionary_entry_import_result.rows:
         if row.import_type == RowResult.IMPORT_TYPE_SKIP:
@@ -173,11 +273,40 @@ def import_resource(data, import_job, missing_media=[], dry_run=True):
             )
             error_row_instance.save()
 
+    # If the row already exists, add message to the errors list.
+    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
+        "row_number", flat=True
+    )
+    for row in audio_import_result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+            if row.number in existing_error_rows:
+                error_row_instance = ImportJobReportRow.objects.get(
+                    report=report, row_number=row.number
+                )
+                error_row_instance.errors = (
+                    error_row_instance.errors + row.error_messages
+                )
+            else:
+                error_row_instance = ImportJobReportRow(
+                    site=import_job.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=row.error_messages,
+                )
+            error_row_instance.save()
+
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
-    # Sort rows and attach the csv
+    return report
+
+
+def attach_csv_to_report(data, import_job, report):
+    """
+    Attaches an updated CSV file to the importJob if any errors occurred.
+    """
     if report.error_rows:
         error_rows = list(
             ImportJobReportRow.objects.filter(report=report).values_list(
@@ -192,14 +321,46 @@ def import_resource(data, import_job, missing_media=[], dry_run=True):
         # Clearing up failed rows csv, incase it exists, and there are no errors present
         import_job.failed_rows_csv = None
 
+
+def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
+    """
+    Primary method that cleans the CSV data, separates it, imports resources, and generates a report.
+    Used for both dry_run and actual imports.
+    """
+
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
+
+    # get a separate table for each model
+    dictionary_entry_data, audio_data = separate_data(cleaned_data)
+
+    audio_import_result, dictionary_entry_data = import_audio_resource(
+        import_job, audio_data, dictionary_entry_data, dry_run
+    )
+    dictionary_entry_import_result = import_dictionary_entry_resource(
+        import_job, dictionary_entry_data, dry_run
+    )
+
+    report = generate_report(
+        import_job,
+        accepted_columns,
+        ignored_columns,
+        missing_media,
+        audio_import_result,
+        dictionary_entry_import_result,
+    )
+    attach_csv_to_report(data, import_job, report)
+
     return report
 
 
 def run_import_job(data, import_job):
+    """
+    Executes the actual import (non dry-run mode) amd update the status attribute of import-job.
+    """
     logger = get_task_logger(__name__)
 
     try:
-        import_resource(data, import_job, dry_run=False)
+        process_import_job_data(data, import_job, dry_run=False)
         import_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -209,8 +370,9 @@ def run_import_job(data, import_job):
 
 
 def dry_run_import_job(data, import_job):
-    """Variation of the import_job method above, for dry-run only.
-    Updates the validationReport and validationStatus instead of the job status."""
+    """
+    Performs a dry-run of the specified import-job and update the validation_status attribute of import-job.
+    """
     logger = get_task_logger(__name__)
 
     missing_media = get_missing_media(data, import_job)
@@ -227,7 +389,7 @@ def dry_run_import_job(data, import_job):
             return
 
     try:
-        report = import_resource(data, import_job, missing_media, dry_run=True)
+        report = process_import_job_data(data, import_job, missing_media, dry_run=True)
         import_job.validation_status = JobStatus.COMPLETE
         import_job.validation_report = report
     except Exception as e:
@@ -238,6 +400,11 @@ def dry_run_import_job(data, import_job):
 
 
 def get_missing_media(data, import_job_instance):
+    """
+    Checks for missing media files in the specified import-job by comparing file names present in the data
+    with the uploaded files associated with the import-job.
+    Returns a list of missing media files.
+    """
     associated_audio_files = list(
         File.objects.filter(import_job=import_job_instance).values_list(
             "content", flat=True
@@ -272,7 +439,12 @@ def get_missing_media(data, import_job_instance):
 
 @shared_task
 def validate_import_job(import_job_id):
-    # Validates a provided CSV before importing provided entries
+    """
+    Performs validation on the uploaded CSV file, and does a dry-run of the process to
+    identify any errors such as missing fields, incorrect data, or missing media.
+    Generates and attaches a report to the import-job for review.
+    """
+
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
     logger.info(
@@ -318,6 +490,10 @@ def validate_import_job(import_job_id):
 
 @shared_task
 def confirm_import_job(import_job_id):
+    """
+    Schedules the actual import for the import-job.
+    Can be used only after the import-job is successfully validated.
+    """
     logger = get_task_logger(__name__)
     task_id = current_task.request.id
     logger.info(
