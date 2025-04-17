@@ -2,7 +2,7 @@ from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
-from backend.models.media import Audio, Person
+from backend.models.media import Audio, Image, ImageFile, Person
 from backend.resources.base import ControlledSiteContentResource
 from backend.resources.utils.import_export_widgets import (
     CustomManyToManyWidget,
@@ -45,10 +45,10 @@ class AudioResource(ControlledSiteContentResource):
         ),
     )
     exclude_from_kids = fields.Field(
-        column_name="audio_include_on_kids_site",
+        column_name="audio_include_in_kids_site",
         attribute="exclude_from_kids",
         widget=InvertedBooleanFieldWidget(
-            column="audio_include_on_kids_site", default=False
+            column="audio_include_in_kids_site", default=False
         ),
     )
 
@@ -65,4 +65,46 @@ class AudioResource(ControlledSiteContentResource):
 
     class Meta:
         model = Audio
+        clean_model_instances = True
+
+
+class ImageResource(ControlledSiteContentResource):
+    original = fields.Field(
+        column_name="img_original",
+        attribute="original",
+        widget=ForeignKeyWidget(model=ImageFile),
+    )
+
+    title = fields.Field(
+        column_name="img_title",
+        attribute="title",
+    )
+
+    description = fields.Field(column_name="img_description", attribute="description")
+
+    acknowledgement = fields.Field(
+        column_name="img_acknowledgement", attribute="acknowledgement"
+    )
+
+    exclude_from_kids = fields.Field(
+        column_name="img_include_in_kids_site",
+        attribute="exclude_from_kids",
+        widget=InvertedBooleanFieldWidget(
+            column="img_include_in_kids_site", default=False
+        ),
+    )
+
+    def before_import_row(self, row, **kwargs):
+        # Filename to be used as title if not provided
+        if "img_title" not in row:
+            row["img_title"] = row["img_filename"]
+
+        # Adding original
+        associated_file = ImageFile.objects.filter(
+            import_job__id=row["import_job"], content__contains=row["img_filename"]
+        )[0]
+        row["img_original"] = str(associated_file.id)
+
+    class Meta:
+        model = Image
         clean_model_instances = True

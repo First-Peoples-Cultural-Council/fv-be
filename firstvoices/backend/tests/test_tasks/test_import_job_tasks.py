@@ -649,6 +649,11 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -656,13 +661,17 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 1
 
         error_row = validation_report.rows.get(row_number=1)
-        assert len(error_row.errors) == 2
+        assert len(error_row.errors) == 3
         assert (
             "Invalid value in include_in_games column. Expected 'true' or 'false'."
             in error_row.errors
         )
         assert (
             "No Person found with the provided name in column audio_speaker."
+            in error_row.errors
+        )
+        assert (
+            "Invalid value in img_include_in_kids_site column. Expected 'true' or 'false'."
             in error_row.errors
         )
 
@@ -679,7 +688,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.user = get_superadmin()
         self.site = SiteFactory(visibility=Visibility.PUBLIC)
 
-    def upload_media(self, filename):
+    def confirm_upload_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job = ImportJobFactory(
@@ -695,6 +704,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "audio/mpeg"),
             import_job=import_job,
         )
 
@@ -1028,7 +1042,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio(self):
-        self.upload_media("related_audio.csv")
+        self.confirm_upload_with_media_files("related_audio.csv")
 
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
@@ -1042,8 +1056,22 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
 
+    def test_related_images(self):
+        self.confirm_upload_with_media_files("related_images.csv")
+
+        entry_with_image = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_images = entry_with_image.related_images.all()
+        assert len(related_images) == 1
+
+        related_image = related_images[0]
+        assert "sample-image.jpg" in related_image.original.content.name
+        assert related_image.title == "Related Image"
+        assert related_image.description == "Testing image upload"
+        assert related_image.acknowledgement == "Test Ack"
+        assert related_image.exclude_from_kids is False
+
     def test_media_title_defaults_to_filename(self):
-        self.upload_media("minimal_media.csv")
+        self.confirm_upload_with_media_files("minimal_media.csv")
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
         assert related_audio[0].title == "sample-audio.mp3"
