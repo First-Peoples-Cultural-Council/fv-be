@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from django.core.management import call_command
 
@@ -159,3 +161,21 @@ class TestConvertHEIC:
 
         assert "Converting HEIC files to JPEG/PNG for 2 sites." in caplog.text
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
+
+    @pytest.mark.django_db
+    def test_convert_heic_error_handling(self, caplog):
+        site = factories.SiteFactory.create()
+        self.create_heic_image_model(site, self.IMAGE_TITLE)
+
+        assert Image.objects.filter(site=site).count() == 1
+
+        with patch(
+            "backend.management.commands.convert_heic.Command.convert_heic_to_jpeg"
+        ) as mock_convert:
+            mock_convert.side_effect = Exception("Conversion error")
+
+            call_command("convert_heic", site_slugs=site.slug)
+
+            assert "Conversion error" in caplog.text
+            assert Image.objects.filter(site=site).count() == 1
+            assert ImageFile.objects.filter(site=site).count() == 1
