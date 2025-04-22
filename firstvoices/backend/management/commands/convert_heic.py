@@ -1,4 +1,5 @@
 import logging
+import re
 from io import BytesIO
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -49,7 +50,9 @@ class Command(BaseCommand):
         content = InMemoryUploadedFile(
             file=output_image,
             field_name="ImageField",
-            name=original_image.name.replace(self.HEIC_EXTENSION, ".png"),
+            name=re.sub(
+                self.HEIC_EXTENSION, ".png", original_image.name, flags=re.IGNORECASE
+            ),
             content_type="image/png",
             size=output_image.getbuffer().nbytes,
             charset=None,
@@ -81,7 +84,9 @@ class Command(BaseCommand):
         content = InMemoryUploadedFile(
             file=output_image,
             field_name="ImageField",
-            name=original_image.name.replace(self.HEIC_EXTENSION, ".jpg"),
+            name=re.sub(
+                self.HEIC_EXTENSION, ".jpg", original_image.name, flags=re.IGNORECASE
+            ),
             content_type="image/jpeg",
             size=output_image.getbuffer().nbytes,
             charset=None,
