@@ -11,7 +11,6 @@ from backend.models.import_jobs import (
     ImportJobReport,
     ImportJobReportRow,
     JobStatus,
-    RowStatus,
 )
 from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
@@ -19,78 +18,12 @@ from backend.resources.media import AudioResource, ImageResource, VideoResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
+    VALID_HEADERS,
+    create_or_append_error_row,
     get_failed_rows_csv_file,
+    is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
-
-VALID_HEADERS = [
-    "title",
-    "type",
-    "translation",
-    "category",
-    "note",
-    "acknowledgement",
-    "part_of_speech",
-    "pronunciation",
-    "alternate_spelling",
-    "visibility",
-    "include_on_kids_site",
-    "include_in_games",
-    "related_entry",
-    # audio
-    "audio_filename",
-    "audio_title",
-    "audio_description",
-    "audio_acknowledgement",
-    "audio_include_in_kids_site",
-    "audio_include_in_games",
-    "audio_speaker",
-    # image
-    "img_filename",
-    "img_title",
-    "img_description",
-    "img_acknowledgement",
-    "img_include_in_kids_site",
-    # video
-    "video_filename",
-    "video_title",
-    "video_description",
-    "video_acknowledgement",
-    "video_include_in_kids_site",
-]
-
-
-def is_valid_header_variation(input_header, all_headers):
-    # The input header can have a _n variation from 2 to 5, e.g. 'note_5'
-    # The original header also has to be present for the variation to be accepted,
-    # e.g. 'note_2' to 'note_5' columns will only be accepted if 'note' column is present in the table
-    # All other variations are invalid
-
-    all_headers = [h.strip().lower() for h in all_headers]
-
-    splits = input_header.split("_")
-    if len(splits) >= 2:
-        prefix = "_".join(splits[:-1])
-        variation = splits[-1]
-    else:
-        prefix = input_header
-        variation = None
-
-    # Check if the prefix is a valid header
-    if (
-        prefix in VALID_HEADERS
-        and prefix in all_headers
-        and variation
-        and variation.isdigit()
-    ):
-        variation = int(variation)
-        if variation <= 1 or variation > 5:
-            # Variation out of range. Skipping column.
-            return False
-    else:
-        return False
-
-    return True
 
 
 def clean_csv(data, missing_media=[]):
@@ -369,97 +302,27 @@ def generate_report(
 
     # Add media errors to report
     for missing_media_row in missing_media:
-        error_row_instance = ImportJobReportRow(
-            site=import_job.site,
-            report=report,
-            status=RowStatus.ERROR,
+        create_or_append_error_row(
+            import_job,
+            report,
             row_number=missing_media_row["idx"],
             errors=[
                 f"Media file not found in uploaded files: {missing_media_row['filename']}."
             ],
         )
-        error_row_instance.save()
 
-    # Adding error messages to the report
-    for row in dictionary_entry_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            error_row_instance = ImportJobReportRow(
-                site=import_job.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=row.error_messages,
-            )
-            error_row_instance.save()
-
-    # If the row already exists, add message to the errors list.
-    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
-        "row_number", flat=True
-    )
-    for row in audio_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            if row.number in existing_error_rows:
-                error_row_instance = ImportJobReportRow.objects.get(
-                    report=report, row_number=row.number
+    # Add errors from individual import results to report
+    for result in [
+        dictionary_entry_import_result,
+        audio_import_result,
+        img_import_result,
+        video_import_result,
+    ]:
+        for row in result.rows:
+            if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+                create_or_append_error_row(
+                    import_job, report, row_number=row.number, errors=row.error_messages
                 )
-                error_row_instance.errors = (
-                    error_row_instance.errors + row.error_messages
-                )
-            else:
-                error_row_instance = ImportJobReportRow(
-                    site=import_job.site,
-                    report=report,
-                    status=RowStatus.ERROR,
-                    row_number=row.number,
-                    errors=row.error_messages,
-                )
-            error_row_instance.save()
-
-    # If the row already exists, add message to the errors list.
-    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
-        "row_number", flat=True
-    )
-    for row in img_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            if row.number in existing_error_rows:
-                error_row_instance = ImportJobReportRow.objects.get(
-                    report=report, row_number=row.number
-                )
-                error_row_instance.errors = (
-                    error_row_instance.errors + row.error_messages
-                )
-            else:
-                error_row_instance = ImportJobReportRow(
-                    site=import_job.site,
-                    report=report,
-                    status=RowStatus.ERROR,
-                    row_number=row.number,
-                    errors=row.error_messages,
-                )
-            error_row_instance.save()
-
-    # If the row already exists, add message to the errors list.
-    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
-        "row_number", flat=True
-    )
-    for row in video_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            if row.number in existing_error_rows:
-                error_row_instance = ImportJobReportRow.objects.get(
-                    report=report, row_number=row.number
-                )
-                error_row_instance.errors = (
-                    error_row_instance.errors + row.error_messages
-                )
-            else:
-                error_row_instance = ImportJobReportRow(
-                    site=import_job.site,
-                    report=report,
-                    status=RowStatus.ERROR,
-                    row_number=row.number,
-                    errors=row.error_messages,
-                )
-            error_row_instance.save()
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
