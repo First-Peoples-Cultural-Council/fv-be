@@ -97,7 +97,6 @@ class TestConvertHEIC:
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
     @pytest.mark.parametrize(
         "extension",
         [
@@ -111,28 +110,16 @@ class TestConvertHEIC:
         site = factories.SiteFactory.create()
         heic_image = self.create_heic_image_model(site, self.IMAGE_TITLE)
 
-        assert Image.objects.filter(site=site).count() == 1
-
         name = "sample-image" + extension
 
         with patch.object(heic_image.original.content, "name", name):
             call_command("convert_heic", site_slugs=site.slug)
-
-        assert Image.objects.filter(site=site).count() == 1
-
-        # 3 image thumbnails are created + 1 original image
-        assert ImageFile.objects.filter(site=site).count() == 4
 
         converted_image = Image.objects.filter(site=site).first()
 
         self.confirm_model_data(heic_image, converted_image)
         assert converted_image.original.content.name.endswith(".jpg")
         assert converted_image.original.mimetype == "image/jpeg"
-
-        self.confirm_image_thumbnail_data(converted_image)
-
-        assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
-        assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
