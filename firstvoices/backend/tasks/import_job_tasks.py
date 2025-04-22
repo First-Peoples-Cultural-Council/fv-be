@@ -15,7 +15,7 @@ from backend.models.import_jobs import (
 )
 from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.resources.media import AudioResource, ImageResource
+from backend.resources.media import AudioResource, ImageResource, VideoResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
@@ -158,53 +158,79 @@ def separate_data(data):
         "img_include_in_kids_site",
     ]
 
+    video_preset_columns = [
+        "video_filename",
+        "video_title",
+        "video_description",
+        "video_acknowledgement",
+        "video_include_in_kids_site",
+    ]
+
     audio_columns = [col for col in audio_preset_columns if col in data.headers]
     img_columns = [col for col in img_preset_columns if col in data.headers]
+    video_columns = [col for col in video_preset_columns if col in data.headers]
 
     audio_data = tablib.Dataset(headers=audio_columns)
     img_data = tablib.Dataset(headers=img_columns)
+    video_data = tablib.Dataset(headers=video_columns)
 
     dictionary_entries_data = tablib.Dataset(
         headers=[
             col
             for col in data.headers
-            if col not in (audio_columns + img_columns)
-            or col in ["audio_filename", "img_filename"]
+            if col not in (audio_columns + img_columns + video_columns)
+            or col in ["audio_filename", "img_filename", "video_filename"]
         ]
     )
 
+    # Audio data
     if "audio_filename" in data.headers:
         for row in data.dict:
             audio_row = [row[col] for col in audio_columns if col in data.headers]
             audio_data.append(audio_row)
 
-    # Filtering audio data to remove rows not containing require column, i.e. audio_filename
     filtered_audio_data = tablib.Dataset(headers=audio_data.headers)
     for row in audio_data.dict:
         if row.get("audio_filename") not in ["", None]:
             filtered_audio_data.append([row.get(col) for col in audio_data.headers])
 
+    # Image data
     if "img_filename" in data.headers:
         for row in data.dict:
             img_row = [row[col] for col in img_columns if col in data.headers]
             img_data.append(img_row)
 
-    # Filtering audio data to remove rows not containing require column, i.e. audio_filename
     filtered_img_data = tablib.Dataset(headers=img_data.headers)
     for row in img_data.dict:
         if row.get("img_filename") not in ["", None]:
             filtered_img_data.append([row.get(col) for col in img_data.headers])
 
+    # Video data
+    if "video_filename" in data.headers:
+        for row in data.dict:
+            video_row = [row[col] for col in video_columns if col in data.headers]
+            video_data.append(video_row)
+
+    filtered_video_data = tablib.Dataset(headers=video_data.headers)
+    for row in video_data.dict:
+        if row.get("video_filename") not in ["", None]:
+            filtered_video_data.append([row.get(col) for col in video_data.headers])
+
     for row in data.dict:
         dictionary_entries_row = [
             row[col]
             for col in data.headers
-            if col not in (audio_columns + img_columns)
-            or col in ["audio_filename", "img_filename"]
+            if col not in (audio_columns + img_columns + video_columns)
+            or col in ["audio_filename", "img_filename", "video_filename"]
         ]
         dictionary_entries_data.append(dictionary_entries_row)
 
-    return dictionary_entries_data, filtered_audio_data, filtered_img_data
+    return (
+        dictionary_entries_data,
+        filtered_audio_data,
+        filtered_img_data,
+        filtered_video_data,
+    )
 
 
 def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run):
@@ -273,6 +299,39 @@ def import_img_resource(import_job, img_data, dictionary_entry_data, dry_run):
     return img_import_result, dictionary_entry_data
 
 
+def import_video_resource(import_job, video_data, dictionary_entry_data, dry_run):
+    """
+    Imports video files and appends IDs of the imported files as related_videos in dictionary_entry_data.
+    Returns updated dictionary_entry_data and result from video import.
+    """
+
+    video_import_result = VideoResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=video_data, dry_run=dry_run)
+
+    # Adding image ids
+    if video_import_result.totals["new"]:
+        video_lookup = {
+            row["video_filename"]: row["id"]
+            for row in video_data.dict
+            if row.get("video_filename")
+        }
+        dictionary_entry_data.append_col(
+            [""] * len(dictionary_entry_data), header="related_videos"
+        )
+        related_video_col_index = dictionary_entry_data.headers.index("related_videos")
+        for i, row in enumerate(dictionary_entry_data.dict):
+            video_filename = row.get("video_filename")
+            related_id = video_lookup.get(video_filename, "")
+            row_list = list(dictionary_entry_data[i])
+            row_list[related_video_col_index] = related_id  # comma separated string
+            dictionary_entry_data[i] = tuple(row_list)
+
+    return video_import_result, dictionary_entry_data
+
+
 def import_dictionary_entry_resource(import_job, dictionary_entry_data, dry_run):
     """
     Imports dictionary entries and returns the import result.
@@ -293,6 +352,7 @@ def generate_report(
     missing_media,
     audio_import_result,
     img_import_result,
+    video_import_result,
     dictionary_entry_import_result,
 ):
     """
@@ -378,6 +438,29 @@ def generate_report(
                 )
             error_row_instance.save()
 
+    # If the row already exists, add message to the errors list.
+    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
+        "row_number", flat=True
+    )
+    for row in video_import_result.rows:
+        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+            if row.number in existing_error_rows:
+                error_row_instance = ImportJobReportRow.objects.get(
+                    report=report, row_number=row.number
+                )
+                error_row_instance.errors = (
+                    error_row_instance.errors + row.error_messages
+                )
+            else:
+                error_row_instance = ImportJobReportRow(
+                    site=import_job.site,
+                    report=report,
+                    status=RowStatus.ERROR,
+                    row_number=row.number,
+                    errors=row.error_messages,
+                )
+            error_row_instance.save()
+
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
@@ -413,13 +496,18 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
     # get a separate table for each model
-    dictionary_entry_data, audio_data, img_data = separate_data(cleaned_data)
+    dictionary_entry_data, audio_data, img_data, video_data = separate_data(
+        cleaned_data
+    )
 
     audio_import_result, dictionary_entry_data = import_audio_resource(
         import_job, audio_data, dictionary_entry_data, dry_run
     )
     img_import_result, dictionary_entry_data = import_img_resource(
         import_job, img_data, dictionary_entry_data, dry_run
+    )
+    video_import_result, dictionary_entry_data = import_video_resource(
+        import_job, video_data, dictionary_entry_data, dry_run
     )
     dictionary_entry_import_result = import_dictionary_entry_resource(
         import_job, dictionary_entry_data, dry_run
@@ -432,6 +520,7 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
         missing_media,
         audio_import_result,
         img_import_result,
+        video_import_result,
         dictionary_entry_import_result,
     )
     attach_csv_to_report(data, import_job, report)

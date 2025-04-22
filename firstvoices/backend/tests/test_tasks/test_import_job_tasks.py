@@ -654,6 +654,11 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -661,7 +666,7 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 1
 
         error_row = validation_report.rows.get(row_number=1)
-        assert len(error_row.errors) == 3
+        assert len(error_row.errors) == 4
         assert (
             "Invalid value in include_in_games column. Expected 'true' or 'false'."
             in error_row.errors
@@ -672,6 +677,10 @@ class TestBulkImportDryRun:
         )
         assert (
             "Invalid value in img_include_in_kids_site column. Expected 'true' or 'false'."
+            in error_row.errors
+        )
+        assert (
+            "Invalid value in video_include_in_kids_site column. Expected 'true' or 'false'."
             in error_row.errors
         )
 
@@ -709,6 +718,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "audio/mpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
 
@@ -1070,8 +1084,31 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image.acknowledgement == "Test Ack"
         assert related_image.exclude_from_kids is False
 
+    def test_related_videos(self):
+        self.confirm_upload_with_media_files("related_videos.csv")
+
+        entry_with_video = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_videos = entry_with_video.related_videos.all()
+        assert len(related_videos) == 1
+
+        related_video = related_videos[0]
+        assert "video_example_small.mp4" in related_video.original.content.name
+        assert related_video.title == "Related Video"
+        assert related_video.description == "Testing video upload"
+        assert related_video.acknowledgement == "Test Ack"
+        assert related_video.exclude_from_kids is False
+
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
+
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
         assert related_audio[0].title == "sample-audio.mp3"
+
+        entry_with_image = DictionaryEntry.objects.filter(title="Phrase 1")[0]
+        related_image = entry_with_image.related_images.all()
+        assert related_image[0].title == "sample-image.jpg"
+
+        entry_with_video = DictionaryEntry.objects.filter(title="Word 2")[0]
+        related_video = entry_with_video.related_videos.all()
+        assert related_video[0].title == "video_example_small.mp4"
