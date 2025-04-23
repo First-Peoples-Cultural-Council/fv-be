@@ -90,16 +90,17 @@ License: Apache Software License 2.0
    - Fixtures available:
      - Default fixtures which are automatically loaded in migrations:
        - `appjson-defaults.json`
+       - `appjson-has_app.json`
        - `default_g2p_config.json`
-       - `partsOfSpeech_initial.json`
        - `language_families.json`
        - `languages.json`
+       - `partsOfSpeech_initial.json`
      - Other:
        - None
 1. (Optional) To run ElasticSearch, RabbitMQ and redis, the following command needs to be run from the fv-be folder.
-   `docker-compose up -d` which will run all the mentioned docker services.
+   `docker compose up -d` which will run all the mentioned docker services.
    To run a specific service for some testing purposes, use the following command:
-   `docker-compose up -d {service}` e.g.`docker-compose up -d elastic`.
+   `docker compose up -d {service}` e.g.`docker compose up -d elastic`.
    1. For ElasticSearch, to confirm the service is up and running, visit
       http://localhost:9200/ and verify the status.
 1. (Optional) By default, the App will send emails to console but an SMTP server can be used by setting the following environment variables:
@@ -112,7 +113,7 @@ License: Apache Software License 2.0
 
 ## IDE Linting and Formatting (Recommended)
 
-These instruction include the steps needed to set up your local IDE so that you will get warnings if any changes are not up to the linting and formatting standards.
+These instructions include the steps needed to set up your local IDE so that you will get warnings if any changes are not up to the linting and formatting standards.
 The pre-commit hooks will ensure that your code changes are up to these standards, but setting up the following in your IDE will help to catch any issues earlier.
 
 **(Recommended before staging and committing files with git):** The entire suite of pre-commit hooks can be run manually by running the following commands from the root project directory:
@@ -137,7 +138,7 @@ pre-commit run --files <filepath>
 
 ### Flake8
 
-Flake8 is a Python wrapper which combines several linting tools into one. More details about Flake8 can be found on [the official Flake8 GitHub page](https://github.com/PyCQA/flake8).
+Flake8 is a Python wrapper that combines several linting tools into one. More details about Flake8 can be found on [the official Flake8 GitHub page](https://github.com/PyCQA/flake8).
 
 The Flake8 pre-commit hook can be executed on all files with the following command:
 
@@ -294,9 +295,9 @@ To set up custom order/confusable cleaning locally, you will need to do the foll
 To build/rebuild elasticsearch indices:
 1. Make sure the elasticsearch server is running. The instructions can be found in this file
 on how to start the server locally if required.
-2. Also make sure a celery worker is running. The instructions can be found in this file under _Celery_ section.
-3. Run the following command from `firstvoices/` folder:
-`python3 manage.py rebuild_index`
+2. Also make sure a celery worker is running. The instructions can be found in this file under [Celery](#celery) section.
+3. Run the following command from the `firstvoices/` folder:
+`python manage.py rebuild_index`
 4. A success message should be displayed if the process gets completed.
 5. Optional arguments can be supplied using the `--index` flag which accepts name of indices as input.
 Currently, the following indices are supported: `dictionary_entries, songs, stories, media, languages`
@@ -359,7 +360,7 @@ python manage.py reset_db -D test_fv_be
 The local docker-compose file sets up ancillary tools to support async task execution via celery, as well as a local
 ElasticSearch instance for testing.
 
-To run just `docker-compose up`. The default values in `settings.py` will fall back to appropriate values.
+To run just `docker compose up`. The default values in `settings.py` will fall back to appropriate values.
 
 If you prefer to run your own instances of `RabbitMQ`, `ElasticSearch`, or `Redis`, set the following environment vars (
 docker-compatible defaults shown):
@@ -377,9 +378,15 @@ virtual environment setup, execute `celery -A firstvoices worker -B` in the `./f
 ## Management Commands
 The following management commands are available to run from the `firstvoices` directory:
 Note: use `python manage.py {command} -h` to list all the args and their use.
-- `python manage.py convert_lyrics_draftjs_to_text` - Converts all lyric text and translations from draftjs to plain text.
-- `python manage.py update_missing_media_metadata` - Queues up asynchronous Celery workers which will update the metadata on any ImageFile, VideoFile, and File (audio) instances that are missing metadata.
-- `python manage.py copy_site` - Copies all content (except for widgets and pages) over to a new site.
+- `python manage.py copy_site` - Copies all content (except for widgets and pages) to a new site.
+- `python manage.py rebuild_index` - Rebuilds the elasticsearch index.
+- `python manage.py unicode_export` - Generates the csv files for the orthography-resources folder for the [unicode-resources repository.](https://github.com/First-Peoples-Cultural-Council/unicode-resources)
+
+Management commands added for data cleanup purposes with niche use cases:
+- `python manage.py convert_draftjs_to_html` - Converts all draftJS content to sanitized HTML for all models that have a draftJS field.
+- `python manage.py convert_heic` - Converts existing HEIC files to JPEG or PNG format.
+- `python manage.py merge_duplicate_speakers` - Merges duplicate speakers based on case-insensitive exact matches on the name, within the same site.
+
 
 ## Useful Local URLs On Startup
 
