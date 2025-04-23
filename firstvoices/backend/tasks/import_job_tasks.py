@@ -64,98 +64,90 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def separate_data(data):
+def build_filtered_dataset(data, columns, filename_key):
     """
-    Splits the cleaned CSV data into two separate datasets, one to be used for dictionary entry resource,
-    and one for audio resource.
+    Helper function to build filtered media datasets
     """
-    audio_preset_columns = [
-        "audio_filename",
-        "audio_title",
-        "audio_description",
-        "audio_speaker",
-        "audio_speaker_2",
-        "audio_speaker_3",
-        "audio_speaker_4",
-        "audio_speaker_5",
-        "audio_acknowledgement",
-        "audio_include_in_kids_site",
-        "audio_include_in_games",
-    ]
+    raw_data = tablib.Dataset(headers=columns)
+    filtered_data = tablib.Dataset(headers=columns)
+    if filename_key in data.headers:
+        for row in data.dict:
+            row_values = [row[col] for col in columns]
+            raw_data.append(row_values)
+            if row.get(filename_key):
+                filtered_data.append(row_values)
+    return filtered_data
 
-    img_preset_columns = [
-        "img_filename",
-        "img_title",
-        "img_description",
-        "img_acknowledgement",
-        "img_include_in_kids_site",
-    ]
 
-    video_preset_columns = [
-        "video_filename",
-        "video_title",
-        "video_description",
-        "video_acknowledgement",
-        "video_include_in_kids_site",
-    ]
+def separate_datasets(data):
+    """
+    Splits the cleaned CSV data into four datasets:
+    - Dictionary entries
+    - Filtered audio entries
+    - Filtered image entries
+    - Filtered video resources
+    """
+    media_supported_columns = {
+        "audio": [
+            "audio_filename",
+            "audio_title",
+            "audio_description",
+            "audio_speaker",
+            "audio_speaker_2",
+            "audio_speaker_3",
+            "audio_speaker_4",
+            "audio_speaker_5",
+            "audio_acknowledgement",
+            "audio_include_in_kids_site",
+            "audio_include_in_games",
+        ],
+        "img": [
+            "img_filename",
+            "img_title",
+            "img_description",
+            "img_acknowledgement",
+            "img_include_in_kids_site",
+        ],
+        "video": [
+            "video_filename",
+            "video_title",
+            "video_description",
+            "video_acknowledgement",
+            "video_include_in_kids_site",
+        ],
+    }
 
-    audio_columns = [col for col in audio_preset_columns if col in data.headers]
-    img_columns = [col for col in img_preset_columns if col in data.headers]
-    video_columns = [col for col in video_preset_columns if col in data.headers]
+    # Filter out existing columns for each media type
+    media_columns = {
+        media_type: [col for col in presets if col in data.headers]
+        for media_type, presets in media_supported_columns.items()
+    }
 
-    audio_data = tablib.Dataset(headers=audio_columns)
-    img_data = tablib.Dataset(headers=img_columns)
-    video_data = tablib.Dataset(headers=video_columns)
-
-    dictionary_entries_data = tablib.Dataset(
-        headers=[
-            col
-            for col in data.headers
-            if col not in (audio_columns + img_columns + video_columns)
-            or col in ["audio_filename", "img_filename", "video_filename"]
-        ]
+    # Building filtered datasets for media
+    filtered_audio_data = build_filtered_dataset(
+        data, media_columns["audio"], "audio_filename"
+    )
+    filtered_img_data = build_filtered_dataset(
+        data, media_columns["img"], "img_filename"
+    )
+    filtered_video_data = build_filtered_dataset(
+        data, media_columns["video"], "video_filename"
     )
 
-    # Audio data
-    if "audio_filename" in data.headers:
-        for row in data.dict:
-            audio_row = [row[col] for col in audio_columns if col in data.headers]
-            audio_data.append(audio_row)
-
-    filtered_audio_data = tablib.Dataset(headers=audio_data.headers)
-    for row in audio_data.dict:
-        if row.get("audio_filename") not in ["", None]:
-            filtered_audio_data.append([row.get(col) for col in audio_data.headers])
-
-    # Image data
-    if "img_filename" in data.headers:
-        for row in data.dict:
-            img_row = [row[col] for col in img_columns if col in data.headers]
-            img_data.append(img_row)
-
-    filtered_img_data = tablib.Dataset(headers=img_data.headers)
-    for row in img_data.dict:
-        if row.get("img_filename") not in ["", None]:
-            filtered_img_data.append([row.get(col) for col in img_data.headers])
-
-    # Video data
-    if "video_filename" in data.headers:
-        for row in data.dict:
-            video_row = [row[col] for col in video_columns if col in data.headers]
-            video_data.append(video_row)
-
-    filtered_video_data = tablib.Dataset(headers=video_data.headers)
-    for row in video_data.dict:
-        if row.get("video_filename") not in ["", None]:
-            filtered_video_data.append([row.get(col) for col in video_data.headers])
+    # Building dataset for dictionary entries
+    exclude_columns = set(
+        media_columns["audio"] + media_columns["img"] + media_columns["video"]
+    )
+    keep_columns = [
+        col
+        for col in data.headers
+        if col not in exclude_columns
+        or col in ["audio_filename", "img_filename", "video_filename"]
+    ]
+    dictionary_entries_data = tablib.Dataset(headers=keep_columns)
 
     for row in data.dict:
-        dictionary_entries_row = [
-            row[col]
-            for col in data.headers
-            if col not in (audio_columns + img_columns + video_columns)
-            or col in ["audio_filename", "img_filename", "video_filename"]
-        ]
+        dictionary_entries_row = [row[col] for col in keep_columns]
         dictionary_entries_data.append(dictionary_entries_row)
 
     return (
@@ -359,7 +351,7 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
     # get a separate table for each model
-    dictionary_entry_data, audio_data, img_data, video_data = separate_data(
+    dictionary_entry_data, audio_data, img_data, video_data = separate_datasets(
         cleaned_data
     )
 
