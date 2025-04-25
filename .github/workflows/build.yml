@@ -309,13 +309,14 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: main
-        repository: First-Peoples-Cultural-Council/fv-infra/helm
+        repository: First-Peoples-Cultural-Council/fv-infra
         token: ${{ secrets.PULL_CONFIG_SECRET }}
-        path: helm
-    -   uses: actions/checkout@v4
+        path: temp
     -   name: Download dependencies
         run: |
-            ls;
+            mkdir helm;
+            ls -a;
+            mv ./temp/helm/*  ./helm/
             aws codecommit get-file \
             --repository-name fv-helm-manifest-values \
             --file-path Values.${{  vars.ENV  }}.yaml \
