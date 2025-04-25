@@ -315,7 +315,6 @@ jobs:
     -   name: Download dependencies
         run: |
             mkdir helm;
-            ls -a;
             mv ./temp/helm/*  ./helm/
             aws codecommit get-file \
             --repository-name fv-helm-manifest-values \
@@ -335,6 +334,4 @@ jobs:
     -   name: helm upgrade
         run: |
             helm list -n ${{  secrets.DEPLOYMENT_NAMESPACE  }};
-            cd ./helm/fv-be
-            ls
-  #          helm upgrade -f ./helm/fv-be/Values.${{  vars.ENV  }}.yaml ${{  secrets.HELM_CHART_NAME  }} ./helm/fv-be/ -n ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+            helm upgrade -f ./helm/fv-be/Values.${{  vars.ENV  }}.yaml ${{  secrets.HELM_CHART_NAME  }} ./helm/fv-be/ -n ${{  secrets.DEPLOYMENT_NAMESPACE  }}
