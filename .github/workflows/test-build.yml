@@ -118,9 +118,29 @@ jobs:
             echo "environment=unknown" >> $GITHUB_OUTPUT
           fi
 
-  deploy:
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
     needs: set-environment
-    uses: First-Peoples-Cultural-Council/fv-be/.github/workflows/build-and-deploy.yml@${{ github.ref_name }}
+    uses: First-Peoples-Cultural-Council/fv-be/.github/workflows/build-and-deploy.yml@dev
+    with:
+      environment: ${{ needs.set-environment.outputs.env }}
+    secrets:
+      FPCC_AWS_ACCESS_KEY_ID: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+      FPCC_AWS_SECRET_ACCESS_KEY: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+      FPCC_DEFAULT_AWS_REGION: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
+      FV_CLUSTER_NAME: ${{ secrets.FV_CLUSTER_NAME }}
+      TEKTON_NAMESPACE: ${{ secrets.TEKTON_NAMESPACE }}
+      TEKTON_INTERCEPTOR_NAME: ${{ secrets.TEKTON_INTERCEPTOR_NAME }}
+      ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}
+      PULL_CONFIG_SECRET: ${{ secrets.PULL_CONFIG_SECRET }}
+      FPCC_DEFAULT_ECR_URI: ${{ secrets.FPCC_DEFAULT_ECR_URI }}
+      DEPLOYMENT_NAMESPACE: ${{ secrets.DEPLOYMENT_NAMESPACE }}
+      HELM_CHART_NAME: ${{ secrets.HELM_CHART_NAME }}
+
+  deploy-preprod-prod:
+    if: (github.ref == 'refs/heads/main') || ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))
+    needs: set-environment
+    uses: First-Peoples-Cultural-Council/fv-be/.github/workflows/build-and-deploy.yml@main
     with:
       environment: ${{ needs.set-environment.outputs.env }}
     secrets:
