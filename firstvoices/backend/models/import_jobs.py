@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
+from rest_framework.exceptions import ValidationError
 
 from backend.models.base import BaseSiteContentModel
 from backend.models.constants import (

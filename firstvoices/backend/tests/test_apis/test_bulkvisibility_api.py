@@ -13,7 +13,8 @@ from .base.base_async_api_test import (
 
 
 class TestBulkVisibilityEndpoints(
-    SuperAdminAsyncJobPermissionsMixin, BaseAsyncSiteContentApiTest
+    SuperAdminAsyncJobPermissionsMixin,
+    BaseAsyncSiteContentApiTest,
 ):
     """
     End-to-end tests that the bulk visibility endpoints have the expected behaviour.

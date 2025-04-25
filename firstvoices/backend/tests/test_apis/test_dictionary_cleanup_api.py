@@ -7,13 +7,16 @@ from backend.models.jobs import DictionaryCleanupJob, JobStatus
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.tests import factories
 from backend.tests.test_apis.base.base_async_api_test import (
+    AsyncWorkflowTestMixin,
     BaseAsyncSiteContentApiTest,
     SuperAdminAsyncJobPermissionsMixin,
 )
 
 
 class TestDictionaryCleanupAPI(
-    SuperAdminAsyncJobPermissionsMixin, BaseAsyncSiteContentApiTest
+    AsyncWorkflowTestMixin,
+    SuperAdminAsyncJobPermissionsMixin,
+    BaseAsyncSiteContentApiTest,
 ):
     API_LIST_VIEW = "api:dictionary-cleanup-list"
     API_DETAIL_VIEW = "api:dictionary-cleanup-detail"
@@ -44,28 +47,17 @@ class TestDictionaryCleanupAPI(
         return self.get_expected_detail_response(instance, site)
 
     def get_valid_data(self, site=None):
-        return {}
+        return {"site": str(site.id)}
 
     def assert_created_instance(self, pk, data):
         instance = DictionaryCleanupJob.objects.get(pk=pk)
         return self.get_expected_response(instance, instance.site)
 
     def assert_created_response(self, expected_data, actual_response):
-        assert actual_response == expected_data
-
-    @pytest.mark.skip(
-        reason="Dictionary cleanup jobs can only be accessed by superusers."
-    )
-    def test_detail_member_access(self, role):
-        # Dictionary cleanup jobs can only be accessed by superusers.
-        pass
-
-    @pytest.mark.skip(
-        reason="Dictionary cleanup jobs can only be accessed by superusers."
-    )
-    def test_detail_team_access(self, role):
-        # Dictionary cleanup jobs can only be accessed by superusers.
-        pass
+        site_id = expected_data["site"]
+        pk = actual_response["id"]
+        job = self.model.objects.get(site=site_id, pk=pk)
+        assert actual_response == self.get_expected_response(job, job.site)
 
     @pytest.mark.skip(reason="Dictionary cleanup jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):
@@ -90,28 +82,6 @@ class TestDictionaryCleanupAPI(
     def test_update_with_null_optional_charfields_success_200(self):
         # Dictionary cleanup jobs have no eligible optional charfields..
         pass
-
-    @pytest.mark.django_db
-    def test_create_success_201(self):
-        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
-
-        data = self.get_valid_data(site)
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug),
-            data=self.format_upload_data(data),
-            content_type=self.content_type,
-        )
-
-        assert response.status_code == 201
-
-        response_data = json.loads(response.content)
-        pk = response_data["id"]
-
-        self.assert_created_instance(pk, data)
-        assert response_data == self.get_expected_response(
-            DictionaryCleanupJob.objects.get(pk=pk), site
-        )
 
     @pytest.mark.django_db
     def test_recalculate_result_display(self):

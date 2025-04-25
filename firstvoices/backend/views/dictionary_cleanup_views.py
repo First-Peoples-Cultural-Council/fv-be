@@ -10,7 +10,11 @@ from backend.serializers.job_serializers import (
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    AsyncJobDeleteMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 from firstvoices.celery import link_error_handler
 
 
@@ -68,6 +72,7 @@ from firstvoices.celery import link_error_handler
     ),
 )
 class DictionaryCleanupJobViewSet(
+    AsyncJobDeleteMixin,
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ModelViewSet,
