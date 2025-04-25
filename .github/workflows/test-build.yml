@@ -140,7 +140,7 @@ jobs:
   deploy-preprod-prod:
     if: (github.ref == 'refs/heads/main') || ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))
     needs: set-environment
-    uses: First-Peoples-Cultural-Council/fv-be/.github/workflows/build-and-deploy.yml@main
+    uses: First-Peoples-Cultural-Council/fv-be/.github/workflows/build-and-deploy.yml@dev
     with:
       environment: ${{ needs.set-environment.outputs.env }}
     secrets:
