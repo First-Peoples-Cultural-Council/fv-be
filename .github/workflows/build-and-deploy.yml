@@ -1,0 +1,144 @@
+name: build-and-deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      FPCC_AWS_ACCESS_KEY_ID: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+      FPCC_AWS_SECRET_ACCESS_KEY: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+      FPCC_DEFAULT_AWS_REGION: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      FV_CLUSTER_NAME: ${{  secrets.FV_CLUSTER_NAME  }}
+      TEKTON_NAMESPACE: ${{  secrets.TEKTON_NAMESPACE  }}
+      TEKTON_INTERCEPTOR_NAME: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
+      ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}
+      PULL_CONFIG_SECRET: ${{ secrets.PULL_CONFIG_SECRET }}
+      FPCC_DEFAULT_ECR_URI: ${{ secrets.FPCC_DEFAULT_ECR_URI }}
+      DEPLOYMENT_NAMESPACE: ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+      HELM_CHART_NAME: ${{  secrets.HELM_CHART_NAME  }}
+
+
+jobs:
+
+  build_with_tekton:
+    name: Dev Build
+    runs-on: ubuntu-22.04
+    if: ((((github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/main')) || ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')))) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    needs: sonarcloud
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      - name: "Setup kubectl"
+        run: |
+          aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      - name: "Setup RUNID"
+        run: |
+          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | head -n 1 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
+      - name: "Check RUNID Validity"
+        run: |
+          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
+          if [${{  env.RUNID  }} == ""];
+          then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
+          exit 1;
+          fi
+      - name: "Monitor RUNID"
+        timeout-minutes: 10
+        run: |
+          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
+          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
+          echo -e "\n========================================================================================================================================================================"
+          echo "Running repo cloning..."
+          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
+          echo -e "\n========================================================================================================================================================================"
+          echo "Running image build..."
+          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
+          sleep 1;
+          echo -e "\n========================================================================================================================================================================"
+          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
+          echo "Running URL adjustments for FV-BE..."
+          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
+          sleep 1;
+          echo -e "\n========================================================================================================================================================================"
+          echo "Running URL adjustments for FV-BE-Static..."
+          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
+          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
+          sleep 1;
+          echo -e "\n========================================================================================================================================================================"
+          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
+          echo "Wrapping up pipeline monitoring";
+
+  image_scan:
+    name: Image Scan
+    runs-on: ubuntu-22.04
+    needs: build_with_tekton
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      - name: "Run image scan"
+        run: |
+          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+          echo "List of findings are below"
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+
+  helm_deploy_dev:
+    name: Dev Deploy
+    runs-on: ubuntu-22.04
+    needs: image_scan
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      - name: Pull infra manifests
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          repository: First-Peoples-Cultural-Council/fv-infra
+          token: ${{ secrets.PULL_CONFIG_SECRET }}
+          path: temp
+      - name: Download dependencies
+        run: |
+          mkdir helm;
+          mv ./temp/helm/*  ./helm/
+          aws codecommit get-file \
+          --repository-name fv-helm-manifest-values \
+          --file-path Values.${{  vars.ENV  }}.yaml \
+          --query fileContent \
+          --output text \
+          | base64 -d > ./helm/fv-be/Values.${{  vars.ENV  }}.yaml
+      - name: "Setup kubectl and dynamic arguments"
+        run: |
+          aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }};
+          printf "%s\n" "version: $(aws ecr describe-images --repository-name helm-fv-web --query 'sort_by(imageDetails,& imagePushedAt)[-1]' --output table | cut -d '|' -f 3 | tail -n 2 | xargs )" >> ./helm/fv-be/Chart.yaml;
+          printf "%s\n" "fvwebImage: $( aws ecr describe-images --repository-name fv-web --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/'| sed 's/\]//' | cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+          printf "%s\n" "fvbeImage: $(aws ecr describe-images --repository-name fv-be --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' | cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+          printf "%s\n" "staticImage: $(aws ecr describe-images --repository-name fv-be-static --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' |cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+          printf "%s\n" "smtpImage: $(aws ecr describe-images --repository-name smtp-sidecar --query 'sort_by(imageDetails,& imagePushedAt)[-1]' | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' |cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+          printf "%s\n" "fvbeBuildString: $(aws ecr describe-images --repository-name fv-be --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+          printf "%s\n" "fvwebBuildString: $(aws ecr describe-images --repository-name fv-web --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
+      - uses: azure/setup-helm@v4.2.0
+        id: install
+      - name: helm upgrade
+        run: |
+          helm list -n ${{  secrets.DEPLOYMENT_NAMESPACE  }};
+#          helm upgrade -f ./helm/fv-be/Values.${{  vars.ENV  }}.yaml ${{  secrets.HELM_CHART_NAME  }} ./helm/fv-be/ -n ${{  secrets.DEPLOYMENT_NAMESPACE  }}
