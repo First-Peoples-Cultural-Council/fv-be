@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from rest_framework import serializers
 
 from backend.models import (
@@ -18,8 +19,7 @@ from backend.serializers.fields import TextListField
 from backend.serializers.files_serializers import FileSerializer
 from backend.serializers.media_serializers import (
     ImageFileSerializer,
-    ImageUploadSerializer,
-    VideoUploadSerializer,
+    VideoFileSerializer,
 )
 
 
@@ -42,6 +42,11 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "original", "title", "description", "acknowledgement")
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user=None):
+        """Add prefetching as required by this serializer"""
+        return queryset.select_related("original")
+
 
 class AudioMinimalSerializer(MediaMinimalSerializer):
     original = FileSerializer(read_only=True)
@@ -51,18 +56,29 @@ class AudioMinimalSerializer(MediaMinimalSerializer):
         model = Audio
         fields = MediaMinimalSerializer.Meta.fields + ("speakers",)
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user=None):
+        """Add prefetching as required by this serializer"""
+        queryset = super().make_queryset_eager(queryset)
+        return queryset.prefetch_related("speakers")
+
 
 class RelatedImageMinimalSerializer(serializers.ModelSerializer):
-    original = ImageUploadSerializer(read_only=True)
+    original = ImageFileSerializer(read_only=True)
 
     class Meta:
         model = Image
         fields = ("id", "original")
         read_only_fields = ("id", "original")
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user=None):
+        """Add prefetching as required by this serializer"""
+        return queryset.select_related("original")
+
 
 class RelatedVideoMinimalSerializer(RelatedImageMinimalSerializer):
-    original = VideoUploadSerializer(read_only=True)
+    original = VideoFileSerializer(read_only=True)
 
     class Meta(RelatedImageMinimalSerializer.Meta):
         model = Video
@@ -76,7 +92,7 @@ class DocumentMinimalSerializer(MediaMinimalSerializer):
 
 
 class ImageMinimalSerializer(MediaMinimalSerializer):
-    original = ImageUploadSerializer(read_only=True)
+    original = ImageFileSerializer(read_only=True)
     small = ImageFileSerializer(read_only=True)
 
     class Meta(MediaMinimalSerializer.Meta):
@@ -84,9 +100,15 @@ class ImageMinimalSerializer(MediaMinimalSerializer):
         fields = MediaMinimalSerializer.Meta.fields + ("small",)
         read_only_fields = MediaMinimalSerializer.Meta.read_only_fields + ("small",)
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user=None):
+        """Add prefetching as required by this serializer"""
+        queryset = super().make_queryset_eager(queryset)
+        return queryset.select_related("small")
+
 
 class VideoMinimalSerializer(ImageMinimalSerializer):
-    original = VideoUploadSerializer(read_only=True)
+    original = VideoFileSerializer(read_only=True)
 
     class Meta(ImageMinimalSerializer.Meta):
         model = Video
@@ -126,6 +148,24 @@ class DictionaryEntryMinimalSerializer(
         )
         read_only_fields = ("id", "title", "type")
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user):
+        """Add prefetching as required by this serializer"""
+        return queryset.select_related("site").prefetch_related(
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.visible(user)
+                .select_related("original")
+                .prefetch_related("speakers"),
+            ),
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+        )
+
 
 class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
     site = LinkedSiteMinimalSerializer(read_only=True)
@@ -151,6 +191,24 @@ class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeria
             "related_videos",
         )
         read_only_fields = ("id", "title", "title_translation", "hide_overlay")
+
+    @classmethod
+    def make_queryset_eager(cls, queryset, user):
+        """Add prefetching as required by this serializer"""
+        return queryset.select_related("site").prefetch_related(
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+            Prefetch(
+                "related_videos",
+                queryset=Video.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+        )
 
 
 class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
@@ -178,6 +236,24 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
             "related_videos",
         )
 
+    @classmethod
+    def make_queryset_eager(cls, queryset, user):
+        """Add prefetching as required by this serializer"""
+        return queryset.select_related("site").prefetch_related(
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+            Prefetch(
+                "related_videos",
+                queryset=Video.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+        )
+
 
 class SearchResultSerializer(serializers.Serializer):
     type = serializers.SerializerMethodField(
@@ -196,6 +272,11 @@ class SearchResultSerializer(serializers.Serializer):
     def get_entry(self, obj):
         serializer = self.entry_serializer(obj["entry"], context=self.context)
         return serializer.data
+
+    @classmethod
+    def make_queryset_eager(cls, queryset, user):
+        """Add prefetching as required by this serializer"""
+        return cls.entry_serializer.make_queryset_eager(queryset, user)
 
 
 class AudioSearchResultSerializer(SearchResultSerializer):
