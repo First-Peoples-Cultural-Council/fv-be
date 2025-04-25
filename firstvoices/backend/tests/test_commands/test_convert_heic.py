@@ -11,6 +11,8 @@ from backend.tests.utils import get_sample_file
 class TestConvertHEIC:
     SAMPLE_FILETYPE = "image/heic"
     SAMPLE_FILENAME = "sample-image.heic"
+    JPG_FILENAME = "sample-image.jpg"
+    JPG_FILETYPE = "image/jpeg"
     SAMPLE_FILENAME_TRANSPARENT = "sample-image-transparent.heic"
     IMAGE_TITLE = "HEIC Image"
 
@@ -25,6 +27,13 @@ class TestConvertHEIC:
             site=site,
         )
         return factories.ImageFactory.create(original=heic, site=site, title=title)
+
+    def create_jpg_image_model(self, site, title):
+        jpg = ImageFile.objects.create(
+            content=get_sample_file(self.JPG_FILENAME, self.JPG_FILETYPE),
+            site=site,
+        )
+        return factories.ImageFactory.create(original=jpg, site=site, title=title)
 
     @staticmethod
     def confirm_model_data(original_model, converted_image_model):
@@ -204,3 +213,34 @@ class TestConvertHEIC:
             assert "Conversion error" in caplog.text
             assert Image.objects.filter(site=site).count() == 1
             assert ImageFile.objects.filter(site=site).count() == 1
+
+    @pytest.mark.django_db
+    def test_renamed_images_converted(self, caplog):
+        site = factories.SiteFactory.create()
+        image_to_rename = self.create_jpg_image_model(site, self.IMAGE_TITLE)
+
+        # Rename the image file
+        image_to_rename.original.content.name = "image.HEIC"
+
+        call_command("convert_heic", site_slugs=site.slug)
+
+        converted_image = Image.objects.filter(site=site).first()
+
+        assert converted_image.original.content.name.endswith(".jpg")
+        assert converted_image.original.mimetype == self.JPG_FILETYPE
+
+    @pytest.mark.django_db
+    def test_log_orphaned_heic_images(self, caplog):
+        site = factories.SiteFactory.create()
+        heic = ImageFile.objects.create(
+            content=get_sample_file(self.SAMPLE_FILENAME, self.SAMPLE_FILETYPE),
+            site=site,
+        )
+
+        call_command("convert_heic", site_slugs=site.slug)
+
+        assert (
+            f"The following orphaned HEIC images were found for site {site.slug}, "
+            f"and not converted:\n"
+        ) in caplog.text
+        assert f"- {heic.id}: {heic.content.name}" in caplog.text
