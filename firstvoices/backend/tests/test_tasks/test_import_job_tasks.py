@@ -684,6 +684,43 @@ class TestBulkImportDryRun:
             in error_row.errors
         )
 
+    def test_duplicate_media_filenames(self):
+        # If multiple rows have same filenames, only the first media instance will be imported
+        # and used. The rest of the media will not be imported and should not give any issues.
+        file_content = get_sample_file(
+            "import_job/duplicate_media_filenames.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
@@ -1112,3 +1149,57 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry_with_video = DictionaryEntry.objects.filter(title="Word 2")[0]
         related_video = entry_with_video.related_videos.all()
         assert related_video[0].title == "video_example_small.mp4"
+
+    def test_duplicate_media_filenames(self):
+        # If multiple rows have same filenames, only the first media instance will be imported
+        # and used. The rest of the media will not be imported and should not give any issues.
+        # All the latter entries will use the first imported media file.
+        file_content = get_sample_file(
+            "import_job/duplicate_media_filenames.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
+
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_audio_entry_1 = entry_1.related_audio.first()
+        related_image_entry_1 = entry_1.related_images.first()
+        related_video_entry_1 = entry_1.related_videos.first()
+
+        entry_2 = DictionaryEntry.objects.filter(title="Phrase 1")[0]
+        related_audio_entry_2 = entry_2.related_audio.first()
+        related_image_entry_2 = entry_2.related_images.first()
+        related_video_entry_2 = entry_2.related_videos.first()
+
+        entry_3 = DictionaryEntry.objects.filter(title="Word 2")[0]
+        related_audio_entry_3 = entry_3.related_audio.first()
+        related_image_entry_3 = entry_3.related_images.first()
+        related_video_entry_3 = entry_3.related_videos.first()
+
+        assert related_audio_entry_1 == related_audio_entry_2 == related_audio_entry_3
+        assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
+        assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3

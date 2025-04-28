@@ -56,7 +56,7 @@ def clean_csv(data, missing_media=[]):
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     # Remove rows that have missing media
-    rows_to_delete = [(obj["idx"] - 1) for obj in missing_media]
+    rows_to_delete = list({(obj["idx"] - 1) for obj in missing_media})
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
@@ -77,6 +77,23 @@ def build_filtered_dataset(data, columns, filename_key):
             if row.get(filename_key):
                 filtered_data.append(row_values)
     return filtered_data
+
+
+def remove_duplicate_filename_rows(data, filename_key):
+    """
+    This method removes any rows with same filename.
+    Only keep the first row if multiple rows have same filenames.
+    """
+    seen_filenames = set()
+    non_duplicated_data = tablib.Dataset(headers=data.headers)
+
+    for row in data.dict:
+        filename = row[filename_key]
+        if filename not in seen_filenames:
+            seen_filenames.add(filename)
+            non_duplicated_data.append(row.values())
+
+    return non_duplicated_data
 
 
 def separate_datasets(data):
@@ -132,6 +149,16 @@ def separate_datasets(data):
     )
     filtered_video_data = build_filtered_dataset(
         data, media_columns["video"], "video_filename"
+    )
+
+    filtered_audio_data = remove_duplicate_filename_rows(
+        filtered_audio_data, "audio_filename"
+    )
+    filtered_img_data = remove_duplicate_filename_rows(
+        filtered_img_data, "img_filename"
+    )
+    filtered_video_data = remove_duplicate_filename_rows(
+        filtered_video_data, "video_filename"
     )
 
     # Building dataset for dictionary entries
