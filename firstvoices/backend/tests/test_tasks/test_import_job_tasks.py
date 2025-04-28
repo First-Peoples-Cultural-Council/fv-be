@@ -70,6 +70,32 @@ class TestBulkImportDryRun:
 
         return import_job
 
+    def import_batch_with_media_files(self, filename):
+        file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        return import_job
+
     def test_import_task_logs(self, caplog):
         import_job = self.import_minimal_dictionary_entries()
 
@@ -636,29 +662,7 @@ class TestBulkImportDryRun:
     def test_multiple_errors_in_single_row(self):
         # If there are multiple issues present in one row, all issues should be displayed
         # along with their column name
-        file_content = get_sample_file("import_job/mixed_errors.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        FileFactory(
-            site=self.site,
-            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
-            import_job=import_job,
-        )
-        ImageFileFactory(
-            site=self.site,
-            content=get_sample_file("sample-image.jpg", "image/jpeg"),
-            import_job=import_job,
-        )
-        VideoFileFactory(
-            site=self.site,
-            content=get_sample_file("video_example_small.mp4", "video/mp4"),
-            import_job=import_job,
-        )
+        import_job = self.import_batch_with_media_files("mixed_errors.csv")
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -687,31 +691,7 @@ class TestBulkImportDryRun:
     def test_duplicate_media_filenames(self):
         # If multiple rows have same filenames, only the first media instance will be imported
         # and used. The rest of the media will not be imported and should not give any issues.
-        file_content = get_sample_file(
-            "import_job/duplicate_media_filenames.csv", self.MIMETYPE
-        )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        FileFactory(
-            site=self.site,
-            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
-            import_job=import_job,
-        )
-        ImageFileFactory(
-            site=self.site,
-            content=get_sample_file("sample-image.jpg", "image/jpeg"),
-            import_job=import_job,
-        )
-        VideoFileFactory(
-            site=self.site,
-            content=get_sample_file("video_example_small.mp4", "video/mp4"),
-            import_job=import_job,
-        )
+        import_job = self.import_batch_with_media_files("duplicate_media_filenames.csv")
         PersonFactory.create(name="Test Speaker 1", site=self.site)
         PersonFactory.create(name="Test Speaker 2", site=self.site)
 
