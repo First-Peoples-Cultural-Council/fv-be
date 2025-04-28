@@ -332,7 +332,7 @@ jobs:
             printf "%s\n" "smtpImage: $(aws ecr describe-images --repository-name smtp-sidecar --query 'sort_by(imageDetails,& imagePushedAt)[-1]' | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' |cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
             printf "%s\n" "fvbeBuildString: $(aws ecr describe-images --repository-name fv-be --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
             printf "%s\n" "fvwebBuildString: $(aws ecr describe-images --repository-name fv-web --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-    -   uses: azure/setup-helm@v4.2.0
+    -   uses: azure/setup-helm@v4.3.0
         id: install
     -   name: helm upgrade
         run: |
