@@ -136,7 +136,7 @@ class Command(BaseCommand):
 
         if orphaned_images:
             logger.info(
-                f"The following orphaned HEIC images were found for site {site.slug}, and not converted:\n"
+                f"The following orphaned HEIC files were found for site {site.slug}, and not converted:\n"
                 + "\n".join(
                     f"- {image.id}: {image.content.name}" for image in orphaned_images
                 )
@@ -170,7 +170,7 @@ class Command(BaseCommand):
             )
 
             if not images:
-                logger.info(f"No HEIC images found for site {site.slug}.")
+                logger.info(f"No HEIC image models found for site {site.slug}.")
                 self.log_orphaned_heic_images(site, logger)
                 continue
 

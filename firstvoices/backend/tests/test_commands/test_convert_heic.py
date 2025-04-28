@@ -76,7 +76,7 @@ class TestConvertHEIC:
         call_command("convert_heic", site_slugs=site.slug)
 
         assert "Converting HEIC files to JPEG/PNG for 1 sites." in caplog.text
-        assert f"No HEIC images found for site {site.slug}" in caplog.text
+        assert f"No HEIC image models found for site {site.slug}" in caplog.text
         assert "HEIC to JPEG/PNG conversion completed." in caplog.text
 
     @pytest.mark.django_db
@@ -240,7 +240,7 @@ class TestConvertHEIC:
         call_command("convert_heic", site_slugs=site.slug)
 
         assert (
-            f"The following orphaned HEIC images were found for site {site.slug}, "
+            f"The following orphaned HEIC files were found for site {site.slug}, "
             f"and not converted:\n"
         ) in caplog.text
         assert f"- {heic.id}: {heic.content.name}" in caplog.text
