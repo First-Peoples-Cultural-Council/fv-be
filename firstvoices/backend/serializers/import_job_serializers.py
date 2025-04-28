@@ -2,7 +2,7 @@ from io import BytesIO
 
 import chardet
 import tablib
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
@@ -150,11 +150,3 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
                     ]
                 }
             )
-        except ValidationError as e:
-            raise serializers.ValidationError(e)
-
-    def delete(self, instance):
-        try:
-            return super().delete(instance)
-        except ValidationError as e:
-            raise serializers.ValidationError(e)

@@ -13,7 +13,11 @@ from backend.tasks.import_job_tasks import confirm_import_job, validate_import_j
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    AsyncJobDeleteMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 from firstvoices.celery import link_error_handler
 
 
@@ -115,7 +119,9 @@ from firstvoices.celery import link_error_handler
         ],
     ),
 )
-class ImportJobViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
+class ImportJobViewSet(
+    AsyncJobDeleteMixin, SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
+):
     serializer_class = ImportJobSerializer
     http_method_names = ["get", "post", "delete"]
     parser_classes = [
