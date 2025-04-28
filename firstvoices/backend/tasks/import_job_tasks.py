@@ -263,7 +263,7 @@ def import_video_resource(import_job, video_data, dictionary_entry_data, dry_run
         import_job=import_job.id,
     ).import_data(dataset=video_data, dry_run=dry_run)
 
-    # Adding image ids
+    # Adding video ids
     if video_import_result.totals["new"]:
         video_lookup = {
             row["video_filename"]: row["id"]
