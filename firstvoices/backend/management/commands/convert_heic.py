@@ -127,6 +127,21 @@ class Command(BaseCommand):
                 )
                 continue
 
+    def log_orphaned_heic_images(self, site, logger):
+        orphaned_images = ImageFile.objects.filter(
+            Q(mimetype__iexact="image/heic")
+            | Q(content__iendswith=self.HEIC_EXTENSION),
+            site=site,
+        )
+
+        if orphaned_images:
+            logger.info(
+                f"The following orphaned HEIC files were found for site {site.slug}, and not converted:\n"
+                + "\n".join(
+                    f"- {image.id}: {image.content.name}" for image in orphaned_images
+                )
+            )
+
     def handle(self, *args, **options):
         logger = logging.getLogger(__name__)
 
@@ -149,15 +164,17 @@ class Command(BaseCommand):
         for site in sites:
             logger.debug(f"Converting heic content to jpeg/png for site {site.slug}...")
             images = Image.objects.filter(
-                Q(original__mimetype="image/heic")
-                | Q(original__content__endswith=self.HEIC_EXTENSION),
+                Q(original__mimetype__iexact="image/heic")
+                | Q(original__content__iendswith=self.HEIC_EXTENSION),
                 site=site,
             )
 
             if not images:
-                logger.info(f"No HEIC images found for site {site.slug}.")
+                logger.info(f"No HEIC image models found for site {site.slug}.")
+                self.log_orphaned_heic_images(site, logger)
                 continue
 
             self.convert_images(images, logger)
+            self.log_orphaned_heic_images(site, logger)
 
         logger.info("HEIC to JPEG/PNG conversion completed.")
