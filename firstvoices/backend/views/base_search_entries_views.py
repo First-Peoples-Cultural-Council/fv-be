@@ -605,3 +605,14 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
             return None
 
         return {"search_result_id": result["_id"], "entry": entry_data}
+
+    def make_queryset_eager(self, model_name, queryset):
+        """Custom method to pass the user to serializers, to allow for permission-based prefetching.
+
+        Returns: updated queryset
+        """
+        serializer = self.get_serializer_class(model_name)
+        if hasattr(serializer, "make_queryset_eager"):
+            return serializer.make_queryset_eager(queryset, self.request.user)
+        else:
+            return queryset
