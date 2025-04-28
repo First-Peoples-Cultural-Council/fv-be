@@ -64,18 +64,28 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def build_filtered_dataset(data, columns, filename_key):
+def normalize_column_name(col_name, prefix):
+    if col_name.startswith(prefix + "_"):
+        col_name_start = len(prefix) + 1
+        return col_name[col_name_start:]
+    return col_name
+
+
+def build_filtered_dataset(data, media_type, columns):
     """
     Helper function to build filtered media datasets
     """
-    raw_data = tablib.Dataset(headers=columns)
-    filtered_data = tablib.Dataset(headers=columns)
+    filename_key = media_type + "_" + "filename"
+
+    normalized_columns = [normalize_column_name(col, media_type) for col in columns]
+    filtered_data = tablib.Dataset(headers=normalized_columns)
+
     if filename_key in data.headers:
         for row in data.dict:
-            row_values = [row[col] for col in columns]
-            raw_data.append(row_values)
             if row.get(filename_key):
-                filtered_data.append(row_values)
+                filtered_row = [row[col] for col in columns]
+                filtered_data.append(filtered_row)
+
     return filtered_data
 
 
@@ -125,14 +135,12 @@ def separate_datasets(data):
 
     # Building filtered datasets for media
     filtered_audio_data = build_filtered_dataset(
-        data, media_columns["audio"], "audio_filename"
+        data,
+        "audio",
+        media_columns["audio"],
     )
-    filtered_img_data = build_filtered_dataset(
-        data, media_columns["img"], "img_filename"
-    )
-    filtered_video_data = build_filtered_dataset(
-        data, media_columns["video"], "video_filename"
-    )
+    filtered_img_data = build_filtered_dataset(data, "img", media_columns["img"])
+    filtered_video_data = build_filtered_dataset(data, "video", media_columns["video"])
 
     # Building dataset for dictionary entries
     exclude_columns = set(
@@ -173,9 +181,7 @@ def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run
     # Adding audio ids
     if audio_import_result.totals["new"]:
         audio_lookup = {
-            row["audio_filename"]: row["id"]
-            for row in audio_data.dict
-            if row.get("audio_filename")
+            row["filename"]: row["id"] for row in audio_data.dict if row.get("filename")
         }
         dictionary_entry_data.append_col(
             [""] * len(dictionary_entry_data), header="related_audio"
@@ -206,9 +212,7 @@ def import_img_resource(import_job, img_data, dictionary_entry_data, dry_run):
     # Adding image ids
     if img_import_result.totals["new"]:
         img_lookup = {
-            row["img_filename"]: row["id"]
-            for row in img_data.dict
-            if row.get("img_filename")
+            row["filename"]: row["id"] for row in img_data.dict if row.get("filename")
         }
         dictionary_entry_data.append_col(
             [""] * len(dictionary_entry_data), header="related_images"
@@ -239,9 +243,7 @@ def import_video_resource(import_job, video_data, dictionary_entry_data, dry_run
     # Adding image ids
     if video_import_result.totals["new"]:
         video_lookup = {
-            row["video_filename"]: row["id"]
-            for row in video_data.dict
-            if row.get("video_filename")
+            row["filename"]: row["id"] for row in video_data.dict if row.get("filename")
         }
         dictionary_entry_data.append_col(
             [""] * len(dictionary_entry_data), header="related_videos"

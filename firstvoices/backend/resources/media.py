@@ -10,143 +10,89 @@ from backend.resources.utils.import_export_widgets import (
 )
 
 
-class AudioResource(ControlledSiteContentResource):
+class BaseMediaResource(ControlledSiteContentResource):
+    title = fields.Field(
+        column_name="title",
+        attribute="title",
+    )
+
+    description = fields.Field(column_name="description", attribute="description")
+
+    acknowledgement = fields.Field(
+        column_name="acknowledgement", attribute="acknowledgement"
+    )
+
+    exclude_from_kids = fields.Field(
+        column_name="include_in_kids_site",
+        attribute="exclude_from_kids",
+        widget=InvertedBooleanFieldWidget(
+            column="include_in_kids_site",
+            default=False,
+        ),
+    )
+
+    def before_import_row(self, row, **kwargs):
+        # Filename to be used as title if not provided
+        if "title" not in row:
+            row["title"] = row["filename"]
+
+        # Adding original
+        associated_file = self.Meta.file_model.objects.filter(
+            import_job__id=row["import_job"], content__contains=row["filename"]
+        )[0]
+        row["original"] = str(associated_file.id)
+
+    class Meta:
+        abstract = True
+        clean_model_instances = True
+
+
+class AudioResource(BaseMediaResource):
     original = fields.Field(
-        column_name="audio_original",
+        column_name="original",
         attribute="original",
         widget=ForeignKeyWidget(model=File),
     )
 
-    title = fields.Field(
-        column_name="audio_title",
-        attribute="title",
-    )
-
-    description = fields.Field(column_name="audio_description", attribute="description")
-
-    acknowledgement = fields.Field(
-        column_name="audio_acknowledgement", attribute="acknowledgement"
-    )
-
     speakers = fields.Field(
-        column_name="audio_speaker",
+        column_name="speaker",
         attribute="speakers",
         m2m_add=True,
         widget=CustomManyToManyWidget(
-            model=Person, field="name", column_name="audio_speaker"
+            model=Person, field="name", column_name="speaker"
         ),
     )
 
     exclude_from_games = fields.Field(
-        column_name="audio_include_in_games",
+        column_name="include_in_games",
         attribute="exclude_from_games",
-        widget=InvertedBooleanFieldWidget(
-            column="audio_include_in_games", default=False
-        ),
-    )
-    exclude_from_kids = fields.Field(
-        column_name="audio_include_in_kids_site",
-        attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(
-            column="audio_include_in_kids_site", default=False
-        ),
+        widget=InvertedBooleanFieldWidget(column="include_in_games", default=False),
     )
 
-    def before_import_row(self, row, **kwargs):
-        # Filename to be used as title if not provided
-        if "audio_title" not in row:
-            row["audio_title"] = row["audio_filename"]
-
-        # Adding original
-        associated_file = File.objects.filter(
-            import_job__id=row["import_job"], content__contains=row["audio_filename"]
-        )[0]
-        row["audio_original"] = str(associated_file.id)
-
-    class Meta:
+    class Meta(BaseMediaResource.Meta):
         model = Audio
-        clean_model_instances = True
+        file_model = File
 
 
-class ImageResource(ControlledSiteContentResource):
+class ImageResource(BaseMediaResource):
     original = fields.Field(
-        column_name="img_original",
+        column_name="original",
         attribute="original",
         widget=ForeignKeyWidget(model=ImageFile),
     )
 
-    title = fields.Field(
-        column_name="img_title",
-        attribute="title",
-    )
-
-    description = fields.Field(column_name="img_description", attribute="description")
-
-    acknowledgement = fields.Field(
-        column_name="img_acknowledgement", attribute="acknowledgement"
-    )
-
-    exclude_from_kids = fields.Field(
-        column_name="img_include_in_kids_site",
-        attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(
-            column="img_include_in_kids_site", default=False
-        ),
-    )
-
-    def before_import_row(self, row, **kwargs):
-        # Filename to be used as title if not provided
-        if "img_title" not in row:
-            row["img_title"] = row["img_filename"]
-
-        # Adding original
-        associated_file = ImageFile.objects.filter(
-            import_job__id=row["import_job"], content__contains=row["img_filename"]
-        )[0]
-        row["img_original"] = str(associated_file.id)
-
-    class Meta:
+    class Meta(BaseMediaResource.Meta):
         model = Image
-        clean_model_instances = True
+        file_model = ImageFile
 
 
-class VideoResource(ControlledSiteContentResource):
+class VideoResource(BaseMediaResource):
     original = fields.Field(
-        column_name="video_original",
+        column_name="original",
         attribute="original",
         widget=ForeignKeyWidget(model=VideoFile),
     )
 
-    title = fields.Field(
-        column_name="video_title",
-        attribute="title",
-    )
-
-    description = fields.Field(column_name="video_description", attribute="description")
-
-    acknowledgement = fields.Field(
-        column_name="video_acknowledgement", attribute="acknowledgement"
-    )
-
-    exclude_from_kids = fields.Field(
-        column_name="video_include_in_kids_site",
-        attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(
-            column="video_include_in_kids_site", default=False
-        ),
-    )
-
-    def before_import_row(self, row, **kwargs):
-        # Filename to be used as title if not provided
-        if "video_title" not in row:
-            row["video_title"] = row["video_filename"]
-
-        # Adding original
-        associated_file = VideoFile.objects.filter(
-            import_job__id=row["import_job"], content__contains=row["video_filename"]
-        )[0]
-        row["video_original"] = str(associated_file.id)
-
     class Meta:
         model = Video
-        clean_model_instances = True
+        file_model = VideoFile
