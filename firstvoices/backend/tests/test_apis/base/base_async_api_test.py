@@ -137,15 +137,13 @@ class AsyncWorkflowTestMixin:
     """Use with BaseSiteContentApiTest, WriteApiTestMixin,"""
 
     @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "other_job_status", [JobStatus.COMPLETE, JobStatus.STARTED]
-    )
-    def test_cannot_delete_successful_job(self, other_job_status):
+    @pytest.mark.parametrize("job_status", [JobStatus.COMPLETE, JobStatus.STARTED])
+    def test_cannot_delete_successful_job(self, job_status):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
         job = self.create_minimal_instance(site=site, visibility=None)
-        job.status = other_job_status
+        job.status = job_status
         job.save()
 
         response = self.client.delete(
