@@ -3,6 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
+from backend.models.jobs import JobStatus
 from backend.tests import factories
 from backend.tests.test_apis.base.base_api_test import WriteApiTestMixin
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -130,6 +131,29 @@ class SuperAdminAsyncJobPermissionsMixin:
         )
 
         assert response.status_code == 403
+
+
+class AsyncWorkflowTestMixin:
+    """Use with BaseSiteContentApiTest, WriteApiTestMixin,"""
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("job_status", [JobStatus.COMPLETE, JobStatus.STARTED])
+    def test_cannot_delete_successful_job(self, job_status):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+        )
+        job = self.create_minimal_instance(site=site, visibility=None)
+        job.status = job_status
+        job.save()
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=self.get_lookup_key(job), site_slug=site.slug)
+        )
+
+        assert response.status_code == 400
+
+        jobs = self.model.objects.filter(pk=job.pk)
+        assert jobs.count() == 1
 
 
 class BaseAsyncSiteContentApiTest(

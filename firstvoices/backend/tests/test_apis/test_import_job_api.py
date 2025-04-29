@@ -6,13 +6,18 @@ from backend.models.constants import AppRole, Role, Visibility
 from backend.models.import_jobs import ImportJob
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
-from backend.tests.test_apis.base.base_async_api_test import BaseAsyncSiteContentApiTest
+from backend.tests.test_apis.base.base_async_api_test import (
+    AsyncWorkflowTestMixin,
+    BaseAsyncSiteContentApiTest,
+)
 from backend.tests.test_apis.base.base_media_test import FormDataMixin
 from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportEndpoints(FormDataMixin, BaseAsyncSiteContentApiTest):
+class TestImportEndpoints(
+    AsyncWorkflowTestMixin, FormDataMixin, BaseAsyncSiteContentApiTest
+):
     """
     End-to-end tests that the /import endpoints have the expected behaviour.
     """

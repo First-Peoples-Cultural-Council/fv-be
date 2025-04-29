@@ -1,8 +1,10 @@
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
+from backend.models.jobs import JobStatus
 from backend.permissions import utils
 from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
 
@@ -196,3 +198,17 @@ class DictionarySerializerContextMixin:
         context["character_variants"] = character_variants
         context["ignorable_characters"] = ignorable_characters
         return context
+
+
+class AsyncJobDeleteMixin:
+    """Blocks job instances from being deleted after they have started running."""
+
+    started_statuses = [JobStatus.STARTED, JobStatus.COMPLETE]
+
+    def perform_destroy(self, instance):
+        if instance.status in self.started_statuses:
+            raise ValidationError(
+                f"Can't delete a job after it has been started. This job already has status {instance.status}"
+            )
+
+        super().perform_destroy(instance)
