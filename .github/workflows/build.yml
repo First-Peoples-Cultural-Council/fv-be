@@ -358,7 +358,6 @@ jobs:
             env: ${{ vars.ENV }}
             k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
             remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
-            helm_release_version: ${{ vars.RELEASE_VERSION }}
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-preprod:
@@ -390,7 +389,6 @@ jobs:
             env: ${{ vars.ENV }}
             k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
             remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
-            helm_release_version: ${{ vars.RELEASE_VERSION }}
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-prod:
@@ -422,7 +420,6 @@ jobs:
             env: ${{ vars.ENV }}
             k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
             remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
-            helm_release_version: ${{ vars.RELEASE_VERSION }}
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
 #  trivy_scan-dev:

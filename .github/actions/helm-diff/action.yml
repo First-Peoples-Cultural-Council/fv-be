@@ -8,8 +8,6 @@ inputs:
     required: true
   k8_namespace:
     required: true
-  helm_release_version:
-    required: true
   helm_chart_name:
     required: true
 
@@ -20,8 +18,7 @@ runs:
         shell: bash
         run: |
             echo "The latest Helm Release version in the Helm repo is ${{  inputs.remote_helm_version  }}";
-            echo "The current release version set using GIT repo variables is ${{ inputs.helm_release_version }}";
-            echo "version: ${{ inputs.helm_release_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
+            echo "version: ${{ inputs.remote_helm_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
 
     -   uses: azure/setup-helm@v4.2.0
         id: install
