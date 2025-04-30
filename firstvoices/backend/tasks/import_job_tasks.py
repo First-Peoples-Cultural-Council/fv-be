@@ -202,8 +202,7 @@ def import_audio_resource(import_job, audio_data, dry_run):
     # Adding audio ids
     if audio_import_result.totals["new"]:
         for row in audio_data.dict:
-            if row.get("audio_filename"):
-                audio_filename_map[row["audio_filename"]] = row["id"]
+            audio_filename_map[row["audio_filename"]] = row["id"]
 
     return audio_import_result, audio_filename_map
 
@@ -225,8 +224,7 @@ def import_img_resource(import_job, img_data, dry_run):
     # Adding image ids
     if img_import_result.totals["new"]:
         for row in img_data.dict:
-            if row.get("img_filename"):
-                img_filename_map[row["img_filename"]] = row["id"]
+            img_filename_map[row["img_filename"]] = row["id"]
 
     return img_import_result, img_filename_map
 
@@ -248,8 +246,7 @@ def import_video_resource(import_job, video_data, dry_run):
     # Adding video ids
     if video_import_result.totals["new"]:
         for row in video_data.dict:
-            if row.get("video_filename"):
-                video_filename_map[row["video_filename"]] = row["id"]
+            video_filename_map[row["video_filename"]] = row["id"]
 
     return video_import_result, video_filename_map
 
