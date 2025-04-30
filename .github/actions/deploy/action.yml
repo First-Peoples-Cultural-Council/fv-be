@@ -52,4 +52,4 @@ runs:
         shell: bash
         run: |
             helm list -n ${{  inputs.k8_namespace }};
-#            helm upgrade -f ./downloads/Values.${{ inputs.env }}.yaml ${{  inputs.helm_chart_name  }} ./helm/fv-be/ -n ${{  inputs.k8_namespace }}
+            helm upgrade -f ./downloads/Values.${{ inputs.env }}.yaml ${{  inputs.helm_chart_name  }} ./helm/fv-be/ -n ${{  inputs.k8_namespace }}
