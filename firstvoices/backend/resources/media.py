@@ -3,14 +3,14 @@ from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
 from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
-from backend.resources.base import ControlledSiteContentResource
+from backend.resources.base import SiteContentResource
 from backend.resources.utils.import_export_widgets import (
     CustomManyToManyWidget,
     InvertedBooleanFieldWidget,
 )
 
 
-class AudioResource(ControlledSiteContentResource):
+class AudioResource(SiteContentResource):
     original = fields.Field(
         column_name="audio_original",
         attribute="original",
@@ -68,7 +68,7 @@ class AudioResource(ControlledSiteContentResource):
         clean_model_instances = True
 
 
-class ImageResource(ControlledSiteContentResource):
+class ImageResource(SiteContentResource):
     original = fields.Field(
         column_name="img_original",
         attribute="original",
@@ -110,7 +110,7 @@ class ImageResource(ControlledSiteContentResource):
         clean_model_instances = True
 
 
-class VideoResource(ControlledSiteContentResource):
+class VideoResource(SiteContentResource):
     original = fields.Field(
         column_name="video_original",
         attribute="original",

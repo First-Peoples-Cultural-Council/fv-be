@@ -185,7 +185,7 @@ def separate_datasets(data):
     )
 
 
-def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run):
+def import_audio_resource(import_job, audio_data, dry_run):
     """
     Imports audio files and appends IDs of the imported files as related_audio in dictionary_entry_data.
     Returns updated dictionary_entry_data and result from audio import.
@@ -197,28 +197,18 @@ def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run
         import_job=import_job.id,
     ).import_data(dataset=audio_data, dry_run=dry_run)
 
+    audio_filename_map = {}
+
     # Adding audio ids
     if audio_import_result.totals["new"]:
-        audio_lookup = {
-            row["audio_filename"]: row["id"]
-            for row in audio_data.dict
-            if row.get("audio_filename")
-        }
-        dictionary_entry_data.append_col(
-            [""] * len(dictionary_entry_data), header="related_audio"
-        )
-        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
-        for i, row in enumerate(dictionary_entry_data.dict):
-            audio_filename = row.get("audio_filename")
-            related_id = audio_lookup.get(audio_filename, "")
-            row_list = list(dictionary_entry_data[i])
-            row_list[related_audio_col_index] = related_id  # comma separated string
-            dictionary_entry_data[i] = tuple(row_list)
+        for row in audio_data.dict:
+            if row.get("audio_filename"):
+                audio_filename_map[row["audio_filename"]] = row["id"]
 
-    return audio_import_result, dictionary_entry_data
+    return audio_import_result, audio_filename_map
 
 
-def import_img_resource(import_job, img_data, dictionary_entry_data, dry_run):
+def import_img_resource(import_job, img_data, dry_run):
     """
     Imports image files and appends IDs of the imported files as related_images in dictionary_entry_data.
     Returns updated dictionary_entry_data and result from image import.
@@ -230,28 +220,18 @@ def import_img_resource(import_job, img_data, dictionary_entry_data, dry_run):
         import_job=import_job.id,
     ).import_data(dataset=img_data, dry_run=dry_run)
 
+    img_filename_map = {}
+
     # Adding image ids
     if img_import_result.totals["new"]:
-        img_lookup = {
-            row["img_filename"]: row["id"]
-            for row in img_data.dict
-            if row.get("img_filename")
-        }
-        dictionary_entry_data.append_col(
-            [""] * len(dictionary_entry_data), header="related_images"
-        )
-        related_img_col_index = dictionary_entry_data.headers.index("related_images")
-        for i, row in enumerate(dictionary_entry_data.dict):
-            img_filename = row.get("img_filename")
-            related_id = img_lookup.get(img_filename, "")
-            row_list = list(dictionary_entry_data[i])
-            row_list[related_img_col_index] = related_id  # comma separated string
-            dictionary_entry_data[i] = tuple(row_list)
+        for row in img_data.dict:
+            if row.get("img_filename"):
+                img_filename_map[row["img_filename"]] = row["id"]
 
-    return img_import_result, dictionary_entry_data
+    return img_import_result, img_filename_map
 
 
-def import_video_resource(import_job, video_data, dictionary_entry_data, dry_run):
+def import_video_resource(import_job, video_data, dry_run):
     """
     Imports video files and appends IDs of the imported files as related_videos in dictionary_entry_data.
     Returns updated dictionary_entry_data and result from video import.
@@ -263,31 +243,65 @@ def import_video_resource(import_job, video_data, dictionary_entry_data, dry_run
         import_job=import_job.id,
     ).import_data(dataset=video_data, dry_run=dry_run)
 
+    video_filename_map = {}
+
     # Adding video ids
     if video_import_result.totals["new"]:
-        video_lookup = {
-            row["video_filename"]: row["id"]
-            for row in video_data.dict
-            if row.get("video_filename")
-        }
+        for row in video_data.dict:
+            if row.get("video_filename"):
+                video_filename_map[row["video_filename"]] = row["id"]
+
+    return video_import_result, video_filename_map
+
+
+def import_dictionary_entry_resource(
+    import_job,
+    dictionary_entry_data,
+    audio_filename_map,
+    img_filename_map,
+    video_filename_map,
+    dry_run,
+):
+    """
+    Imports dictionary entries and returns the import result.
+    """
+
+    if len(audio_filename_map):
+        dictionary_entry_data.append_col(
+            [""] * len(dictionary_entry_data), header="related_audio"
+        )
+        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
+        for i, row in enumerate(dictionary_entry_data.dict):
+            audio_filename = row.get("audio_filename")
+            related_id = audio_filename_map.get(audio_filename, "")
+            row_list = list(dictionary_entry_data[i])
+            row_list[related_audio_col_index] = related_id  # comma separated string
+            dictionary_entry_data[i] = tuple(row_list)
+
+    if len(img_filename_map):
+        dictionary_entry_data.append_col(
+            [""] * len(dictionary_entry_data), header="related_images"
+        )
+        related_img_col_index = dictionary_entry_data.headers.index("related_images")
+        for i, row in enumerate(dictionary_entry_data.dict):
+            img_filename = row.get("img_filename")
+            related_id = img_filename_map.get(img_filename, "")
+            row_list = list(dictionary_entry_data[i])
+            row_list[related_img_col_index] = related_id
+            dictionary_entry_data[i] = tuple(row_list)
+
+    if len(video_filename_map):
         dictionary_entry_data.append_col(
             [""] * len(dictionary_entry_data), header="related_videos"
         )
         related_video_col_index = dictionary_entry_data.headers.index("related_videos")
         for i, row in enumerate(dictionary_entry_data.dict):
             video_filename = row.get("video_filename")
-            related_id = video_lookup.get(video_filename, "")
+            related_id = video_filename_map.get(video_filename, "")
             row_list = list(dictionary_entry_data[i])
             row_list[related_video_col_index] = related_id  # comma separated string
             dictionary_entry_data[i] = tuple(row_list)
 
-    return video_import_result, dictionary_entry_data
-
-
-def import_dictionary_entry_resource(import_job, dictionary_entry_data, dry_run):
-    """
-    Imports dictionary entries and returns the import result.
-    """
     dictionary_entry_import_result = DictionaryEntryResource(
         site=import_job.site,
         run_as_user=import_job.run_as_user,
@@ -382,17 +396,22 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
         cleaned_data
     )
 
-    audio_import_result, dictionary_entry_data = import_audio_resource(
-        import_job, audio_data, dictionary_entry_data, dry_run
+    audio_import_result, audio_filename_map = import_audio_resource(
+        import_job, audio_data, dry_run
     )
-    img_import_result, dictionary_entry_data = import_img_resource(
-        import_job, img_data, dictionary_entry_data, dry_run
+    img_import_result, img_filename_map = import_img_resource(
+        import_job, img_data, dry_run
     )
-    video_import_result, dictionary_entry_data = import_video_resource(
-        import_job, video_data, dictionary_entry_data, dry_run
+    video_import_result, video_filename_map = import_video_resource(
+        import_job, video_data, dry_run
     )
     dictionary_entry_import_result = import_dictionary_entry_resource(
-        import_job, dictionary_entry_data, dry_run
+        import_job,
+        dictionary_entry_data,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+        dry_run,
     )
 
     report = generate_report(
