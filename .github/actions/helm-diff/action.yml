@@ -1,0 +1,50 @@
+name: "Check helm-diff"
+description: "Check helm diff and update chart"
+
+inputs:
+  env:
+    required: true
+  remote_helm_version:
+    required: true
+  k8_namespace:
+    required: true
+  helm_release_version:
+    required: true
+  helm_chart_name:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    -   name: Update Chart yaml
+        shell: bash
+        run: |
+            echo "The latest Helm Release version in the Helm repo is ${{  inputs.remote_helm_version  }}";
+            echo "The current release version set using GIT repo variables is ${{ inputs.helm_release_version }}";
+            echo "version: ${{ inputs.helm_release_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
+
+    -   uses: azure/setup-helm@v4.2.0
+        id: install
+
+    -   name: Check helm diff
+        shell: bash
+        run: |
+            helm list -n ${{  inputs.k8_namespace }};
+            helm plugin install https://github.com/databus23/helm-diff >/dev/null;
+            mkdir uploads; touch ./uploads/minus.txt; touch ./uploads/plus.txt; touch ./uploads/diff.txt
+            helm diff  --debug upgrade -f ./helm/fv-be/Values.${{  inputs.env  }}.yaml ${{  inputs.helm_chart_name }} ./helm/fv-be/ -n ${{  inputs.k8_namespace  }} > ./uploads/diff.txt
+            grep -E '^\+' ./uploads/diff.txt | sed 's/^.\{1\}//' > ./uploads/plus.txt
+            grep -E '^\-' ./uploads/diff.txt | sed 's/^.\{1\}//' > ./uploads/minus.txt
+            chmod +x ./diff_finder.py
+            python3 ./diff_finder.py
+            echo "******************************************************************************"
+            echo "NOTE OF CAUTION!:"
+            echo "The diff printed above is a compact and readable version of the original Helm diff. It works the best when changes to the chart are minor."
+            echo "If a new module or component is added the formatted diff can be skewed."
+            echo "If the formatted diff printed above is not comprehendable or if a major feature is being added, use the verbose helm diff stored in diff.txt of the workflow artifacts."
+
+    -   uses: actions/upload-artifact@v4
+        if: always()
+        with:
+            name: uploads
+            path: uploads/

@@ -1,0 +1,53 @@
+name: "Scan"
+description: "Scan images before deploy"
+
+inputs:
+  env:
+    required: true
+  aws_region:
+    required: true
+  aws_account:
+    required: true
+  aws-access-key-id:
+    required: true
+  aws-secret-access-key:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws_region }}
+
+    - name: Login to ECR
+      shell: bash
+      run: |
+        aws ecr get-login-password --region ${{ inputs.aws_region }} | \
+        docker login --username AWS --password-stdin ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com
+
+    - name: Install Trivy
+      shell: bash
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: Scan images from YAML file
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        FILE="./downloads/Values.${{ inputs.env }}.yaml"
+
+        if [[ ! -f "$FILE" ]]; then
+          echo "ERROR: File $FILE not found"
+          exit 1
+        fi
+
+        echo "🔍 Extracting image references from $FILE..."
+        grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE" | while read -r IMAGE; do
+          echo "Scanning $IMAGE"
+          trivy image --vuln-type os,library --severity CRITICAL,HIGH --exit-code 1 "$IMAGE"
+        done

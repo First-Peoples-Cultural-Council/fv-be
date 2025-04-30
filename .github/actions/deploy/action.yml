@@ -1,0 +1,55 @@
+name: "Deploy"
+description: "Deploy to appropriate environment"
+
+inputs:
+  env:
+    required: true
+  k8_namespace:
+    required: true
+  helm_release_version:
+    required: true
+  helm_chart_name:
+    required: true
+  aws_region:
+    required: true
+  tekton_be_pipeline:
+    required: true
+  tekton_fe_pipeline:
+    required: true
+  tekton_namespace:
+    required: true
+  aws_account:
+    required: true
+  aws-access-key-id:
+    required: true
+  aws-secret-access-key:
+    required: true
+  cluster_name:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws_region }}
+
+    -   name: Update Chart yaml
+        shell: bash
+        run: |
+            aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --region "${{ inputs.aws_region }}"
+            echo "The latest Helm Release version in the Helm repo is ${{  inputs.remote_helm_version  }}";
+            echo "The current release version set using GIT repo variables is ${{ inputs.helm_release_version }}";
+            echo "version: ${{ inputs.helm_release_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
+
+    -   uses: azure/setup-helm@v4.2.0
+        id: install
+
+    -   name: helm upgrade
+        shell: bash
+        run: |
+            helm list -n ${{  inputs.k8_namespace }};
+#            helm upgrade -f ./downloads/Values.${{ inputs.env }}.yaml ${{  inputs.helm_chart_name  }} ./helm/fv-be/ -n ${{  inputs.k8_namespace }}

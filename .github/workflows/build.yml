@@ -275,7 +275,7 @@ jobs:
     name: Image Scan
     environment: dev
     runs-on: ubuntu-22.04
-    needs: build_with_tekton
+    needs: check_helm_chart_diff-dev
     if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
     steps:
       - name: Configure AWS credentials
@@ -292,49 +292,260 @@ jobs:
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
           aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
-  helm_deploy_dev:
-    name: Dev Deploy
-    environment: dev
-    runs-on: ubuntu-22.04
-    needs: image_scan
-    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+  set-environment:
+    name: Set Env
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-environment.outputs.environment }}
     steps:
-    -   name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Set environment based on branch
+        id: set-environment
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+
+          if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
+            ENV="dev"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            ENV="preprod"
+          elif [[ "$GITHUB_REF" =~ refs/tags/r-.* ]]; then
+            ENV="prod"
+          else
+            echo "Unknown branch reference: $GITHUB_REF"
+            exit 0
+          fi
+
+          echo "Environment: $ENV"
+          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
+          - name: Pull infra manifests
+      - uses: actions/checkout@v4
         with:
+          ref: main
+          repository: First-Peoples-Cultural-Council/fv-infra
+          token: ${{ secrets.PULL_CONFIG_SECRET }}
+          path: helm
+      - name: Upload Helm charts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: helm
+          path: helm
+
+  check_helm_chart_diff-dev:
+      needs : [set-environment, build_with_tekton]
+      name: Validate Helm Diff - Dev
+      runs-on: ubuntu-latest
+      if: needs.set-environment.outputs.environment == 'dev'
+      environment: dev
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      -   name: "Prep images and vars"
+          uses: ./.github/actions/deploy-prep
+          with:
+            env: ${{ vars.ENV }}
+            image_tag_prefix: ${{ vars.IMAGE_TAG_PREFIX }}
+            cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+            aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+            ecr_uri: ${{ secrets.FPCC_DEFAULT_ECR_URI }}
+            aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
             aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-    - name: Pull infra manifests
-      uses: actions/checkout@v4
-      with:
-        ref: main
-        repository: First-Peoples-Cultural-Council/fv-infra
-        token: ${{ secrets.PULL_CONFIG_SECRET }}
-        path: temp
-    -   name: Download dependencies
-        run: |
-            mkdir helm;
-            mv ./temp/helm/*  ./helm/
-            aws codecommit get-file \
-            --repository-name fv-helm-manifest-values \
-            --file-path Values.${{  vars.ENV  }}.yaml \
-            --query fileContent \
-            --output text \
-            | base64 -d > ./helm/fv-be/Values.${{  vars.ENV  }}.yaml
-    -   name: "Setup kubectl and dynamic arguments"
-        run: |
-            aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }};
-            printf "%s\n" "version: $(aws ecr describe-images --repository-name helm-fv-web --query 'sort_by(imageDetails,& imagePushedAt)[-1]' --output table | cut -d '|' -f 3 | tail -n 2 | xargs )" >> ./helm/fv-be/Chart.yaml;
-            printf "%s\n" "fvwebImage: $( aws ecr describe-images --repository-name fv-web --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/'| sed 's/\]//' | cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-            printf "%s\n" "fvbeImage: $(aws ecr describe-images --repository-name fv-be --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' | cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-            printf "%s\n" "staticImage: $(aws ecr describe-images --repository-name fv-be-static --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' |cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-            printf "%s\n" "smtpImage: $(aws ecr describe-images --repository-name smtp-sidecar --query 'sort_by(imageDetails,& imagePushedAt)[-1]' | jq '{b: .repositoryName, c: .imageDigest}' | jq -r '.b |= "/"+ . + "@"' |  jq -r '[.b, .c]' | jq -r tostring | sed -r 's/[,""]+//g' | sed 's/\[/ ${{ secrets.FPCC_DEFAULT_ECR_URI }}/' | sed 's/\]//' |cut -c1-)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-            printf "%s\n" "fvbeBuildString: $(aws ecr describe-images --repository-name fv-be --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-            printf "%s\n" "fvwebBuildString: $(aws ecr describe-images --repository-name fv-web --filter tagStatus=TAGGED  --query 'sort_by(imageDetails[?starts_with(imageTags[0], `${{  vars.IMAGE_TAG_PREFIX  }}`)],& imagePushedAt)'[-1] --output yaml | grep -E "^- " | cut -d "-" -f 3)" >>  ./helm/fv-be/Values.${{  vars.ENV  }}.yaml;
-    -   uses: azure/setup-helm@v4.3.0
-        id: install
-    -   name: helm upgrade
-        run: |
-            helm list -n ${{  secrets.DEPLOYMENT_NAMESPACE  }};
-            helm upgrade -f ./helm/fv-be/Values.${{  vars.ENV  }}.yaml ${{  secrets.HELM_CHART_NAME  }} ./helm/fv-be/ -n ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+      -   name: Check helm-diff
+          uses: ./.github/actions/helm-diff
+          with:
+            env: ${{ vars.ENV }}
+            k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
+            remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
+            helm_release_version: ${{ vars.RELEASE_VERSION }}
+            helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
+
+  check_helm_chart_diff-preprod:
+      needs : [set-environment, build_with_tekton_preprod ]
+      name: Validate Helm Diff - PreProd
+      runs-on: ubuntu-latest
+      if: needs.set-environment.outputs.environment == 'preprod'
+      environment: preprod
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      -   name: "Prep images and vars"
+          uses: ./.github/actions/deploy-prep
+          with:
+            env: ${{ vars.ENV }}
+            image_tag_prefix: ${{ vars.IMAGE_TAG_PREFIX }}
+            cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+            aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+            ecr_uri: ${{ secrets.FPCC_DEFAULT_ECR_URI }}
+            aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+            aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+      -   name: Check helm-diff
+          uses: ./.github/actions/helm-diff
+          with:
+            env: ${{ vars.ENV }}
+            k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
+            remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
+            helm_release_version: ${{ vars.RELEASE_VERSION }}
+            helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
+
+  check_helm_chart_diff-prod:
+      needs : [set-environment, build_with_tekton_prod]
+      name: Validate Helm Diff - Prod
+      runs-on: ubuntu-latest
+      if: needs.set-environment.outputs.environment == 'prod'
+      environment: prod
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      -   name: "Prep images and vars"
+          uses: ./.github/actions/deploy-prep
+          with:
+            env: ${{ vars.ENV }}
+            image_tag_prefix: ${{ vars.IMAGE_TAG_PREFIX }}
+            cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+            aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+            ecr_uri: ${{ secrets.FPCC_DEFAULT_ECR_URI }}
+            aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+            aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+      -   name: Check helm-diff
+          uses: ./.github/actions/helm-diff
+          with:
+            env: ${{ vars.ENV }}
+            k8_namespace: ${{ secrets.DEPLOYMENT_NAMESPACE }}
+            remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
+            helm_release_version: ${{ vars.RELEASE_VERSION }}
+            helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
+
+#  trivy_scan-dev:
+#    name: Scan - Dev
+#    runs-on: ubuntu-latest
+#    needs : [set-environment, check_helm_chart_diff-dev]
+#    if: needs.set-environment.outputs.environment == 'dev'
+#    environment: dev
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: Download Helm values file
+#      uses: actions/download-artifact@v4
+#      with:
+#        name: helm-values
+#        path: ./downloads
+#    -   name: "Scan Images"
+#        uses: ./.github/actions/scan
+#        with:
+#          env: ${{ vars.ENV }}
+#          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+#          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+#          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+#          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
+
+  helm_upgrade-dev:
+      name: Deploy - Dev
+      runs-on: ubuntu-latest
+      needs : [set-environment, image_scan]
+      if: needs.set-environment.outputs.environment == 'dev'
+      environment: dev
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      - name: Download Helm values file
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values
+          path: ./downloads
+      - name: "Deploy to Dev"
+        uses: ./.github/actions/deploy
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          k8_namespace: ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+          helm_release_version: ${{  vars.RELEASE_VERSION  }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
+          tekton_be_pipeline: ${{  vars.TEKTON_BE_PIPELINE  }}
+          tekton_fe_pipeline: ${{  vars.TEKTON_FE_PIPELINE  }}
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE }}
+          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          env: ${{  vars.ENV  }}
+          helm_chart_name: ${{ secrets.HELM_CHART_NAME }}
+
+  helm_upgrade-prod:
+      name: Deploy - Prod
+      runs-on: ubuntu-latest
+      needs : [set-environment, check_helm_chart_diff-prod]
+      if: needs.set-environment.outputs.environment == 'prod'
+      environment: prod
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      - name: Download Helm values file
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values
+          path: ./downloads
+      - name: "Deploy to Prod"
+        uses: ./.github/actions/deploy
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          k8_namespace: ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+          helm_release_version: ${{  vars.RELEASE_VERSION  }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
+          tekton_be_pipeline: ${{  vars.TEKTON_BE_PIPELINE  }}
+          tekton_fe_pipeline: ${{  vars.TEKTON_FE_PIPELINE  }}
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE }}
+          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          env: ${{  vars.ENV  }}
+          helm_chart_name: ${{ secrets.HELM_CHART_NAME }}
+
+  helm_upgrade-preprod:
+      name: Deploy - Preprod
+      runs-on: ubuntu-latest
+      needs : [set-environment, check_helm_chart_diff-preprod]
+      if: needs.set-environment.outputs.environment == 'preprod'
+      environment: preprod
+      steps:
+      -   uses: actions/checkout@v4
+      - name: Download Helm charts
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: ./helm
+      - name: Download Helm values file
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values
+          path: ./downloads
+      - name: "Deploy to Preprod"
+        uses: ./.github/actions/deploy
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          k8_namespace: ${{  secrets.DEPLOYMENT_NAMESPACE  }}
+          helm_release_version: ${{  vars.RELEASE_VERSION  }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
+          tekton_be_pipeline: ${{  vars.TEKTON_BE_PIPELINE  }}
+          tekton_fe_pipeline: ${{  vars.TEKTON_FE_PIPELINE  }}
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE }}
+          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          env: ${{  vars.ENV  }}
+          helm_chart_name: ${{ secrets.HELM_CHART_NAME }}

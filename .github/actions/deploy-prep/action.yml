@@ -1,0 +1,120 @@
+name: "Plug-in deploy images"
+description: "Plugs in images and vars based on environment"
+
+inputs:
+  env:
+    required: true
+  image_tag_prefix:
+    required: true
+  cluster_name:
+    required: true
+  aws_region:
+    required: true
+  ecr_uri:
+    required: true
+  aws-access-key-id:
+    required: true
+  aws-secret-access-key:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws_region }}
+
+    - name: Download from CodeCommit
+      shell: bash
+      run: |
+        ls
+        ls ./helm/fv-be/
+        set -euo pipefail
+        aws codecommit get-file \
+          --repository-name fv-helm-manifest-values \
+          --file-path Values.${{ inputs.env }}.yaml \
+          --query fileContent \
+          --output text | base64 -d > ./helm/fv-be/Values.${{ inputs.env }}.yaml;
+        ls ./helm/fv-be/
+    - name: Prepare env vars
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        ENV="${{ inputs.env }}"
+        TAG_PREFIX="${{ inputs.image_tag_prefix }}"
+        CLUSTER_NAME="${{ inputs.cluster_name }}"
+        AWS_REGION="${{ inputs.aws_region }}"
+        ECR_URI="${{ inputs.ecr_uri }}"
+        VALUES_FILE="./helm/fv-be/Values.${ENV}.yaml"
+
+        mkdir -p "$(dirname "$VALUES_FILE")"
+        touch "$VALUES_FILE"
+
+        aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION"
+
+        get_image_digest_ref() {
+          local repo="$1"
+          local image_digest=$(aws ecr describe-images --repository-name "$repo" \
+            --filter "tagStatus=TAGGED" \
+            --query "reverse(sort_by(imageDetails[?imageTags[0] && starts_with(imageTags[0], \`$TAG_PREFIX\`)], &imagePushedAt))[0].imageDigest" \
+            --output text | head -n 1)
+
+          # If not found, fallback to the latest image regardless of tag
+          if [[ -z "$image_digest" || "$image_digest" == "None" ]]; then
+            echo "WARN: No image found with prefix $TAG_PREFIX in $repo, falling back to latest image" >&2
+
+            image_digest=$(aws ecr describe-images --repository-name "$repo" \
+              --query "reverse(sort_by(imageDetails, &imagePushedAt))[0].imageDigest" \
+              --output text | head -n 1)
+          fi
+
+          if [[ -z "$image_digest" || "$image_digest" == "None" ]]; then
+            echo "ERROR: No images found at all in repository $repo" >&2
+            exit 1
+          fi
+
+          echo "$ECR_URI/$repo@$image_digest"
+        }
+
+
+        get_image_tag_suffix() {
+          local repo="$1"
+
+          local raw_tags=$(aws ecr describe-images --repository-name "$repo" \
+            --filter "tagStatus=TAGGED" \
+            --query "reverse(sort_by(imageDetails[?imageTags[0] && starts_with(imageTags[0], \`$TAG_PREFIX\`)], &imagePushedAt))[0].imageTags" \
+            --output text)
+
+          local tag=$(echo "$raw_tags" | head -n 1)
+
+          if [[ -z "$tag" || "$tag" == "None" ]]; then
+            echo "ERROR: No matching tag found for $repo with prefix $TAG_PREFIX" >&2
+            exit 1
+          fi
+
+          # Strip any known prefix
+          echo "${tag#build-}" | sed -E "s/^(p-|r-)//"
+        }
+
+        echo "fvwebBuildString: $(get_image_tag_suffix fv-web)" >> "$VALUES_FILE"
+        echo "fvbeBuildString: $(get_image_tag_suffix fv-be)" >> "$VALUES_FILE"
+
+        echo "fvwebImage: $(get_image_digest_ref fv-web)" >> "$VALUES_FILE"
+        echo "fvbeImage: $(get_image_digest_ref fv-be)" >> "$VALUES_FILE"
+        echo "staticImage: $(get_image_digest_ref fv-be-static)" >> "$VALUES_FILE"
+        echo "smtpImage: $(get_image_digest_ref smtp-sidecar)" >> "$VALUES_FILE"
+
+        echo "REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
+          --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
+          --output text)" >> "$GITHUB_ENV"
+
+    - name: Upload Helm values file
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: helm-values
+        path: ./helm/fv-be/Values.${{ inputs.env }}.yaml
