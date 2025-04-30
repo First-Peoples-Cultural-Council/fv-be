@@ -262,7 +262,7 @@ def import_dictionary_entry_resource(
     """
     Imports dictionary entries and returns the import result.
     """
-
+    media_data = []
     for filename_key, column_name, media_map in [
         ("audio_filename", "related_audio", audio_filename_map),
         ("img_filename", "related_images", img_filename_map),
@@ -273,12 +273,15 @@ def import_dictionary_entry_resource(
                 [""] * len(dictionary_entry_data), header=column_name
             )
             col_index = dictionary_entry_data.headers.index(column_name)
-            for i, row in enumerate(dictionary_entry_data.dict):
-                filename = row.get(filename_key)
-                related_id = media_map.get(filename, "")
-                row_list = list(dictionary_entry_data[i])
-                row_list[col_index] = related_id
-                dictionary_entry_data[i] = tuple(row_list)
+            media_data.append((filename_key, col_index, media_map))
+
+    for i, row in enumerate(dictionary_entry_data.dict):
+        row_list = list(dictionary_entry_data[i])
+        for filename_key, col_index, media_map in media_data:
+            filename = row.get(filename_key)
+            related_id = media_map.get(filename, "")
+            row_list[col_index] = related_id
+        dictionary_entry_data[i] = tuple(row_list)
 
     dictionary_entry_import_result = DictionaryEntryResource(
         site=import_job.site,
