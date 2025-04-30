@@ -301,7 +301,6 @@ jobs:
       - name: Set environment based on branch
         id: set-environment
         run: |
-          BRANCH_NAME="${GITHUB_REF##*/}"
 
           if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
             ENV="dev"
