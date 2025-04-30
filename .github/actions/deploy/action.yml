@@ -6,17 +6,9 @@ inputs:
     required: true
   k8_namespace:
     required: true
-  helm_release_version:
-    required: true
   helm_chart_name:
     required: true
   aws_region:
-    required: true
-  tekton_be_pipeline:
-    required: true
-  tekton_fe_pipeline:
-    required: true
-  tekton_namespace:
     required: true
   aws_account:
     required: true
@@ -37,13 +29,19 @@ runs:
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-region: ${{ inputs.aws_region }}
 
+    - name: Pull helm version
+      shell: bash
+      run:
+        echo "REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
+        --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
+        --output text)" >> "$GITHUB_ENV"
+
     -   name: Update Chart yaml
         shell: bash
         run: |
             aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --region "${{ inputs.aws_region }}"
-            echo "The latest Helm Release version in the Helm repo is ${{  inputs.remote_helm_version  }}";
-            echo "The current release version set using GIT repo variables is ${{ inputs.helm_release_version }}";
-            echo "version: ${{ inputs.helm_release_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
+            echo "The latest Helm Release version in the Helm repo is ${{  env.REMOTE_HELM_RELEASE_VERSION  }}";
+            echo "version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
 
     -   uses: azure/setup-helm@v4.2.0
         id: install
