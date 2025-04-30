@@ -315,8 +315,8 @@ jobs:
 
           echo "Environment: $ENV"
           echo "environment=$ENV" >> "$GITHUB_OUTPUT"
-          - name: Pull infra manifests
-      - uses: actions/checkout@v4
+      - name: Pull infra manifests
+        uses: actions/checkout@v4
         with:
           ref: main
           repository: First-Peoples-Cultural-Council/fv-infra
