@@ -86,7 +86,7 @@ jobs:
           path: helm
 
   check_helm_chart_diff-dev:
-      needs : [set-environment, build_with_tekton]
+      needs : [set-environment, build_with_quemu_buildx]
       name: Validate Helm Diff - Dev
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'dev'
@@ -117,7 +117,7 @@ jobs:
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-preprod:
-      needs : [set-environment, build_with_tekton_preprod ]
+      needs : [set-environment, build_with_quemu_buildx ]
       name: Validate Helm Diff - PreProd
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'preprod'
@@ -148,7 +148,7 @@ jobs:
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-prod:
-      needs : [set-environment, build_with_tekton_prod]
+      needs : [set-environment, build_with_quemu_buildx]
       name: Validate Helm Diff - Prod
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'prod'
