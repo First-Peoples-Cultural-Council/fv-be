@@ -1,0 +1,73 @@
+name: Build and Push Docker Images using Buildx (arm64)
+description: Builds arm64 Docker images with Docker Buildx for django-runtime and static-runtime targets.
+
+inputs:
+  pathToDockerFile:
+    description: Path to the Dockerfile
+    required: false
+    default: Dockerfile
+  pathToContext:
+    description: Build context path
+    required: false
+    default: ./
+  image:
+    description: Full destination for django image (e.g. repo/image:tag)
+    required: true
+  staticImage:
+    description: Full destination for static image (e.g. repo/image:tag)
+    required: true
+
+outputs:
+  IMAGE-DIGEST:
+    description: Digest of the django image
+    value: ${{ steps.django.outputs.digest }}
+  IMAGE-URL:
+    description: Full URL of the django image with digest
+    value: ${{ steps.django.outputs.image-url }}
+  IMAGE-DIGEST-STATIC:
+    description: Digest of the static image
+    value: ${{ steps.static.outputs.digest }}
+  IMAGE-URL-STATIC:
+    description: Full URL of the static image with digest
+    value: ${{ steps.static.outputs.image-url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push django-runtime (arm64)
+      id: django
+      shell: bash
+      run: |
+        docker buildx build \
+          --platform linux/arm64 \
+          --file ${{ inputs.pathToDockerFile }} \
+          --target django-runtime \
+          --tag ${{ inputs.image }} \
+          --push \
+          ${{ inputs.pathToContext }}
+
+        digest=$(docker buildx imagetools inspect ${{ inputs.image }} --format '{{.Digest}}')
+        echo "digest=$digest" >> $GITHUB_OUTPUT
+        echo "image-url=${{ inputs.image }}@$digest" >> $GITHUB_OUTPUT
+
+    - name: Build and push static-runtime (arm64)
+      id: static
+      shell: bash
+      run: |
+        docker buildx build \
+          --platform linux/arm64 \
+          --file ${{ inputs.pathToDockerFile }} \
+          --target static-runtime \
+          --tag ${{ inputs.staticImage }} \
+          --push \
+          ${{ inputs.pathToContext }}
+
+        digest=$(docker buildx imagetools inspect ${{ inputs.staticImage }} --format '{{.Digest}}')
+        echo "digest=$digest" >> $GITHUB_OUTPUT
+        echo "image-url=${{ inputs.staticImage }}@$digest" >> $GITHUB_OUTPUT

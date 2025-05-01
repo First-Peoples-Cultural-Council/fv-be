@@ -99,6 +99,21 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
 
+  build_with_quemu_buildx:
+    runs-on: ubuntu-22.04
+    name: Dev Build
+    steps:
+      - uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push arm64 images
+        uses: ./.github/actions/build
+        with:
+          pathToDockerFile: ./Dockerfile
+          pathToContext: ./
+          image: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}.dkr.ecr.${{  secrets.FPCC_DEFAULT_AWS_REGION  }}.amazonaws.com/fv-be:testabc123
+          staticImage: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}.dkr.ecr.${{  secrets.FPCC_DEFAULT_AWS_REGION  }}.amazonaws.com/fv-be-static:testabc123
+
+
   build_with_tekton:
     name: Dev Build
     environment: dev
