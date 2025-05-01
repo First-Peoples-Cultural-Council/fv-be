@@ -136,6 +136,8 @@ class ImportJobViewSet(
         "validate": "change",
     }
 
+    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+
     started_validation_statuses = [
         JobStatus.ACCEPTED,
         JobStatus.STARTED,

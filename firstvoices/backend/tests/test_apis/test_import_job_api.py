@@ -422,6 +422,26 @@ class TestImportEndpoints(
 
         assert "failedRowsCsv" in response_data
 
+    @pytest.mark.parametrize(
+        "job_status", [JobStatus.ACCEPTED, JobStatus.COMPLETE, JobStatus.STARTED]
+    )
+    def test_cannot_delete_successful_job(self, job_status):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+        )
+        job = factories.ImportJobFactory.create(site=site)
+        job.status = job_status
+        job.save()
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=self.get_lookup_key(job), site_slug=site.slug)
+        )
+
+        assert response.status_code == 400
+
+        jobs = ImportJob.objects.filter(id=job.id)
+        assert jobs.count() == 1
+
     @pytest.mark.parametrize("job_status", [JobStatus.ACCEPTED, JobStatus.STARTED])
     def test_cannot_delete_job_with_started_validation(self, job_status):
         site, _ = factories.get_site_with_app_admin(

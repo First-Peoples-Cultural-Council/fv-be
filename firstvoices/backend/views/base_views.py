@@ -203,7 +203,7 @@ class DictionarySerializerContextMixin:
 class AsyncJobDeleteMixin:
     """Blocks job instances from being deleted after they have started running."""
 
-    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    started_statuses = [JobStatus.STARTED, JobStatus.COMPLETE]
 
     def perform_destroy(self, instance):
         if instance.status in self.started_statuses:
