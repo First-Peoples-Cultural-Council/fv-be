@@ -31,17 +31,19 @@ runs:
 
     - name: Pull helm version
       shell: bash
-      run:
-        echo "REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
-        --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
-        --output text)" >> "$GITHUB_ENV"
+      run: |
+        export REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
+          --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
+          --output text)
+        echo "REMOTE_HELM_RELEASE_VERSION=$REMOTE_HELM_RELEASE_VERSION" >> "$GITHUB_ENV"
 
-    -   name: Update Chart yaml
-        shell: bash
-        run: |
-            aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --region "${{ inputs.aws_region }}"
-            echo "The latest Helm Release version in the Helm repo is ${{  env.REMOTE_HELM_RELEASE_VERSION  }}";
-            echo "version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
+    - name: Update Chart.yaml
+      shell: bash
+      run: |
+        aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --region "${{ inputs.aws_region }}"
+        echo "The latest Helm Release version in the Helm repo is $REMOTE_HELM_RELEASE_VERSION"
+        echo "version: $REMOTE_HELM_RELEASE_VERSION" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null
+
 
     -   uses: azure/setup-helm@v4.2.0
         id: install
