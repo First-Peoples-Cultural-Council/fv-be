@@ -251,6 +251,37 @@ def import_video_resource(import_job, video_data, dry_run):
     return video_import_result, video_filename_map
 
 
+def get_column_index(data, column_name):
+    """
+    Return the index of column if present in the dataset.
+    """
+    try:
+        column_index = data.headers.index(column_name)
+        return column_index
+    except ValueError:
+        return -1
+
+
+def add_column(data, column_name):
+    """
+    Add provided column to the tablib dataset.
+    """
+    data.append_col([""] * len(data), header=column_name)
+    return data.headers.index(column_name)
+
+
+def add_related_id(row_list, filename_col_index, related_media_col_index, media_map):
+    """
+    Lookup the filename against the media map, and add the id of the media resource to
+    the provided row.
+    """
+    if not filename_col_index:
+        return
+    filename = row_list[filename_col_index]
+    related_id = media_map.get(filename, "")
+    row_list[related_media_col_index] = related_id
+
+
 def import_dictionary_entry_resource(
     import_job,
     dictionary_entry_data,
@@ -261,26 +292,28 @@ def import_dictionary_entry_resource(
 ):
     """
     Imports dictionary entries and returns the import result.
+    This method adds related media columns, i.e. "related_images", "related_audio" and fills
+    them up with ids from the media maps, by looking them up against the filename columns.
     """
-    media_data = []
-    for filename_key, column_name, media_map in [
-        ("audio_filename", "related_audio", audio_filename_map),
-        ("img_filename", "related_images", img_filename_map),
-        ("video_filename", "related_videos", video_filename_map),
-    ]:
-        if media_map:
-            dictionary_entry_data.append_col(
-                [""] * len(dictionary_entry_data), header=column_name
-            )
-            col_index = dictionary_entry_data.headers.index(column_name)
-            media_data.append((filename_key, col_index, media_map))
+
+    related_audio_column = add_column(dictionary_entry_data, "related_audio")
+    audio_filename_column = get_column_index(dictionary_entry_data, "audio_filename")
+    related_image_column = add_column(dictionary_entry_data, "related_images")
+    image_filename_column = get_column_index(dictionary_entry_data, "img_filename")
+    related_video_column = add_column(dictionary_entry_data, "related_videos")
+    video_filename_column = get_column_index(dictionary_entry_data, "video_filename")
 
     for i, row in enumerate(dictionary_entry_data.dict):
         row_list = list(dictionary_entry_data[i])
-        for filename_key, col_index, media_map in media_data:
-            filename = row.get(filename_key)
-            related_id = media_map.get(filename, "")
-            row_list[col_index] = related_id
+        add_related_id(
+            row_list, audio_filename_column, related_audio_column, audio_filename_map
+        )
+        add_related_id(
+            row_list, image_filename_column, related_image_column, img_filename_map
+        )
+        add_related_id(
+            row_list, video_filename_column, related_video_column, video_filename_map
+        )
         dictionary_entry_data[i] = tuple(row_list)
 
     dictionary_entry_import_result = DictionaryEntryResource(
