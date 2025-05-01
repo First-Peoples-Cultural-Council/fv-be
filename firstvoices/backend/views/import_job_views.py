@@ -136,6 +136,11 @@ class ImportJobViewSet(
         "validate": "change",
     }
 
+    started_validation_statuses = [
+        JobStatus.ACCEPTED,
+        JobStatus.STARTED,
+    ]
+
     def get_queryset(self):
         site = self.get_validated_site()
         return ImportJob.objects.filter(site=site).order_by(
@@ -217,3 +222,12 @@ class ImportJobViewSet(
         )
 
         return Response(status=status.HTTP_202_ACCEPTED)
+
+    def perform_destroy(self, instance):
+        if instance.validation_status in self.started_validation_statuses:
+            raise ValidationError(
+                f"This job cannot be deleted as it is being validated. "
+                f"This job has the validation status: {instance.status}"
+            )
+
+        super().perform_destroy(instance)

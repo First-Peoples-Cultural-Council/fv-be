@@ -1,7 +1,6 @@
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -169,18 +168,8 @@ class ImportJob(BaseJob):
 
     def delete(self, using=None, keep_parents=False):
         """
-        Does not allow deleting on an instance if the job has been completed, i.e. status="completed".
+        Cleans up the import job by deleting the associated files and reports.
         """
-        if self.validation_status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
-            raise ValidationError(
-                "This job cannot be deleted as it is being validated."
-            )
-
-        if self.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
-            raise ValidationError("This job cannot be deleted as it is being imported.")
-
-        if self.status == JobStatus.COMPLETE:
-            raise ValidationError("A job that has been completed cannot be deleted.")
 
         self._delete_report()
         self._delete_failed_rows_csv()
