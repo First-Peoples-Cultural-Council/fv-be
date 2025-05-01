@@ -30,15 +30,12 @@ runs:
     - name: Download from CodeCommit
       shell: bash
       run: |
-        ls
-        ls ./helm/fv-be/
         set -euo pipefail
         aws codecommit get-file \
           --repository-name fv-helm-manifest-values \
           --file-path Values.${{ inputs.env }}.yaml \
           --query fileContent \
           --output text | base64 -d > ./helm/fv-be/Values.${{ inputs.env }}.yaml;
-        ls ./helm/fv-be/
     - name: Prepare env vars
       shell: bash
       run: |
