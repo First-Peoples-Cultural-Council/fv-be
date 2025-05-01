@@ -17,8 +17,12 @@ jobs:
     runs-on: ubuntu-22.04
     name: Dev Build
     steps:
-      - uses: aws-actions/amazon-ecr-login@v1
-
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
       - name: Build and push arm64 images
         uses: ./.github/actions/build
         with:
