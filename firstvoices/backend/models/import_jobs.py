@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -139,6 +140,33 @@ class ImportJob(BaseJob):
         if import_job_report:
             import_job_report.delete()
 
+    def _delete_data_csv(self):
+        data_csv = self.data
+        if data_csv:
+            data_csv.delete()
+
+    def _delete_failed_rows_csv(self):
+        failed_rows_csv = self.failed_rows_csv
+        if failed_rows_csv:
+            failed_rows_csv.delete()
+
+    def _delete_uploaded_media(self):
+        # Use the apps.get_model() method to avoid circular imports
+        file = apps.get_model("backend", "File")
+        image_file = apps.get_model("backend", "ImageFile")
+        video_file = apps.get_model("backend", "VideoFile")
+
+        images = image_file.objects.filter(import_job_id=self.id)
+        videos = video_file.objects.filter(import_job_id=self.id)
+        audio = file.objects.filter(import_job_id=self.id)
+
+        if images.exists():
+            images.delete()
+        if videos.exists():
+            videos.delete()
+        if audio.exists():
+            audio.delete()
+
     def delete(self, using=None, keep_parents=False):
         """
         Does not allow deleting on an instance if the job has been completed, i.e. status="completed".
@@ -155,4 +183,7 @@ class ImportJob(BaseJob):
             raise ValidationError("A job that has been completed cannot be deleted.")
 
         self._delete_report()
+        self._delete_failed_rows_csv()
+        self._delete_data_csv()
+        self._delete_uploaded_media()
         return super().delete(using, keep_parents)
