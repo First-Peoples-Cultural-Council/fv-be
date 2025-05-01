@@ -205,11 +205,6 @@ jobs:
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
-          echo "Running Helm-upgrade..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
           echo "Wrapping up pipeline monitoring";
 
@@ -262,11 +257,6 @@ jobs:
           echo "Running URL adjustments for FV-BE-Static..."
           kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
           kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          echo "Running Helm-upgrade..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP5  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
           sleep 1;
           echo "===================================================================================="
           kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
