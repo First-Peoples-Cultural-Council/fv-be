@@ -275,8 +275,6 @@ def add_related_id(row_list, filename_col_index, related_media_col_index, media_
     Lookup the filename against the media map, and add the id of the media resource to
     the provided row.
     """
-    if not filename_col_index:
-        return
     filename = row_list[filename_col_index]
     related_id = media_map.get(filename, "")
     row_list[related_media_col_index] = related_id
