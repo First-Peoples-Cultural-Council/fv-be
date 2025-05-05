@@ -35,12 +35,15 @@ runs:
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-region: ${{  inputs.aws_region }}
     - name: "Setup kubectl"
+      shell: bash
       run: |
         aws eks update-kubeconfig --name ${{  inputs.cluster_name  }} --region ${{  inputs.aws_region }}
     - name: "Setup RUNID"
+      shell: bash
       run: |
         echo "RUNID=$(kubectl -n ${{  inputs.tekton_namespace }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  inputs.tekton_interceptor_name  }} | grep 'fv-be-webhook-' | ${inputs.job_sort_order} -n 1 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
     - name: "Check RUNID Validity"
+      shell: bash
       run: |
         echo "The run ID associated with this deployment is $RUNID";
         if [$RUNID == ""];
@@ -48,7 +51,7 @@ runs:
         exit 1;
         fi
     - name: "Monitor RUNID"
-      timeout-minutes: 10
+      shell: bash
       run: |
         echo "The run ID associated with this deployment is $RUNID";
         kubectl get events -n ${{  inputs.tekton_namespace }} | grep "$RUNID";
