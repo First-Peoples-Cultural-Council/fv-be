@@ -55,7 +55,7 @@ nh3==0.2.20 # https://github.com/messense/nh3
 networkx==3.4.2
 numpy==1.26.4
 openpyxl==3.1.5
-packaging==24.2
+packaging==25.0
 panphon==0.21.2
 Pillow==11.2.1
 pillow-heif==0.22.0
