@@ -285,6 +285,7 @@ jobs:
   set-environment:
     name: Set Env
     runs-on: ubuntu-latest
+    if: ((github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
     outputs:
       environment: ${{ steps.set-environment.outputs.environment }}
     steps:
