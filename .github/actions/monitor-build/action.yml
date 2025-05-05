@@ -41,7 +41,12 @@ runs:
     - name: "Setup RUNID"
       shell: bash
       run: |
-        RUNID=$(kubectl -n ${{  inputs.tekton_namespace }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  inputs.tekton_interceptor_name  }} | grep 'fv-be-webhook-' | ${inputs.job_sort_order} -n 1 | awk '{print $1}')
+        SORT_CMD="${{ inputs.job_sort_order }}"
+        RUNID=$(kubectl -n ${{ inputs.tekton_namespace }} get pr \
+          --sort-by=.status.completionTime \
+          -l triggers.tekton.dev/trigger=${{ inputs.tekton_interceptor_name }} \
+          | grep 'fv-be-webhook-' \
+          | $SORT_CMD -n 1 | awk '{print $1}')
         echo "Found RUNID: $RUNID"
         echo "RUNID=$RUNID" >> "$GITHUB_ENV"
     - name: "Check RUNID Validity"
