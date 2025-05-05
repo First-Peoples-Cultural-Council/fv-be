@@ -145,74 +145,76 @@ jobs:
     environment: dev
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
-    needs: [ sonarcloud, set-environment ]
+    if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]'
+    needs: [sonarcloud, set-environment]
     steps:
-    -   uses: actions/checkout@v4
-    -   name: "Monitor tekton build"
+      - uses: actions/checkout@v4
+      - name: Monitor Tekton Build
         uses: ./.github/actions/monitor-build
         with:
-          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
-          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME }}
           job_sort_order: "tail"
-          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
-          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
-          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
-          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
-          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
-          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
+          tekton_namespace: ${{ secrets.TEKTON_NAMESPACE }}
+          tekton_interceptor_name: ${{ secrets.TEKTON_INTERCEPTOR_NAME }}
+          webhook_prefix: "fv-be-webhook-"
+          pipeline_step1: ${{ vars.PIPELINE_STEP1 }}
+          pipeline_step2: ${{ vars.PIPELINE_STEP2 }}
+          pipeline_step3: ${{ vars.PIPELINE_STEP3 }}
+          pipeline_step4: ${{ vars.PIPELINE_STEP4 }}
 
 
   build_with_tekton_preprod:
     name: Preprod Build
     environment: preprod
-    timeout-minutes: 10
     runs-on: ubuntu-22.04
-    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]'
     needs: set-environment
     steps:
-    -   uses: actions/checkout@v4
-    -   name: "Monitor tekton build"
+      - uses: actions/checkout@v4
+      - name: Monitor Tekton Build
         uses: ./.github/actions/monitor-build
         with:
-          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
-          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME }}
           job_sort_order: "head"
-          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
-          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
-          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
-          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
-          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
-          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
-
+          tekton_namespace: ${{ secrets.TEKTON_NAMESPACE }}
+          tekton_interceptor_name: ${{ secrets.TEKTON_INTERCEPTOR_NAME }}
+          webhook_prefix: "fv-be-webhook-"
+          pipeline_step1: ${{ vars.PIPELINE_STEP1 }}
+          pipeline_step2: ${{ vars.PIPELINE_STEP2 }}
+          pipeline_step3: ${{ vars.PIPELINE_STEP3 }}
+          pipeline_step4: ${{ vars.PIPELINE_STEP4 }}
 
   build_with_tekton_prod:
     name: Prod Build
     environment: prod
-    timeout-minutes: 10
     runs-on: ubuntu-22.04
-    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    timeout-minutes: 10
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'r-') && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]'
     needs: set-environment
     steps:
-    -   uses: actions/checkout@v4
-    -   name: "Monitor tekton build"
+      - uses: actions/checkout@v4
+      - name: Monitor Tekton Build
         uses: ./.github/actions/monitor-build
         with:
-          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
-          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME }}
           job_sort_order: "head"
-          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
-          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
-          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
-          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
-          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
-          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
+          tekton_namespace: ${{ secrets.TEKTON_NAMESPACE }}
+          tekton_interceptor_name: ${{ secrets.TEKTON_INTERCEPTOR_NAME }}
+          webhook_prefix: "fv-be-webhook-"
+          pipeline_step1: ${{ vars.PIPELINE_STEP1 }}
+          pipeline_step2: ${{ vars.PIPELINE_STEP2 }}
+          pipeline_step3: ${{ vars.PIPELINE_STEP3 }}
+          pipeline_step4: ${{ vars.PIPELINE_STEP4 }}
 
 #  image_scan:
 #    name: Image Scan
