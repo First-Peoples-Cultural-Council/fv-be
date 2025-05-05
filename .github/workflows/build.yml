@@ -63,225 +63,7 @@ jobs:
           name: coverage${{ matrix.group }}
           path: firstvoices/.coverage
 
-  sonarcloud:
-    name: SonarCloud
-    runs-on: ubuntu-22.04
-    needs: pytest
-    if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
-    strategy:
-      matrix:
-        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.sonarcov.txt
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-      - name: Run coverage
-        run: |
-          coverage combine ./coverage*/.coverage*
-          coverage report --fail-under=75
-          coverage xml
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
 
-  build_with_tekton:
-    name: Dev Build
-    environment: dev
-    runs-on: ubuntu-22.04
-    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
-    needs: sonarcloud
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup kubectl"
-        run: |
-          aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup RUNID"
-        run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | tail -n 1 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
-      - name: "Check RUNID Validity"
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""];
-          then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
-          exit 1;
-          fi
-      - name: "Monitor RUNID"
-        timeout-minutes: 10
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo -e "\n========================================================================================================================================================================"
-          echo "Running repo cloning..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          echo -e "\n========================================================================================================================================================================"
-          echo "Running image build..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo -e "\n========================================================================================================================================================================"
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Running URL adjustments for FV-BE..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo -e "\n========================================================================================================================================================================"
-          echo "Running URL adjustments for FV-BE-Static..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo -e "\n========================================================================================================================================================================"
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Wrapping up pipeline monitoring";
-
-  build_with_tekton_preprod:
-    name: Preprod Build
-    environment: preprod
-    runs-on: ubuntu-22.04
-    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup kubectl"
-        run: |
-          aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup RUNID"
-        run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | head -n 1 |  cut -d ' ' -f 1)" >> "$GITHUB_ENV";
-      - name: "Check RUNID Validity"
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""];
-          then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
-          exit 1;
-          fi
-      - name: "Monitor RUNID"
-        timeout-minutes: 10
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "===================================================================================="
-          echo "Running repo cloning..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          echo "===================================================================================="
-          echo "Running image build..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-                    echo "Running URL adjustments for FV-BE..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          echo "Running URL adjustments for FV-BE-Static..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Wrapping up pipeline monitoring";
-
-  build_with_tekton_prod:
-    name: Prod Build
-    environment: prod
-    runs-on: ubuntu-22.04
-    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup kubectl"
-        run: |
-          aws eks update-kubeconfig --name ${{  secrets.FV_CLUSTER_NAME  }} --region ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-      - name: "Setup RUNID"
-        run: |
-          echo "RUNID=$(kubectl -n ${{  secrets.TEKTON_NAMESPACE  }} get pr --sort-by=.status.completionTime -l triggers.tekton.dev/trigger=${{  secrets.TEKTON_INTERCEPTOR_NAME  }} | grep 'fv-be-webhook-' | head -n 1 | cut -d ' ' -f 1)" >> "$GITHUB_ENV";
-      - name: "Check RUNID Validity"
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          if [${{  env.RUNID  }} == ""];
-          then echo "No running pipeline associated with this branch, or the state of the pipeline is ambiguous.";
-          exit 1;
-          fi
-      - name: "Monitor RUNID"
-        timeout-minutes: 10
-        run: |
-          echo "The run ID associated with this deployment is ${{  env.RUNID  }}";
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "===================================================================================="
-          echo "Running repo cloning..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP1  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          echo "===================================================================================="
-          echo "Running image build..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP2  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Running URL adjustments for FV-BE..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP3  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          echo "Running URL adjustments for FV-BE-Static..."
-          kubectl wait --for=condition=Succeeded TaskRun ${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }} --timeout=300s -n ${{  secrets.TEKTON_NAMESPACE  }}
-          kubectl logs pod/${{  env.RUNID  }}-${{  vars.PIPELINE_STEP4  }}-pod -n ${{  secrets.TEKTON_NAMESPACE  }}
-          sleep 1;
-          echo "===================================================================================="
-          kubectl get events -n ${{  secrets.TEKTON_NAMESPACE  }} | grep "${{  env.RUNID  }}";
-          echo "Wrapping up pipeline monitoring";
-#  image_scan:
-#    name: Image Scan
-#    environment: dev
-#    runs-on: ubuntu-22.04
-#    needs: check_helm_chart_diff-dev
-#    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
-#    steps:
-#      - name: Configure AWS credentials
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-#          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-#      - name: "Run image scan"
-#        run: |
-#          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
-#          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
-#          echo "List of findings are below"
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
   set-environment:
     name: Set Env
     runs-on: ubuntu-latest
@@ -320,8 +102,139 @@ jobs:
           name: helm
           path: helm
 
+
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-22.04
+    needs: pytest
+    if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
+    strategy:
+      matrix:
+        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.sonarcov.txt
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      - name: Run coverage
+        run: |
+          coverage combine ./coverage*/.coverage*
+          coverage report --fail-under=75
+          coverage xml
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+
+
+  build_with_tekton:
+    name: Dev Build
+    environment: dev
+    runs-on: ubuntu-22.04
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    needs: [ sonarcloud, set-environment ]
+    steps:
+    -   uses: actions/checkout@v4
+    -   name: "Monitor tekton build"
+        uses: ./.github/actions/monitor-build
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          job_sort_order: "tail"
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
+          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
+          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
+          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
+          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
+          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
+
+
+  build_with_tekton_preprod:
+    name: Preprod Build
+    environment: preprod
+    runs-on: ubuntu-22.04
+    if: ((github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    needs: set-environment
+    steps:
+    -   uses: actions/checkout@v4
+    -   name: "Monitor tekton build"
+        uses: ./.github/actions/monitor-build
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          job_sort_order: "head"
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
+          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
+          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
+          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
+          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
+          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
+
+
+  build_with_tekton_prod:
+    name: Prod Build
+    environment: prod
+    runs-on: ubuntu-22.04
+    if: ((github.ref_type == 'tag') && (startsWith(github.ref_name, 'r-')) && (github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    needs: set-environment
+    steps:
+    -   uses: actions/checkout@v4
+    -   name: "Monitor tekton build"
+        uses: ./.github/actions/monitor-build
+        with:
+          cluster_name: ${{ secrets.FV_CLUSTER_NAME  }}
+          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          job_sort_order: "head"
+          tekton_namespace: ${{  secrets.TEKTON_NAMESPACE  }}
+          tekton_interceptor_name: ${{  secrets.TEKTON_INTERCEPTOR_NAME  }}
+          pipeline_step1: ${{  vars.PIPELINE_STEP1  }}
+          pipeline_step2: ${{  vars.PIPELINE_STEP2  }}
+          pipeline_step3: ${{  vars.PIPELINE_STEP3  }}
+          pipeline_step4: ${{  vars.PIPELINE_STEP4  }}
+
+#  image_scan:
+#    name: Image Scan
+#    environment: dev
+#    runs-on: ubuntu-22.04
+#    needs: check_helm_chart_diff-dev
+#    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+#    steps:
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+#      - name: "Run image scan"
+#        run: |
+#          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+#          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+#          echo "List of findings are below"
+#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
+#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
+#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+
   check_helm_chart_diff-dev:
-      needs : [set-environment, build_with_tekton]
+      needs : [build_with_tekton]
       name: Validate Helm Diff - Dev
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'dev'
@@ -352,7 +265,7 @@ jobs:
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-preprod:
-      needs : [set-environment, build_with_tekton_preprod ]
+      needs : [build_with_tekton_preprod ]
       name: Validate Helm Diff - PreProd
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'preprod'
@@ -383,7 +296,7 @@ jobs:
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
   check_helm_chart_diff-prod:
-      needs : [set-environment, build_with_tekton_prod]
+      needs : [build_with_tekton_prod]
       name: Validate Helm Diff - Prod
       runs-on: ubuntu-latest
       if: needs.set-environment.outputs.environment == 'prod'
@@ -438,7 +351,7 @@ jobs:
   helm_upgrade-dev:
       name: Deploy - Dev
       runs-on: ubuntu-latest
-      needs : [set-environment, check_helm_chart_diff-dev]
+      needs : [check_helm_chart_diff-dev]
       if: needs.set-environment.outputs.environment == 'dev'
       environment: dev
       steps:
@@ -468,7 +381,7 @@ jobs:
   helm_upgrade-prod:
       name: Deploy - Prod
       runs-on: ubuntu-latest
-      needs : [set-environment, check_helm_chart_diff-prod]
+      needs : [check_helm_chart_diff-prod]
       if: needs.set-environment.outputs.environment == 'prod'
       environment: prod
       steps:
@@ -498,7 +411,7 @@ jobs:
   helm_upgrade-preprod:
       name: Deploy - Preprod
       runs-on: ubuntu-latest
-      needs : [set-environment, check_helm_chart_diff-preprod]
+      needs : [check_helm_chart_diff-preprod]
       if: needs.set-environment.outputs.environment == 'preprod'
       environment: preprod
       steps:
