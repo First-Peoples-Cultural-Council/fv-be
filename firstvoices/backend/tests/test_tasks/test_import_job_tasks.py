@@ -70,6 +70,32 @@ class TestBulkImportDryRun:
 
         return import_job
 
+    def import_batch_with_media_files(self, filename):
+        file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        return import_job
+
     def test_import_task_logs(self, caplog):
         import_job = self.import_minimal_dictionary_entries()
 
@@ -636,19 +662,7 @@ class TestBulkImportDryRun:
     def test_multiple_errors_in_single_row(self):
         # If there are multiple issues present in one row, all issues should be displayed
         # along with their column name
-        file_content = get_sample_file("import_job/mixed_errors.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        FileFactory(
-            site=self.site,
-            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
-            import_job=import_job,
-        )
+        import_job = self.import_batch_with_media_files("mixed_errors.csv")
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -656,7 +670,7 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 1
 
         error_row = validation_report.rows.get(row_number=1)
-        assert len(error_row.errors) == 2
+        assert len(error_row.errors) == 4
         assert (
             "Invalid value in include_in_games column. Expected 'true' or 'false'."
             in error_row.errors
@@ -665,6 +679,27 @@ class TestBulkImportDryRun:
             "No Person found with the provided name in column audio_speaker."
             in error_row.errors
         )
+        assert (
+            "Invalid value in img_include_in_kids_site column. Expected 'true' or 'false'."
+            in error_row.errors
+        )
+        assert (
+            "Invalid value in video_include_in_kids_site column. Expected 'true' or 'false'."
+            in error_row.errors
+        )
+
+    def test_duplicate_media_filenames(self):
+        # If multiple rows have same filenames, only the first media instance will be imported
+        # and used. The rest of the media will not be imported and should not give any issues.
+        import_job = self.import_batch_with_media_files("duplicate_media_filenames.csv")
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
 
 
 @pytest.mark.django_db
@@ -679,7 +714,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.user = get_superadmin()
         self.site = SiteFactory(visibility=Visibility.PUBLIC)
 
-    def upload_media(self, filename):
+    def confirm_upload_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
         file = FileFactory(content=file_content)
         import_job = ImportJobFactory(
@@ -695,6 +730,16 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "audio/mpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
 
@@ -1028,7 +1073,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio(self):
-        self.upload_media("related_audio.csv")
+        self.confirm_upload_with_media_files("related_audio.csv")
 
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
@@ -1042,8 +1087,99 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
 
+    def test_related_images(self):
+        self.confirm_upload_with_media_files("related_images.csv")
+
+        entry_with_image = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_images = entry_with_image.related_images.all()
+        assert len(related_images) == 1
+
+        related_image = related_images[0]
+        assert "sample-image.jpg" in related_image.original.content.name
+        assert related_image.title == "Related Image"
+        assert related_image.description == "Testing image upload"
+        assert related_image.acknowledgement == "Test Ack"
+        assert related_image.exclude_from_kids is False
+
+    def test_related_videos(self):
+        self.confirm_upload_with_media_files("related_videos.csv")
+
+        entry_with_video = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_videos = entry_with_video.related_videos.all()
+        assert len(related_videos) == 1
+
+        related_video = related_videos[0]
+        assert "video_example_small.mp4" in related_video.original.content.name
+        assert related_video.title == "Related Video"
+        assert related_video.description == "Testing video upload"
+        assert related_video.acknowledgement == "Test Ack"
+        assert related_video.exclude_from_kids is False
+
     def test_media_title_defaults_to_filename(self):
-        self.upload_media("minimal_media.csv")
+        self.confirm_upload_with_media_files("minimal_media.csv")
+
         entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio = entry_with_audio.related_audio.all()
         assert related_audio[0].title == "sample-audio.mp3"
+
+        entry_with_image = DictionaryEntry.objects.filter(title="Phrase 1")[0]
+        related_image = entry_with_image.related_images.all()
+        assert related_image[0].title == "sample-image.jpg"
+
+        entry_with_video = DictionaryEntry.objects.filter(title="Word 2")[0]
+        related_video = entry_with_video.related_videos.all()
+        assert related_video[0].title == "video_example_small.mp4"
+
+    def test_duplicate_media_filenames(self):
+        # If multiple rows have same filenames, only the first media instance will be imported
+        # and used. The rest of the media will not be imported and should not give any issues.
+        # All the latter entries will use the first imported media file.
+        file_content = get_sample_file(
+            "import_job/duplicate_media_filenames.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        PersonFactory.create(name="Test Speaker 1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2", site=self.site)
+
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_audio_entry_1 = entry_1.related_audio.first()
+        related_image_entry_1 = entry_1.related_images.first()
+        related_video_entry_1 = entry_1.related_videos.first()
+
+        entry_2 = DictionaryEntry.objects.filter(title="Phrase 1")[0]
+        related_audio_entry_2 = entry_2.related_audio.first()
+        related_image_entry_2 = entry_2.related_images.first()
+        related_video_entry_2 = entry_2.related_videos.first()
+
+        entry_3 = DictionaryEntry.objects.filter(title="Word 2")[0]
+        related_audio_entry_3 = entry_3.related_audio.first()
+        related_image_entry_3 = entry_3.related_images.first()
+        related_video_entry_3 = entry_3.related_videos.first()
+
+        assert related_audio_entry_1 == related_audio_entry_2 == related_audio_entry_3
+        assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
+        assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3

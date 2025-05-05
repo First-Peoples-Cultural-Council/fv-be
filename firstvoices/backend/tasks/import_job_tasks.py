@@ -11,86 +11,19 @@ from backend.models.import_jobs import (
     ImportJobReport,
     ImportJobReportRow,
     JobStatus,
-    RowStatus,
 )
 from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.resources.media import AudioResource
+from backend.resources.media import AudioResource, ImageResource, VideoResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
+    VALID_HEADERS,
+    create_or_append_error_row,
     get_failed_rows_csv_file,
+    is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
-
-VALID_HEADERS = [
-    "title",
-    "type",
-    "translation",
-    "category",
-    "note",
-    "acknowledgement",
-    "part_of_speech",
-    "pronunciation",
-    "alternate_spelling",
-    "visibility",
-    "include_on_kids_site",
-    "include_in_games",
-    "related_entry",
-    # audio
-    "audio_filename",
-    "audio_title",
-    "audio_description",
-    "audio_acknowledgement",
-    "audio_include_in_kids_site",
-    "audio_include_in_games",
-    "audio_speaker",
-    # image
-    "img_filename",
-    "img_title",
-    "img_description",
-    "img_acknowledgement",
-    "img_include_in_kids_site",
-    # video
-    "video_filename",
-    "video_title",
-    "video_description",
-    "video_acknowledgement",
-    "video_include_in_kids_site",
-]
-
-
-def is_valid_header_variation(input_header, all_headers):
-    # The input header can have a _n variation from 2 to 5, e.g. 'note_5'
-    # The original header also has to be present for the variation to be accepted,
-    # e.g. 'note_2' to 'note_5' columns will only be accepted if 'note' column is present in the table
-    # All other variations are invalid
-
-    all_headers = [h.strip().lower() for h in all_headers]
-
-    splits = input_header.split("_")
-    if len(splits) >= 2:
-        prefix = "_".join(splits[:-1])
-        variation = splits[-1]
-    else:
-        prefix = input_header
-        variation = None
-
-    # Check if the prefix is a valid header
-    if (
-        prefix in VALID_HEADERS
-        and prefix in all_headers
-        and variation
-        and variation.isdigit()
-    ):
-        variation = int(variation)
-        if variation <= 1 or variation > 5:
-            # Variation out of range. Skipping column.
-            return False
-    else:
-        return False
-
-    return True
 
 
 def clean_csv(data, missing_media=[]):
@@ -123,7 +56,7 @@ def clean_csv(data, missing_media=[]):
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     # Remove rows that have missing media
-    rows_to_delete = [(obj["idx"] - 1) for obj in missing_media]
+    rows_to_delete = list({(obj["idx"] - 1) for obj in missing_media})
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
@@ -131,58 +64,128 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def separate_data(data):
+def build_filtered_dataset(data, columns, filename_key):
     """
-    Splits the cleaned CSV data into two separate datasets, one to be used for dictionary entry resource,
-    and one for audio resource.
+    Helper function to build filtered media datasets
     """
-    audio_preset_columns = [
-        "audio_filename",
-        "audio_title",
-        "audio_description",
-        "audio_speaker",
-        "audio_speaker_2",
-        "audio_speaker_3",
-        "audio_speaker_4",
-        "audio_speaker_5",
-        "audio_acknowledgement",
-        "audio_include_in_kids_site",
-        "audio_include_in_games",
-    ]
-
-    audio_columns = [col for col in audio_preset_columns if col in data.headers]
-    audio_data = tablib.Dataset(headers=audio_columns)
-    dictionary_entries_data = tablib.Dataset(
-        headers=[
-            col
-            for col in data.headers
-            if col not in audio_columns or col == "audio_filename"
-        ]
-    )
-
-    if "audio_filename" in data.headers:
+    raw_data = tablib.Dataset(headers=columns)
+    filtered_data = tablib.Dataset(headers=columns)
+    if filename_key in data.headers:
         for row in data.dict:
-            audio_row = [row[col] for col in audio_columns if col in data.headers]
-            audio_data.append(audio_row)
+            row_values = [row[col] for col in columns]
+            raw_data.append(row_values)
+            if row.get(filename_key):
+                filtered_data.append(row_values)
+    return filtered_data
 
-    # Filtering audio data to remove rows not containing require column, i.e. audio_filename
-    filtered_audio_data = tablib.Dataset(headers=audio_data.headers)
-    for row in audio_data.dict:
-        if row.get("audio_filename") not in ["", None]:
-            filtered_audio_data.append([row.get(col) for col in audio_data.headers])
+
+def remove_duplicate_filename_rows(data, filename_key):
+    """
+    This method removes any rows with same filename.
+    Only keep the first row if multiple rows have same filenames.
+    """
+    seen_filenames = set()
+    non_duplicated_data = tablib.Dataset(headers=data.headers)
 
     for row in data.dict:
-        dictionary_entries_row = [
-            row[col]
-            for col in data.headers
-            if col not in audio_columns or col == "audio_filename"
-        ]
+        filename = row[filename_key]
+        if filename not in seen_filenames:
+            seen_filenames.add(filename)
+            non_duplicated_data.append(row.values())
+
+    return non_duplicated_data
+
+
+def separate_datasets(data):
+    """
+    Splits the cleaned CSV data into four datasets:
+    - Dictionary entries
+    - Filtered audio entries
+    - Filtered image entries
+    - Filtered video resources
+    """
+    media_supported_columns = {
+        "audio": [
+            "audio_filename",
+            "audio_title",
+            "audio_description",
+            "audio_speaker",
+            "audio_speaker_2",
+            "audio_speaker_3",
+            "audio_speaker_4",
+            "audio_speaker_5",
+            "audio_acknowledgement",
+            "audio_include_in_kids_site",
+            "audio_include_in_games",
+        ],
+        "img": [
+            "img_filename",
+            "img_title",
+            "img_description",
+            "img_acknowledgement",
+            "img_include_in_kids_site",
+        ],
+        "video": [
+            "video_filename",
+            "video_title",
+            "video_description",
+            "video_acknowledgement",
+            "video_include_in_kids_site",
+        ],
+    }
+
+    # Filter out existing columns for each media type
+    media_columns = {
+        media_type: [col for col in presets if col in data.headers]
+        for media_type, presets in media_supported_columns.items()
+    }
+
+    # Building filtered datasets for media
+    filtered_audio_data = build_filtered_dataset(
+        data, media_columns["audio"], "audio_filename"
+    )
+    filtered_img_data = build_filtered_dataset(
+        data, media_columns["img"], "img_filename"
+    )
+    filtered_video_data = build_filtered_dataset(
+        data, media_columns["video"], "video_filename"
+    )
+
+    filtered_audio_data = remove_duplicate_filename_rows(
+        filtered_audio_data, "audio_filename"
+    )
+    filtered_img_data = remove_duplicate_filename_rows(
+        filtered_img_data, "img_filename"
+    )
+    filtered_video_data = remove_duplicate_filename_rows(
+        filtered_video_data, "video_filename"
+    )
+
+    # Building dataset for dictionary entries
+    exclude_columns = set(
+        media_columns["audio"] + media_columns["img"] + media_columns["video"]
+    )
+    keep_columns = [
+        col
+        for col in data.headers
+        if col not in exclude_columns
+        or col in ["audio_filename", "img_filename", "video_filename"]
+    ]
+    dictionary_entries_data = tablib.Dataset(headers=keep_columns)
+
+    for row in data.dict:
+        dictionary_entries_row = [row[col] for col in keep_columns]
         dictionary_entries_data.append(dictionary_entries_row)
 
-    return dictionary_entries_data, filtered_audio_data
+    return (
+        dictionary_entries_data,
+        filtered_audio_data,
+        filtered_img_data,
+        filtered_video_data,
+    )
 
 
-def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run):
+def import_audio_resource(import_job, audio_data, dry_run):
     """
     Imports audio files and appends IDs of the imported files as related_audio in dictionary_entry_data.
     Returns updated dictionary_entry_data and result from audio import.
@@ -194,31 +197,127 @@ def import_audio_resource(import_job, audio_data, dictionary_entry_data, dry_run
         import_job=import_job.id,
     ).import_data(dataset=audio_data, dry_run=dry_run)
 
+    audio_filename_map = {}
+
     # Adding audio ids
-    if len(audio_data):
-        audio_lookup = {
-            row["audio_filename"]: row["id"]
-            for row in audio_data.dict
-            if row.get("audio_filename")
-        }
-        dictionary_entry_data.append_col(
-            [""] * len(dictionary_entry_data), header="related_audio"
-        )
-        related_audio_col_index = dictionary_entry_data.headers.index("related_audio")
-        for i, row in enumerate(dictionary_entry_data.dict):
-            audio_filename = row.get("audio_filename")
-            related_id = audio_lookup.get(audio_filename, "")
-            row_list = list(dictionary_entry_data[i])
-            row_list[related_audio_col_index] = related_id  # comma separated string
-            dictionary_entry_data[i] = tuple(row_list)
+    if audio_import_result.totals["new"]:
+        for row in audio_data.dict:
+            audio_filename_map[row["audio_filename"]] = row["id"]
 
-    return audio_import_result, dictionary_entry_data
+    return audio_import_result, audio_filename_map
 
 
-def import_dictionary_entry_resource(import_job, dictionary_entry_data, dry_run):
+def import_img_resource(import_job, img_data, dry_run):
+    """
+    Imports image files and appends IDs of the imported files as related_images in dictionary_entry_data.
+    Returns updated dictionary_entry_data and result from image import.
+    """
+
+    img_import_result = ImageResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=img_data, dry_run=dry_run)
+
+    img_filename_map = {}
+
+    # Adding image ids
+    if img_import_result.totals["new"]:
+        for row in img_data.dict:
+            img_filename_map[row["img_filename"]] = row["id"]
+
+    return img_import_result, img_filename_map
+
+
+def import_video_resource(import_job, video_data, dry_run):
+    """
+    Imports video files and appends IDs of the imported files as related_videos in dictionary_entry_data.
+    Returns updated dictionary_entry_data and result from video import.
+    """
+
+    video_import_result = VideoResource(
+        site=import_job.site,
+        run_as_user=import_job.run_as_user,
+        import_job=import_job.id,
+    ).import_data(dataset=video_data, dry_run=dry_run)
+
+    video_filename_map = {}
+
+    # Adding video ids
+    if video_import_result.totals["new"]:
+        for row in video_data.dict:
+            video_filename_map[row["video_filename"]] = row["id"]
+
+    return video_import_result, video_filename_map
+
+
+def get_column_index(data, column_name):
+    """
+    Return the index of column if present in the dataset.
+    """
+    try:
+        column_index = data.headers.index(column_name)
+        return column_index
+    except ValueError:
+        return -1
+
+
+def add_column(data, column_name):
+    """
+    Add provided column to the tablib dataset.
+    """
+    data.append_col([""] * len(data), header=column_name)
+    return data.headers.index(column_name)
+
+
+def add_related_id(row_list, filename_col_index, related_media_col_index, media_map):
+    """
+    Lookup the filename against the media map, and add the id of the media resource to
+    the provided row.
+    """
+    if not media_map:
+        # If media map is empty, do nothing
+        return
+
+    filename = row_list[filename_col_index]
+    related_id = media_map.get(filename, "")
+    row_list[related_media_col_index] = related_id
+
+
+def import_dictionary_entry_resource(
+    import_job,
+    dictionary_entry_data,
+    audio_filename_map,
+    img_filename_map,
+    video_filename_map,
+    dry_run,
+):
     """
     Imports dictionary entries and returns the import result.
+    This method adds related media columns, i.e. "related_images", "related_audio" and fills
+    them up with ids from the media maps, by looking them up against the filename columns.
     """
+
+    related_audio_column = add_column(dictionary_entry_data, "related_audio")
+    audio_filename_column = get_column_index(dictionary_entry_data, "audio_filename")
+    related_image_column = add_column(dictionary_entry_data, "related_images")
+    image_filename_column = get_column_index(dictionary_entry_data, "img_filename")
+    related_video_column = add_column(dictionary_entry_data, "related_videos")
+    video_filename_column = get_column_index(dictionary_entry_data, "video_filename")
+
+    for i, row in enumerate(dictionary_entry_data.dict):
+        row_list = list(dictionary_entry_data[i])
+        add_related_id(
+            row_list, audio_filename_column, related_audio_column, audio_filename_map
+        )
+        add_related_id(
+            row_list, image_filename_column, related_image_column, img_filename_map
+        )
+        add_related_id(
+            row_list, video_filename_column, related_video_column, video_filename_map
+        )
+        dictionary_entry_data[i] = tuple(row_list)
+
     dictionary_entry_import_result = DictionaryEntryResource(
         site=import_job.site,
         run_as_user=import_job.run_as_user,
@@ -234,6 +333,8 @@ def generate_report(
     ignored_columns,
     missing_media,
     audio_import_result,
+    img_import_result,
+    video_import_result,
     dictionary_entry_import_result,
 ):
     """
@@ -250,51 +351,27 @@ def generate_report(
 
     # Add media errors to report
     for missing_media_row in missing_media:
-        error_row_instance = ImportJobReportRow(
-            site=import_job.site,
-            report=report,
-            status=RowStatus.ERROR,
+        create_or_append_error_row(
+            import_job,
+            report,
             row_number=missing_media_row["idx"],
             errors=[
                 f"Media file not found in uploaded files: {missing_media_row['filename']}."
             ],
         )
-        error_row_instance.save()
 
-    # Adding error messages to the report
-    for row in dictionary_entry_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            error_row_instance = ImportJobReportRow(
-                site=import_job.site,
-                report=report,
-                status=RowStatus.ERROR,
-                row_number=row.number,
-                errors=row.error_messages,
-            )
-            error_row_instance.save()
-
-    # If the row already exists, add message to the errors list.
-    existing_error_rows = ImportJobReportRow.objects.filter(report=report).values_list(
-        "row_number", flat=True
-    )
-    for row in audio_import_result.rows:
-        if row.import_type == RowResult.IMPORT_TYPE_SKIP:
-            if row.number in existing_error_rows:
-                error_row_instance = ImportJobReportRow.objects.get(
-                    report=report, row_number=row.number
+    # Add errors from individual import results to report
+    for result in [
+        dictionary_entry_import_result,
+        audio_import_result,
+        img_import_result,
+        video_import_result,
+    ]:
+        for row in result.rows:
+            if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+                create_or_append_error_row(
+                    import_job, report, row_number=row.number, errors=row.error_messages
                 )
-                error_row_instance.errors = (
-                    error_row_instance.errors + row.error_messages
-                )
-            else:
-                error_row_instance = ImportJobReportRow(
-                    site=import_job.site,
-                    report=report,
-                    status=RowStatus.ERROR,
-                    row_number=row.number,
-                    errors=row.error_messages,
-                )
-            error_row_instance.save()
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
@@ -331,13 +408,26 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
     # get a separate table for each model
-    dictionary_entry_data, audio_data = separate_data(cleaned_data)
+    dictionary_entry_data, audio_data, img_data, video_data = separate_datasets(
+        cleaned_data
+    )
 
-    audio_import_result, dictionary_entry_data = import_audio_resource(
-        import_job, audio_data, dictionary_entry_data, dry_run
+    audio_import_result, audio_filename_map = import_audio_resource(
+        import_job, audio_data, dry_run
+    )
+    img_import_result, img_filename_map = import_img_resource(
+        import_job, img_data, dry_run
+    )
+    video_import_result, video_filename_map = import_video_resource(
+        import_job, video_data, dry_run
     )
     dictionary_entry_import_result = import_dictionary_entry_resource(
-        import_job, dictionary_entry_data, dry_run
+        import_job,
+        dictionary_entry_data,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+        dry_run,
     )
 
     report = generate_report(
@@ -346,6 +436,8 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
         ignored_columns,
         missing_media,
         audio_import_result,
+        img_import_result,
+        video_import_result,
         dictionary_entry_import_result,
     )
     attach_csv_to_report(data, import_job, report)
