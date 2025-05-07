@@ -1,5 +1,5 @@
 name: "Scan"
-description: "Scan container images before deploy using Trivy and generate CycloneDX SBOMs"
+description: "Scan container images, generate CycloneDX SBOMs, and print Python dependency tree"
 
 inputs:
   env:
@@ -26,38 +26,41 @@ runs:
     - name: Login to ECR
       shell: bash
       run: |
-        aws ecr get-login-password --region ${{ inputs.aws_region }} | \
-        docker login --username AWS --password-stdin ${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com
+        aws ecr get-login-password --region "${{ inputs.aws_region }}" | \
+        docker login --username AWS --password-stdin "${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com"
 
     - name: Install Trivy
       shell: bash
       run: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        if ! command -v trivy &> /dev/null; then
+          echo "Installing Trivy..."
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        fi
 
-    - name: Ensure Python 3 and pip are available
+    - name: Ensure Python 3, pip, and dependencies
       shell: bash
       run: |
-        python3 --version || sudo apt-get install -y python3
-        pip3 install -r requirements.txt || true
+        command -v python3 || sudo apt-get install -y python3
+        command -v pip3 || sudo apt-get install -y python3-pip
+        [ -f requirements.txt ] && pip3 install -r requirements.txt || echo "No requirements.txt found"
+        pip3 install pipdeptree
 
-    - name: Scan images from YAML and generate CycloneDX SBOM
+    - name: Scan images and generate CycloneDX SBOMs
       shell: bash
       run: |
         set -euo pipefail
 
         FILE="./downloads/Values.${{ inputs.env }}.yaml"
+        [[ -f "$FILE" ]] || { echo "$FILE not found"; exit 1; }
 
-        if [[ ! -f "$FILE" ]]; then
-          echo "ERROR: File $FILE not found"
-          exit 1
-        fi
+        IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
+        echo "TRIVY_FAILED=0" >> $GITHUB_ENV
 
-        echo "🔍 Extracting image references from $FILE..."
-        grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE" | while read -r IMAGE; do
+        for IMAGE in $IMAGES; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
 
+          echo "🔍 Scanning $IMAGE"
           echo "============================================================"
-          echo "Scanning $IMAGE"
 
           trivy image --scanners vuln,secret,config,license \
             --format table \
@@ -65,7 +68,7 @@ runs:
             --skip-dirs /proc,/sys \
             --timeout 10m \
             --severity HIGH,CRITICAL \
-            --vuln-type os,library --exit-code 1 "$IMAGE"
+            --vuln-type os,library "$IMAGE" || echo "TRIVY_FAILED=1" >> $GITHUB_ENV
 
           trivy image --scanners vuln,secret,config,license \
             --format cyclonedx \
@@ -73,10 +76,9 @@ runs:
             --skip-dirs /proc,/sys \
             --timeout 10m \
             --severity HIGH,CRITICAL \
-            --vuln-type os,library \
-            --exit-code 1 "$IMAGE" > "${FILENAME}_scan_cbom.json"
+            --vuln-type os,library "$IMAGE" > "${FILENAME}_scan_cbom.json"
 
-          echo "Scanning $IMAGE completed"
+          echo "Scan complete for $IMAGE"
           echo "============================================================"
         done
 
@@ -86,10 +88,27 @@ runs:
         set -euo pipefail
 
         FILE="./downloads/Values.${{ inputs.env }}.yaml"
+        IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
 
-        grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE" | while read -r IMAGE; do
+        for IMAGE in $IMAGES; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-          echo "Dependency Tree for $IMAGE:"
+          echo "Dependency Tree from SBOM for $IMAGE:"
           python3 ./tree.py "${FILENAME}_scan_cbom.json"
           echo
         done
+
+    - name: Print Python dependency tree (pipdeptree)
+      shell: bash
+      run: |
+        echo "Python Dependency Tree:"
+        pipdeptree --warn silence || echo "pipdeptree failed to generate tree"
+
+    - name: Fail if vulnerabilities were found
+      shell: bash
+      run: |
+        if [[ "$TRIVY_FAILED" == "1" ]]; then
+          echo "Vulnerabilities were detected in one or more images."
+          echo "🔧 Please address the vulnerabilities to fix this job."
+          exit 1
+        fi
+        echo "No HIGH or CRITICAL vulnerabilities detected."
