@@ -29,14 +29,14 @@ runs:
       shell: bash
       run: |
         aws ecr get-login-password --region "${{ inputs.aws_region }}" | \
-        docker login --username AWS --password-stdin "${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com"
+        docker login --username AWS --password-stdin "${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com" > /dev/null
 
     - name: Install Trivy
       shell: bash
       run: |
         if ! command -v trivy &> /dev/null; then
           echo "Installing Trivy..."
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin > /dev/null
         fi
 
     - name: Setup Python and pip tools
@@ -47,11 +47,11 @@ runs:
     - name: Install Python dependencies
       shell: bash
       run: |
-        pip install --no-cache-dir pipdeptree
+        pip install --no-cache-dir pipdeptree > /dev/null
         if [[ -f requirements.txt ]]; then
-          pip install -r requirements.txt
+          pip install -r requirements.txt > /dev/null
         else
-          echo "No requirements.txt found."
+          echo "No requirements.txt found." > /dev/null
         fi
 
     - name: Extract Image References
@@ -103,10 +103,10 @@ runs:
     - name: Write CycloneDX Dependency Trees to Files
       shell: bash
       run: |
-        mkdir -p sbom_trees
+        mkdir -p dependency_trees
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-          OUTPUT_FILE="sbom_trees/${FILENAME}_trivy_tree.txt"
+          OUTPUT_FILE="dependency_trees/${FILENAME}_trivy_tree.txt"
 
           echo "Generating dependency tree for $IMAGE → $OUTPUT_FILE"
           python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json" > "$OUTPUT_FILE"
@@ -115,10 +115,8 @@ runs:
     - name: Write Python Dependency Tree to File
       shell: bash
       run: |
-        mkdir -p dependency_output
         echo "Generating Python dependency tree..."
-        pipdeptree --warn silence > dependency_output/python_dependency_tree.txt || echo "pipdeptree failed"
-
+        pipdeptree --warn silence > dependency_trees/python_dependency_tree.txt || echo "pipdeptree failed"
 
     - name: Fail If Vulnerabilities Found
       shell: bash
@@ -139,6 +137,12 @@ runs:
         if [[ "$TRIVY_FAILED" -eq 1 ]]; then
           echo "Vulnerabilities were found. Please address them before proceeding."
           echo "Find each vulnerable package in the trivy generated dependency tree and make the necessary upgrade to address it"
-          echo "If the vulnerable package is installed as python transitive dependency check the python_dependency_tree.txt"
+          echo "If the vulnerable package is installed as a Python transitive dependency, check the python_dependency_tree.txt"
           exit 1
         fi
+
+    - name: Upload All Dependency Trees
+      uses: actions/upload-artifact@v4
+      with:
+        name: all-dependency-trees
+        path: dependency_trees/
