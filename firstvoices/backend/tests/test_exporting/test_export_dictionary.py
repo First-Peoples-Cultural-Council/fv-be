@@ -29,7 +29,21 @@ class TestExportDictionary(SiteContentListEndpointMixin, BaseSiteContentApiTest)
 
     @pytest.mark.django_db
     def test_export_dictionary_csv_renderer(self):
-        entry = factories.DictionaryEntryFactory.create()
+        entry = factories.DictionaryEntryFactory.create(
+            translations=["translation 1", "translation 2", "translation 3"]
+        )
+        entry2 = factories.DictionaryEntryFactory.create(
+            site=entry.site, translations=[]
+        )
+        entry3 = factories.DictionaryEntryFactory.create()
+
+        audio = factories.AudioFactory.create(site=entry.site)
+        speaker = factories.PersonFactory.create(site=entry.site)
+        audio.speakers.add(speaker)
+        speaker2 = factories.PersonFactory.create(site=entry.site)
+        audio.speakers.add(speaker2)
+        entry.related_audio.add(audio)
+
         user = factories.get_superadmin()
         self.client.force_authenticate(user=user)
 
@@ -45,16 +59,22 @@ class TestExportDictionary(SiteContentListEndpointMixin, BaseSiteContentApiTest)
             "translation,translation_2,translation_3,translation_4,translation_5,"
             "acknowledgement,"
             "alternate_spelling,exclude_from_games,exclude_from_kids,"
-            "is_immersion_label,note,part_of_speech,pronunciation,site_slug,"
+            "is_immersion_label,note,part_of_speech,pronunciation,audio_title,audio_description,"
+            "audio_speaker,audio_speaker_2,audio_2_title,audio_2_speaker,site_slug,"
             "created,created_by,last_modified,last_modified_by\r\n"
         )
 
         assert self.get_entry_as_csv_row(entry) in response_string
+        assert self.get_entry_as_csv_row(entry2) in response_string
+        assert str(entry3.id) not in response_string
 
     @pytest.mark.django_db
     def test_export_dictionary_resource(self):
-        entry1 = factories.DictionaryEntryFactory.create()
-        factories.DictionaryEntryFactory.create(site=entry1.site)
+        entry1 = factories.DictionaryEntryFactory.create(
+            translations=["translation 1", "translation 2", "translation 3"]
+        )
+        factories.DictionaryEntryFactory.create(site=entry1.site, translations=[])
+
         factories.DictionaryEntryFactory.create()
         dataset = DictionaryEntryResource(site=entry1.site).export()
         assert len(dataset.dict) == 2
