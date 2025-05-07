@@ -1,5 +1,5 @@
 name: "Scan"
-description: "Scan images before deploy"
+description: "Scan container images before deploy using Trivy and generate CycloneDX SBOMs"
 
 inputs:
   env:
@@ -34,7 +34,13 @@ runs:
       run: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    - name: Scan images from YAML file
+    - name: Ensure Python 3 and pip are available
+      shell: bash
+      run: |
+        python3 --version || sudo apt-get install -y python3
+        pip3 install -r requirements.txt || true
+
+    - name: Scan images from YAML and generate CycloneDX SBOM
       shell: bash
       run: |
         set -euo pipefail
@@ -48,6 +54,42 @@ runs:
 
         echo "🔍 Extracting image references from $FILE..."
         grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE" | while read -r IMAGE; do
+          FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+
+          echo "============================================================"
           echo "Scanning $IMAGE"
-          trivy image --vuln-type os,library --severity CRITICAL,HIGH --exit-code 1 "$IMAGE"
+
+          trivy image --scanners vuln,secret,config,license \
+            --format table \
+            --ignore-unfixed \
+            --skip-dirs /proc,/sys \
+            --timeout 10m \
+            --severity HIGH,CRITICAL \
+            --vuln-type os,library --exit-code 1 "$IMAGE"
+
+          trivy image --scanners vuln,secret,config,license \
+            --format cyclonedx \
+            --ignore-unfixed \
+            --skip-dirs /proc,/sys \
+            --timeout 10m \
+            --severity HIGH,CRITICAL \
+            --vuln-type os,library \
+            --exit-code 1 "$IMAGE" > "${FILENAME}_scan_cbom.json"
+
+          echo "Scanning $IMAGE completed"
+          echo "============================================================"
+        done
+
+    - name: Print CycloneDX Dependency Trees
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        FILE="./downloads/Values.${{ inputs.env }}.yaml"
+
+        grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE" | while read -r IMAGE; do
+          FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+          echo "Dependency Tree for $IMAGE:"
+          python3 ./tree.py "${FILENAME}_scan_cbom.json"
+          echo
         done

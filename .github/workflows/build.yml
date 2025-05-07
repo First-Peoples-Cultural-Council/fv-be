@@ -216,28 +216,6 @@ jobs:
           pipeline_step3: ${{ vars.PIPELINE_STEP3 }}
           pipeline_step4: ${{ vars.PIPELINE_STEP4 }}
 
-#  image_scan:
-#    name: Image Scan
-#    environment: dev
-#    runs-on: ubuntu-22.04
-#    needs: check_helm_chart_diff-dev
-#    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
-#    steps:
-#      - name: Configure AWS credentials
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-#          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-#      - name: "Run image scan"
-#        run: |
-#          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
-#          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
-#          echo "List of findings are below"
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
-#          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
-
   check_helm_chart_diff-dev:
       needs : [build_with_tekton]
       name: Validate Helm Diff - Dev
@@ -331,28 +309,6 @@ jobs:
             remote_helm_version: ${{ env.REMOTE_HELM_RELEASE_VERSION }}
             helm_chart_name: ${{ secrets.HELM_CHART_NAME  }}
 
-#  trivy_scan-dev:
-#    name: Scan - Dev
-#    runs-on: ubuntu-latest
-#    needs : [set-environment, check_helm_chart_diff-dev]
-#    if: needs.set-environment.outputs.environment == 'dev'
-#    environment: dev
-#    steps:
-#    - uses: actions/checkout@v4
-#    - name: Download Helm values file
-#      uses: actions/download-artifact@v4
-#      with:
-#        name: helm-values
-#        path: ./downloads
-#    -   name: "Scan Images"
-#        uses: ./.github/actions/scan
-#        with:
-#          env: ${{ vars.ENV }}
-#          aws_region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
-#          aws-secret-access-key:  ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
-#          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
-#          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
-
   helm_upgrade-dev:
       name: Deploy - Dev
       runs-on: ubuntu-latest
@@ -442,3 +398,50 @@ jobs:
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
           env: ${{  vars.ENV  }}
           helm_chart_name: ${{ secrets.HELM_CHART_NAME }}
+
+  image_scan:
+    name: Image Scan
+    environment: dev
+    runs-on: ubuntu-22.04
+    needs: helm_upgrade-dev
+    if: ((github.ref == 'refs/heads/dev') && (github.event_name != 'pull_request'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{  secrets.FPCC_DEFAULT_AWS_REGION  }}
+      - name: "Run image scan"
+        run: |
+          aws ecr start-image-scan --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+          aws ecr wait image-scan-complete --repository-name ${{ secrets.ECR_REPO_NAME }} --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }}
+          echo "List of findings are below"
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | jq .imageScanFindings.findings
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"CRITICAL\"') ]]; then echo "CRTICAL Vulnerabilities present in this deployment"; exit 1; fi
+          aws ecr describe-image-scan-findings --image-id imageTag=build-${{ github.head_ref }}${{ github.sha }} --repository-name ${{ secrets.ECR_REPO_NAME }} | if [[ $(grep  '\"severity\": \"HIGH\"') ]]; then echo "HIGH Vulnerabilities present in this deployment"; exit 1; fi
+
+
+  trivy_scan-dev:
+    name: Scan - Dev
+    runs-on: ubuntu-latest
+    needs: [helm_upgrade-dev]
+    if: needs.set-environment.outputs.environment == 'dev'
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Helm values file
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values
+          path: ./downloads
+
+      - name: Scan Images
+        uses: ./.github/actions/scan
+        with:
+          env: ${{ vars.ENV }}
+          aws_region: ${{ secrets.FPCC_DEFAULT_AWS_REGION }}
+          aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
+          aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
