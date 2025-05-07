@@ -97,7 +97,7 @@ runs:
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
           echo "************************************************************************************"
           echo "Dependency Tree from SBOM for $IMAGE:"
-          python3 "${{ github.action_path }}tree.py" "${FILENAME}_scan_cbom.json"
+          python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json"
           echo "************************************************************************************"
           echo
         done
