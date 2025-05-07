@@ -3,6 +3,7 @@ from copy import deepcopy
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
 from backend.models.files import File
@@ -523,8 +524,15 @@ def get_missing_media(data, import_job_instance):
     for media_filename in media_filename_list:
         if media_filename in data.headers:
             for idx, filename in enumerate(data[media_filename]):
-                if filename and filename not in associated_filenames:
-                    missing_media.append({"idx": idx + 1, "filename": filename})
+                if not filename:
+                    # Do nothing if the field is empty
+                    continue
+                else:
+                    # If a filename is provided, but the file cannot be found in the associated files
+                    # add an error row for that in missing media
+                    valid_filename = get_valid_filename(filename)
+                    if valid_filename not in associated_filenames:
+                        missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
 
