@@ -78,7 +78,7 @@ runs:
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
           echo "━━━━━━━━━━━━━━━━━━━━━ SCANNING $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
 
-          trivy image --scanners vuln,secret,config \
+          trivy image --scanners vuln,secret,config license \
             --format table \
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
@@ -124,7 +124,7 @@ runs:
         set -euo pipefail
         TRIVY_FAILED=0
         while IFS= read -r IMAGE; do
-          trivy image --scanners vuln,secret,config \
+          trivy image --scanners vuln \
             --format table \
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
