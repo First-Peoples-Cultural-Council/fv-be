@@ -100,21 +100,25 @@ runs:
           echo
         done < image-list.txt
 
-    - name: Print CycloneDX Dependency Trees
+    - name: Write CycloneDX Dependency Trees to Files
       shell: bash
       run: |
+        mkdir -p sbom_trees
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-          echo "Dependency Tree from SBOM for $IMAGE:"
-          python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json"
-          echo
+          OUTPUT_FILE="sbom_trees/${FILENAME}_trivy_tree.txt"
+
+          echo "Generating dependency tree for $IMAGE → $OUTPUT_FILE"
+          python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json" > "$OUTPUT_FILE"
         done < image-list.txt
 
-    - name: Print Python Dependency Tree
+    - name: Write Python Dependency Tree to File
       shell: bash
       run: |
-        echo "Python Dependency Tree:"
-        pipdeptree --warn silence || echo "pipdeptree failed"
+        mkdir -p dependency_output
+        echo "Generating Python dependency tree..."
+        pipdeptree --warn silence > dependency_output/python_dependency_tree.txt || echo "pipdeptree failed"
+
 
     - name: Fail If Vulnerabilities Found
       shell: bash
@@ -134,5 +138,7 @@ runs:
 
         if [[ "$TRIVY_FAILED" -eq 1 ]]; then
           echo "Vulnerabilities were found. Please address them before proceeding."
+          echo "Find each vulnerable package in the trivy generated dependency tree and make the necessary upgrade to address it"
+          echo "If the vulnerable package is installed as python transitive dependency check the python_dependency_tree.txt"
           exit 1
         fi
