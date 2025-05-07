@@ -520,19 +520,20 @@ def get_missing_media(data, import_job_instance):
     associated_filenames = [file.split("/")[-1] for file in associated_files]
 
     missing_media = []
-    media_filename_list = ["AUDIO_FILENAME", "IMG_FILENAME", "VIDEO_FILENAME"]
-    for media_filename in media_filename_list:
-        if media_filename in data.headers:
-            for idx, filename in enumerate(data[media_filename]):
-                if not filename:
-                    # Do nothing if the field is empty
-                    continue
-                else:
-                    # If a filename is provided, but the file cannot be found in the associated files
-                    # add an error row for that in missing media
-                    valid_filename = get_valid_filename(filename)
-                    if valid_filename not in associated_filenames:
-                        missing_media.append({"idx": idx + 1, "filename": filename})
+    media_fields = ["AUDIO_FILENAME", "IMG_FILENAME", "VIDEO_FILENAME"]
+
+    for field in media_fields:
+        if field not in data.headers:
+            continue
+        for idx, filename in enumerate(data[field]):
+            if not filename:
+                # Do nothing if the field is empty
+                continue
+            valid_filename = get_valid_filename(filename)
+            if valid_filename not in associated_filenames:
+                # If a filename is provided, but the file cannot be found in the associated files
+                # add an error row for that in missing media
+                missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
 
