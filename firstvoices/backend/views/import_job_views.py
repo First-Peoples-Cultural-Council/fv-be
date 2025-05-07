@@ -180,13 +180,15 @@ class ImportJobViewSet(
         curr_job.validation_status = JobStatus.ACCEPTED
         curr_job.save()
 
-        transaction.on_commit(
-            lambda: validate_import_job.apply_async(
-                (str(import_job_id),),
-                link_error=link_error_handler.s(),
-                ignore_result=True,
-            )
-        )
+        # transaction.on_commit(
+        #     lambda: validate_import_job.apply_async(
+        #         (str(import_job_id),),
+        #         link_error=link_error_handler.s(),
+        #         ignore_result=True,
+        #     )
+        # )
+
+        validate_import_job(str(import_job_id))
 
         return Response(status=status.HTTP_202_ACCEPTED)
 

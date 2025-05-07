@@ -1,4 +1,4 @@
-import uuid
+# import uuid
 
 from django.db import transaction
 from import_export import fields, resources, widgets
@@ -34,7 +34,7 @@ class BaseResource(resources.ModelResource):
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
-        dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        # dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
         dataset.append_col(lambda x: str(self.site.id), header="site")
         dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
         dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
