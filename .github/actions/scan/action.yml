@@ -56,7 +56,7 @@ runs:
         IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
         echo "TRIVY_FAILED=0" >> $GITHUB_ENV
 
-        "=================================>>>>> SCAN IN PROGRESS <<<<<================================="
+        echo "=================================>>>>> SCAN IN PROGRESS <<<<<================================="
 
         for IMAGE in $IMAGES; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
@@ -83,7 +83,7 @@ runs:
           echo "Scan completed for $IMAGE"
           echo "************************************************************************************"
         done
-        "=================================>>>>> SCAN COMPLETED <<<<<================================="
+        echo "=================================>>>>> SCAN COMPLETED <<<<<================================="
 
     - name: Print CycloneDX Dependency Trees
       shell: bash
