@@ -56,11 +56,13 @@ runs:
         IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
         echo "TRIVY_FAILED=0" >> $GITHUB_ENV
 
+        "=================================>>>>> SCAN IN PROGRESS <<<<<================================="
+
         for IMAGE in $IMAGES; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
 
           echo "🔍 Scanning $IMAGE"
-          echo "============================================================"
+          echo "************************************************************************************"
 
           trivy image --scanners vuln,secret,config,license \
             --format table \
@@ -78,9 +80,10 @@ runs:
             --severity HIGH,CRITICAL \
             --vuln-type os,library "$IMAGE" > "${FILENAME}_scan_cbom.json"
 
-          echo "Scan complete for $IMAGE"
-          echo "============================================================"
+          echo "Scan completed for $IMAGE"
+          echo "************************************************************************************"
         done
+        "=================================>>>>> SCAN COMPLETED <<<<<================================="
 
     - name: Print CycloneDX Dependency Trees
       shell: bash
@@ -92,8 +95,10 @@ runs:
 
         for IMAGE in $IMAGES; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+          echo "************************************************************************************"
           echo "Dependency Tree from SBOM for $IMAGE:"
-          python3 ./tree.py "${FILENAME}_scan_cbom.json"
+          python3 "${{ github.action_path }}/tree.py "${FILENAME}_scan_cbom.json"
+          echo "************************************************************************************"
           echo
         done
 
@@ -108,7 +113,7 @@ runs:
       run: |
         if [[ "$TRIVY_FAILED" == "1" ]]; then
           echo "Vulnerabilities were detected in one or more images."
-          echo "🔧 Please address the vulnerabilities to fix this job."
+          echo "Please address the vulnerabilities to fix this job."
           exit 1
         fi
         echo "No HIGH or CRITICAL vulnerabilities detected."
