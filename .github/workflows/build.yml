@@ -445,3 +445,4 @@ jobs:
           aws_account: ${{ secrets.FPCC_DEFAULT_CLOUD_ACCOUNT }}
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
+          ecr_repo_name: "fv-be"

@@ -12,6 +12,8 @@ inputs:
     required: true
   aws-secret-access-key:
     required: true
+  ecr_repo_name:
+    required: true
 
 runs:
   using: "composite"
@@ -37,40 +39,53 @@ runs:
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
         fi
 
-    - name: Ensure Python 3, pip, and dependencies
+    - name: Setup Python and pip tools
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
       shell: bash
       run: |
-        command -v python3 || sudo apt-get install -y python3
-        command -v pip3 || sudo apt-get install -y python3-pip
-        [ -f requirements.txt ] && pip3 install -r requirements.txt || echo "No requirements.txt found"
-        pip3 install pipdeptree
+        pip install --no-cache-dir pipdeptree
+        if [[ -f requirements.txt ]]; then
+          pip install -r requirements.txt
+        else
+          echo "No requirements.txt found."
+        fi
 
-    - name: Scan images and generate CycloneDX SBOMs
+    - name: Extract Image References
+      id: extract
+      shell: bash
+      run: |
+        FILE="./downloads/Values.${{ inputs.env }}.yaml"
+        REPO="${{ inputs.ecr_repo_name }}"
+        [[ -f "$FILE" ]] || { echo "File $FILE not found"; exit 1; }
+
+        IMAGES=$(grep -oE "[^ ]*${REPO}[^ ]*@sha256:[a-f0-9]+" "$FILE" | sort -u)
+        if [[ -z "$IMAGES" ]]; then
+          echo "No images found matching $REPO"
+          exit 1
+        fi
+
+        echo "$IMAGES" > image-list.txt
+
+    - name: Scan Images and Generate SBOMs
       shell: bash
       run: |
         set -euo pipefail
-
-        FILE="./downloads/Values.${{ inputs.env }}.yaml"
-        [[ -f "$FILE" ]] || { echo "$FILE not found"; exit 1; }
-
-        IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
-        echo "TRIVY_FAILED=0" >> $GITHUB_ENV
-
-        echo "=================================>>>>> SCAN IN PROGRESS <<<<<================================="
-
-        for IMAGE in $IMAGES; do
+        while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+          echo "━━━━━━━━━━━━━━━━━━━━━ SCANNING $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
 
-          echo "Scanning $IMAGE"
-          echo "************************************************************************************"
-
-          trivy image --scanners vuln,secret,config,license \
+          trivy image --scanners vuln,secret,config \
             --format table \
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
             --timeout 10m \
             --severity HIGH,CRITICAL \
-            --vuln-type os,library "$IMAGE" || echo "TRIVY_FAILED=1" >> $GITHUB_ENV
+            --vuln-type os,library \
+            "$IMAGE"
 
           trivy image --scanners vuln,secret,config,license \
             --format cyclonedx \
@@ -78,42 +93,46 @@ runs:
             --skip-dirs /proc,/sys \
             --timeout 10m \
             --severity HIGH,CRITICAL \
-            --vuln-type os,library "$IMAGE" > "${FILENAME}_scan_cbom.json"
+            --vuln-type os,library \
+            "$IMAGE" > "${FILENAME}_scan_cbom.json"
 
           echo "Scan completed for $IMAGE"
-          echo "************************************************************************************"
-        done
-        echo "=================================>>>>> SCAN COMPLETED <<<<<================================="
+          echo
+        done < image-list.txt
 
     - name: Print CycloneDX Dependency Trees
       shell: bash
       run: |
-        set -euo pipefail
-
-        FILE="./downloads/Values.${{ inputs.env }}.yaml"
-        IMAGES=$(grep -oE '[^ ]+@sha256:[a-f0-9]+' "$FILE")
-
-        for IMAGE in $IMAGES; do
+        while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-          echo "************************************************************************************"
           echo "Dependency Tree from SBOM for $IMAGE:"
           python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json"
-          echo "************************************************************************************"
           echo
-        done
+        done < image-list.txt
 
-    - name: Print Python dependency tree (pipdeptree)
+    - name: Print Python Dependency Tree
       shell: bash
       run: |
         echo "Python Dependency Tree:"
-        pipdeptree --warn silence || echo "pipdeptree failed to generate tree"
+        pipdeptree --warn silence || echo "pipdeptree failed"
 
-    - name: Fail if vulnerabilities were found
+    - name: Fail If Vulnerabilities Found
       shell: bash
       run: |
-        if [[ "$TRIVY_FAILED" == "1" ]]; then
-          echo "Vulnerabilities were detected in one or more images."
-          echo "Please address the vulnerabilities to fix this job."
+        set -euo pipefail
+        TRIVY_FAILED=0
+        while IFS= read -r IMAGE; do
+          trivy image --scanners vuln,secret,config \
+            --format table \
+            --ignore-unfixed \
+            --skip-dirs /proc,/sys \
+            --timeout 10m \
+            --severity HIGH,CRITICAL \
+            --vuln-type os,library \
+            --exit-code 1 "$IMAGE" > /dev/null || TRIVY_FAILED=1
+        done < image-list.txt
+
+        if [[ "$TRIVY_FAILED" -eq 1 ]]; then
+          echo "Vulnerabilities were found. Please address them before proceeding."
           exit 1
         fi
-        echo "No HIGH or CRITICAL vulnerabilities detected."
