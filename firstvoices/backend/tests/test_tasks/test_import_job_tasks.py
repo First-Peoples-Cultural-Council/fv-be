@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pytest
 import tablib
+from django.utils.text import get_valid_filename
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
@@ -639,6 +640,11 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -732,14 +738,29 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
         ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "audio/mpeg"),
             import_job=import_job,
         )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another image.jpg", "audio/mpeg"),
+            import_job=import_job,
+        )
         VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another video.mp4", "video/mp4"),
             import_job=import_job,
         )
 
@@ -1075,7 +1096,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     def test_related_audio(self):
         self.confirm_upload_with_media_files("related_audio.csv")
 
-        entry_with_audio = DictionaryEntry.objects.filter(title="Word 1")[0]
+        entry_with_audio = DictionaryEntry.objects.get(title="Word 1")
         related_audio = entry_with_audio.related_audio.all()
         assert len(related_audio) == 1
 
@@ -1086,6 +1107,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.acknowledgement == "Test Ack"
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_audio = entry_2.related_audio.all()
+        assert len(related_audio) == 1
+        related_audio = related_audio[0]
+        assert (
+            get_valid_filename("Another audio") in related_audio.original.content.name
+        )
 
     def test_related_images(self):
         self.confirm_upload_with_media_files("related_images.csv")
@@ -1101,6 +1130,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image.acknowledgement == "Test Ack"
         assert related_image.exclude_from_kids is False
 
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_images = entry_2.related_images.all()
+        assert len(related_images) == 1
+        related_image = related_images[0]
+        assert (
+            get_valid_filename("Another image") in related_image.original.content.name
+        )
+
     def test_related_videos(self):
         self.confirm_upload_with_media_files("related_videos.csv")
 
@@ -1114,6 +1151,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_video.description == "Testing video upload"
         assert related_video.acknowledgement == "Test Ack"
         assert related_video.exclude_from_kids is False
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_videos = entry_2.related_videos.all()
+        assert len(related_videos) == 1
+        related_video = related_videos[0]
+        assert (
+            get_valid_filename("Another video") in related_video.original.content.name
+        )
 
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
