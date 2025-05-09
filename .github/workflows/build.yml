@@ -67,34 +67,48 @@ jobs:
   set-environment:
     name: Set Env
     runs-on: ubuntu-latest
-    if: ((github.event_name != 'pull_request') && (github.actor != 'dependabot[bot]'))
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
     outputs:
       environment: ${{ steps.set-environment.outputs.environment }}
-    steps:
-      - name: Set environment based on branch
-        id: set-environment
-        run: |
+      fv_infra_ref: ${{ steps.set-environment.outputs.fv_infra_ref }}
 
+    steps:
+      - name: Determine environment and fv-infra ref
+        id: set-environment
+        shell: bash
+        run: |
+          REF_NAME="${GITHUB_REF##*/}"
           if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
             ENV="dev"
+            INFRA_REF="dev"
           elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             ENV="preprod"
-          elif [[ "$GITHUB_REF" =~ refs/tags/r-.* ]]; then
+            INFRA_REF="main"
+          elif [[ "$GITHUB_REF" =~ ^refs/tags/r-.* ]]; then
             ENV="prod"
+            # Get latest release tag from fv-infra
+            LATEST_TAG=$(git ls-remote --tags https://github.com/First-Peoples-Cultural-Council/fv-infra.git | \
+              awk -F/ '/refs\/tags\/r-/ { print $NF }' | sort -Vr | head -n1)
+            INFRA_REF="$LATEST_TAG"
           else
-            echo "Unknown branch reference: $GITHUB_REF"
-            exit 0
+            echo "Unknown branch or tag: $GITHUB_REF"
+            exit 1
           fi
 
           echo "Environment: $ENV"
+          echo "fv-infra ref: $INFRA_REF"
+
           echo "environment=$ENV" >> "$GITHUB_OUTPUT"
-      - name: Pull infra manifests
+          echo "fv_infra_ref=$INFRA_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout fv-infra
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ steps.set-environment.outputs.fv_infra_ref }}
           repository: First-Peoples-Cultural-Council/fv-infra
           token: ${{ secrets.PULL_CONFIG_SECRET }}
           path: helm
+
       - name: Upload Helm charts
         uses: actions/upload-artifact@v4
         if: always()
