@@ -2,7 +2,7 @@
 
 # Debug tools --------------------------------------
 django-debug-toolbar==5.2.0  # https://github.com/jazzband/django-debug-toolbar
-django-extensions==3.2.3  # https://github.com/django-extensions/django-extensions
+django-extensions==4.1  # https://github.com/django-extensions/django-extensions
 
 # Linting ------------------------------------------
 flake8==7.2.0  # https://github.com/PyCQA/flake8
