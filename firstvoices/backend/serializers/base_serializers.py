@@ -14,7 +14,14 @@ from ..models.constants import Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
 
-base_timestamp_fields = ("created", "created_by", "last_modified", "last_modified_by")
+base_timestamp_fields = (
+    "created",
+    "created_by",
+    "last_modified",
+    "last_modified_by",
+    "system_last_modified",
+    "system_last_modified_by",
+)
 base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
 
@@ -73,6 +80,7 @@ class UpdateSerializerMixin:
 
     def update(self, instance, validated_data):
         validated_data["last_modified_by"] = self.context["request"].user
+        validated_data["system_last_modified_by"] = self.context["request"].user
         return super().update(instance, validated_data)
 
 
@@ -84,6 +92,7 @@ class CreateSerializerMixin:
     def create(self, validated_data):
         validated_data["created_by"] = self.context["request"].user
         validated_data["last_modified_by"] = self.context["request"].user
+        validated_data["system_last_modified_by"] = self.context["request"].user
         return super().create(validated_data)
 
 
