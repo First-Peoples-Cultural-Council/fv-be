@@ -86,9 +86,21 @@ jobs:
             INFRA_REF="main"
           elif [[ "$GITHUB_REF" =~ ^refs/tags/r-.* ]]; then
             ENV="prod"
-            # Get latest release tag from fv-infra
-            LATEST_TAG=$(git ls-remote --tags https://github.com/First-Peoples-Cultural-Council/fv-infra.git | \
-              awk -F/ '/refs\/tags\/r-/ { print $NF }' | sort -Vr | head -n1)
+            echo "Fetching latest fv-infra tag for prod..."
+
+            # Fetch the latest tag from fv-infra repository
+            LATEST_TAG=$(curl -s \
+              -H "Authorization: token ${{ secrets.PULL_CONFIG_SECRET }}" \
+              -H "User-Agent: github-actions" \
+              https://api.github.com/repos/First-Peoples-Cultural-Council/fv-infra/tags | \
+              jq -r '.[].name' | grep '^r-' | sort -Vr | head -n1)
+
+            # Check if we found a valid tag
+            if [[ -z "$LATEST_TAG" ]]; then
+              echo "No matching release tag found for prod."
+              exit 1
+            fi
+
             INFRA_REF="$LATEST_TAG"
           else
             echo "Unknown branch or tag: $GITHUB_REF"
