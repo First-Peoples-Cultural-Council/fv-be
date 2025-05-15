@@ -204,6 +204,8 @@ class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
     created_by = serializers.StringRelatedField(read_only=True)
     last_modified = serializers.DateTimeField(read_only=True)
     last_modified_by = serializers.StringRelatedField(read_only=True)
+    system_last_modified = serializers.DateTimeField(read_only=True)
+    system_last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         fields = base_timestamp_fields + base_id_fields + ("site",)
