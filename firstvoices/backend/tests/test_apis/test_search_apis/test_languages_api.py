@@ -96,6 +96,27 @@ class TestLanguagesEndpoints(
         mock_search_query_execute.return_value = mock_results
         return self.client.get(url)
 
+    def assert_sites_match_user_permissions(self, response_data, user, sites):
+        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
+        for site in sites:
+            if can_view_site(user, site):
+                assert str(site.id) in site_id_list
+            else:
+                assert str(site.id) not in site_id_list
+
+    def create_mixed_sites(self, language):
+        site_public = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC
+        )
+        site_members = factories.SiteFactory(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
+        site_hidden = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        return site_public, site_members, site_team, site_hidden
+
     def format_language_hit(self, language):
         return {
             "_index": "language_2024_01_25_00_03_01",
@@ -185,26 +206,9 @@ class TestLanguagesEndpoints(
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
-
-        for site in [site_public, site_members, site_team, site_hidden]:
-            if can_view_site(user, site):
-                assert str(site.id) in site_id_list
-            else:
-                assert str(site.id) not in site_id_list
-
-    def create_mixed_sites(self, language):
-        site_public = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC
+        self.assert_sites_match_user_permissions(
+            response_data, user, [site_public, site_members, site_team, site_hidden]
         )
-        site_members = factories.SiteFactory(
-            language=language, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC, is_hidden=True
-        )
-        return site_public, site_members, site_team, site_hidden
 
     @pytest.mark.parametrize(
         "get_response", ["get_explore_list_response", "get_explore_search_response"]
@@ -220,7 +224,7 @@ class TestLanguagesEndpoints(
         self.client.force_authenticate(user=user)
 
         language = backend.tests.factories.access.LanguageFactory.create(
-            title="waffles"
+            title="pancakes"
         )
         site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
             language
@@ -397,13 +401,9 @@ class TestLanguagesEndpoints(
         assert response.status_code == 200
 
         response_data = json.loads(response.content)
-        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
-
-        for site in [site_public, site_members, site_team, site_hidden]:
-            if can_view_site(user, site):
-                assert str(site.id) in site_id_list
-            else:
-                assert str(site.id) not in site_id_list
+        self.assert_sites_match_user_permissions(
+            response_data, user, [site_public, site_members, site_team, site_hidden]
+        )
 
     @pytest.mark.parametrize(
         "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
