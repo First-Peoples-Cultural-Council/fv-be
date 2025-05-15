@@ -1,16 +1,11 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.access import SiteFactory, UserFactory
+from backend.tests.factories.base_factories import SiteContentFactory
 
 
-class CharacterFactory(RelatedMediaBaseFactory):
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-
+class CharacterFactory(RelatedMediaBaseFactory, SiteContentFactory):
     class Meta:
         model = Character
 
@@ -18,11 +13,7 @@ class CharacterFactory(RelatedMediaBaseFactory):
     sort_order = factory.Sequence(int)
 
 
-class CharacterVariantFactory(DjangoModelFactory):
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-
+class CharacterVariantFactory(SiteContentFactory):
     class Meta:
         model = CharacterVariant
 
@@ -30,21 +21,13 @@ class CharacterVariantFactory(DjangoModelFactory):
     title = factory.Sequence(lambda n: "varchr" + chr(n + 64))  # begin with A
 
 
-class IgnoredCharacterFactory(DjangoModelFactory):
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-
+class IgnoredCharacterFactory(SiteContentFactory):
     class Meta:
         model = IgnoredCharacter
 
     title = factory.Sequence(lambda n: "%03d" % n)
 
 
-class AlphabetFactory(DjangoModelFactory):
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-
+class AlphabetFactory(SiteContentFactory):
     class Meta:
         model = Alphabet
