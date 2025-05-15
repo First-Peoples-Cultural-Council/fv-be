@@ -176,15 +176,8 @@ class TestLanguagesEndpoints(
         language = backend.tests.factories.access.LanguageFactory.create(
             title="waffles"
         )
-        site_public = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC
-        )
-        site_members = factories.SiteFactory(
-            language=language, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            language
         )
 
         response = getattr(self, get_response)(mock_search_query_execute, [language])
@@ -199,6 +192,19 @@ class TestLanguagesEndpoints(
                 assert str(site.id) in site_id_list
             else:
                 assert str(site.id) not in site_id_list
+
+    def create_mixed_sites(self, language):
+        site_public = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC
+        )
+        site_members = factories.SiteFactory(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
+        site_hidden = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        return site_public, site_members, site_team, site_hidden
 
     @pytest.mark.parametrize(
         "get_response", ["get_explore_list_response", "get_explore_search_response"]
@@ -216,15 +222,8 @@ class TestLanguagesEndpoints(
         language = backend.tests.factories.access.LanguageFactory.create(
             title="waffles"
         )
-        site_public = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC
-        )
-        site_members = factories.SiteFactory(
-            language=language, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            language
         )
 
         response = getattr(self, get_response)(mock_search_query_execute, [language])
@@ -389,13 +388,8 @@ class TestLanguagesEndpoints(
         user = get_user()
         self.client.force_authenticate(user=user)
 
-        site_public = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-        site_members = factories.SiteFactory(
-            language=None, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=None, visibility=Visibility.PUBLIC, is_hidden=True
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            None
         )
 
         response = self.get_list_response(mock_search_query_execute, [])
@@ -421,13 +415,8 @@ class TestLanguagesEndpoints(
         user = get_user()
         self.client.force_authenticate(user=user)
 
-        site_public = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-        site_members = factories.SiteFactory(
-            language=None, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=None, visibility=Visibility.PUBLIC, is_hidden=True
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            None
         )
 
         response = self.get_explore_list_response(mock_search_query_execute, [])
