@@ -4,6 +4,7 @@ import pytest
 
 import backend.tests.factories.access
 from backend.models.constants import Visibility
+from backend.permissions.predicates import can_view_site
 from backend.tests import factories
 from backend.tests.factories.access import (
     get_anonymous_user,
@@ -38,9 +39,45 @@ class TestLanguagesEndpoints(
             self.get_list_endpoint(), mock_search_query_execute, language_search_results
         )
 
+    def get_explore_list_response(
+        self, mock_search_query_execute, language_search_results
+    ):
+        return self.get_response(
+            f"{self.get_list_endpoint()}?explorable=true",
+            mock_search_query_execute,
+            language_search_results,
+        )
+
+    def get_nonexplore_list_response(
+        self, mock_search_query_execute, language_search_results
+    ):
+        return self.get_response(
+            f"{self.get_list_endpoint()}?explorable=false",
+            mock_search_query_execute,
+            language_search_results,
+        )
+
     def get_search_response(self, mock_search_query_execute, language_search_results):
         return self.get_response(
             self.get_search_endpoint(),
+            mock_search_query_execute,
+            language_search_results,
+        )
+
+    def get_explore_search_response(
+        self, mock_search_query_execute, language_search_results
+    ):
+        return self.get_response(
+            f"{self.get_search_endpoint()}&explorable=true",
+            mock_search_query_execute,
+            language_search_results,
+        )
+
+    def get_nonexplore_search_response(
+        self, mock_search_query_execute, language_search_results
+    ):
+        return self.get_response(
+            f"{self.get_search_endpoint()}&explorable=false",
             mock_search_query_execute,
             language_search_results,
         )
@@ -58,6 +95,27 @@ class TestLanguagesEndpoints(
         }
         mock_search_query_execute.return_value = mock_results
         return self.client.get(url)
+
+    def assert_sites_match_user_permissions(self, response_data, user, sites):
+        site_id_list = [site["id"] for site in response_data["results"][0]["sites"]]
+        for site in sites:
+            if can_view_site(user, site):
+                assert str(site.id) in site_id_list
+            else:
+                assert str(site.id) not in site_id_list
+
+    def create_mixed_sites(self, language):
+        site_public = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC
+        )
+        site_members = factories.SiteFactory(
+            language=language, visibility=Visibility.MEMBERS
+        )
+        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
+        site_hidden = factories.SiteFactory(
+            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+        )
+        return site_public, site_members, site_team, site_hidden
 
     def format_language_hit(self, language):
         return {
@@ -118,7 +176,13 @@ class TestLanguagesEndpoints(
         self.assert_site_response(site, language_response["sites"][0])
 
     @pytest.mark.parametrize(
-        "get_response", ["get_list_response", "get_search_response"]
+        "get_response",
+        [
+            "get_list_response",
+            "get_search_response",
+            "get_nonexplore_list_response",
+            "get_nonexplore_search_response",
+        ],
     )
     @pytest.mark.parametrize(
         "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
@@ -133,15 +197,37 @@ class TestLanguagesEndpoints(
         language = backend.tests.factories.access.LanguageFactory.create(
             title="waffles"
         )
-        site_public = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            language
         )
-        site_members = factories.SiteFactory(
-            language=language, visibility=Visibility.MEMBERS
+
+        response = getattr(self, get_response)(mock_search_query_execute, [language])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        self.assert_sites_match_user_permissions(
+            response_data, user, [site_public, site_members, site_team, site_hidden]
         )
-        site_team = factories.SiteFactory(language=language, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=language, visibility=Visibility.PUBLIC, is_hidden=True
+
+    @pytest.mark.parametrize(
+        "get_response", ["get_explore_list_response", "get_explore_search_response"]
+    )
+    @pytest.mark.parametrize(
+        "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
+    )
+    @pytest.mark.django_db
+    def test_language_sites_only_include_explorable(
+        self, get_response, get_user, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = get_user()
+        self.client.force_authenticate(user=user)
+
+        language = backend.tests.factories.access.LanguageFactory.create(
+            title="pancakes"
+        )
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            language
         )
 
         response = getattr(self, get_response)(mock_search_query_execute, [language])
@@ -186,11 +272,11 @@ class TestLanguagesEndpoints(
         self.assert_site_response(site_z, site_list[1])
 
     @pytest.mark.parametrize(
-        "get_response", ["get_list_response", "get_search_response"]
+        "get_response", ["get_explore_list_response", "get_explore_search_response"]
     )
     @pytest.mark.parametrize("visibility", [Visibility.PUBLIC, Visibility.MEMBERS])
     @pytest.mark.django_db
-    def test_logo(
+    def test_logo_is_explorable(
         self, get_response, visibility, mock_search_query_execute, mock_get_page_size
     ):
         """
@@ -306,16 +392,34 @@ class TestLanguagesEndpoints(
         user = get_user()
         self.client.force_authenticate(user=user)
 
-        site_public = factories.SiteFactory(language=None, visibility=Visibility.PUBLIC)
-        site_members = factories.SiteFactory(
-            language=None, visibility=Visibility.MEMBERS
-        )
-        site_team = factories.SiteFactory(language=None, visibility=Visibility.TEAM)
-        site_hidden = factories.SiteFactory(
-            language=None, visibility=Visibility.PUBLIC, is_hidden=True
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            None
         )
 
         response = self.get_list_response(mock_search_query_execute, [])
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        self.assert_sites_match_user_permissions(
+            response_data, user, [site_public, site_members, site_team, site_hidden]
+        )
+
+    @pytest.mark.parametrize(
+        "get_user", [get_anonymous_user, get_non_member_user, get_superadmin]
+    )
+    @pytest.mark.django_db
+    def test_list_more_sites_only_include_explorable(
+        self, get_user, db, mock_search_query_execute, mock_get_page_size
+    ):
+        user = get_user()
+        self.client.force_authenticate(user=user)
+
+        site_public, site_members, site_team, site_hidden = self.create_mixed_sites(
+            None
+        )
+
+        response = self.get_explore_list_response(mock_search_query_execute, [])
 
         assert response.status_code == 200
 
