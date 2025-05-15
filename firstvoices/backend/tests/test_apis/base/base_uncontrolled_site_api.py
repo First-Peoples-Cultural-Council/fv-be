@@ -177,8 +177,6 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
             "createdBy": instance.created_by.email,
             "lastModified": instance.last_modified.astimezone().isoformat(),
             "lastModifiedBy": instance.last_modified_by.email,
-            "systemLastModified": instance.system_last_modified.astimezone().isoformat(),
-            "systemLastModifiedBy": instance.system_last_modified_by.email,
             "id": str(instance.id),
             "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
             "site": {
