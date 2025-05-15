@@ -66,6 +66,7 @@ class BaseModel(PermissionFilterMixin, RulesModel):
         get_user_model(),
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         default=None,
         related_name="system_modified_%(app_label)s_%(class)s",
     )
