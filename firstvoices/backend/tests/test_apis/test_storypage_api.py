@@ -435,14 +435,13 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             current_app=self.APP_NAME,
             args=[site.slug, str(instance.story.id)],
         )
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}"
 
         return {
-            "created": instance.created.astimezone().isoformat(),
-            "createdBy": instance.created_by.email,
-            "lastModified": instance.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": instance.last_modified_by.email,
-            "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
+            **standard_fields,
             "text": instance.text,
             "translation": instance.translation,
             "notes": instance.notes,
@@ -451,14 +450,6 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
                 "id": str(instance.story.id),
                 "title": instance.story.title,
                 "url": f"http://testserver{story_url}",
-            },
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": instance.site.get_visibility_display().lower(),
-                "language": site.language.title,
             },
             **self.RELATED_MEDIA_DEFAULTS,
         }
