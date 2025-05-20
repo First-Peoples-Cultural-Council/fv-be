@@ -38,16 +38,11 @@ class TestImportEndpoints(
         }
 
     def get_expected_response(self, instance, site):
+        standard_fields = self.get_expected_entry_standard_fields(instance, site)
         return {
-            "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
-            "title": instance.title,
+            **standard_fields,
             "runAsUser": instance.run_as_user,
             "data": self.get_file_data(instance.data),
-            "created": instance.created.astimezone().isoformat(),
-            "createdBy": instance.created_by.email,
-            "lastModified": instance.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": instance.last_modified_by.email,
             "mode": instance.mode.lower(),
             "taskId": instance.task_id,
             "status": instance.status,
@@ -56,14 +51,6 @@ class TestImportEndpoints(
             "validationStatus": instance.validation_status,
             "validationReport": instance.validation_report,
             "failedRowsCsv": instance.failed_rows_csv,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": instance.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
         }
 
     def get_valid_data(self, site=None):
