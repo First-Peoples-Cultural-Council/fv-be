@@ -1,19 +1,15 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models import Category
-from backend.tests.factories.access import SiteFactory, UserFactory
+from backend.tests.factories.base_factories import SiteContentFactory
 
 
-class ParentCategoryFactory(DjangoModelFactory):
-    site = factory.SubFactory(SiteFactory)
-    title = factory.Sequence(lambda n: "Category title %03d" % n)
-    description = factory.Sequence(lambda n: "Category description %03d" % n)
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-
+class ParentCategoryFactory(SiteContentFactory):
     class Meta:
         model = Category
+
+    title = factory.Sequence(lambda n: "Category title %03d" % n)
+    description = factory.Sequence(lambda n: "Category description %03d" % n)
 
 
 class ChildCategoryFactory(ParentCategoryFactory):

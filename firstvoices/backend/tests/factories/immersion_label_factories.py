@@ -1,16 +1,13 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models import ImmersionLabel
-from backend.tests.factories import DictionaryEntryFactory, SiteFactory, UserFactory
+from backend.tests.factories import DictionaryEntryFactory
+from backend.tests.factories.base_factories import SiteContentFactory
 
 
-class ImmersionLabelFactory(DjangoModelFactory):
+class ImmersionLabelFactory(SiteContentFactory):
     class Meta:
         model = ImmersionLabel
 
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
     key = factory.Sequence(lambda n: "ImmersionLabel key %03d" % n)
     dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
