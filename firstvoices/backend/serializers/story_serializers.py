@@ -7,6 +7,7 @@ from backend.models import Story, StoryPage
 from backend.serializers.base_serializers import (
     ArbitraryIdSerializer,
     BaseControlledSiteContentSerializer,
+    BaseSiteContentSerializer,
     CreateSiteContentSerializerMixin,
     LinkedSiteSerializer,
     SiteContentLinkedTitleSerializer,
@@ -59,14 +60,9 @@ class StoryPageDetailSerializer(
     ValidateNonNullableCharFieldsMixin,
     CreateSiteContentSerializerMixin,
     StoryPageSummarySerializer,
+    BaseSiteContentSerializer,
 ):
-    created = serializers.DateTimeField(read_only=True)
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified = serializers.DateTimeField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
     story = LinkedStorySerializer(read_only=True)
-    site = LinkedSiteSerializer(read_only=True)
-
     translation = serializers.CharField(
         required=False, allow_blank=True, allow_null=True, default=""
     )
