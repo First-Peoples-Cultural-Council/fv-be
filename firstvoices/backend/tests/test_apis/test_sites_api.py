@@ -2,6 +2,7 @@ import json
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.management import call_command
 
 from backend.models import AppJson, Site
 from backend.models.constants import AppRole, Role, Visibility
@@ -256,6 +257,7 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
     @pytest.mark.django_db
     @pytest.mark.parametrize("key", ["has_app", "HAS_APP", "Has_App"])
     def test_detail_app_site_menu(self, key):
+        call_command("loaddata", "appjson-has_app.json", app_label="backend")
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
