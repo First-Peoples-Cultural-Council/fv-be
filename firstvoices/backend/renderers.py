@@ -111,7 +111,7 @@ class BatchExportCSVRenderer(renderers.PaginatedCSVRenderer):
         labels = {}
 
         for i in range(0, 5):
-            item_labels, prefix = self._get_media_labels(i, header_prefix, label_prefix)
+            item_labels, _ = self._get_media_labels(i, header_prefix, label_prefix)
             labels.update(item_labels)
 
         return labels

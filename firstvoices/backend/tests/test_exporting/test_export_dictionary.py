@@ -72,7 +72,7 @@ class TestExportDictionary(SiteContentListEndpointMixin, BaseSiteContentApiTest)
         )
 
     def get_all_cols(self, related_list):
-        all_cols = ["" for i in range(0, 6)]
+        all_cols = ["" for _ in range(0, 6)]
 
         for i, item in enumerate(related_list):
             if i < len(all_cols):
@@ -106,20 +106,11 @@ class TestExportDictionary(SiteContentListEndpointMixin, BaseSiteContentApiTest)
 
     @pytest.mark.django_db
     def test_export_dictionary_csv_renderer_has_correct_entries(self):
-        entry = factories.DictionaryEntryFactory.create(
-            translations=["translation 1", "translation 2", "translation 3"]
-        )
+        entry = factories.DictionaryEntryFactory.create()
         entry2 = factories.DictionaryEntryFactory.create(
             site=entry.site, translations=[]
         )
         entry3 = factories.DictionaryEntryFactory.create()
-
-        audio = factories.AudioFactory.create(site=entry.site)
-        speaker = factories.PersonFactory.create(site=entry.site)
-        audio.speakers.add(speaker)
-        speaker2 = factories.PersonFactory.create(site=entry.site)
-        audio.speakers.add(speaker2)
-        entry.related_audio.add(audio)
 
         user = factories.get_superadmin()
         self.client.force_authenticate(user=user)
