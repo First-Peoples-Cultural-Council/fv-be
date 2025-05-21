@@ -1,6 +1,7 @@
 from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import viewsets
+from rest_framework.settings import api_settings
 
 from backend.models.dictionary import DictionaryEntry
 from backend.serializers.dictionary_serializers import (
@@ -14,6 +15,7 @@ from backend.views.base_views import (
     SiteContentViewSetMixin,
 )
 
+from ..renderers import BatchExportCSVRenderer
 from . import doc_strings
 from .utils import get_media_prefetch_list
 
@@ -106,6 +108,9 @@ class DictionaryViewSet(
     """
 
     serializer_class = DictionaryEntryDetailSerializer
+    renderer_classes = tuple(api_settings.DEFAULT_RENDERER_CLASSES) + (
+        BatchExportCSVRenderer,
+    )
 
     def get_queryset(self):
         site = self.get_validated_site()
