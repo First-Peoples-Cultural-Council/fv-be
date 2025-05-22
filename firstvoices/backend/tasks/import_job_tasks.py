@@ -6,6 +6,7 @@ from celery.utils.log import get_task_logger
 from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
+from backend.importing.importers import AudioImporter, ImageImporter, VideoImporter
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -15,7 +16,6 @@ from backend.models.import_jobs import (
 )
 from backend.models.media import ImageFile, VideoFile
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.resources.media import AudioResource, ImageResource, VideoResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
@@ -186,72 +186,6 @@ def separate_datasets(data):
     )
 
 
-def import_audio_resource(import_job, audio_data, dry_run):
-    """
-    Imports audio files and appends IDs of the imported files as related_audio in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from audio import.
-    """
-
-    audio_import_result = AudioResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=audio_data, dry_run=dry_run)
-
-    audio_filename_map = {}
-
-    # Adding audio ids
-    if audio_import_result.totals["new"]:
-        for row in audio_data.dict:
-            audio_filename_map[row["audio_filename"]] = row["id"]
-
-    return audio_import_result, audio_filename_map
-
-
-def import_img_resource(import_job, img_data, dry_run):
-    """
-    Imports image files and appends IDs of the imported files as related_images in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from image import.
-    """
-
-    img_import_result = ImageResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=img_data, dry_run=dry_run)
-
-    img_filename_map = {}
-
-    # Adding image ids
-    if img_import_result.totals["new"]:
-        for row in img_data.dict:
-            img_filename_map[row["img_filename"]] = row["id"]
-
-    return img_import_result, img_filename_map
-
-
-def import_video_resource(import_job, video_data, dry_run):
-    """
-    Imports video files and appends IDs of the imported files as related_videos in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from video import.
-    """
-
-    video_import_result = VideoResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=video_data, dry_run=dry_run)
-
-    video_filename_map = {}
-
-    # Adding video ids
-    if video_import_result.totals["new"]:
-        for row in video_data.dict:
-            video_filename_map[row["video_filename"]] = row["id"]
-
-    return video_import_result, video_filename_map
-
-
 def get_column_index(data, column_name):
     """
     Return the index of column if present in the dataset.
@@ -413,15 +347,16 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
         cleaned_data
     )
 
-    audio_import_result, audio_filename_map = import_audio_resource(
+    audio_import_result, audio_filename_map = AudioImporter.import_data(
         import_job, audio_data, dry_run
     )
-    img_import_result, img_filename_map = import_img_resource(
+    img_import_result, img_filename_map = ImageImporter.import_data(
         import_job, img_data, dry_run
     )
-    video_import_result, video_filename_map = import_video_resource(
+    video_import_result, video_filename_map = VideoImporter.import_data(
         import_job, video_data, dry_run
     )
+
     dictionary_entry_import_result = import_dictionary_entry_resource(
         import_job,
         dictionary_entry_data,
