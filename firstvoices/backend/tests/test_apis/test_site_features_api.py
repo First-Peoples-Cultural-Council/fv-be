@@ -32,21 +32,12 @@ class TestSiteFeatureEndpoints(BaseUncontrolledSiteContentApiTest):
         return factories.SiteFeatureFactory.create(site=site)
 
     def get_expected_detail_response(self, instance, site):
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
         return {
-            "created": instance.created.astimezone().isoformat(),
-            "createdBy": instance.created_by.email,
-            "lastModified": instance.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": instance.last_modified_by.email,
-            "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}",
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": instance.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
+            **standard_fields,
             "key": instance.key,
             "isEnabled": instance.is_enabled,
         }

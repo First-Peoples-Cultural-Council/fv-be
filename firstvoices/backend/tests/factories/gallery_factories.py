@@ -2,18 +2,16 @@ import factory
 from factory.django import DjangoModelFactory
 
 from backend.models import Gallery, GalleryItem
-from backend.tests.factories import ImageFactory, SiteFactory, UserFactory
+from backend.tests.factories import ImageFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class GalleryFactory(DjangoModelFactory):
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-    title = factory.Sequence(lambda n: "Gallery title %03d" % n)
-    cover_image = factory.SubFactory(ImageFactory)
-
+class GalleryFactory(BaseSiteContentFactory):
     class Meta:
         model = Gallery
+
+    title = factory.Sequence(lambda n: "Gallery title %03d" % n)
+    cover_image = factory.SubFactory(ImageFactory)
 
 
 class GalleryItemFactory(DjangoModelFactory):

@@ -1,4 +1,5 @@
 from .access import *  # noqa F401, F403  # isort:skip
+from .base_factories import *  # noqa F401, F403  # isort:skip
 from .app_factories import *  # noqa F401, F403  # isort:skip
 from .job_factories import *  # noqa F401, F403  # isort:skip
 from .category_factories import *  # noqa F401, F403 # isort:skip

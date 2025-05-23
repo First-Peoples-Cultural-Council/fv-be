@@ -34,6 +34,8 @@ class BaseAdmin(admin.ModelAdmin):
         "created_by",
         "last_modified_by",
         "last_modified",
+        "system_last_modified_by",
+        "system_last_modified",
     )
     list_display = (
         "id",
@@ -41,14 +43,17 @@ class BaseAdmin(admin.ModelAdmin):
         "created",
         "last_modified_by",
         "last_modified",
+        "system_last_modified_by",
+        "system_last_modified",
     )
-    list_select_related = ["created_by", "last_modified_by"]
+    list_select_related = ["created_by", "last_modified_by", "system_last_modified_by"]
 
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
 
         obj.last_modified_by = request.user
+        obj.system_last_modified_by = request.user
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):
@@ -57,6 +62,7 @@ class BaseAdmin(admin.ModelAdmin):
                 f.instance.created_by = request.user
 
             f.instance.last_modified_by = request.user
+            f.instance.system_last_modified_by = request.user
 
         super().save_formset(request, form, formset, change)
 
@@ -111,6 +117,8 @@ class BaseInlineAdmin(admin.TabularInline):
         "created_by",
         "last_modified_by",
         "last_modified",
+        "system_last_modified_by",
+        "system_last_modified",
     )
     can_delete = False
     fields = (
@@ -144,6 +152,7 @@ class BaseInlineAdmin(admin.TabularInline):
             obj.created_by = request.user
 
         obj.last_modified_by = request.user
+        obj.system_last_modified_by = request.user
         super().save_model(request, obj, form, change)
 
 

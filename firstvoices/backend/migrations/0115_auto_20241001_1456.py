@@ -13,5 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_has_app_fixture),
+        # migrations.RunPython(load_has_app_fixture),    NB Removed due to conflict with 0124 FW-6543
     ]
