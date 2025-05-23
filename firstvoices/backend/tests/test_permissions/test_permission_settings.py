@@ -6,7 +6,7 @@ from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentM
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
 from backend.tests import factories
-from backend.tests.factories.base_factories import BaseFactory, SiteContentFactory
+from backend.tests.factories.base_factories import BaseFactory, BaseSiteContentFactory
 
 """
 This class generates tests for all models (with a few exclusions), to verify that the different forms of view
@@ -64,7 +64,7 @@ class TestPermissionManager:
             return getattr(factories, "%sFactory" % model_cls.__name__)
         else:
             base_model = (
-                SiteContentFactory if hasattr(model_cls, "site") else BaseFactory
+                BaseSiteContentFactory if hasattr(model_cls, "site") else BaseFactory
             )
 
             class ModelFactory(base_model):

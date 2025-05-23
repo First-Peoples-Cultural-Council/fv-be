@@ -13,7 +13,7 @@ class BaseFactory(DjangoModelFactory):
     system_last_modified_by = factory.SubFactory(UserFactory)
 
 
-class SiteContentFactory(BaseFactory):
+class BaseSiteContentFactory(BaseFactory):
     class Meta:
         abstract = True
 

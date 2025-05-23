@@ -1,10 +1,10 @@
 import factory
 
 from backend.models import Category
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class ParentCategoryFactory(SiteContentFactory):
+class ParentCategoryFactory(BaseSiteContentFactory):
     class Meta:
         model = Category
 

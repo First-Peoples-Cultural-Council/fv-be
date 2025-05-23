@@ -2,10 +2,10 @@ import factory
 
 from backend.models import Story, StoryPage
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class StoryFactory(SiteContentFactory, RelatedMediaBaseFactory):
+class StoryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = Story
 
@@ -14,7 +14,7 @@ class StoryFactory(SiteContentFactory, RelatedMediaBaseFactory):
     author = factory.Sequence(lambda n: "Author for story %03d" % n)
 
 
-class StoryPageFactory(SiteContentFactory, RelatedMediaBaseFactory):
+class StoryPageFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = StoryPage
 

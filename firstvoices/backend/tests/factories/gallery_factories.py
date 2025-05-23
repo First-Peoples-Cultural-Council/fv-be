@@ -3,10 +3,10 @@ from factory.django import DjangoModelFactory
 
 from backend.models import Gallery, GalleryItem
 from backend.tests.factories import ImageFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class GalleryFactory(SiteContentFactory):
+class GalleryFactory(BaseSiteContentFactory):
     class Meta:
         model = Gallery
 

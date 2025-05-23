@@ -2,10 +2,10 @@ import factory
 
 from backend.models import ImmersionLabel
 from backend.tests.factories import DictionaryEntryFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class ImmersionLabelFactory(SiteContentFactory):
+class ImmersionLabelFactory(BaseSiteContentFactory):
     class Meta:
         model = ImmersionLabel
 

@@ -3,10 +3,10 @@ from factory.django import DjangoModelFactory
 
 from backend.models.sites import SiteFeature, SiteMenu
 from backend.tests.factories import SiteFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class SiteFeatureFactory(SiteContentFactory):
+class SiteFeatureFactory(BaseSiteContentFactory):
     class Meta:
         model = SiteFeature
 

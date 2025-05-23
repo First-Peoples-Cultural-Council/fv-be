@@ -2,10 +2,10 @@ import factory
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class CharacterFactory(RelatedMediaBaseFactory, SiteContentFactory):
+class CharacterFactory(RelatedMediaBaseFactory, BaseSiteContentFactory):
     class Meta:
         model = Character
 
@@ -13,7 +13,7 @@ class CharacterFactory(RelatedMediaBaseFactory, SiteContentFactory):
     sort_order = factory.Sequence(int)
 
 
-class CharacterVariantFactory(SiteContentFactory):
+class CharacterVariantFactory(BaseSiteContentFactory):
     class Meta:
         model = CharacterVariant
 
@@ -21,13 +21,13 @@ class CharacterVariantFactory(SiteContentFactory):
     title = factory.Sequence(lambda n: "varchr" + chr(n + 64))  # begin with A
 
 
-class IgnoredCharacterFactory(SiteContentFactory):
+class IgnoredCharacterFactory(BaseSiteContentFactory):
     class Meta:
         model = IgnoredCharacter
 
     title = factory.Sequence(lambda n: "%03d" % n)
 
 
-class AlphabetFactory(SiteContentFactory):
+class AlphabetFactory(BaseSiteContentFactory):
     class Meta:
         model = Alphabet

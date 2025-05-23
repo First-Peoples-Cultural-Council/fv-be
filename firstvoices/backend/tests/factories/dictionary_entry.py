@@ -2,7 +2,7 @@ import factory
 
 from backend.models import DictionaryEntry, PartOfSpeech
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.base_factories import BaseFactory, SiteContentFactory
+from backend.tests.factories.base_factories import BaseFactory, BaseSiteContentFactory
 
 
 class PartOfSpeechFactory(BaseFactory):
@@ -12,7 +12,7 @@ class PartOfSpeechFactory(BaseFactory):
     title = factory.Sequence(lambda n: "Part of Speech %03d" % n)
 
 
-class DictionaryEntryFactory(SiteContentFactory, RelatedMediaBaseFactory):
+class DictionaryEntryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = DictionaryEntry
 

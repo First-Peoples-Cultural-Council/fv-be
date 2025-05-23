@@ -1,21 +1,21 @@
 import factory
 
 from backend.models import BulkVisibilityJob, DictionaryCleanupJob, MTDExportJob
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class DictionaryCleanupJobFactory(SiteContentFactory):
+class DictionaryCleanupJobFactory(BaseSiteContentFactory):
     class Meta:
         model = DictionaryCleanupJob
 
 
-class BulkVisibilityJobFactory(SiteContentFactory):
+class BulkVisibilityJobFactory(BaseSiteContentFactory):
     class Meta:
         model = BulkVisibilityJob
 
     task_id = factory.sequence(lambda n: f"task_id_{n}")
 
 
-class MTDExportJobFactory(SiteContentFactory):
+class MTDExportJobFactory(BaseSiteContentFactory):
     class Meta:
         model = MTDExportJob

@@ -3,10 +3,10 @@ from factory.django import DjangoModelFactory
 
 from backend.models import Lyric, Song
 from backend.tests.factories import RelatedMediaBaseFactory
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class SongFactory(SiteContentFactory, RelatedMediaBaseFactory):
+class SongFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = Song
 

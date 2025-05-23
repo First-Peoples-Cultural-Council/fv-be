@@ -1,10 +1,10 @@
 import factory
 
 from backend.models.page import SitePage
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class SitePageFactory(SiteContentFactory):
+class SitePageFactory(BaseSiteContentFactory):
     class Meta:
         model = SitePage
 

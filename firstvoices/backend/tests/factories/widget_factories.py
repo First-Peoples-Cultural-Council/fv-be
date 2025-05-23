@@ -9,7 +9,7 @@ from backend.models.widget import (
     Widget,
     WidgetSettings,
 )
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
 class WidgetFactory(DjangoModelFactory):
@@ -29,12 +29,12 @@ class WidgetSettingsFactory(DjangoModelFactory):
     value = factory.Sequence(lambda n: "value: %03d" % n)
 
 
-class SiteWidgetFactory(SiteContentFactory, WidgetFactory):
+class SiteWidgetFactory(BaseSiteContentFactory, WidgetFactory):
     class Meta:
         model = SiteWidget
 
 
-class SiteWidgetListFactory(SiteContentFactory):
+class SiteWidgetListFactory(BaseSiteContentFactory):
     class Meta:
         model = SiteWidgetList
 

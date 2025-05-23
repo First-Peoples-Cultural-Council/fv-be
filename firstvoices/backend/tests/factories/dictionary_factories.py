@@ -3,7 +3,7 @@ from django.utils.timezone import datetime
 from factory.django import DjangoModelFactory
 
 from backend.models import dictionary
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 from backend.tests.factories.character_factories import CharacterFactory
 from backend.tests.factories.dictionary_entry import DictionaryEntryFactory
 
@@ -21,7 +21,7 @@ class DictionaryEntryLinkFactory(DjangoModelFactory):
     to_dictionary_entry = factory.SubFactory(DictionaryEntryFactory)
 
 
-class CategoryFactory(SiteContentFactory):
+class CategoryFactory(BaseSiteContentFactory):
     class Meta:
         model = dictionary.Category
 

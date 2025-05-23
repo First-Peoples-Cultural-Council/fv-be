@@ -1,16 +1,16 @@
 import factory
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
-from backend.tests.factories.base_factories import SiteContentFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 from backend.tests.factories.media_factories import FileFactory
 
 
-class ImportJobReportFactory(SiteContentFactory):
+class ImportJobReportFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJobReport
 
 
-class ImportJobReportRowFactory(SiteContentFactory):
+class ImportJobReportRowFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJobReportRow
 
@@ -20,7 +20,7 @@ class ImportJobReportRowFactory(SiteContentFactory):
     identifier_value = factory.Sequence(lambda n: "identifier_value %03d" % n)
 
 
-class ImportJobFactory(SiteContentFactory):
+class ImportJobFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJob
 
