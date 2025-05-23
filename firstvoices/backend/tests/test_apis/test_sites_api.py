@@ -847,6 +847,12 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert updated_instance.visibility == original_instance.visibility
         assert updated_instance.id == original_instance.id
         assert updated_instance.slug == original_instance.slug
+        assert updated_instance.created == original_instance.created
+        assert updated_instance.last_modified > original_instance.last_modified
+        assert (
+            updated_instance.system_last_modified
+            > original_instance.system_last_modified
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Site):
         assert updated_instance.banner_image is None
@@ -925,12 +931,14 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         response_data = json.loads(response.content)
         assert response_data["id"] == str(instance.id)
 
-        self.assert_patch_instance_original_fields(
-            instance, self.get_updated_patch_instance(instance)
-        )
-        self.assert_patch_instance_updated_fields(
-            data, self.get_updated_patch_instance(instance)
-        )
+        updated_patch_instance = self.get_updated_patch_instance(instance)
+
+        assert updated_patch_instance.created_by.email == instance.created_by.email
+        assert updated_patch_instance.system_last_modified_by.email == user.email
+        assert updated_patch_instance.last_modified_by.email == user.email
+
+        self.assert_patch_instance_original_fields(instance, updated_patch_instance)
+        self.assert_patch_instance_updated_fields(data, updated_patch_instance)
         self.assert_update_patch_response(instance, data, response_data)
 
     @pytest.mark.parametrize(
