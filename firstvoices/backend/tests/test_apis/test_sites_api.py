@@ -616,6 +616,37 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response.status_code == 404
 
     @pytest.mark.django_db
+    def test_update_confirm_user(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site.title,
+            "logo": str(image.id),
+            "bannerImage": None,
+            "bannerVideo": None,
+            "homepage": [],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.id)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 200
+
+        updated_site = Site.objects.get(id=site.id)
+        assert updated_site.created == site.created
+        assert updated_site.last_modified > site.last_modified
+        assert updated_site.system_last_modified > site.system_last_modified
+        assert updated_site.created_by.email == site.created_by.email
+        assert updated_site.system_last_modified_by.email == user.email
+        assert updated_site.last_modified_by.email == user.email
+
+    @pytest.mark.django_db
     def test_update_media(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
         user = factories.get_non_member_user()
