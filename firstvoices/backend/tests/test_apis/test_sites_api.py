@@ -594,8 +594,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
     @pytest.mark.django_db
     def test_update_confirm_user(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
         image = factories.ImageFactory.create(site=site)
+        user = factories.get_non_member_user()
         factories.MembershipFactory.create(
             user=user, site=site, role=Role.LANGUAGE_ADMIN
         )
@@ -603,8 +603,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         self.client.force_authenticate(user=user)
         req_body = {
             "title": site.title,
-            "logo": str(image.id),
-            "bannerImage": None,
+            "logo": None,
+            "bannerImage": str(image.id),
             "bannerVideo": None,
             "homepage": [],
         }
