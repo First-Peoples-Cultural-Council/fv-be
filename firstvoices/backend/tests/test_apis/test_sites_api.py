@@ -353,12 +353,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         widget_two = widget_list.widgets.order_by("title").all()[1]
         update_widget_sites(site, [widget_one, widget_two])
 
-        widget_one_settings_one = factories.WidgetSettingsFactory.create(
-            widget=widget_one
-        )
-        widget_two_settings_one = factories.WidgetSettingsFactory.create(
-            widget=widget_two
-        )
+        widget_one_settings = factories.WidgetSettingsFactory.create(widget=widget_one)
+        widget_two_settings = factories.WidgetSettingsFactory.create(widget=widget_two)
 
         site.homepage = widget_list
         site.save()
@@ -391,62 +387,42 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
             if widget["id"] == str(widget_two.id)
         ][0]
 
-        assert response_widget_one == {
-            "created": widget_one.created.astimezone().isoformat(),
-            "createdBy": widget_one.created_by.email,
-            "lastModified": widget_one.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": widget_one.last_modified_by.email,
-            "systemLastModified": widget_one.system_last_modified.astimezone().isoformat(),
-            "systemLastModifiedBy": widget_one.system_last_modified_by.email,
-            "id": str(widget_one.id),
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_one.id)}",
-            "title": widget_one.title,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": widget_one.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
-            "visibility": widget_one.get_visibility_display().lower(),
-            "type": widget_one.widget_type,
-            "format": "Default",
-            "settings": [
-                {
-                    "key": widget_one_settings_one.key,
-                    "value": widget_one_settings_one.value,
+        def get_expected_widget_response(widget_instance, widget_settings):
+            return {
+                "created": widget_instance.created.astimezone().isoformat(),
+                "createdBy": widget_instance.created_by.email,
+                "lastModified": widget_instance.last_modified.astimezone().isoformat(),
+                "lastModifiedBy": widget_instance.last_modified_by.email,
+                "systemLastModified": widget_instance.system_last_modified.astimezone().isoformat(),
+                "systemLastModifiedBy": widget_instance.system_last_modified_by.email,
+                "id": str(widget_instance.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_instance.id)}",
+                "title": widget_instance.title,
+                "site": {
+                    "id": str(site.id),
+                    "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                    "title": site.title,
+                    "slug": site.slug,
+                    "visibility": widget_instance.site.get_visibility_display().lower(),
+                    "language": site.language.title,
                 },
-            ],
-        }
-        assert response_widget_two == {
-            "created": widget_two.created.astimezone().isoformat(),
-            "createdBy": widget_two.created_by.email,
-            "lastModified": widget_two.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": widget_two.last_modified_by.email,
-            "systemLastModified": widget_two.system_last_modified.astimezone().isoformat(),
-            "systemLastModifiedBy": widget_two.system_last_modified_by.email,
-            "id": str(widget_two.id),
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_two.id)}",
-            "title": widget_two.title,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": widget_two.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
-            "visibility": widget_two.get_visibility_display().lower(),
-            "type": widget_two.widget_type,
-            "format": "Default",
-            "settings": [
-                {
-                    "key": widget_two_settings_one.key,
-                    "value": widget_two_settings_one.value,
-                }
-            ],
-        }
+                "visibility": widget_instance.get_visibility_display().lower(),
+                "type": widget_instance.widget_type,
+                "format": "Default",
+                "settings": [
+                    {
+                        "key": widget_settings.key,
+                        "value": widget_settings.value,
+                    },
+                ],
+            }
+
+        assert response_widget_one == get_expected_widget_response(
+            widget_one, widget_one_settings
+        )
+        assert response_widget_two == get_expected_widget_response(
+            widget_two, widget_two_settings
+        )
 
     @pytest.mark.django_db
     def test_detail_homepage_order(self):
