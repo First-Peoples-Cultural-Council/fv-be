@@ -87,6 +87,8 @@ class StoryPageDetailSerializer(
         return super().create(self.add_story_id(validated_data))
 
     def update(self, instance, validated_data):
+        validated_data["last_modified_by"] = self.context["request"].user
+        validated_data["system_last_modified_by"] = self.context["request"].user
         return super().update(instance, self.add_story_id(validated_data))
 
     def add_story_id(self, validated_data):
