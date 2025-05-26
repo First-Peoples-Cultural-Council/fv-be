@@ -353,6 +353,26 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         self.assert_created_response(data, response_data)
 
     @pytest.mark.django_db
+    def test_create_confirm_user(self):
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=site.visibility)
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id)),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+        response_data = json.loads(response.content)
+        instance = StoryPage.objects.get(id=response_data["id"])
+
+        assert instance.created_by.email == user.email
+        assert instance.last_modified_by.email == user.email
+        assert instance.system_last_modified_by.email == user.email
+
+    @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
