@@ -1,27 +1,18 @@
 import factory
-from factory.django import DjangoModelFactory
 
 from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
-from backend.tests.factories.access import SiteFactory, UserFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 from backend.tests.factories.media_factories import FileFactory
 
 
-class ImportJobReportFactory(DjangoModelFactory):
+class ImportJobReportFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJobReport
 
-    site = factory.SubFactory(SiteFactory)
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
 
-
-class ImportJobReportRowFactory(DjangoModelFactory):
+class ImportJobReportRowFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJobReportRow
-
-    site = factory.SubFactory(SiteFactory)
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
 
     row_number = factory.Sequence(int)
     report = factory.SubFactory(ImportJobReportFactory)
@@ -29,13 +20,9 @@ class ImportJobReportRowFactory(DjangoModelFactory):
     identifier_value = factory.Sequence(lambda n: "identifier_value %03d" % n)
 
 
-class ImportJobFactory(DjangoModelFactory):
+class ImportJobFactory(BaseSiteContentFactory):
     class Meta:
         model = ImportJob
-
-    site = factory.SubFactory(SiteFactory)
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
 
     title = factory.Sequence(lambda n: "title %03d" % n)
     data = factory.SubFactory(FileFactory)

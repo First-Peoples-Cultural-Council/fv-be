@@ -3,17 +3,15 @@ from factory.django import DjangoModelFactory
 
 from backend.models import JoinRequest
 from backend.models.join_request import JoinRequestReason
-from backend.tests.factories import SiteFactory, UserFactory
+from backend.tests.factories import UserFactory
+from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
-class JoinRequestFactory(DjangoModelFactory):
+class JoinRequestFactory(BaseSiteContentFactory):
     class Meta:
         model = JoinRequest
 
-    created_by = factory.SubFactory(UserFactory)
-    last_modified_by = factory.SubFactory(UserFactory)
     user = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
 
 
 class JoinRequestReasonFactory(DjangoModelFactory):

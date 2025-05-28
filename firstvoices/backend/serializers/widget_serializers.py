@@ -10,7 +10,6 @@ from backend.models.widget import (
 )
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
-    UpdateSerializerMixin,
     WritableControlledSiteContentSerializer,
 )
 from backend.serializers.fields import SiteHyperlinkedIdentityField
@@ -92,7 +91,7 @@ class SiteWidgetDetailSerializer(
         return super().update(instance, validated_data)
 
 
-class SiteWidgetListSerializer(serializers.ModelSerializer, UpdateSerializerMixin):
+class SiteWidgetListSerializer(serializers.ModelSerializer):
     widgets = SiteWidgetDetailSerializer(many=True)
 
     class Meta:

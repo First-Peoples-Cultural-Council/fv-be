@@ -2,6 +2,7 @@ import json
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.management import call_command
 
 from backend.models import AppJson, Site
 from backend.models.constants import AppRole, Role, Visibility
@@ -256,6 +257,7 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
     @pytest.mark.django_db
     @pytest.mark.parametrize("key", ["has_app", "HAS_APP", "Has_App"])
     def test_detail_app_site_menu(self, key):
+        call_command("loaddata", "appjson-has_app.json", app_label="backend")
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
@@ -351,12 +353,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         widget_two = widget_list.widgets.order_by("title").all()[1]
         update_widget_sites(site, [widget_one, widget_two])
 
-        widget_one_settings_one = factories.WidgetSettingsFactory.create(
-            widget=widget_one
-        )
-        widget_two_settings_one = factories.WidgetSettingsFactory.create(
-            widget=widget_two
-        )
+        widget_one_settings = factories.WidgetSettingsFactory.create(widget=widget_one)
+        widget_two_settings = factories.WidgetSettingsFactory.create(widget=widget_two)
 
         site.homepage = widget_list
         site.save()
@@ -389,58 +387,42 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
             if widget["id"] == str(widget_two.id)
         ][0]
 
-        assert response_widget_one == {
-            "created": widget_one.created.astimezone().isoformat(),
-            "createdBy": widget_one.created_by.email,
-            "lastModified": widget_one.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": widget_one.last_modified_by.email,
-            "id": str(widget_one.id),
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_one.id)}",
-            "title": widget_one.title,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": widget_one.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
-            "visibility": widget_one.get_visibility_display().lower(),
-            "type": widget_one.widget_type,
-            "format": "Default",
-            "settings": [
-                {
-                    "key": widget_one_settings_one.key,
-                    "value": widget_one_settings_one.value,
+        def get_expected_widget_response(widget_instance, widget_settings):
+            return {
+                "created": widget_instance.created.astimezone().isoformat(),
+                "createdBy": widget_instance.created_by.email,
+                "lastModified": widget_instance.last_modified.astimezone().isoformat(),
+                "lastModifiedBy": widget_instance.last_modified_by.email,
+                "systemLastModified": widget_instance.system_last_modified.astimezone().isoformat(),
+                "systemLastModifiedBy": widget_instance.system_last_modified_by.email,
+                "id": str(widget_instance.id),
+                "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_instance.id)}",
+                "title": widget_instance.title,
+                "site": {
+                    "id": str(site.id),
+                    "url": f"http://testserver/api/1.0/sites/{site.slug}",
+                    "title": site.title,
+                    "slug": site.slug,
+                    "visibility": widget_instance.site.get_visibility_display().lower(),
+                    "language": site.language.title,
                 },
-            ],
-        }
-        assert response_widget_two == {
-            "created": widget_two.created.astimezone().isoformat(),
-            "createdBy": widget_two.created_by.email,
-            "lastModified": widget_two.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": widget_two.last_modified_by.email,
-            "id": str(widget_two.id),
-            "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_two.id)}",
-            "title": widget_two.title,
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": widget_two.site.get_visibility_display().lower(),
-                "language": site.language.title,
-            },
-            "visibility": widget_two.get_visibility_display().lower(),
-            "type": widget_two.widget_type,
-            "format": "Default",
-            "settings": [
-                {
-                    "key": widget_two_settings_one.key,
-                    "value": widget_two_settings_one.value,
-                }
-            ],
-        }
+                "visibility": widget_instance.get_visibility_display().lower(),
+                "type": widget_instance.widget_type,
+                "format": "Default",
+                "settings": [
+                    {
+                        "key": widget_settings.key,
+                        "value": widget_settings.value,
+                    },
+                ],
+            }
+
+        assert response_widget_one == get_expected_widget_response(
+            widget_one, widget_one_settings
+        )
+        assert response_widget_two == get_expected_widget_response(
+            widget_two, widget_two_settings
+        )
 
     @pytest.mark.django_db
     def test_detail_homepage_order(self):
@@ -608,6 +590,37 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         response = self.client.get(f"{self.get_detail_endpoint('fake-site')}")
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_confirm_user(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        image = factories.ImageFactory.create(site=site)
+        user = factories.get_non_member_user()
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site.title,
+            "logo": None,
+            "bannerImage": str(image.id),
+            "bannerVideo": None,
+            "homepage": [],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.id)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 200
+
+        updated_site = Site.objects.get(id=site.id)
+        assert updated_site.created == site.created
+        assert updated_site.last_modified > site.last_modified
+        assert updated_site.system_last_modified > site.system_last_modified
+        assert updated_site.created_by.email == site.created_by.email
+        assert updated_site.system_last_modified_by.email == user.email
+        assert updated_site.last_modified_by.email == user.email
 
     @pytest.mark.django_db
     def test_update_media(self):
@@ -841,6 +854,12 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert updated_instance.visibility == original_instance.visibility
         assert updated_instance.id == original_instance.id
         assert updated_instance.slug == original_instance.slug
+        assert updated_instance.created == original_instance.created
+        assert updated_instance.last_modified > original_instance.last_modified
+        assert (
+            updated_instance.system_last_modified
+            > original_instance.system_last_modified
+        )
 
     def assert_patch_instance_updated_fields(self, data, updated_instance: Site):
         assert updated_instance.banner_image is None
@@ -919,12 +938,14 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         response_data = json.loads(response.content)
         assert response_data["id"] == str(instance.id)
 
-        self.assert_patch_instance_original_fields(
-            instance, self.get_updated_patch_instance(instance)
-        )
-        self.assert_patch_instance_updated_fields(
-            data, self.get_updated_patch_instance(instance)
-        )
+        updated_patch_instance = self.get_updated_patch_instance(instance)
+
+        assert updated_patch_instance.created_by.email == instance.created_by.email
+        assert updated_patch_instance.system_last_modified_by.email == user.email
+        assert updated_patch_instance.last_modified_by.email == user.email
+
+        self.assert_patch_instance_original_fields(instance, updated_patch_instance)
+        self.assert_patch_instance_updated_fields(data, updated_patch_instance)
         self.assert_update_patch_response(instance, data, response_data)
 
     @pytest.mark.parametrize(

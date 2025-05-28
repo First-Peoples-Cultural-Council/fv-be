@@ -52,6 +52,7 @@ class SiteFactory(DjangoModelFactory):
 
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)
+    system_last_modified_by = factory.SubFactory(UserFactory)
 
 
 class MembershipFactory(DjangoModelFactory):

@@ -1,27 +1,17 @@
-import factory
 import pytest
 from django.apps import apps
-from factory.django import DjangoModelFactory
 
 from backend.models import ImmersionLabel, Lyric, StoryPage
 from backend.models.base import BaseControlledSiteContentModel, BaseSiteContentModel
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import BaseDictionaryContentModel
 from backend.tests import factories
+from backend.tests.factories.base_factories import BaseFactory, BaseSiteContentFactory
 
 """
 This class generates tests for all models (with a few exclusions), to verify that the different forms of view
 permissions all have the same effect. (Direct use of predicates, permission rules on the models, and query filters.)
 """
-
-
-class BaseModelFactory(DjangoModelFactory):
-    created_by = factory.SubFactory(factories.UserFactory)
-    last_modified_by = factory.SubFactory(factories.UserFactory)
-
-
-class SiteContentFactory(BaseModelFactory):
-    site = factory.SubFactory(factories.SiteFactory)
 
 
 def get_permitted_ids(user, queryset):
@@ -74,7 +64,7 @@ class TestPermissionManager:
             return getattr(factories, "%sFactory" % model_cls.__name__)
         else:
             base_model = (
-                SiteContentFactory if hasattr(model_cls, "site") else BaseModelFactory
+                BaseSiteContentFactory if hasattr(model_cls, "site") else BaseFactory
             )
 
             class ModelFactory(base_model):

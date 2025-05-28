@@ -62,10 +62,22 @@ class BaseModel(PermissionFilterMixin, RulesModel):
 
     last_modified = models.DateTimeField(default=timezone.now, db_index=True)
 
+    system_last_modified_by = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
+        related_name="system_modified_%(app_label)s_%(class)s",
+    )
+
+    system_last_modified = models.DateTimeField(default=timezone.now, db_index=True)
+
     logger = logging.getLogger(__name__)
 
     def save(self, set_modified_date=True, *args, **kwargs):
-        """Update last_modified time if updating the model."""
+        """Always update system_last_modified time if updating the model. Update last_modified time conditionally."""
+        self.system_last_modified = timezone.now()
         if (not self._state.adding) and set_modified_date:
             self.last_modified = timezone.now()
         return super().save(*args, **kwargs)

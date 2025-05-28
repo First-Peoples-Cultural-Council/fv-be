@@ -177,6 +177,8 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
             "createdBy": instance.created_by.email,
             "lastModified": instance.last_modified.astimezone().isoformat(),
             "lastModifiedBy": instance.last_modified_by.email,
+            "systemLastModified": instance.system_last_modified.astimezone().isoformat(),
+            "systemLastModifiedBy": instance.system_last_modified_by.email,
             "id": str(instance.id),
             "url": f"http://testserver{self.get_detail_endpoint(instance.id, instance.site.slug)}",
             "site": {
@@ -394,6 +396,25 @@ class SiteContentCreateApiTestMixin:
         self.assert_created_response(data, response_data)
 
     @pytest.mark.django_db
+    def test_create_confirm_user(self):
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        response_data = json.loads(response.content)
+        instance = self.model.objects.get(id=response_data["id"])
+
+        assert instance.created_by.email == user.email
+        assert instance.last_modified_by.email == user.email
+        assert instance.system_last_modified_by.email == user.email
+
+    @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
@@ -551,6 +572,18 @@ class SiteContentUpdateApiTestMixin:
         response_data = self.perform_successful_detail_request(instance, site, data)
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
+
+    @pytest.mark.django_db
+    def test_update_confirm_user(self):
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        data = self.get_valid_data(site)
+
+        self.perform_successful_detail_request(instance, site, data)
+
+        updated_instance = self.get_updated_instance(instance)
+        assert updated_instance.last_modified_by.email == user.email
+        assert updated_instance.system_last_modified_by.email == user.email
 
     @pytest.mark.django_db
     def test_update_with_nulls_success_200(self):
@@ -761,6 +794,25 @@ class SiteContentPatchApiTestMixin:
             data, self.get_updated_patch_instance(instance)
         )
         self.assert_update_patch_response(instance, data, response_data)
+
+    @pytest.mark.django_db
+    def test_patch_confirm_user(self):
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        instance = self.create_original_instance_for_patch(site=site)
+        data = self.get_valid_patch_data(site)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+        assert response.status_code == 200
+
+        updated_instance = self.get_updated_patch_instance(instance)
+        assert updated_instance.last_modified_by.email == user.email
+        assert updated_instance.system_last_modified_by.email == user.email
 
 
 class BaseReadOnlyUncontrolledSiteContentApiTest(

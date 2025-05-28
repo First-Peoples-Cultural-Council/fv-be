@@ -353,6 +353,26 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         self.assert_created_response(data, response_data)
 
     @pytest.mark.django_db
+    def test_create_confirm_user(self):
+        site, user = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=site.visibility)
+        data = self.get_valid_data(site)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id)),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 201
+        response_data = json.loads(response.content)
+        instance = StoryPage.objects.get(id=response_data["id"])
+
+        assert instance.created_by.email == user.email
+        assert instance.last_modified_by.email == user.email
+        assert instance.system_last_modified_by.email == user.email
+
+    @pytest.mark.django_db
     def test_create_with_nulls_success_201(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
@@ -435,14 +455,13 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             current_app=self.APP_NAME,
             args=[site.slug, str(instance.story.id)],
         )
+        standard_fields = self.get_expected_standard_fields(instance, site)
+        standard_fields[
+            "url"
+        ] = f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}"
 
         return {
-            "created": instance.created.astimezone().isoformat(),
-            "createdBy": instance.created_by.email,
-            "lastModified": instance.last_modified.astimezone().isoformat(),
-            "lastModifiedBy": instance.last_modified_by.email,
-            "id": str(instance.id),
-            "url": f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}",
+            **standard_fields,
             "text": instance.text,
             "translation": instance.translation,
             "notes": instance.notes,
@@ -451,14 +470,6 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
                 "id": str(instance.story.id),
                 "title": instance.story.title,
                 "url": f"http://testserver{story_url}",
-            },
-            "site": {
-                "id": str(site.id),
-                "url": f"http://testserver/api/1.0/sites/{site.slug}",
-                "title": site.title,
-                "slug": site.slug,
-                "visibility": instance.site.get_visibility_display().lower(),
-                "language": site.language.title,
             },
             **self.RELATED_MEDIA_DEFAULTS,
         }
