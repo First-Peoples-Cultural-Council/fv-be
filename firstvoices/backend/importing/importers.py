@@ -23,14 +23,16 @@ class BaseMediaFileImporter:
         Helper function to build filtered media datasets
         """
         columns = [col for col in cls.supported_columns if col in data.headers]
-        raw_data = tablib.Dataset(headers=columns)
         filtered_data = tablib.Dataset(headers=columns)
-        if filename_key in data.headers:
-            for row in data.dict:
+
+        if filename_key not in data.headers:
+            return filtered_data
+
+        for row in data.dict:
+            if row.get(filename_key):
                 row_values = [row[col] for col in columns]
-                raw_data.append(row_values)
-                if row.get(filename_key):
-                    filtered_data.append(row_values)
+                filtered_data.append(row_values)
+
         return filtered_data
 
     @classmethod
