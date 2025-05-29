@@ -55,18 +55,18 @@ class BaseMediaFileImporter:
         Imports media files listed the given csv data file, and returns import results along with
         a map of filenames to imported File ids.
         """
-        # filtered_data = cls.filter_data(csv_data)
+        filtered_data = cls.filter_data(csv_data)
 
         import_result = cls.resource(
             site=import_job.site,
             run_as_user=import_job.run_as_user,
             import_job=import_job.id,
-        ).import_data(dataset=csv_data, dry_run=dry_run)
+        ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         filename_map = {}
 
         if import_result.totals["new"]:
-            for row in csv_data.dict:
+            for row in filtered_data.dict:
                 filename = row[f"{cls.column_prefix}_filename"]
                 filename_map[filename] = row["id"]
 

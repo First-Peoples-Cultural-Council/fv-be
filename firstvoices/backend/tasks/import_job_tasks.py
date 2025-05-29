@@ -65,20 +65,11 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def separate_datasets(data):
+def filter_dictionary_data(data):
     """
     Splits the cleaned CSV data into four datasets:
     - Dictionary entries
-    - Filtered audio entries
-    - Filtered image entries
-    - Filtered video resources
     """
-    # Building filtered datasets for media
-    filtered_audio_data = AudioImporter.filter_data(data)
-    filtered_img_data = ImageImporter.filter_data(data)
-    filtered_video_data = VideoImporter.filter_data(data)
-
-    # Building dataset for dictionary entries
     media_supported_columns = (
         AudioImporter.supported_columns
         + ImageImporter.supported_columns
@@ -98,12 +89,7 @@ def separate_datasets(data):
         dictionary_entries_row = [row[col] for col in keep_columns]
         dictionary_entries_data.append(dictionary_entries_row)
 
-    return (
-        dictionary_entries_data,
-        filtered_audio_data,
-        filtered_img_data,
-        filtered_video_data,
-    )
+    return dictionary_entries_data
 
 
 def get_column_index(data, column_name):
@@ -256,27 +242,24 @@ def attach_csv_to_report(data, import_job, report):
 
 def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     """
-    Primary method that cleans the CSV data, separates it, imports resources, and generates a report.
+    Primary method that cleans the CSV data, imports resources, and generates a report.
     Used for both dry_run and actual imports.
     """
-
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
-    # get a separate table for each model
-    dictionary_entry_data, audio_data, img_data, video_data = separate_datasets(
-        cleaned_data
-    )
-
+    # import media first
     audio_import_result, audio_filename_map = AudioImporter.import_data(
-        import_job, audio_data, dry_run
+        import_job, cleaned_data, dry_run
     )
     img_import_result, img_filename_map = ImageImporter.import_data(
-        import_job, img_data, dry_run
+        import_job, cleaned_data, dry_run
     )
     video_import_result, video_filename_map = VideoImporter.import_data(
-        import_job, video_data, dry_run
+        import_job, cleaned_data, dry_run
     )
 
+    # import dictionary entries
+    dictionary_entry_data = filter_dictionary_data(cleaned_data)
     dictionary_entry_import_result = import_dictionary_entry_resource(
         import_job,
         dictionary_entry_data,
