@@ -1,50 +1,79 @@
 import tablib
 
 from backend.models import ImportJob
+from backend.resources.dictionary import DictionaryEntryResource
 from backend.resources.media import AudioResource, ImageResource, VideoResource
 
 
-class BaseMediaFileImporter:
+class BaseImporter:
     resource = None
-    column_prefix = ""
     supported_columns = []
+    key_col = None
+
+    @classmethod
+    def get_supported_columns(cls):
+        return cls.supported_columns
+
+    @classmethod
+    def import_data(cls, import_job: ImportJob, csv_data: str, dry_run: bool = True):
+        raise NotImplementedError
+
+    @classmethod
+    def get_key_col(cls):
+        return cls.key_col
 
     @classmethod
     def filter_data(cls, data):
-        filename_col = f"{cls.column_prefix}_filename"
-        filtered_data = cls.filter_columns(data, filename_col)
-        filtered_data = cls.remove_duplicate_rows(filtered_data, filename_col)
+        key_col = cls.get_key_col()
+        filtered_data = cls.filter_columns(data, key_col)
+        filtered_data = cls.filter_rows(filtered_data, key_col)
 
         return filtered_data
 
     @classmethod
-    def filter_columns(cls, data, filename_key):
+    def filter_columns(cls, data, key_col=None):
         """
-        Helper function to build filtered media datasets
+        Return only the allowed columns of data.
         """
-        columns = [col for col in cls.supported_columns if col in data.headers]
+        columns = [col for col in cls.get_supported_columns() if col in data.headers]
         filtered_data = tablib.Dataset(headers=columns)
 
-        if filename_key not in data.headers:
+        if key_col and key_col not in data.headers:
             return filtered_data
 
         for row in data.dict:
-            if row.get(filename_key):
-                row_values = [row[col] for col in columns]
-                filtered_data.append(row_values)
+            row_values = [row[col] for col in columns]
+            filtered_data.append(row_values)
 
         return filtered_data
 
     @classmethod
-    def remove_duplicate_rows(cls, data, filename_key):
+    def filter_rows(cls, data, filename_key):
+        """Subclasses can override to filter out duplicate or invalid rows."""
+        return data
+
+
+class BaseMediaFileImporter(BaseImporter):
+    column_prefix = ""
+
+    @classmethod
+    def get_key_col(cls):
+        return f"{cls.column_prefix}_filename"
+
+    @classmethod
+    def filter_rows(cls, data, filename_key):
         """
-        Only keep the first row if multiple rows have same filenames.
+        Removes rows with missing or duplicate filename. Only keeps the first row if multiple rows have same filenames.
         """
         seen_filenames = set()
         non_duplicated_data = tablib.Dataset(headers=data.headers)
 
         for row in data.dict:
             filename = row[filename_key]
+
+            if not filename:
+                continue
+
             if filename not in seen_filenames:
                 seen_filenames.add(filename)
                 non_duplicated_data.append(row.values())
@@ -115,3 +144,49 @@ class VideoImporter(BaseMediaFileImporter):
         "video_acknowledgement",
         "video_include_in_kids_site",
     ]
+
+
+class DictionaryEntryImporter(BaseImporter):
+    resource = DictionaryEntryResource
+    supported_columns_single = [
+        "title",
+        "type",
+        "visibility",
+        "include_on_kids_site",
+        "include_in_games",
+    ]
+    supported_columns_multiple = [
+        "translation",
+        "category",
+        "note",
+        "acknowledgement",
+        "part_of_speech",
+        "pronunciation",
+        "alternate_spelling",
+        "related_entry",
+    ]
+    supported_columns_media = [
+        "audio_filename",
+        "img_filename",
+        "video_filename",
+    ]
+
+    @classmethod
+    def get_supported_columns(cls):
+        return (
+            cls.supported_columns_single
+            + cls.get_multiplied_columns()
+            + cls.supported_columns_media
+        )
+
+    @classmethod
+    def get_multiplied_columns(cls):
+        target_columns = []
+
+        for col in cls.supported_columns_multiple:
+            target_columns.append(col)
+
+            for i in range(2, 6):
+                target_columns.append(f"{col}_{i}")
+
+        return target_columns

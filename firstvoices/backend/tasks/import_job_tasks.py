@@ -6,7 +6,12 @@ from celery.utils.log import get_task_logger
 from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
-from backend.importing.importers import AudioImporter, ImageImporter, VideoImporter
+from backend.importing.importers import (
+    AudioImporter,
+    DictionaryEntryImporter,
+    ImageImporter,
+    VideoImporter,
+)
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -63,33 +68,6 @@ def clean_csv(data, missing_media=[]):
         del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
-
-
-def filter_dictionary_data(data):
-    """
-    Splits the cleaned CSV data into four datasets:
-    - Dictionary entries
-    """
-    media_supported_columns = (
-        AudioImporter.supported_columns
-        + ImageImporter.supported_columns
-        + VideoImporter.supported_columns
-    )
-    media_columns = [col for col in media_supported_columns if col in data.headers]
-    exclude_columns = set(media_columns)
-    keep_columns = [
-        col
-        for col in data.headers
-        if col not in exclude_columns
-        or col in ["audio_filename", "img_filename", "video_filename"]
-    ]
-    dictionary_entries_data = tablib.Dataset(headers=keep_columns)
-
-    for row in data.dict:
-        dictionary_entries_row = [row[col] for col in keep_columns]
-        dictionary_entries_data.append(dictionary_entries_row)
-
-    return dictionary_entries_data
 
 
 def get_column_index(data, column_name):
@@ -259,7 +237,7 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     )
 
     # import dictionary entries
-    dictionary_entry_data = filter_dictionary_data(cleaned_data)
+    dictionary_entry_data = DictionaryEntryImporter.filter_data(cleaned_data)
     dictionary_entry_import_result = import_dictionary_entry_resource(
         import_job,
         dictionary_entry_data,
