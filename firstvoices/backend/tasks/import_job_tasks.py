@@ -65,38 +65,6 @@ def clean_csv(data, missing_media=[]):
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def build_filtered_dataset(data, columns, filename_key):
-    """
-    Helper function to build filtered media datasets
-    """
-    raw_data = tablib.Dataset(headers=columns)
-    filtered_data = tablib.Dataset(headers=columns)
-    if filename_key in data.headers:
-        for row in data.dict:
-            row_values = [row[col] for col in columns]
-            raw_data.append(row_values)
-            if row.get(filename_key):
-                filtered_data.append(row_values)
-    return filtered_data
-
-
-def remove_duplicate_filename_rows(data, filename_key):
-    """
-    This method removes any rows with same filename.
-    Only keep the first row if multiple rows have same filenames.
-    """
-    seen_filenames = set()
-    non_duplicated_data = tablib.Dataset(headers=data.headers)
-
-    for row in data.dict:
-        filename = row[filename_key]
-        if filename not in seen_filenames:
-            seen_filenames.add(filename)
-            non_duplicated_data.append(row.values())
-
-    return non_duplicated_data
-
-
 def separate_datasets(data):
     """
     Splits the cleaned CSV data into four datasets:
@@ -105,67 +73,19 @@ def separate_datasets(data):
     - Filtered image entries
     - Filtered video resources
     """
-    media_supported_columns = {
-        "audio": [
-            "audio_filename",
-            "audio_title",
-            "audio_description",
-            "audio_speaker",
-            "audio_speaker_2",
-            "audio_speaker_3",
-            "audio_speaker_4",
-            "audio_speaker_5",
-            "audio_acknowledgement",
-            "audio_include_in_kids_site",
-            "audio_include_in_games",
-        ],
-        "img": [
-            "img_filename",
-            "img_title",
-            "img_description",
-            "img_acknowledgement",
-            "img_include_in_kids_site",
-        ],
-        "video": [
-            "video_filename",
-            "video_title",
-            "video_description",
-            "video_acknowledgement",
-            "video_include_in_kids_site",
-        ],
-    }
-
-    # Filter out existing columns for each media type
-    media_columns = {
-        media_type: [col for col in presets if col in data.headers]
-        for media_type, presets in media_supported_columns.items()
-    }
-
     # Building filtered datasets for media
-    filtered_audio_data = build_filtered_dataset(
-        data, media_columns["audio"], "audio_filename"
-    )
-    filtered_img_data = build_filtered_dataset(
-        data, media_columns["img"], "img_filename"
-    )
-    filtered_video_data = build_filtered_dataset(
-        data, media_columns["video"], "video_filename"
-    )
-
-    filtered_audio_data = remove_duplicate_filename_rows(
-        filtered_audio_data, "audio_filename"
-    )
-    filtered_img_data = remove_duplicate_filename_rows(
-        filtered_img_data, "img_filename"
-    )
-    filtered_video_data = remove_duplicate_filename_rows(
-        filtered_video_data, "video_filename"
-    )
+    filtered_audio_data = AudioImporter.filter_data(data)
+    filtered_img_data = ImageImporter.filter_data(data)
+    filtered_video_data = VideoImporter.filter_data(data)
 
     # Building dataset for dictionary entries
-    exclude_columns = set(
-        media_columns["audio"] + media_columns["img"] + media_columns["video"]
+    media_supported_columns = (
+        AudioImporter.supported_columns
+        + ImageImporter.supported_columns
+        + VideoImporter.supported_columns
     )
+    media_columns = [col for col in media_supported_columns if col in data.headers]
+    exclude_columns = set(media_columns)
     keep_columns = [
         col
         for col in data.headers
