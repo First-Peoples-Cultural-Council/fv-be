@@ -17,42 +17,6 @@ from backend.models.import_jobs import (
 ASYNC_TASK_START_TEMPLATE = "Task started. Additional info: %s."
 ASYNC_TASK_END_TEMPLATE = "Task ended."
 
-VALID_HEADERS = [
-    "title",
-    "type",
-    "translation",
-    "category",
-    "note",
-    "acknowledgement",
-    "part_of_speech",
-    "pronunciation",
-    "alternate_spelling",
-    "visibility",
-    "include_on_kids_site",
-    "include_in_games",
-    "related_entry",
-    # audio
-    "audio_filename",
-    "audio_title",
-    "audio_description",
-    "audio_acknowledgement",
-    "audio_include_in_kids_site",
-    "audio_include_in_games",
-    "audio_speaker",
-    # image
-    "img_filename",
-    "img_title",
-    "img_description",
-    "img_acknowledgement",
-    "img_include_in_kids_site",
-    # video
-    "video_filename",
-    "video_title",
-    "video_description",
-    "video_acknowledgement",
-    "video_include_in_kids_site",
-]
-
 
 def verify_no_other_import_jobs_running(current_job):
     # Method to verify that no other ImportJob tasks are running
@@ -114,36 +78,3 @@ def create_or_append_error_row(import_job, report, row_number, errors):
     if not created:
         error_row.errors += errors
         error_row.save()
-
-
-def is_valid_header_variation(input_header, all_headers):
-    # The input header can have a _n variation from 2 to 5, e.g. 'note_5'
-    # The original header also has to be present for the variation to be accepted,
-    # e.g. 'note_2' to 'note_5' columns will only be accepted if 'note' column is present in the table
-    # All other variations are invalid
-
-    all_headers = [h.strip().lower() for h in all_headers]
-
-    splits = input_header.split("_")
-    if len(splits) >= 2:
-        prefix = "_".join(splits[:-1])
-        variation = splits[-1]
-    else:
-        prefix = input_header
-        variation = None
-
-    # Check if the prefix is a valid header
-    if (
-        prefix in VALID_HEADERS
-        and prefix in all_headers
-        and variation
-        and variation.isdigit()
-    ):
-        variation = int(variation)
-        if variation <= 1 or variation > 5:
-            # Variation out of range. Skipping column.
-            return False
-    else:
-        return False
-
-    return True

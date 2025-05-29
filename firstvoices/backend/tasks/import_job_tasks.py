@@ -1,4 +1,5 @@
 from copy import deepcopy
+from functools import reduce
 
 import tablib
 from celery import current_task, shared_task
@@ -20,16 +21,21 @@ from backend.models.import_jobs import (
     JobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
-from backend.resources.dictionary import DictionaryEntryResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
-    VALID_HEADERS,
     create_or_append_error_row,
     get_failed_rows_csv_file,
-    is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
+
+
+def get_valid_headers():
+    importers = [AudioImporter, ImageImporter, VideoImporter, DictionaryEntryImporter]
+    supported_columns = map(
+        lambda importer: importer.get_supported_columns(), importers
+    )
+    return reduce(lambda a, b: a + b, supported_columns)
 
 
 def clean_csv(data, missing_media=[]):
@@ -39,6 +45,7 @@ def clean_csv(data, missing_media=[]):
     This method also drops the ignored columns as those will not be used during import.
     """
 
+    valid_headers = get_valid_headers()
     cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
     all_headers = data.headers
     accepted_headers = []
@@ -47,9 +54,7 @@ def clean_csv(data, missing_media=[]):
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
         cleaned_header = header.strip().lower()
-        if cleaned_header in VALID_HEADERS:
-            accepted_headers.append(header)
-        elif is_valid_header_variation(cleaned_header, all_headers):
+        if cleaned_header in valid_headers:
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)
@@ -68,82 +73,6 @@ def clean_csv(data, missing_media=[]):
         del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
-
-
-def get_column_index(data, column_name):
-    """
-    Return the index of column if present in the dataset.
-    """
-    try:
-        column_index = data.headers.index(column_name)
-        return column_index
-    except ValueError:
-        return -1
-
-
-def add_column(data, column_name):
-    """
-    Add provided column to the tablib dataset.
-    """
-    data.append_col([""] * len(data), header=column_name)
-    return data.headers.index(column_name)
-
-
-def add_related_id(row_list, filename_col_index, related_media_col_index, media_map):
-    """
-    Lookup the filename against the media map, and add the id of the media resource to
-    the provided row.
-    """
-    if not media_map:
-        # If media map is empty, do nothing
-        return
-
-    filename = row_list[filename_col_index]
-    related_id = media_map.get(filename, "")
-    row_list[related_media_col_index] = related_id
-
-
-def import_dictionary_entry_resource(
-    import_job,
-    dictionary_entry_data,
-    audio_filename_map,
-    img_filename_map,
-    video_filename_map,
-    dry_run,
-):
-    """
-    Imports dictionary entries and returns the import result.
-    This method adds related media columns, i.e. "related_images", "related_audio" and fills
-    them up with ids from the media maps, by looking them up against the filename columns.
-    """
-
-    related_audio_column = add_column(dictionary_entry_data, "related_audio")
-    audio_filename_column = get_column_index(dictionary_entry_data, "audio_filename")
-    related_image_column = add_column(dictionary_entry_data, "related_images")
-    image_filename_column = get_column_index(dictionary_entry_data, "img_filename")
-    related_video_column = add_column(dictionary_entry_data, "related_videos")
-    video_filename_column = get_column_index(dictionary_entry_data, "video_filename")
-
-    for i, row in enumerate(dictionary_entry_data.dict):
-        row_list = list(dictionary_entry_data[i])
-        add_related_id(
-            row_list, audio_filename_column, related_audio_column, audio_filename_map
-        )
-        add_related_id(
-            row_list, image_filename_column, related_image_column, img_filename_map
-        )
-        add_related_id(
-            row_list, video_filename_column, related_video_column, video_filename_map
-        )
-        dictionary_entry_data[i] = tuple(row_list)
-
-    dictionary_entry_import_result = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=dictionary_entry_data, dry_run=dry_run)
-
-    return dictionary_entry_import_result
 
 
 def generate_report(
@@ -237,14 +166,13 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     )
 
     # import dictionary entries
-    dictionary_entry_data = DictionaryEntryImporter.filter_data(cleaned_data)
-    dictionary_entry_import_result = import_dictionary_entry_resource(
+    dictionary_entry_import_result = DictionaryEntryImporter.import_data(
         import_job,
-        dictionary_entry_data,
+        cleaned_data,
+        dry_run,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
-        dry_run,
     )
 
     report = generate_report(

@@ -190,3 +190,89 @@ class DictionaryEntryImporter(BaseImporter):
                 target_columns.append(f"{col}_{i}")
 
         return target_columns
+
+    @classmethod
+    def import_data(
+        cls,
+        import_job,
+        csv_data,
+        dry_run,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+    ):
+        """
+        Imports dictionary entries and returns the import result.
+        This method adds related media columns, i.e. "related_images", "related_audio" and fills
+        them up with ids from the media maps, by looking them up against the filename columns.
+        """
+        filtered_data = cls.filter_data(csv_data)
+
+        related_audio_column = cls.add_column(filtered_data, "related_audio")
+        audio_filename_column = cls.get_column_index(filtered_data, "audio_filename")
+        related_image_column = cls.add_column(filtered_data, "related_images")
+        image_filename_column = cls.get_column_index(filtered_data, "img_filename")
+        related_video_column = cls.add_column(filtered_data, "related_videos")
+        video_filename_column = cls.get_column_index(filtered_data, "video_filename")
+
+        for i, row in enumerate(filtered_data.dict):
+            row_list = list(filtered_data[i])
+            cls.add_related_id(
+                row_list,
+                audio_filename_column,
+                related_audio_column,
+                audio_filename_map,
+            )
+            cls.add_related_id(
+                row_list, image_filename_column, related_image_column, img_filename_map
+            )
+            cls.add_related_id(
+                row_list,
+                video_filename_column,
+                related_video_column,
+                video_filename_map,
+            )
+            filtered_data[i] = tuple(row_list)
+
+        dictionary_entry_import_result = DictionaryEntryResource(
+            site=import_job.site,
+            run_as_user=import_job.run_as_user,
+            import_job=import_job.id,
+        ).import_data(dataset=filtered_data, dry_run=dry_run)
+
+        return dictionary_entry_import_result
+
+    @classmethod
+    def get_column_index(cls, data, column_name):
+        """
+        Return the index of column if present in the dataset.
+        """
+        try:
+            column_index = data.headers.index(column_name)
+            return column_index
+        except ValueError:
+            return -1
+
+    @classmethod
+    def add_column(cls, data, column_name):
+        """
+        Add provided column to the tablib dataset.
+        """
+        data.append_col([""] * len(data), header=column_name)
+        return data.headers.index(column_name)
+
+    @classmethod
+    def add_related_id(
+        cls, row_list, filename_col_index, related_media_col_index, media_map
+    ):
+        """
+        Lookup the filename in the media map, and add the id of the media resource to
+        the provided row.
+        """
+        if not media_map:
+            # If media map is empty, do nothing
+            return
+
+        filename = row_list[filename_col_index]
+        related_id = media_map.get(filename, "")
+        row_list[related_media_col_index] = related_id
