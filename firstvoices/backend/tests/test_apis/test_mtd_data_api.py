@@ -22,7 +22,6 @@ class TestMTDDataEndpoint:
     APP_NAME = "backend"
 
     client = None
-    content_type = "application/json"
 
     def get_mtd_endpoint(self, site_slug):
         return reverse(self.API_MTD_VIEW, current_app=self.APP_NAME, args=[site_slug])
