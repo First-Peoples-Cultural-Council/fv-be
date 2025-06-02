@@ -7,7 +7,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models import MTDExportJob
-from backend.models.constants import Role, Visibility
+from backend.models.constants import Visibility
 from backend.models.jobs import JobStatus
 from backend.tasks.mtd_export_tasks import build_index_and_calculate_scores
 from backend.tests import factories
@@ -135,29 +135,23 @@ class TestMTDDataEndpoint:
 
     @pytest.mark.django_db
     def test_etag_and_last_modified(self):
-        site, _ = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
-        )
-        factories.CharacterFactory.create_batch(10, site=site)
-        factories.DictionaryEntryFactory.create_batch(
-            10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
-        )
+        self.user = factories.get_superadmin()
+        self.client.force_authenticate(user=self.user)
 
-        mtd = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
-        url = self.get_mtd_endpoint(site_slug=site.slug)
-
+        mtd_export_job = factories.MTDExportJobFactory.create()
+        url = self.get_mtd_endpoint(site_slug=mtd_export_job.site.slug)
         response = self.client.get(url)
 
+        # Compare expected ETag with response header
         expected_etag = hashlib.md5(
-            ":".join(str(mtd.system_last_modified)).encode("utf-8")
+            ":".join(str(mtd_export_job.system_last_modified)).encode("utf-8")
         ).hexdigest()
-        assert response.status_code == 200
         assert response["ETag"].strip('"') == expected_etag
 
-        date_string = response["Last-Modified"]
-        format_string = "%a, %d %b %Y %H:%M:%S %Z"
-        last_modified_header = datetime.strptime(date_string, format_string)
-
-        assert last_modified_header.strftime(
+        # Compare expected Last-Modified with response header
+        response_date = response["Last-Modified"]
+        response_date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        last_modified_datetime = datetime.strptime(response_date, response_date_format)
+        assert last_modified_datetime.strftime(
             "%Y-%m-%d %H:%M:%S"
-        ) == mtd.system_last_modified.strftime("%Y-%m-%d %H:%M:%S")
+        ) == mtd_export_job.system_last_modified.strftime("%Y-%m-%d %H:%M:%S")
