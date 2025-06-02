@@ -29,23 +29,22 @@ from . import doc_strings
 
 def etag_func(request, *args, **kwargs):
     site_slug = kwargs["site_slug"]
-    mtd_export_job = MTDExportJob.objects.filter(site__slug=site_slug).latest(
-        "system_last_modified"
-    )
-    if mtd_export_job is not None:
+    mtd_export_jobs = MTDExportJob.objects.filter(site__slug=site_slug)
+    if mtd_export_jobs.exists():
+        latest = mtd_export_jobs.latest("system_last_modified")
         return hashlib.md5(
-            ":".join(str(mtd_export_job.system_last_modified)).encode("utf-8")
+            ":".join(str(latest.system_last_modified)).encode("utf-8")
         ).hexdigest()
     return None
 
 
 def last_modified_func(request, *args, **kwargs):
     site_slug = kwargs["site_slug"]
-    mtd_export_job = MTDExportJob.objects.filter(site__slug=site_slug).latest(
-        "system_last_modified"
-    )
-    if mtd_export_job is not None:
-        return mtd_export_job.system_last_modified
+    mtd_export_jobs = MTDExportJob.objects.filter(site__slug=site_slug)
+
+    if mtd_export_jobs.exists():
+        latest = mtd_export_jobs.latest("system_last_modified")
+        return latest.system_last_modified
     return None
 
 
