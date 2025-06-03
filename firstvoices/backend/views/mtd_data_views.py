@@ -1,3 +1,5 @@
+import hashlib
+
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
@@ -8,6 +10,7 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework_condition import condition
 from rules.contrib.rest_framework import AutoPermissionViewSetMixin
 
 from backend.models import MTDExportJob
@@ -22,6 +25,27 @@ from backend.views.base_views import (
 from ..permissions.utils import filter_by_viewable
 from ..serializers.mtd_serializers import MTDExportJobSerializer
 from . import doc_strings
+
+
+def etag_func(request, *args, **kwargs):
+    site_slug = kwargs["site_slug"]
+    mtd_export_jobs = MTDExportJob.objects.filter(site__slug=site_slug)
+    if mtd_export_jobs.exists():
+        latest = mtd_export_jobs.latest("system_last_modified")
+        return hashlib.md5(
+            ":".join(str(latest.system_last_modified)).encode("utf-8")
+        ).hexdigest()
+    return None
+
+
+def last_modified_func(request, *args, **kwargs):
+    site_slug = kwargs["site_slug"]
+    mtd_export_jobs = MTDExportJob.objects.filter(site__slug=site_slug)
+
+    if mtd_export_jobs.exists():
+        latest = mtd_export_jobs.latest("system_last_modified")
+        return latest.system_last_modified
+    return None
 
 
 @extend_schema_view(
@@ -59,6 +83,7 @@ class MTDSitesDataViewSet(
         "task": None,
     }
 
+    @condition(etag_func=etag_func, last_modified_func=last_modified_func)
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
         mtd_exports_for_site = MTDExportJob.objects.filter(
@@ -75,6 +100,7 @@ class MTDSitesDataViewSet(
         )
 
     @action(detail=False, methods=["get"])
+    @condition(etag_func=etag_func, last_modified_func=last_modified_func)
     def task(self, request, *args, **kwargs):
         site = self.get_validated_site()
         mtd_exports_for_site = filter_by_viewable(

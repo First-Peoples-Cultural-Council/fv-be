@@ -219,19 +219,23 @@ def check_sites_for_mtd_sync(self):
                 )
 
                 updated_entries_count = DictionaryEntry.objects.filter(
-                    site=site, last_modified__gte=last_export_created
+                    site=site, system_last_modified__gte=last_export_created
                 ).count()
 
                 updated_categories_count = DictionaryEntryCategory.objects.filter(
-                    category__site=site, last_modified__gte=last_export_created
+                    category__site=site, system_last_modified__gte=last_export_created
                 ).count()
 
                 updated_related_media_count = (
                     DictionaryEntry.objects.filter(site=site)
                     .filter(
-                        Q(related_audio__last_modified__gte=last_export_created)
-                        | Q(related_images__last_modified__gte=last_export_created)
-                        | Q(related_videos__last_modified__gte=last_export_created)
+                        Q(related_audio__system_last_modified__gte=last_export_created)
+                        | Q(
+                            related_images__system_last_modified__gte=last_export_created
+                        )
+                        | Q(
+                            related_videos__system_last_modified__gte=last_export_created
+                        )
                     )
                     .distinct()
                     .count()

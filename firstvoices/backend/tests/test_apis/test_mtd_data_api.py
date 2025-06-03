@@ -1,3 +1,6 @@
+import hashlib
+from datetime import datetime
+
 import pytest
 from mothertongues.config.models import LanguageConfiguration
 from rest_framework.reverse import reverse
@@ -129,3 +132,28 @@ class TestMTDDataEndpoint:
         )
         assert response.status_code == 200
         assert response.data[0]["status"] == status
+
+    @pytest.mark.django_db
+    def test_etag_and_last_modified(self):
+        mtd_export_job = factories.MTDExportJobFactory.create()
+        mtd_export_job.export_result = {"result": "fake"}
+        mtd_export_job.status = JobStatus.COMPLETE
+        mtd_export_job.save()
+
+        url = self.get_mtd_endpoint(site_slug=mtd_export_job.site.slug)
+        response = self.client.get(url)
+        assert response.status_code == 200
+
+        # Compare expected ETag with response header
+        expected_etag = hashlib.md5(
+            ":".join(str(mtd_export_job.system_last_modified)).encode("utf-8")
+        ).hexdigest()
+        assert response["ETag"].strip('"') == expected_etag
+
+        # Compare expected Last-Modified with response header
+        response_date = response["Last-Modified"]
+        response_date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        last_modified_datetime = datetime.strptime(response_date, response_date_format)
+        assert last_modified_datetime.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ) == mtd_export_job.system_last_modified.strftime("%Y-%m-%d %H:%M:%S")

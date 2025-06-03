@@ -65,7 +65,9 @@ class ImageFactory(DjangoModelFactory):
 
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Image-%03d" % n)
-    original = factory.SubFactory(ImageFileFactory)
+    original = factory.SubFactory(
+        ImageFileFactory, site=factory.SelfAttribute("..site")
+    )
 
 
 def get_video_content(size="thumbnail"):
@@ -97,7 +99,9 @@ class VideoFactory(DjangoModelFactory):
 
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Video-%03d" % n)
-    original = factory.SubFactory(VideoFileFactory)
+    original = factory.SubFactory(
+        VideoFileFactory, site=factory.SelfAttribute("..site")
+    )
 
 
 class PersonFactory(DjangoModelFactory):
@@ -114,7 +118,7 @@ class AudioFactory(DjangoModelFactory):
 
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Audio-%03d" % n)
-    original = factory.SubFactory(FileFactory)
+    original = factory.SubFactory(FileFactory, site=factory.SelfAttribute("..site"))
 
 
 class DocumentFactory(DjangoModelFactory):
@@ -123,7 +127,7 @@ class DocumentFactory(DjangoModelFactory):
 
     site = factory.SubFactory(SiteFactory)
     title = factory.Sequence(lambda n: "Document-%03d" % n)
-    original = factory.SubFactory(FileFactory)
+    original = factory.SubFactory(FileFactory, site=factory.SelfAttribute("..site"))
 
 
 class AudioSpeakerFactory(DjangoModelFactory):
