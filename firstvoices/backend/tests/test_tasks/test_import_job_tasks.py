@@ -276,6 +276,32 @@ class TestBulkImportDryRun:
         assert "title" in accepted_columns
         assert "type" in accepted_columns
 
+    def test_missing_original_column(self):
+        file_content = get_sample_file(
+            "import_job/original_header_missing.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
+
+        assert "note_2" in ignored_columns
+        assert "note_3" in ignored_columns
+
+        assert "title" in accepted_columns
+        assert "type" in accepted_columns
+
     def test_boolean_variations(self):
         file_content = get_sample_file(
             "import_job/boolean_variations.csv", self.MIMETYPE

@@ -54,7 +54,7 @@ def clean_csv(data, missing_media=[]):
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
-        if is_valid_header_variation(header, valid_headers):
+        if is_valid_header_variation(header, all_headers, valid_headers):
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)
