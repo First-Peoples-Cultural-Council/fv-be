@@ -49,6 +49,7 @@ class SiteFactory(DjangoModelFactory):
     title = factory.Sequence(lambda n: "Site %03d" % n)
     slug = factory.Sequence(lambda n: "site-%03d" % n)
     language = factory.SubFactory(LanguageFactory)
+    visibility = Visibility.PUBLIC
 
     created_by = factory.SubFactory(UserFactory)
     last_modified_by = factory.SubFactory(UserFactory)

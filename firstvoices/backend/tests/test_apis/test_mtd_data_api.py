@@ -135,12 +135,14 @@ class TestMTDDataEndpoint:
 
     @pytest.mark.django_db
     def test_etag_and_last_modified(self):
-        self.user = factories.get_superadmin()
-        self.client.force_authenticate(user=self.user)
-
         mtd_export_job = factories.MTDExportJobFactory.create()
+        mtd_export_job.export_result = {"result": "fake"}
+        mtd_export_job.status = JobStatus.COMPLETE
+        mtd_export_job.save()
+
         url = self.get_mtd_endpoint(site_slug=mtd_export_job.site.slug)
         response = self.client.get(url)
+        assert response.status_code == 200
 
         # Compare expected ETag with response header
         expected_etag = hashlib.md5(

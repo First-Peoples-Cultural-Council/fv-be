@@ -235,7 +235,6 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data["results"]) == 1
         assert response_data["results"][0]["logo"] == self.get_expected_image_data(
             image
         )
