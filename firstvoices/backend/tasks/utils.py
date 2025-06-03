@@ -1,4 +1,5 @@
 import io
+import re
 import sys
 
 import tablib
@@ -78,3 +79,19 @@ def create_or_append_error_row(import_job, report, row_number, errors):
     if not created:
         error_row.errors += errors
         error_row.save()
+
+
+def is_valid_header_variation(input_header, all_headers):
+    # If the header is a numeric variation (e.g., note_2), verify that it has a valid form and
+    # the original header is also present (i.e., note)
+    splits = re.match(r"(\D+[^_\d])_?([2-5])?", input_header, re.IGNORECASE)
+
+    if not splits:
+        return False
+
+    prefix, number = splits.groups()
+
+    if prefix.lower() not in all_headers:
+        return False
+
+    return True

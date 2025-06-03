@@ -26,6 +26,7 @@ from backend.tasks.utils import (
     ASYNC_TASK_START_TEMPLATE,
     create_or_append_error_row,
     get_failed_rows_csv_file,
+    is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
 
@@ -53,8 +54,7 @@ def clean_csv(data, missing_media=[]):
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
-        cleaned_header = header.strip().lower()
-        if cleaned_header in valid_headers:
+        if is_valid_header_variation(header, valid_headers):
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)
