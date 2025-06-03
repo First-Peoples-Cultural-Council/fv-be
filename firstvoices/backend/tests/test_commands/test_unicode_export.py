@@ -30,7 +30,7 @@ class TestUnicodeExport:
         site1 = factories.SiteFactory.create(
             slug="site1", language=language, visibility=Visibility.TEAM
         )
-        site2 = factories.SiteFactory.create(slug="site2")
+        site2 = factories.SiteFactory.create(slug="site2", visibility=Visibility.TEAM)
         site3 = factories.SiteFactory.create(
             slug="site3", language=language, visibility=Visibility.MEMBERS
         )
@@ -71,7 +71,7 @@ class TestUnicodeExport:
         factories.SiteFactory.create(
             slug="site1", language=language, visibility=Visibility.TEAM
         )
-        factories.SiteFactory.create(slug="site2")
+        factories.SiteFactory.create(slug="site2", visibility=Visibility.TEAM)
         site3 = factories.SiteFactory.create(
             slug="site3",
             title="Site 3",
