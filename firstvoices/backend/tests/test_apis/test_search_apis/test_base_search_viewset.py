@@ -1,4 +1,3 @@
-import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -7,7 +6,10 @@ from rest_framework import serializers
 
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
+from backend.tests.test_apis.test_search_apis.base_search_test import (
+    MockSearchResultsMixin,
+    SearchMocksMixin,
+)
 from backend.views.base_search_views import BaseSearchViewSet
 
 
@@ -28,7 +30,7 @@ class EagerSerializer(serializers.Serializer):
         return queryset
 
 
-class TestBaseSearchViewSet(SearchMocksMixin):
+class TestBaseSearchViewSet(SearchMocksMixin, MockSearchResultsMixin):
     @pytest.mark.parametrize("query", [{}, {"query": "   "}])
     def test_get_search_params_empty(self, query):
         mock_request = self.create_mock_request(user=AnonymousUser(), query_dict=query)
@@ -265,24 +267,3 @@ class TestBaseSearchViewSet(SearchMocksMixin):
 
         actual = viewset.serialize_search_results(mock_search_results, mock_data)
         assert actual == [{"id": str(song.id)}]
-
-    def get_song_search_result(self, song=None):
-        return self.get_search_result("song_2024_01_25_00_03_01", song, "Song")
-
-    def get_dictionary_search_result(self, dictionary_entry=None):
-        return self.get_search_result(
-            "dictionary_2024_01_25_00_03_01", dictionary_entry, "DictionaryEntry"
-        )
-
-    def get_search_result(self, index_name, model, document_type):
-        model_id = str(model.id) if model else str(uuid.uuid4())
-        return {
-            "_index": index_name,
-            "_type": "_doc",
-            "_id": "result_" + model_id,
-            "_score": None,
-            "_source": {
-                "document_id": model_id,
-                "document_type": document_type,
-            },
-        }
