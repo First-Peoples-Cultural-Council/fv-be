@@ -29,10 +29,6 @@ class SearchMocksMixin:
         mock_request.query_params = query_dict
         return mock_request
 
-
-class MockSearchResultsMixin:
-    # Generates fake search results for testing.
-
     def get_search_result(self, index_name, model, document_type):
         model_id = str(model.id) if model else str(uuid.uuid4())
         return {

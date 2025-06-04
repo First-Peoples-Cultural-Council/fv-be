@@ -4,13 +4,11 @@ import pytest
 
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.test_search_apis.base_search_test import (
-    MockSearchResultsMixin,
-)
+from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
 
 
-class TestBaseSearchViewSet(MockSearchResultsMixin):
+class TestBaseSearchViewSet(SearchMocksMixin):
     @pytest.mark.django_db
     def test_serialized_entries_have_author_fields(self):
         image = factories.ImageFactory.create()

@@ -6,10 +6,7 @@ from rest_framework import serializers
 
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
-from backend.tests.test_apis.test_search_apis.base_search_test import (
-    MockSearchResultsMixin,
-    SearchMocksMixin,
-)
+from backend.tests.test_apis.test_search_apis.base_search_test import SearchMocksMixin
 from backend.views.base_search_views import BaseSearchViewSet
 
 
@@ -30,7 +27,7 @@ class EagerSerializer(serializers.Serializer):
         return queryset
 
 
-class TestBaseSearchViewSet(SearchMocksMixin, MockSearchResultsMixin):
+class TestBaseSearchViewSet(SearchMocksMixin):
     @pytest.mark.parametrize("query", [{}, {"query": "   "}])
     def test_get_search_params_empty(self, query):
         mock_request = self.create_mock_request(user=AnonymousUser(), query_dict=query)
