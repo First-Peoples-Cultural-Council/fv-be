@@ -698,6 +698,28 @@ class TestBulkImportDryRun:
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
 
+    def test_related_media_id_columns(self):
+        audio1 = factories.AudioFactory.create()
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=audio1.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert "AUDIO_ID" in validation_report.accepted_columns
+        assert "img_id" in validation_report.accepted_columns
+        assert "video_id" in validation_report.accepted_columns
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):

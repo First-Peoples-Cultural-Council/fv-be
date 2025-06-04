@@ -177,6 +177,7 @@ class AudioImporter(BaseMediaFileImporter):
         "audio_acknowledgement",
         "audio_include_in_kids_site",
         "audio_include_in_games",
+        "audio_id",
     ]
 
 
@@ -190,6 +191,7 @@ class ImageImporter(BaseMediaFileImporter):
         "img_description",
         "img_acknowledgement",
         "img_include_in_kids_site",
+        "img_id",
     ]
 
 
@@ -203,6 +205,7 @@ class VideoImporter(BaseMediaFileImporter):
         "video_description",
         "video_acknowledgement",
         "video_include_in_kids_site",
+        "video_id",
     ]
 
 
