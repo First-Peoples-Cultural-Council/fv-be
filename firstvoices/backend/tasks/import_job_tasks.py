@@ -1,4 +1,5 @@
 from copy import deepcopy
+from functools import reduce
 
 import tablib
 from celery import current_task, shared_task
@@ -6,6 +7,12 @@ from celery.utils.log import get_task_logger
 from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
+from backend.importing.importers import (
+    AudioImporter,
+    DictionaryEntryImporter,
+    ImageImporter,
+    VideoImporter,
+)
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -14,17 +21,22 @@ from backend.models.import_jobs import (
     JobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
-from backend.resources.dictionary import DictionaryEntryResource
-from backend.resources.media import AudioResource, ImageResource, VideoResource
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
-    VALID_HEADERS,
     create_or_append_error_row,
     get_failed_rows_csv_file,
     is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
+
+
+def get_valid_headers():
+    importers = [AudioImporter, ImageImporter, VideoImporter, DictionaryEntryImporter]
+    supported_columns = map(
+        lambda importer: importer.get_supported_columns(), importers
+    )
+    return reduce(lambda a, b: a + b, supported_columns)
 
 
 def clean_csv(data, missing_media=[]):
@@ -34,6 +46,7 @@ def clean_csv(data, missing_media=[]):
     This method also drops the ignored columns as those will not be used during import.
     """
 
+    valid_headers = get_valid_headers()
     cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
     all_headers = data.headers
     accepted_headers = []
@@ -41,10 +54,7 @@ def clean_csv(data, missing_media=[]):
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
-        cleaned_header = header.strip().lower()
-        if cleaned_header in VALID_HEADERS:
-            accepted_headers.append(header)
-        elif is_valid_header_variation(cleaned_header, all_headers):
+        if is_valid_header_variation(header, all_headers, valid_headers):
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)
@@ -63,269 +73,6 @@ def clean_csv(data, missing_media=[]):
         del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
-
-
-def build_filtered_dataset(data, columns, filename_key):
-    """
-    Helper function to build filtered media datasets
-    """
-    raw_data = tablib.Dataset(headers=columns)
-    filtered_data = tablib.Dataset(headers=columns)
-    if filename_key in data.headers:
-        for row in data.dict:
-            row_values = [row[col] for col in columns]
-            raw_data.append(row_values)
-            if row.get(filename_key):
-                filtered_data.append(row_values)
-    return filtered_data
-
-
-def remove_duplicate_filename_rows(data, filename_key):
-    """
-    This method removes any rows with same filename.
-    Only keep the first row if multiple rows have same filenames.
-    """
-    seen_filenames = set()
-    non_duplicated_data = tablib.Dataset(headers=data.headers)
-
-    for row in data.dict:
-        filename = row[filename_key]
-        if filename not in seen_filenames:
-            seen_filenames.add(filename)
-            non_duplicated_data.append(row.values())
-
-    return non_duplicated_data
-
-
-def separate_datasets(data):
-    """
-    Splits the cleaned CSV data into four datasets:
-    - Dictionary entries
-    - Filtered audio entries
-    - Filtered image entries
-    - Filtered video resources
-    """
-    media_supported_columns = {
-        "audio": [
-            "audio_filename",
-            "audio_title",
-            "audio_description",
-            "audio_speaker",
-            "audio_speaker_2",
-            "audio_speaker_3",
-            "audio_speaker_4",
-            "audio_speaker_5",
-            "audio_acknowledgement",
-            "audio_include_in_kids_site",
-            "audio_include_in_games",
-        ],
-        "img": [
-            "img_filename",
-            "img_title",
-            "img_description",
-            "img_acknowledgement",
-            "img_include_in_kids_site",
-        ],
-        "video": [
-            "video_filename",
-            "video_title",
-            "video_description",
-            "video_acknowledgement",
-            "video_include_in_kids_site",
-        ],
-    }
-
-    # Filter out existing columns for each media type
-    media_columns = {
-        media_type: [col for col in presets if col in data.headers]
-        for media_type, presets in media_supported_columns.items()
-    }
-
-    # Building filtered datasets for media
-    filtered_audio_data = build_filtered_dataset(
-        data, media_columns["audio"], "audio_filename"
-    )
-    filtered_img_data = build_filtered_dataset(
-        data, media_columns["img"], "img_filename"
-    )
-    filtered_video_data = build_filtered_dataset(
-        data, media_columns["video"], "video_filename"
-    )
-
-    filtered_audio_data = remove_duplicate_filename_rows(
-        filtered_audio_data, "audio_filename"
-    )
-    filtered_img_data = remove_duplicate_filename_rows(
-        filtered_img_data, "img_filename"
-    )
-    filtered_video_data = remove_duplicate_filename_rows(
-        filtered_video_data, "video_filename"
-    )
-
-    # Building dataset for dictionary entries
-    exclude_columns = set(
-        media_columns["audio"] + media_columns["img"] + media_columns["video"]
-    )
-    keep_columns = [
-        col
-        for col in data.headers
-        if col not in exclude_columns
-        or col in ["audio_filename", "img_filename", "video_filename"]
-    ]
-    dictionary_entries_data = tablib.Dataset(headers=keep_columns)
-
-    for row in data.dict:
-        dictionary_entries_row = [row[col] for col in keep_columns]
-        dictionary_entries_data.append(dictionary_entries_row)
-
-    return (
-        dictionary_entries_data,
-        filtered_audio_data,
-        filtered_img_data,
-        filtered_video_data,
-    )
-
-
-def import_audio_resource(import_job, audio_data, dry_run):
-    """
-    Imports audio files and appends IDs of the imported files as related_audio in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from audio import.
-    """
-
-    audio_import_result = AudioResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=audio_data, dry_run=dry_run)
-
-    audio_filename_map = {}
-
-    # Adding audio ids
-    if audio_import_result.totals["new"]:
-        for row in audio_data.dict:
-            audio_filename_map[row["audio_filename"]] = row["id"]
-
-    return audio_import_result, audio_filename_map
-
-
-def import_img_resource(import_job, img_data, dry_run):
-    """
-    Imports image files and appends IDs of the imported files as related_images in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from image import.
-    """
-
-    img_import_result = ImageResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=img_data, dry_run=dry_run)
-
-    img_filename_map = {}
-
-    # Adding image ids
-    if img_import_result.totals["new"]:
-        for row in img_data.dict:
-            img_filename_map[row["img_filename"]] = row["id"]
-
-    return img_import_result, img_filename_map
-
-
-def import_video_resource(import_job, video_data, dry_run):
-    """
-    Imports video files and appends IDs of the imported files as related_videos in dictionary_entry_data.
-    Returns updated dictionary_entry_data and result from video import.
-    """
-
-    video_import_result = VideoResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=video_data, dry_run=dry_run)
-
-    video_filename_map = {}
-
-    # Adding video ids
-    if video_import_result.totals["new"]:
-        for row in video_data.dict:
-            video_filename_map[row["video_filename"]] = row["id"]
-
-    return video_import_result, video_filename_map
-
-
-def get_column_index(data, column_name):
-    """
-    Return the index of column if present in the dataset.
-    """
-    try:
-        column_index = data.headers.index(column_name)
-        return column_index
-    except ValueError:
-        return -1
-
-
-def add_column(data, column_name):
-    """
-    Add provided column to the tablib dataset.
-    """
-    data.append_col([""] * len(data), header=column_name)
-    return data.headers.index(column_name)
-
-
-def add_related_id(row_list, filename_col_index, related_media_col_index, media_map):
-    """
-    Lookup the filename against the media map, and add the id of the media resource to
-    the provided row.
-    """
-    if not media_map:
-        # If media map is empty, do nothing
-        return
-
-    filename = row_list[filename_col_index]
-    related_id = media_map.get(filename, "")
-    row_list[related_media_col_index] = related_id
-
-
-def import_dictionary_entry_resource(
-    import_job,
-    dictionary_entry_data,
-    audio_filename_map,
-    img_filename_map,
-    video_filename_map,
-    dry_run,
-):
-    """
-    Imports dictionary entries and returns the import result.
-    This method adds related media columns, i.e. "related_images", "related_audio" and fills
-    them up with ids from the media maps, by looking them up against the filename columns.
-    """
-
-    related_audio_column = add_column(dictionary_entry_data, "related_audio")
-    audio_filename_column = get_column_index(dictionary_entry_data, "audio_filename")
-    related_image_column = add_column(dictionary_entry_data, "related_images")
-    image_filename_column = get_column_index(dictionary_entry_data, "img_filename")
-    related_video_column = add_column(dictionary_entry_data, "related_videos")
-    video_filename_column = get_column_index(dictionary_entry_data, "video_filename")
-
-    for i, row in enumerate(dictionary_entry_data.dict):
-        row_list = list(dictionary_entry_data[i])
-        add_related_id(
-            row_list, audio_filename_column, related_audio_column, audio_filename_map
-        )
-        add_related_id(
-            row_list, image_filename_column, related_image_column, img_filename_map
-        )
-        add_related_id(
-            row_list, video_filename_column, related_video_column, video_filename_map
-        )
-        dictionary_entry_data[i] = tuple(row_list)
-
-    dictionary_entry_import_result = DictionaryEntryResource(
-        site=import_job.site,
-        run_as_user=import_job.run_as_user,
-        import_job=import_job.id,
-    ).import_data(dataset=dictionary_entry_data, dry_run=dry_run)
-
-    return dictionary_entry_import_result
 
 
 def generate_report(
@@ -402,33 +149,30 @@ def attach_csv_to_report(data, import_job, report):
 
 def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     """
-    Primary method that cleans the CSV data, separates it, imports resources, and generates a report.
+    Primary method that cleans the CSV data, imports resources, and generates a report.
     Used for both dry_run and actual imports.
     """
-
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
-    # get a separate table for each model
-    dictionary_entry_data, audio_data, img_data, video_data = separate_datasets(
-        cleaned_data
+    # import media first
+    audio_import_result, audio_filename_map = AudioImporter.import_data(
+        import_job, cleaned_data, dry_run
+    )
+    img_import_result, img_filename_map = ImageImporter.import_data(
+        import_job, cleaned_data, dry_run
+    )
+    video_import_result, video_filename_map = VideoImporter.import_data(
+        import_job, cleaned_data, dry_run
     )
 
-    audio_import_result, audio_filename_map = import_audio_resource(
-        import_job, audio_data, dry_run
-    )
-    img_import_result, img_filename_map = import_img_resource(
-        import_job, img_data, dry_run
-    )
-    video_import_result, video_filename_map = import_video_resource(
-        import_job, video_data, dry_run
-    )
-    dictionary_entry_import_result = import_dictionary_entry_resource(
+    # import dictionary entries
+    dictionary_entry_import_result = DictionaryEntryImporter.import_data(
         import_job,
-        dictionary_entry_data,
+        cleaned_data,
+        dry_run,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
-        dry_run,
     )
 
     report = generate_report(
