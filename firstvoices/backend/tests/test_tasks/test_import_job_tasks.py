@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
@@ -1290,3 +1290,32 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert images.count() == 1 and images[0].id == image_in_csv.id
         assert files.count() == 1 and files[0].id == audio_in_csv.id
         assert videos.count() == 1 and videos[0].id == video_in_csv.id
+
+    def test_exception_deleting_unused_media(self, caplog):
+        # Simulating a general exception when deleting unused media files
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            status=JobStatus.ACCEPTED,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        mock_report = MagicMock()
+        mock_report.delete.side_effect = Exception("General Exception")
+        with patch(
+            "backend.tasks.import_job_tasks.File.objects.filter",
+            return_value=mock_report,
+        ):
+            confirm_import_job(import_job.id)
+
+        assert (
+            "An exception occurred while trying to delete unused media files."
+            in caplog.text
+        )
+
+        updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
+        assert updated_import_job.status == JobStatus.COMPLETE
