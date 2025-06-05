@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
@@ -9,7 +9,9 @@ from django.utils.text import get_valid_filename
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.files import File
 from backend.models.import_jobs import JobStatus
+from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tests.factories import (
     CategoryFactory,
@@ -1228,3 +1230,92 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio_entry_1 == related_audio_entry_2 == related_audio_entry_3
         assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
         assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3
+
+    def test_unused_media_deleted(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        # Adding media that is referenced in the csv
+        audio_in_csv = FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        image_in_csv = ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+
+        video_in_csv = VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        # Adding additional media that is not in the csv
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another video.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        confirm_import_job(import_job.id)
+
+        images = ImageFile.objects.filter(import_job_id=import_job.id)
+        files = File.objects.filter(import_job_id=import_job.id)
+        videos = VideoFile.objects.filter(import_job_id=import_job.id)
+
+        # Verifying only media included in csv are present after import job completion
+        assert images.count() == 1 and images[0].id == image_in_csv.id
+        assert files.count() == 1 and files[0].id == audio_in_csv.id
+        assert videos.count() == 1 and videos[0].id == video_in_csv.id
+
+    def test_exception_deleting_unused_media(self, caplog):
+        # Simulating a general exception when deleting unused media files
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            status=JobStatus.ACCEPTED,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        mock_report = MagicMock()
+        mock_report.delete.side_effect = Exception("General Exception")
+        with patch(
+            "backend.tasks.import_job_tasks.File.objects.filter",
+            return_value=mock_report,
+        ):
+            confirm_import_job(import_job.id)
+
+        assert (
+            "An exception occurred while trying to delete unused media files."
+            in caplog.text
+        )
+
+        updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
+        assert updated_import_job.status == JobStatus.COMPLETE

@@ -199,6 +199,7 @@ def run_import_job(data, import_job):
     try:
         process_import_job_data(data, import_job, dry_run=False)
         import_job.status = JobStatus.COMPLETE
+        delete_unused_media(import_job)
     except Exception as e:
         logger.error(e)
         import_job.status = JobStatus.FAILED
@@ -280,6 +281,27 @@ def get_missing_media(data, import_job_instance):
                 missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
+
+
+def delete_unused_media(import_job):
+    """
+    Checks for, and deletes, any media files that were uploaded for the import job but not associated with a media model
+    i.e. Not used in the import.
+    """
+    logger = get_task_logger(__name__)
+
+    try:
+        ImageFile.objects.filter(
+            import_job_id=import_job.id, image__isnull=True
+        ).delete()
+        VideoFile.objects.filter(
+            import_job_id=import_job.id, video__isnull=True
+        ).delete()
+        File.objects.filter(import_job_id=import_job.id, audio__isnull=True).delete()
+    except Exception as e:
+        logger.warning(
+            f"An exception occurred while trying to delete unused media files. Error: {e}"
+        )
 
 
 @shared_task
