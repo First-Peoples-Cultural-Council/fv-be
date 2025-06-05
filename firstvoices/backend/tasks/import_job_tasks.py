@@ -299,7 +299,9 @@ def delete_unused_media(import_job):
         ).delete()
         File.objects.filter(import_job_id=import_job.id, audio__isnull=True).delete()
     except Exception as e:
-        logger.warning(e)
+        logger.warning(
+            "An exception occurred while trying to delete unused media files:", e
+        )
 
 
 @shared_task
