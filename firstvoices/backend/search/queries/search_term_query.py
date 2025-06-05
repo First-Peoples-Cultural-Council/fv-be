@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Q
+from elasticsearch.dsl import Q
 
 from backend.search.constants import FUZZY_SEARCH_CUTOFF
 

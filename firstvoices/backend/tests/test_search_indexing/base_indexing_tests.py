@@ -10,6 +10,11 @@ from backend.tests.utils import TransactionOnCommitMixin
 TEST_SEARCH_INDEX_ID = "test search index id"
 
 
+class MockNotFoundError(NotFoundError):
+    def __init__(self, message="", meta={}, body={}):
+        super().__init__(message=message, meta=meta, body=body)
+
+
 class BaseIndexManagerTest:
     """
     Base test class for subclasses of IndexManager.
@@ -23,16 +28,16 @@ class BaseIndexManagerTest:
 
     paths = {
         "es": "elasticsearch.Elasticsearch",
-        "es_get_connection": "elasticsearch_dsl.connections.Connections.get_connection",
-        "es_index_init": "elasticsearch_dsl.index.Index.__init__",
-        "es_index_aliases": "elasticsearch_dsl.index.Index.aliases",
-        "es_index_create": "elasticsearch_dsl.index.Index.create",
-        "es_index_document": "elasticsearch_dsl.index.Index.document",
-        "es_index_settings": "elasticsearch_dsl.index.Index.settings",
-        "es_index_refresh": "elasticsearch_dsl.index.Index.refresh",
+        "es_get_connection": "elasticsearch.dsl.connections.get_connection",
+        "es_index_init": "elasticsearch.dsl.index.Index.__init__",
+        "es_index_aliases": "elasticsearch.dsl.index.Index.aliases",
+        "es_index_create": "elasticsearch.dsl.index.Index.create",
+        "es_index_document": "elasticsearch.dsl.index.Index.document",
+        "es_index_settings": "elasticsearch.dsl.index.Index.settings",
+        "es_index_refresh": "elasticsearch.dsl.index.Index.refresh",
         "es_bulk": "elasticsearch.helpers.actions.bulk",
-        "es_search_init": "elasticsearch_dsl.search.Search.__init__",
-        "es_search_params": "elasticsearch_dsl.search.Search.params",
+        "es_search_init": "elasticsearch.dsl.search.Search.__init__",
+        "es_search_params": "elasticsearch.dsl.search.Search.params",
         "log_error": "logging.Logger.error",
         "log_warning": "logging.Logger.warning",
         "log_info": "logging.Logger.info",
@@ -93,7 +98,7 @@ class BaseIndexManagerTest:
                 **{self.expected_index_name: {"is_write_index": True}}
             )
             mock_settings.assert_called_once_with(
-                number_of_shards=1, number_of_replicas=0
+                number_of_shards="1", number_of_replicas="0"
             )
             mock_create.assert_called_once()
 
@@ -176,16 +181,16 @@ class BaseDocumentManagerTest:
 
     paths = {
         "es": "elasticsearch.Elasticsearch",
-        "es_get_connection": "elasticsearch_dsl.connections.Connections.get_connection",
-        "es_index_init": "elasticsearch_dsl.index.Index.__init__",
-        "es_index_aliases": "elasticsearch_dsl.index.Index.aliases",
-        "es_index_create": "elasticsearch_dsl.index.Index.create",
-        "es_index_document": "elasticsearch_dsl.index.Index.document",
-        "es_index_settings": "elasticsearch_dsl.index.Index.settings",
-        "es_index_refresh": "elasticsearch_dsl.index.Index.refresh",
+        "es_get_connection": "elasticsearch.dsl.connections.Connections.get_connection",
+        "es_index_init": "elasticsearch.dsl.index.Index.__init__",
+        "es_index_aliases": "elasticsearch.dsl.index.Index.aliases",
+        "es_index_create": "elasticsearch.dsl.index.Index.create",
+        "es_index_document": "elasticsearch.dsl.index.Index.document",
+        "es_index_settings": "elasticsearch.dsl.index.Index.settings",
+        "es_index_refresh": "elasticsearch.dsl.index.Index.refresh",
         "es_bulk": "elasticsearch.helpers.actions.bulk",
-        "es_search_init": "elasticsearch_dsl.search.Search.__init__",
-        "es_search_params": "elasticsearch_dsl.search.Search.params",
+        "es_search_init": "elasticsearch.dsl.search.Search.__init__",
+        "es_search_params": "elasticsearch.dsl.search.Search.params",
         "log_error": "logging.Logger.error",
         "log_warning": "logging.Logger.warning",
         "log_info": "logging.Logger.info",
@@ -354,7 +359,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_update_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError()
+        mock_query.execute.side_effect = MockNotFoundError()
 
         instance = self.factory.create()
 
@@ -368,7 +373,7 @@ class BaseDocumentManagerTest:
     @pytest.mark.django_db
     def test_remove_failure_search_result_not_found(self):
         mock_query, mock_search_obj = self.create_search_mocks()
-        mock_query.execute.side_effect = NotFoundError()
+        mock_query.execute.side_effect = MockNotFoundError()
 
         instance = self.factory.create()
 
@@ -388,7 +393,7 @@ class BaseDocumentManagerTest:
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
         ), patch(
-            self.paths["document_get"], side_effect=NotFoundError("Nice try!")
+            self.paths["document_get"], side_effect=MockNotFoundError("Nice try!")
         ), patch(
             self.paths["log_info"], return_value=None
         ) as mock_log_info:
@@ -405,7 +410,7 @@ class BaseDocumentManagerTest:
         with patch(self.paths["es_search_init"], return_value=None), patch(
             self.paths["es_search_params"], return_value=mock_search_obj
         ), patch(
-            self.paths["document_get"], side_effect=NotFoundError("Nice try!")
+            self.paths["document_get"], side_effect=MockNotFoundError("Nice try!")
         ), patch(
             self.paths["log_info"], return_value=None
         ) as mock_log_info:
@@ -434,7 +439,7 @@ class BaseDocumentManagerTest:
     def test_sync_in_index_new_good_document_is_added(self):
         mock_query, mock_search_obj = self.create_search_mocks()
         mock_query.execute.side_effect = (
-            NotFoundError()
+            MockNotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_indexable_document()
@@ -449,7 +454,7 @@ class BaseDocumentManagerTest:
     def test_sync_in_index_new_bad_document_is_skipped(self):
         mock_query, mock_search_obj = self.create_search_mocks()
         mock_query.execute.side_effect = (
-            NotFoundError()
+            MockNotFoundError()
         )  # new document is not yet in the index
 
         instance = self.create_non_indexable_document()
@@ -543,7 +548,7 @@ class BaseDocumentManagerTest:
             self.paths["remove_from_index"], return_value=None
         ) as remove_from_index:
             mock_update_in_index.side_effect = (
-                NotFoundError()
+                MockNotFoundError()
             )  # document is not yet in the index
 
             self.manager.sync_in_index(instance.id)

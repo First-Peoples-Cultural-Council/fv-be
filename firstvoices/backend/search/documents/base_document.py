@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Boolean, Date, Document, Integer, Keyword, Text
+from elasticsearch.dsl import Boolean, Date, Document, Integer, Keyword, Text
 
 
 class BaseDocument(Document):
