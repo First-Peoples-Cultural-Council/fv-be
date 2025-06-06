@@ -1304,11 +1304,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             validation_status=JobStatus.COMPLETE,
         )
 
-        mock_report = MagicMock()
-        mock_report.delete.side_effect = Exception("General Exception")
+        mock_objects = MagicMock()
+        mock_objects.delete.side_effect = Exception("General Exception")
         with patch(
             "backend.tasks.import_job_tasks.File.objects.filter",
-            return_value=mock_report,
+            return_value=mock_objects,
         ):
             confirm_import_job(import_job.id)
 
