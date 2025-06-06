@@ -95,7 +95,9 @@ class TestImportJobMediaEndpoint(
     def test_invalid_file_type(self):
         data = {
             "file": [
+                get_sample_file("sample-image.jpg", "image/jpeg"),
                 get_sample_file("file.txt", "text/plain"),
+                get_sample_file("import_job/Another image.jpg", "image/jpeg"),
             ]
         }
 
@@ -108,6 +110,10 @@ class TestImportJobMediaEndpoint(
         assert response.status_code == 400
         response = json.loads(response.content)
         assert "Unsupported filetype. File: file.txt" in response
+
+        # Ensure no media files are created
+        images = ImageFile.objects.filter(import_job_id=self.import_job.id)
+        assert images.count() == 0
 
     @pytest.mark.parametrize("job_status", JobStatus.names)
     def test_already_confirmed(self, job_status):
@@ -164,3 +170,60 @@ class TestImportJobMediaEndpoint(
         audio_file = File.objects.filter(mimetype="audio/mpeg").first()
         assert audio_file.import_job_id == self.import_job.id
         assert "sample-audio.mp3" in audio_file.content.name
+
+    def test_upload_duplicate_filename(self):
+        data = {
+            "file": [
+                get_sample_file("video_example_small.mp4", "video/mp4"),
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+            ]
+        }
+
+        response = self.client.post(
+            self.endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_content = json.loads(response.content)
+        assert (
+            "There are one or more duplicate filenames within your upload."
+            in response_content
+        )
+
+    def test_subsequent_upload_duplicate_filename(self):
+        data = {
+            "file": [
+                get_sample_file("video_example_small.mp4", "video/mp4"),
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+            ]
+        }
+
+        response = self.client.post(
+            self.endpoint,
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 202
+
+        additional_data = {
+            "file": [
+                get_sample_file("sample-image.jpg", "image/jpeg"),
+            ]
+        }
+
+        response = self.client.post(
+            self.endpoint,
+            data=self.format_upload_data(additional_data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_content = json.loads(response.content)
+        assert (
+            "You cannot upload a file with the same name as one already uploaded to this import job."
+            in response_content
+        )
