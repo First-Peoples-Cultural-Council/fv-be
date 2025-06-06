@@ -72,8 +72,8 @@ class IndexManager:
         new_index = Index(new_index_name)
 
         new_index.settings(
-            number_of_shards=ELASTICSEARCH_DEFAULT_CONFIG["shards"],
-            number_of_replicas=ELASTICSEARCH_DEFAULT_CONFIG["replicas"],
+            number_of_shards=int(ELASTICSEARCH_DEFAULT_CONFIG["shards"]),
+            number_of_replicas=int(ELASTICSEARCH_DEFAULT_CONFIG["replicas"]),
         )
 
         cls._add_document_types(new_index)

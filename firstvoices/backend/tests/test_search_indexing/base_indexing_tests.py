@@ -98,7 +98,7 @@ class BaseIndexManagerTest:
                 **{self.expected_index_name: {"is_write_index": True}}
             )
             mock_settings.assert_called_once_with(
-                number_of_shards="1", number_of_replicas="0"
+                number_of_shards=1, number_of_replicas=0
             )
             mock_create.assert_called_once()
 
