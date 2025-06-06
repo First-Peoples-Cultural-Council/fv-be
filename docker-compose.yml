@@ -23,7 +23,7 @@ services:
       - "9001:9001"
     command: "server /export"
   elastic:
-    image: elasticsearch:7.17.9
+    image: elasticsearch:8.18.2
     hostname: "elastic"
     environment:
       "discovery.type": "single-node"
