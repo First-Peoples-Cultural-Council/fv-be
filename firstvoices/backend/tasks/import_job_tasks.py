@@ -237,7 +237,6 @@ def dry_run_import_job(data, import_job):
         import_job.save()
 
 
-@shared_task
 def get_associated_filenames(import_job):
     """
     Get a list of filenames for the uploaded files associated with the import-job.
