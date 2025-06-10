@@ -1,0 +1,59 @@
+name: 'Elasticsearch tests'
+description: 'Setting up BE with all docker images to run integration_tests tests.'
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+jobs:
+  elasticsearch-tests:
+    runs-on: ubuntu-22.04
+
+    services:
+      docker:
+        image: docker:24.0.2
+        ports:
+          - 9200:9200
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: test_fv_be
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.2'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
+      - name: Start docker-compose
+        run: |
+          docker-compose -f docker-compose.yml up -d
+      - name: Wait for ES to be up
+        run: .github/scripts/wait_for_services.sh
+      - name: Build indices
+        run: python manage.py rebuild_index
+      - name: Run ES tests
+        working-directory: ./firstvoices
+        env:
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          ELASTICSEARCH_HOST: http://localhost:9200
+        run: |
+          pytest --cache-clear backend/tests/integration/
