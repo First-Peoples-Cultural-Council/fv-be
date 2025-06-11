@@ -22,9 +22,6 @@ jobs:
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.DB_DATABASE }}
       ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
       ELASTICSEARCH_HOST: http://localhost:9200
 
@@ -38,6 +35,10 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_DATABASE }}
 
     steps:
       - uses: actions/checkout@v4
