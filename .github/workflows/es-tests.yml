@@ -40,7 +40,7 @@ jobs:
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - name: Start docker-compose
         run: |
-          docker-compose -f docker-compose.yml up -d
+          docker compose -f docker-compose.yml up -d
       - name: Wait for ES to be up
         run: .github/scripts/wait_for_services.sh
       - name: Build indices
