@@ -42,7 +42,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml up -d
       - name: Show container logs (for debug, to be removed later)
-        run: docker-compose logs elastic
+        run: docker compose logs elastic
       - name: Wait for ES to be up
         run: |
           for i in {1..20}; do
