@@ -35,7 +35,7 @@ jobs:
           python-version: '3.13.2'
           cache: 'pip'
       - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
+        uses: docker/setup-compose-action@v2
         with:
           version: 1.29.2
       - name: Install dependencies
