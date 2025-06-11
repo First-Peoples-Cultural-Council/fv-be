@@ -2,12 +2,8 @@ name: 'Elasticsearch tests'
 description: 'Setting up BE with all docker images to run integration_tests tests.'
 
 on:
-  push:
-    branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
+  workflow_dispatch:
+
 jobs:
   elasticsearch-tests:
     runs-on: ubuntu-22.04
