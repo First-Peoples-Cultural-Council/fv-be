@@ -44,6 +44,7 @@ jobs:
       - name: Wait for ES to be up
         run: bash .github/scripts/wait_for_services.sh
       - name: Build indices
+        working-directory: ./firstvoices
         run: python manage.py rebuild_index
       - name: Run ES tests
         working-directory: ./firstvoices
