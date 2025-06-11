@@ -10,10 +10,6 @@ pytestmark = pytest.mark.integration
 
 
 class TestESClusterHealth:
-    """
-    Shall be removed when we add actual tests.
-    """
-
     @pytest.mark.django_db(transaction=True)
     def test_cluster_running(self):
         """
