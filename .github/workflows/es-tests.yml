@@ -34,21 +34,19 @@ jobs:
         with:
           python-version: '3.13.2'
           cache: 'pip'
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+        with:
+          version: 1.29.2
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - name: Start docker-compose
         run: |
-          docker compose -f docker-compose.yml up -d
-      - name: Check docker services status
-        run: docker compose ps
-      - name: Show container logs (for debug, to be removed later)
-        run: docker compose logs elastic
-      - name: Show all container logs
-        run: |
-          docker ps -a
-          docker logs ${docker ps -aqf "name=elastic")
+          docker-compose -f docker-compose.yml up -d
+      - name: Check docker compose logs
+        run: docker-compose logs elastic
       - name: Wait for ES to be up
         run: |
           for i in {1..20}; do
