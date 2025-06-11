@@ -41,8 +41,6 @@ jobs:
       - name: Start docker-compose
         run: |
           docker compose -f docker-compose.yml up -d
-      - name: Check docker compose logs
-        run: docker logs
       - name: Wait for ES to be up
         run: |
           for i in {1..20}; do
