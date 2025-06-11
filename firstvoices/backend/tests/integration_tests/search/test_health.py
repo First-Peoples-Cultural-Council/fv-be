@@ -6,6 +6,8 @@ from backend.models import DictionaryEntry, Site
 from backend.models.constants import AppRole, Visibility
 from backend.tests.factories import get_app_admin
 
+pytestmark = pytest.mark.integration
+
 
 class TestESClusterHealth:
     """

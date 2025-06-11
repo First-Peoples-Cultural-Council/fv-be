@@ -83,4 +83,4 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           ELASTICSEARCH_HOST: http://localhost:9200
         run: |
-          pytest --cache-clear backend/tests/integration_tests/
+          pytest --cache-clear -m integration
