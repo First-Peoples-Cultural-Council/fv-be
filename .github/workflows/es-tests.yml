@@ -1,8 +1,7 @@
 name: 'Elasticsearch tests'
 description: 'Setting up BE with all docker images to run integration_tests tests.'
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   elasticsearch-tests:
