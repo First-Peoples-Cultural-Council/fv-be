@@ -46,6 +46,15 @@ jobs:
       - name: Build indices
         working-directory: ./firstvoices
         run: python manage.py rebuild_index
+        env:
+          DJANGO_SETTINGS_MODULE: firstvoices.settings_test
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          ELASTICSEARCH_HOST: http://localhost:9200
       - name: Run ES tests
         working-directory: ./firstvoices
         env:
