@@ -2,11 +2,17 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from backend.models import Membership
+from backend.serializers.base_serializers import (
+    WritableSiteContentSerializer,
+    base_timestamp_fields,
+)
+from backend.serializers.fields import SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer
 from backend.serializers.site_serializers import (
     FeatureFlagSerializer,
     SiteSummarySerializer,
 )
+from backend.serializers.user_serializers import UserDetailSerializer
 
 
 class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -46,3 +52,21 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Membership
         fields = ("role",) + SiteSummarySerializer.Meta.fields
+
+
+class MembershipDetailSerializer(WritableSiteContentSerializer):
+    url = SiteHyperlinkedIdentityField(
+        view_name="api:membership-detail", read_only=True
+    )
+    user = UserDetailSerializer(allow_null=False, read_only=True)
+    role = serializers.CharField(source="get_role_display")
+
+    class Meta:
+        model = Membership
+        fields = base_timestamp_fields + (
+            "id",
+            "url",
+            "site",
+            "user",
+            "role",
+        )
