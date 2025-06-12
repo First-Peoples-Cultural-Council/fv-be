@@ -96,6 +96,7 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
             "images": f"{site_url}/images",
             "immersionLabels": f"{site_url}/immersion-labels",
             "joinRequests": f"{site_url}/join-requests",
+            "memberships": f"{site_url}/memberships",
             "mtdData": f"{site_url}/mtd-data",
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
