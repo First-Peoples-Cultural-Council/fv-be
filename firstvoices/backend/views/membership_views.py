@@ -42,15 +42,6 @@ class MembershipViewSet(
     serializer_class = MembershipDetailSerializer
     http_method_names = ["get"]
 
-    permission_type_map = {
-        "create": "add",
-        "destroy": "delete",
-        "list": None,
-        "partial_update": "change",
-        "retrieve": "view",
-        "update": "change",
-    }
-
     def get_queryset(self):
         site = self.get_validated_site()
         return (
