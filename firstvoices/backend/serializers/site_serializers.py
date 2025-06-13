@@ -56,8 +56,9 @@ class SiteSummarySerializer(LinkedSiteSerializer):
         "galleries",
         "ignored_characters",
         "images",
-        "join_requests",
         "immersion_labels",
+        "join_requests",
+        "memberships",
         "mtd_data",
         "pages",
         "people",
@@ -96,6 +97,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
+    memberships = SiteViewLinkField(view_name="api:membership-list")
     mtd_data = SiteViewLinkField(view_name="api:mtd-data-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
@@ -145,6 +147,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "images",
             "immersion_labels",
             "join_requests",
+            "memberships",
             "mtd_data",
             "pages",
             "people",

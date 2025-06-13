@@ -19,6 +19,7 @@ from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.import_job_media_views import ImportJobMediaViewSet
 from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
+from backend.views.membership_views import MembershipViewSet
 from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
@@ -55,7 +56,6 @@ sites_router.register(
 sites_router.register(r"categories", CategoryViewSet, basename="category")
 sites_router.register(r"characters", CharactersViewSet, basename="character")
 sites_router.register(r"contact-us", ContactUsView, basename="contact-us")
-sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"dictionary", DictionaryViewSet, basename="dictionaryentry")
 sites_router.register(
     r"dictionary-cleanup/preview",
@@ -78,6 +78,8 @@ sites_router.register(
     r"immersion-labels", ImmersionLabelViewSet, basename="immersionlabel"
 )
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
+sites_router.register(r"memberships", MembershipViewSet, basename="membership")
+sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")

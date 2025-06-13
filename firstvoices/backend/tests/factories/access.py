@@ -5,7 +5,7 @@ from factory.django import DjangoModelFactory
 
 from backend.models.app import AppMembership
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.sites import Language, LanguageFamily, Membership, Site
+from backend.models.sites import Language, LanguageFamily, Site
 from backend.tests import factories
 
 
@@ -56,14 +56,6 @@ class SiteFactory(DjangoModelFactory):
     system_last_modified_by = factory.SubFactory(UserFactory)
 
 
-class MembershipFactory(DjangoModelFactory):
-    class Meta:
-        model = Membership
-
-    user = factory.SubFactory(UserFactory)
-    site = factory.SubFactory(SiteFactory)
-
-
 class AppMembershipFactory(DjangoModelFactory):
     class Meta:
         model = AppMembership
@@ -83,7 +75,7 @@ def get_site_with_member(site_visibility, user_role, user=None):
     if user is None:
         user = UserFactory.create()
     site = SiteFactory.create(visibility=site_visibility)
-    MembershipFactory.create(site=site, user=user, role=user_role)
+    factories.MembershipFactory.create(site=site, user=user, role=user_role)
     return site, user
 
 
