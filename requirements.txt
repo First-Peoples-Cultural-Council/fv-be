@@ -67,7 +67,7 @@ psycopg2-binary==2.9.10
 pycparser==2.22
 PyJWT==2.10.1
 pyrsistent==0.20.0
-pytest==8.3.5
+pytest==8.4.0
 pytest-django==4.11.1  # https://github.com/pytest-dev/pytest-django
 pytest-mock==3.14.1 #https://github.com/pytest-dev/pytest-mock
 python-crontab==3.2.0
