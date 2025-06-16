@@ -36,7 +36,14 @@ def verify_no_other_import_jobs_running(current_job):
         )
 
 
-def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
+def get_failed_rows_csv_file(import_job, data, error_row_numbers):
+    # # Check for pre-existing csv
+    if import_job.failed_rows_csv is not None:
+        failed_rows_csv = import_job.failed_rows_csv
+        import_job.failed_rows_csv = None
+        import_job.save()
+        failed_rows_csv.delete()
+
     # Generate a csv for the erroneous rows
     failed_row_dataset = []
     for row_num in error_row_numbers:
@@ -58,9 +65,10 @@ def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
     )
     failed_row_csv_file = File(
         content=in_memory_csv_file,
-        site=import_job_instance.site,
-        created_by=import_job_instance.last_modified_by,
-        last_modified_by=import_job_instance.last_modified_by,
+        site=import_job.site,
+        created_by=import_job.last_modified_by,
+        last_modified_by=import_job.last_modified_by,
+        import_job=import_job,
     )
     failed_row_csv_file.save()
     return failed_row_csv_file
