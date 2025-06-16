@@ -144,7 +144,11 @@ def attach_csv_to_report(data, import_job, report):
         import_job.save()
     else:
         # Clearing up failed rows csv, incase it exists, and there are no errors present
-        import_job.failed_rows_csv = None
+        if import_job.failed_rows_csv is not None:
+            failed_rows_csv = import_job.failed_rows_csv
+            import_job.failed_rows_csv = None
+            import_job.save()
+            failed_rows_csv.delete()
 
 
 def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
