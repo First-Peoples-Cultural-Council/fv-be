@@ -12,7 +12,7 @@ chardet==5.2.0
 charset-normalizer==3.4.2
 coloredlogs==15.0.1
 cron-descriptor==1.4.5
-cryptography==45.0.3
+cryptography==45.0.4
 Django==5.1.6
 django-admin-env-notice==1.0.1
 django-celery-beat==2.8.1
