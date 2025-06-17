@@ -61,7 +61,6 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
         site=import_job.site,
         created_by=import_job.last_modified_by,
         last_modified_by=import_job.last_modified_by,
-        import_job=import_job,
     )
     failed_row_csv_file.save()
     return failed_row_csv_file
