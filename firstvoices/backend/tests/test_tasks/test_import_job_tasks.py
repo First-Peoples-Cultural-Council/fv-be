@@ -629,9 +629,8 @@ class TestBulkImportDryRun:
 
         self.add_missing_media_and_validate(import_job)
 
-        import_job_files = File.objects.filter(site=self.site, import_job=import_job)
-        for file in import_job_files:
-            assert failed_rows_csv_id != file.id
+        import_job_csv = File.objects.filter(id=failed_rows_csv_id)
+        assert len(import_job_csv) == 0
 
     def test_failed_rows_csv_deleted_and_replaced(self):
         # Start with a validated import job that has missing media
