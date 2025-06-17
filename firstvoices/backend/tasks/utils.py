@@ -56,6 +56,8 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
         size=sys.getsizeof(in_memory_csv_file),
         charset="utf-8",
     )
+    # failed_row_csv_file does not need the import_job property to be set (that is for associated media)
+    # The csv will be set to "failed_rows_csv" on import job in "attach_csv_to_report"
     failed_row_csv_file = File(
         content=in_memory_csv_file,
         site=import_job.site,
