@@ -36,7 +36,7 @@ def verify_no_other_import_jobs_running(current_job):
         )
 
 
-def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
+def get_failed_rows_csv_file(import_job, data, error_row_numbers):
     # Generate a csv for the erroneous rows
     failed_row_dataset = []
     for row_num in error_row_numbers:
@@ -56,11 +56,13 @@ def get_failed_rows_csv_file(import_job_instance, data, error_row_numbers):
         size=sys.getsizeof(in_memory_csv_file),
         charset="utf-8",
     )
+    # failed_row_csv_file does not need the import_job property to be set (that is for associated media)
+    # The csv will be set to "failed_rows_csv" on import job in "attach_csv_to_report"
     failed_row_csv_file = File(
         content=in_memory_csv_file,
-        site=import_job_instance.site,
-        created_by=import_job_instance.last_modified_by,
-        last_modified_by=import_job_instance.last_modified_by,
+        site=import_job.site,
+        created_by=import_job.last_modified_by,
+        last_modified_by=import_job.last_modified_by,
     )
     failed_row_csv_file.save()
     return failed_row_csv_file

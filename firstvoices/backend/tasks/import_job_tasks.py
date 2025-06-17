@@ -132,6 +132,12 @@ def attach_csv_to_report(data, import_job, report):
     """
     Attaches an updated CSV file to the importJob if any errors occurred.
     """
+    # Deleting old failed_rows_csv file if it exists
+    if import_job.failed_rows_csv and import_job.failed_rows_csv.id:
+        old_failed_rows_csv = File.objects.get(id=import_job.failed_rows_csv.id)
+        old_failed_rows_csv.delete()
+        import_job.failed_rows_csv = None
+
     if report.error_rows:
         error_rows = list(
             ImportJobReportRow.objects.filter(report=report).values_list(
@@ -141,10 +147,8 @@ def attach_csv_to_report(data, import_job, report):
         error_rows.sort()
         failed_row_csv_file = get_failed_rows_csv_file(import_job, data, error_rows)
         import_job.failed_rows_csv = failed_row_csv_file
-        import_job.save()
-    else:
-        # Clearing up failed rows csv, incase it exists, and there are no errors present
-        import_job.failed_rows_csv = None
+
+    import_job.save()
 
 
 def process_import_job_data(data, import_job, missing_media=[], dry_run=True):

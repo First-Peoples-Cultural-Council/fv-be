@@ -99,6 +99,45 @@ class TestBulkImportDryRun:
         )
         return import_job
 
+    def import_with_missing_media(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+        validated_import_job = ImportJob.objects.get(id=import_job.id)
+
+        assert validated_import_job.validation_report.error_rows == 3
+
+        return validated_import_job
+
+    def add_missing_media_and_validate(self, import_job):
+        # Add the media to the db
+        FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
     def test_import_task_logs(self, caplog):
         import_job = self.import_minimal_dictionary_entries()
 
@@ -552,23 +591,10 @@ class TestBulkImportDryRun:
         assert import_job.failed_rows_csv is None
 
     def test_missing_media(self):
-        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        validate_import_job(import_job.id)
-
-        # Media should be missing initially
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-        error_rows = validation_report.rows.all().order_by("row_number")
+        import_job = self.import_with_missing_media()
+        error_rows = import_job.validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
-        assert validation_report.error_rows == 3
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
@@ -585,22 +611,33 @@ class TestBulkImportDryRun:
         )
 
     def test_all_media_present(self):
-        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        validate_import_job(import_job.id)
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
 
-        # Media should be missing initially
+        self.add_missing_media_and_validate(import_job)
+
+        # Verifying all missing media errors are resolved now
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 3
+        assert validation_report.error_rows == 0
+        assert validation_report.rows.count() == 0
 
-        # Adding media to db
+    def test_failed_rows_csv_deleted(self):
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
+        failed_rows_csv_id = import_job.failed_rows_csv.id
+
+        self.add_missing_media_and_validate(import_job)
+
+        import_job_csv = File.objects.filter(id=failed_rows_csv_id)
+        assert len(import_job_csv) == 0
+
+    def test_failed_rows_csv_deleted_and_replaced(self):
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
+        first_failed_rows_csv_id = import_job.failed_rows_csv.id
+
+        # Add some of the media to the db
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
@@ -611,22 +648,25 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        VideoFileFactory(
-            site=self.site,
-            content=get_sample_file("video_example_small.mp4", "video/mp4"),
-            import_job=import_job,
-        )
 
         # Validating again
         import_job.validation_status = JobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
-        # Verifying all missing media errors are resolved now
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-        assert validation_report.error_rows == 0
-        assert validation_report.rows.count() == 0
+        revalidated_import_job = ImportJob.objects.get(id=import_job.id)
+
+        # Check that the out of date csv has been deleted
+        first_failed_rows_csv = File.objects.filter(
+            site=self.site, id=first_failed_rows_csv_id
+        )
+        assert len(first_failed_rows_csv) == 0
+
+        # Confirm there is a new csv
+        assert first_failed_rows_csv_id != revalidated_import_job.failed_rows_csv.id
+        assert revalidated_import_job.failed_rows_csv is not None
+        validation_report = revalidated_import_job.validation_report
+        assert validation_report.error_rows == 1
 
     def test_related_audio_speakers(self):
         file_content = get_sample_file("import_job/related_audio.csv", self.MIMETYPE)
