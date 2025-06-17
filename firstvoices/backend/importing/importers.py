@@ -1,4 +1,5 @@
 import tablib
+from django.db.models import Q
 
 from backend.models.import_jobs import ImportJob
 from backend.resources.dictionary import DictionaryEntryResource
@@ -116,7 +117,9 @@ class BaseMediaFileImporter(BaseImporter):
         return import_result, {}
 
     @classmethod
-    def add_related_media_column(cls, data: tablib.Dataset, filename_map: dict):
+    def add_related_media_column(
+        cls, site_id, data: tablib.Dataset, filename_map: dict
+    ):
         """Adds a column containing the IDs of related media. If there are no related files, no column is added."""
         referenced_id_column_idx = cls.get_column_index(
             data, cls.get_referenced_id_col()
@@ -131,6 +134,7 @@ class BaseMediaFileImporter(BaseImporter):
         new_data.headers = data.headers
 
         cls.add_column(new_data, cls.get_related_media_col())
+        referenceable_media_ids = cls.get_referenceable_media_ids(site_id)
 
         for i, row in enumerate(data.dict):
             row_data = cls.append_related_ids(
@@ -138,6 +142,7 @@ class BaseMediaFileImporter(BaseImporter):
                 filename_column_idx,
                 filename_map,
                 referenced_id_column_idx,
+                referenceable_media_ids,
             )
             new_data.append(row_data)
 
@@ -150,9 +155,12 @@ class BaseMediaFileImporter(BaseImporter):
         filename_column_idx: int,
         filename_map: dict,
         referenced_id_column_idx: int,
+        referenceable_media_ids: list,
     ):
         imported_ids = cls.get_imported_ids(row_data, filename_column_idx, filename_map)
-        referenced_ids = cls.get_referenced_ids(row_data, referenced_id_column_idx)
+        referenced_ids = cls.get_referenced_ids(
+            row_data, referenced_id_column_idx, referenceable_media_ids
+        )
         all_related_ids = imported_ids + referenced_ids
 
         related_id_string = ",".join(all_related_ids)
@@ -195,14 +203,51 @@ class BaseMediaFileImporter(BaseImporter):
         return data.headers.index(column_name)
 
     @classmethod
-    def get_referenced_ids(cls, row_data: list, referenced_id_col_idx: int):
+    def get_referenced_ids(
+        cls, row_data: list, referenced_id_col_idx: int, referenceable_media_ids: list
+    ):
         if referenced_id_col_idx < 0:
             return []
 
         ids = row_data[referenced_id_col_idx]
-        if ids:
+        if ids and ids in referenceable_media_ids:
             return [row_data[referenced_id_col_idx]]
         return []
+
+    @classmethod
+    def get_missing_referenced_media(cls, site_id, data):
+        """Return a list of ids from data that do not correspond to media from the given site, or sites with
+        shared media."""
+        column_name = cls.get_referenced_id_col()
+        valid_media_ids = cls.get_referenceable_media_ids(site_id)
+        missing_media_ids = []
+
+        clean_headers = [header.lower() for header in data.headers]
+
+        if column_name.lower() in clean_headers:
+            id_col_idx = clean_headers.index(column_name.lower())
+
+            for idx, media_id in enumerate(data.get_col(id_col_idx)):
+                if not media_id:
+                    # Do nothing if the field is empty
+                    continue
+                if media_id not in valid_media_ids:
+                    missing_media_ids.append({"idx": idx + 1, "id": media_id})
+
+        return missing_media_ids
+
+    @classmethod
+    def get_referenceable_media_ids(cls, site_id):
+        model = cls.resource.Meta.model
+        sites_filter = Q(site=site_id) | Q(
+            site__sitefeature_set__key__iexact="shared_media",
+            site__sitefeature_set__is_enabled=True,
+        )
+
+        return [
+            str(value)
+            for value in model.objects.filter(sites_filter).values_list("id", flat=True)
+        ]
 
 
 class AudioImporter(BaseMediaFileImporter):
@@ -313,14 +358,15 @@ class DictionaryEntryImporter(BaseImporter):
         This method adds related media columns, i.e. "related_images", "related_audio" and fills
         them up with ids from the media maps, by looking them up against the filename columns.
         """
+        site_id = import_job.site.id
         data_with_audio = AudioImporter.add_related_media_column(
-            csv_data, audio_filename_map
+            site_id, csv_data, audio_filename_map
         )
         data_with_audio_and_images = ImageImporter.add_related_media_column(
-            data_with_audio, img_filename_map
+            site_id, data_with_audio, img_filename_map
         )
         data_with_media = VideoImporter.add_related_media_column(
-            data_with_audio_and_images, video_filename_map
+            site_id, data_with_audio_and_images, video_filename_map
         )
 
         filtered_data = cls.filter_data(data_with_media)

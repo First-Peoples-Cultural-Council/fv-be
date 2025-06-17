@@ -4,7 +4,6 @@ from functools import reduce
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
-from django.db.models import Q
 from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
@@ -21,7 +20,7 @@ from backend.models.import_jobs import (
     ImportJobReportRow,
     JobStatus,
 )
-from backend.models.media import Audio, ImageFile, VideoFile
+from backend.models.media import ImageFile, VideoFile
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
     ASYNC_TASK_START_TEMPLATE,
@@ -110,16 +109,16 @@ def generate_report(
             ],
         )
 
-        # Add media errors to report
-        for missing_media_id_row in missing_referenced_media:
-            create_or_append_error_row(
-                import_job,
-                report,
-                row_number=missing_media_row["idx"],
-                errors=[
-                    f"Referenced media not found for ID: {missing_media_id_row['id']}."
-                ],
-            )
+    # Add media errors to report
+    for missing_media_id_row in missing_referenced_media:
+        create_or_append_error_row(
+            import_job,
+            report,
+            row_number=missing_media_id_row["idx"],
+            errors=[
+                f"Referenced media not found for ID: {missing_media_id_row['id']}."
+            ],
+        )
 
     # Add errors from individual import results to report
     for result in [
@@ -319,25 +318,11 @@ def get_missing_referenced_media(data, site_id):
     from an accessible site (same site or one with shared media)
     """
 
-    column_name = "AUDIO_ID"
-    model = Audio
-
-    sites_filter = Q(site=site_id) | Q(
-        site__sitefeature_set__key__iexact="shared_media",
-        site__sitefeature_set__is_enabled=True,
+    return (
+        AudioImporter.get_missing_referenced_media(site_id, data)
+        + ImageImporter.get_missing_referenced_media(site_id, data)
+        + VideoImporter.get_missing_referenced_media(site_id, data)
     )
-    valid_media_ids = model.objects.filter(sites_filter)
-    missing_media_ids = []
-
-    if column_name in data.headers:
-        for idx, media_id in enumerate(data[column_name]):
-            if not media_id:
-                # Do nothing if the field is empty
-                continue
-            if media_id not in valid_media_ids:
-                missing_media_ids.append({"idx": idx + 1, column_name: media_id})
-
-    return missing_media_ids
 
 
 @shared_task

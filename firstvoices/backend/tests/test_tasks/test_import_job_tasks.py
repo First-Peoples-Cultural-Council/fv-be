@@ -557,6 +557,7 @@ class TestBulkImportDryRun:
         error_rows = validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
+        assert validation_report.new_rows == 0
         assert validation_report.error_rows == 3
         assert list(error_rows_numbers) == [1, 2, 3]
 
@@ -754,17 +755,19 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 3
+        assert validation_report.error_rows == 4
 
     def test_related_media_id_wrong_site(self):
-        audio1 = factories.AudioFactory.create()
+        factories.AudioFactory.create()
+        factories.ImageFactory.create()
+        factories.VideoFactory.create()
 
         file_content = get_sample_file(
             "import_job/minimal_media_ids.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
-            site=audio1.site,
+            site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
@@ -773,17 +776,43 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 3
-        assert False
+        assert validation_report.error_rows == 4
+
+    def test_related_media_id_wrong_type(self):
+        factories.AudioFactory.create(
+            site=self.site, id="4764e764-7830-4bea-b30e-4e35cc93b12b"
+        )  # video_id
+        factories.ImageFactory.create(
+            site=self.site, id="7763ae50-1b6e-46bc-bd3a-91037ac736cb"
+        )  # audio_id
+        factories.VideoFactory.create(
+            site=self.site, id="daf8e74f-f20b-4c81-95c2-7dd744277009"
+        )  # image_id
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
 
     def test_related_media_id_success_same_site(self):
         audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
-        # image = factories.ImageFactory.create(
-        #     id="daf8e74f-f20b-4c81-95c2-7dd744277009", site=audio.site
-        # )
-        # video = factories.VideoFactory.create(
-        #     id="4764e764-7830-4bea-b30e-4e35cc93b12b", site=audio.site
-        # )
+        factories.ImageFactory.create(
+            id="daf8e74f-f20b-4c81-95c2-7dd744277009", site=audio.site
+        )
+        factories.VideoFactory.create(
+            id="4764e764-7830-4bea-b30e-4e35cc93b12b", site=audio.site
+        )
 
         file_content = get_sample_file(
             "import_job/minimal_media_ids.csv", self.MIMETYPE
@@ -800,17 +829,30 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
-        assert False
+        assert validation_report.new_rows == 4
 
     def test_related_media_id_success_shared_site(self):
-        audio1 = factories.AudioFactory.create()
+        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        factories.SiteFeatureFactory.create(
+            site=audio.site, key="shared_media", is_enabled=True
+        )
+
+        image = factories.AudioFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        factories.SiteFeatureFactory.create(
+            site=image.site, key="shared_media", is_enabled=True
+        )
+
+        video = factories.AudioFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        factories.SiteFeatureFactory.create(
+            site=video.site, key="SHARED_MEDIA", is_enabled=True
+        )
 
         file_content = get_sample_file(
             "import_job/minimal_media_ids.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
-            site=audio1.site,
+            site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
@@ -820,7 +862,40 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
-        assert False
+        assert validation_report.new_rows == 4
+
+    def test_related_media_id_failed_shared_site(self):
+        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        factories.SiteFeatureFactory.create(
+            site=audio.site, key="shared_media", is_enabled=False
+        )
+
+        image = factories.AudioFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        factories.SiteFeatureFactory.create(
+            site=image.site, key="shared_media", is_enabled=False
+        )
+
+        video = factories.AudioFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        factories.SiteFeatureFactory.create(
+            site=video.site, key="NOT_SHARED_MEDIA", is_enabled=True
+        )
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
+        assert validation_report.new_rows == 0
 
 
 @pytest.mark.django_db
