@@ -89,6 +89,19 @@ def generate_report(
     Creates an ImportJobReport to summarize the results.
     Also combines rows from missing_media, audio import and dictionary entries import.
     """
+    logger = get_task_logger(__name__)
+
+    # Clearing out old report if present
+    old_report = import_job.validation_report
+
+    if old_report:
+        try:
+            old_report = ImportJobReport.objects.filter(id=old_report.id)
+            old_report.delete()
+        except Exception as e:
+            logger.error(e)
+            import_job.validation_status = JobStatus.FAILED
+
     report = ImportJobReport(
         site=import_job.site,
         importjob=import_job,
@@ -104,7 +117,7 @@ def generate_report(
             report,
             row_number=missing_media_row["idx"],
             errors=[
-                f"Media file not found in uploaded files: {missing_media_row['filename']}."
+                f"Media file missing in uploaded files: {missing_media_row['filename']}."
             ],
         )
 
@@ -179,19 +192,18 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
         video_filename_map,
     )
 
-    report = generate_report(
-        import_job,
-        accepted_columns,
-        ignored_columns,
-        missing_media,
-        audio_import_result,
-        img_import_result,
-        video_import_result,
-        dictionary_entry_import_result,
-    )
-    attach_csv_to_report(data, import_job, report)
-
-    return report
+    if dry_run:
+        report = generate_report(
+            import_job,
+            accepted_columns,
+            ignored_columns,
+            missing_media,
+            audio_import_result,
+            img_import_result,
+            video_import_result,
+            dictionary_entry_import_result,
+        )
+        attach_csv_to_report(data, import_job, report)
 
 
 def run_import_job(data, import_job):
@@ -200,8 +212,10 @@ def run_import_job(data, import_job):
     """
     logger = get_task_logger(__name__)
 
+    missing_media = get_missing_media(data, import_job)
+
     try:
-        process_import_job_data(data, import_job, dry_run=False)
+        process_import_job_data(data, import_job, missing_media, dry_run=False)
         import_job.status = JobStatus.COMPLETE
         delete_unused_media(import_job)
     except Exception as e:
@@ -219,21 +233,9 @@ def dry_run_import_job(data, import_job):
 
     missing_media = get_missing_media(data, import_job)
 
-    # Clearing out old report if present
-    old_report = import_job.validation_report
-    if old_report:
-        try:
-            old_report = ImportJobReport.objects.filter(id=old_report.id)
-            old_report.delete()
-        except Exception as e:
-            logger.error(e)
-            import_job.validation_status = JobStatus.FAILED
-            return
-
     try:
-        report = process_import_job_data(data, import_job, missing_media, dry_run=True)
+        process_import_job_data(data, import_job, missing_media, dry_run=True)
         import_job.validation_status = JobStatus.COMPLETE
-        import_job.validation_report = report
     except Exception as e:
         logger.error(e)
         import_job.validation_status = JobStatus.FAILED

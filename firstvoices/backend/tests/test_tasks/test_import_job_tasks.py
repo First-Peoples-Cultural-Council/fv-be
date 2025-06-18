@@ -1042,11 +1042,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
         confirm_import_job(import_job.id)
 
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-
-        assert validation_report.error_rows == 5
-
         imported_entries = DictionaryEntry.objects.all()
         assert len(imported_entries) == 1
         assert imported_entries[0].title == "Phrase 1"
