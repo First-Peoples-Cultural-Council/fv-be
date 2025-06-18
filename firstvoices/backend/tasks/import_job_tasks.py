@@ -99,8 +99,9 @@ def generate_report(
             old_report = ImportJobReport.objects.filter(id=old_report.id)
             old_report.delete()
         except Exception as e:
-            logger.error(e)
-            import_job.validation_status = JobStatus.FAILED
+            logger.error(
+                f"Unable to delete previous report for import_job: {str(import_job.id)}. Error: {e}."
+            )
 
     report = ImportJobReport(
         site=import_job.site,
