@@ -598,15 +598,15 @@ class TestBulkImportDryRun:
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
-            "Media file not found in uploaded files: sample-audio.mp3."
+            "Media file missing in uploaded files: sample-audio.mp3."
             in error_rows[0].errors
         )
         assert (
-            "Media file not found in uploaded files: sample-image.jpg."
+            "Media file missing in uploaded files: sample-image.jpg."
             in error_rows[1].errors
         )
         assert (
-            "Media file not found in uploaded files: video_example_small.mp4."
+            "Media file missing in uploaded files: video_example_small.mp4."
             in error_rows[2].errors
         )
 
