@@ -1,3 +1,4 @@
+from jwt_auth.models import User
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -6,7 +7,7 @@ from backend.serializers.base_serializers import (
     WritableSiteContentSerializer,
     base_timestamp_fields,
 )
-from backend.serializers.fields import SiteHyperlinkedIdentityField
+from backend.serializers.fields import SiteHyperlinkedIdentityField, WritableRoleField
 from backend.serializers.media_serializers import ImageSerializer
 from backend.serializers.site_serializers import (
     FeatureFlagSerializer,
@@ -56,17 +57,26 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
 
 class MembershipDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
-        view_name="api:membership-detail", read_only=True
+        read_only=True, view_name="api:membership-detail"
     )
     user = UserDetailSerializer(allow_null=False, read_only=True)
-    role = serializers.CharField(source="get_role_display")
+    user_id = serializers.PrimaryKeyRelatedField(
+        write_only=True,
+        source="user",
+        queryset=User.objects.all(),
+    )
+    role = WritableRoleField(required=True)
 
     class Meta:
         model = Membership
+
         fields = base_timestamp_fields + (
             "id",
             "url",
             "site",
-            "user",
             "role",
+            "site",
+            "url",
+            "user",
+            "user_id",
         )

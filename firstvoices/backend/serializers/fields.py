@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
-from backend.models.constants import Visibility
+from backend.models.constants import Role, Visibility
 from backend.serializers.utils.context_utils import get_site_from_context
 
 
@@ -90,6 +90,21 @@ class WritableVisibilityField(serializers.CharField):
             return visibility_map[value].lower()
         except KeyError:
             raise serializers.ValidationError("Invalid visibility value.")
+
+
+class WritableRoleField(serializers.CharField):
+    def to_internal_value(self, data):
+        try:
+            return Role[data.upper()]
+        except KeyError:
+            raise serializers.ValidationError("Invalid role option.")
+
+    def to_representation(self, value):
+        role_map = {choice[0]: choice[1] for choice in Role.choices}
+        try:
+            return role_map[value]
+        except KeyError:
+            raise serializers.ValidationError("Invalid role value.")
 
 
 class EnumField(serializers.Field):
