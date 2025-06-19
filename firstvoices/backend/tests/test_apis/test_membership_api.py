@@ -3,7 +3,7 @@ import json
 import pytest
 
 from backend.models import Membership
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseSiteContentApiTest,
@@ -222,3 +222,23 @@ class TestMembershipEndpoints(
 
         #  Assert the membership total for the site including LA
         assert response_data["count"] == 4
+
+    @pytest.mark.django_db
+    def test_membership_unique_validation(self):
+        """
+        Test that a membership cannot be created for the same user and site.
+        """
+        user = factories.get_app_admin(AppRole.SUPERADMIN)
+        self.client.force_authenticate(user=user)
+        site = factories.SiteFactory()
+        factories.MembershipFactory(site=site, user=user)
+
+        data = {
+            "user_id": user.id,
+            "role": "Editor",
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400

@@ -14,6 +14,7 @@ from backend.serializers.site_serializers import (
     SiteSummarySerializer,
 )
 from backend.serializers.user_serializers import UserDetailSerializer
+from backend.serializers.validators import UniqueForSite
 
 
 class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
@@ -59,11 +60,15 @@ class MembershipDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:membership-detail"
     )
-    user = UserDetailSerializer(allow_null=False, read_only=True)
+    user = UserDetailSerializer(
+        allow_null=False,
+        read_only=True,
+    )
     user_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
         source="user",
         queryset=User.objects.all(),
+        validators=[UniqueForSite(queryset=Membership.objects.all())],
     )
     role = WritableRoleField(required=True)
 
