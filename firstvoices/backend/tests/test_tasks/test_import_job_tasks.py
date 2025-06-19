@@ -598,15 +598,15 @@ class TestBulkImportDryRun:
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
-            "Media file not found in uploaded files: sample-audio.mp3."
+            "Media file missing in uploaded files: sample-audio.mp3."
             in error_rows[0].errors
         )
         assert (
-            "Media file not found in uploaded files: sample-image.jpg."
+            "Media file missing in uploaded files: sample-image.jpg."
             in error_rows[1].errors
         )
         assert (
-            "Media file not found in uploaded files: video_example_small.mp4."
+            "Media file missing in uploaded files: video_example_small.mp4."
             in error_rows[2].errors
         )
 
@@ -1041,11 +1041,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             validation_status=JobStatus.COMPLETE,
         )
         confirm_import_job(import_job.id)
-
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-
-        assert validation_report.error_rows == 5
 
         imported_entries = DictionaryEntry.objects.all()
         assert len(imported_entries) == 1

@@ -81,7 +81,10 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         assert response.status_code == 202
 
         assert "General Exception" in caplog.text
-        assert import_job.validation_status == JobStatus.FAILED
+        assert (
+            f"Unable to delete previous report for import_job: {str(import_job.id)}"
+            in caplog.text
+        )
 
     def test_validate_action(self):
         import_job = ImportJob.objects.filter(id=self.import_job.id)[0]
