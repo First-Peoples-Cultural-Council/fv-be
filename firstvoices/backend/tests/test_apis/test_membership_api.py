@@ -7,15 +7,25 @@ from backend.models.constants import Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
     SiteContentDetailApiTestMixin,
     SiteContentListApiTestMixin,
+    SiteContentPatchApiTestMixin,
+    SiteContentUpdateApiTestMixin,
+    WriteApiTestMixin,
 )
 
 
 class TestMembershipEndpoints(
-    SiteContentListApiTestMixin,
-    SiteContentDetailApiTestMixin,
     BaseSiteContentApiTest,
+    SiteContentCreateApiTestMixin,
+    SiteContentDestroyApiTestMixin,
+    SiteContentDetailApiTestMixin,
+    SiteContentListApiTestMixin,
+    SiteContentPatchApiTestMixin,
+    SiteContentUpdateApiTestMixin,
+    WriteApiTestMixin,
 ):
     """
     End-to-end tests that the join request endpoints have the expected behaviour. Includes custom permission tests.
@@ -25,6 +35,7 @@ class TestMembershipEndpoints(
     API_DETAIL_VIEW = "api:membership-detail"
 
     model = Membership
+    model_factory = factories.Membership
 
     def create_minimal_instance(self, site, role=Role.MEMBER, visibility=None):
         membership = factories.MembershipFactory(
@@ -43,12 +54,82 @@ class TestMembershipEndpoints(
                 "firstName": instance.user.first_name,
                 "lastName": instance.user.last_name,
             },
-            "role": Role.MEMBER.label,
+            "role": instance.get_role_display(),
         }
 
     def get_expected_detail_response(self, instance, site):
-        expected = self.get_expected_response(instance, site)
-        return expected
+        return self.get_expected_response(instance, site)
+
+    def get_valid_data(self, site=None):
+        user = factories.get_non_member_user()
+        return {
+            "role": "Assistant",
+            "user_id": str(user.id),
+        }
+
+    def add_expected_defaults(self, data):
+        return data
+
+    def assert_created_instance(self, pk, data):
+        instance = Membership.objects.get(pk=pk)
+        assert instance.get_role_display() == data["role"]
+
+    def assert_created_response(self, expected_data, actual_response):
+        self.assert_update_response(expected_data, actual_response)
+
+    def assert_updated_instance(self, expected_data, actual_instance):
+        assert str(actual_instance.user.id) == expected_data["user_id"]
+        assert actual_instance.get_role_display() == expected_data["role"]
+
+    def assert_update_response(self, expected_data, actual_response):
+        assert actual_response["role"] == expected_data["role"]
+
+    def create_original_instance_for_patch(self, site):
+        return factories.MembershipFactory(
+            site=site,
+            role=Role.MEMBER,
+        )
+
+    def get_valid_patch_data(self, site=None):
+        return {"role": "Editor"}
+
+    def assert_patch_instance_original_fields(
+        self, original_instance, updated_instance
+    ):
+        assert updated_instance.id == original_instance.id
+        assert updated_instance.user.id == original_instance.user.id
+
+    def assert_patch_instance_updated_fields(self, data, updated_instance):
+        assert updated_instance.get_role_display() == data["role"]
+
+    def assert_update_patch_response(self, original_instance, data, actual_response):
+        assert actual_response["id"] == str(original_instance.id)
+        assert actual_response["role"] == data["role"]
+        assert actual_response["user"]["id"] == original_instance.user.id
+
+    def add_related_objects(self, instance):
+        # no related objects to add
+        pass
+
+    def assert_related_objects_deleted(self, instance):
+        # no related objects to delete
+        pass
+
+    def test_create_with_null_optional_charfields_success_201(self):
+        # Membership API does not have eligible optional charfields.
+        pass
+
+    def test_create_with_nulls_success_201(self):
+        # Membership API does not have eligible optional fields.
+        pass
+
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Membership API does not have eligible optional charfields.
+        pass
+
+    def test_update_with_nulls_success_200(self):
+        # Membership API does not have eligible optional fields.
+        pass
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.parametrize("visibility", Visibility)
