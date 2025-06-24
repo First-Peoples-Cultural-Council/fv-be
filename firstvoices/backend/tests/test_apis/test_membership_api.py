@@ -78,7 +78,7 @@ class TestMembershipEndpoints(
         self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert str(actual_instance.user.id) == expected_data["user_id"]
+        assert str(actual_instance.user.id) == str(expected_data["user_id"])
         assert actual_instance.get_role_display() == expected_data["role"]
 
     def assert_update_response(self, expected_data, actual_response):
@@ -224,7 +224,7 @@ class TestMembershipEndpoints(
         assert response_data["count"] == 4
 
     @pytest.mark.django_db
-    def test_membership_unique_validation(self):
+    def test_create_400_already_member(self):
         """
         Test that a membership cannot be created for the same user and site.
         """
@@ -242,3 +242,166 @@ class TestMembershipEndpoints(
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_create_400_missing_user_id(self):
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+
+        data = {
+            "role": "Editor",
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_create_400_missing_role(self):
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+
+        data = {
+            "user_id": user.id,
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_create_400_invalid_role(self):
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+
+        data = {
+            "user_id": user.id,
+            "role": "diva",
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.parametrize(
+        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+    )
+    @pytest.mark.django_db
+    def test_create_403_not_app_admin(self, role):
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+        self.client.force_authenticate(user=user)
+
+        data = self.get_valid_data()
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.django_db
+    def test_create_success_app_admin(self, app_role):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, app_role
+        )
+
+        data = self.get_valid_data()
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
+    @pytest.mark.django_db
+    def test_update_403_not_admin(self, role):
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+        user_2 = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(user=user_2, site=site)
+
+        self.client.force_authenticate(user=user)
+
+        data = {
+            "role": "Editor",
+            "user_id": user_2.id,
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_update_success_admin(self):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        user = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(user=user, site=site)
+
+        self.client.force_authenticate(user=admin)
+
+        data = {
+            "role": "Editor",
+            "user_id": user.id,
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        self.assert_updated_instance(data, self.get_updated_instance(instance))
+        self.assert_update_response(data, response_data)
+
+    @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.django_db
+    def test_update_success_app_admin(self, app_role):
+        admin = factories.get_app_admin(app_role)
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        user = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(user=user, site=site)
+
+        self.client.force_authenticate(user=admin)
+
+        data = {
+            "role": "Editor",
+            "user_id": user.id,
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+
+        self.assert_updated_instance(data, self.get_updated_instance(instance))
+        self.assert_update_response(data, response_data)
