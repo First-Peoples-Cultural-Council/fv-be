@@ -240,7 +240,7 @@ class Membership(BaseSiteContentModel):
         unique_together = ("site", "user")
         rules_permissions = {
             "view": predicates.can_view_user_info,
-            "add": predicates.is_at_least_language_admin,
+            "add": predicates.is_at_least_staff_admin,
             "change": predicates.is_at_least_language_admin,
             "delete": predicates.is_at_least_language_admin,
         }
