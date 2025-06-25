@@ -349,11 +349,9 @@ pytest <path to file>
 pytest <path to file containing test> -k '<name of single test>'
 ```
 
-- Run all tests marked with a marker:
-
+- Run all integration tests:
 ```
-pytest -m <marker>'
-e.g. pytest -m integration (for running integration tests.)
+pytest backend/integration_tests/
 ```
 
 - Reset the test database:

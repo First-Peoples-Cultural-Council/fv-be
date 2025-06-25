@@ -74,4 +74,4 @@ jobs:
       - name: Run ES tests
         working-directory: ./firstvoices
         run: |
-          pytest --cache-clear -m integration
+          pytest --cache-clear backend/integration_tests/
