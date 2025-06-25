@@ -1,8 +1,10 @@
+from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Membership
+from backend.models.constants import AppRole, Role
 from backend.serializers.membership_serializers import MembershipDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -105,6 +107,24 @@ class MembershipViewSet(
     """
 
     serializer_class = MembershipDetailSerializer
+
+    def initial(self, *args, **kwargs):
+        """Ensures user has permission to perform the requested action."""
+        super().initial(*args, **kwargs)
+
+        if self.request.method.lower() in ["put", "patch", "delete"]:
+            requesting_user = self.request.user
+            membership = Membership.objects.filter(pk=kwargs["pk"]).first()
+
+            # If the membership being changed is that of a Language Admin
+            # ensure that the requesting user is at least staff
+            if membership.role == Role.LANGUAGE_ADMIN:
+                if hasattr(requesting_user, "app_role"):
+                    app_role = requesting_user.app_role
+                    if app_role.role not in (AppRole.STAFF, AppRole.SUPERADMIN):
+                        raise PermissionDenied
+                else:
+                    raise PermissionDenied
 
     def get_queryset(self):
         site = self.get_validated_site()
