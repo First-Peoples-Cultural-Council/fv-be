@@ -375,11 +375,41 @@ class TestMembershipEndpoints(
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
 
+    @pytest.mark.django_db
+    def test_update_403_admin_on_admin(self):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        # create a second language admin for the same site
+        user = factories.get_non_member_user()
+        admin_membership_instance = factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=admin)
+
+        data = {
+            "role": "Editor",
+            "user_id": user.id,
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(admin_membership_instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 403
+
     @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
     @pytest.mark.django_db
     def test_update_success_app_admin(self, app_role):
-        admin = factories.get_app_admin(app_role)
-        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+        site, admin = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, app_role
+        )
         user = factories.get_non_member_user()
 
         instance = factories.MembershipFactory.create(user=user, site=site)
@@ -405,3 +435,125 @@ class TestMembershipEndpoints(
 
         self.assert_updated_instance(data, self.get_updated_instance(instance))
         self.assert_update_response(data, response_data)
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
+    @pytest.mark.django_db
+    def test_patch_403_not_admin(self, role):
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+        user_2 = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(user=user_2, site=site)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=self.get_valid_patch_data(),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role_from,role_to",
+        [
+            (Role.MEMBER, Role.ASSISTANT),
+            (Role.ASSISTANT, Role.EDITOR),
+            (Role.EDITOR, Role.LANGUAGE_ADMIN),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_patch_success_admin(self, role_from, role_to):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        user = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(
+            user=user, site=site, role=role_from
+        )
+
+        self.client.force_authenticate(user=admin)
+
+        data = {"role": role_to.label}
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        updated_instance = self.get_updated_instance(instance)
+
+        self.assert_patch_instance_original_fields(instance, updated_instance)
+        self.assert_patch_instance_updated_fields(data, updated_instance)
+
+    @pytest.mark.django_db
+    def test_patch_403_admin_on_admin(self):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        # create a second language admin for the same site
+        user = factories.get_non_member_user()
+        admin_membership_instance = factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=admin)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(admin_membership_instance), site_slug=site.slug
+            ),
+            format="json",
+            data=self.get_valid_patch_data(),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.parametrize(
+        "role_from,role_to",
+        [
+            (Role.MEMBER, Role.ASSISTANT),
+            (Role.ASSISTANT, Role.EDITOR),
+            (Role.EDITOR, Role.LANGUAGE_ADMIN),
+            (Role.LANGUAGE_ADMIN, Role.EDITOR),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_patch_success_app_admin(self, app_role, role_from, role_to):
+        site, app_admin = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, app_role
+        )
+        user = factories.get_non_member_user()
+
+        instance = factories.MembershipFactory.create(
+            user=user, site=site, role=role_from
+        )
+
+        self.client.force_authenticate(user=app_admin)
+
+        data = {"role": role_to.label}
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        updated_instance = self.get_updated_instance(instance)
+
+        self.assert_patch_instance_original_fields(instance, updated_instance)
+        self.assert_patch_instance_updated_fields(data, updated_instance)
