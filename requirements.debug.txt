@@ -5,7 +5,7 @@ django-debug-toolbar==5.2.0  # https://github.com/jazzband/django-debug-toolbar
 django-extensions==4.1  # https://github.com/django-extensions/django-extensions
 
 # Linting ------------------------------------------
-flake8==7.2.0  # https://github.com/PyCQA/flake8
+flake8==7.3.0  # https://github.com/PyCQA/flake8
 flake8-isort==6.1.2  # https://github.com/gforcada/flake8-isort
 coverage==7.9.1  # https://github.com/nedbat/coveragepy
 black==25.1.0  # https://github.com/psf/black
