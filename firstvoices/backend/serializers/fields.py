@@ -95,7 +95,7 @@ class WritableVisibilityField(serializers.CharField):
 class WritableRoleField(serializers.CharField):
     def to_internal_value(self, data):
         try:
-            return Role[data.upper()]
+            return Role[data.upper().replace(" ", "_")]
         except KeyError:
             raise serializers.ValidationError("Invalid role option.")
 
