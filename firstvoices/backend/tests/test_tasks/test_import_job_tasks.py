@@ -845,12 +845,13 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert word.type == TypeOfDictionaryEntry.WORD
         assert word.created_by == self.user
         assert word.last_modified_by == self.user
-
+        assert word.system_last_modified >= word.last_modified
         # phrase
         phrase = DictionaryEntry.objects.filter(title="xyz")[0]
         assert phrase.type == TypeOfDictionaryEntry.PHRASE
         assert phrase.created_by == self.user
         assert phrase.last_modified_by == self.user
+        assert phrase.system_last_modified >= phrase.last_modified
 
     def test_all_columns_dictionary_entries(self):
         file_content = get_sample_file(
@@ -1144,6 +1145,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.acknowledgement == "Test Ack"
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
+        assert related_audio.system_last_modified >= related_audio.last_modified
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_audio = entry_2.related_audio.all()
@@ -1166,6 +1168,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image.description == "Testing image upload"
         assert related_image.acknowledgement == "Test Ack"
         assert related_image.exclude_from_kids is False
+        assert related_image.system_last_modified >= related_image.last_modified
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_images = entry_2.related_images.all()
@@ -1188,6 +1191,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_video.description == "Testing video upload"
         assert related_video.acknowledgement == "Test Ack"
         assert related_video.exclude_from_kids is False
+        assert related_video.system_last_modified >= related_video.last_modified
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_videos = entry_2.related_videos.all()

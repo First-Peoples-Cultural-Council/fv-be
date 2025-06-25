@@ -447,11 +447,14 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_last_modified_not_updated(self, site, alphabet, caplog):
+    def test_last_modified_behaviour(self, site, alphabet, caplog):
         factories.CharacterFactory.create(site=site, title="a")
         factories.CharacterFactory.create(site=site, title="b")
         entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
+
         entry_last_modified = entry.last_modified
+        original_system_last_modified = entry.system_last_modified
+
         factories.CharacterFactory.create(site=site, title="c")
         job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
 
@@ -473,38 +476,6 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         }
         entry = DictionaryEntry.objects.get(site=site, title="abc")
         assert entry.last_modified == entry_last_modified
-
-        self.assert_async_task_logs(job, caplog)
-
-    @pytest.mark.django_db
-    def test_system_last_modified_updated(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
-        entry.save()
-
-        factories.CharacterFactory.create(site=site, title="c")
-        original_system_last_modified = entry.system_last_modified
-
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
-
-        cleanup_dictionary(job.id)
-        job.refresh_from_db()
-
-        assert job.status == JobStatus.COMPLETE
-        assert job.cleanup_result == {
-            "unknown_character_count": {},
-            "updated_entries": [
-                {
-                    "title": "abc",
-                    "cleaned_title": "",
-                    "is_title_updated": False,
-                    "previous_custom_order": "!#⚑c",
-                    "new_custom_order": "!#$",
-                }
-            ],
-        }
-        entry = DictionaryEntry.objects.get(site=site, id=entry.id)
         assert entry.system_last_modified > original_system_last_modified
 
         self.assert_async_task_logs(job, caplog)
