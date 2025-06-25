@@ -469,11 +469,8 @@ class TestMembershipEndpoints(
         site, admin = factories.get_site_with_member(
             Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-        user = factories.get_non_member_user()
 
-        instance = factories.MembershipFactory.create(
-            user=user, site=site, role=role_from
-        )
+        instance = factories.MembershipFactory.create(site=site, role=role_from)
 
         self.client.force_authenticate(user=admin)
 
@@ -501,9 +498,8 @@ class TestMembershipEndpoints(
         )
 
         # create a second language admin for the same site
-        user = factories.get_non_member_user()
         admin_membership_instance = factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
+            site=site, role=Role.LANGUAGE_ADMIN
         )
 
         self.client.force_authenticate(user=admin)
@@ -533,11 +529,8 @@ class TestMembershipEndpoints(
         site, app_admin = factories.get_site_with_app_admin(
             self.client, Visibility.PUBLIC, app_role
         )
-        user = factories.get_non_member_user()
 
-        instance = factories.MembershipFactory.create(
-            user=user, site=site, role=role_from
-        )
+        instance = factories.MembershipFactory.create(site=site, role=role_from)
 
         self.client.force_authenticate(user=app_admin)
 
@@ -557,3 +550,82 @@ class TestMembershipEndpoints(
 
         self.assert_patch_instance_original_fields(instance, updated_instance)
         self.assert_patch_instance_updated_fields(data, updated_instance)
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
+    @pytest.mark.django_db
+    def test_delete_403_not_admin(self, role):
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+
+        instance = factories.MembershipFactory.create(site=site)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
+    @pytest.mark.django_db
+    def test_delete_success_admin(self, role):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        instance = factories.MembershipFactory.create(site=site, role=role)
+
+        self.client.force_authenticate(user=admin)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+        )
+
+        assert response.status_code == 204
+
+    @pytest.mark.django_db
+    def test_delete_403_admin_on_admin(self):
+        site, admin = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        # create a second language admin for the same site
+        admin_membership_instance = factories.MembershipFactory.create(
+            site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=admin)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(admin_membership_instance), site_slug=site.slug
+            ),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    @pytest.mark.parametrize(
+        "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
+    )
+    @pytest.mark.django_db
+    def test_delete_success_app_admin(self, app_role, role):
+        site, app_admin = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, app_role
+        )
+
+        instance = factories.MembershipFactory.create(site=site, role=role)
+
+        self.client.force_authenticate(user=app_admin)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+        )
+
+        assert response.status_code == 204
