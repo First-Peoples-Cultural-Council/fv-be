@@ -73,6 +73,13 @@ class MembershipDetailSerializer(WritableSiteContentSerializer):
     )
     role = WritableRoleField(required=True)
 
+    def update(self, instance, validated_data):
+        """
+        Override update to make user read only after creation.
+        """
+        validated_data.pop("user", None)
+        return super().update(instance, validated_data)
+
     class Meta:
         model = Membership
 
