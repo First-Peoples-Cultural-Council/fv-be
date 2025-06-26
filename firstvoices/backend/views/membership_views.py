@@ -40,7 +40,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         ],
     ),
     create=extend_schema(
-        description=_("Add a membership."),
+        description=_("Add a membership. User cannot be changed after creation."),
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201, response=MembershipDetailSerializer
@@ -52,7 +52,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         parameters=[site_slug_parameter],
     ),
     update=extend_schema(
-        description=_("Edit a membership."),
+        description=_("Edit a membership. User cannot be changed after creation."),
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
@@ -68,7 +68,9 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
         ],
     ),
     partial_update=extend_schema(
-        description=_("Edit a membership. Any omitted fields will be unchanged."),
+        description=_(
+            "Edit a membership. Any omitted fields will be unchanged. User cannot be changed after creation."
+        ),
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_edit,
