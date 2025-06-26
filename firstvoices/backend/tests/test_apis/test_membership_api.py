@@ -28,7 +28,7 @@ class TestMembershipEndpoints(
     WriteApiTestMixin,
 ):
     """
-    End-to-end tests that the join request endpoints have the expected behaviour. Includes custom permission tests.
+    End-to-end tests that the Membership endpoints have the expected behaviour. Includes custom permission tests.
     """
 
     API_LIST_VIEW = "api:membership-list"
@@ -136,11 +136,9 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db
     def test_detail_403_for_non_admins(self, role, visibility):
-        site = factories.SiteFactory.create(visibility=visibility)
-        user = factories.get_non_member_user()
-        factories.MembershipFactory.create(user=user, site=site, role=role)
-        self.client.force_authenticate(user=user)
-
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, visibility=visibility, role=role
+        )
         instance = self.create_minimal_instance(site=site)
 
         response = self.client.get(
@@ -154,10 +152,9 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db
     def test_detail_language_admin_access(self, visibility):
-        site, admin = factories.get_site_with_member(visibility, Role.LANGUAGE_ADMIN)
-
-        self.client.force_authenticate(user=admin)
-
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, visibility, Role.LANGUAGE_ADMIN
+        )
         instance = self.create_minimal_instance(site=site)
 
         response = self.client.get(
@@ -168,13 +165,12 @@ class TestMembershipEndpoints(
 
         assert response.status_code == 200
 
-    def get_list_response_data(self, site, user):
+    def get_list_response_data(self, site):
         #  Create three additional memberships for the site
         self.create_minimal_instance(site=site)
         self.create_minimal_instance(site=site)
         self.create_minimal_instance(site=site)
 
-        self.client.force_authenticate(user=user)
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
@@ -184,11 +180,11 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_list_for_non_admins(self, role):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.PUBLIC, user_role=role
+        site, user = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
         )
 
-        response_data = self.get_list_response_data(site, user)
+        response_data = self.get_list_response_data(site)
 
         # List should only show memberships for current user if not Language Admin
         # Check if the list includes any memberships for other users
@@ -200,26 +196,30 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_list_for_guest(self):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        user = factories.get_non_member_user()
+        site, _ = factories.get_site_with_authenticated_nonmember(
+            self.client, Visibility.PUBLIC
+        )
 
-        response_data = self.get_list_response_data(site, user)
+        response_data = self.get_list_response_data(site)
         assert response_data["count"] == 0
 
     @pytest.mark.django_db
     def test_list_for_anon(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.get_anonymous_user()
+        self.client.force_authenticate(user=user)
 
-        response_data = self.get_list_response_data(site, user)
+        response_data = self.get_list_response_data(site)
         assert response_data["count"] == 0
 
     @pytest.mark.parametrize("visibility", Visibility)
     @pytest.mark.django_db
     def test_list_language_admin_access(self, visibility):
-        site, admin = factories.get_site_with_member(visibility, Role.LANGUAGE_ADMIN)
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, visibility, Role.LANGUAGE_ADMIN
+        )
 
-        response_data = self.get_list_response_data(site=site, user=admin)
+        response_data = self.get_list_response_data(site=site)
 
         #  Assert the membership total for the site including LA
         assert response_data["count"] == 4
@@ -229,13 +229,13 @@ class TestMembershipEndpoints(
         """
         Test that a membership cannot be created for the same user and site.
         """
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
-        self.client.force_authenticate(user=user)
-        site = factories.SiteFactory()
-        factories.MembershipFactory(site=site, user=user)
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
+        instance = factories.MembershipFactory(site=site)
 
         data = {
-            "user": user.email,
+            "user": instance.user.email,
             "role": "Editor",
         }
         response = self.client.post(
@@ -248,9 +248,7 @@ class TestMembershipEndpoints(
     def test_create_400_missing_user(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
-        data = {
-            "role": "Editor",
-        }
+        data = {"role": "Editor"}
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug), format="json", data=data
@@ -263,9 +261,7 @@ class TestMembershipEndpoints(
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         user = factories.get_non_member_user()
 
-        data = {
-            "user": user.email,
-        }
+        data = {"user": user.email}
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug), format="json", data=data
@@ -289,13 +285,29 @@ class TestMembershipEndpoints(
 
         assert response.status_code == 400
 
+    @pytest.mark.django_db
+    def test_create_400_invalid_user(self):
+        site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
+
+        data = {
+            "user": "marge@email.com",
+            "role": "Editor",
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+
     @pytest.mark.parametrize(
         "role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]
     )
     @pytest.mark.django_db
     def test_create_403_not_app_admin(self, role):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
 
         data = self.get_valid_data()
 
@@ -312,10 +324,10 @@ class TestMembershipEndpoints(
             self.client, Visibility.PUBLIC, app_role
         )
 
-        data = self.get_valid_data()
-
         response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+            self.get_list_endpoint(site_slug=site.slug),
+            format="json",
+            data=self.get_valid_data(),
         )
 
         assert response.status_code == 201
@@ -323,11 +335,10 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_update_403_not_admin(self, role):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
-
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
         instance = factories.MembershipFactory.create(site=site)
-
-        self.client.force_authenticate(user=user)
 
         data = {
             "role": "Editor",
@@ -346,12 +357,10 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_update_success_admin(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
         instance = factories.MembershipFactory.create(site=site)
-
-        self.client.force_authenticate(user=admin)
 
         data = {
             "role": "Editor",
@@ -373,14 +382,11 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_update_user_ignored(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-
         instance = factories.MembershipFactory.create(site=site)
         user_2 = factories.get_non_member_user()
-
-        self.client.force_authenticate(user=admin)
 
         data = {
             "role": "Editor",
@@ -404,16 +410,14 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_update_403_admin_on_admin(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
         # create a second language admin for the same site
         admin_membership_instance = factories.MembershipFactory.create(
             site=site, role=Role.LANGUAGE_ADMIN
         )
-
-        self.client.force_authenticate(user=admin)
 
         data = {
             "role": "Editor",
@@ -433,12 +437,10 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
     @pytest.mark.django_db
     def test_update_success_app_admin(self, app_role):
-        site, admin = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, Visibility.PUBLIC, app_role
         )
         instance = factories.MembershipFactory.create(site=site)
-
-        self.client.force_authenticate(user=admin)
 
         data = {
             "role": "Editor",
@@ -463,12 +465,11 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_patch_403_not_admin(self, role):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
         user_2 = factories.get_non_member_user()
-
         instance = factories.MembershipFactory.create(user=user_2, site=site)
-
-        self.client.force_authenticate(user=user)
 
         response = self.client.patch(
             self.get_detail_endpoint(
@@ -490,13 +491,10 @@ class TestMembershipEndpoints(
     )
     @pytest.mark.django_db
     def test_patch_success_admin(self, role_from, role_to):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-
         instance = factories.MembershipFactory.create(site=site, role=role_from)
-
-        self.client.force_authenticate(user=admin)
 
         data = {"role": role_to.label}
 
@@ -517,14 +515,11 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_patch_user_ignored(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-
         instance = factories.MembershipFactory.create(site=site)
         user_2 = factories.get_non_member_user()
-
-        self.client.force_authenticate(user=admin)
 
         data = {"user": user_2.email}
 
@@ -545,16 +540,14 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_patch_403_admin_on_admin(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
         # create a second language admin for the same site
         admin_membership_instance = factories.MembershipFactory.create(
             site=site, role=Role.LANGUAGE_ADMIN
         )
-
-        self.client.force_authenticate(user=admin)
 
         response = self.client.patch(
             self.get_detail_endpoint(
@@ -578,13 +571,10 @@ class TestMembershipEndpoints(
     )
     @pytest.mark.django_db
     def test_patch_success_app_admin(self, app_role, role_from, role_to):
-        site, app_admin = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, Visibility.PUBLIC, app_role
         )
-
         instance = factories.MembershipFactory.create(site=site, role=role_from)
-
-        self.client.force_authenticate(user=app_admin)
 
         data = {"role": role_to.label}
 
@@ -606,11 +596,10 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_delete_403_not_admin(self, role):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
-
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
         instance = factories.MembershipFactory.create(site=site)
-
-        self.client.force_authenticate(user=user)
 
         response = self.client.delete(
             self.get_detail_endpoint(
@@ -623,13 +612,10 @@ class TestMembershipEndpoints(
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
     @pytest.mark.django_db
     def test_delete_success_admin(self, role):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
-
         instance = factories.MembershipFactory.create(site=site, role=role)
-
-        self.client.force_authenticate(user=admin)
 
         response = self.client.delete(
             self.get_detail_endpoint(
@@ -641,16 +627,14 @@ class TestMembershipEndpoints(
 
     @pytest.mark.django_db
     def test_delete_403_admin_on_admin(self):
-        site, admin = factories.get_site_with_member(
-            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
         # create a second language admin for the same site
         admin_membership_instance = factories.MembershipFactory.create(
             site=site, role=Role.LANGUAGE_ADMIN
         )
-
-        self.client.force_authenticate(user=admin)
 
         response = self.client.delete(
             self.get_detail_endpoint(
@@ -666,13 +650,10 @@ class TestMembershipEndpoints(
     )
     @pytest.mark.django_db
     def test_delete_success_app_admin(self, app_role, role):
-        site, app_admin = factories.get_site_with_app_admin(
+        site, _ = factories.get_site_with_app_admin(
             self.client, Visibility.PUBLIC, app_role
         )
-
         instance = factories.MembershipFactory.create(site=site, role=role)
-
-        self.client.force_authenticate(user=app_admin)
 
         response = self.client.delete(
             self.get_detail_endpoint(
