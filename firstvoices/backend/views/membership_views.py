@@ -122,9 +122,13 @@ class MembershipViewSet(
                 if hasattr(requesting_user, "app_role"):
                     app_role = requesting_user.app_role
                     if app_role.role not in (AppRole.STAFF, AppRole.SUPERADMIN):
-                        raise PermissionDenied
+                        raise PermissionDenied(
+                            "Staff or Super Admin app role is required to alter a Language Administrator's membership."
+                        )
                 else:
-                    raise PermissionDenied
+                    raise PermissionDenied(
+                        "Contact support to alter a Language Administrator's membership."
+                    )
 
     def get_queryset(self):
         site = self.get_validated_site()
