@@ -5,13 +5,9 @@ on:
   push:
     branches:
       - dev
-      - main
-    tags:
-      - 'r-*'
   pull_request:
     branches:
       - dev
-      - main
 
 jobs:
   elasticsearch-tests:
@@ -26,10 +22,6 @@ jobs:
       ELASTICSEARCH_HOST: http://localhost:9200
 
     services:
-      docker:
-        image: docker:24.0.2
-        ports:
-          - 9200:9200
       postgres:
         image: postgres:latest
         ports:
