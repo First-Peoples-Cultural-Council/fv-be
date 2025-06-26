@@ -56,17 +56,18 @@ class MembershipSiteSummarySerializer(serializers.HyperlinkedModelSerializer):
         fields = ("role",) + SiteSummarySerializer.Meta.fields
 
 
+class WriteableUserEmailSerializer(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        return UserDetailSerializer(context=self.context).to_representation(value)
+
+
 class MembershipDetailSerializer(WritableSiteContentSerializer):
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:membership-detail"
     )
-    user = UserDetailSerializer(
+    user = WriteableUserEmailSerializer(
         allow_null=False,
-        read_only=True,
-    )
-    user_id = serializers.PrimaryKeyRelatedField(
-        write_only=True,
-        source="user",
+        slug_field="email",
         queryset=User.objects.all(),
         validators=[UniqueForSite(queryset=Membership.objects.all())],
     )
@@ -77,11 +78,8 @@ class MembershipDetailSerializer(WritableSiteContentSerializer):
 
         fields = base_timestamp_fields + (
             "id",
-            "url",
             "site",
+            "url",
             "role",
-            "site",
-            "url",
             "user",
-            "user_id",
         )

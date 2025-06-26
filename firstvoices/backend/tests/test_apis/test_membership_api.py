@@ -64,7 +64,7 @@ class TestMembershipEndpoints(
         user = factories.get_non_member_user()
         return {
             "role": "Assistant",
-            "user_id": str(user.id),
+            "user": user.email,
         }
 
     def add_expected_defaults(self, data):
@@ -72,13 +72,14 @@ class TestMembershipEndpoints(
 
     def assert_created_instance(self, pk, data):
         instance = Membership.objects.get(pk=pk)
+        assert instance.user.email == data["user"]
         assert instance.get_role_display() == data["role"]
 
     def assert_created_response(self, expected_data, actual_response):
-        self.assert_update_response(expected_data, actual_response)
+        assert actual_response["user"]["email"] == expected_data["user"]
+        assert actual_response["role"] == expected_data["role"]
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert str(actual_instance.user.id) == str(expected_data["user_id"])
         assert actual_instance.get_role_display() == expected_data["role"]
 
     def assert_update_response(self, expected_data, actual_response):
@@ -105,7 +106,7 @@ class TestMembershipEndpoints(
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["id"] == str(original_instance.id)
         assert actual_response["role"] == data["role"]
-        assert actual_response["user"]["id"] == original_instance.user.id
+        assert actual_response["user"]["email"] == original_instance.user.email
 
     def add_related_objects(self, instance):
         # no related objects to add
@@ -234,7 +235,7 @@ class TestMembershipEndpoints(
         factories.MembershipFactory(site=site, user=user)
 
         data = {
-            "user_id": user.id,
+            "user": user.email,
             "role": "Editor",
         }
         response = self.client.post(
@@ -244,7 +245,7 @@ class TestMembershipEndpoints(
         assert response.status_code == 400
 
     @pytest.mark.django_db
-    def test_create_400_missing_user_id(self):
+    def test_create_400_missing_user(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
         data = {
@@ -263,7 +264,7 @@ class TestMembershipEndpoints(
         user = factories.get_non_member_user()
 
         data = {
-            "user_id": user.id,
+            "user": user.email,
         }
 
         response = self.client.post(
@@ -278,7 +279,7 @@ class TestMembershipEndpoints(
         user = factories.get_non_member_user()
 
         data = {
-            "user_id": user.id,
+            "user": user.email,
             "role": "diva",
         }
 
@@ -331,7 +332,7 @@ class TestMembershipEndpoints(
 
         data = {
             "role": "Editor",
-            "user_id": user_2.id,
+            "user": user_2.email,
         }
 
         response = self.client.put(
@@ -357,7 +358,7 @@ class TestMembershipEndpoints(
 
         data = {
             "role": "Editor",
-            "user_id": user.id,
+            "user": user.email,
         }
 
         response = self.client.put(
@@ -391,7 +392,7 @@ class TestMembershipEndpoints(
 
         data = {
             "role": "Editor",
-            "user_id": user.id,
+            "user": user.email,
         }
 
         response = self.client.put(
@@ -418,7 +419,7 @@ class TestMembershipEndpoints(
 
         data = {
             "role": "Editor",
-            "user_id": user.id,
+            "user": user.email,
         }
 
         response = self.client.put(
