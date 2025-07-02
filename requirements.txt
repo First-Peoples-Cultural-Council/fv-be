@@ -35,7 +35,7 @@ elastic-transport==8.17.1
 elasticsearch==7.13.4
 elasticsearch-dsl==7.4.1
 et-xmlfile==2.0.0
-eventlet==0.40.0
+eventlet==0.40.1
 factory-boy==3.3.3
 Faker==37.4.0
 ffmpeg-python==0.2.0
