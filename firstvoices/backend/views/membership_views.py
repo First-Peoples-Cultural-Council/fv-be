@@ -4,7 +4,8 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Membership
-from backend.models.constants import AppRole, Role
+from backend.models.constants import Role
+from backend.permissions import predicates
 from backend.serializers.membership_serializers import MembershipDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -121,13 +122,7 @@ class MembershipViewSet(
             # If the membership being changed is that of a Language Admin
             # ensure that the requesting user is at least staff
             if membership.role == Role.LANGUAGE_ADMIN:
-                if hasattr(requesting_user, "app_role"):
-                    app_role = requesting_user.app_role
-                    if app_role.role not in (AppRole.STAFF, AppRole.SUPERADMIN):
-                        raise PermissionDenied(
-                            "Staff or Super Admin app role is required to alter a Language Administrator's membership."
-                        )
-                else:
+                if not predicates.is_at_least_staff_admin(requesting_user, None):
                     raise PermissionDenied(
                         "Contact support to alter a Language Administrator's membership."
                     )
