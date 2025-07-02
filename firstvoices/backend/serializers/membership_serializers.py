@@ -1,4 +1,4 @@
-from jwt_auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -68,7 +68,7 @@ class MembershipDetailSerializer(WritableSiteContentSerializer):
     user = WriteableUserEmailSerializer(
         allow_null=False,
         slug_field="email",
-        queryset=User.objects.all(),
+        queryset=get_user_model().objects.all(),
         validators=[UniqueForSite(queryset=Membership.objects.all())],
     )
     role = WritableRoleField(required=True)
