@@ -237,3 +237,70 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
             in caplog.text
         )
         assert "Task ended." in caplog.text
+
+    @pytest.mark.django_db
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "from_visibility, to_visibility",
+        [
+            (Visibility.PUBLIC, Visibility.MEMBERS),
+            (Visibility.MEMBERS, Visibility.PUBLIC),
+            (Visibility.TEAM, Visibility.MEMBERS),
+            (Visibility.MEMBERS, Visibility.TEAM),
+        ],
+    )
+    def test_bulk_visibility_system_last_modified(self, from_visibility, to_visibility):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        entry = factories.DictionaryEntryFactory.create(
+            site=site, visibility=from_visibility
+        )
+        entry_last_modified = entry.last_modified
+
+        song = factories.SongFactory.create(site=site, visibility=from_visibility)
+        song_last_modified = song.last_modified
+
+        story = factories.StoryFactory.create(site=site, visibility=from_visibility)
+        story_last_modified = story.last_modified
+
+        story_page = factories.StoryPageFactory.create(
+            site=site, story=story, visibility=from_visibility
+        )
+        story_page_last_modified = story_page.last_modified
+
+        site_page = factories.SitePageFactory.create(
+            site=site, visibility=from_visibility
+        )
+        site_page_last_modified = site_page.last_modified
+
+        widget = factories.SiteWidgetFactory.create(
+            site=site, visibility=from_visibility
+        )
+        widget_last_modified = widget.last_modified
+
+        job = factories.BulkVisibilityJobFactory.create(
+            site=site, from_visibility=from_visibility, to_visibility=to_visibility
+        )
+        bulk_change_visibility(job.id)
+
+        entry.refresh_from_db()
+        song.refresh_from_db()
+        story.refresh_from_db()
+        story_page.refresh_from_db()
+        site_page.refresh_from_db()
+        widget.refresh_from_db()
+        job.refresh_from_db()
+        site.refresh_from_db()
+
+        assert entry.last_modified == entry_last_modified
+        assert entry.system_last_modified > entry_last_modified
+        assert song.last_modified == song_last_modified
+        assert song.system_last_modified > song_last_modified
+        assert story.last_modified == story_last_modified
+        assert story.system_last_modified > story_last_modified
+        assert story_page.last_modified == story_page_last_modified
+        assert story_page.system_last_modified > story_page_last_modified
+        assert site_page.last_modified == site_page_last_modified
+        assert site_page.system_last_modified > site_page_last_modified
+        assert widget.last_modified == widget_last_modified
+        assert widget.system_last_modified > widget_last_modified
