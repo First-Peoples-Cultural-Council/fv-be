@@ -107,6 +107,7 @@ class TestConvertDraftjsToHtml:
         )
         song.save()
         song_last_modified = song.last_modified
+        song_system_last_modified = song.system_last_modified
 
         story = factories.StoryFactory.create(site=site)
         story.introduction = self.make_draftjs_content("Story introduction")
@@ -115,12 +116,14 @@ class TestConvertDraftjsToHtml:
         )
         story.save()
         story_last_modified = story.last_modified
+        story_system_last_modified = story.system_last_modified
 
         story_page = factories.StoryPageFactory.create(story=story)
         story_page.text = self.make_draftjs_content("Story page text")
         story_page.translation = self.make_draftjs_content("Translated story page text")
         story_page.save()
         story_page_last_modified = story_page.last_modified
+        story_page_system_last_modified = story_page.system_last_modified
 
         widget = factories.SiteWidgetFactory.create(site=site)
         widget_setting = factories.WidgetSettingsFactory.create(
@@ -129,6 +132,7 @@ class TestConvertDraftjsToHtml:
         widget_setting.value = self.make_draftjs_content("Widget setting value")
         widget_setting.save()
         widget_setting_last_modified = widget_setting.last_modified
+        widget_setting_system_last_modified = widget_setting.system_last_modified
 
         call_command("convert_draftjs_to_html", site_slugs=site.slug)
 
@@ -149,6 +153,11 @@ class TestConvertDraftjsToHtml:
         assert story.last_modified == story_last_modified
         assert story_page.last_modified == story_page_last_modified
         assert widget_setting.last_modified == widget_setting_last_modified
+
+        assert song.system_last_modified > song_system_last_modified
+        assert story.system_last_modified > story_system_last_modified
+        assert story_page.system_last_modified > story_page_system_last_modified
+        assert widget_setting.system_last_modified > widget_setting_system_last_modified
 
         assert "Conversion complete." in caplog.text
 
