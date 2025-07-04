@@ -60,7 +60,7 @@ openpyxl==3.1.5
 packaging==25.0
 panphon==0.22.2
 Pillow==11.2.1
-pillow-heif==0.22.0
+pillow-heif==1.0.0
 pluggy==1.6.0
 prompt-toolkit==3.0.51
 psycopg2-binary==2.9.10
