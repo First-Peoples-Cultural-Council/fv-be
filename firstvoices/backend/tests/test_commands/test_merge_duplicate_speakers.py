@@ -108,3 +108,13 @@ class TestMergeDuplicateSpeakers:
         call_command("merge_duplicate_speakers")
         merged_person = Person.objects.first()
         assert merged_person.bio == ""
+
+    def test_system_last_modified_speaker(self):
+        site = factories.SiteFactory.create()
+        person_1 = factories.PersonFactory.create(name="person A", site=site)
+        factories.PersonFactory.create(name="PERSON A", site=site, bio="A great life.")
+
+        call_command("merge_duplicate_speakers")
+        updated_person = Person.objects.filter(id=person_1.id).first()
+        assert updated_person.bio == "A great life."
+        assert person_1.system_last_modified < updated_person.system_last_modified
