@@ -808,6 +808,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         confirm_import_job(import_job.id)
 
+        return import_job
+
     def test_import_task_logs(self, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
         file = FileFactory(content=file_content)
@@ -846,12 +848,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert word.created_by == self.user
         assert word.last_modified_by == self.user
         assert word.system_last_modified >= word.last_modified
+        assert word.system_last_modified_by == import_job.created_by
         # phrase
         phrase = DictionaryEntry.objects.filter(title="xyz")[0]
         assert phrase.type == TypeOfDictionaryEntry.PHRASE
         assert phrase.created_by == self.user
         assert phrase.last_modified_by == self.user
         assert phrase.system_last_modified >= phrase.last_modified
+        assert phrase.system_last_modified_by == import_job.created_by
 
     def test_all_columns_dictionary_entries(self):
         file_content = get_sample_file(
@@ -1132,7 +1136,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio(self):
-        self.confirm_upload_with_media_files("related_audio.csv")
+        import_job = self.confirm_upload_with_media_files("related_audio.csv")
 
         entry_with_audio = DictionaryEntry.objects.get(title="Word 1")
         related_audio = entry_with_audio.related_audio.all()
@@ -1146,6 +1150,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
         assert related_audio.system_last_modified >= related_audio.last_modified
+        assert related_audio.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_audio = entry_2.related_audio.all()
@@ -1156,7 +1161,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_images(self):
-        self.confirm_upload_with_media_files("related_images.csv")
+        import_job = self.confirm_upload_with_media_files("related_images.csv")
 
         entry_with_image = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_images = entry_with_image.related_images.all()
@@ -1169,6 +1174,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image.acknowledgement == "Test Ack"
         assert related_image.exclude_from_kids is False
         assert related_image.system_last_modified >= related_image.last_modified
+        assert related_image.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_images = entry_2.related_images.all()
@@ -1179,7 +1185,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_videos(self):
-        self.confirm_upload_with_media_files("related_videos.csv")
+        import_job = self.confirm_upload_with_media_files("related_videos.csv")
 
         entry_with_video = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_videos = entry_with_video.related_videos.all()
@@ -1192,6 +1198,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_video.acknowledgement == "Test Ack"
         assert related_video.exclude_from_kids is False
         assert related_video.system_last_modified >= related_video.last_modified
+        assert related_video.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_videos = entry_2.related_videos.all()

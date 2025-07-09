@@ -56,22 +56,34 @@ def bulk_change_visibility(job_instance_id: str):
     try:
         with transaction.atomic():
             entries.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             songs.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             stories.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             story_pages.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             pages.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             widgets.update(
-                system_last_modified=timezone.now(), visibility=job.to_visibility
+                system_last_modified=timezone.now(),
+                system_last_modified_by=job.created_by,
+                visibility=job.to_visibility,
             )
             # Change Site visibility
             site.visibility = job.to_visibility

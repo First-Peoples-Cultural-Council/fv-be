@@ -294,13 +294,19 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
 
         assert entry.last_modified == entry_last_modified
         assert entry.system_last_modified > entry_last_modified
+        assert entry.system_last_modified_by == job.created_by
         assert song.last_modified == song_last_modified
         assert song.system_last_modified > song_last_modified
+        assert song.system_last_modified_by == job.created_by
         assert story.last_modified == story_last_modified
         assert story.system_last_modified > story_last_modified
+        assert story.system_last_modified_by == job.created_by
         assert story_page.last_modified == story_page_last_modified
         assert story_page.system_last_modified > story_page_last_modified
+        assert story_page.system_last_modified_by == job.created_by
         assert site_page.last_modified == site_page_last_modified
         assert site_page.system_last_modified > site_page_last_modified
+        assert site_page.system_last_modified_by == job.created_by
         assert widget.last_modified == widget_last_modified
         assert widget.system_last_modified > widget_last_modified
+        assert widget.system_last_modified_by == job.created_by

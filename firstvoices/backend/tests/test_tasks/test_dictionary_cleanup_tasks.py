@@ -477,6 +477,7 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         entry = DictionaryEntry.objects.get(site=site, title="abc")
         assert entry.last_modified == entry_last_modified
         assert entry.system_last_modified > original_system_last_modified
+        assert entry.system_last_modified_by == job.created_by
 
         self.assert_async_task_logs(job, caplog)
 
