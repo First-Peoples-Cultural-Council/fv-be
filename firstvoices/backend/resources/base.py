@@ -26,6 +26,12 @@ class BaseResource(resources.ModelResource):
         widget=UserForeignKeyWidget(),
     )
 
+    system_last_modified_by = fields.Field(
+        column_name="system_last_modified_by",
+        attribute="system_last_modified_by",
+        widget=UserForeignKeyWidget(),
+    )
+
     def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
         super().__init__(**kwargs)
         self.site = site
@@ -38,6 +44,9 @@ class BaseResource(resources.ModelResource):
         dataset.append_col(lambda x: str(self.site.id), header="site")
         dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
         dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
+        dataset.append_col(
+            lambda x: str(self.run_as_user), header="system_last_modified_by"
+        )
         dataset.append_col(lambda x: str(self.import_job), header="import_job")
 
     def import_row(self, row, instance_loader, **kwargs):
