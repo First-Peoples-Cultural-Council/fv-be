@@ -81,7 +81,8 @@ from backend.views.utils import get_site_url_from_appjson
             "Approve a join request, and create a corresponding site membership."
         ),
         request=inline_serializer(
-            name="Join Request Approval", fields={"role": fields.EnumField(enum=Role)}
+            name="Join Request Approval",
+            fields={"role": fields.EnumLabelField(enum=Role)},
         ),
         responses={
             200: OpenApiResponse(

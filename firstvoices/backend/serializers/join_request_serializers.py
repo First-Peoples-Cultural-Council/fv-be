@@ -22,7 +22,7 @@ from backend.views.utils import get_site_url_from_appjson
 
 
 class JoinRequestReasonSerializer(serializers.ModelSerializer):
-    reason = fields.EnumField(enum=JoinRequestReasonChoices)
+    reason = fields.EnumLabelField(enum=JoinRequestReasonChoices)
 
     class Meta:
         fields = ("reason",)
@@ -34,7 +34,7 @@ class JoinRequestDetailSerializer(WritableSiteContentSerializer):
         view_name="api:joinrequest-detail", read_only=True
     )
     user = UserDetailSerializer(allow_null=False, read_only=True)
-    status = fields.EnumField(
+    status = fields.EnumLabelField(
         enum=JoinRequestStatus,
         allow_null=False,
         default=JoinRequestStatus.PENDING,

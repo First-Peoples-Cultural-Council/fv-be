@@ -107,7 +107,7 @@ class WritableRoleField(serializers.CharField):
             raise serializers.ValidationError("Invalid role value.")
 
 
-class EnumField(serializers.Field):
+class EnumLabelField(serializers.Field):
     enum = None
 
     def __init__(self, enum, *args, **kwargs):
