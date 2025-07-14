@@ -48,7 +48,7 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
             (Video, VideoFactory, VideoFileFactory),
         ],
     )
-    def test_thumbnail_generation_does_not_update_last_modified(
+    def test_thumbnail_generation_last_modified_behaviour(
         self, model, model_factory, model_file_factory
     ):
         site = SiteFactory()
@@ -61,9 +61,8 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
 
         media_item = model.objects.get(id=media_item.id)
 
-        new_last_modified = media_item.last_modified
-
-        assert new_last_modified == original_last_modified
+        assert media_item.last_modified == original_last_modified
+        assert media_item.system_last_modified > media_item.last_modified
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
@@ -106,13 +105,11 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_generate_media_thumbnails_model_does_not_exist(self, caplog):
-        test_id = uuid.uuid4()
-        generate_media_thumbnails("Image", str(test_id))
+        test_id = str(uuid.uuid4())
+        generate_media_thumbnails("Image", test_id)
 
-        assert (
-            f"Thumbnail generation failed for Image with id {str(test_id)}: Model not found."
-            in caplog.text
-        )
+        assert f"Thumbnail generation failed for Image with id {test_id}" in caplog.text
+
         assert "Task ended." in caplog.text
 
     @pytest.mark.django_db

@@ -53,6 +53,7 @@ def cleanup_dictionary(job_instance_id: str):
         # If job is not preview, save the entry to recalculate custom order and clean title
         if not job.is_preview:
             try:
+                entry.system_last_modified_by = job.created_by
                 entry.save(set_modified_date=False)
             except Exception as e:
                 job.status = JobStatus.FAILED
