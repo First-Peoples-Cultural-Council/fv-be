@@ -1,4 +1,4 @@
-asgiref==3.9.0
+asgiref==3.9.1
 coverage==7.9.1
 Django==5.1.6
 django-coverage-plugin==3.1.1
