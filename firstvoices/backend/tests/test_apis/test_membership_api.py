@@ -54,7 +54,7 @@ class TestMembershipEndpoints(
                 "firstName": instance.user.first_name,
                 "lastName": instance.user.last_name,
             },
-            "role": instance.get_role_display(),
+            "role": instance.role.name.lower(),
         }
 
     def get_expected_detail_response(self, instance, site):
@@ -63,7 +63,7 @@ class TestMembershipEndpoints(
     def get_valid_data(self, site=None):
         user = factories.get_non_member_user()
         return {
-            "role": "Assistant",
+            "role": Role.ASSISTANT.name.lower(),
             "user": user.email,
         }
 
@@ -73,17 +73,19 @@ class TestMembershipEndpoints(
     def assert_created_instance(self, pk, data):
         instance = Membership.objects.get(pk=pk)
         assert instance.user.email == data["user"]
-        assert instance.get_role_display() == data["role"]
+        assert Role(instance.role).name.lower() == data["role"]
 
     def assert_created_response(self, expected_data, actual_response):
         assert actual_response["user"]["email"] == expected_data["user"]
         assert actual_response["role"] == expected_data["role"]
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert actual_instance.get_role_display() == expected_data["role"]
+        assert actual_instance.user.email == expected_data["user"]
+        assert Role(actual_instance.role).name.lower() == expected_data["role"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["role"] == expected_data["role"]
+        assert actual_response["user"]["email"] == expected_data["user"]
 
     def create_original_instance_for_patch(self, site):
         return factories.MembershipFactory(
@@ -92,7 +94,7 @@ class TestMembershipEndpoints(
         )
 
     def get_valid_patch_data(self, site=None):
-        return {"role": "Editor"}
+        return {"role": Role.EDITOR.name.lower()}
 
     def assert_patch_instance_original_fields(
         self, original_instance, updated_instance
@@ -101,7 +103,7 @@ class TestMembershipEndpoints(
         assert updated_instance.user.id == original_instance.user.id
 
     def assert_patch_instance_updated_fields(self, data, updated_instance):
-        assert updated_instance.get_role_display() == data["role"]
+        assert Role(updated_instance.role).name.lower() == data["role"]
 
     def assert_update_patch_response(self, original_instance, data, actual_response):
         assert actual_response["id"] == str(original_instance.id)
@@ -124,12 +126,17 @@ class TestMembershipEndpoints(
         # Membership API does not have eligible optional fields.
         pass
 
-    def test_update_with_null_optional_charfields_success_200(self):
-        # Membership API does not have eligible optional charfields.
+    def test_update_success_200(self):
+        # Minimal_instance and valid_data need to maintain the same user
+        # Custom success tests added below
         pass
 
     def test_update_with_nulls_success_200(self):
         # Membership API does not have eligible optional fields.
+        pass
+
+    def test_update_with_null_optional_charfields_success_200(self):
+        # Membership API does not have eligible optional charfields.
         pass
 
     @pytest.mark.parametrize("role", [Role.MEMBER, Role.ASSISTANT, Role.EDITOR])
@@ -236,7 +243,7 @@ class TestMembershipEndpoints(
 
         data = {
             "user": instance.user.email,
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
         }
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug), format="json", data=data
@@ -248,7 +255,7 @@ class TestMembershipEndpoints(
     def test_create_400_missing_user(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
-        data = {"role": "Editor"}
+        data = {"role": Role.EDITOR.name.lower()}
 
         response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug), format="json", data=data
@@ -291,7 +298,7 @@ class TestMembershipEndpoints(
 
         data = {
             "user": "marge@email.com",
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
         }
 
         response = self.client.post(
@@ -341,7 +348,7 @@ class TestMembershipEndpoints(
         instance = factories.MembershipFactory.create(site=site)
 
         data = {
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
             "user": instance.user.email,
         }
 
@@ -359,7 +366,7 @@ class TestMembershipEndpoints(
         instance = factories.MembershipFactory.create(site=site)
 
         data = {
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
             "user": instance.user.email,
         }
 
@@ -400,7 +407,7 @@ class TestMembershipEndpoints(
         user_2 = factories.get_non_member_user()
 
         data = {
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
             "user": user_2.email,
         }
 
@@ -431,7 +438,7 @@ class TestMembershipEndpoints(
         )
 
         data = {
-            "role": "Editor",
+            "role": Role.EDITOR.name.lower(),
             "user": admin_membership_instance.user.email,
         }
 
@@ -479,7 +486,7 @@ class TestMembershipEndpoints(
         )
         instance = factories.MembershipFactory.create(site=site, role=role_from)
 
-        data = {"role": role_to.label}
+        data = {"role": role_to.name.lower()}
 
         response = self.client.patch(
             self.get_detail_endpoint(
@@ -559,7 +566,7 @@ class TestMembershipEndpoints(
         )
         instance = factories.MembershipFactory.create(site=site, role=role_from)
 
-        data = {"role": role_to.label}
+        data = {"role": role_to.name.lower()}
 
         response = self.client.patch(
             self.get_detail_endpoint(
