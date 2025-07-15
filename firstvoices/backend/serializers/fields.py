@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
 from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import Visibility
 from backend.serializers.utils.context_utils import get_site_from_context
 
 
@@ -92,22 +92,31 @@ class WritableVisibilityField(serializers.CharField):
             raise serializers.ValidationError("Invalid visibility value.")
 
 
-class WritableRoleField(serializers.CharField):
+class EnumField(serializers.Field):
+    enum = None
+
+    def __init__(self, enum, *args, **kwargs):
+        self.enum = enum
+        super().__init__(*args, **kwargs)
+
     def to_internal_value(self, data):
         try:
-            return Role[data.upper().replace(" ", "_")]
+            return self.enum[data.upper()]
         except KeyError:
-            raise serializers.ValidationError("Invalid role option.")
+            # raise error and show valid enum keys
+            raise serializers.ValidationError(
+                f"Invalid value {data}. Valid values are: {', '.join(self.enum.names)}"
+            )
 
-    def to_representation(self, value):
-        role_map = {choice[0]: choice[1] for choice in Role.choices}
-        try:
-            return role_map[value]
-        except KeyError:
-            raise serializers.ValidationError("Invalid role value.")
+    def to_representation(self, obj):
+        return self.enum(obj).name.lower()
 
 
 class EnumLabelField(serializers.Field):
+    """
+    This field is deprecated and is to be phased out - use new EnumField going forward.
+    """
+
     enum = None
 
     def __init__(self, enum, *args, **kwargs):

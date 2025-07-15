@@ -3,11 +3,12 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from backend.models import Membership
+from backend.models.constants import Role
 from backend.serializers.base_serializers import (
     WritableSiteContentSerializer,
     base_timestamp_fields,
 )
-from backend.serializers.fields import SiteHyperlinkedIdentityField, WritableRoleField
+from backend.serializers.fields import EnumField, SiteHyperlinkedIdentityField
 from backend.serializers.media_serializers import ImageSerializer
 from backend.serializers.site_serializers import (
     FeatureFlagSerializer,
@@ -71,7 +72,7 @@ class MembershipDetailSerializer(WritableSiteContentSerializer):
         queryset=get_user_model().objects.all(),
         validators=[UniqueForSite(queryset=Membership.objects.all())],
     )
-    role = WritableRoleField(required=True)
+    role = EnumField(enum=Role)
 
     def update(self, instance, validated_data):
         """
