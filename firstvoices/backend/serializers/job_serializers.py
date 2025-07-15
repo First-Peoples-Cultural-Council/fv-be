@@ -16,7 +16,7 @@ from backend.serializers.fields import SiteHyperlinkedIdentityField
 
 
 class BaseJobSerializer(BaseSiteContentSerializer):
-    status = fields.EnumField(enum=JobStatus, read_only=True)
+    status = fields.EnumLabelField(enum=JobStatus, read_only=True)
     task_id = serializers.CharField(read_only=True)
     message = serializers.CharField(read_only=True)
 
@@ -93,8 +93,8 @@ class BulkVisibilityJobSerializer(CreateSiteContentSerializerMixin, BaseJobSeria
     url = SiteHyperlinkedIdentityField(
         read_only=True, view_name="api:bulk-visibility-detail"
     )
-    from_visibility = fields.EnumField(enum=Visibility)
-    to_visibility = fields.EnumField(enum=Visibility)
+    from_visibility = fields.EnumLabelField(enum=Visibility)
+    to_visibility = fields.EnumLabelField(enum=Visibility)
 
     def validate(self, attrs):
         from_visibility = attrs.get("from_visibility")

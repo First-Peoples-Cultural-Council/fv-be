@@ -60,7 +60,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     )
     run_as_user = serializers.CharField(required=False)
     validation_task_id = serializers.CharField(read_only=True)
-    validation_status = fields.EnumField(enum=JobStatus, read_only=True)
+    validation_status = fields.EnumLabelField(enum=JobStatus, read_only=True)
     validation_report = ImportReportSerializer(read_only=True)
     failed_rows_csv = FileSerializer(read_only=True)
 

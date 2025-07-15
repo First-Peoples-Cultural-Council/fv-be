@@ -99,6 +99,30 @@ class EnumField(serializers.Field):
         self.enum = enum
         super().__init__(*args, **kwargs)
 
+    def to_internal_value(self, data):
+        try:
+            return self.enum[data.upper()]
+        except KeyError:
+            # raise error and show valid enum keys
+            raise serializers.ValidationError(
+                f"Invalid value {data}. Valid values are: {', '.join(self.enum.names)}"
+            )
+
+    def to_representation(self, obj):
+        return self.enum(obj).name.lower()
+
+
+class EnumLabelField(serializers.Field):
+    """
+    This field is deprecated and is to be phased out - use new EnumField going forward.
+    """
+
+    enum = None
+
+    def __init__(self, enum, *args, **kwargs):
+        self.enum = enum
+        super().__init__(*args, **kwargs)
+
     def to_representation(self, obj):
         return self.enum(obj).label.lower()
 
