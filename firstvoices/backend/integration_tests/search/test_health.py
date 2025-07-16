@@ -39,3 +39,7 @@ class TestESClusterHealth:
         response = response.json()
         assert response["count"] == 1
         assert response["results"][0]["entry"]["id"] == str(sample_entry.id)
+
+        # Clean-up since transaction=True so all entries get stored in the db
+        sample_entry.delete()
+        site.delete()
