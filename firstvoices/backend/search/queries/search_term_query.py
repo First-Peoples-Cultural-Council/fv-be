@@ -1,13 +1,21 @@
 from elasticsearch_dsl import Q
 
 from backend.search.constants import FUZZY_SEARCH_CUTOFF
+from backend.search.queries.text_matching import (
+    fuzzy_match,
+    match_phrase,
+    substring_match,
+)
 
 BASE_BOOST = 1.0  # default value of boost
-EXACT_MATCH_PRIMARY_BOOST = 5
-EXACT_MATCH_SECONDARY_BOOST = 4
-FUZZY_MATCH_PRIMARY_BOOST = 3
-FUZZY_MATCH_SECONDARY_BOOST = 2
-EXACT_MATCH_OTHER_BOOST = 1.5
+EXACT_MATCH_PRIMARY_BOOST = 10
+EXACT_MATCH_SECONDARY_BOOST = 8
+EXACT_MATCH_OTHER_BOOST = 6
+SUBSTRING_MATCH_PRIMARY_BOOST = 9
+SUBSTRING_MATCH_SECONDARY_BOOST = 7
+SUBSTRING_MATCH_OTHER_BOOST = 5
+FUZZY_MATCH_PRIMARY_BOOST = 4
+FUZZY_MATCH_SECONDARY_BOOST = 3
 FUZZY_MATCH_OTHER_BOOST = BASE_BOOST
 
 
@@ -36,141 +44,99 @@ def get_search_term_query(search_term, domain):
     """
 
     # Primary fields
-    exact_match_primary_language_query = Q(
-        {
-            "match_phrase": {
-                "primary_language_search_fields": {
-                    "query": search_term,
-                    "slop": 3,  # How far apart the terms can be in order to match
-                    "boost": EXACT_MATCH_PRIMARY_BOOST,
-                }
-            }
-        }
+    exact_match_primary_language_query = match_phrase(
+        q=search_term,
+        field="primary_language_search_fields",
+        boost=EXACT_MATCH_PRIMARY_BOOST,
     )
-    exact_match_primary_translation_query = Q(
-        {
-            "match_phrase": {
-                "primary_translation_search_fields": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_PRIMARY_BOOST,
-                }
-            }
-        }
+    exact_match_primary_translation_query = match_phrase(
+        q=search_term,
+        field="primary_translation_search_fields",
+        boost=EXACT_MATCH_PRIMARY_BOOST,
     )
-    fuzzy_match_primary_language_query = Q(
-        {
-            "fuzzy": {
-                "primary_language_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",  # Documentation recommends "AUTO" for this param
-                    "boost": FUZZY_MATCH_PRIMARY_BOOST,
-                }
-            }
-        }
+    substring_match_primary_language_query = substring_match(
+        q=search_term,
+        field="primary_language_search_fields",
+        boost=SUBSTRING_MATCH_PRIMARY_BOOST,
     )
-    fuzzy_match_primary_translation_query = Q(
-        {
-            "fuzzy": {
-                "primary_translation_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_PRIMARY_BOOST,
-                }
-            }
-        }
+    substring_match_primary_translation_query = substring_match(
+        q=search_term,
+        field="primary_translation_search_fields",
+        boost=SUBSTRING_MATCH_PRIMARY_BOOST,
+    )
+    fuzzy_match_primary_language_query = fuzzy_match(
+        q=search_term,
+        field="primary_language_search_fields",
+        boost=FUZZY_MATCH_PRIMARY_BOOST,
+    )
+    fuzzy_match_primary_translation_query = fuzzy_match(
+        q=search_term,
+        field="primary_translation_search_fields",
+        boost=FUZZY_MATCH_PRIMARY_BOOST,
     )
 
     # Secondary fields
-    exact_match_secondary_language_query = Q(
-        {
-            "match_phrase": {
-                "secondary_language_search_fields": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_SECONDARY_BOOST,
-                }
-            }
-        }
+    exact_match_secondary_language_query = match_phrase(
+        q=search_term,
+        field="secondary_language_search_fields",
+        boost=EXACT_MATCH_SECONDARY_BOOST,
     )
-    exact_match_secondary_translation_query = Q(
-        {
-            "match_phrase": {
-                "secondary_translation_search_fields": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_SECONDARY_BOOST,
-                }
-            }
-        }
+    exact_match_secondary_translation_query = match_phrase(
+        q=search_term,
+        field="secondary_translation_search_fields",
+        boost=EXACT_MATCH_SECONDARY_BOOST,
     )
-    fuzzy_match_secondary_language_query = Q(
-        {
-            "fuzzy": {
-                "secondary_language_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_SECONDARY_BOOST,
-                }
-            }
-        }
+    substring_match_secondary_language_query = substring_match(
+        q=search_term,
+        field="secondary_language_search_fields",
+        boost=SUBSTRING_MATCH_SECONDARY_BOOST,
     )
-    fuzzy_match_secondary_translation_query = Q(
-        {
-            "fuzzy": {
-                "secondary_translation_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_SECONDARY_BOOST,
-                }
-            }
-        }
+    substring_match_secondary_translation_query = substring_match(
+        q=search_term,
+        field="secondary_translation_search_fields",
+        boost=SUBSTRING_MATCH_SECONDARY_BOOST,
+    )
+    fuzzy_match_secondary_language_query = fuzzy_match(
+        q=search_term,
+        field="secondary_language_search_fields",
+        boost=FUZZY_MATCH_SECONDARY_BOOST,
+    )
+    fuzzy_match_secondary_translation_query = fuzzy_match(
+        q=search_term,
+        field="secondary_translation_search_fields",
+        boost=FUZZY_MATCH_SECONDARY_BOOST,
     )
 
     # Other fields
-    exact_match_other_language_query = Q(
-        {
-            "match_phrase": {
-                "other_language_search_fields": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_OTHER_BOOST,
-                }
-            }
-        }
+    exact_match_other_language_query = match_phrase(
+        q=search_term,
+        field="other_language_search_fields",
+        boost=EXACT_MATCH_OTHER_BOOST,
     )
-    exact_match_other_translation_query = Q(
-        {
-            "match_phrase": {
-                "other_translation_search_fields": {
-                    "query": search_term,
-                    "slop": 3,
-                    "boost": EXACT_MATCH_OTHER_BOOST,
-                }
-            }
-        }
+    exact_match_other_translation_query = match_phrase(
+        q=search_term,
+        field="other_translation_search_fields",
+        boost=EXACT_MATCH_OTHER_BOOST,
     )
-    fuzzy_match_other_language_query = Q(
-        {
-            "fuzzy": {
-                "other_language_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_OTHER_BOOST,
-                }
-            }
-        }
+    substring_match_other_language_query = substring_match(
+        q=search_term,
+        field="other_language_search_fields",
+        boost=SUBSTRING_MATCH_OTHER_BOOST,
     )
-    fuzzy_match_other_translation_query = Q(
-        {
-            "fuzzy": {
-                "other_translation_search_fields": {
-                    "value": search_term,
-                    "fuzziness": "2",
-                    "boost": FUZZY_MATCH_OTHER_BOOST,
-                }
-            }
-        }
+    substring_match_other_translation_query = substring_match(
+        q=search_term,
+        field="other_translation_search_fields",
+        boost=SUBSTRING_MATCH_OTHER_BOOST,
+    )
+    fuzzy_match_other_language_query = fuzzy_match(
+        q=search_term,
+        field="other_language_search_fields",
+        boost=FUZZY_MATCH_OTHER_BOOST,
+    )
+    fuzzy_match_other_translation_query = fuzzy_match(
+        q=search_term,
+        field="other_translation_search_fields",
+        boost=FUZZY_MATCH_OTHER_BOOST,
     )
 
     subqueries = []
@@ -180,26 +146,38 @@ def get_search_term_query(search_term, domain):
             exact_match_primary_language_query,
             exact_match_secondary_language_query,
             exact_match_other_language_query,
+            substring_match_primary_language_query,
+            substring_match_secondary_language_query,
+            substring_match_other_language_query,
         ],
         "translation_exact": [
             exact_match_primary_translation_query,
             exact_match_secondary_translation_query,
             exact_match_other_translation_query,
+            substring_match_primary_translation_query,
+            substring_match_secondary_translation_query,
+            substring_match_other_translation_query,
         ],
         "language": [
             exact_match_primary_language_query,
-            fuzzy_match_primary_language_query,
             exact_match_secondary_language_query,
-            fuzzy_match_secondary_language_query,
             exact_match_other_language_query,
+            substring_match_primary_language_query,
+            substring_match_secondary_language_query,
+            substring_match_other_language_query,
+            fuzzy_match_primary_language_query,
+            fuzzy_match_secondary_language_query,
             fuzzy_match_other_language_query,
         ],
         "translation": [
             exact_match_primary_translation_query,
-            fuzzy_match_primary_translation_query,
             exact_match_secondary_translation_query,
-            fuzzy_match_secondary_translation_query,
             exact_match_other_translation_query,
+            substring_match_primary_translation_query,
+            substring_match_secondary_translation_query,
+            substring_match_other_translation_query,
+            fuzzy_match_primary_translation_query,
+            fuzzy_match_secondary_translation_query,
             fuzzy_match_other_translation_query,
         ],
     }

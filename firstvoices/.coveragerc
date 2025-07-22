@@ -3,6 +3,7 @@ source=.
 branch=True
 omit =
     */tests/*
+    */integration_tests/*
     */migrations/*
     */backend/admin/*
     */__init__.py

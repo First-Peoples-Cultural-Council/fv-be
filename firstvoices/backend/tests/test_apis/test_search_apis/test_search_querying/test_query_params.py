@@ -10,18 +10,25 @@ from backend.search.queries.search_term_query import (
     FUZZY_MATCH_OTHER_BOOST,
     FUZZY_MATCH_PRIMARY_BOOST,
     FUZZY_MATCH_SECONDARY_BOOST,
+    SUBSTRING_MATCH_OTHER_BOOST,
+    SUBSTRING_MATCH_PRIMARY_BOOST,
+    SUBSTRING_MATCH_SECONDARY_BOOST,
 )
 from backend.tests import factories
 from backend.tests.utils import generate_string
 from backend.views.search_all_entries_views import SearchAllEntriesViewSet
 
 
-def get_match_query(field_name, query, boost):
-    return f"'match_phrase': {{'{field_name}': {{'query': '{query}', 'slop': 3, 'boost': {boost}}}}}"
+def get_match_phrase_query(field_name, query, boost):
+    return f"'match_phrase': {{'{field_name}': {{'query': '{query}', 'boost': {boost}, 'slop': 0}}}}"
+
+
+def get_substring_query(field_name, query, boost):
+    return f"'wildcard': {{'{field_name}': {{'value': '*{query}*', 'boost': {boost}}}}}"
 
 
 def get_fuzzy_query(field_name, query, boost):
-    return f"'fuzzy': {{'{field_name}': {{'value': '{query}', 'fuzziness': '2', 'boost': {boost}}}}}"
+    return f"'match': {{'{field_name}': {{'query': '{query}', 'boost': {boost}, 'fuzziness': 'AUTO'}}}}"
 
 
 def get_search_query(**kwargs):
@@ -47,20 +54,30 @@ class TestQueryParams:
         expected_search_term = "test"
 
         # Primary fields
-        expected_exact_match_primary_language_string = get_match_query(
+        expected_exact_match_primary_language_string = get_match_phrase_query(
             "primary_language_search_fields",
             expected_search_term,
             EXACT_MATCH_PRIMARY_BOOST,
+        )
+        expected_substring_match_primary_language_string = get_substring_query(
+            "primary_language_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_PRIMARY_BOOST,
         )
         expected_fuzzy_match_primary_language_string = get_fuzzy_query(
             "primary_language_search_fields",
             expected_search_term,
             FUZZY_MATCH_PRIMARY_BOOST,
         )
-        expected_exact_match_primary_translation_string = get_match_query(
+        expected_exact_match_primary_translation_string = get_match_phrase_query(
             "primary_translation_search_fields",
             expected_search_term,
             EXACT_MATCH_PRIMARY_BOOST,
+        )
+        expected_substring_match_primary_translation_string = get_substring_query(
+            "primary_translation_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_PRIMARY_BOOST,
         )
         expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
             "primary_translation_search_fields",
@@ -69,20 +86,30 @@ class TestQueryParams:
         )
 
         # Secondary fields
-        expected_exact_match_secondary_language_string = get_match_query(
+        expected_exact_match_secondary_language_string = get_match_phrase_query(
             "secondary_language_search_fields",
             expected_search_term,
             EXACT_MATCH_SECONDARY_BOOST,
+        )
+        expected_substring_match_secondary_language_string = get_substring_query(
+            "secondary_language_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_SECONDARY_BOOST,
         )
         expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
             "secondary_language_search_fields",
             expected_search_term,
             FUZZY_MATCH_SECONDARY_BOOST,
         )
-        expected_exact_match_secondary_translation_string = get_match_query(
+        expected_exact_match_secondary_translation_string = get_match_phrase_query(
             "secondary_translation_search_fields",
             expected_search_term,
             EXACT_MATCH_SECONDARY_BOOST,
+        )
+        expected_substring_match_secondary_translation_string = get_substring_query(
+            "secondary_translation_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_SECONDARY_BOOST,
         )
         expected_fuzzy_match_secondary_translation_string = get_fuzzy_query(
             "secondary_translation_search_fields",
@@ -91,20 +118,30 @@ class TestQueryParams:
         )
 
         # Other fields
-        expected_exact_match_other_language_string = get_match_query(
+        expected_exact_match_other_language_string = get_match_phrase_query(
             "other_language_search_fields",
             expected_search_term,
             EXACT_MATCH_OTHER_BOOST,
+        )
+        expected_substring_match_other_language_string = get_substring_query(
+            "other_language_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_OTHER_BOOST,
         )
         expected_fuzzy_match_other_language_string = get_fuzzy_query(
             "other_language_search_fields",
             expected_search_term,
             FUZZY_MATCH_OTHER_BOOST,
         )
-        expected_exact_match_other_translation_string = get_match_query(
+        expected_exact_match_other_translation_string = get_match_phrase_query(
             "other_translation_search_fields",
             expected_search_term,
             EXACT_MATCH_OTHER_BOOST,
+        )
+        expected_substring_match_other_translation_string = get_substring_query(
+            "other_translation_search_fields",
+            expected_search_term,
+            SUBSTRING_MATCH_OTHER_BOOST,
         )
         expected_fuzzy_match_other_translation_string = get_fuzzy_query(
             "other_translation_search_fields",
@@ -113,18 +150,26 @@ class TestQueryParams:
         )
 
         assert expected_exact_match_primary_language_string in str(search_query)
+        assert expected_substring_match_primary_language_string in str(search_query)
         assert expected_fuzzy_match_primary_language_string in str(search_query)
         assert expected_exact_match_primary_translation_string in str(search_query)
+        assert expected_substring_match_primary_translation_string in str(search_query)
         assert expected_fuzzy_match_primary_translation_string in str(search_query)
 
         assert expected_exact_match_secondary_language_string in str(search_query)
+        assert expected_substring_match_secondary_language_string in str(search_query)
         assert expected_fuzzy_match_secondary_language_string in str(search_query)
         assert expected_exact_match_secondary_translation_string in str(search_query)
+        assert expected_substring_match_secondary_translation_string in str(
+            search_query
+        )
         assert expected_fuzzy_match_secondary_translation_string in str(search_query)
 
         assert expected_exact_match_other_language_string in str(search_query)
+        assert expected_substring_match_other_language_string in str(search_query)
         assert expected_fuzzy_match_other_language_string in str(search_query)
         assert expected_exact_match_other_translation_string in str(search_query)
+        assert expected_substring_match_other_translation_string in str(search_query)
         assert expected_fuzzy_match_other_translation_string in str(search_query)
 
     @pytest.mark.parametrize(
@@ -143,13 +188,13 @@ class TestQueryParams:
         search_query = search_query.to_dict()
 
         # Primary fields
-        expected_exact_match_primary_language_string = get_match_query(
+        expected_exact_match_primary_language_string = get_match_phrase_query(
             "primary_language_search_fields", expected_str, EXACT_MATCH_PRIMARY_BOOST
         )
         expected_fuzzy_match_primary_language_string = get_fuzzy_query(
             "primary_language_search_fields", expected_str, FUZZY_MATCH_PRIMARY_BOOST
         )
-        expected_exact_match_primary_translation_string = get_match_query(
+        expected_exact_match_primary_translation_string = get_match_phrase_query(
             "primary_translation_search_fields", expected_str, EXACT_MATCH_PRIMARY_BOOST
         )
         expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
@@ -157,7 +202,7 @@ class TestQueryParams:
         )
 
         # Secondary fields
-        expected_exact_match_secondary_language_string = get_match_query(
+        expected_exact_match_secondary_language_string = get_match_phrase_query(
             "secondary_language_search_fields",
             expected_str,
             EXACT_MATCH_SECONDARY_BOOST,
@@ -167,7 +212,7 @@ class TestQueryParams:
             expected_str,
             FUZZY_MATCH_SECONDARY_BOOST,
         )
-        expected_exact_match_secondary_translation_string = get_match_query(
+        expected_exact_match_secondary_translation_string = get_match_phrase_query(
             "secondary_translation_search_fields",
             expected_str,
             EXACT_MATCH_SECONDARY_BOOST,
@@ -179,13 +224,13 @@ class TestQueryParams:
         )
 
         # Other fields
-        expected_exact_match_other_language_string = get_match_query(
+        expected_exact_match_other_language_string = get_match_phrase_query(
             "other_language_search_fields", expected_str, EXACT_MATCH_OTHER_BOOST
         )
         expected_fuzzy_match_other_language_string = get_fuzzy_query(
             "other_language_search_fields", expected_str, FUZZY_MATCH_OTHER_BOOST
         )
-        expected_exact_match_other_translation_string = get_match_query(
+        expected_exact_match_other_translation_string = get_match_phrase_query(
             "other_translation_search_fields", expected_str, EXACT_MATCH_OTHER_BOOST
         )
         expected_fuzzy_match_other_translation_string = get_fuzzy_query(
@@ -214,13 +259,13 @@ class TestQueryParams:
         search_query = get_search_query(q=search_term, user=AnonymousUser())
         search_query = search_query.to_dict()
 
-        expected_exact_match_primary_language_string = get_match_query(
+        expected_exact_match_primary_language_string = get_match_phrase_query(
             "primary_language_search_fields", search_term, EXACT_MATCH_PRIMARY_BOOST
         )
         expected_fuzzy_match_primary_language_string = get_fuzzy_query(
             "primary_language_search_fields", search_term, FUZZY_MATCH_PRIMARY_BOOST
         )
-        expected_exact_match_primary_translation_string = get_match_query(
+        expected_exact_match_primary_translation_string = get_match_phrase_query(
             "primary_translation_search_fields", search_term, EXACT_MATCH_PRIMARY_BOOST
         )
         expected_fuzzy_match_primary_translation_string = get_fuzzy_query(
@@ -228,13 +273,13 @@ class TestQueryParams:
         )
 
         # Secondary fields
-        expected_exact_match_secondary_language_string = get_match_query(
+        expected_exact_match_secondary_language_string = get_match_phrase_query(
             "secondary_language_search_fields", search_term, EXACT_MATCH_SECONDARY_BOOST
         )
         expected_fuzzy_match_secondary_language_string = get_fuzzy_query(
             "secondary_language_search_fields", search_term, FUZZY_MATCH_SECONDARY_BOOST
         )
-        expected_exact_match_secondary_translation_string = get_match_query(
+        expected_exact_match_secondary_translation_string = get_match_phrase_query(
             "secondary_translation_search_fields",
             search_term,
             EXACT_MATCH_SECONDARY_BOOST,
@@ -246,13 +291,13 @@ class TestQueryParams:
         )
 
         # Other fields
-        expected_exact_match_other_language_string = get_match_query(
+        expected_exact_match_other_language_string = get_match_phrase_query(
             "other_language_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
         )
         expected_fuzzy_match_other_language_string = get_fuzzy_query(
             "other_language_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
         )
-        expected_exact_match_other_translation_string = get_match_query(
+        expected_exact_match_other_translation_string = get_match_phrase_query(
             "other_translation_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
         )
         expected_fuzzy_match_other_translation_string = get_fuzzy_query(
@@ -282,7 +327,7 @@ class TestDomain:
     search_term = "test_query"
 
     # Primary language fields
-    expected_exact_match_primary_language_string = get_match_query(
+    expected_exact_match_primary_language_string = get_match_phrase_query(
         "primary_language_search_fields",
         search_term,
         EXACT_MATCH_PRIMARY_BOOST,
@@ -292,7 +337,7 @@ class TestDomain:
         search_term,
         FUZZY_MATCH_PRIMARY_BOOST,
     )
-    expected_exact_match_primary_translation_string = get_match_query(
+    expected_exact_match_primary_translation_string = get_match_phrase_query(
         "primary_translation_search_fields",
         search_term,
         EXACT_MATCH_PRIMARY_BOOST,
@@ -304,7 +349,7 @@ class TestDomain:
     )
 
     # Secondary fields
-    expected_exact_match_secondary_language_string = get_match_query(
+    expected_exact_match_secondary_language_string = get_match_phrase_query(
         "secondary_language_search_fields",
         search_term,
         EXACT_MATCH_SECONDARY_BOOST,
@@ -314,7 +359,7 @@ class TestDomain:
         search_term,
         FUZZY_MATCH_SECONDARY_BOOST,
     )
-    expected_exact_match_secondary_translation_string = get_match_query(
+    expected_exact_match_secondary_translation_string = get_match_phrase_query(
         "secondary_translation_search_fields",
         search_term,
         EXACT_MATCH_SECONDARY_BOOST,
@@ -326,13 +371,13 @@ class TestDomain:
     )
 
     # Other fields
-    expected_exact_match_other_language_string = get_match_query(
+    expected_exact_match_other_language_string = get_match_phrase_query(
         "other_language_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
     )
     expected_fuzzy_match_other_language_string = get_fuzzy_query(
         "other_language_search_fields", search_term, FUZZY_MATCH_OTHER_BOOST
     )
-    expected_exact_match_other_translation_string = get_match_query(
+    expected_exact_match_other_translation_string = get_match_phrase_query(
         "other_translation_search_fields", search_term, EXACT_MATCH_OTHER_BOOST
     )
     expected_fuzzy_match_other_translation_string = get_fuzzy_query(

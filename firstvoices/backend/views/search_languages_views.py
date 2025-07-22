@@ -10,7 +10,7 @@ from elasticsearch_dsl import Q, Search
 from backend.models.sites import Site
 from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.search.queries.text_matching import (
-    exact_match,
+    exact_term_match,
     fuzzy_match,
     substring_match,
 )
@@ -131,9 +131,9 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
 
         """
         subqueries = [
-            exact_match(q, field="language_code", boost=PRIMARY_BOOST),
-            exact_match(q, field="primary_search_fields", boost=PRIMARY_BOOST),
-            exact_match(q, field="secondary_search_fields", boost=SECONDARY_BOOST),
+            exact_term_match(q, field="language_code", boost=PRIMARY_BOOST),
+            exact_term_match(q, field="primary_search_fields", boost=PRIMARY_BOOST),
+            exact_term_match(q, field="secondary_search_fields", boost=SECONDARY_BOOST),
             fuzzy_match(q, field="primary_search_fields"),
             fuzzy_match(q, field="secondary_search_fields"),
             substring_match(q, field="primary_search_fields"),
