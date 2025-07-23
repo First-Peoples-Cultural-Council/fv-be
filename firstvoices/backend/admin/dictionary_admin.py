@@ -53,7 +53,7 @@ class DictionaryEntryAdmin(
         "related_documents",
         "related_images",
         "related_videos",
-        "batch_id",
+        "legacy_batch_filename",
         "exclude_from_wotd",
         "part_of_speech",
         "split_chars_base",

@@ -124,7 +124,7 @@ def build_index_and_calculate_scores(site_slug: str, *args, **kwargs):
         )
         .defer(
             "exclude_from_wotd",
-            "batch_id",
+            "legacy_batch_filename",
             "related_dictionary_entries",
             "related_characters",
             "custom_order",

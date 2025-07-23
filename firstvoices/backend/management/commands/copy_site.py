@@ -454,7 +454,7 @@ def copy_dictionary_entries_and_return_map(
 
         entry.id = target_entry_id
         entry.site = target_site
-        entry.batch_id = ""
+        entry.legacy_batch_filename = ""
         entry.import_job = None
         entry.save(set_modified_date=set_modified_date)
 
