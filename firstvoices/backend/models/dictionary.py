@@ -161,9 +161,11 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         ExternalDictionaryEntrySystem,
         on_delete=models.SET_NULL,
         blank=True,
+        null=True,
     )
     external_system_entry_id = models.CharField(
-        max_length=DEFAULT_TITLE_LENGTH, blank=True, null=True
+        max_length=DEFAULT_TITLE_LENGTH,
+        blank=True,
     )
 
     class Meta:
