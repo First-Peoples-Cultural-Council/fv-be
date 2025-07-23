@@ -6,6 +6,7 @@ from backend.models.dictionary import (
     DictionaryEntryCategory,
     DictionaryEntryLink,
     DictionaryEntryRelatedCharacter,
+    ExternalDictionaryEntrySystem,
     WordOfTheDay,
 )
 from backend.models.part_of_speech import PartOfSpeech
@@ -78,6 +79,11 @@ class PartsOfSpeechAdmin(BaseAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("parent")
+
+
+@admin.register(ExternalDictionaryEntrySystem)
+class ExternalDictionaryEntrySystemAdmin(BaseAdmin):
+    list_display = ("title",) + BaseAdmin.list_display
 
 
 # Non-customized admin forms
