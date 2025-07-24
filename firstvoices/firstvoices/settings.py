@@ -270,6 +270,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": description,
     "VERSION": "2.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # Fixtures directory for initial data
