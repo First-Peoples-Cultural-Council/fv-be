@@ -760,6 +760,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     AUDIO_TITLE = "Related Audio"
     IMAGE_DESCRIPTION = "Testing image upload"
     IMAGE_TITLE = "Related Image"
+    TEST_SPEAKER = "Test Speaker"
     VIDEO_DESCRIPTION = "Testing video upload"
     VIDEO_TITLE = "Related Video"
 
@@ -781,8 +782,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        PersonFactory.create(name="Test Speaker 1", site=self.site)
-        PersonFactory.create(name="Test Speaker 2", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2", site=self.site)
         FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
@@ -869,6 +870,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_video.title == f"{self.VIDEO_TITLE}{suffix_number}"
         assert related_video.description == f"{self.VIDEO_DESCRIPTION}{suffix_number}"
         self.assert_related_media_details(related_video, suffix_number)
+
+    def assert_max_speakers(self, related_audio, suffix_number):
+        assert related_audio.speakers.count() == 5
+        expected_speakers = [
+            f"{self.TEST_SPEAKER} {suffix_number}-{i}" for i in range(1, 6)
+        ]
+        actual_speakers = list(related_audio.speakers.values_list("name", flat=True))
+        assert all(speaker in actual_speakers for speaker in expected_speakers)
 
     def test_import_task_logs(self, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
@@ -1229,10 +1238,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         self.upload_multiple_media_files(6, "related_audio", "audio", import_job)
-        PersonFactory.create(name="Test Speaker 1-1", site=self.site)
-        PersonFactory.create(name="Test Speaker 1-2", site=self.site)
-        PersonFactory.create(name="Test Speaker 2-1", site=self.site)
-        PersonFactory.create(name="Test Speaker 2-2", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-1", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-2", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-1", site=self.site)
+        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-2", site=self.site)
 
         confirm_import_job(import_job.id)
 
@@ -1242,16 +1251,16 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_audio_1_speakers = list(
             related_audio_1.speakers.all().values_list("name", flat=True)
         )
-        assert "Test Speaker 1-1" in related_audio_1_speakers
-        assert "Test Speaker 1-2" in related_audio_1_speakers
+        assert f"{self.TEST_SPEAKER} 1-1" in related_audio_1_speakers
+        assert f"{self.TEST_SPEAKER} 1-2" in related_audio_1_speakers
 
         related_audio_2 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-2")
         self.assert_related_audio_details("related_audio", related_audio_2, "-2")
         related_audio_2_speakers = list(
             related_audio_2.speakers.all().values_list("name", flat=True)
         )
-        assert "Test Speaker 2-1" in related_audio_2_speakers
-        assert "Test Speaker 2-2" in related_audio_2_speakers
+        assert f"{self.TEST_SPEAKER} 2-1" in related_audio_2_speakers
+        assert f"{self.TEST_SPEAKER} 2-2" in related_audio_2_speakers
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_audio_3 = entry_2.related_audio.get(title=f"{self.AUDIO_TITLE}-3")
@@ -1372,6 +1381,68 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.assert_related_video_details("related_video", related_video_5, "-5")
         related_video_6 = entry_3.related_videos.get(title=f"{self.VIDEO_TITLE}-6")
         self.assert_related_video_details("related_video", related_video_6, "-6")
+
+    def test_related_media_full(self):
+        file_content = get_sample_file(
+            "import_job/related_media_full.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(5, "related_audio", "audio", import_job)
+        self.upload_multiple_media_files(5, "related_image", "image", import_job)
+        self.upload_multiple_media_files(5, "related_video", "video", import_job)
+
+        for x in range(1, 6):
+            for z in range(1, 6):
+                PersonFactory.create(name=f"Test Speaker {x}-{z}", site=self.site)
+
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.get(title="Word 1")
+        related_audio_1 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-1")
+        self.assert_related_audio_details("related_audio", related_audio_1, "-1")
+        self.assert_max_speakers(related_audio_1, "1")
+        related_audio_2 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-2")
+        self.assert_related_audio_details("related_audio", related_audio_2, "-2")
+        self.assert_max_speakers(related_audio_2, "2")
+        related_audio_3 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-3")
+        self.assert_related_audio_details("related_audio", related_audio_3, "-3")
+        self.assert_max_speakers(related_audio_3, "3")
+        related_audio_4 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-4")
+        self.assert_related_audio_details("related_audio", related_audio_4, "-4")
+        self.assert_max_speakers(related_audio_4, "4")
+        related_audio_5 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-5")
+        self.assert_related_audio_details("related_audio", related_audio_5, "-5")
+        self.assert_max_speakers(related_audio_5, "5")
+
+        related_image_1 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-1")
+        self.assert_related_image_details("related_image", related_image_1, "-1")
+        related_image_2 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-2")
+        self.assert_related_image_details("related_image", related_image_2, "-2")
+        related_image_3 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-3")
+        self.assert_related_image_details("related_image", related_image_3, "-3")
+        related_image_4 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-4")
+        self.assert_related_image_details("related_image", related_image_4, "-4")
+        related_image_5 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-5")
+        self.assert_related_image_details("related_image", related_image_5, "-5")
+
+        related_video_1 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-1")
+        self.assert_related_video_details("related_video", related_video_1, "-1")
+        related_video_2 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-2")
+        self.assert_related_video_details("related_video", related_video_2, "-2")
+        related_video_3 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-3")
+        self.assert_related_video_details("related_video", related_video_3, "-3")
+        related_video_4 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-4")
+        self.assert_related_video_details("related_video", related_video_4, "-4")
+        related_video_5 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-5")
+        self.assert_related_video_details("related_video", related_video_5, "-5")
 
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
