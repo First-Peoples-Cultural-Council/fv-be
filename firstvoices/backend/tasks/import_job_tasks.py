@@ -80,9 +80,9 @@ def generate_report(
     accepted_columns,
     ignored_columns,
     missing_media,
-    audio_import_result,
-    img_import_result,
-    video_import_result,
+    audio_import_results,
+    img_import_results,
+    video_import_results,
     dictionary_entry_import_result,
 ):
     """
@@ -123,12 +123,13 @@ def generate_report(
         )
 
     # Add errors from individual import results to report
-    for result in [
-        dictionary_entry_import_result,
-        audio_import_result,
-        img_import_result,
-        video_import_result,
-    ]:
+    all_results = (
+        [dictionary_entry_import_result]
+        + audio_import_results
+        + img_import_results
+        + video_import_results
+    )
+    for result in all_results:
         for row in result.rows:
             if row.import_type == RowResult.IMPORT_TYPE_SKIP:
                 create_or_append_error_row(
@@ -173,13 +174,13 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
     accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
 
     # import media first
-    audio_import_result, audio_filename_map = AudioImporter.import_data(
+    audio_import_results, audio_filename_map = AudioImporter.import_data(
         import_job, cleaned_data, dry_run
     )
-    img_import_result, img_filename_map = ImageImporter.import_data(
+    img_import_results, img_filename_map = ImageImporter.import_data(
         import_job, cleaned_data, dry_run
     )
-    video_import_result, video_filename_map = VideoImporter.import_data(
+    video_import_results, video_filename_map = VideoImporter.import_data(
         import_job, cleaned_data, dry_run
     )
 
@@ -199,9 +200,9 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
             accepted_columns,
             ignored_columns,
             missing_media,
-            audio_import_result,
-            img_import_result,
-            video_import_result,
+            audio_import_results,
+            img_import_results,
+            video_import_results,
             dictionary_entry_import_result,
         )
         attach_csv_to_report(data, import_job, report)

@@ -1,3 +1,5 @@
+import re
+
 import tablib
 
 from backend.models import ImportJob
@@ -48,7 +50,7 @@ class BaseImporter:
         return filtered_data
 
     @classmethod
-    def filter_rows(cls, data, filename_key):
+    def filter_rows(cls, data, key_col):
         """Subclasses can override to filter out duplicate or invalid rows."""
         return data
 
@@ -56,9 +58,33 @@ class BaseImporter:
 class BaseMediaFileImporter(BaseImporter):
     column_prefix = ""
 
+    supported_column_suffixes = [
+        "filename",
+        "title",
+        "description",
+        "acknowledgement",
+        "include_in_kids_site",
+        "include_in_games",
+    ]
+
     @classmethod
     def get_key_col(cls):
         return f"{cls.column_prefix}_filename"
+
+    @classmethod
+    def get_supported_columns(cls):
+        """
+        Returns a list of supported columns for the media file importer.
+        Uses column prefix, supported suffixes, and multiplies them to create the full list.
+        """
+        columns = []
+        for suffix in cls.supported_column_suffixes:
+            columns.append(f"{cls.column_prefix}_{suffix}")
+
+            for i in range(2, 6):
+                columns.append(f"{cls.column_prefix}_{i}_{suffix}")
+
+        return columns
 
     @classmethod
     def filter_rows(cls, data, filename_key):
@@ -68,17 +94,60 @@ class BaseMediaFileImporter(BaseImporter):
         seen_filenames = set()
         non_duplicated_data = tablib.Dataset(headers=data.headers)
 
-        for row in data.dict:
-            filename = row[filename_key]
+        filename_columns = [
+            col for col in cls.get_supported_columns() if col.endswith("filename")
+        ]
 
-            if not filename:
+        for row in data.dict:
+            primary_filename = row[filename_key]
+
+            if not primary_filename:
                 continue
 
-            if filename not in seen_filenames:
-                seen_filenames.add(filename)
-                non_duplicated_data.append(row.values())
+            row_filenames = [row[col] for col in filename_columns if col in row]
+
+            for filename in row_filenames:
+                if filename not in seen_filenames:
+                    seen_filenames.add(filename)
+                    non_duplicated_data.append(row.values())
 
         return non_duplicated_data
+
+    @classmethod
+    def split_file_data(cls, data):
+        """
+        Splits file data into separate datasets based on column number.
+        Returns a list of datasets, each containing a single file's data for import.
+        """
+        datasets = []
+        headers = data.headers
+
+        # if data is empty, return an empty list
+        if not headers:
+            return datasets
+
+        # if column name includes _\d_ and \d is the same digit, then it is the data of the same file
+        for i in range(1, 6):
+            # Build regex pattern for the i-th file group
+            if i == 1:
+                pattern = rf"^{cls.column_prefix}_[a-z]+(?: _[a-z]+)*(_[2-5])?$"
+            else:
+                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?: _[a-z]+)*(_[2-5])?$"
+
+            file_columns = [
+                col for col in headers if re.match(pattern, col, re.IGNORECASE)
+            ]
+
+            if not file_columns:
+                continue
+
+            file_data = tablib.Dataset(headers=file_columns)
+            for row in data.dict:
+                row_values = [row[col] for col in file_columns]
+                file_data.append(row_values)
+            datasets.append(file_data)
+
+        return datasets
 
     @classmethod
     def import_data(cls, import_job: ImportJob, csv_data: str, dry_run: bool = True):
@@ -86,64 +155,72 @@ class BaseMediaFileImporter(BaseImporter):
         Imports media files listed the given csv data file, and returns import results along with
         a map of filenames to imported File ids.
         """
-        filtered_data = cls.filter_data(csv_data)
 
-        import_result = cls.resource(
-            site=import_job.site,
-            run_as_user=import_job.run_as_user,
-            import_job=import_job.id,
-        ).import_data(dataset=filtered_data, dry_run=dry_run)
+        # First, filter out non-supported columns
+        filtered_data = cls.filter_columns(csv_data, cls.get_key_col())
 
+        # Then, split the data into separate datasets for each file
+        split_file_data = cls.split_file_data(filtered_data)
+
+        import_results = []
         filename_map = {}
 
-        if import_result.totals["new"]:
-            for row in filtered_data.dict:
-                filename = row[f"{cls.column_prefix}_filename"]
-                filename_map[filename] = row["id"]
+        for dataset in split_file_data:
+            # replace numbered prefixes with the base prefix
+            dataset.headers = [
+                re.sub(rf"^{cls.column_prefix}_\d_", f"{cls.column_prefix}_", col)
+                for col in dataset.headers
+            ]
 
-        return import_result, filename_map
+            # filter out duplicate and empty filenames
+            dataset = cls.filter_rows(dataset, cls.get_key_col())
+
+            import_result = cls.resource(
+                site=import_job.site,
+                run_as_user=import_job.run_as_user,
+                import_job=import_job.id,
+            ).import_data(dataset=dataset, dry_run=dry_run)
+
+            if import_result.totals["new"]:
+                for i, row in enumerate(dataset.dict):
+                    filename = row[f"{cls.column_prefix}_filename"]
+                    # for the filename map, store  (row_index, file_id)
+                    filename_map[filename] = (i, row["id"])
+
+            import_results.append(import_result)
+
+        return import_results, filename_map
 
 
 class AudioImporter(BaseMediaFileImporter):
     resource = AudioResource
     column_prefix = "audio"
-    supported_columns = [
-        "audio_filename",
-        "audio_title",
-        "audio_description",
-        "audio_speaker",
-        "audio_speaker_2",
-        "audio_speaker_3",
-        "audio_speaker_4",
-        "audio_speaker_5",
-        "audio_acknowledgement",
-        "audio_include_in_kids_site",
-        "audio_include_in_games",
-    ]
+
+    @classmethod
+    def get_supported_columns(cls):
+        speaker_columns = []
+        for i in range(1, 6):
+            for j in range(1, 6):
+                if i == 1 and j == 1:
+                    speaker_columns.append(f"{cls.column_prefix}_speaker")
+                elif i == 1:
+                    speaker_columns.append(f"{cls.column_prefix}_speaker_{j}")
+                elif j == 1:
+                    speaker_columns.append(f"{cls.column_prefix}_{i}_speaker")
+                else:
+                    speaker_columns.append(f"{cls.column_prefix}_{i}_speaker_{j}")
+
+        return super().get_supported_columns() + speaker_columns
 
 
 class ImageImporter(BaseMediaFileImporter):
     resource = ImageResource
     column_prefix = "img"
-    supported_columns = [
-        "img_filename",
-        "img_title",
-        "img_description",
-        "img_acknowledgement",
-        "img_include_in_kids_site",
-    ]
 
 
 class VideoImporter(BaseMediaFileImporter):
     resource = VideoResource
     column_prefix = "video"
-    supported_columns = [
-        "video_filename",
-        "video_title",
-        "video_description",
-        "video_acknowledgement",
-        "video_include_in_kids_site",
-    ]
 
 
 class DictionaryEntryImporter(BaseImporter):
@@ -273,6 +350,21 @@ class DictionaryEntryImporter(BaseImporter):
             # If media map is empty, do nothing
             return
 
-        filename = row_list[filename_col_index]
-        related_id = media_map.get(filename, "")
-        row_list[related_media_col_index] = related_id
+        # get the row index for the current row (from primary filename)
+        primary_filename = row_list[filename_col_index]
+        if not primary_filename:
+            return
+
+        filename_row_idx = media_map[primary_filename][0]
+
+        # get the related media ids from the map
+        related_file_ids = [
+            file_id
+            for (row_index, file_id) in media_map.values()
+            if row_index == filename_row_idx
+        ]
+
+        # update related media with a comma-separated string of related ids
+        row_list[related_media_col_index] = ",".join(
+            [str(file_id) for file_id in related_file_ids if file_id]
+        )

@@ -1159,6 +1159,31 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             get_valid_filename("Another audio") in related_audio.original.content.name
         )
 
+    def test_related_audio_multiple_files(self):
+        self.confirm_upload_with_media_files("related_audio_multiple.csv")
+
+        entry_with_audio = DictionaryEntry.objects.get(title="Word 1")
+        related_audio = entry_with_audio.related_audio.all()
+        assert len(related_audio) == 2
+
+        related_audio_1 = related_audio[0]
+        assert "sample-audio.mp3" in related_audio_1.original.content.name
+        assert related_audio_1.title == "Related Audio 1"
+        assert related_audio_1.description == "Testing audio upload 1"
+        assert related_audio_1.acknowledgement == "Test Ack 1"
+        assert related_audio_1.speakers.first().name == "Test Speaker 1"
+        assert related_audio_1.exclude_from_kids is False
+        assert related_audio_1.exclude_from_games is True
+
+        related_audio_2 = related_audio[1]
+        assert "Another_audio.mp3" in related_audio_2.original.content.name
+        assert related_audio_2.title == "Related Audio 2"
+        assert related_audio_2.description == "Testing audio upload 2"
+        assert related_audio_2.acknowledgement == "Test Ack 2"
+        assert related_audio_2.speakers.first().name == "Test Speaker 2"
+        assert related_audio_2.exclude_from_kids is True
+        assert related_audio_2.exclude_from_games is False
+
     def test_related_images(self):
         import_job = self.confirm_upload_with_media_files("related_images.csv")
 
