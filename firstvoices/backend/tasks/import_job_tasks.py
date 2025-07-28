@@ -48,7 +48,7 @@ def clean_csv(data, missing_media=[]):
 
     valid_headers = get_valid_headers()
     cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
-    all_headers = data.headers
+    all_headers = [header.lower() for header in data.headers]
     accepted_headers = []
     invalid_headers = []
 

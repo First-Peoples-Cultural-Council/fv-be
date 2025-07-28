@@ -755,6 +755,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     MIMETYPE = "text/csv"
     TASK = confirm_import_job
 
+    ACKNOWLEDGEMENT = "Test Ack"
+    AUDIO_DESCRIPTION = "Testing audio upload"
+    AUDIO_TITLE = "Related Audio"
+    IMAGE_DESCRIPTION = "Testing image upload"
+    IMAGE_TITLE = "Related Image"
+    VIDEO_DESCRIPTION = "Testing video upload"
+    VIDEO_TITLE = "Related Video"
+
     def get_valid_task_args(self):
         return (uuid.uuid4(),)
 
@@ -808,6 +816,59 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         confirm_import_job(import_job.id)
         return import_job
+
+    def upload_multiple_media_files(self, count, filename, file_type, import_job):
+        if file_type == "audio":
+            base_file = "sample-audio.mp3"
+            file_ext = ".mp3"
+            media_factory = FileFactory
+            mimetype = "audio/mpeg"
+        elif file_type == "image":
+            base_file = "sample-image.jpg"
+            file_ext = ".jpg"
+            media_factory = ImageFileFactory
+            mimetype = "image/jpeg"
+        elif file_type == "video":
+            base_file = "video_example_small.mp4"
+            file_ext = ".mp4"
+            media_factory = VideoFileFactory
+            mimetype = "video/mp4"
+        else:
+            return
+
+        for x in range(1, count + 1):
+            media_factory(
+                site=self.site,
+                content=get_sample_file(
+                    filename=f"{base_file}",
+                    mimetype=mimetype,
+                    title=f"{filename}-{x}{file_ext}",
+                ),
+                import_job=import_job,
+            )
+
+    def assert_related_media_details(self, related_media, suffix_number=""):
+        assert related_media.acknowledgement == f"{self.ACKNOWLEDGEMENT}{suffix_number}"
+        assert related_media.exclude_from_kids is False
+        assert related_media.exclude_from_games is True
+
+    def assert_related_audio_details(self, filename, related_audio, suffix_number=""):
+        assert f"{filename}{suffix_number}.mp3" in related_audio.original.content.name
+        assert related_audio.title == f"{self.AUDIO_TITLE}{suffix_number}"
+        assert related_audio.description == f"{self.AUDIO_DESCRIPTION}{suffix_number}"
+        self.assert_related_media_details(related_audio, suffix_number)
+
+    def assert_related_image_details(self, filename, related_image, suffix_number=""):
+        assert f"{filename}{suffix_number}.jpg" in related_image.original.content.name
+        assert related_image.title == f"{self.IMAGE_TITLE}{suffix_number}"
+        assert related_image.description == f"{self.IMAGE_DESCRIPTION}{suffix_number}"
+        self.assert_related_media_details(related_image, suffix_number)
+
+    def assert_related_video_details(self, filename, related_video, suffix_number=""):
+        assert f"{filename}{suffix_number}.mp4" in related_video.original.content.name
+        assert related_video.title == f"{self.VIDEO_TITLE}{suffix_number}"
+        assert related_video.description == f"{self.VIDEO_DESCRIPTION}{suffix_number}"
+        self.assert_related_media_details(related_video, suffix_number)
 
     def test_import_task_logs(self, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
@@ -1160,29 +1221,54 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio_multiple_files(self):
-        self.confirm_upload_with_media_files("related_audio_multiple.csv")
+        file_content = get_sample_file(
+            "import_job/related_audio_multiple.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
 
-        entry_with_audio = DictionaryEntry.objects.get(title="Word 1")
-        related_audio = entry_with_audio.related_audio.all()
-        assert len(related_audio) == 2
+        self.upload_multiple_media_files(6, "related_audio", "audio", import_job)
+        PersonFactory.create(name="Test Speaker 1-1", site=self.site)
+        PersonFactory.create(name="Test Speaker 1-2", site=self.site)
+        PersonFactory.create(name="Test Speaker 2-1", site=self.site)
+        PersonFactory.create(name="Test Speaker 2-2", site=self.site)
 
-        related_audio_1 = related_audio[0]
-        assert "sample-audio.mp3" in related_audio_1.original.content.name
-        assert related_audio_1.title == "Related Audio 1"
-        assert related_audio_1.description == "Testing audio upload 1"
-        assert related_audio_1.acknowledgement == "Test Ack 1"
-        assert related_audio_1.speakers.first().name == "Test Speaker 1"
-        assert related_audio_1.exclude_from_kids is False
-        assert related_audio_1.exclude_from_games is True
+        confirm_import_job(import_job.id)
 
-        related_audio_2 = related_audio[1]
-        assert "Another_audio.mp3" in related_audio_2.original.content.name
-        assert related_audio_2.title == "Related Audio 2"
-        assert related_audio_2.description == "Testing audio upload 2"
-        assert related_audio_2.acknowledgement == "Test Ack 2"
-        assert related_audio_2.speakers.first().name == "Test Speaker 2"
-        assert related_audio_2.exclude_from_kids is True
-        assert related_audio_2.exclude_from_games is False
+        entry_1 = DictionaryEntry.objects.get(title="Word 1")
+        related_audio_1 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-1")
+        self.assert_related_audio_details("related_audio", related_audio_1, "-1")
+        related_audio_1_speakers = list(
+            related_audio_1.speakers.all().values_list("name", flat=True)
+        )
+        assert "Test Speaker 1-1" in related_audio_1_speakers
+        assert "Test Speaker 1-2" in related_audio_1_speakers
+
+        related_audio_2 = entry_1.related_audio.get(title=f"{self.AUDIO_TITLE}-2")
+        self.assert_related_audio_details("related_audio", related_audio_2, "-2")
+        related_audio_2_speakers = list(
+            related_audio_2.speakers.all().values_list("name", flat=True)
+        )
+        assert "Test Speaker 2-1" in related_audio_2_speakers
+        assert "Test Speaker 2-2" in related_audio_2_speakers
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_audio_3 = entry_2.related_audio.get(title=f"{self.AUDIO_TITLE}-3")
+        self.assert_related_audio_details("related_audio", related_audio_3, "-3")
+        related_audio_4 = entry_2.related_audio.get(title=f"{self.AUDIO_TITLE}-4")
+        self.assert_related_audio_details("related_audio", related_audio_4, "-4")
+
+        entry_3 = DictionaryEntry.objects.get(title="Word 3")
+        related_audio_5 = entry_3.related_audio.get(title=f"{self.AUDIO_TITLE}-5")
+        self.assert_related_audio_details("related_audio", related_audio_5, "-5")
+        related_audio_6 = entry_3.related_audio.get(title=f"{self.AUDIO_TITLE}-6")
+        self.assert_related_audio_details("related_audio", related_audio_6, "-6")
 
     def test_related_images(self):
         import_job = self.confirm_upload_with_media_files("related_images.csv")
