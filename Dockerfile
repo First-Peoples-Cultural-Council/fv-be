@@ -1,5 +1,5 @@
-ARG python_image=python:3.13-alpine3.20
-ARG caddy_image=caddy:2.7.6-alpine
+ARG python_image=python:3.13.5-alpine3.22
+ARG caddy_image=caddy:2.10.0-alpine
 
 FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
