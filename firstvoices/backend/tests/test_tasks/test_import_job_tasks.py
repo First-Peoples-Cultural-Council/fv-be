@@ -1203,12 +1203,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert len(related_audio) == 1
 
         related_audio = related_audio[0]
-        assert "sample-audio.mp3" in related_audio.original.content.name
-        assert related_audio.title == "Related Audio"
-        assert related_audio.description == "Testing audio upload"
-        assert related_audio.acknowledgement == "Test Ack"
-        assert related_audio.exclude_from_kids is False
-        assert related_audio.exclude_from_games is True
+        self.assert_related_audio_details("sample-audio", related_audio)
         assert related_audio.system_last_modified >= related_audio.last_modified
         assert related_audio.system_last_modified_by == import_job.created_by
 
@@ -1278,11 +1273,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert len(related_images) == 1
 
         related_image = related_images[0]
-        assert "sample-image.jpg" in related_image.original.content.name
-        assert related_image.title == "Related Image"
-        assert related_image.description == "Testing image upload"
-        assert related_image.acknowledgement == "Test Ack"
-        assert related_image.exclude_from_kids is False
+        self.assert_related_image_details("sample-image", related_image)
         assert related_image.system_last_modified >= related_image.last_modified
         assert related_image.system_last_modified_by == import_job.created_by
 
@@ -1336,11 +1327,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert len(related_videos) == 1
 
         related_video = related_videos[0]
-        assert "video_example_small.mp4" in related_video.original.content.name
-        assert related_video.title == "Related Video"
-        assert related_video.description == "Testing video upload"
-        assert related_video.acknowledgement == "Test Ack"
-        assert related_video.exclude_from_kids is False
+        self.assert_related_video_details("video_example_small", related_video)
         assert related_video.system_last_modified >= related_video.last_modified
         assert related_video.system_last_modified_by == import_job.created_by
 
