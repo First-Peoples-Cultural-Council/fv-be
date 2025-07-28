@@ -1294,6 +1294,40 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             get_valid_filename("Another image") in related_image.original.content.name
         )
 
+    def test_related_images_multiple_files(self):
+        file_content = get_sample_file(
+            "import_job/related_images_multiple.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(6, "related_image", "image", import_job)
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.get(title="Word 1")
+        related_image_1 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-1")
+        self.assert_related_image_details("related_image", related_image_1, "-1")
+        related_image_2 = entry_1.related_images.get(title=f"{self.IMAGE_TITLE}-2")
+        self.assert_related_image_details("related_image", related_image_2, "-2")
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_image_3 = entry_2.related_images.get(title=f"{self.IMAGE_TITLE}-3")
+        self.assert_related_image_details("related_image", related_image_3, "-3")
+        related_image_4 = entry_2.related_images.get(title=f"{self.IMAGE_TITLE}-4")
+        self.assert_related_image_details("related_image", related_image_4, "-4")
+
+        entry_3 = DictionaryEntry.objects.get(title="Word 3")
+        related_image_5 = entry_3.related_images.get(title=f"{self.IMAGE_TITLE}-5")
+        self.assert_related_image_details("related_image", related_image_5, "-5")
+        related_image_6 = entry_3.related_images.get(title=f"{self.IMAGE_TITLE}-6")
+        self.assert_related_image_details("related_image", related_image_6, "-6")
+
     def test_related_videos(self):
         import_job = self.confirm_upload_with_media_files("related_videos.csv")
 

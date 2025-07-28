@@ -1,0 +1,4 @@
+TITLE,TYPE,IMG_FILENAME,IMG_TITLE,IMG_DESCRIPTION,IMG_ACKNOWLEDGEMENT,IMG_INCLUDE_IN_KIDS_SITE,IMG_INCLUDE_IN_GAMES,IMG_2_FILENAME,IMG_2_TITLE,IMG_2_DESCRIPTION,IMG_2_ACKNOWLEDGEMENT,IMG_2_INCLUDE_IN_KIDS_SITE,IMG_2_INCLUDE_IN_GAMES
+Word 1,word,related_image-1.jpg,Related Image-1,Testing image upload-1,Test Ack-1,TRUE,FALSE,related_image-2.jpg,Related Image-2,Testing image upload-2,Test Ack-2,TRUE,FALSE
+Word 2,word,related_image-3.jpg,Related Image-3,Testing image upload-3,Test Ack-3,TRUE,FALSE,related_image-4.jpg,Related Image-4,Testing image upload-4,Test Ack-4,TRUE,FALSE
+Word 3,word,related_image-5.jpg,Related Image-5,Testing image upload-5,Test Ack-5,TRUE,FALSE,related_image-6.jpg,Related Image-6,Testing image upload-6,Test Ack-6,TRUE,FALSE
