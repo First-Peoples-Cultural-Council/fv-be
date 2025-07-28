@@ -130,9 +130,11 @@ class BaseMediaFileImporter(BaseImporter):
         for i in range(1, 6):
             # Build regex pattern for the i-th file group
             if i == 1:
-                pattern = rf"^{cls.column_prefix}_[a-z]+(?: _[a-z]+)*(_[2-5])?$"
+                pattern = (
+                    rf"^{cls.column_prefix}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
+                )
             else:
-                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?: _[a-z]+)*(_[2-5])?$"
+                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
 
             file_columns = [
                 col for col in headers if re.match(pattern, col, re.IGNORECASE)
