@@ -1352,6 +1352,40 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             get_valid_filename("Another video") in related_video.original.content.name
         )
 
+    def test_related_videos_multiple_files(self):
+        file_content = get_sample_file(
+            "import_job/related_videos_multiple.csv", self.MIMETYPE
+        )
+        file = FileFactory(content=file_content)
+        import_job = ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(6, "related_video", "video", import_job)
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.get(title="Word 1")
+        related_video_1 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-1")
+        self.assert_related_video_details("related_video", related_video_1, "-1")
+        related_video_2 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-2")
+        self.assert_related_video_details("related_video", related_video_2, "-2")
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_video_3 = entry_2.related_videos.get(title=f"{self.VIDEO_TITLE}-3")
+        self.assert_related_video_details("related_video", related_video_3, "-3")
+        related_video_4 = entry_2.related_videos.get(title=f"{self.VIDEO_TITLE}-4")
+        self.assert_related_video_details("related_video", related_video_4, "-4")
+
+        entry_3 = DictionaryEntry.objects.get(title="Word 3")
+        related_video_5 = entry_3.related_videos.get(title=f"{self.VIDEO_TITLE}-5")
+        self.assert_related_video_details("related_video", related_video_5, "-5")
+        related_video_6 = entry_3.related_videos.get(title=f"{self.VIDEO_TITLE}-6")
+        self.assert_related_video_details("related_video", related_video_6, "-6")
+
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
 
