@@ -4,6 +4,10 @@ ARG caddy_image=caddy:2.10.0-alpine
 FROM $python_image AS django-common
 ENV DEBUG_DISABLE=True
 
+# To fix flagged vulnerabilities, can be removed later once
+# they're added to an updated python base image above
+RUN pip install "setuptools>=78.1.1" --no-cache-dir
+
 WORKDIR /app
 RUN apk add --no-cache \
     build-base \
@@ -32,5 +36,13 @@ COPY --from=static-collector /app/firstvoices/static /srv
 
 # or django-runtime for the api server. this is last so that it's the default if no target specified
 FROM django-common AS django-runtime
+
+# Create non-root user and group
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Give ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 8000
 CMD ["gunicorn", "--timeout", "120", "-b", "0.0.0.0:8000", "firstvoices.wsgi:application"]
