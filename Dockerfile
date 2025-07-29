@@ -9,7 +9,9 @@ ENV DEBUG_DISABLE=True
 RUN pip install "setuptools>=78.1.1" --no-cache-dir
 
 WORKDIR /app
-RUN apk add --no-cache \
+RUN apk update && \
+    apk upgrade sqlite-libs && \
+    apk add --no-cache \
     build-base \
     ffmpeg \
     git \
