@@ -62,7 +62,7 @@ class GallerySummarySerializer(WritableSiteContentSerializer):
         Validate that gallery items are unique. Must be done before create/update.
         """
         gallery_items = attrs.get("galleryitem_set", [])
-        if len(gallery_items) != len({x for x in gallery_items}):
+        if len(gallery_items) != len(set(gallery_items)):
             raise serializers.ValidationError("Gallery items must be unique.")
         return super().validate(attrs)
 
