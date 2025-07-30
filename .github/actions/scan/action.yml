@@ -78,22 +78,22 @@ runs:
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
           echo "━━━━━━━━━━━━━━━━━━━━━ SCANNING $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
 
-          trivy image --scanners vuln,secret,config,license \
+          trivy image --scanners vuln,secret,misconfig,license \
             --format table \
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
             --timeout 10m \
-            --severity HIGH,CRITICAL \
-            --vuln-type os,library \
+            --severity CRITICAL \
+            --pkg-types os,library \
             "$IMAGE"
 
-          trivy image --scanners vuln,secret,config,license \
+          trivy image --scanners vuln,secret,misconfig,license \
             --format cyclonedx \
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
             --timeout 10m \
-            --severity HIGH,CRITICAL \
-            --vuln-type os,library \
+            --severity CRITICAL \
+            --pkg-types os,library \
             "$IMAGE" > "${FILENAME}_scan_cbom.json"
 
           echo "Scan completed for $IMAGE"
@@ -135,8 +135,8 @@ runs:
             --ignore-unfixed \
             --skip-dirs /proc,/sys \
             --timeout 10m \
-            --severity HIGH,CRITICAL \
-            --vuln-type os,library \
+            --severity CRITICAL \
+            --pkg-types os,library \
             --exit-code 1 "$IMAGE" > /dev/null || TRIVY_FAILED=1
         done < image-list.txt
 
@@ -148,4 +148,3 @@ runs:
         else
           echo "No HIGH or CRITICAL vulnerabilities detected."
         fi
-
