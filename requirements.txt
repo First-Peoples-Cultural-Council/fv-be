@@ -77,7 +77,7 @@ python-magic==0.4.27
 pytz==2025.2
 PyYAML==6.0.2
 redis==6.2.0
-regex==2024.11.6
+regex==2025.7.34
 requests==2.32.4
 rules==3.5
 sentry-sdk==2.33.1
