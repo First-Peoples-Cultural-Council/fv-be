@@ -50,7 +50,11 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
     @classmethod
     def make_queryset_eager(cls, queryset, user=None):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("original")
+        return queryset.select_related(
+            "original",
+            "created_by",
+            "last_modified_by",
+        )
 
 
 class AudioMinimalSerializer(MediaMinimalSerializer):
@@ -160,7 +164,11 @@ class DictionaryEntryMinimalSerializer(
     @classmethod
     def make_queryset_eager(cls, queryset, user):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
+        return queryset.select_related(
+            "site",
+            "created_by",
+            "last_modified_by",
+        ).prefetch_related(
             Prefetch(
                 "related_audio",
                 queryset=Audio.objects.visible(user)
