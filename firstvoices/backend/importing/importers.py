@@ -306,6 +306,8 @@ class DictionaryEntryImporter(BaseImporter):
         "visibility",
         "include_on_kids_site",
         "include_in_games",
+        "external_system",
+        "external_system_entry_id",
     ]
     supported_columns_multiple = [
         "translation",
