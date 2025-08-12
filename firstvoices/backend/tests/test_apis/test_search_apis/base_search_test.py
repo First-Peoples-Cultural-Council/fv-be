@@ -2,7 +2,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from elasticsearch_dsl import Search
+from elasticsearch.dsl import Search
 
 from backend.pagination import SearchPageNumberPagination
 

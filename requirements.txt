@@ -32,8 +32,7 @@ drf-nested-routers==0.94.2  # https://github.com/alanjds/drf-nested-routers/
 drf-spectacular==0.28.0
 editdistance==0.8.1
 elastic-transport==8.17.1
-elasticsearch==7.13.4
-elasticsearch-dsl==7.4.1
+elasticsearch==8.18.0
 et-xmlfile==2.0.0
 eventlet==0.40.1
 factory-boy==3.3.3

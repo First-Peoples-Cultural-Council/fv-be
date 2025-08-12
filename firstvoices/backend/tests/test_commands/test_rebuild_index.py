@@ -27,7 +27,7 @@ class TestRebuildIndex:
     def test_base_case(self, caplog):
         # Testing all indices are rebuild if no args are passed.
         with patch(
-            "elasticsearch_dsl.connections.Connections.get_connection",
+            "elasticsearch.dsl.connections.Connections.get_connection",
             return_value=self.mock_connection,
         ), patch(
             "backend.management.commands.rebuild_index.Command.index_managers",
@@ -45,7 +45,7 @@ class TestRebuildIndex:
     def test_valid_index_name_passed(self, caplog):
         # Testing all indices are rebuild if no args are passed.
         with patch(
-            "elasticsearch_dsl.connections.Connections.get_connection",
+            "elasticsearch.dsl.connections.Connections.get_connection",
             return_value=self.mock_connection,
         ), patch(
             "backend.management.commands.rebuild_index.Command.index_managers",
@@ -60,7 +60,7 @@ class TestRebuildIndex:
 
     def test_invalid_index_provided(self, caplog):
         with patch(
-            "elasticsearch_dsl.connections.Connections.get_connection",
+            "elasticsearch.dsl.connections.Connections.get_connection",
             return_value=self.mock_connection,
         ), patch(
             "backend.management.commands.rebuild_index.Command.index_managers",
