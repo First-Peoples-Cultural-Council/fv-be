@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
@@ -9,7 +9,9 @@ from django.utils.text import get_valid_filename
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.files import File
 from backend.models.import_jobs import JobStatus
+from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
@@ -85,6 +87,45 @@ class TestBulkImportDryRun:
             import_job=import_job,
         )
         return import_job
+
+    def import_with_missing_media(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+        validated_import_job = ImportJob.objects.get(id=import_job.id)
+
+        assert validated_import_job.validation_report.error_rows == 3
+
+        return validated_import_job
+
+    def add_missing_media_and_validate(self, import_job):
+        # Add the media to the db
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        factories.ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+        factories.VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
 
     def test_import_task_logs(self, caplog):
         import_job = self.import_minimal_dictionary_entries()
@@ -541,56 +582,53 @@ class TestBulkImportDryRun:
         assert import_job.failed_rows_csv is None
 
     def test_missing_media(self):
-        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        validate_import_job(import_job.id)
-
-        # Media should be missing initially
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-        error_rows = validation_report.rows.all().order_by("row_number")
+        import_job = self.import_with_missing_media()
+        error_rows = import_job.validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
-        assert validation_report.new_rows == 0
-        assert validation_report.error_rows == 3
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
-            "Media file not found in uploaded files: sample-audio.mp3."
+            "Media file missing in uploaded files: sample-audio.mp3."
             in error_rows[0].errors
         )
         assert (
-            "Media file not found in uploaded files: sample-image.jpg."
+            "Media file missing in uploaded files: sample-image.jpg."
             in error_rows[1].errors
         )
         assert (
-            "Media file not found in uploaded files: video_example_small.mp4."
+            "Media file missing in uploaded files: video_example_small.mp4."
             in error_rows[2].errors
         )
 
     def test_all_media_present(self):
-        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-        )
-        validate_import_job(import_job.id)
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
 
-        # Media should be missing initially
+        self.add_missing_media_and_validate(import_job)
+
+        # Verifying all missing media errors are resolved now
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 3
+        assert validation_report.error_rows == 0
+        assert validation_report.rows.count() == 0
 
-        # Adding media to db
+    def test_failed_rows_csv_deleted(self):
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
+        failed_rows_csv_id = import_job.failed_rows_csv.id
+
+        self.add_missing_media_and_validate(import_job)
+
+        import_job_csv = File.objects.filter(id=failed_rows_csv_id)
+        assert len(import_job_csv) == 0
+
+    def test_failed_rows_csv_deleted_and_replaced(self):
+        # Start with a validated import job that has missing media
+        import_job = self.import_with_missing_media()
+        first_failed_rows_csv_id = import_job.failed_rows_csv.id
+
+        # Add some of the media to the db
         factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
@@ -601,22 +639,25 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        factories.VideoFileFactory(
-            site=self.site,
-            content=get_sample_file("video_example_small.mp4", "video/mp4"),
-            import_job=import_job,
-        )
 
         # Validating again
         import_job.validation_status = JobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
-        # Verifying all missing media errors are resolved now
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-        assert validation_report.error_rows == 0
-        assert validation_report.rows.count() == 0
+        revalidated_import_job = ImportJob.objects.get(id=import_job.id)
+
+        # Check that the out of date csv has been deleted
+        first_failed_rows_csv = File.objects.filter(
+            site=self.site, id=first_failed_rows_csv_id
+        )
+        assert len(first_failed_rows_csv) == 0
+
+        # Confirm there is a new csv
+        assert first_failed_rows_csv_id != revalidated_import_job.failed_rows_csv.id
+        assert revalidated_import_job.failed_rows_csv is not None
+        validation_report = revalidated_import_job.validation_report
+        assert validation_report.error_rows == 1
 
     def test_related_audio_speakers(self):
         file_content = get_sample_file("import_job/related_audio.csv", self.MIMETYPE)
@@ -955,6 +996,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         confirm_import_job(import_job.id)
+        return import_job
 
     def test_import_task_logs(self, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
@@ -993,12 +1035,15 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert word.type == TypeOfDictionaryEntry.WORD
         assert word.created_by == self.user
         assert word.last_modified_by == self.user
-
+        assert word.system_last_modified >= word.last_modified
+        assert word.system_last_modified_by == import_job.created_by
         # phrase
         phrase = DictionaryEntry.objects.filter(title="xyz")[0]
         assert phrase.type == TypeOfDictionaryEntry.PHRASE
         assert phrase.created_by == self.user
         assert phrase.last_modified_by == self.user
+        assert phrase.system_last_modified >= phrase.last_modified
+        assert phrase.system_last_modified_by == import_job.created_by
 
     def test_all_columns_dictionary_entries(self):
         file_content = get_sample_file(
@@ -1190,11 +1235,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
         confirm_import_job(import_job.id)
 
-        import_job = ImportJob.objects.get(id=import_job.id)
-        validation_report = import_job.validation_report
-
-        assert validation_report.error_rows == 5
-
         imported_entries = DictionaryEntry.objects.all()
         assert len(imported_entries) == 1
         assert imported_entries[0].title == "Phrase 1"
@@ -1284,7 +1324,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_audio(self):
-        self.confirm_upload_with_media_files("related_audio.csv")
+        import_job = self.confirm_upload_with_media_files("related_audio.csv")
 
         entry_with_audio = DictionaryEntry.objects.get(title="Word 1")
         related_audio = entry_with_audio.related_audio.all()
@@ -1297,6 +1337,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.acknowledgement == "Test Ack"
         assert related_audio.exclude_from_kids is False
         assert related_audio.exclude_from_games is True
+        assert related_audio.system_last_modified >= related_audio.last_modified
+        assert related_audio.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_audio = entry_2.related_audio.all()
@@ -1307,7 +1349,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_images(self):
-        self.confirm_upload_with_media_files("related_images.csv")
+        import_job = self.confirm_upload_with_media_files("related_images.csv")
 
         entry_with_image = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_images = entry_with_image.related_images.all()
@@ -1319,6 +1361,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image.description == "Testing image upload"
         assert related_image.acknowledgement == "Test Ack"
         assert related_image.exclude_from_kids is False
+        assert related_image.system_last_modified >= related_image.last_modified
+        assert related_image.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_images = entry_2.related_images.all()
@@ -1329,7 +1373,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
     def test_related_videos(self):
-        self.confirm_upload_with_media_files("related_videos.csv")
+        import_job = self.confirm_upload_with_media_files("related_videos.csv")
 
         entry_with_video = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_videos = entry_with_video.related_videos.all()
@@ -1341,6 +1385,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_video.description == "Testing video upload"
         assert related_video.acknowledgement == "Test Ack"
         assert related_video.exclude_from_kids is False
+        assert related_video.system_last_modified >= related_video.last_modified
+        assert related_video.system_last_modified_by == import_job.created_by
 
         entry_2 = DictionaryEntry.objects.get(title="Word 2")
         related_videos = entry_2.related_videos.all()
@@ -1418,3 +1464,92 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio_entry_1 == related_audio_entry_2 == related_audio_entry_3
         assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
         assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3
+
+    def test_unused_media_deleted(self):
+        file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        # Adding media that is referenced in the csv
+        audio_in_csv = factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        image_in_csv = factories.ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+
+        video_in_csv = factories.VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        # Adding additional media that is not in the csv
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        factories.ImageFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another image.jpg", "image/jpeg"),
+            import_job=import_job,
+        )
+
+        factories.VideoFileFactory(
+            site=self.site,
+            content=get_sample_file("import_job/Another video.mp4", "video/mp4"),
+            import_job=import_job,
+        )
+
+        confirm_import_job(import_job.id)
+
+        images = ImageFile.objects.filter(import_job_id=import_job.id)
+        files = File.objects.filter(import_job_id=import_job.id)
+        videos = VideoFile.objects.filter(import_job_id=import_job.id)
+
+        # Verifying only media included in csv are present after import job completion
+        assert images.count() == 1 and images[0].id == image_in_csv.id
+        assert files.count() == 1 and files[0].id == audio_in_csv.id
+        assert videos.count() == 1 and videos[0].id == video_in_csv.id
+
+    def test_exception_deleting_unused_media(self, caplog):
+        # Simulating a general exception when deleting unused media files
+
+        file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            status=JobStatus.ACCEPTED,
+            validation_status=JobStatus.COMPLETE,
+        )
+
+        mock_objects = MagicMock()
+        mock_objects.delete.side_effect = Exception("General Exception")
+        with patch(
+            "backend.tasks.import_job_tasks.File.objects.filter",
+            return_value=mock_objects,
+        ):
+            confirm_import_job(import_job.id)
+
+        assert (
+            "An exception occurred while trying to delete unused media files."
+            in caplog.text
+        )
+
+        updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
+        assert updated_import_job.status == JobStatus.COMPLETE

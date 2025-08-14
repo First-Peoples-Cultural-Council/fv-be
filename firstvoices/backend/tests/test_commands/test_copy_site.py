@@ -129,6 +129,10 @@ class TestCopySite:
         assert "DictionaryEntry count:: source: 0, target: 0, map: 0" in caplog.text
         assert "ImmersionLabels count:: source: 0, target: 0" in caplog.text
 
+    @staticmethod
+    def assert_system_last_modified_updated(source, target):
+        assert target.system_last_modified > source.system_last_modified
+
     def test_site_attributes(self):
         self.call_copy_site_command()
 
@@ -148,6 +152,7 @@ class TestCopySite:
 
         assert target_site.created_by.email == self.superadmin_user.email
         assert target_site.last_modified_by.email == self.superadmin_user.email
+        self.assert_system_last_modified_updated(source_site, target_site)
 
     def test_site_features(self):
         source_feature_enabled = SiteFeatureFactory.create(
@@ -168,6 +173,9 @@ class TestCopySite:
 
         assert target_feature_enabled.is_enabled == source_feature_enabled.is_enabled
         assert target_feature_disabled.is_enabled == source_feature_disabled.is_enabled
+        self.assert_system_last_modified_updated(
+            source_feature_enabled, target_feature_enabled
+        )
 
     @pytest.mark.parametrize("char_variant_present", [True, False])
     def test_characters_and_variants(self, char_variant_present):
@@ -197,6 +205,7 @@ class TestCopySite:
 
         assert target_char.title == source_char.title
         assert target_char.sort_order == source_char.sort_order
+        self.assert_system_last_modified_updated(source_char, target_char)
 
         assert target_char.related_images.count() == 2
         assert target_char.related_videos.count() == 2
@@ -261,6 +270,9 @@ class TestCopySite:
         ).distinct()[0]
         assert target_parent_category.title == source_parent_category.title
         child_categories = target_parent_category.children.all()
+        self.assert_system_last_modified_updated(
+            source_parent_category, target_parent_category
+        )
 
         assert child_categories.count() == 2
         assert child_categories[0].title == source_child_category_1.title
@@ -282,10 +294,12 @@ class TestCopySite:
 
         assert target_audio.original != source_audio.original
         assert target_audio.title == source_audio.title
+        self.assert_system_last_modified_updated(source_audio, target_audio)
 
         target_speaker = target_audio.speakers.first()
         assert target_speaker.site.slug == self.TARGET_SLUG
         assert target_speaker.name == source_speaker.name
+        self.assert_system_last_modified_updated(source_speaker, target_speaker)
 
         assert Person.objects.filter(
             site__slug=self.TARGET_SLUG, name=source_extra_person.name
@@ -307,6 +321,7 @@ class TestCopySite:
         assert target_image.thumbnail is None
         assert target_image.small is None
         assert target_image.medium is None
+        self.assert_system_last_modified_updated(source_image, target_image)
 
     def test_videos(self):
         source_video = VideoFactory(site=self.source_site)
@@ -324,6 +339,7 @@ class TestCopySite:
         assert target_video.thumbnail is None
         assert target_video.small is None
         assert target_video.medium is None
+        self.assert_system_last_modified_updated(source_video, target_video)
 
     @pytest.mark.parametrize("cover_image_present", [True, False])
     def test_gallery(self, cover_image_present):
@@ -398,6 +414,7 @@ class TestCopySite:
         assert target_song.related_videos.count() == 2
         assert target_song.related_audio.count() == 2
         assert target_song.related_video_links == source_song.related_video_links
+        self.assert_system_last_modified_updated(source_song, target_song)
 
     def test_stories(self):
         source_img_1 = ImageFactory(site=self.source_site)
@@ -443,6 +460,7 @@ class TestCopySite:
         assert target_story.related_videos.count() == 2
         assert target_story.related_audio.count() == 2
         assert target_story.related_video_links == source_story.related_video_links
+        self.assert_system_last_modified_updated(source_story, target_story)
 
         target_story_page = target_story.pages.all()[0]
 
@@ -565,6 +583,7 @@ class TestCopySite:
         assert target_entry.related_images.count() == 2
         assert target_entry.related_videos.count() == 2
         assert target_entry.related_audio.count() == 2
+        self.assert_system_last_modified_updated(source_entry, target_entry)
 
     def test_immersion_labels(self):
         entry = DictionaryEntryFactory(site=self.source_site)
@@ -581,6 +600,7 @@ class TestCopySite:
             target_imm_label.dictionary_entry.title
             == source_imm_label.dictionary_entry.title
         )
+        self.assert_system_last_modified_updated(source_imm_label, target_imm_label)
 
     def test_missing_audio_original(self, caplog):
         src_audio = AudioFactory(site=self.source_site)

@@ -52,10 +52,10 @@ class Story(
 
     def save(self, *args, **kwargs):
         # normalizing text input
-        self.acknowledgements = list(
-            map(lambda x: clean_input(x), self.acknowledgements)
-        )
-        self.notes = list(map(lambda x: clean_input(x), self.notes))
+        self.acknowledgements = [
+            clean_input(x) for x in self.acknowledgements if x is not None
+        ]
+        self.notes = [clean_input(x) for x in self.notes if x is not None]
 
         super().save(*args, **kwargs)
 
@@ -95,7 +95,7 @@ class StoryPage(TranslatedTextMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     def save(self, *args, **kwargs):
         # normalizing text input
-        self.notes = list(map(lambda x: clean_input(x), self.notes))
+        self.notes = [clean_input(x) for x in self.notes]
 
         # always match the site
         # these are saved in the db rather than set as properties to make permissions on queries simpler

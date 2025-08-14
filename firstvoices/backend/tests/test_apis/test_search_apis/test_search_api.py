@@ -208,7 +208,7 @@ class TestSearchAPI(
         assert response_data["count"] == 0
 
     def test_connection_error(self, mock_search_query_execute):
-        mock_search_query_execute.side_effect = ConnectionError()
+        mock_search_query_execute.side_effect = ConnectionError("Connection Error.")
 
         response = self.client.get(self.get_list_endpoint())
         assert response.status_code == 500

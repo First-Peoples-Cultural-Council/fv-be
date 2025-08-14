@@ -349,6 +349,11 @@ pytest <path to file>
 pytest <path to file containing test> -k '<name of single test>'
 ```
 
+- Run all integration tests:
+```
+pytest backend/integration_tests/
+```
+
 - Reset the test database:
 
 ```

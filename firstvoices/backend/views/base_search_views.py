@@ -101,7 +101,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
     def build_query(self, **kwargs):
         """Subclasses should implement.
 
-        Returns: elasticsearch_dsl.search.Search object specifying the query to execute
+        Returns: elasticsearch.dsl.search.Search object specifying the query to execute
         """
         raise NotImplementedError()
 

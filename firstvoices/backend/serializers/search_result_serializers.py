@@ -30,11 +30,16 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
 
 
 class MediaMinimalSerializer(serializers.ModelSerializer):
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
     class Meta:
         fields = (
             "id",
             "created",
+            "created_by",
             "last_modified",
+            "last_modified_by",
             "original",
             "title",
             "description",
@@ -45,7 +50,11 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
     @classmethod
     def make_queryset_eager(cls, queryset, user=None):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("original")
+        return queryset.select_related(
+            "original",
+            "created_by",
+            "last_modified_by",
+        )
 
 
 class AudioMinimalSerializer(MediaMinimalSerializer):
@@ -123,6 +132,8 @@ class DictionaryEntryMinimalSerializer(
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
     )
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -136,7 +147,9 @@ class DictionaryEntryMinimalSerializer(
         fields = (
             "id",
             "created",
+            "created_by",
             "last_modified",
+            "last_modified_by",
             "visibility",
             "title",
             "type",
@@ -151,7 +164,11 @@ class DictionaryEntryMinimalSerializer(
     @classmethod
     def make_queryset_eager(cls, queryset, user):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
+        return queryset.select_related(
+            "site",
+            "created_by",
+            "last_modified_by",
+        ).prefetch_related(
             Prefetch(
                 "related_audio",
                 queryset=Audio.objects.visible(user)
@@ -175,13 +192,17 @@ class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeria
     related_videos = RelatedVideoMinimalSerializer(
         many=True, required=False, read_only=True
     )
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Song
         fields = (
             "id",
             "created",
+            "created_by",
             "last_modified",
+            "last_modified_by",
             "visibility",
             "title",
             "title_translation",
@@ -219,13 +240,17 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
     related_videos = RelatedVideoMinimalSerializer(
         many=True, required=False, read_only=True
     )
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Story
         fields = (
             "id",
             "created",
+            "created_by",
             "last_modified",
+            "last_modified_by",
             "visibility",
             "title",
             "title_translation",

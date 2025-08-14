@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Keyword, Text
+from elasticsearch.dsl import Keyword, Text
 
 from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
 from backend.search.documents.base_document import BaseDocument

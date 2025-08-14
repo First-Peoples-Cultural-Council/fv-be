@@ -19,5 +19,6 @@ from .story_factories import *  # noqa F401, F403 # isort:skip
 from .immersion_label_factories import *  # noqa F401, F403 # isort:skip
 from .join_request_factories import *  # noqa F401, F403 # isort:skip
 from .import_job_factories import *  # noqa F401, F403 # isort:skip
+from .membership_factories import *  # noqa F401, F403 # isort:skip
 
 from .generic import *  # noqa F401, F403 # isort:skip

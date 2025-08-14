@@ -5,6 +5,7 @@ from import_export import fields, resources, widgets
 from import_export.results import RowResult
 
 from backend.models.constants import Visibility
+from backend.models.import_jobs import ImportJob
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
 from backend.resources.utils.import_export_widgets import (
@@ -26,11 +27,20 @@ class BaseResource(resources.ModelResource):
         widget=UserForeignKeyWidget(),
     )
 
+    system_last_modified_by = fields.Field(
+        column_name="system_last_modified_by",
+        attribute="system_last_modified_by",
+        widget=UserForeignKeyWidget(),
+    )
+
     def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
         super().__init__(**kwargs)
         self.site = site
         self.run_as_user = run_as_user
         self.import_job = import_job
+        self.created_by = (
+            ImportJob.objects.get(id=import_job).created_by if import_job else ""
+        )
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
@@ -38,6 +48,9 @@ class BaseResource(resources.ModelResource):
         dataset.append_col(lambda x: str(self.site.id), header="site")
         dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
         dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
+        dataset.append_col(
+            lambda x: str(self.created_by), header="system_last_modified_by"
+        )
         dataset.append_col(lambda x: str(self.import_job), header="import_job")
 
     def import_row(self, row, instance_loader, **kwargs):

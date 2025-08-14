@@ -6,7 +6,7 @@ from backend.serializers import fields
 
 
 class MTDExportJobSerializer(serializers.ModelSerializer):
-    status = fields.EnumField(enum=JobStatus, read_only=True)
+    status = fields.EnumLabelField(enum=JobStatus, read_only=True)
     task_id = serializers.CharField(read_only=True)
     message = serializers.CharField(read_only=True)
 

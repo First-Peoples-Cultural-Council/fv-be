@@ -9,6 +9,7 @@ from rest_framework.status import HTTP_202_ACCEPTED
 
 from backend.models import ImportJob
 from backend.models.media import SUPPORTED_FILETYPES, File, ImageFile, VideoFile
+from backend.tasks.import_job_tasks import get_associated_filenames
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin
 
@@ -77,7 +78,29 @@ class ImportJobMediaViewSet(
                 f"Can't add media after an import job has started. This job already has status: {import_job.status}."
             )
 
-        for file in self.request.FILES.getlist("file"):
+        request_files = self.request.FILES.getlist("file")
+
+        # Check filetypes raising an error if unsupported, and create a set of filenames in the request
+        filenames = set()
+        for file in request_files:
+            self.get_filetype(file)
+            filenames.add(file.name)
+
+        #  Check for duplicate filenames within the request
+        if len(request_files) > len(filenames):
+            raise ValidationError(
+                "There are one or more duplicate filenames within your upload."
+            )
+
+        #  Check for duplicate filenames compared with already uploaded files
+        uploaded_filenames = get_associated_filenames(import_job)
+
+        if len(set(filenames).intersection(uploaded_filenames)) > 0:
+            raise ValidationError(
+                "You cannot upload a file with the same name as one already uploaded to this import job."
+            )
+
+        for file in request_files:
             filetype = self.get_filetype(file)
             new_file = filetype(
                 content=file,

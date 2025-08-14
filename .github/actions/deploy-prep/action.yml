@@ -56,12 +56,12 @@ runs:
         get_image_digest_ref() {
           local repo="$1"
           local image_digest=$(aws ecr describe-images --repository-name "$repo" \
-            --filter "tagStatus=TAGGED" \
-            --query "reverse(sort_by(imageDetails[?imageTags[0] && starts_with(imageTags[0], \`$TAG_PREFIX\`)], &imagePushedAt))[0].imageDigest" \
-            --output text | head -n 1)
+          --filter "tagStatus=TAGGED" \
+          --query "imageDetails" \
+          --output json | jq -r --arg prefix "$TAG_PREFIX" 'map(select(.imageTags != null and (.imageTags | map(startswith($prefix)) | any))) | sort_by(.imagePushedAt) | last | .imageDigest' | head -n 1)
 
           # If not found, fallback to the latest image regardless of tag
-          if [[ -z "$image_digest" || "$image_digest" == "None" ]]; then
+          if [[ -z "$image_digest" || "$image_digest" == "None" || "$image_digest" == "null" ]]; then
             echo "WARN: No image found with prefix $TAG_PREFIX in $repo, falling back to latest image" >&2
 
             image_digest=$(aws ecr describe-images --repository-name "$repo" \
