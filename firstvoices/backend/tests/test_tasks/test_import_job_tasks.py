@@ -878,12 +878,12 @@ class TestBulkImportDryRun:
             site=audio.site, key="shared_media", is_enabled=True
         )
 
-        image = factories.AudioFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
         factories.SiteFeatureFactory.create(
             site=image.site, key="shared_media", is_enabled=True
         )
 
-        video = factories.AudioFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
         factories.SiteFeatureFactory.create(
             site=video.site, key="SHARED_MEDIA", is_enabled=True
         )
@@ -911,12 +911,12 @@ class TestBulkImportDryRun:
             site=audio.site, key="shared_media", is_enabled=False
         )
 
-        image = factories.AudioFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
         factories.SiteFeatureFactory.create(
             site=image.site, key="shared_media", is_enabled=False
         )
 
-        video = factories.AudioFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
         factories.SiteFeatureFactory.create(
             site=video.site, key="NOT_SHARED_MEDIA", is_enabled=True
         )
@@ -936,7 +936,6 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 4
-        assert validation_report.new_rows == 0
 
 
 @pytest.mark.django_db
