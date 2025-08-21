@@ -181,6 +181,12 @@ class DictionaryEntryMinimalSerializer(
                     "original", "small"
                 ),
             ),
+            Prefetch(
+                "related_videos",
+                queryset=Video.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
         )
 
 
@@ -216,7 +222,17 @@ class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeria
     @classmethod
     def make_queryset_eager(cls, queryset, user):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
+        return queryset.select_related(
+            "site",
+            "created_by",
+            "last_modified_by",
+        ).prefetch_related(
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.visible(user)
+                .select_related("original")
+                .prefetch_related("speakers"),
+            ),
             Prefetch(
                 "related_images",
                 queryset=Image.objects.visible(user).select_related(
@@ -264,7 +280,17 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
     @classmethod
     def make_queryset_eager(cls, queryset, user):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
+        return queryset.select_related(
+            "site",
+            "created_by",
+            "last_modified_by",
+        ).prefetch_related(
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.visible(user)
+                .select_related("original")
+                .prefetch_related("speakers"),
+            ),
             Prefetch(
                 "related_images",
                 queryset=Image.objects.visible(user).select_related(
