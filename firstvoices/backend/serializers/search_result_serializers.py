@@ -31,6 +31,7 @@ class SearchResultPrefetchMixin:
     @classmethod
     def make_queryset_eager(cls, queryset, user):
         return queryset.select_related(
+            "site",
             "created_by",
             "last_modified_by",
         ).prefetch_related(
