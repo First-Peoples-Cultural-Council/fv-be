@@ -64,7 +64,6 @@ class BaseMediaFileImporter(BaseImporter):
         "description",
         "acknowledgement",
         "include_in_kids_site",
-        "include_in_games",
     ]
 
     @classmethod
@@ -158,11 +157,8 @@ class BaseMediaFileImporter(BaseImporter):
         a map of filenames to imported File ids.
         """
 
-        # First, filter out non-supported columns
-        filtered_data = cls.filter_columns(csv_data, cls.get_key_col())
-
-        # Then, split the data into separate datasets for each file
-        split_file_data = cls.split_file_data(filtered_data)
+        # Split the data into separate datasets for each file
+        split_file_data = cls.split_file_data(csv_data)
 
         import_results = []
         filename_map = {}
@@ -202,6 +198,11 @@ class AudioImporter(BaseMediaFileImporter):
     def get_supported_columns(cls):
         speaker_columns = []
         for i in range(1, 6):
+            if i == 1:
+                speaker_columns.append(f"{cls.column_prefix}_include_in_games")
+            else:
+                speaker_columns.append(f"{cls.column_prefix}_{i}_include_in_games")
+
             for j in range(1, 6):
                 if i == 1 and j == 1:
                     speaker_columns.append(f"{cls.column_prefix}_speaker")

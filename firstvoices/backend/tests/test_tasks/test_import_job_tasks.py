@@ -851,24 +851,26 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     def assert_related_media_details(self, related_media, suffix_number=""):
         assert related_media.acknowledgement == f"{self.ACKNOWLEDGEMENT}{suffix_number}"
         assert related_media.exclude_from_kids is False
-        assert related_media.exclude_from_games is True
 
     def assert_related_audio_details(self, filename, related_audio, suffix_number=""):
         assert f"{filename}{suffix_number}.mp3" in related_audio.original.content.name
         assert related_audio.title == f"{self.AUDIO_TITLE}{suffix_number}"
         assert related_audio.description == f"{self.AUDIO_DESCRIPTION}{suffix_number}"
+        assert related_audio.exclude_from_games is True
         self.assert_related_media_details(related_audio, suffix_number)
 
     def assert_related_image_details(self, filename, related_image, suffix_number=""):
         assert f"{filename}{suffix_number}.jpg" in related_image.original.content.name
         assert related_image.title == f"{self.IMAGE_TITLE}{suffix_number}"
         assert related_image.description == f"{self.IMAGE_DESCRIPTION}{suffix_number}"
+        assert related_image.exclude_from_games is False
         self.assert_related_media_details(related_image, suffix_number)
 
     def assert_related_video_details(self, filename, related_video, suffix_number=""):
         assert f"{filename}{suffix_number}.mp4" in related_video.original.content.name
         assert related_video.title == f"{self.VIDEO_TITLE}{suffix_number}"
         assert related_video.description == f"{self.VIDEO_DESCRIPTION}{suffix_number}"
+        assert related_video.exclude_from_games is False
         self.assert_related_media_details(related_video, suffix_number)
 
     def assert_max_speakers(self, related_audio, suffix_number):

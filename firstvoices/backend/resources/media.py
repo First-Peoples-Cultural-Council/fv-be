@@ -90,12 +90,6 @@ class ImageResource(SiteContentResource):
         column_name="img_acknowledgement", attribute="acknowledgement"
     )
 
-    exclude_from_games = fields.Field(
-        column_name="img_include_in_games",
-        attribute="exclude_from_games",
-        widget=InvertedBooleanFieldWidget(column="img_include_in_games", default=False),
-    )
-
     exclude_from_kids = fields.Field(
         column_name="img_include_in_kids_site",
         attribute="exclude_from_kids",
@@ -138,14 +132,6 @@ class VideoResource(SiteContentResource):
 
     acknowledgement = fields.Field(
         column_name="video_acknowledgement", attribute="acknowledgement"
-    )
-
-    exclude_from_games = fields.Field(
-        column_name="video_include_in_games",
-        attribute="exclude_from_games",
-        widget=InvertedBooleanFieldWidget(
-            column="video_include_in_games", default=False
-        ),
     )
 
     exclude_from_kids = fields.Field(
