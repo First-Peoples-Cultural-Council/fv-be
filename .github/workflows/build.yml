@@ -151,7 +151,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.sonarcov.txt
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
       - name: Run coverage
         run: |
           coverage combine ./coverage*/.coverage*
@@ -251,7 +251,7 @@ jobs:
       steps:
       -   uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
@@ -282,7 +282,7 @@ jobs:
       steps:
       -   uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
@@ -313,7 +313,7 @@ jobs:
       steps:
       -   uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
@@ -344,12 +344,12 @@ jobs:
       steps:
       - uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
       - name: Download Helm values file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm-values
           path: ./downloads
@@ -374,12 +374,12 @@ jobs:
       steps:
       -   uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
       - name: Download Helm values file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm-values
           path: ./downloads
@@ -404,12 +404,12 @@ jobs:
       steps:
       -   uses: actions/checkout@v5
       - name: Download Helm charts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm
           path: ./
       - name: Download Helm values file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm-values
           path: ./downloads
@@ -458,7 +458,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Download Helm values file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: helm-values
           path: ./downloads
