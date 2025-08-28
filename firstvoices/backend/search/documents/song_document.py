@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Boolean, Keyword, Text
+from elasticsearch.dsl import Boolean, Keyword, Text
 
 from backend.search.constants import ELASTICSEARCH_SONG_INDEX
 from backend.search.documents.base_document import BaseSiteEntryWithMediaDocument

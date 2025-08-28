@@ -1,6 +1,6 @@
 import random
 
-from elasticsearch_dsl import Search
+from elasticsearch.dsl import Search
 
 from backend.search.constants import ALL_SEARCH_TYPES
 from backend.search.queries.query_builder_utils import (

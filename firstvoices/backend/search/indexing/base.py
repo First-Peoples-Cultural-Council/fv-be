@@ -1,10 +1,9 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from elasticsearch.dsl import Search, connections
+from elasticsearch.dsl.index import Index
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from elasticsearch.helpers import actions
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
-from elasticsearch_dsl.index import Index
 
 from backend.search import es_logging
 from firstvoices.settings import ELASTICSEARCH_DEFAULT_CONFIG
@@ -73,8 +72,8 @@ class IndexManager:
         new_index = Index(new_index_name)
 
         new_index.settings(
-            number_of_shards=ELASTICSEARCH_DEFAULT_CONFIG["shards"],
-            number_of_replicas=ELASTICSEARCH_DEFAULT_CONFIG["replicas"],
+            number_of_shards=int(ELASTICSEARCH_DEFAULT_CONFIG["shards"]),
+            number_of_replicas=int(ELASTICSEARCH_DEFAULT_CONFIG["replicas"]),
         )
 
         cls._add_document_types(new_index)

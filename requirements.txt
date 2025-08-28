@@ -3,28 +3,28 @@ aniso8601==10.0.1
 asgiref==3.9.1
 async-timeout==5.0.1
 attrs==25.3.0
-boto3==1.39.9
+boto3==1.40.6
 botocore>=1.29.139
 celery==5.5.3
-certifi==2025.7.14
+certifi==2025.8.3
 cffi==1.17.1
 chardet==5.2.0
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
 coloredlogs==15.0.1
 cron-descriptor==1.4.5
-cryptography==45.0.5
+cryptography==45.0.6
 Django==5.1.6
 django-admin-env-notice==1.0.1
 django-celery-beat==2.8.1
 django-cors-headers==4.7.0
 django-coverage-plugin==3.1.1
-django-debug-toolbar==5.2.0
+django-debug-toolbar==6.0.0
 django-embed-video==1.4.10
 django-import-export==4.3.8
 django-rest-framework-condition==0.1.1
 django-storages==1.14.6
 django-timezone-field==7.1
-djangorestframework==3.16.0
+djangorestframework==3.16.1
 djangorestframework-camel-case==1.4.2
 djangorestframework-csv==3.0.2
 draftjs_exporter==5.1.0 # https://github.com/springload/draftjs_exporter
@@ -32,12 +32,11 @@ drf-nested-routers==0.94.2  # https://github.com/alanjds/drf-nested-routers/
 drf-spectacular==0.28.0
 editdistance==0.8.1
 elastic-transport==8.17.1
-elasticsearch==7.13.4
-elasticsearch-dsl==7.4.1
+elasticsearch==8.18.0
 et-xmlfile==2.0.0
-eventlet==0.40.1
+eventlet==0.40.2
 factory-boy==3.3.3
-Faker==37.4.2
+Faker==37.5.3
 ffmpeg-python==0.2.0
 g2p==2.2.2 # https://github.com/roedoejet/g2p
 greenlet==3.2.3
@@ -48,10 +47,10 @@ inflection==0.5.1
 iniconfig==2.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
-jsonschema==4.25.0
+jsonschema==4.25.1
 kombu==5.5.4
 MarkupSafe==3.0.2
-mothertongues @ git+https://github.com/MotherTongues/mothertongues@b985fc3
+mothertongues @ git+https://github.com/MotherTongues/mothertongues@0ea975a
 munkres==1.1.4
 nh3==0.3.0 # https://github.com/messense/nh3
 networkx==3.4.2
@@ -60,7 +59,7 @@ openpyxl==3.1.5
 packaging==25.0
 panphon==0.22.2
 Pillow==11.3.0
-pillow-heif==1.0.0
+pillow-heif==1.1.0
 pluggy==1.6.0
 prompt-toolkit==3.0.51
 psycopg2-binary==2.9.10
@@ -76,11 +75,11 @@ python-dotenv==1.1.1
 python-magic==0.4.27
 pytz==2025.2
 PyYAML==6.0.2
-redis==6.2.0
-regex==2024.11.6
+redis==6.4.0
+regex==2025.7.34
 requests==2.32.4
 rules==3.5
-sentry-sdk==2.33.1
+sentry-sdk==2.34.1
 six==1.17.0
 sqlparse==0.5.3
 tablib==3.8.0

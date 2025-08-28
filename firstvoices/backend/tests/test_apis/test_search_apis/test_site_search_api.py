@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch
 
 import pytest
-from elasticsearch_dsl import Search
+from elasticsearch.dsl import Search
 
 from backend.models.constants import Role, Visibility
 from backend.tests import factories

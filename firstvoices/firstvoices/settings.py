@@ -14,7 +14,7 @@ from pathlib import Path
 
 import sentry_sdk
 from dotenv import load_dotenv
-from elasticsearch_dsl import connections
+from elasticsearch.dsl import connections
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -270,6 +270,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": description,
     "VERSION": "2.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # Fixtures directory for initial data
@@ -292,7 +293,7 @@ CELERY_TASK_IGNORE_RESULT = True
 # Celery tasks are not picked up by autodiscover_tasks() if they are not globally imported. This adds missing tasks.
 # CELERY_IMPORTS = ("backend.tasks.my_task",)
 
-ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
+ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "http://localhost:9200")
 ELASTICSEARCH_PRIMARY_INDEX = os.getenv("ELASTICSEARCH_PRIMARY_INDEX", "fv")
 # The following defaults are defaults in context of non-production environments.
 ELASTICSEARCH_DEFAULT_CONFIG = {

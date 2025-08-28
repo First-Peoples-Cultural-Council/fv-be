@@ -1,8 +1,9 @@
 import re
 
 import tablib
+from django.db.models import Q
 
-from backend.models import ImportJob
+from backend.models.import_jobs import ImportJob
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.resources.media import AudioResource, ImageResource, VideoResource
 
@@ -57,6 +58,7 @@ class BaseImporter:
 
 class BaseMediaFileImporter(BaseImporter):
     column_prefix = ""
+    related_column = ""
 
     supported_column_suffixes = [
         "filename",
@@ -77,6 +79,7 @@ class BaseMediaFileImporter(BaseImporter):
         Uses column prefix, supported suffixes, and multiplies them to create the full list.
         """
         columns = []
+        columns.append(cls.get_referenced_id_col())
         for suffix in cls.supported_column_suffixes:
             columns.append(f"{cls.column_prefix}_{suffix}")
 
@@ -86,7 +89,15 @@ class BaseMediaFileImporter(BaseImporter):
         return columns
 
     @classmethod
-    def filter_rows(cls, data, filename_key):
+    def get_referenced_id_col(cls):
+        return f"{cls.column_prefix}_ids"
+
+    @classmethod
+    def get_related_media_col(cls):
+        return cls.related_column
+
+    @classmethod
+    def filter_rows(cls, data: tablib.Dataset, filename_key: str):
         """
         Removes rows with missing or duplicate filename. Only keeps the first row if multiple rows have same filenames.
         """
@@ -98,9 +109,7 @@ class BaseMediaFileImporter(BaseImporter):
         ]
 
         for row in data.dict:
-            primary_filename = row[filename_key]
-
-            if not primary_filename:
+            if not row[filename_key]:
                 continue
 
             row_filenames = [row[col] for col in filename_columns if col in row]
@@ -151,7 +160,9 @@ class BaseMediaFileImporter(BaseImporter):
         return datasets
 
     @classmethod
-    def import_data(cls, import_job: ImportJob, csv_data: str, dry_run: bool = True):
+    def import_data(
+        cls, import_job: ImportJob, csv_data: tablib.Dataset, dry_run: bool = True
+    ):
         """
         Imports media files listed the given csv data file, and returns import results along with
         a map of filenames to imported File ids.
@@ -170,29 +181,176 @@ class BaseMediaFileImporter(BaseImporter):
                 for col in dataset.headers
             ]
 
-            # filter out duplicate and empty filenames
-            dataset = cls.filter_rows(dataset, cls.get_key_col())
+            if cls.get_key_col() in dataset.headers:
+                # filter out duplicate and empty filenames
+                dataset = cls.filter_rows(dataset, cls.get_key_col())
 
-            import_result = cls.resource(
-                site=import_job.site,
-                run_as_user=import_job.run_as_user,
-                import_job=import_job.id,
-            ).import_data(dataset=dataset, dry_run=dry_run)
+                import_result = cls.resource(
+                    site=import_job.site,
+                    run_as_user=import_job.run_as_user,
+                    import_job=import_job.id,
+                ).import_data(dataset=dataset, dry_run=dry_run)
 
-            if import_result.totals["new"]:
-                for i, row in enumerate(dataset.dict):
-                    filename = row[f"{cls.column_prefix}_filename"]
-                    # for the filename map, store  (row_index, file_id)
-                    filename_map[filename] = (i, row["id"])
+                if import_result.totals["new"]:
+                    for i, row in enumerate(dataset.dict):
+                        filename = row[f"{cls.column_prefix}_filename"]
+                        # for the filename map, store  (row_index, file_id)
+                        filename_map[filename] = (i, row["id"])
 
-            import_results.append(import_result)
+                import_results.append(import_result)
 
         return import_results, filename_map
+
+    @classmethod
+    def add_related_media_column(
+        cls, site_id, data: tablib.Dataset, filename_map: dict
+    ):
+        """Adds a column containing the IDs of related media. If there are no related files, no column is added."""
+        referenced_id_column_idx = cls.get_column_index(
+            data, cls.get_referenced_id_col()
+        )
+        primary_filename_column_idx = cls.get_column_index(data, cls.get_key_col())
+
+        if (not filename_map) and (referenced_id_column_idx == -1):
+            # No related media
+            return data
+
+        new_data = tablib.Dataset()
+        new_data.headers = data.headers
+
+        cls.add_column(new_data, cls.get_related_media_col())
+        referenceable_media_ids = cls.get_referenceable_media_ids(site_id)
+
+        for i, row in enumerate(data.dict):
+            row_data = cls.append_related_ids(
+                list(data[i]),
+                primary_filename_column_idx,
+                filename_map,
+                referenced_id_column_idx,
+                referenceable_media_ids,
+            )
+            new_data.append(row_data)
+
+        return new_data
+
+    @classmethod
+    def append_related_ids(
+        cls,
+        row_data: list,
+        primary_filename_column_idx: int,
+        filename_map: dict,
+        referenced_id_column_idx: int,
+        referenceable_media_ids: list,
+    ):
+        imported_ids = cls.get_imported_ids(
+            row_data, primary_filename_column_idx, filename_map
+        )
+        referenced_ids = cls.get_referenced_ids(
+            row_data, referenced_id_column_idx, referenceable_media_ids
+        )
+        all_related_ids = imported_ids + referenced_ids
+
+        related_id_string = ",".join(all_related_ids)
+        row_data.append(related_id_string)
+
+        return tuple(row_data)
+
+    @classmethod
+    def get_imported_ids(
+        cls, row_data: list, primary_filename_column_idx: int, filename_map: dict
+    ):
+        if primary_filename_column_idx < 0 or filename_map is None:
+            return []
+
+        filename = row_data[primary_filename_column_idx]
+
+        # Get the row identifier from dictionary tuple (row_index, file_id)
+        # Then use the row identifier to find all related files with the same row identifier
+        related_ids = []
+        if filename and filename_map:
+            file_row_identifier = filename_map[filename][0]
+            related_ids = [
+                str(file_id)
+                for (row_index, file_id) in filename_map.values()
+                if row_index == file_row_identifier
+            ]
+
+        return related_ids
+
+    @classmethod
+    def get_column_index(cls, data: tablib.Dataset, column_name: str):
+        """
+        Return the index of column if present in the dataset.
+        """
+        try:
+            column_index = data.headers.index(column_name)
+            return column_index
+        except ValueError:
+            return -1
+
+    @classmethod
+    def add_column(cls, data: tablib.Dataset, column_name: str):
+        """
+        Add provided column to the tablib dataset.
+        """
+        data.append_col([""] * len(data), header=column_name)
+        return data.headers.index(column_name)
+
+    @classmethod
+    def get_referenced_ids(
+        cls, row_data: list, referenced_id_col_idx: int, referenceable_media_ids: list
+    ):
+        if referenced_id_col_idx < 0:
+            return []
+
+        ids = (id_.strip() for id_ in row_data[referenced_id_col_idx].split(","))
+        return [id_ for id_ in ids if id_ and id_ in referenceable_media_ids]
+
+    @classmethod
+    def get_missing_referenced_media(cls, site_id, data):
+        """Return a list of ids from data that do not correspond to media from the given site, or sites with
+        shared media."""
+        column_name = cls.get_referenced_id_col()
+        valid_media_ids = cls.get_referenceable_media_ids(site_id)
+        missing_media_ids = []
+
+        clean_headers = [header.lower() for header in data.headers]
+
+        if column_name.lower() in clean_headers:
+            id_col_idx = clean_headers.index(column_name.lower())
+
+            for idx, media_id_str in enumerate(data.get_col(id_col_idx)):
+                if not media_id_str:
+                    # Do nothing if the field is empty
+                    continue
+
+                media_ids = [
+                    id_.strip() for id_ in media_id_str.split(",") if id_.strip()
+                ]
+                for media_id in media_ids:
+                    if media_id not in valid_media_ids:
+                        missing_media_ids.append({"idx": idx + 1, "id": media_id})
+
+        return missing_media_ids
+
+    @classmethod
+    def get_referenceable_media_ids(cls, site_id):
+        model = cls.resource.Meta.model
+        sites_filter = Q(site=site_id) | Q(
+            site__sitefeature_set__key__iexact="shared_media",
+            site__sitefeature_set__is_enabled=True,
+        )
+
+        return [
+            str(value)
+            for value in model.objects.filter(sites_filter).values_list("id", flat=True)
+        ]
 
 
 class AudioImporter(BaseMediaFileImporter):
     resource = AudioResource
     column_prefix = "audio"
+    related_column = "related_audio"
 
     @classmethod
     def get_supported_columns(cls):
@@ -219,11 +377,13 @@ class AudioImporter(BaseMediaFileImporter):
 class ImageImporter(BaseMediaFileImporter):
     resource = ImageResource
     column_prefix = "img"
+    related_column = "related_images"
 
 
 class VideoImporter(BaseMediaFileImporter):
     resource = VideoResource
     column_prefix = "video"
+    related_column = "related_videos"
 
 
 class DictionaryEntryImporter(BaseImporter):
@@ -246,9 +406,9 @@ class DictionaryEntryImporter(BaseImporter):
         "related_entry",
     ]
     supported_columns_media = [
-        "audio_filename",
-        "img_filename",
-        "video_filename",
+        "related_audio",
+        "related_images",
+        "related_videos",
     ]
 
     @classmethod
@@ -286,33 +446,18 @@ class DictionaryEntryImporter(BaseImporter):
         This method adds related media columns, i.e. "related_images", "related_audio" and fills
         them up with ids from the media maps, by looking them up against the filename columns.
         """
-        filtered_data = cls.filter_data(csv_data)
+        site_id = import_job.site.id
+        data_with_audio = AudioImporter.add_related_media_column(
+            site_id, csv_data, audio_filename_map
+        )
+        data_with_audio_and_images = ImageImporter.add_related_media_column(
+            site_id, data_with_audio, img_filename_map
+        )
+        data_with_media = VideoImporter.add_related_media_column(
+            site_id, data_with_audio_and_images, video_filename_map
+        )
 
-        related_audio_column = cls.add_column(filtered_data, "related_audio")
-        audio_filename_column = cls.get_column_index(filtered_data, "audio_filename")
-        related_image_column = cls.add_column(filtered_data, "related_images")
-        image_filename_column = cls.get_column_index(filtered_data, "img_filename")
-        related_video_column = cls.add_column(filtered_data, "related_videos")
-        video_filename_column = cls.get_column_index(filtered_data, "video_filename")
-
-        for i, row in enumerate(filtered_data.dict):
-            row_list = list(filtered_data[i])
-            cls.add_related_id(
-                row_list,
-                audio_filename_column,
-                related_audio_column,
-                audio_filename_map,
-            )
-            cls.add_related_id(
-                row_list, image_filename_column, related_image_column, img_filename_map
-            )
-            cls.add_related_id(
-                row_list,
-                video_filename_column,
-                related_video_column,
-                video_filename_map,
-            )
-            filtered_data[i] = tuple(row_list)
+        filtered_data = cls.filter_data(data_with_media)
 
         dictionary_entry_import_result = DictionaryEntryResource(
             site=import_job.site,

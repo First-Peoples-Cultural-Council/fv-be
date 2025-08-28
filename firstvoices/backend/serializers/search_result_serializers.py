@@ -23,6 +23,39 @@ from backend.serializers.media_serializers import (
 )
 
 
+class SearchResultPrefetchMixin:
+    """
+    Mixin to add prefetching/select related for entry-type search results.
+    """
+
+    @classmethod
+    def make_queryset_eager(cls, queryset, user):
+        return queryset.select_related(
+            "site",
+            "created_by",
+            "last_modified_by",
+        ).prefetch_related(
+            Prefetch(
+                "related_audio",
+                queryset=Audio.objects.visible(user)
+                .select_related("original")
+                .prefetch_related("speakers"),
+            ),
+            Prefetch(
+                "related_images",
+                queryset=Image.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+            Prefetch(
+                "related_videos",
+                queryset=Video.objects.visible(user).select_related(
+                    "original", "small"
+                ),
+            ),
+        )
+
+
 class PersonMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Person
@@ -50,7 +83,11 @@ class MediaMinimalSerializer(serializers.ModelSerializer):
     @classmethod
     def make_queryset_eager(cls, queryset, user=None):
         """Add prefetching as required by this serializer"""
-        return queryset.select_related("original")
+        return queryset.select_related(
+            "original",
+            "created_by",
+            "last_modified_by",
+        )
 
 
 class AudioMinimalSerializer(MediaMinimalSerializer):
@@ -120,7 +157,7 @@ class VideoMinimalSerializer(ImageMinimalSerializer):
 
 
 class DictionaryEntryMinimalSerializer(
-    ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer
+    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
     translations = TextListField(required=False, allow_empty=True)
@@ -157,26 +194,10 @@ class DictionaryEntryMinimalSerializer(
         )
         read_only_fields = ("id", "title", "type")
 
-    @classmethod
-    def make_queryset_eager(cls, queryset, user):
-        """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
-            Prefetch(
-                "related_audio",
-                queryset=Audio.objects.visible(user)
-                .select_related("original")
-                .prefetch_related("speakers"),
-            ),
-            Prefetch(
-                "related_images",
-                queryset=Image.objects.visible(user).select_related(
-                    "original", "small"
-                ),
-            ),
-        )
 
-
-class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
+class SongMinimalSerializer(
+    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
+):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
@@ -205,26 +226,10 @@ class SongMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeria
         )
         read_only_fields = ("id", "title", "title_translation", "hide_overlay")
 
-    @classmethod
-    def make_queryset_eager(cls, queryset, user):
-        """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
-            Prefetch(
-                "related_images",
-                queryset=Image.objects.visible(user).select_related(
-                    "original", "small"
-                ),
-            ),
-            Prefetch(
-                "related_videos",
-                queryset=Video.objects.visible(user).select_related(
-                    "original", "small"
-                ),
-            ),
-        )
 
-
-class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSerializer):
+class StoryMinimalSerializer(
+    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
+):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
@@ -251,24 +256,6 @@ class StoryMinimalSerializer(ReadOnlyVisibilityFieldMixin, serializers.ModelSeri
             "site",
             "related_images",
             "related_videos",
-        )
-
-    @classmethod
-    def make_queryset_eager(cls, queryset, user):
-        """Add prefetching as required by this serializer"""
-        return queryset.select_related("site").prefetch_related(
-            Prefetch(
-                "related_images",
-                queryset=Image.objects.visible(user).select_related(
-                    "original", "small"
-                ),
-            ),
-            Prefetch(
-                "related_videos",
-                queryset=Video.objects.visible(user).select_related(
-                    "original", "small"
-                ),
-            ),
         )
 
 

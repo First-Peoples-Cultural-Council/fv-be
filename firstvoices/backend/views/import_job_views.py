@@ -66,7 +66,6 @@ from firstvoices.celery import link_error_handler
         },
         parameters=[
             site_slug_parameter,
-            id_parameter,
         ],
     ),
     destroy=extend_schema(

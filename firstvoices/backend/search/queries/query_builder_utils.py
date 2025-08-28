@@ -1,6 +1,6 @@
 from enum import Enum
 
-from elasticsearch_dsl import Q
+from elasticsearch.dsl import Q
 
 from backend.models import Membership
 from backend.models.category import Category

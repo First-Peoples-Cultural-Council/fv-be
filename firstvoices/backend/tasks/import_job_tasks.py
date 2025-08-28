@@ -79,7 +79,8 @@ def generate_report(
     import_job,
     accepted_columns,
     ignored_columns,
-    missing_media,
+    missing_uploaded_media,
+    missing_referenced_media,
     audio_import_results,
     img_import_results,
     video_import_results,
@@ -112,13 +113,24 @@ def generate_report(
     report.save()
 
     # Add media errors to report
-    for missing_media_row in missing_media:
+    for missing_media_row in missing_uploaded_media:
         create_or_append_error_row(
             import_job,
             report,
             row_number=missing_media_row["idx"],
             errors=[
                 f"Media file missing in uploaded files: {missing_media_row['filename']}."
+            ],
+        )
+
+    # Add media errors to report
+    for missing_media_id_row in missing_referenced_media:
+        create_or_append_error_row(
+            import_job,
+            report,
+            row_number=missing_media_id_row["idx"],
+            errors=[
+                f"Referenced media not found for ID: {missing_media_id_row['id']}."
             ],
         )
 
@@ -166,12 +178,20 @@ def attach_csv_to_report(data, import_job, report):
     import_job.save()
 
 
-def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
+def process_import_job_data(
+    data,
+    import_job,
+    missing_uploaded_media=[],
+    missing_referenced_media=[],
+    dry_run=True,
+):
     """
     Primary method that cleans the CSV data, imports resources, and generates a report.
     Used for both dry_run and actual imports.
     """
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(data, missing_media)
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(
+        data, missing_uploaded_media
+    )
 
     # import media first
     audio_import_results, audio_filename_map = AudioImporter.import_data(
@@ -199,7 +219,8 @@ def process_import_job_data(data, import_job, missing_media=[], dry_run=True):
             import_job,
             accepted_columns,
             ignored_columns,
-            missing_media,
+            missing_uploaded_media,
+            missing_referenced_media,
             audio_import_results,
             img_import_results,
             video_import_results,
@@ -214,10 +235,17 @@ def run_import_job(data, import_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_media = get_missing_media(data, import_job)
+    missing_uploaded_media = get_missing_uploaded_media(data, import_job)
+    missing_referenced_media = get_missing_referenced_media(data, import_job.site.id)
 
     try:
-        process_import_job_data(data, import_job, missing_media, dry_run=False)
+        process_import_job_data(
+            data,
+            import_job,
+            missing_uploaded_media,
+            missing_referenced_media,
+            dry_run=False,
+        )
         import_job.status = JobStatus.COMPLETE
         delete_unused_media(import_job)
     except Exception as e:
@@ -233,10 +261,19 @@ def dry_run_import_job(data, import_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_media = get_missing_media(data, import_job)
+    missing_uploaded_media = get_missing_uploaded_media(data, import_job)
+    missing_referenced_media_ids = get_missing_referenced_media(
+        data, import_job.site.id
+    )
 
     try:
-        process_import_job_data(data, import_job, missing_media, dry_run=True)
+        process_import_job_data(
+            data,
+            import_job,
+            missing_uploaded_media,
+            missing_referenced_media_ids,
+            dry_run=True,
+        )
         import_job.validation_status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -269,7 +306,7 @@ def get_associated_filenames(import_job):
     return [file.split("/")[-1] for file in associated_files]
 
 
-def get_missing_media(data, import_job):
+def get_missing_uploaded_media(data, import_job):
     """
     Checks for missing media files in the specified import-job by comparing file names present in the data
     with the uploaded files associated with the import-job.
@@ -294,6 +331,19 @@ def get_missing_media(data, import_job):
                 missing_media.append({"idx": idx + 1, "filename": filename})
 
     return missing_media
+
+
+def get_missing_referenced_media(data, site_id):
+    """
+    Checks the media files referenced by ID in the csv data file and returns errors for any that do not exist or are not
+    from an accessible site (same site or one with shared media)
+    """
+
+    return (
+        AudioImporter.get_missing_referenced_media(site_id, data)
+        + ImageImporter.get_missing_referenced_media(site_id, data)
+        + VideoImporter.get_missing_referenced_media(site_id, data)
+    )
 
 
 def delete_unused_media(import_job):

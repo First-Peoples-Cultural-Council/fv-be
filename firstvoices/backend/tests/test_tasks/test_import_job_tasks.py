@@ -13,18 +13,7 @@ from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
-from backend.tests.factories import (
-    CategoryFactory,
-    DictionaryEntryFactory,
-    FileFactory,
-    ImageFileFactory,
-    ImportJobFactory,
-    PersonFactory,
-    SiteFactory,
-    SongFactory,
-    VideoFileFactory,
-    get_superadmin,
-)
+from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import get_sample_file
 
@@ -34,15 +23,15 @@ class TestBulkImportDryRun:
     MIMETYPE = "text/csv"
 
     def setup_method(self):
-        self.user = get_superadmin()
-        self.site = SiteFactory(visibility=Visibility.PUBLIC)
+        self.user = factories.factories.get_superadmin()
+        self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
     def import_invalid_dictionary_entries(self):
         file_content = get_sample_file(
             "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -58,8 +47,8 @@ class TestBulkImportDryRun:
 
     def import_minimal_dictionary_entries(self):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -75,24 +64,24 @@ class TestBulkImportDryRun:
 
     def import_batch_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
         )
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
@@ -101,8 +90,8 @@ class TestBulkImportDryRun:
 
     def import_with_missing_media(self):
         file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -117,17 +106,17 @@ class TestBulkImportDryRun:
 
     def add_missing_media_and_validate(self, import_job):
         # Add the media to the db
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
@@ -149,8 +138,8 @@ class TestBulkImportDryRun:
 
     def test_base_case_dictionary_entries(self):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -172,8 +161,8 @@ class TestBulkImportDryRun:
         file_content = get_sample_file(
             "import_job/all_valid_columns.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -237,8 +226,8 @@ class TestBulkImportDryRun:
 
     def test_default_values(self):
         file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -272,8 +261,8 @@ class TestBulkImportDryRun:
         file_content = get_sample_file(
             "import_job/invalid_categories.csv", self.MIMETYPE
         )  # 1st row in the file a valid row for control
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -295,8 +284,8 @@ class TestBulkImportDryRun:
 
     def test_validation_report_columns(self):
         file_content = get_sample_file("import_job/unknown_columns.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -321,8 +310,8 @@ class TestBulkImportDryRun:
         file_content = get_sample_file(
             "import_job/original_header_missing.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -347,8 +336,8 @@ class TestBulkImportDryRun:
         file_content = get_sample_file(
             "import_job/boolean_variations.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -373,10 +362,10 @@ class TestBulkImportDryRun:
 
     def test_existing_related_entries(self):
         # For entries that are already present in the db
-        DictionaryEntryFactory(
+        factories.DictionaryEntryFactory(
             site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
-        DictionaryEntryFactory(
+        factories.DictionaryEntryFactory(
             site=self.site,
             type=TypeOfDictionaryEntry.PHRASE,
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
@@ -385,8 +374,8 @@ class TestBulkImportDryRun:
         file_content = get_sample_file(
             "import_job/valid_related_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -405,13 +394,15 @@ class TestBulkImportDryRun:
     def test_invalid_related_entries(self):
         # For entries that are already present in the db
         # Referring to a different model
-        SongFactory(site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c"))
+        factories.SongFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
 
         file_content = get_sample_file(
             "import_job/invalid_related_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -442,11 +433,11 @@ class TestBulkImportDryRun:
         )
 
     def test_dry_run_failed(self, caplog):
-        file = FileFactory(
+        file = factories.FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
-        import_job = ImportJobFactory(
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -510,8 +501,8 @@ class TestBulkImportDryRun:
     )
     def test_invalid_validation_status(self, validation_status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -528,8 +519,8 @@ class TestBulkImportDryRun:
     )
     def test_invalid_job_status(self, status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -549,8 +540,8 @@ class TestBulkImportDryRun:
         # If the last validation is successful, the failed rows csv should
         # be updated or deleted
         file_content = get_sample_file("import_job/invalid_m2m.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -571,7 +562,7 @@ class TestBulkImportDryRun:
         assert import_job.failed_rows_csv is not None
 
         # Adding invalid_category as a category to the site
-        CategoryFactory.create(title="invalid", site=self.site)
+        factories.CategoryFactory.create(title="invalid", site=self.site)
 
         # Validating again
         import_job.validation_status = JobStatus.ACCEPTED
@@ -638,12 +629,12 @@ class TestBulkImportDryRun:
         first_failed_rows_csv_id = import_job.failed_rows_csv.id
 
         # Add some of the media to the db
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
@@ -670,19 +661,19 @@ class TestBulkImportDryRun:
 
     def test_related_audio_speakers(self):
         file_content = get_sample_file("import_job/related_audio.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
         )
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
             import_job=import_job,
@@ -697,8 +688,8 @@ class TestBulkImportDryRun:
             in validation_report.rows.all()[0].errors
         )
 
-        PersonFactory.create(name="Test Speaker 1", site=self.site)
-        PersonFactory.create(name="Test Speaker 2", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 1", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 2", site=self.site)
 
         import_job.validation_status = JobStatus.ACCEPTED
         import_job.save()
@@ -740,14 +731,211 @@ class TestBulkImportDryRun:
         # If multiple rows have same filenames, only the first media instance will be imported
         # and used. The rest of the media will not be imported and should not give any issues.
         import_job = self.import_batch_with_media_files("duplicate_media_filenames.csv")
-        PersonFactory.create(name="Test Speaker 1", site=self.site)
-        PersonFactory.create(name="Test Speaker 2", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 1", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 2", site=self.site)
 
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
+
+    def test_related_media_id_columns_accepted(self):
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "img_ids" in validation_report.accepted_columns
+        assert "video_ids" in validation_report.accepted_columns
+
+    def test_related_media_id_and_filename_columns_accepted(self):
+        file_content = get_sample_file(
+            "import_job/minimal_media_mixed.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "audio_filename" in validation_report.accepted_columns
+        assert "img_ids" in validation_report.accepted_columns
+        assert "img_filename" in validation_report.accepted_columns
+        assert "video_ids" in validation_report.accepted_columns
+        assert "video_filename" in validation_report.accepted_columns
+
+    def test_related_media_id_does_not_exist(self):
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
+
+    def test_related_media_id_wrong_site(self):
+        factories.AudioFactory.create()
+        factories.ImageFactory.create()
+        factories.VideoFactory.create()
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
+
+    def test_related_media_id_wrong_type(self):
+        factories.AudioFactory.create(
+            site=self.site, id="4764e764-7830-4bea-b30e-4e35cc93b12b"
+        )  # video_id
+        factories.ImageFactory.create(
+            site=self.site, id="7763ae50-1b6e-46bc-bd3a-91037ac736cb"
+        )  # audio_id
+        factories.VideoFactory.create(
+            site=self.site, id="daf8e74f-f20b-4c81-95c2-7dd744277009"
+        )  # image_id
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
+
+    def test_related_media_id_success_same_site(self):
+        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        factories.ImageFactory.create(
+            id="daf8e74f-f20b-4c81-95c2-7dd744277009", site=audio.site
+        )
+        factories.VideoFactory.create(
+            id="4764e764-7830-4bea-b30e-4e35cc93b12b", site=audio.site
+        )
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=audio.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.new_rows == 4
+
+    def test_related_media_id_success_shared_site(self):
+        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        factories.SiteFeatureFactory.create(
+            site=audio.site, key="shared_media", is_enabled=True
+        )
+
+        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        factories.SiteFeatureFactory.create(
+            site=image.site, key="shared_media", is_enabled=True
+        )
+
+        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        factories.SiteFeatureFactory.create(
+            site=video.site, key="SHARED_MEDIA", is_enabled=True
+        )
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.new_rows == 4
+
+    def test_related_media_id_failed_shared_site(self):
+        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        factories.SiteFeatureFactory.create(
+            site=audio.site, key="shared_media", is_enabled=False
+        )
+
+        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        factories.SiteFeatureFactory.create(
+            site=image.site, key="shared_media", is_enabled=False
+        )
+
+        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        factories.SiteFeatureFactory.create(
+            site=video.site, key="NOT_SHARED_MEDIA", is_enabled=True
+        )
+
+        file_content = get_sample_file(
+            "import_job/minimal_media_ids.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
 
 
 @pytest.mark.django_db
@@ -768,13 +956,13 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         return (uuid.uuid4(),)
 
     def setup_method(self):
-        self.user = get_superadmin()
-        self.site = SiteFactory(visibility=Visibility.PUBLIC)
+        self.user = factories.get_superadmin()
+        self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
     def confirm_upload_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -782,34 +970,34 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
 
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1", site=self.site)
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2", site=self.site)
-        FileFactory(
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 1", site=self.site)
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 2", site=self.site)
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another image.jpg", "audio/mpeg"),
             import_job=import_job,
         )
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another video.mp4", "video/mp4"),
             import_job=import_job,
@@ -822,17 +1010,17 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         if file_type == "audio":
             base_file = "sample-audio.mp3"
             file_ext = ".mp3"
-            media_factory = FileFactory
+            media_factory = factories.FileFactory
             mimetype = "audio/mpeg"
         elif file_type == "image":
             base_file = "sample-image.jpg"
             file_ext = ".jpg"
-            media_factory = ImageFileFactory
+            media_factory = factories.ImageFileFactory
             mimetype = "image/jpeg"
         elif file_type == "video":
             base_file = "video_example_small.mp4"
             file_ext = ".mp4"
-            media_factory = VideoFileFactory
+            media_factory = factories.VideoFileFactory
             mimetype = "video/mp4"
         else:
             return
@@ -883,8 +1071,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_import_task_logs(self, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -902,8 +1090,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_base_case_dictionary_entries(self):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -932,8 +1120,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/all_valid_columns.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -992,8 +1180,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_default_values(self):
         file_content = get_sample_file("import_job/default_values.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1021,12 +1209,12 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert empty_kids_flag.exclude_from_kids is False
 
     def test_import_job_failed(self, caplog):
-        file = FileFactory(
+        file = factories.FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
         )
 
         # Mock that the task has already completed
-        import_job = ImportJobFactory(
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1047,15 +1235,15 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_existing_related_entries(self):
         # For entries that are already present in the db
-        existing_entry = DictionaryEntryFactory(
+        existing_entry = factories.DictionaryEntryFactory(
             site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
 
         file_content = get_sample_file(
             "import_job/valid_related_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             data=file,
             run_as_user=self.user,
@@ -1073,10 +1261,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_multiple_existing_related_entries(self):
         # For entries that are already present in the db
-        existing_entry_1 = DictionaryEntryFactory(
+        existing_entry_1 = factories.DictionaryEntryFactory(
             site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
         )
-        existing_entry_2 = DictionaryEntryFactory(
+        existing_entry_2 = factories.DictionaryEntryFactory(
             site=self.site,
             type=TypeOfDictionaryEntry.PHRASE,
             id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
@@ -1085,8 +1273,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/valid_related_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             data=file,
             run_as_user=self.user,
@@ -1109,8 +1297,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             data=file,
             run_as_user=self.user,
@@ -1129,8 +1317,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/invalid_m2m.csv", self.MIMETYPE
         )  # 1st row in the file a valid row for control
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1146,8 +1334,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_import_id_added_to_imported_entries(self):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1170,8 +1358,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     )
     def test_invalid_status(self, status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site, run_as_user=self.user, data=file, status=status
         )
 
@@ -1189,8 +1377,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     )
     def test_invalid_validation_status(self, validation_status, caplog):
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1230,8 +1418,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/related_audio_multiple.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1240,10 +1428,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         self.upload_multiple_media_files(6, "related_audio", "audio", import_job)
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-1", site=self.site)
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-2", site=self.site)
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-1", site=self.site)
-        PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-2", site=self.site)
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-1", site=self.site)
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 1-2", site=self.site)
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-1", site=self.site)
+        factories.PersonFactory.create(name=f"{self.TEST_SPEAKER} 2-2", site=self.site)
 
         confirm_import_job(import_job.id)
 
@@ -1300,8 +1488,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/related_images_multiple.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1354,8 +1542,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/related_videos_multiple.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1388,8 +1576,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/related_media_full.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1403,7 +1591,9 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         for x in range(1, 6):
             for z in range(1, 6):
-                PersonFactory.create(name=f"Test Speaker {x}-{z}", site=self.site)
+                factories.PersonFactory.create(
+                    name=f"Test Speaker {x}-{z}", site=self.site
+                )
 
         confirm_import_job(import_job.id)
 
@@ -1468,31 +1658,31 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         file_content = get_sample_file(
             "import_job/duplicate_media_filenames.csv", self.MIMETYPE
         )
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
         )
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
-        PersonFactory.create(name="Test Speaker 1", site=self.site)
-        PersonFactory.create(name="Test Speaker 2", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 1", site=self.site)
+        factories.PersonFactory.create(name="Test Speaker 2", site=self.site)
 
         confirm_import_job(import_job.id)
 
@@ -1517,8 +1707,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
     def test_unused_media_deleted(self):
         file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
@@ -1527,38 +1717,38 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         # Adding media that is referenced in the csv
-        audio_in_csv = FileFactory(
+        audio_in_csv = factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
 
-        image_in_csv = ImageFileFactory(
+        image_in_csv = factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
             import_job=import_job,
         )
 
-        video_in_csv = VideoFileFactory(
+        video_in_csv = factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("video_example_small.mp4", "video/mp4"),
             import_job=import_job,
         )
 
         # Adding additional media that is not in the csv
-        FileFactory(
+        factories.FileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
 
-        ImageFileFactory(
+        factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another image.jpg", "image/jpeg"),
             import_job=import_job,
         )
 
-        VideoFileFactory(
+        factories.VideoFileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another video.mp4", "video/mp4"),
             import_job=import_job,
@@ -1579,8 +1769,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         # Simulating a general exception when deleting unused media files
 
         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-        file = FileFactory(content=file_content)
-        import_job = ImportJobFactory(
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,

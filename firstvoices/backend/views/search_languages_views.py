@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from elasticsearch_dsl import Q, Search
+from elasticsearch.dsl import Q, Search
 
 from backend.models.sites import Site
 from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
@@ -109,7 +109,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
 
     def build_query(self, q, **kwargs):
         """
-        Returns: elasticsearch_dsl.search.Search object specifying the query to execute
+        Returns: elasticsearch.dsl.search.Search object specifying the query to execute
         """
         if q:
             return self.build_search_term_query(q)
