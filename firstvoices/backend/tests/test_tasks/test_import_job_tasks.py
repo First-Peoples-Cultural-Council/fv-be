@@ -17,6 +17,21 @@ from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import get_sample_file
 
+TEST_AUDIO_IDS = [
+    "7763ae50-1b6e-46bc-bd3a-91037ac736cb",
+    "addd0095-581f-40b9-afef-fbb394876df7",
+]
+
+TEST_IMAGE_IDS = [
+    "daf8e74f-f20b-4c81-95c2-7dd744277009",
+    "90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",
+]
+
+TEST_VIDEO_IDS = [
+    "4764e764-7830-4bea-b30e-4e35cc93b12b",
+    "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
+]
+
 
 @pytest.mark.django_db
 class TestBulkImportDryRun:
@@ -820,15 +835,9 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 4
 
     def test_related_media_id_wrong_type(self):
-        factories.AudioFactory.create(
-            site=self.site, id="4764e764-7830-4bea-b30e-4e35cc93b12b"
-        )  # video_id
-        factories.ImageFactory.create(
-            site=self.site, id="7763ae50-1b6e-46bc-bd3a-91037ac736cb"
-        )  # audio_id
-        factories.VideoFactory.create(
-            site=self.site, id="daf8e74f-f20b-4c81-95c2-7dd744277009"
-        )  # image_id
+        factories.AudioFactory.create(site=self.site, id=TEST_VIDEO_IDS[0])  # video_id
+        factories.ImageFactory.create(site=self.site, id=TEST_AUDIO_IDS[0])  # audio_id
+        factories.VideoFactory.create(site=self.site, id=TEST_IMAGE_IDS[0])  # image_id
 
         file_content = get_sample_file(
             "import_job/minimal_media_ids.csv", self.MIMETYPE
@@ -847,13 +856,9 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 4
 
     def test_related_media_id_success_same_site(self):
-        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
-        factories.ImageFactory.create(
-            id="daf8e74f-f20b-4c81-95c2-7dd744277009", site=audio.site
-        )
-        factories.VideoFactory.create(
-            id="4764e764-7830-4bea-b30e-4e35cc93b12b", site=audio.site
-        )
+        audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
 
         file_content = get_sample_file(
             "import_job/minimal_media_ids.csv", self.MIMETYPE
@@ -873,17 +878,17 @@ class TestBulkImportDryRun:
         assert validation_report.new_rows == 4
 
     def test_related_media_id_success_shared_site(self):
-        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=audio.site, key="shared_media", is_enabled=True
         )
 
-        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        image = factories.ImageFactory.create(id=TEST_IMAGE_IDS[0])
         factories.SiteFeatureFactory.create(
             site=image.site, key="shared_media", is_enabled=True
         )
 
-        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        video = factories.VideoFactory.create(id=TEST_VIDEO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=video.site, key="SHARED_MEDIA", is_enabled=True
         )
@@ -906,17 +911,17 @@ class TestBulkImportDryRun:
         assert validation_report.new_rows == 4
 
     def test_related_media_id_failed_shared_site(self):
-        audio = factories.AudioFactory.create(id="7763ae50-1b6e-46bc-bd3a-91037ac736cb")
+        audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=audio.site, key="shared_media", is_enabled=False
         )
 
-        image = factories.ImageFactory.create(id="daf8e74f-f20b-4c81-95c2-7dd744277009")
+        image = factories.ImageFactory.create(id=TEST_IMAGE_IDS[0])
         factories.SiteFeatureFactory.create(
             site=image.site, key="shared_media", is_enabled=False
         )
 
-        video = factories.VideoFactory.create(id="4764e764-7830-4bea-b30e-4e35cc93b12b")
+        video = factories.VideoFactory.create(id=TEST_VIDEO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=video.site, key="NOT_SHARED_MEDIA", is_enabled=True
         )
@@ -1793,3 +1798,100 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
         assert updated_import_job.status == JobStatus.COMPLETE
+
+    def test_related_media_ids_multiple(self):
+        audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=audio.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=audio.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[1], site=audio.site)
+
+        file_content = get_sample_file(
+            "import_job/related_media_ids_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=audio.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+
+        assert validation_report.error_rows == 0
+        assert validation_report.new_rows == 4
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.all().count() == 4
+        entry1 = DictionaryEntry.objects.get(title="Multiple audio")
+        assert entry1.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
+
+        entry2 = DictionaryEntry.objects.get(title="Multiple image")
+        assert entry2.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
+
+        entry3 = DictionaryEntry.objects.get(title="Multiple video")
+        assert entry3.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+
+        entry4 = DictionaryEntry.objects.get(title="Multiple all media")
+        assert entry4.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
+        assert entry4.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
+        assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+
+    def test_related_media_mixed_multiple(self):
+        file_content = get_sample_file(
+            "import_job/related_media_mixed_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(2, "related_audio", "audio", import_job)
+        self.upload_multiple_media_files(2, "related_image", "image", import_job)
+        self.upload_multiple_media_files(2, "related_video", "video", import_job)
+
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[1], site=self.site)
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+
+        assert validation_report.error_rows == 0
+        assert validation_report.new_rows == 4
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.all().count() == 4
+        entry1 = DictionaryEntry.objects.get(title="Multiple audio")
+        assert entry1.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
+        assert entry1.related_audio.count() == 4
+
+        entry2 = DictionaryEntry.objects.get(title="Multiple image")
+        assert entry2.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
+        assert entry2.related_images.count() == 4
+
+        entry3 = DictionaryEntry.objects.get(title="Multiple video")
+        assert entry3.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+        assert entry3.related_videos.count() == 4
+
+        entry4 = DictionaryEntry.objects.get(title="Multiple all media")
+        assert entry4.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
+        assert entry4.related_audio.count() == 4
+        assert entry4.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
+        assert entry4.related_images.count() == 4
+        assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+        assert entry4.related_videos.count() == 4

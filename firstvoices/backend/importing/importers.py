@@ -18,7 +18,9 @@ class BaseImporter:
         return cls.supported_columns
 
     @classmethod
-    def import_data(cls, import_job: ImportJob, csv_data: str, dry_run: bool = True):
+    def import_data(
+        cls, import_job: ImportJob, csv_data: tablib.Dataset, dry_run: bool = True
+    ):
         raise NotImplementedError
 
     @classmethod
@@ -78,8 +80,7 @@ class BaseMediaFileImporter(BaseImporter):
         Returns a list of supported columns for the media file importer.
         Uses column prefix, supported suffixes, and multiplies them to create the full list.
         """
-        columns = []
-        columns.append(cls.get_referenced_id_col())
+        columns = [cls.get_referenced_id_col()]
         for suffix in cls.supported_column_suffixes:
             columns.append(f"{cls.column_prefix}_{suffix}")
 
@@ -278,6 +279,16 @@ class BaseMediaFileImporter(BaseImporter):
         return related_ids
 
     @classmethod
+    def get_referenced_ids(
+        cls, row_data: list, referenced_id_col_idx: int, referenceable_media_ids: list
+    ):
+        if referenced_id_col_idx < 0:
+            return []
+
+        ids = (id_.strip() for id_ in row_data[referenced_id_col_idx].split(","))
+        return [id_ for id_ in ids if id_ and id_ in referenceable_media_ids]
+
+    @classmethod
     def get_column_index(cls, data: tablib.Dataset, column_name: str):
         """
         Return the index of column if present in the dataset.
@@ -295,16 +306,6 @@ class BaseMediaFileImporter(BaseImporter):
         """
         data.append_col([""] * len(data), header=column_name)
         return data.headers.index(column_name)
-
-    @classmethod
-    def get_referenced_ids(
-        cls, row_data: list, referenced_id_col_idx: int, referenceable_media_ids: list
-    ):
-        if referenced_id_col_idx < 0:
-            return []
-
-        ids = (id_.strip() for id_ in row_data[referenced_id_col_idx].split(","))
-        return [id_ for id_ in ids if id_ and id_ in referenceable_media_ids]
 
     @classmethod
     def get_missing_referenced_media(cls, site_id, data):
@@ -466,53 +467,3 @@ class DictionaryEntryImporter(BaseImporter):
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         return dictionary_entry_import_result
-
-    @classmethod
-    def get_column_index(cls, data, column_name):
-        """
-        Return the index of column if present in the dataset.
-        """
-        try:
-            column_index = data.headers.index(column_name)
-            return column_index
-        except ValueError:
-            return -1
-
-    @classmethod
-    def add_column(cls, data, column_name):
-        """
-        Add provided column to the tablib dataset.
-        """
-        data.append_col([""] * len(data), header=column_name)
-        return data.headers.index(column_name)
-
-    @classmethod
-    def add_related_id(
-        cls, row_list, filename_col_index, related_media_col_index, media_map
-    ):
-        """
-        Lookup the filename in the media map, and add the id of the media resource to
-        the provided row.
-        """
-        if not media_map:
-            # If media map is empty, do nothing
-            return
-
-        # get the row index for the current row (from primary filename)
-        primary_filename = row_list[filename_col_index]
-        if not primary_filename:
-            return
-
-        filename_row_idx = media_map[primary_filename][0]
-
-        # get the related media ids from the map
-        related_file_ids = [
-            file_id
-            for (row_index, file_id) in media_map.values()
-            if row_index == filename_row_idx
-        ]
-
-        # update related media with a comma-separated string of related ids
-        row_list[related_media_col_index] = ",".join(
-            [str(file_id) for file_id in related_file_ids if file_id]
-        )
