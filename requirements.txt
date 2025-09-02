@@ -39,7 +39,7 @@ factory-boy==3.3.3
 Faker==37.5.3
 ffmpeg-python==0.2.0
 g2p==2.2.2 # https://github.com/roedoejet/g2p
-greenlet==3.2.3
+greenlet==3.2.4
 gunicorn==23.0.0
 humanfriendly==10.0
 idna==3.10
