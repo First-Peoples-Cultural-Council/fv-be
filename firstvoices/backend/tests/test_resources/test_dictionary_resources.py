@@ -17,7 +17,7 @@ class TestDictionaryEntryImport:
         headers = [
             # these headers should match the defined template for batch uploads
             "id,created,created_by,last_modified,last_modified_by,site,"
-            "title,visibility,type,batch_id,include_on_kids_site,include_in_games,part_of_speech,"
+            "title,visibility,type,legacy_batch_filename,include_on_kids_site,include_in_games,part_of_speech,"
             "related_video_links"
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")
@@ -29,9 +29,10 @@ class TestDictionaryEntryImport:
         site = factories.SiteFactory.create()
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
-            f"{site.id},test_word,Public,Word,batch_id,True,True,Noun,https://www.youtube.com/watch?v=A1bcde23f5g",
+            f"{site.id},test_word,Public,Word,legacy_batch_filename,True,True,Noun,"
+            f"https://www.youtube.com/watch?v=A1bcde23f5g",
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_two@test.com,2023-02-02 21:21:39.864,user_two@test.com,"
-            f"{site.id},test_phrase,Team,Phrase,batch_id,False,False,Verb,",
+            f"{site.id},test_phrase,Team,Phrase,legacy_batch_filename,False,False,Verb,",
         ]
 
         table = self.build_table(data)
@@ -47,7 +48,7 @@ class TestDictionaryEntryImport:
         assert table["site"][0] == str(test_word.site.id)
         assert Visibility.PUBLIC == test_word.visibility
         assert TypeOfDictionaryEntry.WORD == test_word.type
-        assert table["batch_id"][0] == test_word.batch_id
+        assert table["legacy_batch_filename"][0] == test_word.legacy_batch_filename
         assert not test_word.exclude_from_kids
         assert not test_word.exclude_from_games
         assert table["part_of_speech"][0] == test_word.part_of_speech.title
@@ -60,7 +61,7 @@ class TestDictionaryEntryImport:
         assert table["site"][1] == str(test_phrase.site.id)
         assert Visibility.TEAM == test_phrase.visibility
         assert TypeOfDictionaryEntry.PHRASE == test_phrase.type
-        assert table["batch_id"][1] == test_phrase.batch_id
+        assert table["legacy_batch_filename"][1] == test_phrase.legacy_batch_filename
         assert test_phrase.exclude_from_kids
         assert test_phrase.exclude_from_games
         assert table["part_of_speech"][1] == test_phrase.part_of_speech.title
@@ -88,7 +89,7 @@ class BaseDictionaryEntryContentTest:
         data = [
             f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
             f"{site.id},{dictionary_entry.id},this is a {self.content_type}",
-            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com,"
+            f"{uuid.uuid4()},2023-02-02 21:21:10.713,user_one@test.com,2023-02-02 21:21:39.864,user_one@test.com, "
             f"{site.id},{dictionary_entry.id},this is a {self.content_type}",
         ]
 

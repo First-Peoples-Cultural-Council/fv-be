@@ -25,6 +25,20 @@ from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
 
 
+class ExternalDictionaryEntrySystem(BaseModel):
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
+
+    class Meta:
+        verbose_name = _("External dictionary entry system")
+        verbose_name_plural = _("External dictionary entry systems")
+        rules_permissions = {
+            "view": rules.always_allow,
+            "add": predicates.is_superadmin,
+            "change": predicates.is_superadmin,
+            "delete": predicates.is_superadmin,
+        }
+
+
 class BaseDictionaryContentModel(BaseModel):
     """
     Base model for Dictionary models which require DictionaryEntry as a foreign key and
@@ -79,7 +93,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     custom_order = TruncatingCharField(max_length=DEFAULT_TITLE_LENGTH, blank=True)
 
     # from nxtag:tags
-    batch_id = models.CharField(blank=True)
+    legacy_batch_filename = models.CharField(blank=True)
 
     # from fv:related_assets, fv-word:related_phrases
     related_dictionary_entries = models.ManyToManyField(
@@ -141,6 +155,17 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         ImportJob,
         null=True,
         on_delete=models.SET_NULL,
+    )
+
+    external_system = models.ForeignKey(
+        ExternalDictionaryEntrySystem,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    external_system_entry_id = models.CharField(
+        max_length=DEFAULT_TITLE_LENGTH,
+        blank=True,
     )
 
     class Meta:

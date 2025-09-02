@@ -2,7 +2,10 @@ from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models import Category, DictionaryEntry, ImportJob
-from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.dictionary import (
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
@@ -80,6 +83,12 @@ class DictionaryEntryResource(
         column_name="import_job",
         attribute="import_job",
         widget=ForeignKeyWidget(ImportJob),
+    )
+
+    external_system = fields.Field(
+        column_name="external_system",
+        attribute="external_system",
+        widget=ForeignKeyWidget(ExternalDictionaryEntrySystem, field="title"),
     )
 
     exclude_from_games = fields.Field(

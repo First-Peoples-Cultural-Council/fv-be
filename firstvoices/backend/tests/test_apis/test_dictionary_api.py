@@ -199,13 +199,15 @@ class TestDictionaryEndpoint(
             "translations": format_dictionary_entry_related_field(
                 instance.translations
             ),
-            "partOfSpeech": {
-                "id": str(instance.part_of_speech.id),
-                "title": instance.part_of_speech.title,
-                "parent": None,
-            }
-            if instance.part_of_speech
-            else None,
+            "partOfSpeech": (
+                {
+                    "id": str(instance.part_of_speech.id),
+                    "title": instance.part_of_speech.title,
+                    "parent": None,
+                }
+                if instance.part_of_speech
+                else None
+            ),
             "pronunciations": format_dictionary_entry_related_field(
                 instance.pronunciations
             ),
@@ -220,7 +222,7 @@ class TestDictionaryEndpoint(
             site=site,
             title="Title",
             type=TypeOfDictionaryEntry.WORD,
-            batch_id="Batch ID",
+            legacy_batch_filename="Legacy batch filename",
             exclude_from_wotd=True,
             **related_media,
             translations=["translation_1", "translation_2"],
@@ -255,7 +257,10 @@ class TestDictionaryEndpoint(
     ):
         assert updated_instance.id == original_instance.id
         assert updated_instance.type == original_instance.type
-        assert updated_instance.batch_id == original_instance.batch_id
+        assert (
+            updated_instance.legacy_batch_filename
+            == original_instance.legacy_batch_filename
+        )
         assert updated_instance.exclude_from_wotd == original_instance.exclude_from_wotd
         assert (
             updated_instance.categories.first().id
