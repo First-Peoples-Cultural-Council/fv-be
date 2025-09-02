@@ -122,11 +122,15 @@ class DictionaryExportViewSet(
         ]
         exported_entries_dataset.headers = new_headers
 
-        expanded_dataset = expand_many_to_one(
+        # Expanding datasets for all fields
+        exported_entries_dataset = expand_many_to_one(
             exported_entries_dataset, "TRANSLATION", max_columns=5
         )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "CATEGORY", max_columns=5
+        )
 
-        dataset_csv_export = expanded_dataset.export("csv")
+        dataset_csv_export = exported_entries_dataset.export("csv")
         in_memory_csv_file = io.BytesIO(dataset_csv_export.encode("utf-8-sig"))
         in_memory_csv_file = InMemoryUploadedFile(
             file=in_memory_csv_file,
