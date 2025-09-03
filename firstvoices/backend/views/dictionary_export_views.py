@@ -1,12 +1,15 @@
 import io
 import sys
 
+from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework import viewsets
 from rest_framework.response import Response
 
 from backend.models import DictionaryEntry
 from backend.models.files import File
+from backend.permissions.predicates import has_language_admin_membership, is_superadmin
+from backend.permissions.utils import filter_by_viewable
 from backend.serializers.dictionary_export_serializers import (
     DictionaryExportCsvSerializer,
 )
@@ -15,16 +18,32 @@ from backend.utils.dictionary_export_utils import (
     expand_many_to_one,
     get_dataset_from_queryset,
 )
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import SiteContentViewSetMixin
 
 
-class DictionaryExportViewSet(
-    FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.GenericViewSet
-):
-    def get_queryset(self):
-        # todo: Filter queryset by user permissions
+class DictionaryExportViewSet(SiteContentViewSetMixin, viewsets.GenericViewSet):
+    http_method_names = ["get"]
+
+    def initial(self, *args, **kwargs):
+        # Explicit method since we do not have a model attached,
+        # thus, permissions would need to be checked manually
+        super().initial(*args, **kwargs)
+
+        if not self.request.user:
+            return PermissionDenied
+
+        # Check permission
+        user = self.request.user
         site = self.get_validated_site()
-        return DictionaryEntry.objects.filter(site=site)
+        if not (has_language_admin_membership(user, site) or is_superadmin(user, site)):
+            raise PermissionDenied
+
+        return None
+
+    def get_queryset(self):
+        site = self.get_validated_site()
+        queryset = DictionaryEntry.objects.filter(site=site)
+        return filter_by_viewable(self.request.user, queryset)
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
