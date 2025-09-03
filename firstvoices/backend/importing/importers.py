@@ -195,7 +195,7 @@ class BaseMediaFileImporter(BaseImporter):
                 if import_result.totals["new"]:
                     for row in dataset.dict:
                         filename = row[f"{cls.column_prefix}_filename"]
-                        if filename and filename not in filename_map:
+                        if filename not in filename_map:
                             filename_map[filename] = row["id"]
 
                 import_results.append(import_result)
