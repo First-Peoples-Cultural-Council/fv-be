@@ -20,6 +20,10 @@ field_map = {
     "title": "TITLE",
     "type": "TYPE",
     "translations": "TRANSLATION",
+    "notes": "NOTE",
+    "acknowledgements": "ACKNOWLEDGEMENT",
+    "alternate_spellings": "ALTERNATE_SPELLING",
+    "pronunciations": "PRONUNCIATION",
     "categories": "CATEGORY",
     "visibility": "VISIBILITY",
     "part_of_speech": "PART_OF_SPEECH",
@@ -153,6 +157,18 @@ class DictionaryExportViewSet(
         # Expanding datasets for all fields
         exported_entries_dataset = expand_many_to_one(
             exported_entries_dataset, "TRANSLATION", max_columns=5
+        )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "NOTE", max_columns=5
+        )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "PRONUNCIATION", max_columns=5
+        )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "ACKNOWLEDGEMENT", max_columns=5
+        )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "ALTERNATE_SPELLING", max_columns=5
         )
         exported_entries_dataset = expand_many_to_one(
             exported_entries_dataset, "CATEGORY", max_columns=5
