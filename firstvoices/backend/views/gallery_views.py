@@ -108,6 +108,7 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
         site = self.get_validated_site()
         return (
             Gallery.objects.filter(site=site)
+            .order_by("title")
             .prefetch_related(
                 "site",
                 "site__language",
