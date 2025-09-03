@@ -40,6 +40,7 @@ class DictionaryExportViewSet(
             "ACKNOWLEDGEMENT",
             "ALTERNATE_SPELLING",
             "CATEGORY",
+            "RELATED_ENTRY_ID",
             "VIDEO_EMBED_LINK",
         ]:
             dataset = expand_many_to_one(dataset, field, max_columns=5)

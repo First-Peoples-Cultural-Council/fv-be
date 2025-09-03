@@ -19,6 +19,7 @@ FIELD_MAP = {
     "audio_ids": "AUDIO_IDS",
     "video_ids": "VIDEO_IDS",
     "related_video_links": "VIDEO_EMBED_LINK",
+    "related_dictionary_entries": "RELATED_ENTRY_ID",
 }
 
 BOOLEAN_INVERT_FIELDS = {
@@ -48,6 +49,7 @@ def get_dataset_from_queryset(queryset):
         "acknowledgements",
         "alternate_spellings",
         "pronunciations",
+        "related_dictionary_entries",
         *BOOLEAN_INVERT_FIELDS.keys(),
         *MEDIA_FIELDS.keys(),
     ]
@@ -69,6 +71,10 @@ def get_dataset_from_queryset(queryset):
             elif field == "categories":
                 values = getattr(entry, field).all()
                 row.append([str(value) for value in values])
+
+            elif field == "related_dictionary_entries":
+                ids = getattr(entry, field).values_list("id", flat=True)
+                row.append([str(id) for id in ids])
 
             else:
                 value = getattr(entry, field)
