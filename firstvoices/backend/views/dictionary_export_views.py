@@ -29,6 +29,10 @@ field_map = {
     "part_of_speech": "PART_OF_SPEECH",
     "include_in_games": "INCLUDE_IN_GAMES",
     "include_on_kids_site": "INCLUDE_ON_KIDS_SITE",
+    "image_ids": "IMAGE_IDS",
+    "audio_ids": "AUDIO_IDS",
+    "video_ids": "VIDEO_IDS",
+    "related_video_links": "VIDEO_EMBED_LINK",
 }
 
 
@@ -49,6 +53,9 @@ def get_dataset_from_queryset(queryset, site, request):
         "acknowledgements",
         "alternate_spellings",
         "pronunciations",
+        "related_images",
+        "related_audio",
+        "related_videos",
     ]
 
     headers = []
@@ -59,26 +66,37 @@ def get_dataset_from_queryset(queryset, site, request):
             headers.append("include_in_games")
         elif field == "exclude_from_kids":
             headers.append("include_on_kids_site")
+        elif field == "related_images":
+            headers.append("image_ids")
+        elif field == "related_audio":
+            headers.append("audio_ids")
+        elif field == "related_videos":
+            headers.append("video_ids")
         else:
             headers.append(field)
 
-    for obj in queryset:
+    for entry in queryset:
         row = []
         for field in fields:
             dictionary_entry_field = DictionaryEntry._meta.get_field(field)
 
+            # Media fields
+            if field in ["related_images", "related_audio", "related_videos"]:
+                ids = getattr(entry, field).values_list("id", flat=True)
+                row.append(",".join(map(str, ids)))
+
             # many to many fields
-            if isinstance(dictionary_entry_field, ManyToManyField):
-                values = getattr(obj, field).all()
+            elif isinstance(dictionary_entry_field, ManyToManyField):
+                values = getattr(entry, field).all()
                 values = [str(value) for value in values]
                 row.append(values)
 
             else:
-                value = getattr(obj, field)
+                value = getattr(entry, field)
 
                 # field with choices
-                if hasattr(obj, f"get_{field}_display"):
-                    value = getattr(obj, f"get_{field}_display")()
+                if hasattr(entry, f"get_{field}_display"):
+                    value = getattr(entry, f"get_{field}_display")()
 
                 # invert booleans
                 if field in ["exclude_from_games", "exclude_from_kids"]:
@@ -172,6 +190,9 @@ class DictionaryExportViewSet(
         )
         exported_entries_dataset = expand_many_to_one(
             exported_entries_dataset, "CATEGORY", max_columns=5
+        )
+        exported_entries_dataset = expand_many_to_one(
+            exported_entries_dataset, "VIDEO_EMBED_LINK", max_columns=5
         )
 
         dataset_csv_export = exported_entries_dataset.export("csv")
