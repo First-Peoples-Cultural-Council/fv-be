@@ -3,6 +3,7 @@ import sys
 
 import tablib
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.db.models.fields.related import ManyToManyField
 from rest_framework import viewsets
 from rest_framework.response import Response
 
@@ -18,6 +19,8 @@ field_map = {
     "title": "TITLE",
     "type": "TYPE",
     "translations": "TRANSLATION",
+    "categories": "CATEGORY",
+    "visibility": "VISIBILITY",
     "part_of_speech": "PART_OF_SPEECH",
 }
 
@@ -48,10 +51,18 @@ def get_dataset_from_queryset(queryset, site, request):
         row = []
         for field in fields:
             dictionary_entry_field = DictionaryEntry._meta.get_field(field)
-            if dictionary_entry_field.choices:
-                row.append(getattr(obj, f"get_{field}_display")())
+
+            # many to many fields
+            if isinstance(dictionary_entry_field, ManyToManyField):
+                values = getattr(obj, field).all()
+                values = [str(value) for value in values]
+                row.append(values)
             else:
                 value = getattr(obj, field)
+
+                # field with choices
+                if hasattr(obj, f"get_{field}_display"):
+                    value = getattr(obj, f"get_{field}_display")()
                 row.append(value)
         data.append(row)
 
