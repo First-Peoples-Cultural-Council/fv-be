@@ -1,9 +1,7 @@
 import io
 import sys
 
-import tablib
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db.models.fields.related import ManyToManyField
 from rest_framework import viewsets
 from rest_framework.response import Response
 
@@ -12,153 +10,19 @@ from backend.models.files import File
 from backend.serializers.dictionary_export_serializers import (
     DictionaryExportCsvSerializer,
 )
+from backend.utils.dictionary_export_utils import (
+    FIELD_MAP,
+    expand_many_to_one,
+    get_dataset_from_queryset,
+)
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-
-# Mapping to handle plural form, capitalization and such
-field_map = {
-    "id": "ID",
-    "title": "TITLE",
-    "type": "TYPE",
-    "translations": "TRANSLATION",
-    "notes": "NOTE",
-    "acknowledgements": "ACKNOWLEDGEMENT",
-    "alternate_spellings": "ALTERNATE_SPELLING",
-    "pronunciations": "PRONUNCIATION",
-    "categories": "CATEGORY",
-    "visibility": "VISIBILITY",
-    "part_of_speech": "PART_OF_SPEECH",
-    "include_in_games": "INCLUDE_IN_GAMES",
-    "include_on_kids_site": "INCLUDE_ON_KIDS_SITE",
-    "image_ids": "IMAGE_IDS",
-    "audio_ids": "AUDIO_IDS",
-    "video_ids": "VIDEO_IDS",
-    "related_video_links": "VIDEO_EMBED_LINK",
-}
-
-
-def get_dataset_from_queryset(queryset, site, request):
-    # Convert to CSV
-    fields = [
-        "id",
-        "title",
-        "type",
-        "translations",
-        "categories",
-        "visibility",
-        "part_of_speech",
-        "exclude_from_games",
-        "exclude_from_kids",
-        "related_video_links",
-        "notes",
-        "acknowledgements",
-        "alternate_spellings",
-        "pronunciations",
-        "related_images",
-        "related_audio",
-        "related_videos",
-    ]
-
-    headers = []
-    data = []
-
-    for field in fields:
-        if field == "exclude_from_games":
-            headers.append("include_in_games")
-        elif field == "exclude_from_kids":
-            headers.append("include_on_kids_site")
-        elif field == "related_images":
-            headers.append("image_ids")
-        elif field == "related_audio":
-            headers.append("audio_ids")
-        elif field == "related_videos":
-            headers.append("video_ids")
-        else:
-            headers.append(field)
-
-    for entry in queryset:
-        row = []
-        for field in fields:
-            dictionary_entry_field = DictionaryEntry._meta.get_field(field)
-
-            # Media fields
-            if field in ["related_images", "related_audio", "related_videos"]:
-                ids = getattr(entry, field).values_list("id", flat=True)
-                row.append(",".join(map(str, ids)))
-
-            # many to many fields
-            elif isinstance(dictionary_entry_field, ManyToManyField):
-                values = getattr(entry, field).all()
-                values = [str(value) for value in values]
-                row.append(values)
-
-            else:
-                value = getattr(entry, field)
-
-                # field with choices
-                if hasattr(entry, f"get_{field}_display"):
-                    value = getattr(entry, f"get_{field}_display")()
-
-                # invert booleans
-                if field in ["exclude_from_games", "exclude_from_kids"]:
-                    value = not bool(value)
-
-                row.append(value)
-        data.append(row)
-
-    dataset = tablib.Dataset(*data, headers=headers)
-    return dataset
-
-
-def expand_many_to_one(dataset, field_name, max_columns=None):
-    if field_name not in dataset.headers:
-        return dataset
-
-    field_index = dataset.headers.index(field_name)
-
-    # determine max columns
-    actual_max = 0
-    for row in dataset.dict:
-        value = row.get(field_name, [])
-        if isinstance(value, (list, tuple)):
-            actual_max = max(actual_max, len(value))
-        elif value:
-            actual_max = max(actual_max, 1)
-
-    # final columns
-    num_columns = actual_max if max_columns is None else min(actual_max, max_columns)
-
-    new_headers = (
-        dataset.headers[:field_index]
-        + [
-            field_name if i == 0 else f"{field_name}_{i + 1}"
-            for i in range(num_columns)
-        ]
-        + dataset.headers[field_index + 1 :]  # noqa: E203
-    )
-
-    # build new rows
-    new_data = []
-    for row in dataset.dict:
-        values = row.get(field_name, [])
-        if not isinstance(values, (list, tuple)):
-            values = [values] if values else []
-
-        expanded_values = [
-            values[i] if i < len(values) else "" for i in range(num_columns)
-        ]
-
-        before = [row[h] for h in dataset.headers[:field_index]]
-        after = [row[h] for h in dataset.headers[field_index + 1 :]]  # noqa: E203
-        new_row = before + expanded_values + after
-        new_data.append(new_row)
-
-    return tablib.Dataset(*new_data, headers=new_headers)
 
 
 class DictionaryExportViewSet(
     FVPermissionViewSetMixin, SiteContentViewSetMixin, viewsets.GenericViewSet
 ):
     def get_queryset(self):
+        # todo: Filter queryset by user permissions
         site = self.get_validated_site()
         return DictionaryEntry.objects.filter(site=site)
 
@@ -166,52 +30,36 @@ class DictionaryExportViewSet(
         site = self.get_validated_site()
         queryset = self.get_queryset()
 
-        exported_entries_dataset = get_dataset_from_queryset(queryset, site, request)
-        new_headers = [
-            field_map.get(header, header) for header in exported_entries_dataset.headers
-        ]
-        exported_entries_dataset.headers = new_headers
+        dataset = get_dataset_from_queryset(queryset)
+        dataset.headers = [FIELD_MAP.get(header, header) for header in dataset.headers]
 
-        # Expanding datasets for all fields
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "TRANSLATION", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "NOTE", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "PRONUNCIATION", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "ACKNOWLEDGEMENT", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "ALTERNATE_SPELLING", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "CATEGORY", max_columns=5
-        )
-        exported_entries_dataset = expand_many_to_one(
-            exported_entries_dataset, "VIDEO_EMBED_LINK", max_columns=5
-        )
+        for field in [
+            "TRANSLATION",
+            "NOTE",
+            "PRONUNCIATION",
+            "ACKNOWLEDGEMENT",
+            "ALTERNATE_SPELLING",
+            "CATEGORY",
+            "VIDEO_EMBED_LINK",
+        ]:
+            dataset = expand_many_to_one(dataset, field, max_columns=5)
 
-        dataset_csv_export = exported_entries_dataset.export("csv")
-        in_memory_csv_file = io.BytesIO(dataset_csv_export.encode("utf-8-sig"))
-        in_memory_csv_file = InMemoryUploadedFile(
-            file=in_memory_csv_file,
+        dataset_csv = dataset.export("csv")
+        in_memory_csv = io.BytesIO(dataset_csv.encode("utf-8-sig"))
+        in_memory_csv = InMemoryUploadedFile(
+            file=in_memory_csv,
             field_name="dictionary_entries_export",
             name="dictionary_entries_export.csv",
             content_type="text/csv",
-            size=sys.getsizeof(in_memory_csv_file),
+            size=sys.getsizeof(in_memory_csv),
             charset="utf-8",
         )
         csv_file = File(
-            content=in_memory_csv_file,
+            content=in_memory_csv,
             site=site,
             created_by=request.user,
             last_modified_by=request.user,
         )
         csv_file.save()
 
-        serializer = DictionaryExportCsvSerializer(csv_file)
-        return Response(serializer.data)
+        return Response(DictionaryExportCsvSerializer(csv_file).data)
