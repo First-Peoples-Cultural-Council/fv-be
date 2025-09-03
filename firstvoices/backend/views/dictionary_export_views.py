@@ -14,6 +14,7 @@ from backend.serializers.dictionary_export_serializers import (
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
+# Mapping to handle plural form, capitalization and such
 field_map = {
     "id": "ID",
     "title": "TITLE",
@@ -22,6 +23,8 @@ field_map = {
     "categories": "CATEGORY",
     "visibility": "VISIBILITY",
     "part_of_speech": "PART_OF_SPEECH",
+    "include_in_games": "INCLUDE_IN_GAMES",
+    "include_on_kids_site": "INCLUDE_ON_KIDS_SITE",
 }
 
 
@@ -44,8 +47,16 @@ def get_dataset_from_queryset(queryset, site, request):
         "pronunciations",
     ]
 
-    headers = fields
+    headers = []
     data = []
+
+    for field in fields:
+        if field == "exclude_from_games":
+            headers.append("include_in_games")
+        elif field == "exclude_from_kids":
+            headers.append("include_on_kids_site")
+        else:
+            headers.append(field)
 
     for obj in queryset:
         row = []
@@ -57,12 +68,18 @@ def get_dataset_from_queryset(queryset, site, request):
                 values = getattr(obj, field).all()
                 values = [str(value) for value in values]
                 row.append(values)
+
             else:
                 value = getattr(obj, field)
 
                 # field with choices
                 if hasattr(obj, f"get_{field}_display"):
                     value = getattr(obj, f"get_{field}_display")()
+
+                # invert booleans
+                if field in ["exclude_from_games", "exclude_from_kids"]:
+                    value = not bool(value)
+
                 row.append(value)
         data.append(row)
 
