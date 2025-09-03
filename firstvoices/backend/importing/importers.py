@@ -193,10 +193,10 @@ class BaseMediaFileImporter(BaseImporter):
                 ).import_data(dataset=dataset, dry_run=dry_run)
 
                 if import_result.totals["new"]:
-                    for i, row in enumerate(dataset.dict):
+                    for row in dataset.dict:
                         filename = row[f"{cls.column_prefix}_filename"]
-                        # for the filename map, store  (row_index, file_id)
-                        filename_map[filename] = (i, row["id"])
+                        if filename and filename not in filename_map:
+                            filename_map[filename] = row["id"]
 
                 import_results.append(import_result)
 
@@ -210,7 +210,6 @@ class BaseMediaFileImporter(BaseImporter):
         referenced_id_column_idx = cls.get_column_index(
             data, cls.get_referenced_id_col()
         )
-        primary_filename_column_idx = cls.get_column_index(data, cls.get_key_col())
 
         if (not filename_map) and (referenced_id_column_idx == -1):
             # No related media
@@ -225,7 +224,6 @@ class BaseMediaFileImporter(BaseImporter):
         for i, row in enumerate(data.dict):
             row_data = cls.append_related_ids(
                 list(data[i]),
-                primary_filename_column_idx,
                 filename_map,
                 referenced_id_column_idx,
                 referenceable_media_ids,
@@ -238,14 +236,11 @@ class BaseMediaFileImporter(BaseImporter):
     def append_related_ids(
         cls,
         row_data: list,
-        primary_filename_column_idx: int,
         filename_map: dict,
         referenced_id_column_idx: int,
         referenceable_media_ids: list,
     ):
-        imported_ids = cls.get_imported_ids(
-            row_data, primary_filename_column_idx, filename_map
-        )
+        imported_ids = cls.get_imported_ids(row_data, filename_map)
         referenced_ids = cls.get_referenced_ids(
             row_data, referenced_id_column_idx, referenceable_media_ids
         )
@@ -257,25 +252,15 @@ class BaseMediaFileImporter(BaseImporter):
         return tuple(row_data)
 
     @classmethod
-    def get_imported_ids(
-        cls, row_data: list, primary_filename_column_idx: int, filename_map: dict
-    ):
-        if primary_filename_column_idx < 0 or filename_map is None:
+    def get_imported_ids(cls, row_data: list, filename_map: dict):
+        if filename_map is None:
             return []
 
-        filename = row_data[primary_filename_column_idx]
-
-        # Get the row identifier from dictionary tuple (row_index, file_id)
-        # Then use the row identifier to find all related files with the same row identifier
-        related_ids = []
-        if filename and filename_map:
-            file_row_identifier = filename_map[filename][0]
-            related_ids = [
-                str(file_id)
-                for (row_index, file_id) in filename_map.values()
-                if row_index == file_row_identifier
-            ]
-
+        related_ids = [
+            str(file_id)
+            for filename, file_id in filename_map.items()
+            if filename in row_data
+        ]
         return related_ids
 
     @classmethod
