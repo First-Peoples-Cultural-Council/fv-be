@@ -133,6 +133,6 @@ class DictionaryViewSet(
             )
             .defer(
                 "exclude_from_wotd",
-                "batch_id",
+                "legacy_batch_filename",
             )
         )

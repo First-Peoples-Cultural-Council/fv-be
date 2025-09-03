@@ -8,7 +8,10 @@ from django.utils.text import get_valid_filename
 
 from backend.models import DictionaryEntry, ImportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import TypeOfDictionaryEntry
+from backend.models.dictionary import (
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
@@ -942,6 +945,45 @@ class TestBulkImportDryRun:
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 4
 
+    def test_dictionary_entry_external_system_fields(self):
+        external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_1.save()
+        external_system_2 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_2.save()
+
+        file_content = get_sample_file(
+            "import_job/dictionary_entry_external_system_fields.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
+
+        assert validation_report.new_rows == 2
+        assert validation_report.error_rows == 0
+
+        expected_valid_columns = [
+            "TITLE",
+            "TYPE",
+            "EXTERNAL_SYSTEM",
+            "EXTERNAL_SYSTEM_ENTRY_ID",
+        ]
+
+        for column in expected_valid_columns:
+            assert column in accepted_columns
+
+        assert len(ignored_columns) == 0
+
     def test_related_media_id_duplicate_ids(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
@@ -1840,6 +1882,35 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
         assert updated_import_job.status == JobStatus.COMPLETE
+
+    def test_dictionary_entry_external_system_fields(self):
+        external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_1.save()
+        external_system_2 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_2.save()
+
+        file_content = get_sample_file(
+            "import_job/dictionary_entry_external_system_fields.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        # Entry 1
+        word = DictionaryEntry.objects.filter(title="abc")[0]
+        assert word.external_system.title == external_system_1.title
+        assert word.external_system_entry_id == "abc123"
+        # Entry 2
+        phrase = DictionaryEntry.objects.filter(title="xyz")[0]
+        assert phrase.external_system.title == external_system_2.title
+        assert phrase.external_system_entry_id == "xyz007"
 
     def test_related_media_ids_multiple(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])

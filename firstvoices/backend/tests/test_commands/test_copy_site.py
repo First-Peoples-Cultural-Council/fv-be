@@ -522,7 +522,7 @@ class TestCopySite:
         source_entry = DictionaryEntryFactory(
             site=self.source_site,
             title="Primary entry",
-            batch_id="validId",
+            legacy_batch_filename="legacyBatchFilename",
             import_job=source_import_job,
         )
 
@@ -555,7 +555,7 @@ class TestCopySite:
         assert target_entry.translations == source_entry.translations
         assert target_entry.alternate_spellings == source_entry.alternate_spellings
         assert target_entry.pronunciations == source_entry.pronunciations
-        assert target_entry.batch_id == ""
+        assert target_entry.legacy_batch_filename == ""
         assert target_entry.import_job is None
         assert target_entry.exclude_from_games == source_entry.exclude_from_games
         assert target_entry.exclude_from_kids == source_entry.exclude_from_kids
