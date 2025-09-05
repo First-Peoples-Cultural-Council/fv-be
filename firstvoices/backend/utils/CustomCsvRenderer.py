@@ -13,7 +13,7 @@ class CustomCsvRenderer(BaseRenderer):
 
     def get_max_lengths(self, rows, fields):
         # Find max number of columns to add for flattened keys
-        max_lengths = {field: 0 for field in fields}
+        max_lengths = dict.fromkeys(fields, 0)
         for r in rows:
             for f in fields:
                 value = r.get(f)
@@ -44,19 +44,20 @@ class CustomCsvRenderer(BaseRenderer):
         expanded_columns = {}
 
         for source_key, source_val in row.items():
-            if source_key in flatten_fields:
-                base_col_name = flatten_fields[source_key]
-                num_columns = max(1, max_lengths.get(source_key, 0))
-                values_list = self.normalize_value_to_list(source_val)
-
-                # First column uses base name, rest are suffixed
-                for i in range(num_columns):
-                    col_name = base_col_name if i == 0 else f"{base_col_name}_{i+1}"
-                    expanded_columns[col_name] = (
-                        values_list[i] if i < len(values_list) else ""
-                    )
-            else:
+            if source_key not in flatten_fields:
+                # pass through if field does not require to be flattened
                 expanded_columns[source_key] = "" if source_val is None else source_val
+                continue
+
+            base = flatten_fields[source_key]
+            count = max(1, max_lengths.get(source_key, 0))
+
+            values = self.normalize_value_to_list(source_val)
+            values = values + [""] * count
+
+            expanded_columns[base] = values[0]
+            for i, value in enumerate(values[1:], start=2):
+                expanded_columns[f"{base}_{i}"] = value
 
         return {header: expanded_columns.get(header, "") for header in headers}
 
