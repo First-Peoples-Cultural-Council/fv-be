@@ -33,21 +33,32 @@ class CustomCsvRenderer(BaseRenderer):
                     seen.append(k)
         return seen
 
+    def normalize_value_to_list(self, value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return [value]
+
     def expand_row(self, row, headers, flatten_fields, max_lengths):
-        output = {}
+        expanded_columns = {}
 
-        for key, val in row.items():
-            if key in flatten_fields:
-                base = flatten_fields[key]
-                n = max(1, max_lengths.get(key, 0))
-                values = val if isinstance(val, (list, tuple)) else [val]
-                for i in range(n):
-                    col = base if i == 0 else f"{base}_{i+1}"
-                    output[col] = values[i] if i < len(values) else ""
+        for source_key, source_val in row.items():
+            if source_key in flatten_fields:
+                base_col_name = flatten_fields[source_key]
+                num_columns = max(1, max_lengths.get(source_key, 0))
+                values_list = self.normalize_value_to_list(source_val)
+
+                # First column uses base name, rest are suffixed
+                for i in range(num_columns):
+                    col_name = base_col_name if i == 0 else f"{base_col_name}_{i+1}"
+                    expanded_columns[col_name] = (
+                        values_list[i] if i < len(values_list) else ""
+                    )
             else:
-                output[key] = val
+                expanded_columns[source_key] = "" if source_val is None else source_val
 
-        return {header: output.get(header, "") for header in headers}
+        return {header: expanded_columns.get(header, "") for header in headers}
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if data is None:
