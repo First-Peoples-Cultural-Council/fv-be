@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework.response import Response
 
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
@@ -57,4 +58,9 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         serialized_data = [
             dictionary_entry["entry"] for dictionary_entry in serialized_data
         ]
-        return Response(data=serialized_data)
+
+        filename = f"dictionary_export_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
+        return Response(
+            data=serialized_data,
+            headers={"Content-Disposition": f'attachment; filename= "{filename}"'},
+        )
