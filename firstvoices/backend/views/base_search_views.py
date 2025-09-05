@@ -57,6 +57,17 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
         return self.serializer_class
 
+    def get_search_response(self, search_params, pagination_params):
+        search_query = self.build_query(**search_params)
+        search_query = self.paginate_query(search_query, **pagination_params)
+        search_query = self.sort_query(search_query, **search_params)
+
+        try:
+            response = search_query.execute()
+            return response
+        except ConnectionError:
+            raise ElasticSearchConnectionError()
+
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
         pagination_params = self.get_pagination_params()
@@ -64,15 +75,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         if self.has_invalid_input(search_params):
             return self.paginate_search_response(request, [], 0)
 
-        search_query = self.build_query(**search_params)
-        search_query = self.paginate_query(search_query, **pagination_params)
-        search_query = self.sort_query(search_query, **search_params)
-
-        try:
-            response = search_query.execute()
-        except ConnectionError:
-            raise ElasticSearchConnectionError()
-
+        response = self.get_search_response(search_params, pagination_params)
         search_results = response["hits"]["hits"]
         data = self.hydrate(search_results)
         serialized_data = self.serialize_search_results(

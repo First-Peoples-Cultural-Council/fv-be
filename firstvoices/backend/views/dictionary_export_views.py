@@ -3,7 +3,6 @@ from rest_framework.response import Response
 
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
-from backend.views.exceptions import ElasticSearchConnectionError
 from backend.views.search_site_entries_views import SearchSiteEntriesViewSet
 
 
@@ -41,16 +40,9 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         if self.has_invalid_input(search_params):
             return self.paginate_search_response(request, [], 0)
 
-        search_query = self.build_query(**search_params)
-        search_query = self.paginate_query(search_query, **pagination_params)
-        search_query = self.sort_query(search_query, **search_params)
-
-        try:
-            response = search_query.execute()
-        except ConnectionError:
-            raise ElasticSearchConnectionError()
-
+        response = self.get_search_response(search_params, pagination_params)
         search_results = response["hits"]["hits"]
+
         data = self.hydrate(search_results)
         serialized_data = self.serialize_search_results(
             search_results, data, **search_params, **pagination_params
