@@ -7,6 +7,7 @@ from backend.serializers.utils.import_job_utils import check_required_headers
 from backend.tasks.import_job_tasks import clean_csv
 from backend.tests.utils import get_batch_import_test_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
+from backend.utils.CustomCsvRenderer import CustomCsvRenderer
 
 
 class TestCharacterUtils:
@@ -151,3 +152,65 @@ class TestCleanCsv:
         assert "translation_8" in invalid_headers
         assert "note_6" in invalid_headers
         assert "note_99" in invalid_headers
+
+
+class TestCustomCsvRenderer:
+    def test_get_max_lengths(self):
+        rows = [
+            {
+                "translations": ["translation_1", "translation_2"],
+                "notes": ["note_1", "note_2", "note_3"],
+            },
+            {
+                "translations": ["translation_1"],
+                "notes": [
+                    "note_1",
+                    "note_2",
+                ],
+            },
+        ]
+        fields = ["translations", "notes"]
+        max_lengths = CustomCsvRenderer().get_max_lengths(rows, fields)
+        assert max_lengths["translations"] == 2
+        assert max_lengths["notes"] == 3
+
+    def test_get_first_seen_keys(self):
+        rows = [
+            {
+                "id": 123,
+                "title": "abc",
+                "translations": ["translation_1", "translation_2"],
+            },
+            {"id": 456, "notes": ["note_1", "note_2"]},
+        ]
+        assert CustomCsvRenderer().get_first_seen_keys(rows) == [
+            "id",
+            "title",
+            "translations",
+            "notes",
+        ]
+
+    def test_expand_rows(self):
+        row = {
+            "id": 123,
+            "title": "abc",
+            "translations": ["translation_1", "translation_2", "translation_3"],
+        }
+        flatten_fields = {"translations": "translation"}
+        max_lengths = CustomCsvRenderer().get_max_lengths([row], flatten_fields)
+
+        expanded_headers = [
+            "id",
+            "title",
+            "translation",
+            "translation_2",
+            "translation_3",
+        ]
+        expanded_row = CustomCsvRenderer().expand_row(
+            row, expanded_headers, flatten_fields, max_lengths
+        )
+        assert expanded_row["id"] == 123
+        assert expanded_row["title"] == "abc"
+        assert expanded_row["translation"] == "translation_1"
+        assert expanded_row["translation_2"] == "translation_2"
+        assert expanded_row["translation_3"] == "translation_3"
