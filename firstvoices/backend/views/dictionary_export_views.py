@@ -1,5 +1,10 @@
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.response import Response
 
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
@@ -14,7 +19,34 @@ from backend.views.search_site_entries_views import (
 @extend_schema_view(
     list=extend_schema(
         description="Export a CSV of dictionary entries.",
-        parameters=[*SITE_SEARCH_PARAMS, *BASE_SEARCH_PARAMS],
+        parameters=[
+            *SITE_SEARCH_PARAMS,
+            *BASE_SEARCH_PARAMS,
+            OpenApiParameter(
+                name="types",
+                description="Filter by type of content. Options are word & phrase.",
+                required=False,
+                default="",
+                type=str,
+                examples=[
+                    OpenApiExample(
+                        "",
+                        value="",
+                        description="Retrieves all types of results.",
+                    ),
+                    OpenApiExample(
+                        "word",
+                        value="word",
+                        description="Retrieves all words.",
+                    ),
+                    OpenApiExample(
+                        "phrase",
+                        value="phrase",
+                        description="Retrieves all phrases.",
+                    ),
+                ],
+            ),
+        ],
     )
 )
 class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):

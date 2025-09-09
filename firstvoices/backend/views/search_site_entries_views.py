@@ -63,13 +63,13 @@ SITE_SEARCH_PARAMS = [
             ),
             OpenApiExample(
                 "valid UUID",
-                value="valid UUID",
+                value="6cdb161a-2ce7-4197-813d-1683448128a2",
                 description="Return entries which are associated with "
                 "the given category or its child categories.",
             ),
             OpenApiExample(
                 "invalid UUID",
-                value="invalid UUID",
+                value="invalid-uuid",
                 description="Cannot validate given id, returns empty result set.",
             ),
         ],
