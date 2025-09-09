@@ -1,11 +1,22 @@
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.response import Response
 
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
-from backend.views.search_site_entries_views import SearchSiteEntriesViewSet
+from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
+from backend.views.search_site_entries_views import (
+    SITE_SEARCH_PARAMS,
+    SearchSiteEntriesViewSet,
+)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        description="Export a CSV of dictionary entries.",
+        parameters=[*SITE_SEARCH_PARAMS, *BASE_SEARCH_PARAMS],
+    )
+)
 class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
     http_method_names = ["get"]
     serializer_classes = {
@@ -36,9 +47,6 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         ]
 
         pagination_params = self.get_pagination_params()
-
-        if self.has_invalid_input(search_params):
-            return self.paginate_search_response(request, [], 0)
 
         response = self.get_search_response(search_params, pagination_params)
         search_results = response["hits"]["hits"]
