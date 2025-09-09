@@ -45,6 +45,7 @@ class AudioResource(SiteContentResource):
             column="audio_include_in_games", default=False
         ),
     )
+
     exclude_from_kids = fields.Field(
         column_name="audio_include_in_kids_site",
         attribute="exclude_from_kids",

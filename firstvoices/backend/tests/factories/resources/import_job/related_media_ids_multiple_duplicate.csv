@@ -1,0 +1,5 @@
+TITLE,TYPE,AUDIO_IDS,img_ids,video_ids
+Duplicate audio,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,7763ae50-1b6e-46bc-bd3a-91037ac736cb",,
+Duplicate image,word,,"daf8e74f-f20b-4c81-95c2-7dd744277009,daf8e74f-f20b-4c81-95c2-7dd744277009",
+Duplicate video,word,,,"4764e764-7830-4bea-b30e-4e35cc93b12b,4764e764-7830-4bea-b30e-4e35cc93b12b"
+Duplicate all media,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,7763ae50-1b6e-46bc-bd3a-91037ac736cb","daf8e74f-f20b-4c81-95c2-7dd744277009,daf8e74f-f20b-4c81-95c2-7dd744277009","4764e764-7830-4bea-b30e-4e35cc93b12b,4764e764-7830-4bea-b30e-4e35cc93b12b"

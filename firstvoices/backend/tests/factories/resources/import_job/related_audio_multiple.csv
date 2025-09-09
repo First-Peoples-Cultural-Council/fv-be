@@ -1,0 +1,4 @@
+TITLE,TYPE,AUDIO_FILENAME,AUDIO_TITLE,AUDIO_DESCRIPTION,AUDIO_ACKNOWLEDGEMENT,AUDIO_SPEAKER,AUDIO_SPEAKER_2,AUDIO_INCLUDE_IN_KIDS_SITE,AUDIO_INCLUDE_IN_GAMES,AUDIO_2_FILENAME,AUDIO_2_TITLE,AUDIO_2_DESCRIPTION,AUDIO_2_ACKNOWLEDGEMENT,AUDIO_2_SPEAKER,AUDIO_2_SPEAKER_2,AUDIO_2_INCLUDE_IN_KIDS_SITE,AUDIO_2_INCLUDE_IN_GAMES
+Word 1,word,related_audio-1.mp3,Related Audio-1,Testing audio upload-1,Test Ack-1,Test Speaker 1-1,Test Speaker 1-2,TRUE,FALSE,related_audio-2.mp3,Related Audio-2,Testing audio upload-2,Test Ack-2,Test Speaker 2-1,Test Speaker 2-2,TRUE,FALSE
+Word 2,word,related_audio-3.mp3,Related Audio-3,Testing audio upload-3,Test Ack-3,"","",TRUE,FALSE,related_audio-4.mp3,Related Audio-4,Testing audio upload-4,Test Ack-4,"","",TRUE,FALSE
+Word 3,word,related_audio-5.mp3,Related Audio-5,Testing audio upload-5,Test Ack-5,"","",TRUE,FALSE,related_audio-6.mp3,Related Audio-6,Testing audio upload-6,Test Ack-6,"","",TRUE,FALSE
