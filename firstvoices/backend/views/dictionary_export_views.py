@@ -40,11 +40,12 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
 
         # If anything else is present in the search params except for words or phrases,
         # we pop them out as this API only supports dictionary entries
-        search_params["types"] = [
+        filtered_types = [
             entry_type
             for entry_type in search_params["types"]
             if entry_type in ["word", "phrase"]
         ]
+        search_params["types"] = filtered_types
 
         pagination_params = self.get_pagination_params()
 
