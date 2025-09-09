@@ -14,13 +14,10 @@ class CustomCsvRenderer(BaseRenderer):
     def get_max_lengths(self, rows, fields):
         # Find max number of columns to add for flattened keys
         max_lengths = dict.fromkeys(fields, 0)
-        for r in rows:
-            for f in fields:
-                value = r.get(f)
-                if isinstance(value, (list, tuple)):
-                    max_lengths[f] = max(max_lengths[f], len(value))
-                else:
-                    max_lengths[f] = max(max_lengths[f], 1)
+        for row in rows:
+            for field in fields:
+                num_values = len(row.get(field))
+                max_lengths[field] = max(max_lengths[field], num_values)
 
         return max_lengths
 
@@ -32,13 +29,6 @@ class CustomCsvRenderer(BaseRenderer):
                 if k not in seen:
                     seen.append(k)
         return seen
-
-    def normalize_value_to_list(self, value):
-        if value is None:
-            return []
-        if isinstance(value, (list, tuple)):
-            return list(value)
-        return [value]
 
     def expand_row(self, row, headers, flatten_fields, max_lengths):
         expanded_columns = {}
@@ -52,9 +42,13 @@ class CustomCsvRenderer(BaseRenderer):
             base = flatten_fields[source_key]
             count = max(1, max_lengths.get(source_key, 0))
 
-            values = self.normalize_value_to_list(source_val)
+            # Padding if row contains values for a field less than the max_lengths
+            # e.g. there are 3 max note columns for the CSV but an entry only contains 2 notes
+            # the note_3 for that entry would be ""
+            values = list(source_val)
             values = values + [""] * count
 
+            # Filling values in expanded columns
             expanded_columns[base] = values[0]
             for i, value in enumerate(values[1:], start=2):
                 expanded_columns[f"{base}_{i}"] = value
@@ -62,9 +56,6 @@ class CustomCsvRenderer(BaseRenderer):
         return {header: expanded_columns.get(header, "") for header in headers}
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        if data is None:
-            return ""
-
         # Get flatten fields from the view if present
         view = (renderer_context or {}).get("view")
         self.flatten_fields = getattr(view, "flatten_fields", self.flatten_fields)

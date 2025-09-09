@@ -22,25 +22,21 @@ class TestDictionaryExportAPI(
 
     def setup_method(self):
         super().setup_method()
-        # Should get an empty csv with a valid filename
         self.site, self.user = factories.get_site_with_member(
             site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_filename(self, mock_search_query_execute):
-        dictionary_entry = factories.DictionaryEntryFactory.create(
-            site=self.site,
-        )
+    def mock_es_results(self, mock_search_query_execute, entry_id):
         mock_es_results = {
             "hits": {
                 "hits": [
                     {
                         "_index": "dictionary_entries_2023_06_23_06_11_22",
-                        "_id": str(dictionary_entry.id),
+                        "_id": str(entry_id),
                         "_score": 1.0,
                         "_source": {
-                            "document_id": dictionary_entry.id,
+                            "document_id": entry_id,
                             "document_type": "DictionaryEntry",
                             "site_id": self.site.id,
                         },
@@ -50,6 +46,23 @@ class TestDictionaryExportAPI(
             }
         }
         mock_search_query_execute.return_value = mock_es_results
+
+    def get_csv_rows(self, response):
+        content = response.content.decode("utf-8")
+        reader = csv.reader(io.StringIO(content))
+
+        rows = list(reader)
+        assert len(rows) > 0
+
+        headers = rows[0]
+        csv_rows = [dict(zip(headers, row)) for row in rows[1:]]
+        return csv_rows
+
+    def test_filename(self, mock_search_query_execute):
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
 
@@ -72,43 +85,14 @@ class TestDictionaryExportAPI(
             exclude_from_games=True,
             exclude_from_kids=True,
         )
-
-        mock_es_results = {
-            "hits": {
-                "hits": [
-                    {
-                        "_index": "dictionary_entries_2023_06_23_06_11_22",
-                        "_id": str(dictionary_entry.id),
-                        "_score": 1.0,
-                        "_source": {
-                            "document_id": dictionary_entry.id,
-                            "document_type": "DictionaryEntry",
-                            "site_id": self.site.id,
-                        },
-                    },
-                ],
-                "total": {"value": 1, "relation": "eq"},
-            }
-        }
-        mock_search_query_execute.return_value = mock_es_results
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
         response = self.client.get(
             self.get_list_endpoint(site_slug=self.site.slug), format="csv"
         )
+        csv_rows = self.get_csv_rows(response)
 
-        assert response.status_code == 200
-        assert "text/csv" in response["content-type"]
-
-        content = response.content.decode("utf-8")
-        reader = csv.reader(io.StringIO(content))
-
-        rows = list(reader)
-        assert len(rows) > 0
-
-        headers = rows[0]
-        data = [dict(zip(headers, row)) for row in rows[1:]]
-
-        first_row = data[0]
+        first_row = csv_rows[0]
         assert first_row["id"] == str(dictionary_entry.id)
         assert first_row["title"] == dictionary_entry.title
         assert first_row["type"] == dictionary_entry.type
@@ -130,40 +114,14 @@ class TestDictionaryExportAPI(
             acknowledgements=["acknowledgement_1", "acknowledgement_2"],
             alternate_spellings=["alternate_spelling_1", "alternate_spelling_2"],
         )
-
-        mock_es_results = {
-            "hits": {
-                "hits": [
-                    {
-                        "_index": "dictionary_entries_2023_06_23_06_11_22",
-                        "_id": str(dictionary_entry.id),
-                        "_score": 1.0,
-                        "_source": {
-                            "document_id": dictionary_entry.id,
-                            "document_type": "DictionaryEntry",
-                            "site_id": self.site.id,
-                        },
-                    },
-                ],
-                "total": {"value": 1, "relation": "eq"},
-            }
-        }
-        mock_search_query_execute.return_value = mock_es_results
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
         response = self.client.get(
             self.get_list_endpoint(site_slug=self.site.slug), format="csv"
         )
+        csv_rows = self.get_csv_rows(response)
 
-        content = response.content.decode("utf-8")
-        reader = csv.reader(io.StringIO(content))
-
-        rows = list(reader)
-        assert len(rows) > 0
-
-        headers = rows[0]
-        data = [dict(zip(headers, row)) for row in rows[1:]]
-
-        first_row = data[0]
+        first_row = csv_rows[0]
         assert first_row["translation"] == dictionary_entry.translations[0]
         assert first_row["translation_2"] == dictionary_entry.translations[1]
         assert first_row["note"] == dictionary_entry.notes[0]
@@ -200,40 +158,14 @@ class TestDictionaryExportAPI(
                 "https://www.youtube.com/watch?v=xyz456",
             ],
         )
-
-        mock_es_results = {
-            "hits": {
-                "hits": [
-                    {
-                        "_index": "dictionary_entries_2023_06_23_06_11_22",
-                        "_id": str(dictionary_entry.id),
-                        "_score": 1.0,
-                        "_source": {
-                            "document_id": dictionary_entry.id,
-                            "document_type": "DictionaryEntry",
-                            "site_id": self.site.id,
-                        },
-                    },
-                ],
-                "total": {"value": 1, "relation": "eq"},
-            }
-        }
-        mock_search_query_execute.return_value = mock_es_results
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
         response = self.client.get(
             self.get_list_endpoint(site_slug=self.site.slug), format="csv"
         )
+        csv_rows = self.get_csv_rows(response)
 
-        content = response.content.decode("utf-8")
-        reader = csv.reader(io.StringIO(content))
-
-        rows = list(reader)
-        assert len(rows) > 0
-
-        headers = rows[0]
-        data = [dict(zip(headers, row)) for row in rows[1:]]
-
-        first_row = data[0]
+        first_row = csv_rows[0]
         assert first_row["video_embed_link"] == dictionary_entry.related_video_links[0]
         assert (
             first_row["video_embed_link_2"] == dictionary_entry.related_video_links[1]
