@@ -28,7 +28,29 @@ class TestDictionaryExportAPI(
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_filename(self):
+    def test_filename(self, mock_search_query_execute):
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+        mock_es_results = {
+            "hits": {
+                "hits": [
+                    {
+                        "_index": "dictionary_entries_2023_06_23_06_11_22",
+                        "_id": str(dictionary_entry.id),
+                        "_score": 1.0,
+                        "_source": {
+                            "document_id": dictionary_entry.id,
+                            "document_type": "DictionaryEntry",
+                            "site_id": self.site.id,
+                        },
+                    },
+                ],
+                "total": {"value": 1, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_es_results
+
         response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
 
         assert response.status_code == 200
