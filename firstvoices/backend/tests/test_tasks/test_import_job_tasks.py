@@ -1024,7 +1024,7 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 4
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 0
 
 
 @pytest.mark.django_db
@@ -2064,26 +2064,8 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.all().count() == 4
-        entry1 = DictionaryEntry.objects.get(title="Multiple audio")
-        assert entry1.related_audio.filter(id=TEST_AUDIO_IDS[0]).count() == 1
-        assert entry1.related_audio.count() == 1
-
-        entry2 = DictionaryEntry.objects.get(title="Multiple image")
-        assert entry2.related_images.filter(id=TEST_IMAGE_IDS[0]).count() == 1
-        assert entry2.related_images.count() == 1
-
-        entry3 = DictionaryEntry.objects.get(title="Multiple video")
-        assert entry3.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
-        assert entry3.related_videos.count() == 1
-
-        entry4 = DictionaryEntry.objects.get(title="Multiple all media")
-        assert entry4.related_audio.filter(id=TEST_AUDIO_IDS[0]).count() == 1
-        assert entry4.related_audio.count() == 1
-        assert entry4.related_images.filter(id=TEST_IMAGE_IDS[0]).count() == 1
-        assert entry4.related_images.count() == 1
-        assert entry4.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
-        assert entry4.related_videos.count() == 1
+        # All rows have invalid media ids, so no entries should be imported
+        assert DictionaryEntry.objects.all().count() == 0
 
     def test_import_multiple_media_duplicate_filenames_same_row(self):
         file_content = get_sample_file(
