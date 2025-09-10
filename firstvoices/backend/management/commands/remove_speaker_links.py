@@ -140,20 +140,10 @@ class Command(BaseCommand):
     def validate_output_dir(self, output_dir):
         output_dir = os.path.expandvars(os.path.expanduser(output_dir))
 
-        if os.path.exists(output_dir) and not os.path.isdir(output_dir):
-            self.logger.error(f"Path '{output_dir}' exists but is not a directory.")
-            return None
-
-        if not os.path.exists(output_dir):
-            try:
-                os.makedirs(output_dir, exist_ok=True)
-                self.logger.info(f"Created output directory '{output_dir}'.")
-            except Exception as e:
-                self.logger.error(f"Failed to create directory '{output_dir}': {e}")
-                return None
-
-        if not os.access(output_dir, os.W_OK):
-            self.logger.error(f"Directory '{output_dir}' is not writable.")
+        if not os.path.isdir(output_dir) or not os.access(output_dir, os.W_OK):
+            self.logger.error(
+                f"Output directory '{output_dir}' does not exist or is not writeable."
+            )
             return None
 
         return output_dir
