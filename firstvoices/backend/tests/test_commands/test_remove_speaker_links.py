@@ -180,11 +180,11 @@ class TestRemoveSpeakerLinks:
         self.assert_caplog_text(caplog, "John Doe", self.site.slug, str(csv_file))
         assert "Dry run mode enabled. No changes will be made." in caplog.text
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0].id} from entry {entry_ids[0].title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry1.title}."
             in caplog.text
         )
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0].id} from entry {entry_ids[2].title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry3.title}."
             in caplog.text
         )
 
