@@ -278,7 +278,7 @@ class TestRemoveSpeakerLinks:
         assert f"Change log written to {output_file}." in caplog.text
 
     def test_remove_speaker_links_typo_dry_run(self, caplog):
-        audio_ids, person = self.setup_entries_with_audio("John Doe")
+        audio_ids, _ = self.setup_entries_with_audio("John Doe")
 
         typo_audio = self.setup_typo_audio("Jhon Doe")
 
