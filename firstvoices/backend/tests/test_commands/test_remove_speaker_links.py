@@ -46,12 +46,28 @@ class TestRemoveSpeakerLinks:
         entry3.related_audio.set([related_audio, related_audio_no_speaker])
         entry3.save()
 
-        entry_ids = DictionaryEntry.objects.all().values_list("id", flat=True)
         audio_ids = Audio.objects.filter(site=self.site).values_list("id", flat=True)
-        return entry_ids, audio_ids, person
+        return audio_ids, person
+
+    def setup_typo_audio(self, typo_name):
+        typo_person = factories.PersonFactory(name=typo_name, site=self.site)
+        typo_audio = factories.AudioFactory.create(site=self.site)
+        typo_audio.speakers.set([typo_person])
+        typo_audio.save()
+        return typo_audio
 
     def get_entry_csv_content(self):
         return f"id\n{self.TEST_ENTRY_UUID_1}\n{self.TEST_ENTRY_UUID_2}\n{self.TEST_ENTRY_UUID_3}\n"
+
+    def assert_entries_unchanged(self):
+        assert DictionaryEntry.objects.count() == 3
+        entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
+        assert entry1.related_audio.count() == 1
+        entry2 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_2)
+        assert entry2.related_audio.count() == 1
+        entry3 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_3)
+        assert entry3.related_audio.count() == 2
+        return [entry1, entry2, entry3]
 
     @staticmethod
     def assert_caplog_text(caplog, speaker_name, site_slug, csv_file):
@@ -130,34 +146,28 @@ class TestRemoveSpeakerLinks:
         )
 
     def test_remove_speaker_links_dry_run_no_csv(self, caplog):
-        entry_ids, audio_ids, _ = self.setup_entries_with_audio("John Doe")
+        audio_ids, _ = self.setup_entries_with_audio("John Doe")
         call_command(
             "remove_speaker_links",
             site_slug=self.site.slug,
             speaker_name="John Doe",
             dry_run=True,
         )
-        assert DictionaryEntry.objects.count() == 3
-        entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
-        assert entry1.related_audio.count() == 1
-        entry2 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_2)
-        assert entry2.related_audio.count() == 1
-        entry3 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_3)
-        assert entry3.related_audio.count() == 2
+        entries = self.assert_entries_unchanged()
 
         self.assert_caplog_text(caplog, "John Doe", self.site.slug, None)
         assert "Dry run mode enabled. No changes will be made." in caplog.text
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry1.title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entries[0].title}."
             in caplog.text
         )
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry3.title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entries[2].title}."
             in caplog.text
         )
 
     def test_remove_speaker_links_dry_run_with_csv(self, tmp_path, caplog):
-        entry_ids, audio_ids, _ = self.setup_entries_with_audio("John Doe")
+        audio_ids, _ = self.setup_entries_with_audio("John Doe")
         csv_file = tmp_path / "test_speaker_links.csv"
         with open(csv_file, "w") as f:
             f.write(self.get_entry_csv_content())
@@ -169,27 +179,21 @@ class TestRemoveSpeakerLinks:
             csv_file=str(csv_file),
             dry_run=True,
         )
-        assert DictionaryEntry.objects.count() == 3
-        entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
-        assert entry1.related_audio.count() == 1
-        entry2 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_2)
-        assert entry2.related_audio.count() == 1
-        entry3 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_3)
-        assert entry3.related_audio.count() == 2
+        entries = self.assert_entries_unchanged()
 
         self.assert_caplog_text(caplog, "John Doe", self.site.slug, str(csv_file))
         assert "Dry run mode enabled. No changes will be made." in caplog.text
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry1.title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entries[0].title}."
             in caplog.text
         )
         assert (
-            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entry3.title}."
+            f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entries[2].title}."
             in caplog.text
         )
 
     def test_remove_speaker_links_no_csv(self, tmp_path, caplog):
-        entry_ids, audio_ids, person = self.setup_entries_with_audio("John Doe")
+        audio_ids, person = self.setup_entries_with_audio("John Doe")
         call_command(
             "remove_speaker_links",
             site_slug=self.site.slug,
@@ -226,7 +230,7 @@ class TestRemoveSpeakerLinks:
         assert f"Change log written to {output_file}." in caplog.text
 
     def test_remove_speaker_links_with_csv(self, tmp_path, caplog):
-        entry_ids, audio_ids, person = self.setup_entries_with_audio("John Doe")
+        audio_ids, person = self.setup_entries_with_audio("John Doe")
         csv_file = tmp_path / "test_speaker_links.csv"
         with open(csv_file, "w") as f:
             f.write(self.get_entry_csv_content())
@@ -274,12 +278,9 @@ class TestRemoveSpeakerLinks:
         assert f"Change log written to {output_file}." in caplog.text
 
     def test_remove_speaker_links_typo_dry_run(self, caplog):
-        entry_ids, audio_ids, person = self.setup_entries_with_audio("John Doe")
+        audio_ids, person = self.setup_entries_with_audio("John Doe")
 
-        typo_person = factories.PersonFactory(name="Jhon Doe", site=self.site)
-        typo_audio = factories.AudioFactory.create(site=self.site)
-        typo_audio.speakers.set([typo_person])
-        typo_audio.save()
+        typo_audio = self.setup_typo_audio("Jhon Doe")
 
         entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
         entry1.related_audio.add(typo_audio)
@@ -316,12 +317,9 @@ class TestRemoveSpeakerLinks:
         )
 
     def test_remove_speaker_links_typo(self, tmp_path, caplog):
-        entry_ids, audio_ids, person = self.setup_entries_with_audio("John Doe")
+        audio_ids, person = self.setup_entries_with_audio("John Doe")
 
-        typo_person = factories.PersonFactory(name="Jhon Doe", site=self.site)
-        typo_audio = factories.AudioFactory.create(site=self.site)
-        typo_audio.speakers.set([typo_person])
-        typo_audio.save()
+        typo_audio = self.setup_typo_audio("Jhon Doe")
 
         entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
         entry1.related_audio.add(typo_audio)
