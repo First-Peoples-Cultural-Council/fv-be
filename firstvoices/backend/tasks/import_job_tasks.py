@@ -39,7 +39,7 @@ def get_valid_headers():
     return reduce(lambda a, b: a + b, supported_columns)
 
 
-def clean_csv(data, missing_media=[]):
+def clean_csv(data, missing_uploaded_media=[], missing_referenced_media=[]):
     """
     Method to run validations on a csv file and returns a list of
     accepted columns, ignored columns and a cleaned csv for importing.
@@ -67,7 +67,8 @@ def clean_csv(data, missing_media=[]):
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     # Remove rows that have missing media
-    rows_to_delete = list({(obj["idx"] - 1) for obj in missing_media})
+    rows_to_delete = list({(obj["idx"] - 1) for obj in missing_uploaded_media})
+    rows_to_delete += list({(obj["idx"] - 1) for obj in missing_referenced_media})
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
@@ -190,7 +191,7 @@ def process_import_job_data(
     Used for both dry_run and actual imports.
     """
     accepted_columns, ignored_columns, cleaned_data = clean_csv(
-        data, missing_uploaded_media
+        data, missing_uploaded_media, missing_referenced_media
     )
 
     # import media first
@@ -315,7 +316,23 @@ def get_missing_uploaded_media(data, import_job):
 
     associated_filenames = get_associated_filenames(import_job)
     missing_media = []
-    media_fields = ["AUDIO_FILENAME", "IMG_FILENAME", "VIDEO_FILENAME"]
+    media_fields = [
+        "AUDIO_FILENAME",
+        "AUDIO_2_FILENAME",
+        "AUDIO_3_FILENAME",
+        "AUDIO_4_FILENAME",
+        "AUDIO_5_FILENAME",
+        "IMG_FILENAME",
+        "IMG_2_FILENAME",
+        "IMG_3_FILENAME",
+        "IMG_4_FILENAME",
+        "IMG_5_FILENAME",
+        "VIDEO_FILENAME",
+        "VIDEO_2_FILENAME",
+        "VIDEO_3_FILENAME",
+        "VIDEO_4_FILENAME",
+        "VIDEO_5_FILENAME",
+    ]
 
     for field in media_fields:
         if field not in data.headers:
