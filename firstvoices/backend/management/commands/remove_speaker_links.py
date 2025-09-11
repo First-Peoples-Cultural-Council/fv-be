@@ -3,6 +3,7 @@ import logging
 import os
 
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 
 from backend.models import Audio, DictionaryEntry, Person, Site
@@ -64,44 +65,46 @@ class Command(BaseCommand):
         For each entry in the csv, marks all related audio with the provided speaker name,
         and removes the audio links from the entry.
         """
-        for _id in id_list:
-            try:
-                entry = DictionaryEntry.objects.get(id=_id, site__slug=site_slug)
-            except DictionaryEntry.DoesNotExist:
-                self.logger.warning(
-                    f"DictionaryEntry with ID {_id} not found in site {site_slug}."
-                )
-                continue
-
-            related_audio = entry.related_audio.all()
-            if related_audio.exists():
-                if dry_run:
-                    audio_ids = [str(audio.id) for audio in related_audio]
-                    self.logger.info(
-                        f"[Dry Run] Would remove links to audio {audio_ids} from entry {entry.title} "
-                        f"and add speaker '{speaker_name}' to those audio models."
+        with transaction.atomic():
+            for _id in id_list:
+                try:
+                    entry = DictionaryEntry.objects.get(id=_id, site__slug=site_slug)
+                except DictionaryEntry.DoesNotExist:
+                    self.logger.warning(
+                        f"DictionaryEntry with ID {_id} not found in site {site_slug}."
                     )
-                else:
-                    for audio in related_audio:
-                        self.change_log.append(
-                            {
-                                "entry_id": str(entry.id),
-                                "entry_title": entry.title,
-                                "audio_id": str(audio.id),
-                                "audio_title": audio.title,
-                                "speaker_name": speaker_name,
-                                "site": site_slug,
-                            }
+                    continue
+
+                related_audio = entry.related_audio.all()
+                if related_audio.exists():
+                    if dry_run:
+                        audio_ids = [str(audio.id) for audio in related_audio]
+                        audio_ids_str = ", ".join(audio_ids)
+                        self.logger.info(
+                            f"[Dry Run] Would remove links to audio {audio_ids_str} from entry {entry.title} "
+                            f"and add speaker '{speaker_name}' to those audio models."
                         )
-                        speaker, _ = Person.objects.get_or_create(
-                            name=speaker_name,
-                            site=entry.site,
-                            defaults={"bio": "---"},
-                        )
-                        audio.speakers.add(speaker)
-                        audio.save(set_modified_date=False)
-                        entry.related_audio.remove(audio)
-                        entry.save(set_modified_date=False)
+                    else:
+                        for audio in related_audio:
+                            self.change_log.append(
+                                {
+                                    "entry_id": str(entry.id),
+                                    "entry_title": entry.title,
+                                    "audio_id": str(audio.id),
+                                    "audio_title": audio.title,
+                                    "speaker_name": speaker_name,
+                                    "site": site_slug,
+                                }
+                            )
+                            speaker, _ = Person.objects.get_or_create(
+                                name=speaker_name,
+                                site=entry.site,
+                                defaults={"bio": "---"},
+                            )
+                            audio.speakers.add(speaker)
+                            audio.save(set_modified_date=False)
+                            entry.related_audio.remove(audio)
+                            entry.save(set_modified_date=False)
 
     def remove_audio_links_by_speaker(self, speaker_name, site_slug, typos, dry_run):
         site_audio = Audio.objects.filter(site__slug=site_slug)
@@ -109,33 +112,34 @@ class Command(BaseCommand):
         if typos:
             speakers_to_check = speakers_to_check + typos.split(",")
 
-        for name in speakers_to_check:
-            name = name.strip()
-            audio_to_unlink = site_audio.filter(
-                speakers__name__icontains=name
-            ).distinct()
-            for audio in audio_to_unlink:
-                related_entries = DictionaryEntry.objects.filter(
-                    related_audio=audio, site__slug=site_slug
-                )
-                for entry in related_entries:
-                    if dry_run:
-                        self.logger.info(
-                            f"[Dry Run] Would remove audio link {audio.id} from entry {entry.title}."
-                        )
-                    else:
-                        self.change_log.append(
-                            {
-                                "entry_id": str(entry.id),
-                                "entry_title": entry.title,
-                                "audio_id": str(audio.id),
-                                "audio_title": audio.title,
-                                "speaker_name": speaker_name,
-                                "site": site_slug,
-                            }
-                        )
-                        entry.related_audio.remove(audio)
-                        entry.save(set_modified_date=False)
+        with transaction.atomic():
+            for name in speakers_to_check:
+                name = name.strip()
+                audio_to_unlink = site_audio.filter(
+                    speakers__name__icontains=name
+                ).distinct()
+                for audio in audio_to_unlink:
+                    related_entries = DictionaryEntry.objects.filter(
+                        related_audio=audio, site__slug=site_slug
+                    )
+                    for entry in related_entries:
+                        if dry_run:
+                            self.logger.info(
+                                f"[Dry Run] Would remove audio link {audio.id} from entry {entry.title}."
+                            )
+                        else:
+                            self.change_log.append(
+                                {
+                                    "entry_id": str(entry.id),
+                                    "entry_title": entry.title,
+                                    "audio_id": str(audio.id),
+                                    "audio_title": audio.title,
+                                    "speaker_name": speaker_name,
+                                    "site": site_slug,
+                                }
+                            )
+                            entry.related_audio.remove(audio)
+                            entry.save(set_modified_date=False)
 
     def validate_output_dir(self, output_dir):
         output_dir = os.path.expandvars(os.path.expanduser(output_dir))

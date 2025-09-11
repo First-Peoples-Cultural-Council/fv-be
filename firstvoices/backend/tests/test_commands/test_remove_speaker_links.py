@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from django.core.management import call_command
 from django.utils import timezone
@@ -61,6 +63,7 @@ class TestRemoveSpeakerLinks:
 
     def assert_entries_unchanged(self):
         assert DictionaryEntry.objects.count() == 3
+        assert Audio.objects.count() == 2
         entry1 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_1)
         assert entry1.related_audio.count() == 1
         entry2 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_2)
@@ -361,3 +364,23 @@ class TestRemoveSpeakerLinks:
             content = f.read()
             assert content == expected_output_content
         assert f"Change log written to {output_file}." in caplog.text
+
+    def test_rollback_if_error(self, tmp_path):
+        self.setup_entries_with_audio("John Doe")
+        csv_file = tmp_path / "test_speaker_links.csv"
+        with open(csv_file, "w") as f:
+            f.write(self.get_entry_csv_content())
+
+        with patch.object(
+            DictionaryEntry, "save", side_effect=Exception("Mocked exception")
+        ):
+            call_command(
+                "remove_speaker_links",
+                site_slug=self.site.slug,
+                speaker_name="John Doe",
+                output_dir=str(tmp_path),
+                csv_file=str(csv_file),
+                dry_run=False,
+            )
+
+        self.assert_entries_unchanged()
