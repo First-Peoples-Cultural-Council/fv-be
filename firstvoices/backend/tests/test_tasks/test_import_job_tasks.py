@@ -1026,6 +1026,28 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 4
         assert validation_report.new_rows == 0
 
+    def test_missing_media_multiple(self):
+        import_job = self.import_batch_with_media_files("missing_media_multiple.csv")
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 3
+
+        error_rows = validation_report.rows.all().order_by("row_number")
+        assert (
+            "Media file missing in uploaded files: missing-audio.mp3."
+            in error_rows[0].errors
+        )
+        assert (
+            "Media file missing in uploaded files: missing-image.jpg."
+            in error_rows[1].errors
+        )
+        assert (
+            "Media file missing in uploaded files: missing-video.mp4."
+            in error_rows[2].errors
+        )
+
 
 @pytest.mark.django_db
 class TestBulkImport(IgnoreTaskResultsMixin):
@@ -2150,3 +2172,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry.related_audio.count() == 1
         related_audio = entry.related_audio.first()
         assert related_audio.title == "related_audio-1.mp3"
+
+    def test_missing_media_multiple_rows_skipped(self):
+        self.confirm_upload_with_media_files("missing_media_multiple.csv")
+        assert DictionaryEntry.objects.all().count() == 0
