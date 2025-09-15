@@ -34,7 +34,7 @@ editdistance==0.8.1
 elastic-transport==8.17.1
 elasticsearch==8.18.0
 et-xmlfile==2.0.0
-eventlet==0.40.2
+eventlet==0.40.3
 factory-boy==3.3.3
 Faker==37.5.3
 ffmpeg-python==0.2.0
