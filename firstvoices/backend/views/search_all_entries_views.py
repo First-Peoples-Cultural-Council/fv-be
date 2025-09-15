@@ -6,13 +6,17 @@ from drf_spectacular.utils import (
 )
 
 from backend.search.validators import get_valid_site_ids_from_slugs
-from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
+from backend.views.base_search_entries_views import (
+    BASE_SEARCH_PARAMS,
+    BaseSearchEntriesViewSet,
+)
 
 
 @extend_schema_view(
     list=extend_schema(
         description="List of search results from all sites satisfying the query.",
         parameters=[
+            *BASE_SEARCH_PARAMS,
             OpenApiParameter(
                 name="sites",
                 description="Filter results based on site. Multiple site slugs can be passed as a comma-separated "

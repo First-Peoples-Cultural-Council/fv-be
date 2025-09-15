@@ -164,3 +164,19 @@ class TextListField(serializers.ListField):
                     "Expected the objects in the list to contain key 'text'."
                 )
         return response
+
+
+class InvertedBooleanField(serializers.BooleanField):
+    # Read-only field to be used in export serializers
+    def to_representation(self, value):
+        value = super().to_representation(value)
+        return None if value is None else (not bool(value))
+
+
+class CommaSeparatedIDsField(serializers.Field):
+    # Read-only field to be used in export serializers
+    def to_representation(self, value):
+        ids = value.all().values_list("id", flat=True)
+        ids = [str(id) for id in ids]
+
+        return ",".join(ids)
