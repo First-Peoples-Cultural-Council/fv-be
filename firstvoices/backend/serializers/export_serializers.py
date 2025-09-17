@@ -21,6 +21,7 @@ class DictionaryEntryExportResultSerializer(
     audio_ids = CommaSeparatedIDsField(source="related_audio", read_only=True)
     video_ids = CommaSeparatedIDsField(source="related_videos", read_only=True)
     image_ids = CommaSeparatedIDsField(source="related_images", read_only=True)
+    external_system = serializers.SlugRelatedField(slug_field="title", read_only=True)
 
     class Meta:
         model = DictionaryEntry
@@ -43,6 +44,7 @@ class DictionaryEntryExportResultSerializer(
             "related_dictionary_entries",
             "include_in_games",
             "include_on_kids_site",
+            "external_system",
         )
 
 
