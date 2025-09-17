@@ -34,7 +34,6 @@ class SearchResultPrefetchMixin:
             "site",
             "created_by",
             "last_modified_by",
-            "external_system",
         ).prefetch_related(
             Prefetch(
                 "related_audio",
