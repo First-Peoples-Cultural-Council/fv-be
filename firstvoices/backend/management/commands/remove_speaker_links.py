@@ -13,7 +13,7 @@ class Command(BaseCommand):
     help = (
         "Removes the audio links from dictionary entries given a speaker name."
         "And/or csv file containing the ids of the entries."
-        "Speaker name is also added as a speaker to all entries that had audio removed."
+        "The provided speaker name is added as a speaker to all audio files associated with the entries in the csv."
     )
 
     def __init__(self, *args, **kwargs):
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                         audio_ids_str = ", ".join(audio_ids)
                         self.logger.info(
                             f"[Dry Run] Would remove links to audio {audio_ids_str} from entry {entry.title} "
-                            f"and add speaker '{speaker_name}' to those audio models."
+                            f"and add speaker '{speaker_name}' to affected audio instances."
                         )
                     else:
                         for audio in related_audio:
