@@ -25,6 +25,7 @@ class DictionaryEntryDocument(BaseSiteEntryWithMediaDocument):
     custom_order = Keyword()
     categories = Keyword()
     import_job_id = Keyword()
+    external_system = Keyword()
     has_translation = Boolean()
     has_unrecognized_chars = Boolean()
     has_categories = Boolean()

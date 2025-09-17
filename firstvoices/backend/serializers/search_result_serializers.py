@@ -34,6 +34,7 @@ class SearchResultPrefetchMixin:
             "site",
             "created_by",
             "last_modified_by",
+            "external_system",
         ).prefetch_related(
             Prefetch(
                 "related_audio",
@@ -167,6 +168,7 @@ class DictionaryEntryMinimalSerializer(
     )
     created_by = serializers.StringRelatedField(read_only=True)
     last_modified_by = serializers.StringRelatedField(read_only=True)
+    external_system = serializers.SlugRelatedField(slug_field="title", read_only=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -191,6 +193,7 @@ class DictionaryEntryMinimalSerializer(
             "related_audio",
             "related_images",
             "split_chars_base",
+            "external_system",
         )
         read_only_fields = ("id", "title", "type")
 

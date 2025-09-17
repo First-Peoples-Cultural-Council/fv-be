@@ -183,6 +183,10 @@ def get_import_job_query(import_job_id):
     return Q("bool", filter=[Q("term", import_job_id=str(import_job_id))])
 
 
+def get_external_system_query(external_system_id):
+    return Q("bool", filter=[Q("term", external_system=external_system_id)])
+
+
 def get_kids_query(kids):
     return Q("bool", filter=[Q("term", exclude_from_kids=not kids)])
 

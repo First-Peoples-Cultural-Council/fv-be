@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from backend.models import Site
 from backend.models.constants import Visibility
+from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.search.constants import ALL_SEARCH_TYPES, LENGTH_FILTER_MAX
 from backend.search.queries.query_builder_utils import SearchDomains
 
@@ -167,3 +168,15 @@ def get_valid_site_ids_from_slugs(input_site_slug_str, user):
     if len(selected_values) == 0:
         return None
     return selected_values
+
+
+def get_valid_external_system_id(title):
+    if not title:
+        return None
+
+    try:
+        valid_instance = ExternalDictionaryEntrySystem.objects.filter(title=title)
+        return str(valid_instance[0].id)
+    except (exceptions.ValidationError, IndexError):
+        # invalid title or no entry found with provided title
+        return None
