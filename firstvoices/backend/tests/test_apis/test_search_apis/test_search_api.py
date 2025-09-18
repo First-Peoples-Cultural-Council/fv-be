@@ -407,3 +407,12 @@ class TestSearchAPI(
         assert response.status_code == 200
         assert response_data["count"] == 4
         assert len(response_data["results"]) == 4
+
+    def test_invalid_external_system(self):
+        response = self.client.get(
+            self.get_list_endpoint() + "?externalSystem=invalidSystem"
+        )
+        response_data = json.loads(response.content)
+
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0

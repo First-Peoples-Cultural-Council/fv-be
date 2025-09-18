@@ -177,3 +177,19 @@ class TestDictionaryExportAPI(
         assert str(image_2.id) in first_row["image_ids"]
         assert str(video_1.id) in first_row["video_ids"]
         assert str(video_2.id) in first_row["video_ids"]
+
+    def test_external_system(self, mock_search_query_execute):
+        external_system = factories.ExternalDictionaryEntrySystemFactory.create()
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+            external_system=external_system,
+        )
+
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=self.site.slug), format="csv"
+        )
+        csv_rows = self.get_csv_rows(response)
+        first_row = csv_rows[0]
+        assert first_row["external_system"] == external_system.title

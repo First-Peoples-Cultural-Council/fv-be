@@ -605,6 +605,29 @@ class TestImportJob:
 
 
 @pytest.mark.django_db
+class TestExternalSystem:
+    def setup_method(self):
+        self.external_system = factories.ExternalDictionaryEntrySystem()
+
+    def test_default(self):  # default case
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "external_system" not in str(search_query)
+
+    def test_valid_import_job(self):
+        search_query = get_search_query(
+            external_system_id=self.external_system.id, user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+
+        filtered_term = search_query["query"]["bool"]["filter"][0]["term"]
+        assert "external_system" in filtered_term
+
+        assert str(self.external_system.id) in filtered_term["external_system"]
+
+
+@pytest.mark.django_db
 class TestSearchFilters:
     def test_empty_site_id_allowed(self):
         search_query = get_search_query(q="something", sites="", user=AnonymousUser())

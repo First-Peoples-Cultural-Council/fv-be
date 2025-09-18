@@ -172,7 +172,7 @@ def get_valid_site_ids_from_slugs(input_site_slug_str, user):
 
 def get_valid_external_system_id(title):
     if not title:
-        return None
+        return ""
 
     try:
         valid_instance = ExternalDictionaryEntrySystem.objects.filter(title=title)

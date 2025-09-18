@@ -6,11 +6,7 @@ from drf_spectacular.utils import (
 )
 
 from backend.models import Category, ImportJob
-from backend.search.validators import (
-    get_valid_external_system_id,
-    get_valid_instance_id,
-    get_valid_starts_with_char,
-)
+from backend.search.validators import get_valid_instance_id, get_valid_starts_with_char
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_search_entries_views import (
     BASE_SEARCH_PARAMS,
@@ -50,20 +46,6 @@ SITE_SEARCH_PARAMS = [
                 "valid UUID",
                 value="6cdb161a-2ce7-4197-813d-1683448128a2",
                 description="Return entries which were imported by the specified job.",
-            ),
-        ],
-    ),
-    OpenApiParameter(
-        name="externalSystem",
-        description="Filter results based on the associated external system.",
-        required=False,
-        default="",
-        type=str,
-        examples=[
-            OpenApiExample(
-                "ExternalSystemName",
-                value="ExternalSystemName",
-                description="Return entries which have the specified external system.",
             ),
         ],
     ),
@@ -134,13 +116,6 @@ class SearchSiteEntriesViewSet(SiteContentViewSetMixin, BaseSearchEntriesViewSet
             search_params["import_job_id"] = import_job_id
         else:
             search_params["import_job_id"] = ""
-
-        external_system_input_str = self.request.GET.get("externalSystem", "")
-        if external_system_input_str:
-            external_system_id = get_valid_external_system_id(external_system_input_str)
-            search_params["external_system_id"] = external_system_id
-        else:
-            search_params["external_system_id"] = ""
 
         return search_params
 
