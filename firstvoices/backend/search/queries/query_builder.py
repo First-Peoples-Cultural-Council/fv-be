@@ -6,6 +6,7 @@ from backend.search.constants import ALL_SEARCH_TYPES
 from backend.search.queries.query_builder_utils import (
     get_category_query,
     get_cleaned_search_term,
+    get_external_system_query,
     get_games_query,
     get_has_audio_query,
     get_has_categories_query,
@@ -44,6 +45,7 @@ def get_search_query(
     starts_with_char="",
     category_id="",
     import_job_id="",
+    external_system_id="",
     kids=None,
     games=None,
     visibility="",
@@ -110,6 +112,9 @@ def get_search_query(
 
     if import_job_id:
         search_query = search_query.query(get_import_job_query(import_job_id))
+
+    if external_system_id:
+        search_query = search_query.query(get_external_system_query(external_system_id))
 
     if kids is not None:
         search_query = search_query.query(get_kids_query(kids))

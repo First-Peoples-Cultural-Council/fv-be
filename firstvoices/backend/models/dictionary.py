@@ -26,7 +26,7 @@ from .part_of_speech import PartOfSpeech
 
 
 class ExternalDictionaryEntrySystem(BaseModel):
-    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH)
+    title = models.CharField(max_length=DEFAULT_TITLE_LENGTH, unique=True)
 
     class Meta:
         verbose_name = _("External dictionary entry system")

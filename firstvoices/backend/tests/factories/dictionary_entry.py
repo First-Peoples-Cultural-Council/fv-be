@@ -1,6 +1,7 @@
 import factory
 
 from backend.models import DictionaryEntry, PartOfSpeech
+from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.tests.factories import RelatedMediaBaseFactory
 from backend.tests.factories.base_factories import BaseFactory, BaseSiteContentFactory
 
@@ -32,3 +33,10 @@ class DictionaryEntryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     alternate_spellings = factory.List(
         [factory.Sequence(lambda n: "Alternate Spelling %03d" % n)]
     )
+
+
+class ExternalDictionaryEntrySystemFactory(BaseFactory):
+    class Meta:
+        model = ExternalDictionaryEntrySystem
+
+    title = factory.Sequence(lambda n: "External dictionary entry system %03d" % n)

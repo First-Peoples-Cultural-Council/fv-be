@@ -18,6 +18,7 @@ from backend.search.validators import (
     get_valid_boolean,
     get_valid_count,
     get_valid_domain,
+    get_valid_external_system_id,
     get_valid_search_types,
     get_valid_site_features,
     get_valid_sort,
@@ -176,6 +177,20 @@ BASE_SEARCH_PARAMS = [
                 "Public, Members",
                 value="public,members",
                 description="Returns results that have been published with Public or Members-only visibility.",
+            ),
+        ],
+    ),
+    OpenApiParameter(
+        name="externalSystem",
+        description="Filter results based on the associated external system.",
+        required=False,
+        default="",
+        type=str,
+        examples=[
+            OpenApiExample(
+                "ExternalSystemName",
+                value="ExternalSystemName",
+                description="Return entries which have the specified external system.",
             ),
         ],
     ),
@@ -473,6 +488,9 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str, "both")
 
+        external_system_input_str = self.request.GET.get("externalSystem", "")
+        external_system_id = get_valid_external_system_id(external_system_input_str)
+
         kids_flag = self.request.GET.get("kids", None)
         kids_flag = get_valid_boolean(kids_flag)
 
@@ -538,6 +556,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
             "max_words": max_words,
             "sort": valid_sort,
             "descending": descending,
+            "external_system_id": external_system_id,
         }
 
     def build_query(self, **kwargs):
@@ -587,6 +606,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
             not search_params["types"]
             or not search_params["domain"]
             or search_params["visibility"] is None
+            or search_params["external_system_id"] is None
             or (
                 search_params["min_words"]
                 and search_params["max_words"]
