@@ -382,6 +382,7 @@ class DictionaryEntryImporter(BaseImporter):
         "include_in_games",
         "external_system",
         "external_system_entry_id",
+        "video_embed_links",
     ]
     supported_columns_multiple = [
         "translation",

@@ -34,6 +34,8 @@ TEST_VIDEO_IDS = [
     "4764e764-7830-4bea-b30e-4e35cc93b12b",
     "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
 ]
+VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=N_Iyb0LkDUc"
 
 
 @pytest.mark.django_db
@@ -1046,6 +1048,38 @@ class TestBulkImportDryRun:
         assert (
             "Media file missing in uploaded files: missing-video.mp4."
             in error_rows[2].errors
+        )
+
+    def test_invalid_video_embed_links(self):
+        file_content = get_sample_file(
+            "import_job/invalid_video_embed_links.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+
+        assert validation_report.new_rows == 0
+        assert validation_report.error_rows == 3
+
+        error_rows = validation_report.rows.all().order_by("row_number")
+        assert (
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL."
+            in error_rows[0].errors
+        )
+        assert (
+            "related_video_links: Duplicate urls found in list." in error_rows[1].errors
+        )
+        assert (
+            "related_video_links: Duplicate urls found in list." in error_rows[2].errors
         )
 
 
@@ -2176,3 +2210,33 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     def test_missing_media_multiple_rows_skipped(self):
         self.confirm_upload_with_media_files("missing_media_multiple.csv")
         assert DictionaryEntry.objects.all().count() == 0
+
+    def test_import_video_embed_links(self):
+        file_content = get_sample_file(
+            "import_job/video_embed_links.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.all().count() == 3
+
+        entry_1 = DictionaryEntry.objects.get(title="YouTube")
+        assert len(entry_1.related_video_links) == 1
+        assert entry_1.related_video_links[0] == YOUTUBE_VIDEO_LINK
+
+        entry_2 = DictionaryEntry.objects.get(title="Vimeo")
+        assert len(entry_2.related_video_links) == 1
+        assert entry_2.related_video_links[0] == VIMEO_VIDEO_LINK
+
+        entry_3 = DictionaryEntry.objects.get(title="Both")
+        assert len(entry_3.related_video_links) == 2
+        assert YOUTUBE_VIDEO_LINK in entry_3.related_video_links
+        assert VIMEO_VIDEO_LINK in entry_3.related_video_links
