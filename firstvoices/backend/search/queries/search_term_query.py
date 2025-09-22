@@ -81,13 +81,11 @@ def get_search_term_query(search_term, domain):
         q=search_term,
         field="primary_language_search_fields",
         boost=CONTAINS_MATCH_PRIMARY_BOOST,
-        match_type="contains",
     )
     contains_match_primary_translation_query = substring_match(
         q=search_term,
         field="primary_translation_search_fields",
         boost=CONTAINS_MATCH_PRIMARY_BOOST,
-        match_type="contains",
     )
     fuzzy_match_primary_language_query = fuzzy_match(
         q=search_term,
@@ -127,13 +125,11 @@ def get_search_term_query(search_term, domain):
         q=search_term,
         field="secondary_language_search_fields",
         boost=CONTAINS_MATCH_SECONDARY_BOOST,
-        match_type="contains",
     )
     contains_match_secondary_translation_query = substring_match(
         q=search_term,
         field="secondary_translation_search_fields",
         boost=CONTAINS_MATCH_SECONDARY_BOOST,
-        match_type="contains",
     )
     fuzzy_match_secondary_language_query = fuzzy_match(
         q=search_term,
@@ -173,13 +169,11 @@ def get_search_term_query(search_term, domain):
         q=search_term,
         field="other_language_search_fields",
         boost=CONTAINS_MATCH_OTHER_BOOST,
-        match_type="contains",
     )
     contains_match_other_translation_query = substring_match(
         q=search_term,
         field="other_translation_search_fields",
         boost=CONTAINS_MATCH_OTHER_BOOST,
-        match_type="contains",
     )
     fuzzy_match_other_language_query = fuzzy_match(
         q=search_term,
