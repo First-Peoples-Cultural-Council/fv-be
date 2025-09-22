@@ -62,7 +62,6 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         "acknowledgements": "acknowledgement",
         "alternate_spellings": "alternate_spelling",
         "pronunciations": "pronunciation",
-        "related_video_links": "video_embed_link",
         "related_dictionary_entries": "related_entry_id",
     }
 

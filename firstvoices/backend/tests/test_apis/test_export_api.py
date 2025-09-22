@@ -166,10 +166,8 @@ class TestDictionaryExportAPI(
         csv_rows = self.get_csv_rows(response)
 
         first_row = csv_rows[0]
-        assert first_row["video_embed_link"] == dictionary_entry.related_video_links[0]
-        assert (
-            first_row["video_embed_link_2"] == dictionary_entry.related_video_links[1]
-        )
+        assert dictionary_entry.related_video_links[0] in first_row["video_embed_links"]
+        assert dictionary_entry.related_video_links[1] in first_row["video_embed_links"]
 
         assert str(audio_1.id) in first_row["audio_ids"]
         assert str(audio_2.id) in first_row["audio_ids"]
