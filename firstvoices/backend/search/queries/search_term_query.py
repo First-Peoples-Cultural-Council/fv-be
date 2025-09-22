@@ -9,17 +9,17 @@ from backend.search.queries.text_matching import (
 
 BASE_BOOST = 1.0  # default value of boost
 
-# Exact matches
+# Exact matches (highest)
 EXACT_MATCH_PRIMARY_BOOST = 12
 EXACT_MATCH_SECONDARY_BOOST = 10
 EXACT_MATCH_OTHER_BOOST = 8
 
-# Prefix matches (Prioritized higher than other substrings)
+# Prefix matches (prioritized higher than contains and fuzzy queries)
 PREFIX_MATCH_PRIMARY_BOOST = 9
 PREFIX_MATCH_SECONDARY_BOOST = 7
 PREFIX_MATCH_OTHER_BOOST = 5
 
-# Middle/suffix matches (equal but weaker than fuzzy matches)
+# Substring matches in the middle or suffix (middle and suffix are equal but weaker than prefix matches)
 CONTAINS_MATCH_PRIMARY_BOOST = 6
 CONTAINS_MATCH_SECONDARY_BOOST = 4
 CONTAINS_MATCH_OTHER_BOOST = 3
