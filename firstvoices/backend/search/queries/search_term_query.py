@@ -8,14 +8,25 @@ from backend.search.queries.text_matching import (
 )
 
 BASE_BOOST = 1.0  # default value of boost
-EXACT_MATCH_PRIMARY_BOOST = 10
-EXACT_MATCH_SECONDARY_BOOST = 8
-EXACT_MATCH_OTHER_BOOST = 6
-SUBSTRING_MATCH_PRIMARY_BOOST = 9
-SUBSTRING_MATCH_SECONDARY_BOOST = 7
-SUBSTRING_MATCH_OTHER_BOOST = 5
-FUZZY_MATCH_PRIMARY_BOOST = 4
-FUZZY_MATCH_SECONDARY_BOOST = 3
+
+# Exact matches
+EXACT_MATCH_PRIMARY_BOOST = 12
+EXACT_MATCH_SECONDARY_BOOST = 10
+EXACT_MATCH_OTHER_BOOST = 8
+
+# Prefix matches (Prioritized higher than other substrings)
+PREFIX_MATCH_PRIMARY_BOOST = 9
+PREFIX_MATCH_SECONDARY_BOOST = 7
+PREFIX_MATCH_OTHER_BOOST = 5
+
+# Middle/suffix matches (equal but weaker than fuzzy matches)
+CONTAINS_MATCH_PRIMARY_BOOST = 6
+CONTAINS_MATCH_SECONDARY_BOOST = 4
+CONTAINS_MATCH_OTHER_BOOST = 3
+
+# Fuzzy matches (lowest)
+FUZZY_MATCH_PRIMARY_BOOST = 2
+FUZZY_MATCH_SECONDARY_BOOST = 1.5
 FUZZY_MATCH_OTHER_BOOST = BASE_BOOST
 
 
@@ -54,15 +65,29 @@ def get_search_term_query(search_term, domain):
         field="primary_translation_search_fields",
         boost=EXACT_MATCH_PRIMARY_BOOST,
     )
-    substring_match_primary_language_query = substring_match(
+    prefix_match_primary_language_query = substring_match(
         q=search_term,
         field="primary_language_search_fields",
-        boost=SUBSTRING_MATCH_PRIMARY_BOOST,
+        boost=PREFIX_MATCH_PRIMARY_BOOST,
+        match_type="prefix",
     )
-    substring_match_primary_translation_query = substring_match(
+    prefix_match_primary_translation_query = substring_match(
         q=search_term,
         field="primary_translation_search_fields",
-        boost=SUBSTRING_MATCH_PRIMARY_BOOST,
+        boost=PREFIX_MATCH_PRIMARY_BOOST,
+        match_type="prefix",
+    )
+    contains_match_primary_language_query = substring_match(
+        q=search_term,
+        field="primary_language_search_fields",
+        boost=CONTAINS_MATCH_PRIMARY_BOOST,
+        match_type="contains",
+    )
+    contains_match_primary_translation_query = substring_match(
+        q=search_term,
+        field="primary_translation_search_fields",
+        boost=CONTAINS_MATCH_PRIMARY_BOOST,
+        match_type="contains",
     )
     fuzzy_match_primary_language_query = fuzzy_match(
         q=search_term,
@@ -86,15 +111,29 @@ def get_search_term_query(search_term, domain):
         field="secondary_translation_search_fields",
         boost=EXACT_MATCH_SECONDARY_BOOST,
     )
-    substring_match_secondary_language_query = substring_match(
+    prefix_match_secondary_language_query = substring_match(
         q=search_term,
         field="secondary_language_search_fields",
-        boost=SUBSTRING_MATCH_SECONDARY_BOOST,
+        boost=PREFIX_MATCH_SECONDARY_BOOST,
+        match_type="prefix",
     )
-    substring_match_secondary_translation_query = substring_match(
+    prefix_match_secondary_translation_query = substring_match(
         q=search_term,
         field="secondary_translation_search_fields",
-        boost=SUBSTRING_MATCH_SECONDARY_BOOST,
+        boost=PREFIX_MATCH_SECONDARY_BOOST,
+        match_type="prefix",
+    )
+    contains_match_secondary_language_query = substring_match(
+        q=search_term,
+        field="secondary_language_search_fields",
+        boost=CONTAINS_MATCH_SECONDARY_BOOST,
+        match_type="contains",
+    )
+    contains_match_secondary_translation_query = substring_match(
+        q=search_term,
+        field="secondary_translation_search_fields",
+        boost=CONTAINS_MATCH_SECONDARY_BOOST,
+        match_type="contains",
     )
     fuzzy_match_secondary_language_query = fuzzy_match(
         q=search_term,
@@ -118,15 +157,29 @@ def get_search_term_query(search_term, domain):
         field="other_translation_search_fields",
         boost=EXACT_MATCH_OTHER_BOOST,
     )
-    substring_match_other_language_query = substring_match(
+    prefix_match_other_language_query = substring_match(
         q=search_term,
         field="other_language_search_fields",
-        boost=SUBSTRING_MATCH_OTHER_BOOST,
+        boost=PREFIX_MATCH_OTHER_BOOST,
+        match_type="prefix",
     )
-    substring_match_other_translation_query = substring_match(
+    prefix_match_other_translation_query = substring_match(
         q=search_term,
         field="other_translation_search_fields",
-        boost=SUBSTRING_MATCH_OTHER_BOOST,
+        boost=PREFIX_MATCH_OTHER_BOOST,
+        match_type="prefix",
+    )
+    contains_match_other_language_query = substring_match(
+        q=search_term,
+        field="other_language_search_fields",
+        boost=CONTAINS_MATCH_OTHER_BOOST,
+        match_type="contains",
+    )
+    contains_match_other_translation_query = substring_match(
+        q=search_term,
+        field="other_translation_search_fields",
+        boost=CONTAINS_MATCH_OTHER_BOOST,
+        match_type="contains",
     )
     fuzzy_match_other_language_query = fuzzy_match(
         q=search_term,
@@ -142,59 +195,55 @@ def get_search_term_query(search_term, domain):
     subqueries = []
 
     subquery_domains = {
-        "language_exact": [
-            exact_match_primary_language_query,
-            exact_match_secondary_language_query,
-            exact_match_other_language_query,
-            substring_match_primary_language_query,
-            substring_match_secondary_language_query,
-            substring_match_other_language_query,
-        ],
-        "translation_exact": [
-            exact_match_primary_translation_query,
-            exact_match_secondary_translation_query,
-            exact_match_other_translation_query,
-            substring_match_primary_translation_query,
-            substring_match_secondary_translation_query,
-            substring_match_other_translation_query,
-        ],
         "language": [
             exact_match_primary_language_query,
             exact_match_secondary_language_query,
             exact_match_other_language_query,
-            substring_match_primary_language_query,
-            substring_match_secondary_language_query,
-            substring_match_other_language_query,
-            fuzzy_match_primary_language_query,
-            fuzzy_match_secondary_language_query,
-            fuzzy_match_other_language_query,
+            prefix_match_primary_language_query,
+            prefix_match_secondary_language_query,
+            prefix_match_other_language_query,
+            contains_match_primary_language_query,
+            contains_match_secondary_language_query,
+            contains_match_other_language_query,
         ],
         "translation": [
             exact_match_primary_translation_query,
             exact_match_secondary_translation_query,
             exact_match_other_translation_query,
-            substring_match_primary_translation_query,
-            substring_match_secondary_translation_query,
-            substring_match_other_translation_query,
+            prefix_match_primary_translation_query,
+            prefix_match_secondary_translation_query,
+            prefix_match_other_translation_query,
+            contains_match_primary_translation_query,
+            contains_match_secondary_translation_query,
+            contains_match_other_translation_query,
+        ],
+        "language_fuzzy": [
+            fuzzy_match_primary_language_query,
+            fuzzy_match_secondary_language_query,
+            fuzzy_match_other_language_query,
+        ],
+        "translation_fuzzy": [
             fuzzy_match_primary_translation_query,
             fuzzy_match_secondary_translation_query,
             fuzzy_match_other_translation_query,
         ],
     }
+
     subquery_domains["both"] = (
         subquery_domains["language"] + subquery_domains["translation"]
     )
-    subquery_domains["both_exact"] = (
-        subquery_domains["language_exact"] + subquery_domains["translation_exact"]
+    subquery_domains["both_fuzzy"] = (
+        subquery_domains["language_fuzzy"] + subquery_domains["translation_fuzzy"]
     )
 
     if len(search_term) >= FUZZY_SEARCH_CUTOFF:
         # Use only exact field matching and no fuzzy matching to avoid excessive computation for large queries
         # and to prevent Elasticsearch from encountering exceptions due to generating too many states
         # during fuzzy search.
-        subqueries += subquery_domains.get(domain + "_exact", [])
+        subqueries += subquery_domains.get(domain, [])
     else:
         subqueries += subquery_domains.get(domain, [])
+        subqueries += subquery_domains.get(domain + "_fuzzy", [])
 
     return Q(
         "bool",

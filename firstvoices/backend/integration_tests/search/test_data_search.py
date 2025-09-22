@@ -164,6 +164,20 @@ class TestDataSearch:
         DictionaryEntryFactory.create(
             site=self.site,
             visibility=Visibility.PUBLIC,
+            title="Blowfish",
+            created_by=self.admin_user,
+            last_modified_by=self.admin_user,
+        )
+        DictionaryEntryFactory.create(
+            site=self.site,
+            visibility=Visibility.PUBLIC,
+            title="BlueFishTest",
+            created_by=self.admin_user,
+            last_modified_by=self.admin_user,
+        )
+        DictionaryEntryFactory.create(
+            site=self.site,
+            visibility=Visibility.PUBLIC,
             title="Dish",
             created_by=self.admin_user,
             last_modified_by=self.admin_user,
@@ -176,8 +190,14 @@ class TestDataSearch:
         assert response.status_code == 200
 
         response = response.json()
-        assert response["count"] == 3
+        assert response["count"] == 5
 
         results = [r["entry"]["title"] for r in response["results"]]
 
-        assert results.index("Fish") < results.index("Fishing") < results.index("Dish")
+        assert (
+            results.index("Fish")
+            < results.index("Fishing")
+            < results.index("Blowfish")
+            < results.index("BlueFishTest")
+            < results.index("Dish")
+        )
