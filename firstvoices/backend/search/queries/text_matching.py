@@ -49,15 +49,20 @@ def fuzzy_match(q, field, boost=BASE_BOOST):
     )
 
 
-def substring_match(q, field, boost=BASE_BOOST):
+def substring_match(q, field, boost=BASE_BOOST, match_type=None):
     """
     Returns: An elasticsearch dsl query clause for matching partial words (e.g., find "test" in "testing").
     """
+    if match_type == "prefix":
+        value = f"{q}*"
+    else:
+        # Middle / Suffix
+        value = f"*{q}*"
     return Q(
         {
             "wildcard": {
                 field: {
-                    "value": f"*{q}*",
+                    "value": value,
                     "boost": boost,
                 }
             }
