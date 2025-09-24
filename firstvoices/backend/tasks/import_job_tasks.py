@@ -71,7 +71,8 @@ def clean_csv(data, missing_uploaded_media=[], missing_referenced_media=[]):
     missing_referenced_media_row_idx = [
         (obj["idx"] - 1) for obj in missing_referenced_media
     ]
-    rows_to_delete = list({*missing_media_row_idx, *missing_referenced_media_row_idx})
+    rows_to_delete = {*missing_media_row_idx, *missing_referenced_media_row_idx}
+    rows_to_delete = list(rows_to_delete)
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
