@@ -186,7 +186,6 @@ class ImportJobViewSet(
                 ignore_result=True,
             )
         )
-        # validate_import_job(str(import_job_id))
 
         return Response(status=status.HTTP_202_ACCEPTED)
 
