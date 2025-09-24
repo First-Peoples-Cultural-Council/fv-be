@@ -3,6 +3,7 @@ import re
 import tablib
 from django.db.models import Q
 
+from backend.models import DictionaryEntry
 from backend.models.import_jobs import ImportJob
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.resources.media import AudioResource, ImageResource, VideoResource
@@ -382,6 +383,7 @@ class DictionaryEntryImporter(BaseImporter):
         "include_in_games",
         "external_system",
         "external_system_entry_id",
+        "related_entry_ids",
     ]
     supported_columns_multiple = [
         "translation",
@@ -454,3 +456,34 @@ class DictionaryEntryImporter(BaseImporter):
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         return dictionary_entry_import_result
+
+    @classmethod
+    def get_missing_referenced_entries(cls, site_id, data):
+        """Return a list of ids from data that do not correspond to dictionary entries from the given site."""
+        column_name = "related_entry_ids"
+        valid_entry_ids = [
+            str(value)
+            for value in DictionaryEntry.objects.filter(site=site_id).values_list(
+                "id", flat=True
+            )
+        ]
+        missing_entry_ids = []
+
+        clean_headers = [header.lower() for header in data.headers]
+
+        if column_name.lower() in clean_headers:
+            id_col_idx = clean_headers.index(column_name.lower())
+
+            for idx, entry_id_str in enumerate(data.get_col(id_col_idx)):
+                if not entry_id_str:
+                    # Do nothing if the field is empty
+                    continue
+
+                entry_ids = [
+                    id_.strip() for id_ in entry_id_str.split(",") if id_.strip()
+                ]
+                for entry_id in entry_ids:
+                    if entry_id not in valid_entry_ids:
+                        missing_entry_ids.append({"idx": idx + 1, "id": entry_id})
+
+        return missing_entry_ids

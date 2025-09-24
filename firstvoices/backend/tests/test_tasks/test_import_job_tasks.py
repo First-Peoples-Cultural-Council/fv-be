@@ -378,7 +378,7 @@ class TestBulkImportDryRun:
             in validation_error_row.errors
         )
 
-    def test_existing_related_entries(self):
+    def test_related_entries_by_id(self):
         # For entries that are already present in the db
         factories.DictionaryEntryFactory(
             site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
@@ -390,7 +390,7 @@ class TestBulkImportDryRun:
         )
 
         file_content = get_sample_file(
-            "import_job/valid_related_entries.csv", self.MIMETYPE
+            "import_job/valid_related_entries_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -406,10 +406,10 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
 
-        assert validation_report.new_rows == 2
+        assert validation_report.new_rows == 1
         assert validation_report.error_rows == 0
 
-    def test_invalid_related_entries(self):
+    def test_invalid_related_entries_by_id(self):
         # For entries that are already present in the db
         # Referring to a different model
         factories.SongFactory(
@@ -417,7 +417,7 @@ class TestBulkImportDryRun:
         )
 
         file_content = get_sample_file(
-            "import_job/invalid_related_entries.csv", self.MIMETYPE
+            "import_job/invalid_related_entries_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -440,13 +440,13 @@ class TestBulkImportDryRun:
 
         assert validation_error_rows[0].row_number == 1
         assert (
-            "Invalid DictionaryEntry supplied in column: related_entry. Expected field: id"
+            "Referenced dictionary entry not found for ID: invalid_uuid"
             in validation_error_rows[0].errors
         )
 
         assert validation_error_rows[1].row_number == 2
         assert (
-            "No DictionaryEntry found with the provided id in column related_entry."
+            "Referenced dictionary entry not found for ID: 964b2b52-45c3-4c2f-90db-7f34c6599c1c"
             in validation_error_rows[1].errors
         )
 
@@ -1344,14 +1344,17 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             assert import_job.status == JobStatus.FAILED
             assert "Random exception." in caplog.text
 
-    def test_existing_related_entries(self):
+    def test_related_entries_by_id(self):
         # For entries that are already present in the db
-        existing_entry = factories.DictionaryEntryFactory(
-            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        existing_entry1 = factories.DictionaryEntryFactory.create(
+            site=self.site, id="964b2b52-45c3-4c2f-90db-7f34c6599c1c"
+        )
+        existing_entry2 = factories.DictionaryEntryFactory.create(
+            site=self.site, id="f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"
         )
 
         file_content = get_sample_file(
-            "import_job/valid_related_entries.csv", self.MIMETYPE
+            "import_job/valid_related_entries_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -1363,45 +1366,17 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 3
 
         new_entry = DictionaryEntry.objects.get(title="Word 1")
-        related_entry = new_entry.dictionaryentrylink_set.first()
-
-        assert related_entry.from_dictionary_entry.id == new_entry.id
-        assert related_entry.to_dictionary_entry.id == existing_entry.id
-
-    def test_multiple_existing_related_entries(self):
-        # For entries that are already present in the db
-        existing_entry_1 = factories.DictionaryEntryFactory(
-            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
-        )
-        existing_entry_2 = factories.DictionaryEntryFactory(
-            site=self.site,
-            type=TypeOfDictionaryEntry.PHRASE,
-            id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d"),
+        related_entry_list = new_entry.dictionaryentrylink_set.values_list(
+            "to_dictionary_entry_id", flat=True
         )
 
-        file_content = get_sample_file(
-            "import_job/valid_related_entries.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            data=file,
-            run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
-        )
-
-        confirm_import_job(import_job.id)
-
-        related_entry = DictionaryEntry.objects.get(
-            title="Word 2"
-        ).dictionaryentrylink_set.values_list("to_dictionary_entry_id", flat=True)
-        related_entry_list = list(related_entry)
-
-        assert existing_entry_1.id in related_entry_list
-        assert existing_entry_2.id in related_entry_list
+        assert len(related_entry_list) == 2
+        assert existing_entry1.id in related_entry_list
+        assert existing_entry2.id in related_entry_list
 
     def test_skip_rows_with_erroneous_values(self):
         # If a row has validation errors, skip that row, but import the rest of the file
