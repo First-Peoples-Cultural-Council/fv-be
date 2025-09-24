@@ -21,7 +21,12 @@ class DictionaryEntryExportResultSerializer(
     audio_ids = CommaSeparatedIDsField(source="related_audio", read_only=True)
     video_ids = CommaSeparatedIDsField(source="related_videos", read_only=True)
     image_ids = CommaSeparatedIDsField(source="related_images", read_only=True)
+    video_embed_links = serializers.SerializerMethodField()
     external_system = serializers.SlugRelatedField(slug_field="title", read_only=True)
+
+    @staticmethod
+    def get_video_embed_links(instance):
+        return instance.related_video_links
 
     class Meta:
         model = DictionaryEntry
@@ -40,7 +45,7 @@ class DictionaryEntryExportResultSerializer(
             "video_ids",
             "image_ids",
             "part_of_speech",
-            "related_video_links",
+            "video_embed_links",
             "related_dictionary_entries",
             "include_in_games",
             "include_on_kids_site",

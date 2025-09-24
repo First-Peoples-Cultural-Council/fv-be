@@ -1,0 +1,4 @@
+TITLE,TYPE,VIDEO_EMBED_LINKS
+Invalid,word,"not,valid,links"
+Duplicate,phrase,"https://www.youtube.com/watch?v=N_Iyb0LkDUc,https://www.youtube.com/watch?v=N_Iyb0LkDUc"
+Both,word,"invalid,https://www.youtube.com/watch?v=N_Iyb0LkDUc,https://www.youtube.com/watch?v=N_Iyb0LkDUc"

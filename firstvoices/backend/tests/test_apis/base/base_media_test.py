@@ -18,7 +18,7 @@ from backend.tests.test_apis.base.base_uncontrolled_site_api import (
 from backend.tests.utils import get_sample_file
 
 VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
-YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=abc123"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=N_Iyb0LkDUc"
 MOCK_EMBED_LINK = "https://mock_embed_link.com/"
 MOCK_THUMBNAIL_LINK = "https://mock_thumbnail_link.com/"
 

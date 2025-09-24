@@ -135,7 +135,7 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         widget=widgets.ManyToManyWidget(Video, separator=",", field="id"),
     )
     related_video_links = fields.Field(
-        column_name="related_video_links",
+        column_name="video_embed_links",
         attribute="related_video_links",
         widget=ArrayOfStringsWidget(),
     )
