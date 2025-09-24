@@ -1370,9 +1370,12 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert DictionaryEntry.objects.count() == 3
 
         new_entry = DictionaryEntry.objects.get(title="Word 1")
-        related_entry_list = new_entry.dictionaryentrylink_set.values_list(
-            "to_dictionary_entry_id", flat=True
-        )
+        related_entry_list = [
+            str(value)
+            for value in new_entry.dictionaryentrylink_set.values_list(
+                "to_dictionary_entry_id", flat=True
+            )
+        ]
 
         assert len(related_entry_list) == 2
         assert existing_entry1.id in related_entry_list
