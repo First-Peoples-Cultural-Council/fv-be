@@ -78,9 +78,19 @@ def clean_csv(
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     # Remove rows that have missing media or entries
-    rows_to_delete = list({(obj["idx"] - 1) for obj in missing_uploaded_media})
-    rows_to_delete += list({(obj["idx"] - 1) for obj in missing_referenced_media})
-    rows_to_delete += list({(obj["idx"] - 1) for obj in missing_entries})
+    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
+    missing_referenced_media_row_idx = [
+        (obj["idx"] - 1) for obj in missing_referenced_media
+    ]
+    missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
+
+    rows_to_delete = {
+        *missing_media_row_idx,
+        *missing_referenced_media_row_idx,
+        *missing_entries_row_idx,
+    }
+    rows_to_delete = list(rows_to_delete)
+
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
@@ -133,7 +143,8 @@ def generate_report(
             report,
             row_number=missing_media_row["idx"],
             errors=[
-                f"Media file missing in uploaded files: {missing_media_row['filename']}."
+                f"Media file missing in uploaded files: "
+                f"{missing_media_row['filename']}, column: {missing_media_row['column']}."
             ],
         )
 
@@ -144,7 +155,8 @@ def generate_report(
             report,
             row_number=missing_media_id_row["idx"],
             errors=[
-                f"Referenced media not found for ID: {missing_media_id_row['id']}."
+                f"Referenced media not found for "
+                f"ID: {missing_media_id_row['id']} in column: {missing_media_id_row['column']}."
             ],
         )
 
@@ -362,6 +374,8 @@ def get_missing_uploaded_media(data, import_job):
     ]
 
     for field in media_fields:
+        field = field.lower()
+        data.headers = [h.lower() for h in data.headers]
         if field not in data.headers:
             continue
         for idx, filename in enumerate(data[field]):
@@ -372,7 +386,9 @@ def get_missing_uploaded_media(data, import_job):
             if valid_filename not in associated_filenames:
                 # If a filename is provided, but the file cannot be found in the associated files
                 # add an error row for that in missing media
-                missing_media.append({"idx": idx + 1, "filename": filename})
+                missing_media.append(
+                    {"idx": idx + 1, "filename": filename, "column": field}
+                )
 
     return missing_media
 

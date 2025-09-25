@@ -34,6 +34,8 @@ TEST_VIDEO_IDS = [
     "4764e764-7830-4bea-b30e-4e35cc93b12b",
     "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
 ]
+VIMEO_VIDEO_LINK = "https://vimeo.com/226053498"
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=N_Iyb0LkDUc"
 
 
 @pytest.mark.django_db
@@ -205,7 +207,7 @@ class TestBulkImportDryRun:
             "include_in_games",
             "include_on_kids_site",
             "translation",
-            "TRANSLATION_2",
+            "translation_2",
             "translation_3",
             "translation_4",
             "translation_5",
@@ -607,15 +609,15 @@ class TestBulkImportDryRun:
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
-            "Media file missing in uploaded files: sample-audio.mp3."
+            "Media file missing in uploaded files: sample-audio.mp3, column: audio_filename."
             in error_rows[0].errors
         )
         assert (
-            "Media file missing in uploaded files: sample-image.jpg."
+            "Media file missing in uploaded files: sample-image.jpg, column: img_filename."
             in error_rows[1].errors
         )
         assert (
-            "Media file missing in uploaded files: video_example_small.mp4."
+            "Media file missing in uploaded files: video_example_small.mp4, column: video_filename."
             in error_rows[2].errors
         )
 
@@ -773,7 +775,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "audio_ids" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "video_ids" in validation_report.accepted_columns
 
@@ -792,7 +794,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "audio_ids" in validation_report.accepted_columns
         assert "audio_filename" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "img_filename" in validation_report.accepted_columns
@@ -973,10 +975,10 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 0
 
         expected_valid_columns = [
-            "TITLE",
-            "TYPE",
-            "EXTERNAL_SYSTEM",
-            "EXTERNAL_SYSTEM_ENTRY_ID",
+            "title",
+            "type",
+            "external_system",
+            "external_system_entry_id",
         ]
 
         for column in expected_valid_columns:
@@ -1036,16 +1038,48 @@ class TestBulkImportDryRun:
 
         error_rows = validation_report.rows.all().order_by("row_number")
         assert (
-            "Media file missing in uploaded files: missing-audio.mp3."
+            "Media file missing in uploaded files: missing-audio.mp3, column: audio_2_filename."
             in error_rows[0].errors
         )
         assert (
-            "Media file missing in uploaded files: missing-image.jpg."
+            "Media file missing in uploaded files: missing-image.jpg, column: img_2_filename."
             in error_rows[1].errors
         )
         assert (
-            "Media file missing in uploaded files: missing-video.mp4."
+            "Media file missing in uploaded files: missing-video.mp4, column: video_2_filename."
             in error_rows[2].errors
+        )
+
+    def test_invalid_video_embed_links(self):
+        file_content = get_sample_file(
+            "import_job/invalid_video_embed_links.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+
+        assert validation_report.new_rows == 0
+        assert validation_report.error_rows == 3
+
+        error_rows = validation_report.rows.all().order_by("row_number")
+        assert (
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL."
+            in error_rows[0].errors
+        )
+        assert (
+            "related_video_links: Duplicate urls found in list." in error_rows[1].errors
+        )
+        assert (
+            "related_video_links: Duplicate urls found in list." in error_rows[2].errors
         )
 
 
@@ -2142,15 +2176,41 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         validation_report = import_job.validation_report
 
         assert validation_report.error_rows == 1
-        assert validation_report.new_rows == 1
+        assert validation_report.new_rows == 0
 
         confirm_import_job(import_job.id)
-        assert DictionaryEntry.objects.all().count() == 1
-        entry = DictionaryEntry.objects.get(title="Invalid audio")
-        assert entry.related_audio.count() == 1
-        related_audio = entry.related_audio.first()
-        assert related_audio.title == "related_audio-1.mp3"
+        assert DictionaryEntry.objects.all().count() == 0
 
     def test_missing_media_multiple_rows_skipped(self):
         self.confirm_upload_with_media_files("missing_media_multiple.csv")
         assert DictionaryEntry.objects.all().count() == 0
+
+    def test_import_video_embed_links(self):
+        file_content = get_sample_file(
+            "import_job/video_embed_links.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.all().count() == 3
+
+        entry_1 = DictionaryEntry.objects.get(title="YouTube")
+        assert len(entry_1.related_video_links) == 1
+        assert entry_1.related_video_links[0] == YOUTUBE_VIDEO_LINK
+
+        entry_2 = DictionaryEntry.objects.get(title="Vimeo")
+        assert len(entry_2.related_video_links) == 1
+        assert entry_2.related_video_links[0] == VIMEO_VIDEO_LINK
+
+        entry_3 = DictionaryEntry.objects.get(title="Both")
+        assert len(entry_3.related_video_links) == 2
+        assert YOUTUBE_VIDEO_LINK in entry_3.related_video_links
+        assert VIMEO_VIDEO_LINK in entry_3.related_video_links

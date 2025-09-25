@@ -316,7 +316,9 @@ class BaseMediaFileImporter(BaseImporter):
                 ]
                 for media_id in media_ids:
                     if media_id not in valid_media_ids:
-                        missing_media_ids.append({"idx": idx + 1, "id": media_id})
+                        missing_media_ids.append(
+                            {"idx": idx + 1, "id": media_id, "column": column_name}
+                        )
 
         return missing_media_ids
 
@@ -384,6 +386,7 @@ class DictionaryEntryImporter(BaseImporter):
         "external_system",
         "external_system_entry_id",
         "related_entry_ids",
+        "video_embed_links",
     ]
     supported_columns_multiple = [
         "translation",
