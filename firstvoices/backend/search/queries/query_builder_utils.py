@@ -105,7 +105,6 @@ def get_view_permissions_filter(user):
 
     # base.has_member_access_to_obj(user) + has_team_access_to_obj(user)
     # create the base bool query
-    query = Q("bool")
     filter_list = []
 
     user_memberships = (
@@ -137,11 +136,7 @@ def get_view_permissions_filter(user):
         & Q("term", visibility=Visibility.PUBLIC)
     )
 
-    # add all the filters to the query
-    for f in filter_list:
-        query.should.append(f)
-
-    return query
+    return Q("bool", filter=filter_list)
 
 
 def get_starts_with_query(site_id, starts_with_char):
