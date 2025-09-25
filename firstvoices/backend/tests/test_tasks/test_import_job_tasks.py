@@ -207,7 +207,7 @@ class TestBulkImportDryRun:
             "include_in_games",
             "include_on_kids_site",
             "translation",
-            "TRANSLATION_2",
+            "translation_2",
             "translation_3",
             "translation_4",
             "translation_5",
@@ -609,15 +609,15 @@ class TestBulkImportDryRun:
         assert list(error_rows_numbers) == [1, 2, 3]
 
         assert (
-            "Media file missing in uploaded files: sample-audio.mp3."
+            "Media file missing in uploaded files: sample-audio.mp3, column: audio_filename."
             in error_rows[0].errors
         )
         assert (
-            "Media file missing in uploaded files: sample-image.jpg."
+            "Media file missing in uploaded files: sample-image.jpg, column: img_filename."
             in error_rows[1].errors
         )
         assert (
-            "Media file missing in uploaded files: video_example_small.mp4."
+            "Media file missing in uploaded files: video_example_small.mp4, column: video_filename."
             in error_rows[2].errors
         )
 
@@ -775,7 +775,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "audio_ids" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "video_ids" in validation_report.accepted_columns
 
@@ -794,7 +794,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert "AUDIO_IDS" in validation_report.accepted_columns
+        assert "audio_ids" in validation_report.accepted_columns
         assert "audio_filename" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "img_filename" in validation_report.accepted_columns
@@ -975,10 +975,10 @@ class TestBulkImportDryRun:
         assert validation_report.error_rows == 0
 
         expected_valid_columns = [
-            "TITLE",
-            "TYPE",
-            "EXTERNAL_SYSTEM",
-            "EXTERNAL_SYSTEM_ENTRY_ID",
+            "title",
+            "type",
+            "external_system",
+            "external_system_entry_id",
         ]
 
         for column in expected_valid_columns:
@@ -1038,15 +1038,15 @@ class TestBulkImportDryRun:
 
         error_rows = validation_report.rows.all().order_by("row_number")
         assert (
-            "Media file missing in uploaded files: missing-audio.mp3."
+            "Media file missing in uploaded files: missing-audio.mp3, column: audio_2_filename."
             in error_rows[0].errors
         )
         assert (
-            "Media file missing in uploaded files: missing-image.jpg."
+            "Media file missing in uploaded files: missing-image.jpg, column: img_2_filename."
             in error_rows[1].errors
         )
         assert (
-            "Media file missing in uploaded files: missing-video.mp4."
+            "Media file missing in uploaded files: missing-video.mp4, column: video_2_filename."
             in error_rows[2].errors
         )
 
@@ -2198,14 +2198,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         validation_report = import_job.validation_report
 
         assert validation_report.error_rows == 1
-        assert validation_report.new_rows == 1
+        assert validation_report.new_rows == 0
 
         confirm_import_job(import_job.id)
-        assert DictionaryEntry.objects.all().count() == 1
-        entry = DictionaryEntry.objects.get(title="Invalid audio")
-        assert entry.related_audio.count() == 1
-        related_audio = entry.related_audio.first()
-        assert related_audio.title == "related_audio-1.mp3"
+        assert DictionaryEntry.objects.all().count() == 0
 
     def test_missing_media_multiple_rows_skipped(self):
         self.confirm_upload_with_media_files("missing_media_multiple.csv")
