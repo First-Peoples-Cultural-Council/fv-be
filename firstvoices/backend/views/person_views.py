@@ -106,4 +106,4 @@ class PersonViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelView
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return Person.objects.filter(site=site)
+        return Person.objects.filter(site=site).order_by("name")
