@@ -116,14 +116,18 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             return self.get_detail_queryset()
 
         site = self.get_validated_site()
-        return SitePage.objects.filter(site=site).select_related(
-            "widgets",
-            "banner_image",
-            "banner_video",
-            "site",
-            "site__language",
-            "created_by",
-            "last_modified_by",
+        return (
+            SitePage.objects.filter(site=site)
+            .select_related(
+                "widgets",
+                "banner_image",
+                "banner_video",
+                "site",
+                "site__language",
+                "created_by",
+                "last_modified_by",
+            )
+            .order_by("title")
         )
 
     def get_detail_queryset(self):
