@@ -462,9 +462,9 @@ class DictionaryEntryImporter(BaseImporter):
         # Only keep the first entry if there are multiple entries with the same title
         title_map = {}
         if dictionary_entry_import_result.totals["new"]:
-            for idx, row in enumerate(filtered_data.dict):
+            for row in filtered_data.dict:
                 if row["title"] not in title_map:
-                    title_map[row["title"]] = (row["id"], idx + 1)
+                    title_map[row["title"]] = row["id"]
             dictionary_entry_import_result.title_map = title_map
 
         return dictionary_entry_import_result, title_map, filtered_data

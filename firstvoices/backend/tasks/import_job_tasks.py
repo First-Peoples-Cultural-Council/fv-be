@@ -99,6 +99,25 @@ def clean_csv(
     return accepted_headers, invalid_headers, cleaned_data
 
 
+def append_missing_from_entry_data(
+    idx, row, failed_related_entry_data, related_entry_headers
+):
+    """
+    If a row does not have an ID (i.e. was not imported), append it to the failed_link_entry_list
+    to indicate that related entries could not be linked for this row.
+    """
+    for header in related_entry_headers:
+        if row.get(header):
+            failed_related_entry_data.append(
+                {
+                    "idx": idx,
+                    "title": row.get("title"),
+                    "type": "from_entry",
+                    "related_entry_title": row.get(header),
+                }
+            )
+
+
 def link_related_entries(import_data, entry_title_map, dry_run):
     """
     Links related dictionary entries by title based on the RELATED_ENTRY columns in the CSV data.
@@ -110,46 +129,55 @@ def link_related_entries(import_data, entry_title_map, dry_run):
         for header in import_data.headers
         if header.lower().startswith("related_entry")
     ]
-    failed_link_entry_map = {}
-
     if not related_entry_headers:
         return []
+
+    failed_related_entry_data = []
 
     for idx, row in enumerate(import_data.dict):
 
         # Skip rows without an ID as these entries have not been imported
         if not row["id"]:
+            append_missing_from_entry_data(
+                idx + 1, row, failed_related_entry_data, related_entry_headers
+            )
             continue
 
-        for related_entry_header in related_entry_headers:
-            related_entry_title = row[related_entry_header]
-            if not related_entry_title:
-                continue
+        else:
 
-            related_entry_id = entry_title_map.get(related_entry_title)
-
-            # Related entry not found in the imported entries
-            if not related_entry_id:
-                failed_link_entry_map[related_entry_title] = (
-                    f"ID: {row['id']}, Title: {row['title']}"
-                )
-                continue
-            else:
-                related_entry_id = related_entry_id[0]
-
-            if not dry_run:
-                target_entry = DictionaryEntry.objects.get(id=row["id"])
-                related_entry = DictionaryEntry.objects.get(id=related_entry_id)
-                # Avoid self-referential links
-                if related_entry.id == target_entry.id:
+            for related_entry_header in related_entry_headers:
+                related_entry_title = row[related_entry_header]
+                if not related_entry_title:
+                    # No related entry specified in this column, skip
                     continue
 
-                DictionaryEntryLink.objects.create(
-                    from_dictionary_entry=target_entry,
-                    to_dictionary_entry=related_entry,
-                )
+                related_entry_id = entry_title_map.get(related_entry_title)
 
-    return failed_link_entry_map
+                # Related entry not found in the imported entries
+                if not related_entry_id:
+                    failed_related_entry_data.append(
+                        {
+                            "idx": idx + 1,
+                            "title": related_entry_title,
+                            "type": "to_entry",
+                            "related_entry_title": row.get("title"),
+                        }
+                    )
+                    continue
+
+                if not dry_run:
+                    from_entry = DictionaryEntry.objects.get(id=row["id"])
+                    to_entry = DictionaryEntry.objects.get(id=related_entry_id)
+                    # Avoid self-referential links
+                    if from_entry.id == to_entry.id:
+                        continue
+
+                    DictionaryEntryLink.objects.create(
+                        from_dictionary_entry=from_entry,
+                        to_dictionary_entry=to_entry,
+                    )
+
+    return failed_related_entry_data
 
 
 def generate_report(
@@ -246,33 +274,38 @@ def generate_report(
     return report
 
 
-def add_missing_related_entry_errors(entry_title_map, failed_link_entry_map, report):
+def add_missing_related_entry_errors(
+    entry_title_map, failed_related_entry_data, report
+):
     """
     Appends missing related entry errors to the report for any related entries that could not be linked.
     """
-    if not failed_link_entry_map:
+    if not failed_related_entry_data:
         return
 
-    row_to_title_map = {
-        row_num: title for title, (id_, row_num) in entry_title_map.items()
-    }
     error_rows = ImportJobReportRow.objects.filter(report=report)
-    seen_rows = set()
 
-    for row in error_rows:
-        related_entry_title = row_to_title_map[row.row_number]
-        if (
-            related_entry_title in failed_link_entry_map
-            and row.row_number not in seen_rows
-        ):
-            seen_rows.add(row.row_number)
+    for data in failed_related_entry_data:
+        error_row = error_rows.get(row__row_number=data["idx"])
+        related_entry_id = (
+            entry_title_map.get(data["related_entry_title"])
+            or "N/A, related entry not imported"
+        )
+        if data["type"] == "from_entry":
             error_message = (
-                f"Related entry '{related_entry_title}' was not imported and could not be linked to "
-                f"related entry with {failed_link_entry_map[related_entry_title]}. "
-                f"Please link these entries manually after re-importing."
+                f"Entry '{data['title']}' was not imported, and could not be linked as a "
+                f"related entry to entry '{data['related_entry']}' with ID '{related_entry_id}'."
+                f"Please link the entries manually after re-importing the missing entry."
             )
-            row.errors.append(error_message)
-            row.save()
+            error_row.errors.append(error_message)
+            error_row.save()
+
+        else:
+            error_message = (
+                f"Related entry '{data['title']}' could not be found to link to entry '{data['related_entry']}' with"
+                f"ID '{related_entry_id}'. Please link the entries manually after re-importing the missing entry."
+            )
+            error_row.errors.append(error_message)
 
 
 def attach_csv_to_report(data, import_job, report):
@@ -338,7 +371,9 @@ def process_import_job_data(
         )
     )
 
-    failed_link_entry_map = link_related_entries(import_data, entry_title_map, dry_run)
+    failed_related_entry_data = link_related_entries(
+        import_data, entry_title_map, dry_run
+    )
 
     if dry_run:
         report = generate_report(
@@ -353,7 +388,9 @@ def process_import_job_data(
             video_import_results,
             dictionary_entry_import_result,
         )
-        add_missing_related_entry_errors(entry_title_map, failed_link_entry_map, report)
+        add_missing_related_entry_errors(
+            entry_title_map, failed_related_entry_data, report
+        )
         attach_csv_to_report(data, import_job, report)
 
 
