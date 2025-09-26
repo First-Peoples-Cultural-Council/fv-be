@@ -452,6 +452,27 @@ class TestBulkImportDryRun:
             in validation_error_rows[1].errors
         )
 
+    def test_related_entries_by_title(self):
+        # For entries from within the same batch import csv file
+        file_content = get_sample_file(
+            "import_job/valid_related_entries_by_title.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 2
+        assert validation_report.error_rows == 0
+
     def test_dry_run_failed(self, caplog):
         file = factories.FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
@@ -1378,7 +1399,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             assert import_job.status == JobStatus.FAILED
             assert "Random exception." in caplog.text
 
-    def test_related_entries_by_id(self):
+    def test_multiple_related_entries_by_id(self):
         # For entries that are already present in the db
         existing_entry1 = factories.DictionaryEntryFactory.create(
             site=self.site, id="964b2b52-45c3-4c2f-90db-7f34c6599c1c"

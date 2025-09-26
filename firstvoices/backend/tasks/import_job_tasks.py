@@ -13,6 +13,7 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
+from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -96,6 +97,59 @@ def clean_csv(
         del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
+
+
+def link_related_entries(import_data, entry_title_map, dry_run):
+    """
+    Links related dictionary entries by title based on the RELATED_ENTRY columns in the CSV data.
+    Any errors encountered during the linking process are skipped to be logged in generate_report.
+    """
+
+    related_entry_headers = [
+        header
+        for header in import_data.headers
+        if header.lower().startswith("related_entry")
+    ]
+    failed_link_entry_map = {}
+
+    if not related_entry_headers:
+        return []
+
+    for idx, row in enumerate(import_data.dict):
+
+        # Skip rows without an ID as these entries have not been imported
+        if not row["id"]:
+            continue
+
+        for related_entry_header in related_entry_headers:
+            related_entry_title = row[related_entry_header]
+            if not related_entry_title:
+                continue
+
+            related_entry_id = entry_title_map.get(related_entry_title)
+
+            # Related entry not found in the imported entries
+            if not related_entry_id:
+                failed_link_entry_map[related_entry_title] = (
+                    f"ID: {row['id']}, Title: {row['title']}"
+                )
+                continue
+            else:
+                related_entry_id = related_entry_id[0]
+
+            if not dry_run:
+                target_entry = DictionaryEntry.objects.get(id=row["id"])
+                related_entry = DictionaryEntry.objects.get(id=related_entry_id)
+                # Avoid self-referential links
+                if related_entry.id == target_entry.id:
+                    continue
+
+                DictionaryEntryLink.objects.create(
+                    from_dictionary_entry=target_entry,
+                    to_dictionary_entry=related_entry,
+                )
+
+    return failed_link_entry_map
 
 
 def generate_report(
@@ -192,6 +246,35 @@ def generate_report(
     return report
 
 
+def add_missing_related_entry_errors(entry_title_map, failed_link_entry_map, report):
+    """
+    Appends missing related entry errors to the report for any related entries that could not be linked.
+    """
+    if not failed_link_entry_map:
+        return
+
+    row_to_title_map = {
+        row_num: title for title, (id_, row_num) in entry_title_map.items()
+    }
+    error_rows = ImportJobReportRow.objects.filter(report=report)
+    seen_rows = set()
+
+    for row in error_rows:
+        related_entry_title = row_to_title_map[row.row_number]
+        if (
+            related_entry_title in failed_link_entry_map
+            and row.row_number not in seen_rows
+        ):
+            seen_rows.add(row.row_number)
+            error_message = (
+                f"Related entry '{related_entry_title}' was not imported and could not be linked to "
+                f"related entry with {failed_link_entry_map[related_entry_title]}. "
+                f"Please link these entries manually after re-importing."
+            )
+            row.errors.append(error_message)
+            row.save()
+
+
 def attach_csv_to_report(data, import_job, report):
     """
     Attaches an updated CSV file to the importJob if any errors occurred.
@@ -244,14 +327,18 @@ def process_import_job_data(
     )
 
     # import dictionary entries
-    dictionary_entry_import_result = DictionaryEntryImporter.import_data(
-        import_job,
-        cleaned_data,
-        dry_run,
-        audio_filename_map,
-        img_filename_map,
-        video_filename_map,
+    dictionary_entry_import_result, entry_title_map, import_data = (
+        DictionaryEntryImporter.import_data(
+            import_job,
+            cleaned_data,
+            dry_run,
+            audio_filename_map,
+            img_filename_map,
+            video_filename_map,
+        )
     )
+
+    failed_link_entry_map = link_related_entries(import_data, entry_title_map, dry_run)
 
     if dry_run:
         report = generate_report(
@@ -266,6 +353,7 @@ def process_import_job_data(
             video_import_results,
             dictionary_entry_import_result,
         )
+        add_missing_related_entry_errors(entry_title_map, failed_link_entry_map, report)
         attach_csv_to_report(data, import_job, report)
 
 

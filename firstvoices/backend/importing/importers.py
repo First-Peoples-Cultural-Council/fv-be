@@ -458,7 +458,16 @@ class DictionaryEntryImporter(BaseImporter):
             import_job=import_job.id,
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
-        return dictionary_entry_import_result
+        # Create a map of title:(id, row number) for newly created entries
+        # Only keep the first entry if there are multiple entries with the same title
+        title_map = {}
+        if dictionary_entry_import_result.totals["new"]:
+            for idx, row in enumerate(filtered_data.dict):
+                if row["title"] not in title_map:
+                    title_map[row["title"]] = (row["id"], idx + 1)
+            dictionary_entry_import_result.title_map = title_map
+
+        return dictionary_entry_import_result, title_map, filtered_data
 
     @classmethod
     def get_missing_referenced_entries(cls, site_id, data):

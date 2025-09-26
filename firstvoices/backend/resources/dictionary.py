@@ -19,8 +19,8 @@ from backend.resources.utils.import_export_widgets import (
 
 
 class DictionaryEntryResource(
-    ControlledSiteContentResource,
     RelatedMediaResourceMixin,
+    ControlledSiteContentResource,
 ):
     type = fields.Field(
         column_name="type",
