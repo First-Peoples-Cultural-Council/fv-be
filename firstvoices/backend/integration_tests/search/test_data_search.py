@@ -186,7 +186,7 @@ class TestDataSearch:
         url = reverse(
             "api:site-search-list", current_app="backend", args=[self.site.slug]
         )
-        response = self.client.get(url + "?q=fish&domain=both&types=word")
+        response = self.client.get(url + "?q=fish")
         assert response.status_code == 200
 
         response = response.json()
