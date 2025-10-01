@@ -79,7 +79,7 @@ redis==6.4.0
 regex==2025.9.1
 requests==2.32.5
 rules==3.5
-sentry-sdk==2.38.0
+sentry-sdk==2.39.0
 six==1.17.0
 sqlparse==0.5.3
 tablib==3.8.0
