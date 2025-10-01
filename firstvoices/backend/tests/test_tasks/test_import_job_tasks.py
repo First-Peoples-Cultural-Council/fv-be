@@ -473,9 +473,9 @@ class TestBulkImportDryRun:
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
 
-    def test_invalid_related_entry_by_title_missing_from_entry(self):
+    def test_related_entry_by_title_invalid_from_entry(self):
         file_content = get_sample_file(
-            "import_job/related_entries_invalid_missing_from_entry.csv", self.MIMETYPE
+            "import_job/related_entries_invalid_from_entry.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
 
@@ -507,6 +507,38 @@ class TestBulkImportDryRun:
 
         assert error_message.startswith(prefix) and error_message.endswith(suffix)
 
+        related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
+        assert uuid.UUID(related_entry_id).version == 4
+
+    def test_related_entry_by_title_invalid_to_entry(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_invalid_to_entry.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 1
+        assert validation_report.error_rows == 1
+
+        error_row = validation_report.rows.get(row_number=1)
+
+        prefix = "Related entry 'Word 2' could not be found to link to entry 'Word 1' with ID '"
+        suffix = (
+            "'. Please link the entries manually after re-importing the missing entry."
+        )
+
+        error_message = error_row.errors[0]
+        assert error_message.startswith(prefix) and error_message.endswith(suffix)
         related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
         assert uuid.UUID(related_entry_id).version == 4
 

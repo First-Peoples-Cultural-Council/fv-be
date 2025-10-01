@@ -224,7 +224,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_media_row["idx"],
-            errors=[
+            error_message=[
                 f"Media file missing in uploaded files: "
                 f"{missing_media_row['filename']}, column: {missing_media_row['column']}."
             ],
@@ -236,7 +236,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_media_id_row["idx"],
-            errors=[
+            error_message=[
                 f"Referenced media not found for "
                 f"ID: {missing_media_id_row['id']} in column: {missing_media_id_row['column']}."
             ],
@@ -248,7 +248,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_entry_row["idx"],
-            errors=[
+            error_message=[
                 f"Referenced dictionary entry not found for ID: {missing_entry_row['id']}"
             ],
         )
@@ -264,7 +264,10 @@ def generate_report(
         for row in result.rows:
             if row.import_type == RowResult.IMPORT_TYPE_SKIP:
                 create_or_append_error_row(
-                    import_job, report, row_number=row.number, errors=row.error_messages
+                    import_job,
+                    report,
+                    row_number=row.number,
+                    error_message=row.error_messages,
                 )
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
@@ -275,18 +278,16 @@ def generate_report(
 
 
 def add_missing_related_entry_errors(
-    entry_title_map, failed_related_entry_data, report
+    entry_title_map, failed_related_entry_data, import_job, report
 ):
     """
     Appends missing related entry errors to the report for any related entries that could not be linked.
     """
-    error_rows = ImportJobReportRow.objects.filter(report=report)
 
-    if not failed_related_entry_data or not error_rows:
+    if not failed_related_entry_data:
         return
 
     for data in failed_related_entry_data:
-        error_row = error_rows.get(row_number=data["idx"])
         related_entry_id = (
             entry_title_map.get(data["related_entry_title"])
             or "N/A, related entry not imported"
@@ -297,15 +298,18 @@ def add_missing_related_entry_errors(
                 f"related entry to entry '{data['related_entry_title']}' with ID '{related_entry_id}'. "
                 f"Please link the entries manually after re-importing the missing entry."
             )
-            error_row.errors.append(error_message)
-            error_row.save()
+            create_or_append_error_row(
+                import_job, report, data["idx"], str(error_message)
+            )
 
         else:
             error_message = (
-                f"Related entry '{data['title']}' could not be found to link to entry '{data['related_entry']}' with"
-                f"ID '{related_entry_id}'. Please link the entries manually after re-importing the missing entry."
+                f"Related entry '{data['title']}' could not be found to link to entry '{data['related_entry_title']}' "
+                f"with ID '{related_entry_id}'. Please link the entries manually after re-importing the missing entry."
             )
-            error_row.errors.append(error_message)
+            create_or_append_error_row(
+                import_job, report, data["idx"], str(error_message)
+            )
 
 
 def attach_csv_to_report(data, import_job, report):
@@ -389,7 +393,7 @@ def process_import_job_data(
             dictionary_entry_import_result,
         )
         add_missing_related_entry_errors(
-            entry_title_map, failed_related_entry_data, report
+            entry_title_map, failed_related_entry_data, import_job, report
         )
         attach_csv_to_report(data, import_job, report)
 

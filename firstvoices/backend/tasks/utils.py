@@ -68,18 +68,18 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
     return failed_row_csv_file
 
 
-def create_or_append_error_row(import_job, report, row_number, errors):
+def create_or_append_error_row(import_job, report, row_number, error_message):
     error_row, created = ImportJobReportRow.objects.get_or_create(
         site=import_job.site,
         report=report,
         row_number=row_number,
         defaults={
             "status": RowStatus.ERROR,
-            "errors": errors,
+            "errors": [error_message],
         },
     )
     if not created:
-        error_row.errors += errors
+        error_row.errors.append(error_message)
         error_row.save()
 
 
