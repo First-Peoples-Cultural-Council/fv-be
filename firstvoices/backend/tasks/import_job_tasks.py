@@ -280,13 +280,13 @@ def add_missing_related_entry_errors(
     """
     Appends missing related entry errors to the report for any related entries that could not be linked.
     """
-    if not failed_related_entry_data:
-        return
-
     error_rows = ImportJobReportRow.objects.filter(report=report)
 
+    if not failed_related_entry_data or not error_rows:
+        return
+
     for data in failed_related_entry_data:
-        error_row = error_rows.get(row__row_number=data["idx"])
+        error_row = error_rows.get(row_number=data["idx"])
         related_entry_id = (
             entry_title_map.get(data["related_entry_title"])
             or "N/A, related entry not imported"
@@ -294,7 +294,7 @@ def add_missing_related_entry_errors(
         if data["type"] == "from_entry":
             error_message = (
                 f"Entry '{data['title']}' was not imported, and could not be linked as a "
-                f"related entry to entry '{data['related_entry']}' with ID '{related_entry_id}'."
+                f"related entry to entry '{data['related_entry_title']}' with ID '{related_entry_id}'. "
                 f"Please link the entries manually after re-importing the missing entry."
             )
             error_row.errors.append(error_message)

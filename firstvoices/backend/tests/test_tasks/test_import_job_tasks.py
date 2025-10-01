@@ -392,7 +392,7 @@ class TestBulkImportDryRun:
         )
 
         file_content = get_sample_file(
-            "import_job/valid_related_entries_by_id.csv", self.MIMETYPE
+            "import_job/related_entries_valid_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -419,7 +419,7 @@ class TestBulkImportDryRun:
         )
 
         file_content = get_sample_file(
-            "import_job/invalid_related_entries_by_id.csv", self.MIMETYPE
+            "import_job/related_entries_invalid_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -455,7 +455,7 @@ class TestBulkImportDryRun:
     def test_related_entries_by_title(self):
         # For entries from within the same batch import csv file
         file_content = get_sample_file(
-            "import_job/valid_related_entries_by_title.csv", self.MIMETYPE
+            "import_job/related_entries_valid_by_title.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
 
@@ -472,6 +472,43 @@ class TestBulkImportDryRun:
         validation_report = import_job.validation_report
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
+
+    def test_invalid_related_entry_by_title_missing_from_entry(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_invalid_missing_from_entry.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 1
+        assert validation_report.error_rows == 1
+
+        error_row = validation_report.rows.first()
+        assert error_row.row_number == 1
+        prefix = (
+            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2' "
+            "with ID '"
+        )
+        suffix = (
+            "'. Please link the entries manually after re-importing the missing entry."
+        )
+
+        error_message = error_row.errors[1]
+
+        assert error_message.startswith(prefix) and error_message.endswith(suffix)
+
+        related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
+        assert uuid.UUID(related_entry_id).version == 4
 
     def test_dry_run_failed(self, caplog):
         file = factories.FileFactory(
@@ -1409,7 +1446,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         file_content = get_sample_file(
-            "import_job/valid_related_entries_by_id.csv", self.MIMETYPE
+            "import_job/related_entries_valid_by_id.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -1435,6 +1472,31 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert len(related_entry_list) == 2
         assert existing_entry1.id in related_entry_list
         assert existing_entry2.id in related_entry_list
+
+    def test_related_entry_import_by_title(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_valid_by_title.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 2
+
+        entry1 = DictionaryEntry.objects.get(title="Word 1")
+        related_entry1 = entry1.dictionaryentrylink_set.first()
+        assert related_entry1.to_dictionary_entry.title == "Word 2"
+
+        entry2 = DictionaryEntry.objects.get(title="Word 2")
+        related_entry2 = entry2.dictionaryentrylink_set.first()
+        assert related_entry2.to_dictionary_entry.title == "Word 1"
 
     def test_skip_rows_with_erroneous_values(self):
         # If a row has validation errors, skip that row, but import the rest of the file
