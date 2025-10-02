@@ -232,7 +232,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_media_row["idx"],
-            error_message=[
+            errors=[
                 f"Media file missing in uploaded files: "
                 f"{missing_media_row['filename']}, column: {missing_media_row['column']}."
             ],
@@ -244,7 +244,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_media_id_row["idx"],
-            error_message=[
+            errors=[
                 f"Referenced media not found for "
                 f"ID: {missing_media_id_row['id']} in column: {missing_media_id_row['column']}."
             ],
@@ -256,7 +256,7 @@ def generate_report(
             import_job,
             report,
             row_number=missing_entry_row["idx"],
-            error_message=[
+            errors=[
                 f"Referenced dictionary entry not found for ID: {missing_entry_row['id']}"
             ],
         )
@@ -275,7 +275,7 @@ def generate_report(
                     import_job,
                     report,
                     row_number=row.number,
-                    error_message=row.error_messages,
+                    errors=row.error_messages,
                 )
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
@@ -307,7 +307,7 @@ def add_missing_related_entry_errors(
                 f"Please link the entries manually after re-importing the missing entry."
             )
             create_or_append_error_row(
-                import_job, report, data["idx"], str(error_message)
+                import_job, report, row_number=data["idx"], errors=[str(error_message)]
             )
 
         else:
@@ -316,7 +316,7 @@ def add_missing_related_entry_errors(
                 f"with ID '{related_entry_id}'. Please link the entries manually after re-importing the missing entry."
             )
             create_or_append_error_row(
-                import_job, report, data["idx"], str(error_message)
+                import_job, report, row_number=data["idx"], errors=[str(error_message)]
             )
 
 
