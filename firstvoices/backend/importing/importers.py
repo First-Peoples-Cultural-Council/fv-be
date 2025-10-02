@@ -463,7 +463,7 @@ class DictionaryEntryImporter(BaseImporter):
             dictionary_entry_import_result, filtered_data
         )
 
-        # Create a map of title:(id, row number) for newly created entries
+        # Create a map of title:id for newly created entries
         # Only keep the first entry if there are multiple entries with the same title
         title_map = {}
         if dictionary_entry_import_result.totals["new"]:
