@@ -542,6 +542,56 @@ class TestBulkImportDryRun:
         related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
         assert uuid.UUID(related_entry_id).version == 4
 
+    def test_related_entry_by_title_invalid_both_entries(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_invalid_to_and_from_entry.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 1  # Control row present
+        assert validation_report.error_rows == 2
+
+        error_rows = validation_report.rows.all().order_by("row_number")
+        error_row_1 = error_rows[0]
+        error_row_2 = error_rows[1]
+
+        assert error_row_1.row_number == 1
+        assert error_row_2.row_number == 2
+
+        assert len(error_row_1.errors) == 3
+        assert (
+            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'"
+            in error_row_1.errors[1]
+        )
+        assert "N/A: entry not imported" in error_row_1.errors[1]
+        assert (
+            "Related entry 'Word 2' could not be found to link to entry 'Word 1'"
+            in error_row_1.errors[2]
+        )
+        assert "N/A: entry not imported" in error_row_1.errors[2]
+
+        assert len(error_row_2.errors) == 3
+        assert (
+            "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'"
+            in error_row_2.errors[1]
+        )
+        assert "N/A: entry not imported" in error_row_2.errors[1]
+        assert (
+            "Related entry 'Word 1' could not be found to link to entry 'Word 2'"
+            in error_row_2.errors[2]
+        )
+        assert "N/A: entry not imported" in error_row_2.errors[2]
+
     def test_dry_run_failed(self, caplog):
         file = factories.FileFactory(
             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)

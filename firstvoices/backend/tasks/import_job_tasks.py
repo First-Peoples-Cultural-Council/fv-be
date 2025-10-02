@@ -118,10 +118,23 @@ def append_missing_from_entry_data(
             )
 
 
-def link_related_entries(import_data, entry_title_map, dry_run):
+def link_related_entries(from_entry, to_entry):
+    """
+    Creates a link between two dictionary entries, avoiding self-referential links.
+    """
+    if from_entry.id == to_entry.id:
+        return
+
+    DictionaryEntryLink.objects.create(
+        from_dictionary_entry=from_entry,
+        to_dictionary_entry=to_entry,
+    )
+
+
+def handle_related_entries(import_data, entry_title_map, dry_run):
     """
     Links related dictionary entries by title based on the RELATED_ENTRY columns in the CSV data.
-    Any errors encountered during the linking process are skipped to be logged in generate_report.
+    Any errors encountered during the linking process are added to failed_related_entry_data.
     """
 
     related_entry_headers = [
@@ -141,41 +154,31 @@ def link_related_entries(import_data, entry_title_map, dry_run):
             append_missing_from_entry_data(
                 idx + 1, row, failed_related_entry_data, related_entry_headers
             )
-            continue
 
-        else:
+        for related_entry_header in related_entry_headers:
+            related_entry_title = row[related_entry_header]
+            if not related_entry_title:
+                # No related entry specified in this column, skip
+                continue
 
-            for related_entry_header in related_entry_headers:
-                related_entry_title = row[related_entry_header]
-                if not related_entry_title:
-                    # No related entry specified in this column, skip
-                    continue
+            related_entry_id = entry_title_map.get(related_entry_title)
 
-                related_entry_id = entry_title_map.get(related_entry_title)
+            # Related entry not found in the imported entries
+            if not related_entry_id:
+                failed_related_entry_data.append(
+                    {
+                        "idx": idx + 1,
+                        "title": related_entry_title,
+                        "type": "to_entry",
+                        "related_entry_title": row.get("title"),
+                    }
+                )
+                continue
 
-                # Related entry not found in the imported entries
-                if not related_entry_id:
-                    failed_related_entry_data.append(
-                        {
-                            "idx": idx + 1,
-                            "title": related_entry_title,
-                            "type": "to_entry",
-                            "related_entry_title": row.get("title"),
-                        }
-                    )
-                    continue
-
-                if not dry_run:
-                    from_entry = DictionaryEntry.objects.get(id=row["id"])
-                    to_entry = DictionaryEntry.objects.get(id=related_entry_id)
-                    # Avoid self-referential links
-                    if from_entry.id == to_entry.id:
-                        continue
-
-                    DictionaryEntryLink.objects.create(
-                        from_dictionary_entry=from_entry,
-                        to_dictionary_entry=to_entry,
-                    )
+            if not dry_run:
+                from_entry = DictionaryEntry.objects.get(id=row["id"])
+                to_entry = DictionaryEntry.objects.get(id=related_entry_id)
+                link_related_entries(from_entry, to_entry)
 
     return failed_related_entry_data
 
@@ -290,7 +293,7 @@ def add_missing_related_entry_errors(
     for data in failed_related_entry_data:
         related_entry_id = (
             entry_title_map.get(data["related_entry_title"])
-            or "N/A, related entry not imported"
+            or "N/A: entry not imported"
         )
         if data["type"] == "from_entry":
             error_message = (
@@ -375,7 +378,7 @@ def process_import_job_data(
         )
     )
 
-    failed_related_entry_data = link_related_entries(
+    failed_related_entry_data = handle_related_entries(
         import_data, entry_title_map, dry_run
     )
 
