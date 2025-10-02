@@ -1580,6 +1580,108 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_entry2 = entry2.dictionaryentrylink_set.first()
         assert related_entry2.to_dictionary_entry.title == "Word 1"
 
+    def test_related_entries_import_by_title_full(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_valid_by_title_full.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 6
+
+        entry1 = DictionaryEntry.objects.get(title="Word 1")
+        related_entries = entry1.dictionaryentrylink_set.all()
+        assert related_entries.count() == 5
+
+        expected_related_titles = [
+            "Word 2",
+            "Word 3",
+            "Phrase 1",
+            "Phrase 2",
+            "Phrase 3",
+        ]
+        actual_related_titles = [
+            related_entry.to_dictionary_entry.title for related_entry in related_entries
+        ]
+        assert all(title in actual_related_titles for title in expected_related_titles)
+
+    def test_related_entries_duplicate_titles(self):
+        # If there are multiple entries with the same title, only link the first instance of that title
+        file_content = get_sample_file(
+            "import_job/related_entries_duplicate_titles.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 3
+
+        entry1 = DictionaryEntry.objects.get(title="Word 1")
+        related_entries = entry1.dictionaryentrylink_set.all()
+        assert related_entries.count() == 1
+        assert related_entries[0].to_dictionary_entry.title == "Word 2"
+        assert related_entries[0].to_dictionary_entry.notes[0] == "first instance"
+
+    def test_related_entries_duplicate_titles_same_row(self):
+        # Ensure no duplicate links are created if the same title is in the same row multiple times
+        file_content = get_sample_file(
+            "import_job/related_entries_duplicate_titles_same_row.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 2
+
+        entry1 = DictionaryEntry.objects.get(title="Word 1")
+        related_entries = entry1.dictionaryentrylink_set.all()
+        assert related_entries.count() == 1
+        assert related_entries[0].to_dictionary_entry.title == "Word 2"
+
+    def test_related_entries_cannot_link_to_self(self):
+        # Ensure no links are created to self
+        file_content = get_sample_file(
+            "import_job/related_entries_self_link.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 1
+
+        entry1 = DictionaryEntry.objects.get(title="Word 1")
+        related_entries = entry1.dictionaryentrylink_set.all()
+        assert related_entries.count() == 0
+
     def test_skip_rows_with_erroneous_values(self):
         # If a row has validation errors, skip that row, but import the rest of the file
         file_content = get_sample_file(

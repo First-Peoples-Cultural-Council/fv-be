@@ -120,9 +120,14 @@ def append_missing_from_entry_data(
 
 def link_related_entries(from_entry, to_entry):
     """
-    Creates a link between two dictionary entries, avoiding self-referential links.
+    Creates a link between two dictionary entries, avoiding self-referential or duplicate links.
     """
     if from_entry.id == to_entry.id:
+        return
+
+    if DictionaryEntryLink.objects.filter(
+        from_dictionary_entry=from_entry, to_dictionary_entry=to_entry
+    ).exists():
         return
 
     DictionaryEntryLink.objects.create(
