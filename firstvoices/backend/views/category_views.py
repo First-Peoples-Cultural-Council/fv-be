@@ -224,6 +224,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                     Prefetch(
                         "children",
                         queryset=Category.objects.filter(nested_query)
+                        .select_related("parent")
                         .order_by(Lower("title"))
                         .distinct(),
                     )
