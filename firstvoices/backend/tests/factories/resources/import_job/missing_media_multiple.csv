@@ -1,4 +1,5 @@
-TITLE,TYPE,AUDIO_FILENAME,AUDIO_2_FILENAME,IMG_FILENAME,IMG_2_FILENAME,VIDEO_FILENAME,VIDEO_2_FILENAME
-Word 1,word,sample-audio.mp3,missing-audio.mp3,,,,
-Phrase 1,phrase,,,sample-image.jpg,missing-image.jpg,,
-Word 2,word,,,,,video_example_small.mp4,missing-video.mp4
+TITLE,TYPE,AUDIO_FILENAME,AUDIO_2_FILENAME,IMG_FILENAME,IMG_2_FILENAME,VIDEO_FILENAME,VIDEO_2_FILENAME,DOCUMENT_FILENAME,DOCUMENT_2_FILENAME
+Word 1,word,sample-audio.mp3,missing-audio.mp3,,,,,,
+Phrase 1,phrase,,,sample-image.jpg,missing-image.jpg,,,,
+Word 2,word,,,,,video_example_small.mp4,missing-video.mp4,,
+Phrase 2,phrase,,,,,,,sample-document.pdf,missing-document.pdf

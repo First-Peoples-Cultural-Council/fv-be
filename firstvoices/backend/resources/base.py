@@ -122,6 +122,12 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         m2m_add=True,
         widget=widgets.ManyToManyWidget(Audio, separator=",", field="id"),
     )
+    related_documents = fields.Field(
+        column_name="related_documents",
+        attribute="related_documents",
+        m2m_add=True,
+        widget=widgets.ManyToManyWidget(Audio, separator=",", field="id"),
+    )
     related_images = fields.Field(
         column_name="related_images",
         attribute="related_images",

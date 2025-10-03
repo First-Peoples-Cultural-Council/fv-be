@@ -3,7 +3,15 @@ from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
-from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
+from backend.models.media import (
+    Audio,
+    Document,
+    Image,
+    ImageFile,
+    Person,
+    Video,
+    VideoFile,
+)
 from backend.resources.base import SiteContentResource
 from backend.resources.utils.import_export_widgets import (
     CustomManyToManyWidget,
@@ -69,6 +77,52 @@ class AudioResource(SiteContentResource):
 
     class Meta:
         model = Audio
+        clean_model_instances = True
+
+
+class DocumentResource(SiteContentResource):
+    original = fields.Field(
+        column_name="document_original",
+        attribute="original",
+        widget=ForeignKeyWidget(model=File),
+    )
+
+    title = fields.Field(
+        column_name="document_title",
+        attribute="title",
+    )
+
+    description = fields.Field(
+        column_name="document_description", attribute="description"
+    )
+
+    acknowledgement = fields.Field(
+        column_name="document_acknowledgement", attribute="acknowledgement"
+    )
+
+    exclude_from_kids = fields.Field(
+        column_name="document_include_in_kids_site",
+        attribute="exclude_from_kids",
+        widget=InvertedBooleanFieldWidget(
+            column="document_include_in_kids_site", default=False
+        ),
+    )
+
+    def before_import_row(self, row, **kwargs):
+        # Filename to be used as title if not provided
+        if "document_title" not in row or len(row["document_title"]) == 0:
+            row["document_title"] = row["document_filename"]
+
+        valid_filename = get_valid_filename(row["document_filename"])
+
+        # Adding original
+        associated_file = File.objects.filter(
+            import_job__id=row["import_job"], content__contains=valid_filename
+        )[0]
+        row["document_original"] = str(associated_file.id)
+
+    class Meta:
+        model = Document
         clean_model_instances = True
 
 

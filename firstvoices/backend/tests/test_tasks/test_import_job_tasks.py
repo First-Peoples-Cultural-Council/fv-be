@@ -25,6 +25,11 @@ TEST_AUDIO_IDS = [
     "addd0095-581f-40b9-afef-fbb394876df7",
 ]
 
+TEST_DOCUMENT_IDS = [
+    "0c0cdd67-2858-4e15-8092-0df9d061e28d",
+    "a00d78b1-159b-4c6a-b417-96d4e5819fdd",
+]
+
 TEST_IMAGE_IDS = [
     "daf8e74f-f20b-4c81-95c2-7dd744277009",
     "90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",
@@ -96,6 +101,11 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
+            import_job=import_job,
+        )
         factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
@@ -120,7 +130,7 @@ class TestBulkImportDryRun:
         validate_import_job(import_job.id)
         validated_import_job = ImportJob.objects.get(id=import_job.id)
 
-        assert validated_import_job.validation_report.error_rows == 3
+        assert validated_import_job.validation_report.error_rows == 4
 
         return validated_import_job
 
@@ -129,6 +139,11 @@ class TestBulkImportDryRun:
         factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
             import_job=import_job,
         )
         factories.ImageFileFactory(
@@ -606,7 +621,7 @@ class TestBulkImportDryRun:
         error_rows = import_job.validation_report.rows.all().order_by("row_number")
         error_rows_numbers = error_rows.values_list("row_number", flat=True)
 
-        assert list(error_rows_numbers) == [1, 2, 3]
+        assert list(error_rows_numbers) == [1, 2, 3, 4]
 
         assert (
             "Media file missing in uploaded files: sample-audio.mp3, column: audio_filename."
@@ -619,6 +634,10 @@ class TestBulkImportDryRun:
         assert (
             "Media file missing in uploaded files: video_example_small.mp4, column: video_filename."
             in error_rows[2].errors
+        )
+        assert (
+            "Media file missing in uploaded files: sample-document.pdf, column: document_filename."
+            in error_rows[3].errors
         )
 
     def test_all_media_present(self):
@@ -776,6 +795,7 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert "audio_ids" in validation_report.accepted_columns
+        assert "document_ids" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "video_ids" in validation_report.accepted_columns
 
@@ -796,6 +816,8 @@ class TestBulkImportDryRun:
         validation_report = import_job.validation_report
         assert "audio_ids" in validation_report.accepted_columns
         assert "audio_filename" in validation_report.accepted_columns
+        assert "document_ids" in validation_report.accepted_columns
+        assert "document_filename" in validation_report.accepted_columns
         assert "img_ids" in validation_report.accepted_columns
         assert "img_filename" in validation_report.accepted_columns
         assert "video_ids" in validation_report.accepted_columns
@@ -816,10 +838,11 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 5
 
     def test_related_media_id_wrong_site(self):
         factories.AudioFactory.create()
+        factories.DocumentFactory.create()
         factories.ImageFactory.create()
         factories.VideoFactory.create()
 
@@ -837,10 +860,13 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 5
 
     def test_related_media_id_wrong_type(self):
         factories.AudioFactory.create(site=self.site, id=TEST_VIDEO_IDS[0])  # video_id
+        factories.DocumentFactory.create(
+            site=self.site, id=TEST_IMAGE_IDS[0]
+        )  # image_id
         factories.ImageFactory.create(site=self.site, id=TEST_AUDIO_IDS[0])  # audio_id
         factories.VideoFactory.create(site=self.site, id=TEST_IMAGE_IDS[0])  # image_id
 
@@ -858,10 +884,11 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 5
 
     def test_related_media_id_success_same_site(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=audio.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
 
@@ -880,12 +907,17 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 5
 
     def test_related_media_id_success_shared_site(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=audio.site, key="shared_media", is_enabled=True
+        )
+
+        document = factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0])
+        factories.SiteFeatureFactory.create(
+            site=document.site, key="SHARED_MEDIA", is_enabled=True
         )
 
         image = factories.ImageFactory.create(id=TEST_IMAGE_IDS[0])
@@ -913,12 +945,17 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 5
 
     def test_related_media_id_failed_shared_site(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.SiteFeatureFactory.create(
             site=audio.site, key="shared_media", is_enabled=False
+        )
+
+        document = factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0])
+        factories.SiteFeatureFactory.create(
+            site=document.site, key="shared_media", is_enabled=False
         )
 
         image = factories.ImageFactory.create(id=TEST_IMAGE_IDS[0])
@@ -945,7 +982,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 5
 
     def test_dictionary_entry_external_system_fields(self):
         external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
@@ -988,6 +1025,7 @@ class TestBulkImportDryRun:
 
     def test_related_media_id_duplicate_ids(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=audio.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
 
@@ -1005,10 +1043,11 @@ class TestBulkImportDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 0
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 5
 
     def test_related_media_id_mixed_invalid_and_valid(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=audio.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
 
@@ -1025,7 +1064,7 @@ class TestBulkImportDryRun:
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 5
         assert validation_report.new_rows == 0
 
     def test_missing_media_multiple(self):
@@ -1034,7 +1073,7 @@ class TestBulkImportDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 3
+        assert validation_report.error_rows == 4
 
         error_rows = validation_report.rows.all().order_by("row_number")
         assert (
@@ -1048,6 +1087,10 @@ class TestBulkImportDryRun:
         assert (
             "Media file missing in uploaded files: missing-video.mp4, column: video_2_filename."
             in error_rows[2].errors
+        )
+        assert (
+            "Media file missing in uploaded files: missing-document.pdf, column: document_2_filename."
+            in error_rows[3].errors
         )
 
     def test_invalid_video_embed_links(self):
@@ -1089,13 +1132,15 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     TASK = confirm_import_job
 
     ACKNOWLEDGEMENT = "Test Ack"
-    AUDIO_DESCRIPTION = "Testing audio upload"
     AUDIO_TITLE = "Related Audio"
-    IMAGE_DESCRIPTION = "Testing image upload"
+    AUDIO_DESCRIPTION = "Testing audio upload"
+    DOCUMENT_TITLE = "Related Document"
+    DOCUMENT_DESCRIPTION = "Testing document upload"
     IMAGE_TITLE = "Related Image"
+    IMAGE_DESCRIPTION = "Testing image upload"
     TEST_SPEAKER = "Test Speaker"
-    VIDEO_DESCRIPTION = "Testing video upload"
     VIDEO_TITLE = "Related Video"
+    VIDEO_DESCRIPTION = "Testing video upload"
 
     def get_valid_task_args(self):
         return (uuid.uuid4(),)
@@ -1104,6 +1149,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.user = factories.get_superadmin()
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
+    # TODO: add documents to this test
     def confirm_upload_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
@@ -1151,6 +1197,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         return import_job
 
+    # TODO: add documents to this test
     def upload_multiple_media_files(self, count, filename, file_type, import_job):
         if file_type == "audio":
             base_file = "sample-audio.mp3"
@@ -1181,6 +1228,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
                 import_job=import_job,
             )
 
+    # TODO: add documents to this test
     def assert_related_media_details(self, related_media, suffix_number=""):
         assert related_media.acknowledgement == f"{self.ACKNOWLEDGEMENT}{suffix_number}"
         assert related_media.exclude_from_kids is False
@@ -1609,6 +1657,12 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_audio_6 = entry_3.related_audio.get(title=f"{self.AUDIO_TITLE}-6")
         self.assert_related_audio_details("related_audio", related_audio_6, "-6")
 
+    def test_related_documents(self):
+        pass
+
+    def test_related_documents_multiple_files(self):
+        pass
+
     def test_related_images(self):
         import_job = self.confirm_upload_with_media_files("related_images.csv")
 
@@ -1717,6 +1771,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video_6 = entry_3.related_videos.get(title=f"{self.VIDEO_TITLE}-6")
         self.assert_related_video_details("related_video", related_video_6, "-6")
 
+    # TODO: add documents to this test
     def test_related_media_full(self):
         file_content = get_sample_file(
             "import_job/related_media_full.csv", self.MIMETYPE
@@ -1781,6 +1836,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video_5 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-5")
         self.assert_related_video_details("related_video", related_video_5, "-5")
 
+    # TODO: add documents to this test
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
 
@@ -1796,6 +1852,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video = entry_with_video.related_videos.all()
         assert related_video[0].title == "video_example_small.mp4"
 
+    # TODO: add documents to this test
     def test_duplicate_media_filenames(self):
         # If multiple rows have same filenames, only the first media instance will be imported
         # and used. The rest of the media will not be imported and should not give any issues.
@@ -1850,6 +1907,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
         assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3
 
+    # TODO: add documents to this test
     def test_unused_media_deleted(self):
         file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
@@ -1968,6 +2026,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert phrase.external_system.title == external_system_2.title
         assert phrase.external_system_entry_id == "xyz007"
 
+    # TODO: add documents to this test
     def test_related_media_ids_multiple(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=audio.site)
@@ -2011,6 +2070,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry4.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
         assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
 
+    # TODO: add documents to this test
     def test_related_media_mixed_multiple(self):
         file_content = get_sample_file(
             "import_job/related_media_mixed_multiple.csv", self.MIMETYPE
@@ -2065,6 +2125,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
         assert entry4.related_videos.count() == 4
 
+    # TODO: add documents to this test
     def test_import_related_media_id_duplicate_ids(self):
         file_content = get_sample_file(
             "import_job/related_media_ids_multiple_duplicate.csv", self.MIMETYPE
@@ -2103,6 +2164,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry4.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
         assert entry4.related_videos.count() == 1
 
+    # TODO: add documents to this test
     def test_import_related_media_id_mixed_invalid_and_valid(self):
         file_content = get_sample_file(
             "import_job/related_media_ids_multiple.csv", self.MIMETYPE
@@ -2123,6 +2185,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         # All rows have invalid media ids, so no entries should be imported
         assert DictionaryEntry.objects.all().count() == 0
 
+    # TODO: add documents to this test?
     def test_import_multiple_media_duplicate_filenames_same_row(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_duplicate_row.csv", self.MIMETYPE
@@ -2149,6 +2212,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry = DictionaryEntry.objects.get(title="Duplicate audio row")
         assert entry.related_audio.count() == 2
 
+    # TODO: add documents to this test?
     def test_import_multiple_media_duplicate_filenames_same_col(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_duplicate_col.csv", self.MIMETYPE
@@ -2179,6 +2243,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry3 = DictionaryEntry.objects.get(title="Duplicate audio col 3")
         assert entry3.related_audio.count() == 3
 
+    # TODO: add documents to this test?
     def test_import_multiple_media_mixed_invalid_and_valid_filenames(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_invalid.csv",
@@ -2203,6 +2268,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         assert DictionaryEntry.objects.all().count() == 0
 
+    # TODO: add documents to this test?
     def test_missing_media_multiple_rows_skipped(self):
         self.confirm_upload_with_media_files("missing_media_multiple.csv")
         assert DictionaryEntry.objects.all().count() == 0

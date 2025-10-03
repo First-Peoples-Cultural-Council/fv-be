@@ -10,6 +10,7 @@ from import_export.results import RowResult
 from backend.importing.importers import (
     AudioImporter,
     DictionaryEntryImporter,
+    DocumentImporter,
     ImageImporter,
     VideoImporter,
 )
@@ -32,7 +33,13 @@ from backend.tasks.utils import (
 
 
 def get_valid_headers():
-    importers = [AudioImporter, ImageImporter, VideoImporter, DictionaryEntryImporter]
+    importers = [
+        AudioImporter,
+        DocumentImporter,
+        ImageImporter,
+        VideoImporter,
+        DictionaryEntryImporter,
+    ]
     supported_columns = map(
         lambda importer: importer.get_supported_columns(), importers
     )
@@ -87,6 +94,7 @@ def generate_report(
     missing_uploaded_media,
     missing_referenced_media,
     audio_import_results,
+    document_import_results,
     img_import_results,
     video_import_results,
     dictionary_entry_import_result,
@@ -204,6 +212,9 @@ def process_import_job_data(
     audio_import_results, audio_filename_map = AudioImporter.import_data(
         import_job, cleaned_data, dry_run
     )
+    document_import_results, document_filename_map = DocumentImporter.import_data(
+        import_job, cleaned_data, dry_run
+    )
     img_import_results, img_filename_map = ImageImporter.import_data(
         import_job, cleaned_data, dry_run
     )
@@ -219,6 +230,7 @@ def process_import_job_data(
         audio_filename_map,
         img_filename_map,
         video_filename_map,
+        document_filename_map,
     )
 
     if dry_run:
@@ -229,6 +241,7 @@ def process_import_job_data(
             missing_uploaded_media,
             missing_referenced_media,
             audio_import_results,
+            document_import_results,
             img_import_results,
             video_import_results,
             dictionary_entry_import_result,
@@ -328,6 +341,11 @@ def get_missing_uploaded_media(data, import_job):
         "AUDIO_3_FILENAME",
         "AUDIO_4_FILENAME",
         "AUDIO_5_FILENAME",
+        "DOCUMENT_FILENAME",
+        "DOCUMENT_2_FILENAME",
+        "DOCUMENT_3_FILENAME",
+        "DOCUMENT_4_FILENAME",
+        "DOCUMENT_5_FILENAME",
         "IMG_FILENAME",
         "IMG_2_FILENAME",
         "IMG_3_FILENAME",
@@ -368,6 +386,7 @@ def get_missing_referenced_media(data, site_id):
 
     return (
         AudioImporter.get_missing_referenced_media(site_id, data)
+        + DocumentImporter.get_missing_referenced_media(site_id, data)
         + ImageImporter.get_missing_referenced_media(site_id, data)
         + VideoImporter.get_missing_referenced_media(site_id, data)
     )
@@ -388,6 +407,7 @@ def delete_unused_media(import_job):
             import_job_id=import_job.id, video__isnull=True
         ).delete()
         File.objects.filter(import_job_id=import_job.id, audio__isnull=True).delete()
+        File.objects.filter(import_job_id=import_job.id, document__isnull=True).delete()
     except Exception as e:
         logger.warning(
             f"An exception occurred while trying to delete unused media files. Error: {e}"
