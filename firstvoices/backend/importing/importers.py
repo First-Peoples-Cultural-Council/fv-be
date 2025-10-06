@@ -3,6 +3,7 @@ import re
 import tablib
 from django.db.models import Q
 
+from backend.models import DictionaryEntry
 from backend.models.import_jobs import ImportJob
 from backend.resources.dictionary import DictionaryEntryResource
 from backend.resources.media import AudioResource, ImageResource, VideoResource
@@ -56,6 +57,17 @@ class BaseImporter:
     def filter_rows(cls, data, key_col):
         """Subclasses can override to filter out duplicate or invalid rows."""
         return data
+
+    @classmethod
+    def get_column_index(cls, data: tablib.Dataset, column_name: str):
+        """
+        Return the index of column if present in the dataset.
+        """
+        try:
+            column_index = data.headers.index(column_name)
+            return column_index
+        except ValueError:
+            return -1
 
 
 class BaseMediaFileImporter(BaseImporter):
@@ -274,17 +286,6 @@ class BaseMediaFileImporter(BaseImporter):
         return [id_ for id_ in ids if id_ and id_ in referenceable_media_ids]
 
     @classmethod
-    def get_column_index(cls, data: tablib.Dataset, column_name: str):
-        """
-        Return the index of column if present in the dataset.
-        """
-        try:
-            column_index = data.headers.index(column_name)
-            return column_index
-        except ValueError:
-            return -1
-
-    @classmethod
     def add_column(cls, data: tablib.Dataset, column_name: str):
         """
         Add provided column to the tablib dataset.
@@ -384,6 +385,7 @@ class DictionaryEntryImporter(BaseImporter):
         "include_in_games",
         "external_system",
         "external_system_entry_id",
+        "related_entry_ids",
         "video_embed_links",
     ]
     supported_columns_multiple = [
@@ -456,4 +458,60 @@ class DictionaryEntryImporter(BaseImporter):
             import_job=import_job.id,
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
-        return dictionary_entry_import_result
+        # Remove IDs from skipped rows
+        filtered_data = cls.remove_ids_from_skipped_rows(
+            dictionary_entry_import_result, filtered_data
+        )
+
+        # Create a map of title:id for newly created entries
+        # Only keep the first entry if there are multiple entries with the same title
+        title_map = {}
+        if dictionary_entry_import_result.totals["new"]:
+            for row in filtered_data.dict:
+                if row["title"] not in title_map:
+                    title_map[row["title"]] = row["id"]
+
+        return dictionary_entry_import_result, title_map, filtered_data
+
+    @classmethod
+    def get_missing_referenced_entries(cls, site_id, data):
+        """Return a list of ids from data that do not correspond to dictionary entries from the given site."""
+        column_name = "related_entry_ids"
+        valid_entry_ids = [
+            str(value)
+            for value in DictionaryEntry.objects.filter(site=site_id).values_list(
+                "id", flat=True
+            )
+        ]
+        missing_entry_ids = []
+
+        clean_headers = [header.lower() for header in data.headers]
+
+        if column_name.lower() in clean_headers:
+            id_col_idx = clean_headers.index(column_name.lower())
+
+            for idx, entry_id_str in enumerate(data.get_col(id_col_idx)):
+                if not entry_id_str:
+                    # Do nothing if the field is empty
+                    continue
+
+                entry_ids = [
+                    id_.strip() for id_ in entry_id_str.split(",") if id_.strip()
+                ]
+                for entry_id in entry_ids:
+                    if entry_id not in valid_entry_ids:
+                        missing_entry_ids.append({"idx": idx + 1, "id": entry_id})
+
+        return missing_entry_ids
+
+    @classmethod
+    def remove_ids_from_skipped_rows(cls, import_result, data):
+        """Returns a filtered dataset with IDs removed from rows that were skipped during import."""
+        id_removed_data = tablib.Dataset(headers=data.headers)
+        id_col_index = cls.get_column_index(data, "id")
+        for i, row in enumerate(data.dict):
+            if import_result.rows[i].import_type == "skip" and id_col_index != -1:
+                row["id"] = ""
+            id_removed_data.append(row.values())
+
+        return id_removed_data

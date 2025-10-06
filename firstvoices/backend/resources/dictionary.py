@@ -1,5 +1,4 @@
-from import_export import fields
-from import_export.widgets import ForeignKeyWidget
+from import_export import fields, widgets
 
 from backend.models import Category, DictionaryEntry, ImportJob
 from backend.models.dictionary import (
@@ -20,8 +19,8 @@ from backend.resources.utils.import_export_widgets import (
 
 
 class DictionaryEntryResource(
-    ControlledSiteContentResource,
     RelatedMediaResourceMixin,
+    ControlledSiteContentResource,
 ):
     type = fields.Field(
         column_name="type",
@@ -70,25 +69,23 @@ class DictionaryEntryResource(
         widget=TextListWidget(prefix="alternate_spelling"),
     )
 
-    # Related entries
-    related_dictionary_entries = fields.Field(
-        column_name="related_entry",
+    related_dictionary_entries_by_id = fields.Field(
+        column_name="related_entry_ids",
         attribute="related_dictionary_entries",
-        widget=CustomManyToManyWidget(
-            model=DictionaryEntry, column_name="related_entry"
-        ),
+        m2m_add=True,
+        widget=widgets.ManyToManyWidget(DictionaryEntry, separator=",", field="id"),
     )
 
     import_job = fields.Field(
         column_name="import_job",
         attribute="import_job",
-        widget=ForeignKeyWidget(ImportJob),
+        widget=widgets.ForeignKeyWidget(ImportJob),
     )
 
     external_system = fields.Field(
         column_name="external_system",
         attribute="external_system",
-        widget=ForeignKeyWidget(ExternalDictionaryEntrySystem, field="title"),
+        widget=widgets.ForeignKeyWidget(ExternalDictionaryEntrySystem, field="title"),
     )
 
     exclude_from_games = fields.Field(

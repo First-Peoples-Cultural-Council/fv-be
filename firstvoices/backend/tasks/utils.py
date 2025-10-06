@@ -79,7 +79,7 @@ def create_or_append_error_row(import_job, report, row_number, errors):
         },
     )
     if not created:
-        error_row.errors += errors
+        error_row.errors.extend(errors)
         error_row.save()
 
 
