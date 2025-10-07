@@ -3,10 +3,10 @@ aniso8601==10.0.1
 asgiref==3.9.1
 async-timeout==5.0.1
 attrs==25.3.0
-boto3==1.40.40
+boto3==1.40.45
 botocore>=1.29.139
 celery==5.5.3
-certifi==2025.8.3
+certifi==2025.10.5
 cffi==2.0.0
 chardet==5.2.0
 charset-normalizer==3.4.3
@@ -20,7 +20,7 @@ django-cors-headers==4.9.0
 django-coverage-plugin==3.1.1
 django-debug-toolbar==6.0.0
 django-embed-video==1.4.10
-django-import-export==4.3.9
+django-import-export==4.3.10
 django-rest-framework-condition==0.1.1
 django-storages==1.14.6
 django-timezone-field==7.1
@@ -63,7 +63,7 @@ pillow-heif==1.1.0
 pluggy==1.6.0
 prompt-toolkit==3.0.52
 psycopg2-binary==2.9.10
-pycparser==2.22
+pycparser==2.23
 PyJWT==2.10.1
 pyrsistent==0.20.0
 pytest==8.4.2
@@ -79,7 +79,7 @@ redis==6.4.0
 regex==2025.9.1
 requests==2.32.5
 rules==3.5
-sentry-sdk==2.39.0
+sentry-sdk==2.40.0
 six==1.17.0
 sqlparse==0.5.3
 tablib==3.8.0

@@ -546,12 +546,18 @@ class TestCategory:
             category_id=self.child_category.id, user=AnonymousUser()
         )
         search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
 
-        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
-        assert "categories" in filtered_terms
+        category_filter = None
+        for f in filters:
+            if "terms" in f and "categories" in f["terms"]:
+                category_filter = f["terms"]
+                break
 
-        assert str(self.child_category.id) in filtered_terms["categories"]
-        assert str(self.parent_category.id) not in filtered_terms["categories"]
+        assert category_filter is not None
+
+        assert str(self.child_category.id) in category_filter["categories"]
+        assert str(self.parent_category.id) not in category_filter["categories"]
 
     def test_category_with_children(self):
         # relates to: DictionaryObjectTest.java - testCategoryWithChildren()
@@ -559,12 +565,18 @@ class TestCategory:
             category_id=self.parent_category.id, user=AnonymousUser()
         )
         search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
 
-        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
-        assert "categories" in filtered_terms
+        category_filter = None
+        for f in filters:
+            if "terms" in f and "categories" in f["terms"]:
+                category_filter = f["terms"]
+                break
 
-        assert str(self.child_category.id) in filtered_terms["categories"]
-        assert str(self.parent_category.id) in filtered_terms["categories"]
+        assert category_filter is not None
+
+        assert str(self.child_category.id) in category_filter["categories"]
+        assert str(self.parent_category.id) in category_filter["categories"]
 
 
 @pytest.mark.django_db
@@ -638,11 +650,17 @@ class TestImportJob:
             import_job_id=self.import_job.id, user=AnonymousUser()
         )
         search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
 
-        filtered_term = search_query["query"]["bool"]["filter"][0]["term"]
-        assert "import_job_id" in filtered_term
+        import_job_filter = None
+        for f in filters:
+            if "term" in f and "import_job_id" in f["term"]:
+                import_job_filter = f["term"]
+                break
 
-        assert str(self.import_job.id) in filtered_term["import_job_id"]
+        assert import_job_filter is not None
+
+        assert str(self.import_job.id) in import_job_filter["import_job_id"]
 
 
 @pytest.mark.django_db
@@ -662,10 +680,16 @@ class TestExternalSystem:
         )
         search_query = search_query.to_dict()
 
-        filtered_term = search_query["query"]["bool"]["filter"][0]["term"]
-        assert "external_system" in filtered_term
+        filters = search_query["query"]["bool"]["filter"]
 
-        assert str(self.external_system.id) in filtered_term["external_system"]
+        external_system_filter = None
+        for f in filters:
+            if "term" in f and "external_system" in f["term"]:
+                external_system_filter = f["term"]
+                break
+
+        assert external_system_filter is not None
+        assert str(self.external_system.id) in external_system_filter["external_system"]
 
 
 @pytest.mark.django_db
@@ -683,12 +707,16 @@ class TestSearchFilters:
             sites=[str(valid_site.id)], user=AnonymousUser()
         )
         search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
 
-        expected_site_filter = (
-            "'filter': [{'terms': {'site_id': ['" + str(valid_site.id) + "']}}]"
-        )
+        site_filter = None
+        for f in filters:
+            if "terms" in f and "site_id" in f["terms"]:
+                site_filter = f["terms"]
+                break
 
-        assert expected_site_filter in str(search_query)
+        assert site_filter is not None
+        assert str(valid_site.id) in site_filter["site_id"]
 
 
 @pytest.mark.django_db
@@ -891,10 +919,11 @@ class TestVisibilityParam:
     def test_default(self):
         search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
+        default_filters = search_query["query"]["bool"]["filter"]
+        visibility_filter = default_filters[0]["bool"]["must"][1]
 
-        assert "filter" not in search_query["query"]["bool"] or "visibility" not in str(
-            search_query["query"]["bool"]["filter"]
-        )
+        assert visibility_filter is not None
+        assert visibility_filter["term"]["visibility"] == Visibility.PUBLIC
 
     @pytest.mark.parametrize(
         "visibility",
@@ -912,12 +941,19 @@ class TestVisibilityParam:
         search_query = get_search_query(visibility=visibility, user=AnonymousUser())
         search_query = search_query.to_dict()
 
-        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
-        assert "visibility" in filtered_terms
-        assert len(filtered_terms["visibility"]) == len(visibility)
+        filters = search_query["query"]["bool"]["filter"]
+
+        visibility_filter = None
+        for f in filters:
+            if "terms" in f and "visibility" in f["terms"]:
+                visibility_filter = f["terms"]
+                break
+
+        assert visibility_filter is not None
+        assert len(visibility_filter["visibility"]) == len(visibility)
 
         for value in visibility:
-            assert value in filtered_terms["visibility"]
+            assert value in visibility_filter["visibility"]
 
 
 class TestHasMediaParams:
@@ -984,13 +1020,19 @@ class TestHasSiteFeatureParams:
             has_site_feature=site_features, user=AnonymousUser()
         )
         search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
 
-        filtered_terms = search_query["query"]["bool"]["filter"][0]["terms"]
-        assert "site_features" in filtered_terms
-        assert len(filtered_terms["site_features"]) == len(site_features)
+        site_features_filter = None
+        for f in filters:
+            if "terms" in f and "site_features" in f["terms"]:
+                site_features_filter = f["terms"]
+                break
+
+        assert site_features_filter is not None
+        assert len(site_features_filter["site_features"]) == len(site_features)
 
         for value in site_features:
-            assert value in filtered_terms["site_features"]
+            assert value in site_features_filter["site_features"]
 
 
 class TestHasTranslationParams:

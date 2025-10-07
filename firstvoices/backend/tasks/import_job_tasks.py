@@ -14,6 +14,7 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
+from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -46,12 +47,23 @@ def get_valid_headers():
     return reduce(lambda a, b: a + b, supported_columns)
 
 
-def clean_csv(data, missing_uploaded_media=[], missing_referenced_media=[]):
+def clean_csv(
+    data,
+    missing_uploaded_media=None,
+    missing_referenced_media=None,
+    missing_entries=None,
+):
     """
     Method to run validations on a csv file and returns a list of
     accepted columns, ignored columns and a cleaned csv for importing.
     This method also drops the ignored columns as those will not be used during import.
     """
+    if missing_uploaded_media is None:
+        missing_uploaded_media = []
+    if missing_referenced_media is None:
+        missing_referenced_media = []
+    if missing_entries is None:
+        missing_entries = []
 
     valid_headers = get_valid_headers()
     cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
@@ -73,18 +85,114 @@ def clean_csv(data, missing_uploaded_media=[], missing_referenced_media=[]):
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
-    # Remove rows that have missing media
+    # Remove rows that have missing media or entries
     missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
     missing_referenced_media_row_idx = [
         (obj["idx"] - 1) for obj in missing_referenced_media
     ]
-    rows_to_delete = {*missing_media_row_idx, *missing_referenced_media_row_idx}
+    missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
+
+    rows_to_delete = {
+        *missing_media_row_idx,
+        *missing_referenced_media_row_idx,
+        *missing_entries_row_idx,
+    }
     rows_to_delete = list(rows_to_delete)
+
     rows_to_delete.sort(reverse=True)
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
 
     return accepted_headers, invalid_headers, cleaned_data
+
+
+def append_missing_from_entry_data(
+    idx, row, failed_related_entry_data, related_entry_headers
+):
+    """
+    If a row does not have an ID (i.e. was not imported), append it to the failed_link_entry_list
+    to indicate that related entries could not be linked for this row.
+    """
+    for header in related_entry_headers:
+        if row.get(header):
+            failed_related_entry_data.append(
+                {
+                    "idx": idx,
+                    "title": row.get("title"),
+                    "type": "from_entry",
+                    "related_entry_title": row.get(header),
+                }
+            )
+
+
+def link_related_entries(from_entry, to_entry):
+    """
+    Creates a link between two dictionary entries, avoiding self-referential or duplicate links.
+    """
+    if from_entry.id == to_entry.id:
+        return
+
+    if DictionaryEntryLink.objects.filter(
+        from_dictionary_entry=from_entry, to_dictionary_entry=to_entry
+    ).exists():
+        return
+
+    DictionaryEntryLink.objects.create(
+        from_dictionary_entry=from_entry,
+        to_dictionary_entry=to_entry,
+    )
+
+
+def handle_related_entries(import_data, entry_title_map, dry_run):
+    """
+    Links related dictionary entries by title based on the RELATED_ENTRY columns in the CSV data.
+    Any errors encountered during the linking process are added to failed_related_entry_data.
+    """
+
+    related_entry_headers = [
+        header
+        for header in import_data.headers
+        if header.lower().startswith("related_entry")
+    ]
+    if not related_entry_headers:
+        return []
+
+    failed_related_entry_data = []
+
+    for idx, row in enumerate(import_data.dict):
+
+        # Skip rows without an ID as these entries have not been imported
+        if not row["id"]:
+            append_missing_from_entry_data(
+                idx + 1, row, failed_related_entry_data, related_entry_headers
+            )
+
+        for related_entry_header in related_entry_headers:
+            related_entry_title = row[related_entry_header]
+            if not related_entry_title:
+                # No related entry specified in this column, skip
+                continue
+
+            related_entry_id = entry_title_map.get(related_entry_title)
+
+            # Related entry not found in the imported entries
+            if not related_entry_id:
+                failed_related_entry_data.append(
+                    {
+                        "idx": idx + 1,
+                        "title": related_entry_title,
+                        "type": "to_entry",
+                        "related_entry_title": row.get("title"),
+                    }
+                )
+                continue
+
+            if not dry_run:
+                from_entry = DictionaryEntry.objects.get(id=row["id"])
+                to_entry = DictionaryEntry.objects.get(id=related_entry_id)
+                link_related_entries(from_entry, to_entry)
+
+    return failed_related_entry_data
 
 
 def generate_report(
@@ -93,6 +201,7 @@ def generate_report(
     ignored_columns,
     missing_uploaded_media,
     missing_referenced_media,
+    missing_entries,
     audio_import_results,
     document_import_results,
     img_import_results,
@@ -149,6 +258,17 @@ def generate_report(
             ],
         )
 
+    # Add entry ID errors to report
+    for missing_entry_row in missing_entries:
+        create_or_append_error_row(
+            import_job,
+            report,
+            row_number=missing_entry_row["idx"],
+            errors=[
+                f"Referenced dictionary entry not found for ID: {missing_entry_row['id']}"
+            ],
+        )
+
     # Add errors from individual import results to report
     all_results = (
         [dictionary_entry_import_result]
@@ -160,7 +280,10 @@ def generate_report(
         for row in result.rows:
             if row.import_type == RowResult.IMPORT_TYPE_SKIP:
                 create_or_append_error_row(
-                    import_job, report, row_number=row.number, errors=row.error_messages
+                    import_job,
+                    report,
+                    row_number=row.number,
+                    errors=row.error_messages,
                 )
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
@@ -168,6 +291,41 @@ def generate_report(
     report.save()
 
     return report
+
+
+def add_missing_related_entry_errors(
+    entry_title_map, failed_related_entry_data, import_job, report
+):
+    """
+    Appends missing related entry errors to the report for any related entries that could not be linked.
+    """
+
+    if not failed_related_entry_data:
+        return
+
+    for data in failed_related_entry_data:
+        related_entry_id = (
+            entry_title_map.get(data["related_entry_title"])
+            or "N/A: entry not imported"
+        )
+        if data["type"] == "from_entry":
+            error_message = (
+                f"Entry '{data['title']}' was not imported, and could not be linked as a "
+                f"related entry to entry '{data['related_entry_title']}' with ID '{related_entry_id}'. "
+                f"Please link the entries manually after re-importing the missing entry."
+            )
+            create_or_append_error_row(
+                import_job, report, row_number=data["idx"], errors=[str(error_message)]
+            )
+
+        else:
+            error_message = (
+                f"Related entry '{data['title']}' could not be found to link to entry '{data['related_entry_title']}' "
+                f"with ID '{related_entry_id}'. Please link the entries manually after re-importing the missing entry."
+            )
+            create_or_append_error_row(
+                import_job, report, row_number=data["idx"], errors=[str(error_message)]
+            )
 
 
 def attach_csv_to_report(data, import_job, report):
@@ -204,8 +362,10 @@ def process_import_job_data(
     Primary method that cleans the CSV data, imports resources, and generates a report.
     Used for both dry_run and actual imports.
     """
+    missing_entries = get_missing_referenced_entries(data, import_job.site.id)
+
     accepted_columns, ignored_columns, cleaned_data = clean_csv(
-        data, missing_uploaded_media, missing_referenced_media
+        data, missing_uploaded_media, missing_referenced_media, missing_entries
     )
 
     # import media first
@@ -223,14 +383,20 @@ def process_import_job_data(
     )
 
     # import dictionary entries
-    dictionary_entry_import_result = DictionaryEntryImporter.import_data(
-        import_job,
-        cleaned_data,
-        dry_run,
-        audio_filename_map,
-        img_filename_map,
-        video_filename_map,
-        document_filename_map,
+    dictionary_entry_import_result, entry_title_map, import_data = (
+        DictionaryEntryImporter.import_data(
+            import_job,
+            cleaned_data,
+            dry_run,
+            audio_filename_map,
+            img_filename_map,
+            video_filename_map,
+            document_filename_map,
+        )
+    )
+
+    failed_related_entry_data = handle_related_entries(
+        import_data, entry_title_map, dry_run
     )
 
     if dry_run:
@@ -240,11 +406,15 @@ def process_import_job_data(
             ignored_columns,
             missing_uploaded_media,
             missing_referenced_media,
+            missing_entries,
             audio_import_results,
             document_import_results,
             img_import_results,
             video_import_results,
             dictionary_entry_import_result,
+        )
+        add_missing_related_entry_errors(
+            entry_title_map, failed_related_entry_data, import_job, report
         )
         attach_csv_to_report(data, import_job, report)
 
@@ -392,6 +562,14 @@ def get_missing_referenced_media(data, site_id):
         + ImageImporter.get_missing_referenced_media(site_id, data)
         + VideoImporter.get_missing_referenced_media(site_id, data)
     )
+
+
+def get_missing_referenced_entries(data, site_id):
+    """
+    Checks the dictionary entries referenced by ID in the csv data file and returns errors for any that do not exist.
+    """
+
+    return DictionaryEntryImporter.get_missing_referenced_entries(site_id, data)
 
 
 def delete_unused_media(import_job):
