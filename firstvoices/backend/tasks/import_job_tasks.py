@@ -306,7 +306,7 @@ def get_associated_filenames(import_job):
     """
     Get a list of filenames for the uploaded files associated with the import-job.
     """
-    associated_audio_files = list(
+    associated_audio_and_document_files = list(
         File.objects.filter(import_job=import_job).values_list("content", flat=True)
     )
     associated_video_files = list(
@@ -320,7 +320,9 @@ def get_associated_filenames(import_job):
         )
     )
     associated_files = (
-        associated_image_files + associated_video_files + associated_audio_files
+        associated_image_files
+        + associated_video_files
+        + associated_audio_and_document_files
     )
 
     return [file.split("/")[-1] for file in associated_files]
@@ -406,8 +408,9 @@ def delete_unused_media(import_job):
         VideoFile.objects.filter(
             import_job_id=import_job.id, video__isnull=True
         ).delete()
-        File.objects.filter(import_job_id=import_job.id, audio__isnull=True).delete()
-        File.objects.filter(import_job_id=import_job.id, document__isnull=True).delete()
+        File.objects.filter(
+            import_job_id=import_job.id, audio__isnull=True, document__isnull=True
+        ).delete()
     except Exception as e:
         logger.warning(
             f"An exception occurred while trying to delete unused media files. Error: {e}"

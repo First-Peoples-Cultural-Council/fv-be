@@ -4,6 +4,7 @@ from django.db import transaction
 from import_export import fields, resources, widgets
 from import_export.results import RowResult
 
+from backend.models import Document
 from backend.models.constants import Visibility
 from backend.models.import_jobs import ImportJob
 from backend.models.media import Audio, Image, Video
@@ -126,7 +127,7 @@ class RelatedMediaResourceMixin(resources.ModelResource):
         column_name="related_documents",
         attribute="related_documents",
         m2m_add=True,
-        widget=widgets.ManyToManyWidget(Audio, separator=",", field="id"),
+        widget=widgets.ManyToManyWidget(Document, separator=",", field="id"),
     )
     related_images = fields.Field(
         column_name="related_images",

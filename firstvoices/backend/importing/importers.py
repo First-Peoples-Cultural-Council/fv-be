@@ -409,6 +409,7 @@ class DictionaryEntryImporter(BaseImporter):
     ]
     supported_columns_media = [
         "related_audio",
+        "related_documents",
         "related_images",
         "related_videos",
     ]

@@ -673,6 +673,11 @@ class TestBulkImportDryRun:
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
+            import_job=import_job,
+        )
         factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
@@ -1149,7 +1154,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.user = factories.get_superadmin()
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
-    # TODO: add documents to this test
     def confirm_upload_with_media_files(self, filename):
         file_content = get_sample_file(f"import_job/{filename}", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
@@ -1171,6 +1175,18 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         factories.FileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
+            import_job=import_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                "import_job/Another document.pdf", "application/pdf"
+            ),
             import_job=import_job,
         )
         factories.ImageFileFactory(
@@ -1197,7 +1213,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         return import_job
 
-    # TODO: add documents to this test
     def upload_multiple_media_files(self, count, filename, file_type, import_job):
         if file_type == "audio":
             base_file = "sample-audio.mp3"
@@ -1214,6 +1229,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             file_ext = ".mp4"
             media_factory = factories.VideoFileFactory
             mimetype = "video/mp4"
+        elif file_type == "document":
+            base_file = "sample-document.pdf"
+            file_ext = ".pdf"
+            media_factory = factories.FileFactory
+            mimetype = "application/pdf"
         else:
             return
 
@@ -1228,7 +1248,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
                 import_job=import_job,
             )
 
-    # TODO: add documents to this test
     def assert_related_media_details(self, related_media, suffix_number=""):
         assert related_media.acknowledgement == f"{self.ACKNOWLEDGEMENT}{suffix_number}"
         assert related_media.exclude_from_kids is False
@@ -1239,6 +1258,20 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert related_audio.description == f"{self.AUDIO_DESCRIPTION}{suffix_number}"
         assert related_audio.exclude_from_games is True
         self.assert_related_media_details(related_audio, suffix_number)
+
+    def assert_related_document_details(
+        self, filename, related_document, suffix_number=""
+    ):
+        assert (
+            f"{filename}{suffix_number}.pdf" in related_document.original.content.name
+        )
+        assert related_document.title == f"{self.DOCUMENT_TITLE}{suffix_number}"
+        assert (
+            related_document.description
+            == f"{self.DOCUMENT_DESCRIPTION}{suffix_number}"
+        )
+        assert related_document.exclude_from_games is False
+        self.assert_related_media_details(related_document, suffix_number)
 
     def assert_related_image_details(self, filename, related_image, suffix_number=""):
         assert f"{filename}{suffix_number}.jpg" in related_image.original.content.name
@@ -1771,7 +1804,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video_6 = entry_3.related_videos.get(title=f"{self.VIDEO_TITLE}-6")
         self.assert_related_video_details("related_video", related_video_6, "-6")
 
-    # TODO: add documents to this test
     def test_related_media_full(self):
         file_content = get_sample_file(
             "import_job/related_media_full.csv", self.MIMETYPE
@@ -1788,6 +1820,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.upload_multiple_media_files(5, "related_audio", "audio", import_job)
         self.upload_multiple_media_files(5, "related_image", "image", import_job)
         self.upload_multiple_media_files(5, "related_video", "video", import_job)
+        self.upload_multiple_media_files(5, "related_document", "document", import_job)
 
         for x in range(1, 6):
             for z in range(1, 6):
@@ -1836,7 +1869,37 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video_5 = entry_1.related_videos.get(title=f"{self.VIDEO_TITLE}-5")
         self.assert_related_video_details("related_video", related_video_5, "-5")
 
-    # TODO: add documents to this test
+        related_document_1 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-1"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_1, "-1"
+        )
+        related_document_2 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-2"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_2, "-2"
+        )
+        related_document_3 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-3"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_3, "-3"
+        )
+        related_document_4 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-4"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_4, "-4"
+        )
+        related_document_5 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-5"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_5, "-5"
+        )
+
     def test_media_title_defaults_to_filename(self):
         self.confirm_upload_with_media_files("minimal_media.csv")
 
@@ -1852,7 +1915,10 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         related_video = entry_with_video.related_videos.all()
         assert related_video[0].title == "video_example_small.mp4"
 
-    # TODO: add documents to this test
+        entry_with_document = DictionaryEntry.objects.filter(title="Phrase 2")[0]
+        related_document = entry_with_document.related_documents.all()
+        assert related_document[0].title == "sample-document.pdf"
+
     def test_duplicate_media_filenames(self):
         # If multiple rows have same filenames, only the first media instance will be imported
         # and used. The rest of the media will not be imported and should not give any issues.
@@ -1873,6 +1939,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
             import_job=import_job,
         )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
+            import_job=import_job,
+        )
         factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("sample-image.jpg", "image/jpeg"),
@@ -1890,24 +1961,31 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         entry_1 = DictionaryEntry.objects.filter(title="Word 1")[0]
         related_audio_entry_1 = entry_1.related_audio.first()
+        related_document_entry_1 = entry_1.related_documents.first()
         related_image_entry_1 = entry_1.related_images.first()
         related_video_entry_1 = entry_1.related_videos.first()
 
         entry_2 = DictionaryEntry.objects.filter(title="Phrase 1")[0]
         related_audio_entry_2 = entry_2.related_audio.first()
+        related_document_entry_2 = entry_2.related_documents.first()
         related_image_entry_2 = entry_2.related_images.first()
         related_video_entry_2 = entry_2.related_videos.first()
 
         entry_3 = DictionaryEntry.objects.filter(title="Word 2")[0]
         related_audio_entry_3 = entry_3.related_audio.first()
+        related_document_entry_3 = entry_3.related_documents.first()
         related_image_entry_3 = entry_3.related_images.first()
         related_video_entry_3 = entry_3.related_videos.first()
 
         assert related_audio_entry_1 == related_audio_entry_2 == related_audio_entry_3
         assert related_image_entry_1 == related_image_entry_2 == related_image_entry_3
         assert related_video_entry_1 == related_video_entry_2 == related_video_entry_3
+        assert (
+            related_document_entry_1
+            == related_document_entry_2
+            == related_document_entry_3
+        )
 
-    # TODO: add documents to this test
     def test_unused_media_deleted(self):
         file_content = get_sample_file("import_job/minimal_media.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
@@ -1923,6 +2001,12 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         audio_in_csv = factories.FileFactory(
             site=self.site,
             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            import_job=import_job,
+        )
+
+        document_in_csv = factories.FileFactory(
+            site=self.site,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
             import_job=import_job,
         )
 
@@ -1945,6 +2029,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             import_job=import_job,
         )
 
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                "import_job/Another document.pdf", "application/pdf"
+            ),
+            import_job=import_job,
+        )
+
         factories.ImageFileFactory(
             site=self.site,
             content=get_sample_file("import_job/Another image.jpg", "image/jpeg"),
@@ -1964,8 +2056,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         videos = VideoFile.objects.filter(import_job_id=import_job.id)
 
         # Verifying only media included in csv are present after import job completion
+        file_ids = list(files.values_list("id", flat=True))
+
         assert images.count() == 1 and images[0].id == image_in_csv.id
-        assert files.count() == 1 and files[0].id == audio_in_csv.id
+        assert files.count() == 2
+        assert audio_in_csv.id in file_ids and document_in_csv.id in file_ids
         assert videos.count() == 1 and videos[0].id == video_in_csv.id
 
     def test_exception_deleting_unused_media(self, caplog):
@@ -2026,10 +2121,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert phrase.external_system.title == external_system_2.title
         assert phrase.external_system_entry_id == "xyz007"
 
-    # TODO: add documents to this test
     def test_related_media_ids_multiple(self):
         audio = factories.AudioFactory.create(id=TEST_AUDIO_IDS[0])
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=audio.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=audio.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[1], site=audio.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=audio.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=audio.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=audio.site)
@@ -2051,11 +2147,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         validation_report = import_job.validation_report
 
         assert validation_report.error_rows == 0
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 5
 
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.all().count() == 4
+        assert DictionaryEntry.objects.all().count() == 5
         entry1 = DictionaryEntry.objects.get(title="Multiple audio")
         assert entry1.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
 
@@ -2065,12 +2161,15 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry3 = DictionaryEntry.objects.get(title="Multiple video")
         assert entry3.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
 
+        entry4 = DictionaryEntry.objects.get(title="Multiple document")
+        assert entry4.related_documents.filter(id__in=TEST_DOCUMENT_IDS).count() == 2
+
         entry4 = DictionaryEntry.objects.get(title="Multiple all media")
         assert entry4.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
         assert entry4.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
         assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+        assert entry4.related_documents.filter(id__in=TEST_DOCUMENT_IDS).count() == 2
 
-    # TODO: add documents to this test
     def test_related_media_mixed_multiple(self):
         file_content = get_sample_file(
             "import_job/related_media_mixed_multiple.csv", self.MIMETYPE
@@ -2084,11 +2183,14 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         )
 
         self.upload_multiple_media_files(2, "related_audio", "audio", import_job)
+        self.upload_multiple_media_files(2, "related_document", "document", import_job)
         self.upload_multiple_media_files(2, "related_image", "image", import_job)
         self.upload_multiple_media_files(2, "related_video", "video", import_job)
 
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[1], site=self.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=self.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
@@ -2100,11 +2202,11 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         validation_report = import_job.validation_report
 
         assert validation_report.error_rows == 0
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 5
 
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.all().count() == 4
+        assert DictionaryEntry.objects.all().count() == 5
         entry1 = DictionaryEntry.objects.get(title="Multiple audio")
         assert entry1.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
         assert entry1.related_audio.count() == 4
@@ -2117,15 +2219,20 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry3.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
         assert entry3.related_videos.count() == 4
 
-        entry4 = DictionaryEntry.objects.get(title="Multiple all media")
-        assert entry4.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
-        assert entry4.related_audio.count() == 4
-        assert entry4.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
-        assert entry4.related_images.count() == 4
-        assert entry4.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
-        assert entry4.related_videos.count() == 4
+        entry4 = DictionaryEntry.objects.get(title="Multiple document")
+        assert entry4.related_documents.filter(id__in=TEST_DOCUMENT_IDS).count() == 2
+        assert entry4.related_documents.count() == 4
 
-    # TODO: add documents to this test
+        entry5 = DictionaryEntry.objects.get(title="Multiple all media")
+        assert entry5.related_audio.filter(id__in=TEST_AUDIO_IDS).count() == 2
+        assert entry5.related_audio.count() == 4
+        assert entry5.related_images.filter(id__in=TEST_IMAGE_IDS).count() == 2
+        assert entry5.related_images.count() == 4
+        assert entry5.related_videos.filter(id__in=TEST_VIDEO_IDS).count() == 2
+        assert entry5.related_videos.count() == 4
+        assert entry5.related_documents.filter(id__in=TEST_DOCUMENT_IDS).count() == 2
+        assert entry5.related_documents.count() == 4
+
     def test_import_related_media_id_duplicate_ids(self):
         file_content = get_sample_file(
             "import_job/related_media_ids_multiple_duplicate.csv", self.MIMETYPE
@@ -2139,11 +2246,12 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=self.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.all().count() == 4
+        assert DictionaryEntry.objects.all().count() == 5
         entry1 = DictionaryEntry.objects.get(title="Duplicate audio")
         assert entry1.related_audio.filter(id=TEST_AUDIO_IDS[0]).count() == 1
         assert entry1.related_audio.count() == 1
@@ -2156,15 +2264,20 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         assert entry3.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
         assert entry3.related_videos.count() == 1
 
-        entry4 = DictionaryEntry.objects.get(title="Duplicate all media")
-        assert entry4.related_audio.filter(id=TEST_AUDIO_IDS[0]).count() == 1
-        assert entry4.related_audio.count() == 1
-        assert entry4.related_images.filter(id=TEST_IMAGE_IDS[0]).count() == 1
-        assert entry4.related_images.count() == 1
-        assert entry4.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
-        assert entry4.related_videos.count() == 1
+        entry4 = DictionaryEntry.objects.get(title="Duplicate document")
+        assert entry4.related_documents.filter(id=TEST_DOCUMENT_IDS[0]).count() == 1
+        assert entry4.related_documents.count() == 1
 
-    # TODO: add documents to this test
+        entry5 = DictionaryEntry.objects.get(title="Duplicate all media")
+        assert entry5.related_audio.filter(id=TEST_AUDIO_IDS[0]).count() == 1
+        assert entry5.related_audio.count() == 1
+        assert entry5.related_images.filter(id=TEST_IMAGE_IDS[0]).count() == 1
+        assert entry5.related_images.count() == 1
+        assert entry5.related_videos.filter(id=TEST_VIDEO_IDS[0]).count() == 1
+        assert entry5.related_videos.count() == 1
+        assert entry5.related_documents.filter(id=TEST_DOCUMENT_IDS[0]).count() == 1
+        assert entry5.related_documents.count() == 1
+
     def test_import_related_media_id_mixed_invalid_and_valid(self):
         file_content = get_sample_file(
             "import_job/related_media_ids_multiple.csv", self.MIMETYPE
@@ -2178,6 +2291,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             status=JobStatus.ACCEPTED,
         )
         factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=self.site)
         factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
         factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
         confirm_import_job(import_job.id)
@@ -2185,7 +2299,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         # All rows have invalid media ids, so no entries should be imported
         assert DictionaryEntry.objects.all().count() == 0
 
-    # TODO: add documents to this test?
     def test_import_multiple_media_duplicate_filenames_same_row(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_duplicate_row.csv", self.MIMETYPE
@@ -2212,7 +2325,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry = DictionaryEntry.objects.get(title="Duplicate audio row")
         assert entry.related_audio.count() == 2
 
-    # TODO: add documents to this test?
     def test_import_multiple_media_duplicate_filenames_same_col(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_duplicate_col.csv", self.MIMETYPE
@@ -2243,7 +2355,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         entry3 = DictionaryEntry.objects.get(title="Duplicate audio col 3")
         assert entry3.related_audio.count() == 3
 
-    # TODO: add documents to this test?
     def test_import_multiple_media_mixed_invalid_and_valid_filenames(self):
         file_content = get_sample_file(
             "import_job/related_media_multiple_invalid.csv",
@@ -2268,7 +2379,6 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         confirm_import_job(import_job.id)
         assert DictionaryEntry.objects.all().count() == 0
 
-    # TODO: add documents to this test?
     def test_missing_media_multiple_rows_skipped(self):
         self.confirm_upload_with_media_files("missing_media_multiple.csv")
         assert DictionaryEntry.objects.all().count() == 0

@@ -1,5 +1,6 @@
-TITLE,TYPE,AUDIO_IDS,audio_filename,audio_2_filename,img_ids,img_filename,img_2_filename,video_ids,video_filename,video_2_filename
-Multiple audio,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,addd0095-581f-40b9-afef-fbb394876df7",related_audio-1.mp3,related_audio-2.mp3,,,,,,
-Multiple image,word,,,,"daf8e74f-f20b-4c81-95c2-7dd744277009,90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",related_image-1.jpg,related_image-2.jpg,,,
-Multiple video,word,,,,,,,"4764e764-7830-4bea-b30e-4e35cc93b12b,8d998d21-862b-4288-9a3a-ec2fb0a67ad3",related_video-1.mp4,related_video-2.mp4
-Multiple all media,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,addd0095-581f-40b9-afef-fbb394876df7",related_audio-1.mp3,related_audio-2.mp3,"daf8e74f-f20b-4c81-95c2-7dd744277009,90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",related_image-1.jpg,related_image-2.jpg,"4764e764-7830-4bea-b30e-4e35cc93b12b,8d998d21-862b-4288-9a3a-ec2fb0a67ad3",related_video-1.mp4,related_video-2.mp4
+TITLE,TYPE,AUDIO_IDS,audio_filename,audio_2_filename,img_ids,img_filename,img_2_filename,video_ids,video_filename,video_2_filename,document_ids,document_filename,document_2_filename
+Multiple audio,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,addd0095-581f-40b9-afef-fbb394876df7",related_audio-1.mp3,related_audio-2.mp3,,,,,,,,,
+Multiple image,word,,,,"daf8e74f-f20b-4c81-95c2-7dd744277009,90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",related_image-1.jpg,related_image-2.jpg,,,,,,
+Multiple video,word,,,,,,,"4764e764-7830-4bea-b30e-4e35cc93b12b,8d998d21-862b-4288-9a3a-ec2fb0a67ad3",related_video-1.mp4,related_video-2.mp4,,,
+Multiple document,word,,,,,,,,,,"0c0cdd67-2858-4e15-8092-0df9d061e28d,a00d78b1-159b-4c6a-b417-96d4e5819fdd",related_document-1.pdf,related_document-2.pdf
+Multiple all media,word,"7763ae50-1b6e-46bc-bd3a-91037ac736cb,addd0095-581f-40b9-afef-fbb394876df7",related_audio-1.mp3,related_audio-2.mp3,"daf8e74f-f20b-4c81-95c2-7dd744277009,90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",related_image-1.jpg,related_image-2.jpg,"4764e764-7830-4bea-b30e-4e35cc93b12b,8d998d21-862b-4288-9a3a-ec2fb0a67ad3",related_video-1.mp4,related_video-2.mp4,"0c0cdd67-2858-4e15-8092-0df9d061e28d,a00d78b1-159b-4c6a-b417-96d4e5819fdd",related_document-1.pdf,related_document-2.pdf
