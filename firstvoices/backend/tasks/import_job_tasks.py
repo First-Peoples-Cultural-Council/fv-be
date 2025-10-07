@@ -273,6 +273,7 @@ def generate_report(
     all_results = (
         [dictionary_entry_import_result]
         + audio_import_results
+        + document_import_results
         + img_import_results
         + video_import_results
     )
