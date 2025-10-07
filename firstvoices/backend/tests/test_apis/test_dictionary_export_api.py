@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import re
 
 import pytest
@@ -191,3 +192,45 @@ class TestDictionaryExportAPI(
         csv_rows = self.get_csv_rows(response)
         first_row = csv_rows[0]
         assert first_row["external_system"] == external_system.title
+
+    def test_emtpy_results(self, mock_search_query_execute):
+        # Emulating a search query which doesn't returns any hits on dictionary entries
+        mock_es_results = {
+            "hits": {
+                "hits": [],
+                "total": {"value": 0, "relation": "eq"},
+            }
+        }
+        mock_search_query_execute.return_value = mock_es_results
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=self.site.slug), format="csv"
+        )
+        csv_rows = self.get_csv_rows(response)
+
+        assert len(csv_rows) == 0
+
+    @pytest.mark.parametrize("site_visibility", [Visibility.TEAM, Visibility.MEMBERS])
+    def test_permissions_error_handling(
+        self, site_visibility, mock_search_query_execute
+    ):
+        self.site, self.user = factories.get_site_with_anonymous_user(
+            visibility=site_visibility
+        )
+        self.client.force_authenticate(user=self.user)
+
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=self.site.slug), format="csv"
+        )
+        assert response.status_code == 403
+        response_data = json.loads(response.content)
+
+        assert (
+            response_data["detail"]
+            == "You do not have permission to perform this action."
+        )
