@@ -1,0 +1,4 @@
+TITLE,TYPE,DOCUMENT_FILENAME,DOCUMENT_TITLE,DOCUMENT_DESCRIPTION,DOCUMENT_ACKNOWLEDGEMENT,DOCUMENT_INCLUDE_IN_KIDS_SITE,DOCUMENT_2_FILENAME,DOCUMENT_2_TITLE,DOCUMENT_2_DESCRIPTION,DOCUMENT_2_ACKNOWLEDGEMENT,DOCUMENT_2_INCLUDE_IN_KIDS_SITE
+Word 1,word,related_document-1.pdf,Related Document-1,Testing document upload-1,Test Ack-1,TRUE,related_document-2.pdf,Related Document-2,Testing document upload-2,Test Ack-2,TRUE
+Word 2,word,related_document-3.pdf,Related Document-3,Testing document upload-3,Test Ack-3,TRUE,related_document-4.pdf,Related Document-4,Testing document upload-4,Test Ack-4,TRUE
+Word 3,word,related_document-5.pdf,Related Document-5,Testing document upload-5,Test Ack-5,TRUE,related_document-6.pdf,Related Document-6,Testing document upload-6,Test Ack-6,TRUE

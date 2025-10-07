@@ -1691,10 +1691,83 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         self.assert_related_audio_details("related_audio", related_audio_6, "-6")
 
     def test_related_documents(self):
-        pass
+        import_job = self.confirm_upload_with_media_files("related_documents.csv")
+
+        entry_with_document = DictionaryEntry.objects.filter(title="Word 1")[0]
+        related_documents = entry_with_document.related_documents.all()
+        assert len(related_documents) == 1
+
+        related_document = related_documents[0]
+        self.assert_related_document_details("sample-document", related_document)
+        assert related_document.system_last_modified >= related_document.last_modified
+        assert related_document.system_last_modified_by == import_job.created_by
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_documents = entry_2.related_documents.all()
+        assert len(related_documents) == 1
+        related_document = related_documents[0]
+        assert (
+            get_valid_filename("Another document")
+            in related_document.original.content.name
+        )
 
     def test_related_documents_multiple_files(self):
-        pass
+        file_content = get_sample_file(
+            "import_job/related_documents_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(6, "related_document", "document", import_job)
+        confirm_import_job(import_job.id)
+
+        entry_1 = DictionaryEntry.objects.get(title="Word 1")
+        related_document_1 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-1"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_1, "-1"
+        )
+        related_document_2 = entry_1.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-2"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_2, "-2"
+        )
+
+        entry_2 = DictionaryEntry.objects.get(title="Word 2")
+        related_document_3 = entry_2.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-3"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_3, "-3"
+        )
+        related_document_4 = entry_2.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-4"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_4, "-4"
+        )
+
+        entry_3 = DictionaryEntry.objects.get(title="Word 3")
+        related_document_5 = entry_3.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-5"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_5, "-5"
+        )
+        related_document_6 = entry_3.related_documents.get(
+            title=f"{self.DOCUMENT_TITLE}-6"
+        )
+        self.assert_related_document_details(
+            "related_document", related_document_6, "-6"
+        )
 
     def test_related_images(self):
         import_job = self.confirm_upload_with_media_files("related_images.csv")
