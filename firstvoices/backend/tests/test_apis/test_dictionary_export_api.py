@@ -193,7 +193,7 @@ class TestDictionaryExportAPI(
         first_row = csv_rows[0]
         assert first_row["external_system"] == external_system.title
 
-    def test_emtpy_results(self, mock_search_query_execute):
+    def test_empty_results(self, mock_search_query_execute):
         # Emulating a search query which doesn't returns any hits on dictionary entries
         mock_es_results = {
             "hits": {
