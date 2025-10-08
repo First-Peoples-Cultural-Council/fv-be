@@ -1,6 +1,6 @@
-from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site

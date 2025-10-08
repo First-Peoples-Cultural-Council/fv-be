@@ -5,6 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
@@ -54,7 +55,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
     serializer_classes = {
         "DictionaryEntry": DictionaryEntryExportSerializer,
     }
-    renderer_classes = [CustomCsvRenderer]
+    renderer_classes = [CustomCsvRenderer, JSONRenderer]
     flatten_fields = {
         "categories": "category",
         "translations": "translation",
@@ -64,6 +65,19 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         "pronunciations": "pronunciation",
         "related_dictionary_entries": "related_entry_id",
     }
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        # To return JSON response for errors
+        response = super().finalize_response(request, response, *args, **kwargs)
+
+        if getattr(response, "exception", False):
+            renderer = JSONRenderer()
+            response.accepted_renderer = renderer
+            response.accepted_media_type = renderer.media_type
+            response.renderer_context = self.get_renderer_context()
+            response["Content-Type"] = renderer.media_type
+            response.render()
+        return response
 
     # Overriding to return CSV instead of search results
     def list(self, request, **kwargs):
