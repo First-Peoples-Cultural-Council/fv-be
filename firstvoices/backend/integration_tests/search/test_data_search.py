@@ -1,8 +1,9 @@
 import pytest
+from django.core.management import call_command
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
-from backend.models import DictionaryEntry, Site
+from backend.models import AppJson, DictionaryEntry, Site
 from backend.models.constants import AppRole, Visibility
 from backend.tests.factories import DictionaryEntryFactory, get_app_admin
 
@@ -10,6 +11,8 @@ from backend.tests.factories import DictionaryEntryFactory, get_app_admin
 @pytest.mark.django_db(transaction=True)
 class TestDataSearch:
     def setup_method(self):
+        if not AppJson.objects.filter(key="default_g2p_config").exists():
+            call_command("loaddata", "default_g2p_config.json", app_label="backend")
         self.client = APIClient()
         self.admin_user = get_app_admin(AppRole.STAFF)
         self.site = Site(
