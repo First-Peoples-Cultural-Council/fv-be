@@ -136,7 +136,7 @@ def get_view_permissions_filter(user):
         & Q("term", visibility=Visibility.PUBLIC)
     )
 
-    return Q("bool", filter=filter_list)
+    return Q("bool", should=filter_list, minimum_should_match=1)
 
 
 def get_starts_with_query(site_id, starts_with_char):
