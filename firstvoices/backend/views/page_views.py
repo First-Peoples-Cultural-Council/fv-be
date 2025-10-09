@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import status
@@ -127,7 +128,8 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 "created_by",
                 "last_modified_by",
             )
-            .order_by("title")
+            .annotate(title_lower=Lower("title"))
+            .order_by("title_lower")
         )
 
     def get_detail_queryset(self):
