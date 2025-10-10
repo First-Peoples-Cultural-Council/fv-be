@@ -1,0 +1,3 @@
+TITLE,TYPE,DOCUMENT_FILENAME,DOCUMENT_TITLE,DOCUMENT_DESCRIPTION,DOCUMENT_ACKNOWLEDGEMENT,DOCUMENT_INCLUDE_IN_KIDS_SITE
+Word 1,word,sample-document.pdf,Related Document,Testing document upload,Test Ack,TRUE
+Word 2,word,Another document.pdf,"","","",""

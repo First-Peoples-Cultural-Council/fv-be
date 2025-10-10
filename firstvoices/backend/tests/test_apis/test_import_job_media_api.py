@@ -96,7 +96,7 @@ class TestImportJobMediaEndpoint(
         data = {
             "file": [
                 get_sample_file("sample-image.jpg", "image/jpeg"),
-                get_sample_file("file.txt", "text/plain"),
+                get_sample_file("sample-image.heic", "image/heic"),
                 get_sample_file("import_job/Another image.jpg", "image/jpeg"),
             ]
         }
@@ -109,7 +109,7 @@ class TestImportJobMediaEndpoint(
 
         assert response.status_code == 400
         response = json.loads(response.content)
-        assert "Unsupported filetype. File: file.txt" in response
+        assert "Unsupported filetype. File: sample-image.heic" in response
 
         # Ensure no media files are created
         images = ImageFile.objects.filter(import_job_id=self.import_job.id)

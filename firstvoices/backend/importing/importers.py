@@ -6,7 +6,12 @@ from django.db.models import Q
 from backend.models import DictionaryEntry
 from backend.models.import_jobs import ImportJob
 from backend.resources.dictionary import DictionaryEntryResource
-from backend.resources.media import AudioResource, ImageResource, VideoResource
+from backend.resources.media import (
+    AudioResource,
+    DocumentResource,
+    ImageResource,
+    VideoResource,
+)
 
 
 class BaseImporter:
@@ -363,6 +368,12 @@ class AudioImporter(BaseMediaFileImporter):
         return super().get_supported_columns() + speaker_columns
 
 
+class DocumentImporter(BaseMediaFileImporter):
+    resource = DocumentResource
+    column_prefix = "document"
+    related_column = "related_documents"
+
+
 class ImageImporter(BaseMediaFileImporter):
     resource = ImageResource
     column_prefix = "img"
@@ -400,6 +411,7 @@ class DictionaryEntryImporter(BaseImporter):
     ]
     supported_columns_media = [
         "related_audio",
+        "related_documents",
         "related_images",
         "related_videos",
     ]
@@ -433,6 +445,7 @@ class DictionaryEntryImporter(BaseImporter):
         audio_filename_map,
         img_filename_map,
         video_filename_map,
+        document_filename_map,
     ):
         """
         Imports dictionary entries and returns the import result.
@@ -446,8 +459,11 @@ class DictionaryEntryImporter(BaseImporter):
         data_with_audio_and_images = ImageImporter.add_related_media_column(
             site_id, data_with_audio, img_filename_map
         )
-        data_with_media = VideoImporter.add_related_media_column(
+        data_with_audio_images_video = VideoImporter.add_related_media_column(
             site_id, data_with_audio_and_images, video_filename_map
+        )
+        data_with_media = DocumentImporter.add_related_media_column(
+            site_id, data_with_audio_images_video, document_filename_map
         )
 
         filtered_data = cls.filter_data(data_with_media)
