@@ -920,10 +920,11 @@ class TestVisibilityParam:
         search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
         default_filters = search_query["query"]["bool"]["filter"]
-        visibility_filter = default_filters[0]["bool"]["must"][1]
+        visibility_filter = default_filters[0]["bool"]["should"][0]
+        default_visibility = visibility_filter["bool"]["must"][1]
 
-        assert visibility_filter is not None
-        assert visibility_filter["term"]["visibility"] == Visibility.PUBLIC
+        assert default_visibility is not None
+        assert default_visibility["term"]["visibility"] == Visibility.PUBLIC
 
     @pytest.mark.parametrize(
         "visibility",

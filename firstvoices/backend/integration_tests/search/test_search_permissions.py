@@ -414,8 +414,6 @@ class TestSearchPermissions:
         assert response.status_code == 200
         response = response.json()
 
-        assert response["results"] == []
-        assert response["count"] == 4
         returned_ids = {result["entry"]["id"] for result in response["results"]}
         assert str(self.shared_image.id) in returned_ids
         assert str(self.shared_audio.id) in returned_ids
