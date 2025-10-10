@@ -50,18 +50,13 @@ class TestSearchPermissions:
         )
 
     def teardown_method(self):
-        DictionaryEntry.objects.filter(site=self.site).delete()
-        Song.objects.filter(site=self.site).delete()
-        Story.objects.filter(site=self.site).delete()
-        Image.objects.filter(site=self.site).delete()
-        Audio.objects.filter(site=self.site).delete()
-        Video.objects.filter(site=self.site).delete()
-        Document.objects.filter(site=self.site).delete()
-
-        Image.objects.filter(site=self.shared_media_site).delete()
-        Audio.objects.filter(site=self.shared_media_site).delete()
-        Video.objects.filter(site=self.shared_media_site).delete()
-        Document.objects.filter(site=self.shared_media_site).delete()
+        DictionaryEntry.objects.all().delete()
+        Song.objects.all().delete()
+        Story.objects.all().delete()
+        Image.objects.all().delete()
+        Audio.objects.all().delete()
+        Video.objects.all().delete()
+        Document.objects.all().delete()
 
         SiteFeature.objects.filter(site=self.shared_media_site).delete()
         Site.objects.filter(id=self.shared_media_site.id).delete()
@@ -155,10 +150,10 @@ class TestSearchPermissions:
 
     def setup_media(self):
         # If there is any media from previous tests
-        Image.objects.filter(site=self.site).delete()
-        Audio.objects.filter(site=self.site).delete()
-        Video.objects.filter(site=self.site).delete()
-        Document.objects.filter(site=self.site).delete()
+        Image.objects.all().delete()
+        Audio.objects.all().delete()
+        Video.objects.all().delete()
+        Document.objects.all().delete()
 
         self.image = factories.ImageFactory.create(
             site=self.site,
@@ -186,16 +181,11 @@ class TestSearchPermissions:
         )
 
     def setup_shared_media(self):
-        # If there is any shared media from previous tests
-        Image.objects.filter(site__id=self.shared_media_site.id).delete()
-        Audio.objects.filter(site__id=self.shared_media_site.id).delete()
-        Video.objects.filter(site__id=self.shared_media_site.id).delete()
-        Document.objects.filter(site__id=self.shared_media_site.id).delete()
-
-        Image.objects.filter(site=self.site).delete()
-        Audio.objects.filter(site=self.site).delete()
-        Video.objects.filter(site=self.site).delete()
-        Document.objects.filter(site=self.site).delete()
+        # If there is any media from previous tests
+        Image.objects.all().delete()
+        Audio.objects.all().delete()
+        Video.objects.all().delete()
+        Document.objects.all().delete()
 
         self.shared_image = factories.ImageFactory.create(
             site=self.shared_media_site,
