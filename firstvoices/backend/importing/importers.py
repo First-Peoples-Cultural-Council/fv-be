@@ -459,11 +459,11 @@ class DictionaryEntryImporter(BaseImporter):
         data_with_audio_and_images = ImageImporter.add_related_media_column(
             site_id, data_with_audio, img_filename_map
         )
-        data_with_media = VideoImporter.add_related_media_column(
+        data_with_audio_images_video = VideoImporter.add_related_media_column(
             site_id, data_with_audio_and_images, video_filename_map
         )
         data_with_media = DocumentImporter.add_related_media_column(
-            site_id, data_with_media, document_filename_map
+            site_id, data_with_audio_images_video, document_filename_map
         )
 
         filtered_data = cls.filter_data(data_with_media)
