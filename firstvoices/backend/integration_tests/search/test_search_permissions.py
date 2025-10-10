@@ -61,10 +61,10 @@ class TestSearchPermissions:
         Image.objects.filter(site=self.shared_media_site).delete()
         Audio.objects.filter(site=self.shared_media_site).delete()
         Video.objects.filter(site=self.shared_media_site).delete()
-        Document.objects.filter(site=self.site).delete()
+        Document.objects.filter(site=self.shared_media_site).delete()
+
         SiteFeature.objects.filter(site=self.shared_media_site).delete()
         Site.objects.filter(id=self.shared_media_site.id).delete()
-
         Site.objects.filter(id=self.site.id).delete()
 
     def get_search_response_types(self, types):
