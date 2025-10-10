@@ -22,6 +22,24 @@ from backend.models.sites import SiteFeature
 @pytest.mark.django_db(transaction=True)
 class TestSearchPermissions:
 
+    def clear_entries(self):
+        DictionaryEntry.objects.filter(site=self.site).delete()
+        DictionaryEntry.objects.filter(site=self.shared_media_site).delete()
+        Song.objects.filter(site=self.site).delete()
+        Song.objects.filter(site=self.shared_media_site).delete()
+        Story.objects.filter(site=self.site).delete()
+        Story.objects.filter(site=self.shared_media_site).delete()
+
+    def clear_media(self):
+        Image.objects.filter(site=self.site).delete()
+        Image.objects.filter(site=self.shared_media_site).delete()
+        Audio.objects.filter(site=self.site).delete()
+        Audio.objects.filter(site=self.shared_media_site).delete()
+        Video.objects.filter(site=self.site).delete()
+        Video.objects.filter(site=self.shared_media_site).delete()
+        Document.objects.filter(site=self.site).delete()
+        Document.objects.filter(site=self.shared_media_site).delete()
+
     def setup_method(self):
         if not AppJson.objects.filter(key="default_g2p_config").exists():
             call_command("loaddata", "default_g2p_config.json", app_label="backend")
@@ -50,13 +68,8 @@ class TestSearchPermissions:
         )
 
     def teardown_method(self):
-        DictionaryEntry.objects.all().delete()
-        Song.objects.all().delete()
-        Story.objects.all().delete()
-        Image.objects.all().delete()
-        Audio.objects.all().delete()
-        Video.objects.all().delete()
-        Document.objects.all().delete()
+        self.clear_entries()
+        self.clear_media()
 
         SiteFeature.objects.filter(site=self.shared_media_site).delete()
         Site.objects.filter(id=self.shared_media_site.id).delete()
@@ -76,7 +89,7 @@ class TestSearchPermissions:
 
     def setup_entries(self):
         # If there are any entries from previous tests
-        DictionaryEntry.objects.filter(site=self.site).delete()
+        self.clear_entries()
 
         self.entry_public = factories.DictionaryEntryFactory.create(
             site=self.site,
@@ -102,8 +115,7 @@ class TestSearchPermissions:
 
     def setup_songs_and_stories(self):
         # If there are any songs/stories from previous tests
-        Song.objects.filter(site=self.site).delete()
-        Story.objects.filter(site=self.site).delete()
+        self.clear_entries()
 
         self.song_public = factories.SongFactory.create(
             site=self.site,
@@ -150,10 +162,7 @@ class TestSearchPermissions:
 
     def setup_media(self):
         # If there is any media from previous tests
-        Image.objects.all().delete()
-        Audio.objects.all().delete()
-        Video.objects.all().delete()
-        Document.objects.all().delete()
+        self.clear_media()
 
         self.image = factories.ImageFactory.create(
             site=self.site,
@@ -182,10 +191,7 @@ class TestSearchPermissions:
 
     def setup_shared_media(self):
         # If there is any media from previous tests
-        Image.objects.all().delete()
-        Audio.objects.all().delete()
-        Video.objects.all().delete()
-        Document.objects.all().delete()
+        self.clear_media()
 
         self.shared_image = factories.ImageFactory.create(
             site=self.shared_media_site,
@@ -211,6 +217,40 @@ class TestSearchPermissions:
             created_by=self.admin_user,
             last_modified_by=self.admin_user,
         )
+
+    def assert_all_entries_visible(self, response):
+        assert response.status_code == 200
+        response = response.json()
+
+        assert response["count"] == 3
+        returned_ids = {result["entry"]["id"] for result in response["results"]}
+        assert str(self.entry_public.id) in returned_ids
+        assert str(self.entry_members.id) in returned_ids
+        assert str(self.entry_team.id) in returned_ids
+
+    def assert_all_songs_stories_visible(self, response):
+        assert response.status_code == 200
+        response = response.json()
+
+        assert response["count"] == 6
+        returned_ids = {result["entry"]["id"] for result in response["results"]}
+        assert str(self.song_public.id) in returned_ids
+        assert str(self.song_members.id) in returned_ids
+        assert str(self.song_team.id) in returned_ids
+        assert str(self.story_public.id) in returned_ids
+        assert str(self.story_members.id) in returned_ids
+        assert str(self.story_team.id) in returned_ids
+
+    def assert_all_media_visible(self, response):
+        assert response.status_code == 200
+        response = response.json()
+
+        assert response["count"] == 4
+        returned_ids = {result["entry"]["id"] for result in response["results"]}
+        assert str(self.image.id) in returned_ids
+        assert str(self.audio.id) in returned_ids
+        assert str(self.video.id) in returned_ids
+        assert str(self.document.id) in returned_ids
 
     def test_entry_permissions_anonymous(self):
         self.setup_entries()
@@ -248,14 +288,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
 
         response = self.get_search_response_types("word,phrase")
-        assert response.status_code == 200
-        response = response.json()
-
-        assert response["count"] == 3
-        returned_ids = {result["entry"]["id"] for result in response["results"]}
-        assert str(self.entry_public.id) in returned_ids
-        assert str(self.entry_members.id) in returned_ids
-        assert str(self.entry_team.id) in returned_ids
+        self.assert_all_entries_visible(response)
 
     @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
     def test_entry_permissions_app_admin(self, app_role):
@@ -264,14 +297,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
 
         response = self.get_search_response_types("word,phrase")
-        assert response.status_code == 200
-        response = response.json()
-
-        assert response["count"] == 3
-        returned_ids = {result["entry"]["id"] for result in response["results"]}
-        assert str(self.entry_public.id) in returned_ids
-        assert str(self.entry_members.id) in returned_ids
-        assert str(self.entry_team.id) in returned_ids
+        self.assert_all_entries_visible(response)
 
     def test_song_story_permissions_anonymous(self):
         self.setup_songs_and_stories()
@@ -313,17 +339,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
 
         response = self.get_search_response_types("song,story")
-        assert response.status_code == 200
-        response = response.json()
-
-        assert response["count"] == 6
-        returned_ids = {result["entry"]["id"] for result in response["results"]}
-        assert str(self.song_public.id) in returned_ids
-        assert str(self.song_members.id) in returned_ids
-        assert str(self.song_team.id) in returned_ids
-        assert str(self.story_public.id) in returned_ids
-        assert str(self.story_members.id) in returned_ids
-        assert str(self.story_team.id) in returned_ids
+        self.assert_all_songs_stories_visible(response)
 
     @pytest.mark.parametrize("app_role", [AppRole.STAFF, AppRole.SUPERADMIN])
     def test_song_story_permissions_app_admin(self, app_role):
@@ -332,17 +348,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
 
         response = self.get_search_response_types("song,story")
-        assert response.status_code == 200
-        response = response.json()
-
-        assert response["count"] == 6
-        returned_ids = {result["entry"]["id"] for result in response["results"]}
-        assert str(self.song_public.id) in returned_ids
-        assert str(self.song_members.id) in returned_ids
-        assert str(self.song_team.id) in returned_ids
-        assert str(self.story_public.id) in returned_ids
-        assert str(self.story_members.id) in returned_ids
-        assert str(self.story_team.id) in returned_ids
+        self.assert_all_songs_stories_visible(response)
 
     @pytest.mark.parametrize(
         "user_role",
@@ -358,15 +364,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
 
         response = self.get_search_response_types("image,audio,video,document")
-        assert response.status_code == 200
-        response = response.json()
-
-        assert response["count"] == 4
-        returned_ids = {result["entry"]["id"] for result in response["results"]}
-        assert str(self.image.id) in returned_ids
-        assert str(self.audio.id) in returned_ids
-        assert str(self.video.id) in returned_ids
-        assert str(self.document.id) in returned_ids
+        self.assert_all_media_visible(response)
 
     @pytest.mark.parametrize(
         "user_role",
@@ -385,15 +383,7 @@ class TestSearchPermissions:
         self.client.force_authenticate(user=user)
         response = self.get_search_response_types("image,audio,video,document")
         if user_role in [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN]:
-            assert response.status_code == 200
-            response = response.json()
-
-            assert response["count"] == 4
-            returned_ids = {result["entry"]["id"] for result in response["results"]}
-            assert str(self.image.id) in returned_ids
-            assert str(self.audio.id) in returned_ids
-            assert str(self.video.id) in returned_ids
-            assert str(self.document.id) in returned_ids
+            self.assert_all_media_visible(response)
         else:
             assert response.status_code == 403
 
