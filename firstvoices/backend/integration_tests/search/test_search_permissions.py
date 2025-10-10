@@ -192,6 +192,11 @@ class TestSearchPermissions:
         Video.objects.filter(site__id=self.shared_media_site.id).delete()
         Document.objects.filter(site__id=self.shared_media_site.id).delete()
 
+        Image.objects.filter(site=self.site).delete()
+        Audio.objects.filter(site=self.site).delete()
+        Video.objects.filter(site=self.site).delete()
+        Document.objects.filter(site=self.site).delete()
+
         self.shared_image = factories.ImageFactory.create(
             site=self.shared_media_site,
             title="Shared Image",
