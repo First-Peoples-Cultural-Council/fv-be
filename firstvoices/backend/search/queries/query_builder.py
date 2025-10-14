@@ -84,7 +84,7 @@ def get_search_query(
 
     permissions_filter = get_view_permissions_filter(user)
     if permissions_filter:
-        search_query = search_query.query(permissions_filter)
+        search_query = search_query.filter(permissions_filter)
 
     # Adding search term and domain filter
     if q:
