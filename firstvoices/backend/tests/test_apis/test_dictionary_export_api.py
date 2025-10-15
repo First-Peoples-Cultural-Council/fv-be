@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -209,14 +209,71 @@ class TestDictionaryExportAPI(
 
         assert len(csv_rows) == 0
 
-    @pytest.mark.parametrize("site_visibility", [Visibility.TEAM, Visibility.MEMBERS])
-    def test_permissions_error_handling(
+    # Test permissions
+    # Only language admins, staff and super admins should be able to export
+    @pytest.mark.parametrize("role", [AppRole.STAFF, AppRole.SUPERADMIN])
+    def test_superadmins_have_access(self, role, mock_search_query_execute):
+        if role == AppRole.SUPERADMIN:
+            self.site, self.user = factories.get_site_with_app_admin(self.client)
+        elif role == AppRole.STAFF:
+            self.site, self.user = factories.get_site_with_staff_user(self.client)
+
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
+
+        assert response.status_code == 200
+        assert "text/csv" in response["content-type"]
+
+    def test_language_admins_have_access(self, mock_search_query_execute):
+        self.site, self.user = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.LANGUAGE_ADMIN
+        )
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=self.site.slug))
+
+        assert response.status_code == 200
+        assert "text/csv" in response["content-type"]
+
+    @pytest.mark.parametrize("role", [Role.MEMBER, Role.EDITOR, Role.ASSISTANT])
+    def test_non_language_admins_have_no_access(self, role, mock_search_query_execute):
+        self.site, self.user = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=self.site.slug), format="csv"
+        )
+        assert response.status_code == 403
+        response_data = json.loads(response.content)
+
+        assert (
+            response_data["detail"]
+            == "You do not have permission to perform this action."
+        )
+
+    @pytest.mark.parametrize(
+        "site_visibility", [Visibility.PUBLIC, Visibility.TEAM, Visibility.MEMBERS]
+    )
+    def test_unauthorized_users_have_no_access(
         self, site_visibility, mock_search_query_execute
     ):
-        self.site, self.user = factories.get_site_with_anonymous_user(
-            visibility=site_visibility
+        self.site, self.user = factories.get_site_with_authenticated_nonmember(
+            self.client, visibility=site_visibility
         )
-        self.client.force_authenticate(user=self.user)
 
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=self.site,
