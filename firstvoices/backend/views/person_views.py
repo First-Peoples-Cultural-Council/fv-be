@@ -1,3 +1,4 @@
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
@@ -106,4 +107,8 @@ class PersonViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelView
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return Person.objects.filter(site=site).order_by("name")
+        return (
+            Person.objects.filter(site=site)
+            .annotate(name_lower=Lower("name"))
+            .order_by("name_lower")
+        )
