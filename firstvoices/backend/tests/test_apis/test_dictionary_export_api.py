@@ -172,8 +172,8 @@ class TestDictionaryExportAPI(
 
         assert str(audio_1.id) in first_row["audio_ids"]
         assert str(audio_2.id) in first_row["audio_ids"]
-        assert str(image_1.id) in first_row["image_ids"]
-        assert str(image_2.id) in first_row["image_ids"]
+        assert str(image_1.id) in first_row["img_ids"]
+        assert str(image_2.id) in first_row["img_ids"]
         assert str(video_1.id) in first_row["video_ids"]
         assert str(video_2.id) in first_row["video_ids"]
 
