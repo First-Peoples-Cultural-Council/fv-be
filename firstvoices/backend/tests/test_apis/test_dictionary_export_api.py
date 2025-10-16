@@ -71,7 +71,7 @@ class TestDictionaryExportAPI(
         assert "text/csv" in response["content-type"]
 
         file_header = response["content-disposition"]
-        filename_pattern = r"dictionary_export_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}"
+        filename_pattern = rf"dictionary_export_{self.site.slug}_\d{{4}}_\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}}"
 
         assert re.search(
             filename_pattern, file_header
