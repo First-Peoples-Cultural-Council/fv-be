@@ -9,7 +9,7 @@ celery==5.5.3
 certifi==2025.10.5
 cffi==2.0.0
 chardet==5.2.0
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
 coloredlogs==15.0.1
 cron-descriptor==2.0.6
 cryptography==45.0.7
