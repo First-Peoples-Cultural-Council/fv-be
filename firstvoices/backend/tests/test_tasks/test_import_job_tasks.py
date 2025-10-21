@@ -573,28 +573,18 @@ class TestBulkImportDryRun:
         assert error_row_1.row_number == 1
         assert error_row_2.row_number == 2
 
-        assert len(error_row_1.errors) == 3
+        assert len(error_row_1.errors) == 2
         assert (
             "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'. "
             "Please link the entries manually after re-importing the missing entry."
             in error_row_1.errors[1]
         )
-        assert (
-            "Related entry 'Word 2' could not be found to link to entry 'Word 1'. "
-            "Please link the entries manually after re-importing the missing entry."
-            in error_row_1.errors[2]
-        )
 
-        assert len(error_row_2.errors) == 3
+        assert len(error_row_2.errors) == 2
         assert (
             "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'. "
             "Please link the entries manually after re-importing the missing entry."
             in error_row_2.errors[1]
-        )
-        assert (
-            "Related entry 'Word 1' could not be found to link to entry 'Word 2'. "
-            "Please link the entries manually after re-importing the missing entry."
-            in error_row_2.errors[2]
         )
 
     def test_dry_run_failed(self, caplog):

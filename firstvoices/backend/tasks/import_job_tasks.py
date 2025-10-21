@@ -183,6 +183,7 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 create_or_append_error_row(
                     import_job, report, row_number=idx + 1, errors=[str(error_message)]
                 )
+                continue
 
             related_entry_id = entry_title_map.get(related_entry_title)
             if not related_entry_id:
@@ -193,9 +194,7 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 create_or_append_error_row(
                     import_job, report, row_number=idx + 1, errors=[str(error_message)]
                 )
-
-            # since the "to" entry was not found, the original entry was deleted. Decrement new_rows count
-            if row["id"] and not related_entry_id:
+                # since the "to" entry was not found, the original entry was deleted. Decrement new_rows count
                 report.new_rows -= 1
 
             report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
