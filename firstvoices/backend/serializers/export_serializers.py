@@ -20,7 +20,7 @@ class DictionaryEntryExportResultSerializer(
     )
     audio_ids = CommaSeparatedIDsField(source="related_audio", read_only=True)
     video_ids = CommaSeparatedIDsField(source="related_videos", read_only=True)
-    image_ids = CommaSeparatedIDsField(source="related_images", read_only=True)
+    img_ids = CommaSeparatedIDsField(source="related_images", read_only=True)
     video_embed_links = serializers.SerializerMethodField()
     external_system = serializers.SlugRelatedField(slug_field="title", read_only=True)
 
@@ -43,7 +43,7 @@ class DictionaryEntryExportResultSerializer(
             "pronunciations",
             "audio_ids",
             "video_ids",
-            "image_ids",
+            "img_ids",
             "part_of_speech",
             "video_embed_links",
             "related_dictionary_entries",
