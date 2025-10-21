@@ -99,6 +99,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
     # Overriding to return CSV instead of search results
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+        site = self.get_validated_site()
 
         # If anything else is present in the search params except for words or phrases,
         # we pop them out as this API only supports dictionary entries
@@ -122,7 +123,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
             dictionary_entry["entry"] for dictionary_entry in serialized_data
         ]
 
-        filename = f"dictionary_export_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
+        filename = f"dictionary_export_{site.slug}_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
         return Response(
             data=serialized_data,
             headers={"Content-Disposition": f'attachment; filename= "{filename}"'},
