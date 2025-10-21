@@ -510,20 +510,13 @@ class TestBulkImportDryRun:
 
         error_row = validation_report.rows.first()
         assert error_row.row_number == 1
-        prefix = (
-            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2' "
-            "with ID '"
-        )
-        suffix = (
-            "'. Please link the entries manually after re-importing the missing entry."
+
+        expected_error_message = (
+            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'. "
+            "Please link the entries manually after re-importing the missing entry."
         )
 
-        error_message = error_row.errors[1]
-
-        assert error_message.startswith(prefix) and error_message.endswith(suffix)
-
-        related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
-        assert uuid.UUID(related_entry_id).version == 4
+        assert error_row.errors[1] == expected_error_message
 
     def test_related_entry_by_title_invalid_to_entry(self):
         file_content = get_sample_file(
@@ -542,20 +535,17 @@ class TestBulkImportDryRun:
         # Updated instance
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.new_rows == 1
-        assert validation_report.error_rows == 1
+        assert validation_report.new_rows == 0
+        assert validation_report.error_rows == 2
 
         error_row = validation_report.rows.get(row_number=1)
 
-        prefix = "Related entry 'Word 2' could not be found to link to entry 'Word 1' with ID '"
-        suffix = (
-            "'. Please link the entries manually after re-importing the missing entry."
+        expected_error_message = (
+            "Related entry 'Word 2' could not be found to link to entry 'Word 1'. "
+            "Please link the entries manually after re-importing the missing entry."
         )
 
-        error_message = error_row.errors[0]
-        assert error_message.startswith(prefix) and error_message.endswith(suffix)
-        related_entry_id = error_message[len(prefix) : -len(suffix)]  # Noqa: E203
-        assert uuid.UUID(related_entry_id).version == 4
+        assert error_row.errors[0] == expected_error_message
 
     def test_related_entry_by_title_invalid_both_entries(self):
         file_content = get_sample_file(
@@ -585,27 +575,27 @@ class TestBulkImportDryRun:
 
         assert len(error_row_1.errors) == 3
         assert (
-            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'"
+            "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'. "
+            "Please link the entries manually after re-importing the missing entry."
             in error_row_1.errors[1]
         )
-        assert "N/A: entry not imported" in error_row_1.errors[1]
         assert (
-            "Related entry 'Word 2' could not be found to link to entry 'Word 1'"
+            "Related entry 'Word 2' could not be found to link to entry 'Word 1'. "
+            "Please link the entries manually after re-importing the missing entry."
             in error_row_1.errors[2]
         )
-        assert "N/A: entry not imported" in error_row_1.errors[2]
 
         assert len(error_row_2.errors) == 3
         assert (
-            "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'"
+            "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'. "
+            "Please link the entries manually after re-importing the missing entry."
             in error_row_2.errors[1]
         )
-        assert "N/A: entry not imported" in error_row_2.errors[1]
         assert (
-            "Related entry 'Word 1' could not be found to link to entry 'Word 2'"
+            "Related entry 'Word 1' could not be found to link to entry 'Word 2'. "
+            "Please link the entries manually after re-importing the missing entry."
             in error_row_2.errors[2]
         )
-        assert "N/A: entry not imported" in error_row_2.errors[2]
 
     def test_dry_run_failed(self, caplog):
         file = factories.FileFactory(
@@ -1693,6 +1683,24 @@ class TestBulkImport(IgnoreTaskResultsMixin):
             related_entry.to_dictionary_entry.title for related_entry in related_entries
         ]
         assert all(title in actual_related_titles for title in expected_related_titles)
+
+    def test_related_entry_import_missing_from_entry(self):
+        file_content = get_sample_file(
+            "import_job/related_entries_invalid_from_entry.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            data=file,
+            run_as_user=self.user,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.count() == 0
 
     def test_related_entries_duplicate_titles(self):
         # If there are multiple entries with the same title, only link the first instance of that title
