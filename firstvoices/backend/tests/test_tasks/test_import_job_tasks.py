@@ -1684,9 +1684,9 @@ class TestBulkImport(IgnoreTaskResultsMixin):
         ]
         assert all(title in actual_related_titles for title in expected_related_titles)
 
-    def test_related_entry_import_missing_from_entry(self):
+    def test_related_entry_import_missing_to_entry(self):
         file_content = get_sample_file(
-            "import_job/related_entries_invalid_from_entry.csv", self.MIMETYPE
+            "import_job/related_entries_invalid_to_entry.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
 

@@ -153,7 +153,7 @@ def handle_related_entries(entry_title_map, import_data):
             # Related entry not found in the imported entries
             if not related_entry_id:
                 # Since the related entry could not be found, the original entry fails import.
-                DictionaryEntryLink.objects.get(row["id"]).delete()
+                DictionaryEntry.objects.get(id=row["id"]).delete()
                 continue
 
             from_entry = DictionaryEntry.objects.get(id=row["id"])
