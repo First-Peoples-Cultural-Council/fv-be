@@ -5,9 +5,12 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
+from backend.models.constants import AppRole, Role
+from backend.permissions.utils import get_app_role, get_site_role
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
 from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
@@ -66,6 +69,20 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         "related_dictionary_entries": "related_entry_id",
     }
 
+    def initial(self, request, *args, **kwargs):
+        """Ensures user has permissions to perform the requested action."""
+        super().initial(self.request, *args, **kwargs)
+
+        user = self.request.user
+        site = self.get_validated_site()
+
+        # Only language admins, staff or super admins can perform the requested action
+        is_at_least_staff = get_app_role(user) >= AppRole.STAFF
+        is_language_admin = get_site_role(user, site) == Role.LANGUAGE_ADMIN
+
+        if not (is_at_least_staff or is_language_admin):
+            raise PermissionDenied("You do not have permission to perform this action.")
+
     def finalize_response(self, request, response, *args, **kwargs):
         # To return JSON response for errors
         response = super().finalize_response(request, response, *args, **kwargs)
@@ -82,6 +99,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
     # Overriding to return CSV instead of search results
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
+        site = self.get_validated_site()
 
         # If anything else is present in the search params except for words or phrases,
         # we pop them out as this API only supports dictionary entries
@@ -105,7 +123,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
             dictionary_entry["entry"] for dictionary_entry in serialized_data
         ]
 
-        filename = f"dictionary_export_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
+        filename = f"dictionary_export_{site.slug}_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
         return Response(
             data=serialized_data,
             headers={"Content-Disposition": f'attachment; filename= "{filename}"'},

@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -108,7 +109,8 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
         site = self.get_validated_site()
         return (
             Gallery.objects.filter(site=site)
-            .order_by("title")
+            .annotate(title_lower=Lower("title"))
+            .order_by("title_lower")
             .prefetch_related(
                 "site",
                 "site__language",

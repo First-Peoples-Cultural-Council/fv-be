@@ -2,14 +2,14 @@ amqp==5.3.1
 aniso8601==10.0.1
 asgiref==3.10.0
 async-timeout==5.0.1
-attrs==25.3.0
+attrs==25.4.0
 boto3==1.40.50
 botocore>=1.29.139
 celery==5.5.3
 certifi==2025.10.5
 cffi==2.0.0
 chardet==5.2.0
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
 coloredlogs==15.0.1
 cron-descriptor==2.0.6
 cryptography==45.0.7
@@ -17,7 +17,7 @@ Django==5.1.6
 django-admin-env-notice==1.0.1
 django-celery-beat==2.8.1
 django-cors-headers==4.9.0
-django-coverage-plugin==3.1.1
+django-coverage-plugin==3.2.0
 django-debug-toolbar==6.0.0
 django-embed-video==1.4.10
 django-import-export==4.3.10
@@ -58,7 +58,7 @@ numpy==1.26.4
 openpyxl==3.1.5
 packaging==25.0
 panphon==0.22.2
-Pillow==11.3.0
+Pillow==12.0.0
 pillow-heif==1.1.0
 pluggy==1.6.0
 prompt-toolkit==3.0.52

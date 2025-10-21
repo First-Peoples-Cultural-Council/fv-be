@@ -107,3 +107,15 @@ def is_valid_header_variation(input_header, all_headers, valid_headers):
         return False
 
     return True
+
+
+def get_related_entry_headers(import_data):
+    related_entry_headers = [
+        header
+        for header in import_data.headers
+        if header.lower().startswith("related_entry")
+    ]
+    if "related_entry_ids" in related_entry_headers:
+        related_entry_headers.remove("related_entry_ids")
+
+    return related_entry_headers
