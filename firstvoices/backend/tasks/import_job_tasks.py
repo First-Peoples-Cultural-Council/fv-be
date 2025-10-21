@@ -28,6 +28,7 @@ from backend.tasks.utils import (
     ASYNC_TASK_START_TEMPLATE,
     create_or_append_error_row,
     get_failed_rows_csv_file,
+    get_related_entry_headers,
     is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )
@@ -129,15 +130,9 @@ def handle_related_entries(entry_title_map, import_data):
     Links related dictionary entries by title based on the RELATED_ENTRY columns in the CSV data.
     """
 
-    related_entry_headers = [
-        header
-        for header in import_data.headers
-        if header.lower().startswith("related_entry")
-    ]
-    if "related_entry_ids" in related_entry_headers:
-        related_entry_headers.remove("related_entry_ids")
+    related_entry_headers = get_related_entry_headers(import_data)
     if not related_entry_headers:
-        return []
+        return
 
     for idx, row in enumerate(import_data.dict):
 
@@ -165,15 +160,9 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
     """
     Appends missing related entry errors to the report for any related entries that could not be linked during dry-run.
     """
-    related_entry_headers = [
-        header
-        for header in import_data.headers
-        if header.lower().startswith("related_entry")
-    ]
-    if "related_entry_ids" in related_entry_headers:
-        related_entry_headers.remove("related_entry_ids")
+    related_entry_headers = get_related_entry_headers(import_data)
     if not related_entry_headers:
-        return []
+        return
 
     for idx, row in enumerate(import_data.dict):
 
@@ -204,9 +193,10 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 create_or_append_error_row(
                     import_job, report, row_number=idx + 1, errors=[str(error_message)]
                 )
-                # since the "to" entry was not found, the original entry was deleted. Decrement new_rows count
-                if row["id"]:
-                    report.new_rows -= 1
+
+            # since the "to" entry was not found, the original entry was deleted. Decrement new_rows count
+            if row["id"] and not related_entry_id:
+                report.new_rows -= 1
 
             report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
             report.save()
