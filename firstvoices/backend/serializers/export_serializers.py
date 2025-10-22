@@ -19,6 +19,7 @@ class DictionaryEntryExportResultSerializer(
         source="exclude_from_kids", read_only=True
     )
     audio_ids = CommaSeparatedIDsField(source="related_audio", read_only=True)
+    document_ids = CommaSeparatedIDsField(source="related_documents", read_only=True)
     video_ids = CommaSeparatedIDsField(source="related_videos", read_only=True)
     img_ids = CommaSeparatedIDsField(source="related_images", read_only=True)
     video_embed_links = serializers.SerializerMethodField()
@@ -42,6 +43,7 @@ class DictionaryEntryExportResultSerializer(
             "alternate_spellings",
             "pronunciations",
             "audio_ids",
+            "document_ids",
             "video_ids",
             "img_ids",
             "part_of_speech",
