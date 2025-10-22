@@ -125,6 +125,9 @@ class UpdateJobViewSet(ImportJobViewSet):
             "-created"
         )  # permissions are applied by the base view
 
+    def perform_create(self, serializer):
+        serializer.save(mode=ImportJobMode.UPDATE)
+
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):
         """

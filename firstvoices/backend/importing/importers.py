@@ -425,6 +425,19 @@ class DictionaryEntryImporter(BaseImporter):
         )
 
     @classmethod
+    def get_supported_update_columns(cls):
+        multiplied_columns = cls.get_multiplied_columns()
+        for column in multiplied_columns:
+            if column.startswith("related_entry"):
+                multiplied_columns.remove(column)
+        return (
+            ["id"]
+            + cls.supported_columns_single
+            + multiplied_columns
+            + cls.supported_columns_media
+        )
+
+    @classmethod
     def get_multiplied_columns(cls):
         target_columns = []
 
