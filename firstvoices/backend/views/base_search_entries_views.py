@@ -475,6 +475,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         "Image": ImageSearchResultSerializer,
         "Video": VideoSearchResultSerializer,
     }
+    valid_types = ENTRY_SEARCH_TYPES
 
     def get_search_params(self):
         """
@@ -483,7 +484,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         base_search_params = super().get_search_params()
 
         input_types_str = self.request.GET.get("types", "")
-        valid_types_list = get_valid_search_types(input_types_str, ENTRY_SEARCH_TYPES)
+        valid_types_list = get_valid_search_types(input_types_str, self.valid_types)
 
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str, "both")

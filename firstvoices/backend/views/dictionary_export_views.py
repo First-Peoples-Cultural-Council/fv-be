@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from backend.models.constants import AppRole, Role
 from backend.permissions.utils import get_app_role, get_site_role
+from backend.search.constants import TYPE_PHRASE, TYPE_WORD
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
 from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
@@ -68,6 +69,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         "pronunciations": "pronunciation",
         "related_dictionary_entries": "related_entry_id",
     }
+    valid_types = [TYPE_WORD, TYPE_PHRASE]
 
     def initial(self, request, *args, **kwargs):
         """Ensures user has permissions to perform the requested action."""
@@ -98,17 +100,15 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
 
     # Overriding to return CSV instead of search results
     def list(self, request, **kwargs):
-        search_params = self.get_search_params()
         site = self.get_validated_site()
+        filename = f"dictionary_export_{site.slug}_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
 
-        # If anything else is present in the search params except for words or phrases,
-        # we pop them out as this API only supports dictionary entries
-        filtered_types = [
-            entry_type
-            for entry_type in search_params["types"]
-            if entry_type in ["word", "phrase"]
-        ]
-        search_params["types"] = filtered_types
+        search_params = self.get_search_params()
+        if self.has_invalid_input(search_params):
+            return Response(
+                data=[],
+                headers={"Content-Disposition": f'attachment; filename= "{filename}"'},
+            )
 
         pagination_params = self.get_pagination_params()
 
@@ -123,7 +123,6 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
             dictionary_entry["entry"] for dictionary_entry in serialized_data
         ]
 
-        filename = f"dictionary_export_{site.slug}_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
         return Response(
             data=serialized_data,
             headers={"Content-Disposition": f'attachment; filename= "{filename}"'},
