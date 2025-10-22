@@ -176,6 +176,8 @@ class TestDictionaryExportAPI(
         assert str(image_2.id) in first_row["img_ids"]
         assert str(video_1.id) in first_row["video_ids"]
         assert str(video_2.id) in first_row["video_ids"]
+        assert str(document_1.id) in first_row["document_ids"]
+        assert str(document_2.id) in first_row["document_ids"]
 
     def test_external_system(self, mock_search_query_execute):
         external_system = factories.ExternalDictionaryEntrySystemFactory.create()
