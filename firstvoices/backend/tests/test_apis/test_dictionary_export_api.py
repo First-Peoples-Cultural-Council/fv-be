@@ -291,3 +291,44 @@ class TestDictionaryExportAPI(
             response_data["detail"]
             == "You do not have permission to perform this action."
         )
+
+    @pytest.mark.parametrize(
+        "entry_type", [TypeOfDictionaryEntry.WORD, TypeOfDictionaryEntry.PHRASE]
+    )
+    def test_valid_types(self, entry_type, mock_search_query_execute):
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+            title="Title",
+            type=entry_type,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                site_slug=self.site.slug, query_kwargs={"types": entry_type}
+            ),
+            format="csv",
+        )
+        csv_rows = self.get_csv_rows(response)
+
+        first_row = csv_rows[0]
+        assert first_row["id"] == str(dictionary_entry.id)
+
+    def test_invalid_types(self, mock_search_query_execute):
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+            title="Title",
+            type=TypeOfDictionaryEntry.WORD,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                site_slug=self.site.slug, query_kwargs={"types": "invalid"}
+            ),
+            format="csv",
+        )
+
+        assert response.status_code == 200
+        csv_rows = self.get_csv_rows(response)
+        assert len(csv_rows) == 0
