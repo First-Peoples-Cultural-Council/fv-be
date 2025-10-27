@@ -11,8 +11,6 @@ from backend.tasks.import_job_tasks import (
     generate_report,
     get_missing_referenced_entries,
     get_missing_referenced_media,
-    handle_related_entries,
-    handle_related_entries_dry_run,
 )
 from backend.tasks.utils import (
     ASYNC_TASK_END_TEMPLATE,
@@ -88,26 +86,25 @@ def process_update_job_data(
     )
 
     # import dictionary entries
-    # TODO: implement update data method in DictionaryEntryImporter
-    dictionary_entry_update_result, entry_title_map, update_data = (
-        DictionaryEntryImporter.update_data(update_job, cleaned_data, dry_run)
+    dictionary_entry_update_result = DictionaryEntryImporter.update_data(
+        update_job, cleaned_data, dry_run
     )
 
-    # TODO: implement update versions of the below methods
     if dry_run:
         report = generate_report(
-            update_job,
-            accepted_headers,
-            invalid_headers,
-            missing_entries,
-            missing_referenced_media,
-            dictionary_entry_update_result,
+            import_job=update_job,
+            accepted_columns=accepted_headers,
+            ignored_columns=invalid_headers,
+            missing_uploaded_media=[],
+            missing_referenced_media=missing_referenced_media,
+            missing_entries=missing_entries,
+            audio_import_results=[],
+            document_import_results=[],
+            img_import_results=[],
+            video_import_results=[],
+            dictionary_entry_import_result=dictionary_entry_update_result,
         )
-
-        handle_related_entries_dry_run(entry_title_map, update_data, update_job, report)
         attach_csv_to_report(data, update_job, report)
-    else:
-        handle_related_entries(entry_title_map, update_data)
 
 
 def run_update_job(data, update_job):

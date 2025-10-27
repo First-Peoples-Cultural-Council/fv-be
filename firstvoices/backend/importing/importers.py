@@ -34,19 +34,22 @@ class BaseImporter:
         return cls.key_col
 
     @classmethod
-    def filter_data(cls, data):
+    def filter_data(cls, data, supported_columns=None):
         key_col = cls.get_key_col()
-        filtered_data = cls.filter_columns(data, key_col)
+        filtered_data = cls.filter_columns(data, key_col, supported_columns)
         filtered_data = cls.filter_rows(filtered_data, key_col)
 
         return filtered_data
 
     @classmethod
-    def filter_columns(cls, data, key_col=None):
+    def filter_columns(cls, data, key_col=None, supported_columns=None):
         """
         Return only the allowed columns of data.
         """
-        columns = [col for col in cls.get_supported_columns() if col in data.headers]
+        if not supported_columns:
+            supported_columns = cls.get_supported_columns()
+
+        columns = [col for col in supported_columns if col in data.headers]
         filtered_data = tablib.Dataset(headers=columns)
 
         if key_col and key_col not in data.headers:
@@ -501,6 +504,22 @@ class DictionaryEntryImporter(BaseImporter):
                     title_map[row["title"]] = row["id"]
 
         return dictionary_entry_import_result, title_map, filtered_data
+
+    @classmethod
+    def update_data(cls, update_job, csv_data, dry_run):
+        """
+        Updates dictionary entries and returns the update result.
+        """
+
+        filtered_data = cls.filter_data(csv_data, cls.get_supported_update_columns())
+
+        dictionary_entry_update_result = DictionaryEntryResource(
+            site=update_job.site,
+            run_as_user=update_job.run_as_user,
+            import_job=update_job.id,
+        ).import_data(dataset=filtered_data, dry_run=dry_run)
+
+        return dictionary_entry_update_result
 
     @classmethod
     def get_missing_referenced_entries(cls, site_id, data):

@@ -1,6 +1,6 @@
 from import_export import fields, widgets
 
-from backend.models import Category, DictionaryEntry, ImportJob
+from backend.models import Category, DictionaryEntry, ImportJob, ImportJobMode
 from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
@@ -99,6 +99,20 @@ class DictionaryEntryResource(
         widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
     )
 
+    def get_or_init_instance(self, instance_loader, row):
+        """
+        If import job mode = update, update existing entries instead of creating new ones.
+        """
+        import_job = ImportJob.objects.get(id=self.import_job)
+        instance = instance_loader.get_instance(row)
+
+        if import_job.mode == ImportJobMode.UPDATE and instance:
+            return instance, False
+        return super().get_or_init_instance(instance_loader, row)
+
     class Meta:
         model = DictionaryEntry
         clean_model_instances = True
+        import_id_fields = ["id"]
+        skip_unchanged = True
+        report_skipped = True
