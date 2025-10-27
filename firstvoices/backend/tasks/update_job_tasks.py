@@ -186,7 +186,7 @@ def validate_update_job(update_job_id):
     update_job.validation_status = JobStatus.STARTED
     update_job.validation_task_id = task_id
 
-    dry_run_update_job(update_job, data)
+    dry_run_update_job(data, update_job)
     update_job.save()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
