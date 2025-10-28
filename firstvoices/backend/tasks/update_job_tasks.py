@@ -42,7 +42,7 @@ def clean_update_csv(
 
     for header in all_headers:
         if is_valid_header_variation(header, all_headers, valid_headers):
-            accepted_headers.append(header)
+            accepted_headers.append(header.lower())
         else:
             invalid_headers.append(header)
 

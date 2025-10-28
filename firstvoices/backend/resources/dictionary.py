@@ -104,10 +104,15 @@ class DictionaryEntryResource(
         If import job mode = update, update existing entries instead of creating new ones.
         """
         import_job = ImportJob.objects.get(id=self.import_job)
-        instance = instance_loader.get_instance(row)
+        instance_loader.get_instance(row)
 
-        if import_job.mode == ImportJobMode.UPDATE and instance:
-            return instance, False
+        if import_job.mode == ImportJobMode.UPDATE:
+            if not row.get("id"):
+                raise ImportError(f"Missing 'id' for update in row: {row}.")
+            if not row.get("type"):
+                raise ImportError(
+                    f"Missing 'type' for update in row with id {row.get('id')}."
+                )
         return super().get_or_init_instance(instance_loader, row)
 
     class Meta:
