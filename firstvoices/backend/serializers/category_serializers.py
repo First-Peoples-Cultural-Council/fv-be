@@ -36,8 +36,16 @@ class ParentCategoryListSerializer(ChildCategoryListSerializer):
 
 
 class ParentCategoryFlatListSerializer(ChildCategoryListSerializer):
+    parent = serializers.UUIDField(source="parent_id", allow_null=True, read_only=True)
+    parentTitle = serializers.SerializerMethodField(
+        source="parent.title", read_only=True
+    )
+
     class Meta(ChildCategoryListSerializer.Meta):
-        fields = ChildCategoryListSerializer.Meta.fields + ("parent",)
+        fields = ChildCategoryListSerializer.Meta.fields + ("parent", "parentTitle")
+
+    def get_parentTitle(self, obj):
+        return obj.parent.title if obj.parent_id else None
 
 
 class CategoryDetailSerializer(
