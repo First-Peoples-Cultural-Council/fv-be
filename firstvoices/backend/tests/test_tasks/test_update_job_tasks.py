@@ -1,4 +1,5 @@
 import pytest
+import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
@@ -28,17 +29,39 @@ class TestBulkUpdateDryRun:
         self.user = factories.factories.get_superadmin()
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
-    def create_dictionary_entries(self, entry_ids):
+    def create_dictionary_entries(self, entry_ids, site=None):
+        if site is None:
+            site = self.site
         for entry_id in entry_ids:
             factories.DictionaryEntryFactory.create(
                 id=entry_id,
-                site=self.site,
+                site=site,
             )
 
     def update_minimal_dictionary_entries(self, entry_ids):
         self.create_dictionary_entries(entry_ids)
 
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        return update_job
+
+    def update_invalid_dictionary_entries(self, entry_ids):
+        self.create_dictionary_entries(entry_ids)
+
+        file_content = get_sample_file(
+            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
+        )
         file = factories.FileFactory(content=file_content)
 
         update_job = factories.ImportJobFactory(
@@ -66,7 +89,7 @@ class TestBulkUpdateDryRun:
         update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.new_rows == 2
+        assert update_job.validation_report.update_rows == 2
         assert update_job.validation_report.error_rows == 0
 
     def test_all_columns_update(self):
@@ -89,7 +112,7 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.new_rows == 6
+        assert update_job.validation_report.update_rows == 6
         assert update_job.validation_report.error_rows == 0
 
         expected_valid_columns = [
@@ -154,15 +177,60 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.new_rows == 3
+        assert update_job.validation_report.update_rows == 3
         assert update_job.validation_report.error_rows == 0
 
     def test_invalid_update_values(self):
-        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
+
+        error_rows_numbers = list(
+            update_job.validation_report.rows.values_list("row_number", flat=True)
+        )
+
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.error_rows == 9
+        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+    @pytest.mark.parametrize(
+        "site_visibility, expected_update_rows, expected_error_rows",
+        [
+            (Visibility.PUBLIC, 3, 1),
+            (Visibility.MEMBERS, 2, 2),
+            (Visibility.TEAM, 1, 3),
+        ],
+    )
+    def test_invalid_site_visibility(
+        self, site_visibility, expected_update_rows, expected_error_rows
+    ):
+        site = factories.SiteFactory(visibility=site_visibility)
+        self.create_dictionary_entries(TEST_ENTRY_IDS, site=site)
 
         file_content = get_sample_file(
-            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
+            "update_job/visibility_values.csv", self.MIMETYPE
         )
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == expected_update_rows
+        assert update_job.validation_report.error_rows == expected_error_rows
+
+    def test_updated_entries_not_in_site(self):
+        other_site = factories.SiteFactory()
+        self.create_dictionary_entries(TEST_ENTRY_IDS, site=other_site)
+
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
 
         update_job = factories.ImportJobFactory(
@@ -175,11 +243,35 @@ class TestBulkUpdateDryRun:
 
         validate_update_job(update_job.id)
         update_job = ImportJob.objects.get(id=update_job.id)
+
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == 0
+        assert update_job.validation_report.error_rows == 2
+
+    def test_failed_rows_csv(self):
+        update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
         error_rows_numbers = list(
             update_job.validation_report.rows.values_list("row_number", flat=True)
         )
 
-        assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 1
+        file_content = get_sample_file(
+            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
+        )
+        input_csv_table = tablib.Dataset().load(
+            file_content.read().decode("utf-8-sig"), format="csv"
+        )
+
+        failed_rows_csv_table = tablib.Dataset().load(
+            update_job.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
         assert update_job.validation_report.error_rows == 9
         assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
+        assert len(failed_rows_csv_table) == 9
+
+        for i in range(0, len(error_rows_numbers)):
+            input_index = (
+                error_rows_numbers[i] - 1
+            )  # since we do +1 while generating error row numbers
+            assert input_csv_table[input_index] == failed_rows_csv_table[i]
