@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 
 import pytest
@@ -5,11 +6,12 @@ import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import ExternalDictionaryEntrySystem
+from backend.models.dictionary import DictionaryEntry, ExternalDictionaryEntrySystem
 from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
-from backend.tasks.update_job_tasks import validate_update_job
+from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import get_sample_file
 
 TEST_ENTRY_IDS = [
@@ -381,3 +383,362 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.update_rows == 0
         assert update_job.validation_report.error_rows == 2
+
+
+@pytest.mark.django_db
+class TestBulkUpdate(IgnoreTaskResultsMixin):
+    MIMETYPE = "text/csv"
+    TASK = confirm_update_job
+
+    def get_valid_task_args(self):
+        return (uuid.uuid4(),)
+
+    def setup_method(self):
+        self.user = factories.factories.get_superadmin()
+        self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+    def create_dictionary_entries(self, entry_ids, site=None):
+        if site is None:
+            site = self.site
+        for entry_id in entry_ids:
+            factories.DictionaryEntryFactory.create(
+                id=entry_id,
+                site=site,
+            )
+
+    def test_update_task_logs(self, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+
+        assert (
+            f"Task started. Additional info: Update job id: {update_job.id}, dry-run: False."
+            in caplog.text
+        )
+        assert "Task ended." in caplog.text
+
+    def test_base_case_update(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry1.title == "abc"
+        assert entry1.type == "word"
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert entry2.title == "xyz"
+        assert entry2.type == "phrase"
+
+    def test_all_columns_update(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file(
+            "update_job/all_valid_columns.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+        entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry.title == "Word 1"
+        assert entry.type == "word"
+        assert entry.visibility == Visibility.PUBLIC
+        assert entry.part_of_speech.title == "Adjective"
+        assert entry.exclude_from_games is False
+        assert entry.exclude_from_kids is True
+        assert entry.translations == [
+            "first_translation",
+            "second_translation",
+            "third_translation",
+            "fourth_translation",
+            "fifth_translation",
+        ]
+        assert entry.acknowledgements == [
+            "first_ack",
+            "second_ack",
+            "third_ack",
+            "fourth_ack",
+            "fifth_ack",
+        ]
+        assert entry.notes == [
+            "first_note",
+            "second_note",
+            "third_note",
+            "fourth_note",
+            "fifth_note",
+        ]
+        assert entry.alternate_spellings == [
+            "alt_s_1",
+            "alt_s_2",
+            "alt_s_3",
+            "alt_s_4",
+            "alt_s_5",
+        ]
+        assert entry.pronunciations == [
+            "first_p",
+            "second_p",
+            "third_p",
+            "fourth_p",
+            "fifth_p",
+        ]
+
+        categories = list(entry.categories.all().values_list("title", flat=True))
+        assert "Animals" in categories
+        assert "Body" in categories
+
+    def test_update_default_values(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/default_values.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry1.visibility == Visibility.TEAM
+        assert entry1.exclude_from_games is True
+        assert entry1.exclude_from_kids is False
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert entry2.visibility == Visibility.PUBLIC
+        assert entry2.exclude_from_games is False
+        assert entry2.exclude_from_kids is False
+
+        entry3 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[2])
+        assert entry3.visibility == Visibility.TEAM
+        assert entry3.exclude_from_games is True
+        assert entry3.exclude_from_kids is False
+
+    def test_update_job_failed(self, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        with patch(
+            "backend.tasks.update_job_tasks.process_update_job_data",
+            side_effect=Exception("Test exception"),
+        ):
+            confirm_update_job(update_job.id)
+
+            update_job = ImportJob.objects.get(id=update_job.id)
+            assert update_job.status == JobStatus.FAILED
+            assert "Test exception" in caplog.text
+
+    def test_update_valid_rows_only(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file(
+            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry.title == "Control"
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert entry2.title != "Invalid type"
+
+    @pytest.mark.parametrize(
+        "status", [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED]
+    )
+    def test_invalid_status(self, status, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=status,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.status == JobStatus.FAILED
+        assert "This job cannot be run due to consistency issues." in caplog.text
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [None, JobStatus.STARTED, JobStatus.ACCEPTED, JobStatus.FAILED],
+    )
+    def test_invalid_validation_status(self, validation_status, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=validation_status,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.status == JobStatus.FAILED
+        assert (
+            f"Please validate the job before confirming the import. Update job id: {update_job.id}."
+            in caplog.text
+        )
+
+    def test_update_dictionary_entry_external_system_fields(self):
+        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_1.save()
+        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_2.save()
+
+        factories.DictionaryEntryFactory.create(
+            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+            site=self.site,
+            external_system=external_system_1,
+            external_system_entry_id="FW123",
+        )
+
+        file_content = get_sample_file(
+            "update_job/external_system_fields.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        entry = DictionaryEntry.objects.get(id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1")
+        assert entry.external_system == external_system_2
+        assert entry.external_system_entry_id == "abc123"
+
+    def test_missing_update_columns_unchanged(self):
+        factories.DictionaryEntryFactory.create(
+            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+            site=self.site,
+            title="Word 1",
+            type="word",
+            visibility=Visibility.PUBLIC,
+        )
+
+        factories.DictionaryEntryFactory.create(
+            id="768c920c-38a9-4aea-821a-e1c0739c00d4",
+            site=self.site,
+            title="Word 2",
+            type="word",
+            visibility=Visibility.MEMBERS,
+        )
+
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry1.title == "abc"
+        assert entry1.type == "word"
+        assert entry1.visibility == Visibility.PUBLIC  # unchanged
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert entry2.title == "xyz"
+        assert entry2.type == "phrase"
+        assert entry2.visibility == Visibility.MEMBERS  # unchanged
+
+    def test_valid_blank_columns_cleared(self):
+        factories.DictionaryEntryFactory.create(
+            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+            site=self.site,
+            title="Word 1",
+            type="word",
+            visibility=Visibility.PUBLIC,
+            translations=["hello", "hi"],
+        )
+        factories.DictionaryEntryFactory.create(
+            id="768c920c-38a9-4aea-821a-e1c0739c00d4",
+            site=self.site,
+            title="Word 2",
+            type="word",
+            visibility=Visibility.MEMBERS,
+            translations=["goodbye"],
+        )
+
+        file_content = get_sample_file(
+            "update_job/blank_optional_columns.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry1.title == "Word 1"  # unchanged
+        assert entry1.type == "word"  # unchanged
+        assert entry1.translations == ["new translation"]  # updated
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert entry2.title == "Word 2"  # unchanged
+        assert entry2.type == "word"  # unchanged
+        assert entry2.translations == []  # cleared

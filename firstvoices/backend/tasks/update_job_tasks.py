@@ -213,20 +213,22 @@ def confirm_update_job(update_job_id):
         )
         update_job.status = JobStatus.FAILED
         update_job.save()
+        return
 
     if update_job.validation_status != JobStatus.COMPLETE:
         logger.info(
             f"Please validate the job before confirming the import. Update job id: {update_job_id}."
         )
-        update_job.validation_status = JobStatus.FAILED
+        update_job.status = JobStatus.FAILED
         update_job.save()
+        return
 
     verify_no_other_import_jobs_running(update_job)
 
     update_job.status = JobStatus.STARTED
     update_job.task_id = task_id
 
-    run_update_job(update_job, data)
+    run_update_job(data, update_job)
     update_job.save()
 
     logger.info(ASYNC_TASK_END_TEMPLATE)
