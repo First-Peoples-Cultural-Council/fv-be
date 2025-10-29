@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 import pytest
 import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
+from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import validate_update_job
@@ -192,6 +195,137 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_report.error_rows == 9
         assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+    def test_dry_run_failed(self, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file = factories.FileFactory(
+            content=get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        )
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        with patch(
+            "backend.tasks.update_job_tasks.process_update_job_data",
+            side_effect=Exception("Test exception"),
+        ):
+            validate_update_job(update_job.id)
+
+            update_job = ImportJob.objects.get(id=update_job.id)
+            assert update_job.validation_status == JobStatus.FAILED
+            assert "Test exception" in caplog.text
+
+    def test_failed_rows_csv(self):
+        update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
+        error_rows_numbers = list(
+            update_job.validation_report.rows.values_list("row_number", flat=True)
+        )
+
+        file_content = get_sample_file(
+            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
+        )
+        input_csv_table = tablib.Dataset().load(
+            file_content.read().decode("utf-8-sig"), format="csv"
+        )
+
+        failed_rows_csv_table = tablib.Dataset().load(
+            update_job.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
+        assert update_job.validation_report.error_rows == 9
+        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
+        assert len(failed_rows_csv_table) == 9
+
+        for i in range(0, len(error_rows_numbers)):
+            input_index = (
+                error_rows_numbers[i] - 1
+            )  # since we do +1 while generating error row numbers
+            assert input_csv_table[input_index] == failed_rows_csv_table[i]
+
+    def test_failed_rows_csv_not_generated_on_valid_rows(self):
+        update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
+        assert update_job.failed_rows_csv is None
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
+    )
+    def test_invalid_validation_status(self, validation_status, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=validation_status,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.FAILED
+        assert "This job cannot be run due to consistency issues." in caplog.text
+
+    @pytest.mark.parametrize(
+        "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    )
+    def test_invalid_job_status(self, status, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            status=status,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.FAILED
+        assert (
+            "This job could not be started as it is either queued, or already running or completed. "
+            f"Update job id: {update_job.id}." in caplog.text
+        )
+
+    def test_update_dictionary_entry_external_system_fields(self):
+        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_1.save()
+        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_2.save()
+
+        factories.DictionaryEntryFactory.create(
+            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+            site=self.site,
+            external_system=external_system_1,
+            external_system_entry_id="FW123",
+        )
+
+        file_content = get_sample_file(
+            "update_job/external_system_fields.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.error_rows == 0
+
     @pytest.mark.parametrize(
         "site_visibility, expected_update_rows, expected_error_rows",
         [
@@ -247,31 +381,3 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.update_rows == 0
         assert update_job.validation_report.error_rows == 2
-
-    def test_failed_rows_csv(self):
-        update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
-        error_rows_numbers = list(
-            update_job.validation_report.rows.values_list("row_number", flat=True)
-        )
-
-        file_content = get_sample_file(
-            "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
-        )
-        input_csv_table = tablib.Dataset().load(
-            file_content.read().decode("utf-8-sig"), format="csv"
-        )
-
-        failed_rows_csv_table = tablib.Dataset().load(
-            update_job.failed_rows_csv.content.read().decode("utf-8-sig"),
-            format="csv",
-        )
-
-        assert update_job.validation_report.error_rows == 9
-        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
-        assert len(failed_rows_csv_table) == 9
-
-        for i in range(0, len(error_rows_numbers)):
-            input_index = (
-                error_rows_numbers[i] - 1
-            )  # since we do +1 while generating error row numbers
-            assert input_csv_table[input_index] == failed_rows_csv_table[i]
