@@ -3,7 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.import_jobs import ImportJob
+from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.jobs import JobStatus
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
@@ -446,3 +446,25 @@ class TestImportEndpoints(
 
         jobs = ImportJob.objects.filter(id=job.id)
         assert jobs.count() == 1
+
+    def test_update_jobs_not_in_list(self):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+        )
+        import_job = factories.ImportJobFactory.create(
+            site=site, mode=ImportJobMode.SKIP_DUPLICATES
+        )
+        update_job = factories.ImportJobFactory.create(
+            site=site, mode=ImportJobMode.UPDATE
+        )
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert response_data["count"] == 1
+
+        returned_job_ids = [item["id"] for item in response_data["results"]]
+
+        assert str(import_job.id) in returned_job_ids
+        assert str(update_job.id) not in returned_job_ids

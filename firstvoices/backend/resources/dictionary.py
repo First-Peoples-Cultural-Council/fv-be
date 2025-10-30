@@ -100,6 +100,10 @@ class DictionaryEntryResource(
         widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._processed_ids = set()
+
     def get_or_init_instance(self, instance_loader, row):
         """
         If import job mode = update, update existing entries instead of creating new ones.
@@ -143,6 +147,14 @@ class DictionaryEntryResource(
                 raise ImportError(
                     f"Entry with id {row.get('id')} does not belong to site '{site.title}'."
                 )
+
+            # Prevent duplicate updates within the same import
+            if str(row.get("id")) in self._processed_ids:
+                raise ImportError(
+                    f"Duplicate entry with id {row.get('id')} found in import."
+                )
+            self._processed_ids.add(str(row.get("id")))
+
         return super().get_or_init_instance(instance_loader, row)
 
     class Meta:

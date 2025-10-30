@@ -49,6 +49,7 @@ class ImportReportSerializer(serializers.ModelSerializer):
         fields = [
             "new_rows",
             "error_rows",
+            "update_rows",
             "error_details",
             "accepted_columns",
             "ignored_columns",

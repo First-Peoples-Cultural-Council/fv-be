@@ -406,6 +406,25 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_report.update_rows == 2
         assert update_job.validation_report.error_rows == 0
 
+    def test_duplicate_ids_in_update_file(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/duplicate_ids.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.error_rows == 1
+
 
 @pytest.mark.django_db
 class TestBulkUpdate(IgnoreTaskResultsMixin):
