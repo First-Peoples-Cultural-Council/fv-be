@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
+from backend.serializers.update_job_serializers import UpdateJobSerializer
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
@@ -119,6 +120,8 @@ from firstvoices.celery import link_error_handler
     ),
 )
 class UpdateJobViewSet(ImportJobViewSet):
+    serializer_class = UpdateJobSerializer
+
     def get_queryset(self):
         site = self.get_validated_site()
         return ImportJob.objects.filter(site=site, mode=ImportJobMode.UPDATE).order_by(

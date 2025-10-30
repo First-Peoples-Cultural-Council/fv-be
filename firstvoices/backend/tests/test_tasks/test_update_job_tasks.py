@@ -384,6 +384,28 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_report.update_rows == 0
         assert update_job.validation_report.error_rows == 2
 
+    def test_update_only_one_column(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+
+        file_content = get_sample_file(
+            "update_job/one_column_update.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.update_rows == 2
+        assert update_job.validation_report.error_rows == 0
+
 
 @pytest.mark.django_db
 class TestBulkUpdate(IgnoreTaskResultsMixin):
@@ -700,6 +722,38 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert entry2.title == "xyz"
         assert entry2.type == "phrase"
         assert entry2.visibility == Visibility.MEMBERS  # unchanged
+
+    def test_update_only_one_column(self):
+        factories.DictionaryEntryFactory.create(
+            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+            site=self.site,
+            exclude_from_games=False,
+        )
+        factories.DictionaryEntryFactory.create(
+            id="768c920c-38a9-4aea-821a-e1c0739c00d4",
+            site=self.site,
+            exclude_from_games=True,
+        )
+
+        file_content = get_sample_file(
+            "update_job/one_column_update.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry1.exclude_from_games
+
+        entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        assert not entry2.exclude_from_games
 
     def test_valid_blank_columns_cleared(self):
         factories.DictionaryEntryFactory.create(

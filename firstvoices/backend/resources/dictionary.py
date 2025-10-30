@@ -121,7 +121,9 @@ class DictionaryEntryResource(
                 raise ImportError(f"Missing 'id' for update in row: {row}.")
 
             # Skip missing types
-            if not row.get("type"):
+            if "type" in row and (
+                row.get("type") is None or str(row.get("type")).strip() == ""
+            ):
                 raise ImportError(
                     f"Missing 'type' for update in row with id {row.get('id')}."
                 )

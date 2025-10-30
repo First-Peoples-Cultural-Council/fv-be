@@ -7,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from backend.models import ImportJobMode
 from backend.models.import_jobs import ImportJob, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
@@ -142,9 +143,13 @@ class ImportJobViewSet(
         JobStatus.STARTED,
     ]
 
+    import_job_modes = [ImportJobMode.SKIP_DUPLICATES, ImportJobMode.ALLOW_DUPLICATES]
+
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(site=site).order_by(
+        return ImportJob.objects.filter(
+            site=site, mode__in=self.import_job_modes
+        ).order_by(
             "-created"
         )  # permissions are applied by the base view
 

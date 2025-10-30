@@ -57,7 +57,7 @@ class TestImportEndpoints(
         return {
             "title": "Test Title",
             "data": get_sample_file("import_job/minimal.csv", "text/csv"),
-            "mode": "update",
+            "mode": "skip_duplicates",
         }
 
     def get_valid_data_with_nulls(self, site=None):
