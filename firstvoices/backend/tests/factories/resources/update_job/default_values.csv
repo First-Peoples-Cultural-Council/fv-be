@@ -1,0 +1,4 @@
+﻿id,title,type,visibility,include_in_games,include_on_kids_site
+ba93662a-e1bc-4c0b-8fa1-12b0bc108be1,Empty visibility,phrase  ,,FALSE,TRUE
+768c920c-38a9-4aea-821a-e1c0739c00d4,Empty include in games,WORD,  puBLIc  ,,TRUE
+67525f1e-2a55-40b6-b39c-cb708819f47c,Empty include on kids site,  PhRasE  ,teaM  ,FALSE,

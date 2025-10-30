@@ -294,6 +294,7 @@ def generate_report(
                 )
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
+    report.update_rows = dictionary_entry_import_result.totals["update"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
@@ -389,7 +390,7 @@ def process_import_job_data(
 
 def run_import_job(data, import_job):
     """
-    Executes the actual import (non dry-run mode) amd update the status attribute of import-job.
+    Executes the actual import (non dry-run mode) and updates the status attribute of import-job.
     """
     logger = get_task_logger(__name__)
 
@@ -415,7 +416,7 @@ def run_import_job(data, import_job):
 
 def dry_run_import_job(data, import_job):
     """
-    Performs a dry-run of the specified import-job and update the validation_status attribute of import-job.
+    Performs a dry-run of the specified import-job and updates the validation_status attribute of the import-job.
     """
     logger = get_task_logger(__name__)
 

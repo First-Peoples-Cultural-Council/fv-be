@@ -6,7 +6,7 @@ from import_export.results import RowResult
 
 from backend.models import Document
 from backend.models.constants import Visibility
-from backend.models.import_jobs import ImportJob
+from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
 from backend.resources.utils.import_export_widgets import (
@@ -45,7 +45,11 @@ class BaseResource(resources.ModelResource):
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
-        dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+        # ID is only added if the import job mode is not update
+        import_job = ImportJob.objects.get(id=self.import_job)
+        if import_job.mode != ImportJobMode.UPDATE:
+            dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+
         dataset.append_col(lambda x: str(self.site.id), header="site")
         dataset.append_col(lambda x: str(self.run_as_user), header="created_by")
         dataset.append_col(lambda x: str(self.run_as_user), header="last_modified_by")
@@ -72,14 +76,7 @@ class BaseResource(resources.ModelResource):
 
         except ImportError:
             if import_result.import_type == RowResult.IMPORT_TYPE_INVALID:
-                validation_error_messages = []
-                for (
-                    attribute,
-                    error,
-                ) in import_result.validation_error.message_dict.items():
-                    validation_error_messages.append(f"{attribute}: {error[0]}")
-                import_result.error_messages = validation_error_messages
-                import_result.validation_error = None
+                import_result = self._handle_validation_error(import_result)
             else:
                 import_result.error_messages = [
                     str(err.error).split("\n")[0] for err in import_result.errors
@@ -88,6 +85,23 @@ class BaseResource(resources.ModelResource):
 
             import_result.import_type = RowResult.IMPORT_TYPE_SKIP
 
+        return import_result
+
+    @staticmethod
+    def _handle_validation_error(import_result):
+        validation_error = import_result.validation_error
+        validation_error_messages = []
+        if hasattr(validation_error, "message_dict"):
+            for (
+                attribute,
+                error,
+            ) in import_result.validation_error.message_dict.items():
+                validation_error_messages.append(f"{attribute}: {error[0]}")
+        elif hasattr(validation_error, "error_list"):
+            for err in import_result.validation_error.error_list:
+                validation_error_messages.append(str(err).split("\n")[0])
+        import_result.error_messages = validation_error_messages
+        import_result.validation_error = None
         return import_result
 
     class Meta:

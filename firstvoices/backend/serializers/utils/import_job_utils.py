@@ -2,17 +2,21 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 REQUIRED_HEADERS = ["title", "type"]
+REQUIRED_UPDATE_HEADERS = ["id"]
 
 
-def check_required_headers(input_headers):
+def check_required_headers(input_headers, update_mode=False):
     # check for the required headers
+    required_headers = REQUIRED_HEADERS
+    if update_mode:
+        required_headers = REQUIRED_UPDATE_HEADERS
 
     input_headers = [h.strip().lower() for h in input_headers]
-    if set(REQUIRED_HEADERS) - set(input_headers):
+    if set(required_headers) - set(input_headers):
         raise serializers.ValidationError(
             detail={
                 "data": [
-                    "CSV file does not have the all the required headers. Required headers are ['title', 'type']"
+                    f"CSV file does not have the all the required headers. Required headers are {required_headers}"
                 ]
             }
         )

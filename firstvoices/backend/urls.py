@@ -34,6 +34,7 @@ from backend.views.song_views import SongViewSet
 from backend.views.stats_views import StatsViewSet
 from backend.views.story_views import StoryViewSet
 from backend.views.storypage_views import StoryPageViewSet
+from backend.views.update_job_views import UpdateJobViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
 from backend.views.word_of_the_day_views import WordOfTheDayView
@@ -99,8 +100,9 @@ sites_router.register(r"stories", StoryViewSet, basename="story")
 stories_router = NestedSimpleRouter(sites_router, r"stories", lookup="story")
 stories_router.register(r"pages", StoryPageViewSet, basename="storypage")
 
-# import-jobs
+# import and update jobs
 sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
+sites_router.register(r"update-jobs", UpdateJobViewSet, basename="updatejob")
 import_jobs_router = NestedSimpleRouter(
     sites_router, r"import-jobs", lookup="importjob"
 )
