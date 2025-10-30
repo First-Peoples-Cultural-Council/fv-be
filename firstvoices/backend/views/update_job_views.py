@@ -186,6 +186,9 @@ class UpdateJobViewSet(ImportJobViewSet):
                 "This job has already been confirmed and is currently being imported."
             )
 
+        if curr_job.status == JobStatus.COMPLETE:
+            raise ValidationError("This job has already finished importing.")
+
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for confirmation
