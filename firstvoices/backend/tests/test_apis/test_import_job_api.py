@@ -451,10 +451,20 @@ class TestImportEndpoints(
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
-        factories.ImportJobFactory.create(site=site, mode=ImportJobMode.UPDATE)
+        import_job = factories.ImportJobFactory.create(
+            site=site, mode=ImportJobMode.SKIP_DUPLICATES
+        )
+        update_job = factories.ImportJobFactory.create(
+            site=site, mode=ImportJobMode.UPDATE
+        )
 
         response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
         response_data = json.loads(response.content)
 
         assert response.status_code == 200
-        assert response_data["count"] == 0
+        assert response_data["count"] == 1
+
+        returned_job_ids = [item["id"] for item in response_data["results"]]
+
+        assert str(import_job.id) in returned_job_ids
+        assert str(update_job.id) not in returned_job_ids
