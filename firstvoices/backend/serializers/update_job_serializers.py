@@ -1,7 +1,11 @@
+from rest_framework import serializers
+
 from backend.serializers.import_job_serializers import ImportJobSerializer
 
 
 class UpdateJobSerializer(ImportJobSerializer):
+    mode = serializers.CharField(read_only=True)
+
     def build_url_field(self, field_name, model_class):
         """
         Add our namespace to the view_name
