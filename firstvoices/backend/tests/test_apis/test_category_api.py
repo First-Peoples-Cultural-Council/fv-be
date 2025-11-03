@@ -662,3 +662,33 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
         assert len(results[0]["children"]) == 1
         assert results[0]["children"][0]["id"] == str(child_category.id)
+
+    @pytest.mark.django_db
+    def test_flat_list_parentTitle_basic(self):
+        parent = ParentCategoryFactory.create(site=self.site, title="Animal")
+        child = ChildCategoryFactory.create(
+            site=self.site, parent=parent, title="Lizards"
+        )
+
+        resp = self.client.get(
+            self.get_list_endpoint(
+                self.site.slug,
+                query_kwargs={"nested": False},
+            )
+        )
+        assert resp.status_code == 200
+        data = json.loads(resp.content)
+
+        assert all("children" not in obj for obj in data["results"])
+
+        assert all("parent" in obj and "parentTitle" in obj for obj in data["results"])
+
+        parent_obj = find_object_by_id(data["results"], parent.id)
+        child_obj = find_object_by_id(data["results"], child.id)
+        assert parent_obj is not None and child_obj is not None
+
+        assert parent_obj["parent"] is None
+        assert parent_obj["parentTitle"] is None
+
+        assert child_obj["parent"] == str(parent.id)
+        assert child_obj["parentTitle"] == parent.title
