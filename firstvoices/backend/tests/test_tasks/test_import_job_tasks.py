@@ -541,8 +541,9 @@ class TestBulkImportDryRun:
         error_row = validation_report.rows.get(row_number=1)
 
         expected_error_message = (
-            "Related entry 'Word 2' could not be found to link to entry 'Word 1'. "
-            "Please link the entries manually after re-importing the missing entry."
+            "Entry 'Word 1' cannot be imported as related entry 'Word 2' "
+            "could not be found to add as a related entry. "
+            "Please resolve the problems with 'Word 2' before attempting the import again."
         )
 
         assert error_row.errors[0] == expected_error_message
