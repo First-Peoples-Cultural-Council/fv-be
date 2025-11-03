@@ -135,6 +135,7 @@ def handle_related_entries(entry_title_map, import_data):
         return
 
     for idx, row in enumerate(import_data.dict):
+        seen_related_entry_titles = set()
 
         for related_entry_header in related_entry_headers:
 
@@ -142,6 +143,13 @@ def handle_related_entries(entry_title_map, import_data):
             if not related_entry_title:
                 # No related entry specified in this column, skip
                 continue
+
+            if related_entry_title in seen_related_entry_titles:
+                # Duplicate related entry title in the same row, row should fail import, so delete it
+                DictionaryEntry.objects.get(id=row["id"]).delete()
+                continue
+
+            seen_related_entry_titles.add(related_entry_title)
 
             related_entry_id = entry_title_map.get(related_entry_title)
 
@@ -165,6 +173,7 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
         return
 
     for idx, row in enumerate(import_data.dict):
+        seen_related_entry_titles = set()
 
         for related_entry_header in related_entry_headers:
 
@@ -172,6 +181,24 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
             if not related_entry_title:
                 # No related entry specified in this column, skip
                 continue
+
+            if related_entry_title in seen_related_entry_titles:
+                error_message = (
+                    f"Duplicate related entry title '{related_entry_title}' found in column '{related_entry_header}'. "
+                    f"Please ensure each related entry title is unique per entry."
+                )
+                create_or_append_error_row(
+                    import_job,
+                    report,
+                    row_number=idx + 1,
+                    errors=[str(error_message)],
+                )
+                # since the original entry was not imported due to duplicate related entries, decrement new_rows count
+                report.new_rows -= 1
+                report.save()
+                continue
+
+            seen_related_entry_titles.add(related_entry_title)
 
             if not row["id"]:
                 # missing from entry
@@ -196,9 +223,10 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 )
                 # since the "to" entry was not found, the original entry was deleted. Decrement new_rows count
                 report.new_rows -= 1
+                report.save()
 
-            report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
-            report.save()
+        report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
+        report.save()
 
 
 def generate_report(
