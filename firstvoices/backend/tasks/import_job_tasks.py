@@ -30,6 +30,7 @@ from backend.tasks.utils import (
     get_failed_rows_csv_file,
     get_related_entry_headers,
     is_valid_header_variation,
+    normalize_columns,
     verify_no_other_import_jobs_running,
 )
 
@@ -104,6 +105,10 @@ def clean_csv(
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
 
+    # normalize title and related entry columns
+    columns_to_normalize = ["title"] + get_related_entry_headers(cleaned_data)
+    cleaned_data = normalize_columns(cleaned_data, columns_to_normalize)
+
     return accepted_headers, invalid_headers, cleaned_data
 
 
@@ -169,8 +174,6 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
     Appends missing related entry errors to the report for any related entries that could not be linked during dry-run.
     """
     related_entry_headers = get_related_entry_headers(import_data)
-    if not related_entry_headers:
-        return
 
     for idx, row in enumerate(import_data.dict):
         seen_related_entry_titles = set()

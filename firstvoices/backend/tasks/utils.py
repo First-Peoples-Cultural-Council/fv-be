@@ -14,6 +14,7 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.utils.character_utils import clean_input
 
 ASYNC_TASK_START_TEMPLATE = "Task started. Additional info: %s."
 ASYNC_TASK_END_TEMPLATE = "Task ended."
@@ -119,3 +120,17 @@ def get_related_entry_headers(import_data):
         related_entry_headers.remove("related_entry_ids")
 
     return related_entry_headers
+
+
+def normalize_columns(import_data, columns):
+    # normalize data in specified columns using clean_input function
+    normalized_data = tablib.Dataset(headers=import_data.headers)
+
+    for row in import_data.dict:
+        new_row = row.copy()
+        for column in columns:
+            if column in new_row:
+                new_row[column] = clean_input(row[column])
+        normalized_data.append([new_row[h] for h in import_data.headers])
+
+    return normalized_data
