@@ -541,8 +541,9 @@ class TestBulkImportDryRun:
         error_row = validation_report.rows.get(row_number=1)
 
         expected_error_message = (
-            "Related entry 'Word 2' could not be found to link to entry 'Word 1'. "
-            "Please link the entries manually after re-importing the missing entry."
+            "Entry 'Word 1' cannot be imported as related entry 'Word 2' "
+            "could not be found to add as a related entry. "
+            "Please resolve the problems with 'Word 2' before attempting the import again."
         )
 
         assert error_row.errors[0] == expected_error_message
@@ -585,6 +586,34 @@ class TestBulkImportDryRun:
             "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'. "
             "Please link the entries manually after re-importing the missing entry."
             in error_row_2.errors[1]
+        )
+
+    def test_related_entries_duplicate_titles_same_row(self):
+        # if a related entry title appears in the same row multiple times, fail the row
+        file_content = get_sample_file(
+            "import_job/related_entries_duplicate_titles_same_row.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Updated instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 1
+        assert validation_report.error_rows == 1
+
+        error_row = validation_report.rows.first()
+        assert error_row.row_number == 1
+        assert (
+            "Duplicate related entry title 'Word 2' found in column 'related_entry_2'. "
+            "Please ensure each related entry title is unique per entry."
         )
 
     def test_dry_run_failed(self, caplog):
@@ -1732,12 +1761,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
 
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.count() == 2
-
-        entry1 = DictionaryEntry.objects.get(title="Word 1")
-        related_entries = entry1.dictionaryentrylink_set.all()
-        assert related_entries.count() == 1
-        assert related_entries[0].to_dictionary_entry.title == "Word 2"
+        assert DictionaryEntry.objects.count() == 1
 
     def test_related_entries_cannot_link_to_self(self):
         # Ensure no links are created to self
