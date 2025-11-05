@@ -26,13 +26,15 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         # Not required for this endpoint
         return {}
 
-    def create_import_job(self, site, status=None):
+    def create_import_job(
+        self, site, status=None, validation_status=JobStatus.COMPLETE
+    ):
         return ImportJobFactory(
             site=site,
             data=factories.FileFactory(
                 content=get_sample_file("import_job/all_valid_columns.csv", "text/csv")
             ),
-            validation_status=JobStatus.COMPLETE,
+            validation_status=validation_status,
             status=status,
         )
 
