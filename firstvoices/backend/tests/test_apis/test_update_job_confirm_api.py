@@ -21,13 +21,15 @@ class TestUpdateJobConfirmAction(TestImportJobConfirmAction):
 
     API_CONFIRM_ACTION = "api:updatejob-confirm"
 
-    def create_import_job(self, site, status=None):
+    def create_import_job(
+        self, site, status=None, validation_status=JobStatus.COMPLETE
+    ):
         return ImportJobFactory(
             site=site,
             data=factories.FileFactory(
                 content=get_sample_file("update_job/all_valid_columns.csv", "text/csv")
             ),
-            validation_status=JobStatus.COMPLETE,
+            validation_status=validation_status,
             status=status,
             mode=ImportJobMode.UPDATE,
         )
