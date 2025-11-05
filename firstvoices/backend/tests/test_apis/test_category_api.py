@@ -688,7 +688,7 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         assert parent_obj is not None and child_obj is not None
 
         assert parent_obj["parent"] is None
-        assert parent_obj["parentTitle"] is None
+        assert parent_obj["parentTitle"] == ""
 
         assert child_obj["parent"] == str(parent.id)
         assert child_obj["parentTitle"] == parent.title
