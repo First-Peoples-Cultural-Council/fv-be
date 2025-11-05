@@ -186,10 +186,12 @@ class LinkedSiteMinimalSerializer(
     Minimal info about a site, suitable for search results.
     """
 
+    is_hidden = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Site
-        fields = ("id", "slug", "title", "visibility")
-        read_only_fields = ("id", "slug", "title")
+        fields = ("id", "slug", "title", "visibility", "is_hidden")
+        read_only_fields = ("id", "slug", "title", "is_hidden")
 
 
 class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
