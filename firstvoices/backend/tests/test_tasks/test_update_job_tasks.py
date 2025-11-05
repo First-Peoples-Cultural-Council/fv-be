@@ -94,7 +94,7 @@ class TestBulkUpdateDryRun:
         update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 2
+        assert update_job.validation_report.updated_rows == 2
         assert update_job.validation_report.error_rows == 0
 
     def test_all_columns_update(self):
@@ -117,7 +117,7 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 6
+        assert update_job.validation_report.updated_rows == 6
         assert update_job.validation_report.error_rows == 0
 
         expected_valid_columns = [
@@ -182,7 +182,7 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 3
+        assert update_job.validation_report.updated_rows == 3
         assert update_job.validation_report.error_rows == 0
 
     def test_invalid_update_values(self):
@@ -193,7 +193,7 @@ class TestBulkUpdateDryRun:
         )
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 9
         assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -325,11 +325,11 @@ class TestBulkUpdateDryRun:
         validate_update_job(update_job.id)
         update_job = ImportJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 0
 
     @pytest.mark.parametrize(
-        "site_visibility, expected_update_rows, expected_error_rows",
+        "site_visibility, expected_updated_rows, expected_error_rows",
         [
             (Visibility.PUBLIC, 3, 1),
             (Visibility.MEMBERS, 2, 2),
@@ -337,7 +337,7 @@ class TestBulkUpdateDryRun:
         ],
     )
     def test_invalid_site_visibility(
-        self, site_visibility, expected_update_rows, expected_error_rows
+        self, site_visibility, expected_updated_rows, expected_error_rows
     ):
         site = factories.SiteFactory(visibility=site_visibility)
         self.create_dictionary_entries(TEST_ENTRY_IDS, site=site)
@@ -359,7 +359,7 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == expected_update_rows
+        assert update_job.validation_report.updated_rows == expected_updated_rows
         assert update_job.validation_report.error_rows == expected_error_rows
 
     def test_updated_entries_not_in_site(self):
@@ -381,7 +381,7 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 0
+        assert update_job.validation_report.updated_rows == 0
         assert update_job.validation_report.error_rows == 2
 
     def test_update_only_one_column(self):
@@ -403,7 +403,7 @@ class TestBulkUpdateDryRun:
 
         update_job = ImportJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 2
+        assert update_job.validation_report.updated_rows == 2
         assert update_job.validation_report.error_rows == 0
 
     def test_duplicate_ids_in_update_file(self):
@@ -422,7 +422,7 @@ class TestBulkUpdateDryRun:
 
         update_job = ImportJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.update_rows == 1
+        assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 1
 
 

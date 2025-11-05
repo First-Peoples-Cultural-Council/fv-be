@@ -294,7 +294,7 @@ def generate_report(
                 )
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
-    report.update_rows = dictionary_entry_import_result.totals["update"]
+    report.updated_rows = dictionary_entry_import_result.totals["update"]
     report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
     report.save()
 
