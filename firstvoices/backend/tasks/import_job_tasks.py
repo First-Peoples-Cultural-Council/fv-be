@@ -208,7 +208,8 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 error_message = (
                     f"Entry '{row['title']}' was not imported, and could not be linked as a "
                     f"related entry to entry '{related_entry_title}'. "
-                    f"Please link the entries manually after re-importing the missing entry."
+                    f"For related entries to be linked properly, please resolve the issues with entry "
+                    f"'{row['title']}' before importing this file."
                 )
                 create_or_append_error_row(
                     import_job, report, row_number=idx + 1, errors=[str(error_message)]

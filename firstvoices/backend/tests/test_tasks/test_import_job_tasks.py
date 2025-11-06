@@ -513,7 +513,8 @@ class TestBulkImportDryRun:
 
         expected_error_message = (
             "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'. "
-            "Please link the entries manually after re-importing the missing entry."
+            "For related entries to be linked properly, please resolve the issues with entry 'Word 1' before "
+            "importing this file."
         )
 
         assert error_row.errors[1] == expected_error_message
@@ -577,15 +578,15 @@ class TestBulkImportDryRun:
         assert len(error_row_1.errors) == 2
         assert (
             "Entry 'Word 1' was not imported, and could not be linked as a related entry to entry 'Word 2'. "
-            "Please link the entries manually after re-importing the missing entry."
-            in error_row_1.errors[1]
+            "For related entries to be linked properly, please resolve the issues with entry 'Word 1' before "
+            "importing this file." in error_row_1.errors[1]
         )
 
         assert len(error_row_2.errors) == 2
         assert (
             "Entry 'Word 2' was not imported, and could not be linked as a related entry to entry 'Word 1'. "
-            "Please link the entries manually after re-importing the missing entry."
-            in error_row_2.errors[1]
+            "For related entries to be linked properly, please resolve the issues with entry 'Word 2' before "
+            "importing this file." in error_row_2.errors[1]
         )
 
     def test_related_entries_duplicate_titles_same_row(self):
