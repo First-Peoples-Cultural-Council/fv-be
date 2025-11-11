@@ -49,7 +49,7 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 jsonschema==4.25.1
 kombu==5.5.4
-MarkupSafe==3.0.2
+MarkupSafe==3.0.3
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@0ea975a
 munkres==1.1.4
 nh3==0.3.2 # https://github.com/messense/nh3
