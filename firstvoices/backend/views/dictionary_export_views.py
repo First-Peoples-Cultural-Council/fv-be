@@ -69,7 +69,8 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         "pronunciations": "pronunciation",
         "related_dictionary_entries": "related_entry_id",
     }
-    valid_types = [TYPE_WORD, TYPE_PHRASE]
+    default_search_types = [TYPE_WORD, TYPE_PHRASE]
+    allowed_search_types = [TYPE_WORD, TYPE_PHRASE]
 
     def initial(self, request, *args, **kwargs):
         """Ensures user has permissions to perform the requested action."""
