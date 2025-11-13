@@ -43,7 +43,7 @@ def get_valid_search_types(input_types, default_types, allowed_types):
     for value in values:
         stripped_value = value.strip().lower()
         if stripped_value in allowed_types and stripped_value not in selected_values:
-            selected_values.append(value)
+            selected_values.append(stripped_value)
 
     return selected_values or None
 
