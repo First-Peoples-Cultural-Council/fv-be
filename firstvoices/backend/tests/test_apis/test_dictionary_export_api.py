@@ -316,7 +316,8 @@ class TestDictionaryExportAPI(
         first_row = csv_rows[0]
         assert first_row["id"] == str(dictionary_entry.id)
 
-    def test_invalid_types(self, mock_search_query_execute):
+    @pytest.mark.parametrize("unsupported_type", ["invalid", "song", "story"])
+    def test_unsupported_types_types(self, unsupported_type, mock_search_query_execute):
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=self.site,
             title="Title",
@@ -326,7 +327,7 @@ class TestDictionaryExportAPI(
 
         response = self.client.get(
             self.get_list_endpoint(
-                site_slug=self.site.slug, query_kwargs={"types": "invalid"}
+                site_slug=self.site.slug, query_kwargs={"types": unsupported_type}
             ),
             format="csv",
         )

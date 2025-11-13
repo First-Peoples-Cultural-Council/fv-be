@@ -9,6 +9,7 @@ from drf_spectacular.utils import (
 from rest_framework import serializers
 
 from backend.search.constants import (
+    ALL_SEARCH_TYPES,
     ENTRY_SEARCH_TYPES,
     LENGTH_FILTER_MAX,
     SearchIndexEntryTypes,
@@ -475,7 +476,8 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         "Image": ImageSearchResultSerializer,
         "Video": VideoSearchResultSerializer,
     }
-    valid_types = ENTRY_SEARCH_TYPES
+    default_search_types = ENTRY_SEARCH_TYPES
+    allowed_search_types = ALL_SEARCH_TYPES
 
     def get_search_params(self):
         """
@@ -484,7 +486,9 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         base_search_params = super().get_search_params()
 
         input_types_str = self.request.GET.get("types", "")
-        valid_types_list = get_valid_search_types(input_types_str, self.valid_types)
+        valid_types_list = get_valid_search_types(
+            input_types_str, self.default_search_types, self.allowed_search_types
+        )
 
         input_domain_str = self.request.GET.get("domain", "")
         valid_domain = get_valid_domain(input_domain_str, "both")
