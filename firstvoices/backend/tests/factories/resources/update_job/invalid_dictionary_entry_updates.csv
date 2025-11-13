@@ -1,0 +1,11 @@
+﻿id,title,type,visibility,category,include_in_games,include_on_kids_site,part_of_speech,Ignorable_comments_column
+ba93662a-e1bc-4c0b-8fa1-12b0bc108be1,Control,phrase,Team,Animals,FALSE,TRUE,Suffix,Valid entry for control
+768c920c-38a9-4aea-821a-e1c0739c00d4,Invalid type,xyz,Public,Animals,TRUE,FALSE,Adjective,invalid type
+67525f1e-2a55-40b6-b39c-cb708819f47c,Blank type,,Public,Animals,FALSE,TRUE,Adjective,blank type
+adcc9c74-3ab2-4a31-8063-5ba5007be507,Invalid vis,phrase,notAValidVis,Animals,FALSE,TRUE,Suffix,invalid visibility
+6398bfb3-7d4a-48ce-9286-0408ea183043,Invalid bool,phrase,Team,Animals,notBoolValue,TRUE,Adjective,invalid boolean value
+bc525519-77ef-4318-94a6-cd9fc85f8646,Invalid part,xyz,Public,Animals,TRUE,FALSE,invalid_part,invalid_part_of_speech
+7120e5f5-de3a-48fd-a697-1529e2fbe3c3,,word,Public,Animals,FALSE,TRUE,Adjective,Missing title
+,Blank ID,word,Public,Animals,FALSE,FALSE,Adjective,blank id
+invalid,Invalid ID,word,Public,Animals,FALSE,FALSE,Adjective,invalid id
+92782704-d2c9-47fc-b628-abdca150ed54,Invalid category,word,Public,invalid,FALSE,FALSE,Adjective,invalid category

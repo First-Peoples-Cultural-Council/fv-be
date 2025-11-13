@@ -26,6 +26,18 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         # Not required for this endpoint
         return {}
 
+    def create_import_job(
+        self, site, status=None, validation_status=JobStatus.COMPLETE
+    ):
+        return ImportJobFactory(
+            site=site,
+            data=factories.FileFactory(
+                content=get_sample_file("import_job/all_valid_columns.csv", "text/csv")
+            ),
+            validation_status=validation_status,
+            status=status,
+        )
+
     def setup_method(self):
         self.client = APIClient()
         self.site, user = factories.get_site_with_member(
@@ -55,10 +67,7 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         self.import_job.status = status
         self.import_job.save()
 
-        import_job = ImportJobFactory(
-            site=self.site,
-            validation_status=JobStatus.COMPLETE,
-        )
+        import_job = self.create_import_job(site=self.site)
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
@@ -75,11 +84,7 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         )
 
     def test_reconfirming_a_completed_job_not_allowed(self):
-        import_job = ImportJobFactory(
-            site=self.site,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.COMPLETE,
-        )
+        import_job = self.create_import_job(site=self.site, status=JobStatus.COMPLETE)
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
@@ -98,11 +103,7 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         self.import_job.status = JobStatus.COMPLETE
         self.import_job.save()
 
-        import_job = ImportJobFactory(
-            site=self.site,
-            validation_status=JobStatus.COMPLETE,
-            status=status,
-        )
+        import_job = self.create_import_job(site=self.site, status=status)
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,

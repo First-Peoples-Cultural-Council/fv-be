@@ -1,6 +1,7 @@
 from import_export import fields, widgets
 
-from backend.models import Category, DictionaryEntry, ImportJob
+from backend.models import Category, DictionaryEntry, ImportJob, ImportJobMode
+from backend.models.constants import Visibility
 from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
@@ -99,6 +100,66 @@ class DictionaryEntryResource(
         widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._processed_ids = set()
+
+    def get_or_init_instance(self, instance_loader, row):
+        """
+        If import job mode = update, update existing entries instead of creating new ones.
+        """
+        import_job = ImportJob.objects.get(id=self.import_job)
+        site = import_job.site
+        valid_entry_ids = [
+            str(i)
+            for i in DictionaryEntry.objects.filter(site=site).values_list(
+                "id", flat=True
+            )
+        ]
+
+        instance_loader.get_instance(row)
+
+        if import_job.mode == ImportJobMode.UPDATE:
+            # Skip missing IDs
+            if not row.get("id"):
+                raise ImportError(f"Missing 'id' for update in row: {row}.")
+
+            # Skip missing types
+            if "type" in row and (
+                row.get("type") is None or str(row.get("type")).strip() == ""
+            ):
+                raise ImportError(
+                    f"Missing 'type' for update in row with id {row.get('id')}."
+                )
+
+            # Enforce visibility restrictions
+            if (
+                row.get("visibility")
+                and Visibility[row.get("visibility").upper().strip()].value
+                > site.visibility
+            ):
+                raise ImportError(
+                    f"Cannot update entry with id {row.get('id')} due to visibility restrictions."
+                )
+
+            # Ensure updated entries belong to the site
+            if row.get("id") not in valid_entry_ids:
+                raise ImportError(
+                    f"Entry with id {row.get('id')} does not belong to site '{site.title}'."
+                )
+
+            # Prevent duplicate updates within the same import
+            if str(row.get("id")) in self._processed_ids:
+                raise ImportError(
+                    f"Duplicate entry with id {row.get('id')} found in import."
+                )
+            self._processed_ids.add(str(row.get("id")))
+
+        return super().get_or_init_instance(instance_loader, row)
+
     class Meta:
         model = DictionaryEntry
         clean_model_instances = True
+        import_id_fields = ["id"]
+        skip_unchanged = True
+        report_skipped = True

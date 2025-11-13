@@ -8,7 +8,12 @@ from tablib import InvalidDimensions
 
 from backend.models.constants import AppRole
 from backend.models.files import File
-from backend.models.import_jobs import ImportJob, ImportJobReport, ImportJobReportRow
+from backend.models.import_jobs import (
+    ImportJob,
+    ImportJobMode,
+    ImportJobReport,
+    ImportJobReportRow,
+)
 from backend.models.jobs import JobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
@@ -44,6 +49,7 @@ class ImportReportSerializer(serializers.ModelSerializer):
         fields = [
             "new_rows",
             "error_rows",
+            "updated_rows",
             "error_details",
             "accepted_columns",
             "ignored_columns",
@@ -116,6 +122,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     def create(self, validated_data):
         validated_data["site"] = get_site_from_context(self)
         file = self.create_file(validated_data["data"], File, validated_data["site"])
+        update_mode = validated_data.get("mode") == ImportJobMode.UPDATE
 
         try:
             table = tablib.Dataset().load(
@@ -126,7 +133,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             # Validate headers
             # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
-            check_required_headers(table.headers)
+            check_required_headers(table.headers, update_mode)
 
             # Check for duplicate headers
             check_duplicate_headers(table.headers)

@@ -2093,7 +2093,7 @@ class TestBulkImport(IgnoreTaskResultsMixin):
     def test_related_videos(self):
         import_job = self.confirm_upload_with_media_files("related_videos.csv")
 
-        entry_with_video = DictionaryEntry.objects.filter(title="Word 1")[0]
+        entry_with_video = DictionaryEntry.objects.get(title="Word 1")
         related_videos = entry_with_video.related_videos.all()
         assert len(related_videos) == 1
 
