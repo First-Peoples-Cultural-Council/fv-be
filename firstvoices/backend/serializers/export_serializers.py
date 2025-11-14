@@ -27,7 +27,12 @@ class DictionaryEntryExportResultSerializer(
 
     @staticmethod
     def get_video_embed_links(instance):
-        return instance.related_video_links
+        links = instance.related_video_links
+
+        if not links:
+            return ""
+
+        return links
 
     class Meta:
         model = DictionaryEntry
