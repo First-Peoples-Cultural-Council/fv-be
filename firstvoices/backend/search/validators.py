@@ -5,7 +5,7 @@ from rest_framework import serializers
 from backend.models import Site
 from backend.models.constants import Visibility
 from backend.models.dictionary import ExternalDictionaryEntrySystem
-from backend.search.constants import ALL_SEARCH_TYPES, LENGTH_FILTER_MAX
+from backend.search.constants import LENGTH_FILTER_MAX
 from backend.search.queries.query_builder_utils import SearchDomains
 
 
@@ -33,22 +33,19 @@ def get_valid_count(count, property_name):
     return count
 
 
-def get_valid_search_types(input_types, default_value=ALL_SEARCH_TYPES):
-    if input_types is None or input_types == "":
-        return default_value
+def get_valid_search_types(input_types, default_types, allowed_types):
+    if not input_types:
+        return default_types
 
     values = input_types.split(",")
     selected_values = []
 
     for value in values:
         stripped_value = value.strip().lower()
-        if stripped_value in ALL_SEARCH_TYPES and stripped_value not in selected_values:
+        if stripped_value in allowed_types and stripped_value not in selected_values:
             selected_values.append(stripped_value)
 
-    if len(selected_values) == 0:
-        return None
-
-    return selected_values
+    return selected_values or None
 
 
 def get_valid_domain(input_domain_str, default_value="both"):
