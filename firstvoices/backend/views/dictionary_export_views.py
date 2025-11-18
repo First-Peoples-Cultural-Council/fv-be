@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
@@ -85,6 +85,30 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
 
         if not (is_at_least_staff or is_language_admin):
             raise PermissionDenied("You do not have permission to perform this action.")
+
+    def get_pagination_params(self):
+        # limit page size to 5000 entries for export
+
+        default_page_size = self.paginator.get_page_size(self.request)
+
+        page = self.paginator.override_invalid_number(self.request.GET.get("page", 1))
+
+        page_size = self.paginator.override_invalid_number(
+            self.request.GET.get("pageSize", default_page_size), default_page_size
+        )
+
+        if page_size > 5000:
+            raise ValidationError(
+                "pageSize: The maximum number of entries per export is 5000."
+            )
+
+        start = (page - 1) * page_size
+
+        return {
+            "page_size": page_size,
+            "page": page,
+            "start": start,
+        }
 
     def finalize_response(self, request, response, *args, **kwargs):
         # To return JSON response for errors

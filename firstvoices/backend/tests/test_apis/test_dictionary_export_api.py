@@ -335,3 +335,25 @@ class TestDictionaryExportAPI(
         assert response.status_code == 200
         csv_rows = self.get_csv_rows(response)
         assert len(csv_rows) == 0
+
+    def test_page_size_cannot_exceed_limit(self, mock_search_query_execute):
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+            title="Title",
+            type=TypeOfDictionaryEntry.WORD,
+        )
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(
+                site_slug=self.site.slug, query_kwargs={"pageSize": 5001}
+            ),
+            format="csv",
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[0]
+            == "pageSize: The maximum number of entries per export is 5000."
+        )
