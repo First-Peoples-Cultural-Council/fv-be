@@ -14,16 +14,45 @@ from ..models.constants import Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
 
-base_timestamp_fields = (
+default_timestamp_fields = (
     "created",
     "created_by",
     "last_modified",
     "last_modified_by",
+)
+system_timestamp_fields = (
     "system_last_modified",
     "system_last_modified_by",
 )
+base_timestamp_fields = default_timestamp_fields + system_timestamp_fields
 base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
+
+
+class DefaultTimestampFieldsMixin:
+    """
+    A mixin providing basic timestamp fields for serializers.
+    """
+
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        fields = default_timestamp_fields
+
+
+class SystemTimestampFieldsMixin(DefaultTimestampFieldsMixin):
+    """
+    A mixin providing system timestamp fields for serializers.
+    """
+
+    system_last_modified = serializers.DateTimeField(read_only=True)
+    system_last_modified_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        fields = base_timestamp_fields
 
 
 class SiteContentUrlMixin:
@@ -194,20 +223,15 @@ class LinkedSiteMinimalSerializer(
         read_only_fields = ("id", "slug", "title", "is_hidden")
 
 
-class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
+class BaseSiteContentSerializer(
+    SystemTimestampFieldsMixin, SiteContentLinkedTitleSerializer
+):
     """
     Base serializer for site content models.
     """
 
     id = serializers.UUIDField(read_only=True)
     site = LinkedSiteSerializer(read_only=True)
-
-    created = serializers.DateTimeField(read_only=True)
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified = serializers.DateTimeField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
-    system_last_modified = serializers.DateTimeField(read_only=True)
-    system_last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         fields = base_timestamp_fields + base_id_fields + ("site",)

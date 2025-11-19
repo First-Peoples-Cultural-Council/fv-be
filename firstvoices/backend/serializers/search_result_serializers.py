@@ -12,8 +12,10 @@ from backend.models import (
     dictionary,
 )
 from backend.serializers.base_serializers import (
+    DefaultTimestampFieldsMixin,
     LinkedSiteMinimalSerializer,
     ReadOnlyVisibilityFieldMixin,
+    default_timestamp_fields,
 )
 from backend.serializers.fields import TextListField
 from backend.serializers.files_serializers import FileSerializer
@@ -62,23 +64,23 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "bio")
 
 
-class MediaMinimalSerializer(serializers.ModelSerializer):
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
+class MediaMinimalSerializer(DefaultTimestampFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         fields = (
             "id",
-            "created",
-            "created_by",
-            "last_modified",
-            "last_modified_by",
             "original",
             "title",
             "description",
             "acknowledgement",
         )
-        read_only_fields = ("id", "original", "title", "description", "acknowledgement")
+        read_only_fields = default_timestamp_fields + (
+            "id",
+            "original",
+            "title",
+            "description",
+            "acknowledgement",
+        )
 
     @classmethod
     def make_queryset_eager(cls, queryset, user=None):
@@ -157,7 +159,10 @@ class VideoMinimalSerializer(ImageMinimalSerializer):
 
 
 class DictionaryEntryMinimalSerializer(
-    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
+    ReadOnlyVisibilityFieldMixin,
+    SearchResultPrefetchMixin,
+    DefaultTimestampFieldsMixin,
+    serializers.ModelSerializer,
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
     translations = TextListField(required=False, allow_empty=True)
@@ -165,8 +170,6 @@ class DictionaryEntryMinimalSerializer(
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
     )
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
     external_system = serializers.SlugRelatedField(slug_field="title", read_only=True)
 
     def __init__(self, *args, **kwargs):
@@ -178,12 +181,8 @@ class DictionaryEntryMinimalSerializer(
 
     class Meta:
         model = dictionary.DictionaryEntry
-        fields = (
+        fields = default_timestamp_fields + (
             "id",
-            "created",
-            "created_by",
-            "last_modified",
-            "last_modified_by",
             "visibility",
             "title",
             "type",
@@ -198,7 +197,10 @@ class DictionaryEntryMinimalSerializer(
 
 
 class SongMinimalSerializer(
-    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
+    ReadOnlyVisibilityFieldMixin,
+    SearchResultPrefetchMixin,
+    DefaultTimestampFieldsMixin,
+    serializers.ModelSerializer,
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
@@ -207,17 +209,11 @@ class SongMinimalSerializer(
     related_videos = RelatedVideoMinimalSerializer(
         many=True, required=False, read_only=True
     )
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Song
-        fields = (
+        fields = default_timestamp_fields + (
             "id",
-            "created",
-            "created_by",
-            "last_modified",
-            "last_modified_by",
             "visibility",
             "title",
             "title_translation",
@@ -230,7 +226,10 @@ class SongMinimalSerializer(
 
 
 class StoryMinimalSerializer(
-    ReadOnlyVisibilityFieldMixin, SearchResultPrefetchMixin, serializers.ModelSerializer
+    ReadOnlyVisibilityFieldMixin,
+    SearchResultPrefetchMixin,
+    DefaultTimestampFieldsMixin,
+    serializers.ModelSerializer,
 ):
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
@@ -239,17 +238,11 @@ class StoryMinimalSerializer(
     related_videos = RelatedVideoMinimalSerializer(
         many=True, required=False, read_only=True
     )
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Story
-        fields = (
+        fields = default_timestamp_fields + (
             "id",
-            "created",
-            "created_by",
-            "last_modified",
-            "last_modified_by",
             "visibility",
             "title",
             "title_translation",
