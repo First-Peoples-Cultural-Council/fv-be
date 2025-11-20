@@ -157,9 +157,22 @@ class DictionaryEntryResource(
 
         return super().get_or_init_instance(instance_loader, row)
 
+    def save_m2m(self, instance, row, **kwargs):
+        super().save_m2m(instance, row, **kwargs)
+
+        # Override to replace existing related entries
+        data_field = "related_entry_ids"
+        instance_field = "related_dictionary_entries"
+
+        if data_field in row:
+            new_values = row[data_field].split(",")
+            new_values = [value.strip() for value in new_values]
+            getattr(instance, instance_field).set(new_values)
+
     class Meta:
         model = DictionaryEntry
         clean_model_instances = True
         import_id_fields = ["id"]
         skip_unchanged = True
         report_skipped = True
+        use_bulk = False

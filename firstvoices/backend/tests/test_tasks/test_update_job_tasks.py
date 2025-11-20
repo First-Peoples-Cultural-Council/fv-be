@@ -1,5 +1,6 @@
 import uuid
 from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 import tablib
@@ -24,6 +25,24 @@ TEST_ENTRY_IDS = [
     "7120e5f5-de3a-48fd-a697-1529e2fbe3c3",
     "92782704-d2c9-47fc-b628-abdca150ed54",
 ]
+
+
+def setup_for_external_systems(site):
+    external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
+    external_system_1.save()
+    external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
+    external_system_2.save()
+
+    factories.DictionaryEntryFactory.create(
+        id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+        site=site,
+        external_system=external_system_1,
+        external_system_entry_id="FW123",
+    )
+
+    file_content = get_sample_file("update_job/external_system_fields.csv", "text/csv")
+    file = factories.FileFactory(content=file_content)
+    return external_system_1, external_system_2, file
 
 
 @pytest.mark.django_db
@@ -80,6 +99,26 @@ class TestBulkUpdateDryRun:
         validate_update_job(update_job.id)
         update_job = ImportJob.objects.get(id=update_job.id)
         return update_job
+
+    def validate_related_entries(self):
+        file_content = get_sample_file(
+            "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.updated_rows == 1
+        assert update_job.validation_report.error_rows == 0
 
     def test_update_task_logs(self, caplog):
         update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
@@ -299,22 +338,7 @@ class TestBulkUpdateDryRun:
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
-        external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
-        external_system_2.save()
-
-        factories.DictionaryEntryFactory.create(
-            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
-            site=self.site,
-            external_system=external_system_1,
-            external_system_entry_id="FW123",
-        )
-
-        file_content = get_sample_file(
-            "update_job/external_system_fields.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
+        _, _, file = setup_for_external_systems(self.site)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
@@ -424,6 +448,37 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 1
+
+    def test_related_entries_by_id_new_entries(self):
+        # Adding an entry with no related entries
+        factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+
+        # Entry to be added as the related entry
+        # For entries that are already present in the db
+        factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
+        )
+
+        self.validate_related_entries()
+
+    def test_related_entries_by_id_replace_existing_entries(self):
+        # Adding an entry with no related entries
+        existing_related_entry = factories.DictionaryEntryFactory(site=self.site)
+        primary_entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        primary_entry.related_dictionary_entries.add(existing_related_entry)
+        primary_entry.save()
+
+        # Entry to be added as the related entry
+        # For entries that are already present in the db
+        factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
+        )
+
+        self.validate_related_entries()
 
 
 @pytest.mark.django_db
@@ -673,22 +728,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
-        external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
-        external_system_2.save()
-
-        factories.DictionaryEntryFactory.create(
-            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
-            site=self.site,
-            external_system=external_system_1,
-            external_system_entry_id="FW123",
-        )
-
-        file_content = get_sample_file(
-            "update_job/external_system_fields.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
+        _, external_system_2, file = setup_for_external_systems(self.site)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
@@ -815,3 +855,75 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert entry2.title == "Word 2"  # unchanged
         assert entry2.type == "word"  # unchanged
         assert entry2.translations == []  # cleared
+
+    def test_related_entries_by_id_new_entries(self):
+        # Adding an entry with no related entries
+        primary_entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+
+        # Entry to be added as the related entry
+        # For entries that are already present in the db
+        new_related_entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
+        )
+
+        file_content = get_sample_file(
+            "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        primary_entry = DictionaryEntry.objects.get(id=primary_entry.id)
+        related_entries = primary_entry.related_dictionary_entries.all().values_list(
+            "id", flat=True
+        )
+        assert new_related_entry.id in related_entries
+
+    def test_related_entries_by_id_replace_existing_entries(self):
+        # Adding an entry with no related entries
+        existing_related_entry = factories.DictionaryEntryFactory(site=self.site)
+        primary_entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        primary_entry.related_dictionary_entries.add(existing_related_entry)
+        primary_entry.save()
+
+        # Entry to be added as the related entry
+        # For entries that are already present in the db
+        new_related_entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
+        )
+        new_related_entry_2 = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("02507a2e-d18a-4277-b0c2-21d59764be13")
+        )
+
+        file_content = get_sample_file(
+            "update_job/related_entries_by_id_replace_entries.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+        primary_entry = DictionaryEntry.objects.get(id=primary_entry.id)
+        related_entries = primary_entry.related_dictionary_entries.all().values_list(
+            "id", flat=True
+        )
+        assert existing_related_entry.id not in related_entries
+        assert new_related_entry.id in related_entries
+        assert new_related_entry_2.id in related_entries
