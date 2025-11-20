@@ -100,6 +100,26 @@ class TestBulkUpdateDryRun:
         update_job = ImportJob.objects.get(id=update_job.id)
         return update_job
 
+    def validate_related_entries(self):
+        file_content = get_sample_file(
+            "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id)
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.updated_rows == 1
+        assert update_job.validation_report.error_rows == 0
+
     def test_update_task_logs(self, caplog):
         update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
 
@@ -318,9 +338,7 @@ class TestBulkUpdateDryRun:
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1, external_system_2, file = setup_for_external_systems(
-            self.site
-        )
+        _, _, file = setup_for_external_systems(self.site)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
@@ -443,24 +461,7 @@ class TestBulkUpdateDryRun:
             site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
         )
 
-        file_content = get_sample_file(
-            "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
-        )
-
-        validate_update_job(update_job.id)
-
-        update_job = ImportJob.objects.get(id=update_job.id)
-        assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.updated_rows == 1
-        assert update_job.validation_report.error_rows == 0
+        self.validate_related_entries()
 
     def test_related_entries_by_id_replace_existing_entries(self):
         # Adding an entry with no related entries
@@ -477,24 +478,7 @@ class TestBulkUpdateDryRun:
             site=self.site, id=UUID("f93eb512-c0bc-49ac-bbf7-86ac1a9dc89d")
         )
 
-        file_content = get_sample_file(
-            "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
-        )
-
-        validate_update_job(update_job.id)
-
-        update_job = ImportJob.objects.get(id=update_job.id)
-        assert update_job.validation_status == JobStatus.COMPLETE
-        assert update_job.validation_report.updated_rows == 1
-        assert update_job.validation_report.error_rows == 0
+        self.validate_related_entries()
 
 
 @pytest.mark.django_db
@@ -744,9 +728,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1, external_system_2, file = setup_for_external_systems(
-            self.site
-        )
+        _, external_system_2, file = setup_for_external_systems(self.site)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
