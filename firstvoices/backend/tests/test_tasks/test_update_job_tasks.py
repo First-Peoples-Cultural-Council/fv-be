@@ -27,6 +27,24 @@ TEST_ENTRY_IDS = [
 ]
 
 
+def setup_for_external_systems(site):
+    external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
+    external_system_1.save()
+    external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
+    external_system_2.save()
+
+    factories.DictionaryEntryFactory.create(
+        id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
+        site=site,
+        external_system=external_system_1,
+        external_system_entry_id="FW123",
+    )
+
+    file_content = get_sample_file("update_job/external_system_fields.csv", "text/csv")
+    file = factories.FileFactory(content=file_content)
+    return external_system_1, external_system_2, file
+
+
 @pytest.mark.django_db
 class TestBulkUpdateDryRun:
     MIMETYPE = "text/csv"
@@ -300,22 +318,9 @@ class TestBulkUpdateDryRun:
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
-        external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
-        external_system_2.save()
-
-        factories.DictionaryEntryFactory.create(
-            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
-            site=self.site,
-            external_system=external_system_1,
-            external_system_entry_id="FW123",
+        external_system_1, external_system_2, file = setup_for_external_systems(
+            self.site
         )
-
-        file_content = get_sample_file(
-            "update_job/external_system_fields.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
@@ -739,22 +744,9 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         )
 
     def test_update_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
-        external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Fieldworks")
-        external_system_2.save()
-
-        factories.DictionaryEntryFactory.create(
-            id="ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
-            site=self.site,
-            external_system=external_system_1,
-            external_system_entry_id="FW123",
+        external_system_1, external_system_2, file = setup_for_external_systems(
+            self.site
         )
-
-        file_content = get_sample_file(
-            "update_job/external_system_fields.csv", self.MIMETYPE
-        )
-        file = factories.FileFactory(content=file_content)
         update_job = factories.ImportJobFactory(
             site=self.site,
             run_as_user=self.user,
