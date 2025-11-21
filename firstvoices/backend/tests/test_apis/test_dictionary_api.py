@@ -4,7 +4,11 @@ import pytest
 
 import backend.tests.factories.dictionary_entry
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.dictionary import (
+    DictionaryEntry,
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.tests import factories
 from backend.tests.test_apis.base.base_media_test import (
     MOCK_EMBED_LINK,
@@ -1130,6 +1134,124 @@ class TestDictionaryEndpoint(
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_create_external_system_fields(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
+
+        ExternalDictionaryEntrySystem.objects.create(title="External One")
+
+        data = {
+            "title": "Hello",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "team",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "external_system": "External One",
+            "external_system_entry_id": "abc-123",
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 201
+
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] == "External One"
+        assert response_data["externalSystemEntryId"] == "abc-123"
+
+        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
+        assert (
+            entry_in_db.external_system
+            and entry_in_db.external_system.title == "External One"
+        )
+        assert entry_in_db.external_system_entry_id == "abc-123"
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_update_external_system_fields_put(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
+
+        sys_a = ExternalDictionaryEntrySystem.objects.create(title="ExtA")
+        sys_b = ExternalDictionaryEntrySystem.objects.create(title="ExtB")
+
+        entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            title="Hello",
+            type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+            exclude_from_games=False,
+            exclude_from_kids=False,
+            external_system=sys_a,
+            external_system_entry_id="old-id",
+        )
+
+        data = {
+            "title": "Hello",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "public",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "external_system": "ExtB",
+            "external_system_entry_id": "new-id",
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] == "ExtB"
+        assert response_data["externalSystemEntryId"] == "new-id"
+
+        entry.refresh_from_db()
+        assert entry.external_system_id == sys_b.id
+        assert entry.external_system_entry_id == "new-id"
+
+    @pytest.mark.django_db
+    def test_dictionary_entry_patch_clear_external_system_fields(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
+
+        system = ExternalDictionaryEntrySystem.objects.create(title="ExtClear")
+        entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            title="Hello",
+            type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+            external_system=system,
+            external_system_entry_id="to-clear",
+        )
+
+        data = {
+            "external_system": None,
+            "external_system_entry_id": "",
+        }
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 200
+
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] is None
+        assert response_data["externalSystemEntryId"] == ""
+
+        entry.refresh_from_db()
+        assert entry.external_system is None
+        assert entry.external_system_entry_id == ""
 
     @pytest.mark.django_db
     def test_dictionary_entry_update_related_media(self):
