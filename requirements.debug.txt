@@ -1,7 +1,7 @@
 -r requirements.txt
 
 # Debug tools --------------------------------------
-django-debug-toolbar==6.0.0  # https://github.com/jazzband/django-debug-toolbar
+django-debug-toolbar==6.1.0  # https://github.com/jazzband/django-debug-toolbar
 django-extensions==4.1  # https://github.com/django-extensions/django-extensions
 
 # Linting ------------------------------------------
