@@ -25,6 +25,25 @@ TEST_ENTRY_IDS = [
     "7120e5f5-de3a-48fd-a697-1529e2fbe3c3",
     "92782704-d2c9-47fc-b628-abdca150ed54",
 ]
+TEST_AUDIO_IDS = [
+    "7763ae50-1b6e-46bc-bd3a-91037ac736cb",
+    "addd0095-581f-40b9-afef-fbb394876df7",
+]
+
+TEST_DOCUMENT_IDS = [
+    "0c0cdd67-2858-4e15-8092-0df9d061e28d",
+    "a00d78b1-159b-4c6a-b417-96d4e5819fdd",
+]
+
+TEST_IMAGE_IDS = [
+    "daf8e74f-f20b-4c81-95c2-7dd744277009",
+    "90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",
+]
+
+TEST_VIDEO_IDS = [
+    "4764e764-7830-4bea-b30e-4e35cc93b12b",
+    "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
+]
 
 
 def setup_for_external_systems(site):
@@ -480,6 +499,57 @@ class TestBulkUpdateDryRun:
 
         self.validate_related_entries()
 
+    def test_related_media_ids_multiple(self):
+        old_audio_1 = factories.AudioFactory.create(site=self.site)
+        old_audio_2 = factories.AudioFactory.create(site=self.site)
+        old_doc_1 = factories.DocumentFactory.create(site=self.site)
+        old_doc_2 = factories.DocumentFactory.create(site=self.site)
+        old_img_1 = factories.ImageFactory.create(site=self.site)
+        old_img_2 = factories.ImageFactory.create(site=self.site)
+        old_video_1 = factories.VideoFactory.create(site=self.site)
+        old_video_2 = factories.VideoFactory.create(site=self.site)
+
+        # Adding existing entries
+        entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        entry.related_audio.add(old_audio_1)
+        entry.related_audio.add(old_audio_2)
+        entry.related_images.add(old_img_1)
+        entry.related_images.add(old_img_2)
+        entry.related_documents.add(old_doc_1)
+        entry.related_documents.add(old_doc_2)
+        entry.related_videos.add(old_video_1)
+        entry.related_videos.add(old_video_2)
+
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[1], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[1], site=self.site)
+
+        file_content = get_sample_file(
+            "update_job/related_media_ids_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            mode=ImportJobMode.UPDATE,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_update_job(update_job.id)
+
+        import_job = ImportJob.objects.get(id=update_job.id)
+        validation_report = import_job.validation_report
+
+        assert validation_report.error_rows == 0
+        assert validation_report.updated_rows == 1
+
 
 @pytest.mark.django_db
 class TestBulkUpdate(IgnoreTaskResultsMixin):
@@ -927,3 +997,99 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert existing_related_entry.id not in related_entries
         assert new_related_entry.id in related_entries
         assert new_related_entry_2.id in related_entries
+
+    def test_related_media_ids_multiple(self):
+        old_audio_1 = factories.AudioFactory.create(site=self.site)
+        old_audio_2 = factories.AudioFactory.create(site=self.site)
+        old_doc_1 = factories.DocumentFactory.create(site=self.site)
+        old_doc_2 = factories.DocumentFactory.create(site=self.site)
+        old_img_1 = factories.ImageFactory.create(site=self.site)
+        old_img_2 = factories.ImageFactory.create(site=self.site)
+        old_video_1 = factories.VideoFactory.create(site=self.site)
+        old_video_2 = factories.VideoFactory.create(site=self.site)
+
+        # Adding existing entries
+        entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        entry.related_audio.add(old_audio_1)
+        entry.related_audio.add(old_audio_2)
+        entry.related_images.add(old_img_1)
+        entry.related_images.add(old_img_2)
+        entry.related_documents.add(old_doc_1)
+        entry.related_documents.add(old_doc_2)
+        entry.related_videos.add(old_video_1)
+        entry.related_videos.add(old_video_2)
+
+        new_audio_1 = factories.AudioFactory.create(
+            id=TEST_AUDIO_IDS[0], site=self.site
+        )
+        new_audio_2 = factories.AudioFactory.create(
+            id=TEST_AUDIO_IDS[1], site=self.site
+        )
+        new_doc_1 = factories.DocumentFactory.create(
+            id=TEST_DOCUMENT_IDS[0], site=self.site
+        )
+        new_doc_2 = factories.DocumentFactory.create(
+            id=TEST_DOCUMENT_IDS[1], site=self.site
+        )
+        new_img_1 = factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
+        new_img_2 = factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=self.site)
+        new_video_1 = factories.VideoFactory.create(
+            id=TEST_VIDEO_IDS[0], site=self.site
+        )
+        new_video_2 = factories.VideoFactory.create(
+            id=TEST_VIDEO_IDS[1], site=self.site
+        )
+
+        file_content = get_sample_file(
+            "update_job/related_media_ids_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            mode=ImportJobMode.UPDATE,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_update_job(update_job.id)
+
+        entry = DictionaryEntry.objects.get(id=entry.id)
+        related_images = [
+            str(item_id)
+            for item_id in entry.related_images.all().values_list(flat=True)
+        ]
+        related_audio = [
+            str(item_id) for item_id in entry.related_audio.all().values_list(flat=True)
+        ]
+        related_videos = [
+            str(item_id)
+            for item_id in entry.related_videos.all().values_list(flat=True)
+        ]
+        related_documents = [
+            str(item_id)
+            for item_id in entry.related_documents.all().values_list(flat=True)
+        ]
+
+        # Verify old entries are not present
+        assert old_audio_1.id not in related_audio
+        assert old_audio_2.id not in related_audio
+        assert old_img_1.id not in related_images
+        assert old_img_2.id not in related_images
+        assert old_video_1.id not in related_videos
+        assert old_video_2.id not in related_videos
+        assert old_doc_1.id not in related_documents
+        assert old_doc_2.id not in related_documents
+
+        # Verify new entries are added
+        assert new_audio_1.id in related_audio
+        assert new_audio_2.id in related_audio
+        assert new_img_1.id in related_images
+        assert new_img_2.id in related_images
+        assert new_video_1.id in related_videos
+        assert new_video_2.id in related_videos
+        assert new_doc_1.id in related_documents
+        assert new_doc_2.id in related_documents
