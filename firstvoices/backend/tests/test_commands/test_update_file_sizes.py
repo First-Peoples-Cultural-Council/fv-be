@@ -135,3 +135,30 @@ class TestUpdateFileSizes:
         assert file.size is None
         assert imagefile.size is None
         assert videofile.size is None
+
+    def test_timestamps(self):
+        # ensure last_modified is not updated, and that system_last_modified is updated
+        site = factories.SiteFactory.create()
+        file, imagefile, videofile = self.setup_files_with_missing_sizes(site)
+
+        old_last_modified = file.last_modified
+        old_image_last_modified = imagefile.last_modified
+        old_video_last_modified = videofile.last_modified
+
+        call_command("update_file_sizes", site_slugs=site.slug)
+        file.refresh_from_db()
+        imagefile.refresh_from_db()
+        videofile.refresh_from_db()
+
+        assert file.last_modified == old_last_modified
+        assert imagefile.last_modified == old_image_last_modified
+        assert videofile.last_modified == old_video_last_modified
+
+        assert file.system_last_modified != file.last_modified
+        assert file.system_last_modified > file.last_modified
+
+        assert imagefile.system_last_modified != imagefile.last_modified
+        assert imagefile.system_last_modified > imagefile.last_modified
+
+        assert videofile.system_last_modified != videofile.last_modified
+        assert videofile.system_last_modified > videofile.last_modified

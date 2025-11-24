@@ -2,6 +2,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from backend.models import Site
 from backend.models.files import File
@@ -26,7 +27,9 @@ class Command(BaseCommand):
     def update_file_size(self, file_instance, model):
         file_size = file_instance.content.size
         if file_size and file_instance.size != file_size:
-            model.objects.filter(id=file_instance.id).update(size=file_size)
+            model.objects.filter(id=file_instance.id).update(
+                size=file_size, system_last_modified=timezone.now()
+            )
         elif not file_size:
             # File size not found, log a warning
             self.logger.warning(
