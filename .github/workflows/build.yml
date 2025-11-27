@@ -16,9 +16,9 @@ jobs:
     name: pytest
     runs-on: ubuntu-22.04
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
-#    strategy:
-#      matrix:
-#        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
+    strategy:
+      matrix:
+        python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
 #        group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
@@ -41,7 +41,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
-      # Upgrade pyOpenSSL - weird issue only impacting AWS EC2 AMI images
       - name: Upgrade pyOpenSSL
         run: pip install --upgrade pyOpenSSL
       - name: Setup ffmpeg (with retries)
