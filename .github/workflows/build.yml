@@ -16,10 +16,10 @@ jobs:
     name: pytest
     runs-on: ubuntu-22.04
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
-    strategy:
-      matrix:
-        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
-        group: [ 1, 2, 3, 4, 5 ]
+#    strategy:
+#      matrix:
+#        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
+#        group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
         image: postgres:latest
@@ -54,7 +54,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
+          pytest --cache-clear --cov --cov-config=.coveragerc
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -472,4 +472,3 @@ jobs:
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
           ecr_repo_name: "fv-be"
-          
