@@ -41,6 +41,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
+      # Upgrade pyOpenSSL - weird issue only impacting AWS EC2 AMI images
+      - name: Upgrade pyOpenSSL
+        run: pip install --upgrade pyOpenSSL
       - name: Setup ffmpeg (with retries)
         uses: ./.github/workflows/setup-ffmpeg
         id: setup-ffmpeg
