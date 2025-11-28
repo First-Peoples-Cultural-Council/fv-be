@@ -18,8 +18,8 @@ jobs:
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
-        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
-        group: [ 1, 2, 3, 4, 5 ]
+        python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
+#        group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
         image: postgres:latest
@@ -41,6 +41,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
+      - name: Upgrade pyOpenSSL
+        run: pip install --upgrade pyOpenSSL
       - name: Setup ffmpeg (with retries)
         uses: ./.github/workflows/setup-ffmpeg
         id: setup-ffmpeg
@@ -54,7 +56,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
+          pytest --cache-clear --cov --cov-config=.coveragerc
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -154,7 +156,6 @@ jobs:
         uses: actions/download-artifact@v6
       - name: Run coverage
         run: |
-          coverage combine ./coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
@@ -472,4 +473,3 @@ jobs:
           aws-access-key-id: ${{ secrets.FPCC_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.FPCC_AWS_SECRET_ACCESS_KEY }}
           ecr_repo_name: "fv-be"
-          
