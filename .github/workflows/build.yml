@@ -62,7 +62,7 @@ jobs:
         with:
           if-no-files-found: error
           include-hidden-files: true
-          name: coverage${{ matrix.group }}
+          name: coverage
           path: firstvoices/.coverage
 
 
@@ -156,6 +156,7 @@ jobs:
         uses: actions/download-artifact@v6
       - name: Run coverage
         run: |
+          coverage combine
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
