@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
-#        group: [ 1, 2, 3, 4, 5 ]
+        group: [ 1 ]
     services:
       postgres:
         image: postgres:latest
@@ -56,7 +56,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cache-clear --cov --cov-config=.coveragerc
+          pytest --cache-clear --cov --cov-config=.coveragerc --splits 1 --group ${{ matrix.group }}
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -156,7 +156,7 @@ jobs:
         uses: actions/download-artifact@v6
       - name: Run coverage
         run: |
-          coverage combine
+          coverage combine ./coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
