@@ -15,17 +15,25 @@ class TestRemoveSpeakerLinks:
     TEST_ENTRY_UUID_2 = "4a2e3113-5c7e-44df-9e6a-cc11a10f5fa0"
     TEST_ENTRY_UUID_3 = "dfcaae4d-f01f-4fc5-b0ca-7366e7fdf8b9"
 
+    TEST_AUDIO_UUID_1 = "135740ac-b271-46dd-8d54-5f4df42f519b"
+    TEST_AUDIO_UUID_2 = "d47a1375-ff3e-4d2b-9275-168cefc1e92d"
+    TEST_AUDIO_UUID_3 = "0e952fbf-b122-4feb-a91c-11e302e36502"
+
     def setup_method(self):
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
 
     def setup_entries_with_audio(self, speaker_name):
         person = factories.PersonFactory(name=speaker_name, site=self.site)
 
-        related_audio = factories.AudioFactory.create(site=self.site)
+        related_audio = factories.AudioFactory.create(
+            site=self.site, id=self.TEST_AUDIO_UUID_1
+        )
         related_audio.speakers.set([person])
         related_audio.save()
 
-        related_audio_no_speaker = factories.AudioFactory.create(site=self.site)
+        related_audio_no_speaker = factories.AudioFactory.create(
+            site=self.site, id=self.TEST_AUDIO_UUID_2
+        )
 
         entry1 = factories.DictionaryEntryFactory.create(
             id=self.TEST_ENTRY_UUID_1,
@@ -48,12 +56,13 @@ class TestRemoveSpeakerLinks:
         entry3.related_audio.set([related_audio, related_audio_no_speaker])
         entry3.save()
 
-        audio_ids = Audio.objects.filter(site=self.site).values_list("id", flat=True)
-        return audio_ids, person
+        return [related_audio.id, related_audio_no_speaker.id], person
 
     def setup_typo_audio(self, typo_name):
         typo_person = factories.PersonFactory(name=typo_name, site=self.site)
-        typo_audio = factories.AudioFactory.create(site=self.site)
+        typo_audio = factories.AudioFactory.create(
+            site=self.site, id=self.TEST_AUDIO_UUID_3
+        )
         typo_audio.speakers.set([typo_person])
         typo_audio.save()
         return typo_audio
@@ -186,6 +195,20 @@ class TestRemoveSpeakerLinks:
 
         self.assert_caplog_text(caplog, "John Doe", self.site.slug, str(csv_file))
         assert "Dry run mode enabled. No changes will be made." in caplog.text
+
+        assert (
+            f"[Dry Run] Would remove links to audio {self.TEST_AUDIO_UUID_1} from entry {entries[0].title} "
+            f"and add speaker 'John Doe' to affected audio instances."
+        ) in caplog.text
+        assert (
+            f"[Dry Run] Would remove links to audio {self.TEST_AUDIO_UUID_2} from entry {entries[1].title} "
+            f"and add speaker 'John Doe' to affected audio instances."
+        )
+        assert (
+            f"[Dry Run] Would remove links to audio {self.TEST_AUDIO_UUID_1}, {self.TEST_AUDIO_UUID_2} "
+            f"from entry {entries[2].title} and add speaker 'John Doe' to affected audio instances."
+        )
+
         assert (
             f"[Dry Run] Would remove audio link {audio_ids[0]} from entry {entries[0].title}."
             in caplog.text
@@ -211,8 +234,12 @@ class TestRemoveSpeakerLinks:
         assert entry2.related_audio.count() == 1
         entry3 = DictionaryEntry.objects.get(id=self.TEST_ENTRY_UUID_3)
         assert entry3.related_audio.count() == 1
+
         audio = Audio.objects.get(id=audio_ids[0])
         assert person in audio.speakers.all()
+
+        audio2 = Audio.objects.get(id=audio_ids[1])
+        assert person not in audio2.speakers.all()
 
         self.assert_caplog_text(caplog, "John Doe", self.site.slug, None)
         output_file = (
@@ -222,8 +249,8 @@ class TestRemoveSpeakerLinks:
 
         expected_output_csv_content = (
             "entry_id,entry_title,audio_id,audio_title,speaker_name,site\n"
-            f"{self.TEST_ENTRY_UUID_1},{entry1.title},{audio_ids[0]},{audio.title},John Doe,{self.site.slug}\n"
-            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio_ids[0]},{audio.title},John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_1},{entry1.title},{audio.id},{audio.title},John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio.id},{audio.title},John Doe,{self.site.slug}\n"
         )
 
         assert output_file.exists()
@@ -267,12 +294,10 @@ class TestRemoveSpeakerLinks:
 
         expected_output_content = (
             "entry_id,entry_title,audio_id,audio_title,speaker_name,site\n"
-            f"{self.TEST_ENTRY_UUID_1},{entry1.title},{audio_ids[0]},{audio.title},John Doe,{self.site.slug}\n"
-            f"{self.TEST_ENTRY_UUID_2},{entry2.title},{audio_ids[1]},{Audio.objects.get(id=audio_ids[1]).title},"
-            f"John Doe,{self.site.slug}\n"
-            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio_ids[0]},{audio.title},John Doe,{self.site.slug}\n"
-            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio_ids[1]},{Audio.objects.get(id=audio_ids[1]).title},"
-            f"John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_1},{entry1.title},{audio.id},{audio.title},John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_2},{entry2.title},{audio2.id},{audio2.title},John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio.id},{audio.title},John Doe,{self.site.slug}\n"
+            f"{self.TEST_ENTRY_UUID_3},{entry3.title},{audio2.id},{audio2.title},John Doe,{self.site.slug}\n"
         )
         assert output_file.exists()
         with open(output_file) as f:
