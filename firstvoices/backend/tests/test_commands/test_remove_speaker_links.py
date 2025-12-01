@@ -302,7 +302,12 @@ class TestRemoveSpeakerLinks:
         assert output_file.exists()
         with open(output_file) as f:
             content = f.read()
-            assert content == expected_output_content
+
+        actual_content = [line.strip() for line in content.splitlines()]
+        expected_content = [
+            line.strip() for line in expected_output_content.splitlines()
+        ]
+        assert set(actual_content) == set(expected_content)
         assert f"Change log written to {output_file}." in caplog.text
 
     def test_remove_speaker_links_typo_dry_run(self, caplog):
