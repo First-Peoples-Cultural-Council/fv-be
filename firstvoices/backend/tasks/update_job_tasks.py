@@ -70,13 +70,12 @@ def clean_update_csv(
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def process_update_job_data(
-    data, update_job, missing_referenced_media=[], dry_run=True
-):
+def process_update_job_data(data, update_job, dry_run=True):
     """
     Primary method that cleans the CSV data, uses resources to update models, and generates a report.
     Used for both dry_run and actual imports.
     """
+    missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
     missing_entries = get_missing_referenced_entries(data, update_job.site.id)
 
     accepted_headers, invalid_headers, cleaned_data = clean_update_csv(
@@ -113,12 +112,8 @@ def run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
-
     try:
-        process_update_job_data(
-            data, update_job, missing_referenced_media, dry_run=False
-        )
+        process_update_job_data(data, update_job, dry_run=False)
         update_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -133,12 +128,8 @@ def dry_run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
-
     try:
-        process_update_job_data(
-            data, update_job, missing_referenced_media, dry_run=True
-        )
+        process_update_job_data(data, update_job, dry_run=True)
         update_job.validation_status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)

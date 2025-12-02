@@ -20,7 +20,9 @@ runs:
             echo "The latest Helm Release version in the Helm repo is ${{  inputs.remote_helm_version  }}";
             echo "version: ${{ inputs.remote_helm_version }}" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null;
 
-    -   uses: azure/setup-helm@v4.2.0
+    -   uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.19.2
         id: install
 
     -   name: Check helm diff
