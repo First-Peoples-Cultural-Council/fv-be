@@ -125,10 +125,11 @@ def not_raises(exception):
         raise pytest.fail(f"Did raise {exception}")
 
 
-def get_sample_file(filename, mimetype, title=None):
-    path = (
-        os.path.dirname(os.path.realpath(__file__)) + f"/factories/resources/{filename}"
-    )
+def get_sample_file(filename, mimetype, file_dir="factories/resources", title=None):
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)), file_dir, filename)
+    # path = (
+    #     os.path.dirname(os.path.realpath(__file__)) + f"{filename}"
+    # )
     file = open(path, "rb")
     return InMemoryUploadedFile(
         file,
