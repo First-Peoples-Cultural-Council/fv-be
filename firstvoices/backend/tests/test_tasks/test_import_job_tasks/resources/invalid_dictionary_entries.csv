@@ -1,0 +1,7 @@
+﻿title,type,visibility,acknowledgement,include_in_games,include_on_kids_site,part_of_speech,Ignorable_comments_column
+Phrase 1,phrase,Team,123,FALSE,TRUE,Suffix,Valid entry for control
+Word 1,xyz,Public,123,TRUE,FALSE,Adjective,invalid type entry
+,word,Public,123,FALSE,TRUE,Adjective,Missing title
+Phrase 3,phrase,notAValidVis,123,FALSE,TRUE,Suffix,invalid visibility
+Phrase 4,phrase,Team,123,notBoolValue,TRUE,Adjective,invalid boolean value
+Word 1,xyz,Public,123,TRUE,FALSE,invalid_part,invalid_part_of_speech

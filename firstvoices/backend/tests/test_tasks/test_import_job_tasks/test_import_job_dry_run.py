@@ -1,7 +1,11 @@
+from unittest.mock import patch
+
 import pytest
+import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
+from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
@@ -221,9 +225,10 @@ class TestImportJobDryRun:
         assert validation_report.new_rows == 4
         assert validation_report.error_rows == 0
 
-    def test_mix_of_invalid_columns(self):
+    def test_mix_of_invalid_rows(self):
         # Tests for invalid values present in the following columns
         # type, title, visibility, boolean(include_in_games, include_on_kids_site), part_of_speech
+        # Also verify the CSV generated
 
         file_content = get_sample_file(
             file_dir=self.MEDIA_FILES_DIR,
@@ -255,6 +260,29 @@ class TestImportJobDryRun:
         assert validation_report.new_rows == 1  # control row
         assert len(error_rows) == 5
         assert error_rows_numbers == [2, 3, 4, 5, 6]
+
+        # re-opening the file
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_invalid_rows.csv",
+            mimetype=self.MIMETYPE,
+        )
+        input_csv_table = tablib.Dataset().load(
+            file_content.read().decode("utf-8-sig"), format="csv"
+        )
+
+        failed_rows_csv_table = tablib.Dataset().load(
+            import_job.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
+        assert len(failed_rows_csv_table) == 5
+
+        for i in range(0, len(error_rows_numbers)):
+            input_index = (
+                error_rows_numbers[i] - 1
+            )  # since we do +1 while generating error row numbers
+            assert input_csv_table[input_index] == failed_rows_csv_table[i]
 
     def test_invalid_categories(self):
         file_content = get_sample_file(
@@ -313,3 +341,156 @@ class TestImportJobDryRun:
             "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
             in validation_error_row.errors
         )
+
+    def test_dry_run_failed(self, caplog):
+        # Valid CSV
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_dry_run_failed.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        with patch(
+            "backend.tasks.import_job_tasks.process_import_job_data",
+            side_effect=Exception("Random exception."),
+        ):
+            validate_import_job(import_job.id)
+
+            # Refreshed import job instance
+            import_job = ImportJob.objects.get(id=import_job.id)
+            assert import_job.validation_status == JobStatus.FAILED
+            assert "Random exception." in caplog.text
+
+    def test_failed_rows_csv_not_generated_on_valid_rows(self):
+        # To verify that failedRowsCsv is not generated if all rows in the input file are valid.
+
+        # Valid CSV
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_failed_rows_csv_not_generated_on_valid_rows.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        # Refreshed instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        assert import_job.failed_rows_csv is None
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
+    )
+    def test_invalid_validation_status(self, validation_status, caplog):
+        # Valid CSV
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_invalid_validation_status.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=validation_status,
+        )
+
+        validate_import_job(import_job.id)
+        import_job = ImportJob.objects.get(id=import_job.id)
+        assert import_job.validation_status == JobStatus.FAILED
+        assert "This job cannot be run due to consistency issues." in caplog.text
+
+    @pytest.mark.parametrize(
+        "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    )
+    def test_invalid_job_status(self, status, caplog):
+        # Valid CSV
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_invalid_job_status.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            status=status,
+        )
+
+        validate_import_job(import_job.id)
+        import_job = ImportJob.objects.get(id=import_job.id)
+        assert import_job.validation_status == JobStatus.FAILED
+        assert (
+            "This job could not be started as it is either queued, or already running or completed. "
+            f"ImportJob id: {import_job.id}." in caplog.text
+        )
+
+    def test_failed_rows_csv_is_updated_or_cleared_after_revalidation(self):
+        # If the last validation is successful, the failed rows csv should
+        # be updated or deleted
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_failed_rows_csv_invalid_category.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+
+        assert validation_report.error_rows == 1
+        assert error_rows_numbers == [2]
+        assert import_job.failed_rows_csv is not None
+        failed_rows_csv_id = import_job.failed_rows_csv.id
+
+        # Adding specified invalid_category in the file as a category to the site
+        factories.CategoryFactory.create(title="invalid", site=self.site)
+
+        # Validating again
+        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+
+        assert validation_report.error_rows == 0
+        assert error_rows_numbers == []
+        assert import_job.failed_rows_csv is None
+
+        import_job_csv = File.objects.filter(id=failed_rows_csv_id)
+        assert len(import_job_csv) == 0

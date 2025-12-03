@@ -192,158 +192,49 @@
 #         import_job.validation_status = JobStatus.ACCEPTED
 #         import_job.save()
 #         validate_import_job(import_job.id)
+
+#     def test_failed_rows_csv_deleted_and_replaced(self):
+#         # Start with a validated import job that has missing media
+#         import_job = self.import_with_missing_media()
+#         first_failed_rows_csv_id = import_job.failed_rows_csv.id
 #
-#
-#
-#     def test_dry_run_failed(self, caplog):
-#         file = factories.FileFactory(
-#             content=get_sample_file("import_job/all_valid_columns.csv", self.MIMETYPE)
-#         )
-#
-#         import_job = factories.ImportJobFactory(
+#         # Add some of the media to the db
+#         factories.FileFactory(
 #             site=self.site,
-#             run_as_user=self.user,
-#             data=file,
-#             validation_status=JobStatus.ACCEPTED,
+#             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+#             import_job=import_job,
 #         )
-#
-#         with patch(
-#             "backend.tasks.import_job_tasks.process_import_job_data",
-#             side_effect=Exception("Random exception."),
-#         ):
-#             validate_import_job(import_job.id)
-#
-#             # Updated import job instance
-#             import_job = ImportJob.objects.get(id=import_job.id)
-#             assert import_job.validation_status == JobStatus.FAILED
-#             assert "Random exception." in caplog.text
-#
-#     def test_failed_rows_csv(self):
-#         import_job = self.import_invalid_dictionary_entries()
-#         validation_report = import_job.validation_report
-#         error_rows = validation_report.rows.all()
-#         error_rows_numbers = list(
-#             validation_report.rows.order_by("row_number").values_list(
-#                 "row_number", flat=True
-#             )
-#         )
-#         assert len(error_rows) == 5
-#         assert error_rows_numbers == [2, 3, 4, 5, 6]
-#
-#         # Reading actual file
-#         file_content = get_sample_file(
-#             "import_job/invalid_dictionary_entries.csv", self.MIMETYPE
-#         )
-#         input_csv_table = tablib.Dataset().load(
-#             file_content.read().decode("utf-8-sig"), format="csv"
-#         )
-#
-#         failed_rows_csv_table = tablib.Dataset().load(
-#             import_job.failed_rows_csv.content.read().decode("utf-8-sig"),
-#             format="csv",
-#         )
-#
-#         assert len(failed_rows_csv_table) == 5
-#
-#         for i in range(0, len(error_rows_numbers)):
-#             input_index = (
-#                 error_rows_numbers[i] - 1
-#             )  # since we do +1 while generating error row numbers
-#             assert input_csv_table[input_index] == failed_rows_csv_table[i]
-#
-#     def test_failed_rows_csv_not_generated_on_valid_rows(self):
-#         # To verify no failedRowsCsv is generated if all rows
-#         # in the input file are valid.
-#
-#         import_job = self.import_minimal_dictionary_entries()
-#         assert import_job.failed_rows_csv is None
-#
-#     @pytest.mark.parametrize(
-#         "validation_status",
-#         [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
-#     )
-#     def test_invalid_validation_status(self, validation_status, caplog):
-#         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-#         file = factories.FileFactory(content=file_content)
-#         import_job = factories.ImportJobFactory(
+#         factories.FileFactory(
 #             site=self.site,
-#             run_as_user=self.user,
-#             data=file,
-#             validation_status=validation_status,
+#             content=get_sample_file("sample-document.pdf", "application/pdf"),
+#             import_job=import_job,
 #         )
-#
-#         validate_import_job(import_job.id)
-#         import_job = ImportJob.objects.get(id=import_job.id)
-#         assert import_job.validation_status == JobStatus.FAILED
-#         assert "This job cannot be run due to consistency issues." in caplog.text
-#
-#     @pytest.mark.parametrize(
-#         "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
-#     )
-#     def test_invalid_job_status(self, status, caplog):
-#         file_content = get_sample_file("import_job/minimal.csv", self.MIMETYPE)
-#         file = factories.FileFactory(content=file_content)
-#         import_job = factories.ImportJobFactory(
+#         factories.ImageFileFactory(
 #             site=self.site,
-#             run_as_user=self.user,
-#             data=file,
-#             validation_status=JobStatus.ACCEPTED,
-#             status=status,
+#             content=get_sample_file("sample-image.jpg", "image/jpeg"),
+#             import_job=import_job,
 #         )
-#
-#         validate_import_job(import_job.id)
-#         import_job = ImportJob.objects.get(id=import_job.id)
-#         assert import_job.validation_status == JobStatus.FAILED
-#         assert (
-#             "This job could not be started as it is either queued, or already running or completed. "
-#             f"ImportJob id: {import_job.id}." in caplog.text
-#         )
-#
-#     def test_failed_rows_csv_is_updated_or_cleared_after_revalidation(self):
-#         # If the last validation is successful, the failed rows csv should
-#         # be updated or deleted
-#         file_content = get_sample_file("import_job/invalid_m2m.csv", self.MIMETYPE)
-#         file = factories.FileFactory(content=file_content)
-#         import_job = factories.ImportJobFactory(
-#             site=self.site,
-#             run_as_user=self.user,
-#             data=file,
-#             validation_status=JobStatus.ACCEPTED,
-#         )
-#         validate_import_job(import_job.id)
-#
-#         import_job = ImportJob.objects.get(id=import_job.id)
-#         validation_report = import_job.validation_report
-#         error_rows_numbers = list(
-#             validation_report.rows.order_by("row_number").values_list(
-#                 "row_number", flat=True
-#             )
-#         )
-#
-#         assert validation_report.error_rows == 1
-#         assert error_rows_numbers == [2]
-#         assert import_job.failed_rows_csv is not None
-#
-#         # Adding invalid_category as a category to the site
-#         factories.CategoryFactory.create(title="invalid", site=self.site)
 #
 #         # Validating again
 #         import_job.validation_status = JobStatus.ACCEPTED
 #         import_job.save()
 #         validate_import_job(import_job.id)
 #
-#         import_job = ImportJob.objects.get(id=import_job.id)
-#         validation_report = import_job.validation_report
-#         error_rows_numbers = list(
-#             validation_report.rows.order_by("row_number").values_list(
-#                 "row_number", flat=True
-#             )
+#         revalidated_import_job = ImportJob.objects.get(id=import_job.id)
+#
+#         # Check that the out of date csv has been deleted
+#         first_failed_rows_csv = File.objects.filter(
+#             site=self.site, id=first_failed_rows_csv_id
 #         )
+#         assert len(first_failed_rows_csv) == 0
 #
-#         assert validation_report.error_rows == 0
-#         assert error_rows_numbers == []
-#         assert import_job.failed_rows_csv is None
-#
+#         # Confirm there is a new csv
+#         assert first_failed_rows_csv_id != revalidated_import_job.failed_rows_csv.id
+#         assert revalidated_import_job.failed_rows_csv is not None
+#         validation_report = revalidated_import_job.validation_report
+#         assert validation_report.error_rows == 1
+# #
+
 #     def test_missing_media(self):
 #         import_job = self.import_with_missing_media()
 #         error_rows = import_job.validation_report.rows.all().order_by("row_number")
@@ -415,56 +306,6 @@
 #         assert validation_report.error_rows == 0
 #         assert validation_report.rows.count() == 0
 #
-#     def test_failed_rows_csv_deleted(self):
-#         # Start with a validated import job that has missing media
-#         import_job = self.import_with_missing_media()
-#         failed_rows_csv_id = import_job.failed_rows_csv.id
-#
-#         self.add_missing_media_and_validate(import_job)
-#
-#         import_job_csv = File.objects.filter(id=failed_rows_csv_id)
-#         assert len(import_job_csv) == 0
-#
-#     def test_failed_rows_csv_deleted_and_replaced(self):
-#         # Start with a validated import job that has missing media
-#         import_job = self.import_with_missing_media()
-#         first_failed_rows_csv_id = import_job.failed_rows_csv.id
-#
-#         # Add some of the media to the db
-#         factories.FileFactory(
-#             site=self.site,
-#             content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
-#             import_job=import_job,
-#         )
-#         factories.FileFactory(
-#             site=self.site,
-#             content=get_sample_file("sample-document.pdf", "application/pdf"),
-#             import_job=import_job,
-#         )
-#         factories.ImageFileFactory(
-#             site=self.site,
-#             content=get_sample_file("sample-image.jpg", "image/jpeg"),
-#             import_job=import_job,
-#         )
-#
-#         # Validating again
-#         import_job.validation_status = JobStatus.ACCEPTED
-#         import_job.save()
-#         validate_import_job(import_job.id)
-#
-#         revalidated_import_job = ImportJob.objects.get(id=import_job.id)
-#
-#         # Check that the out of date csv has been deleted
-#         first_failed_rows_csv = File.objects.filter(
-#             site=self.site, id=first_failed_rows_csv_id
-#         )
-#         assert len(first_failed_rows_csv) == 0
-#
-#         # Confirm there is a new csv
-#         assert first_failed_rows_csv_id != revalidated_import_job.failed_rows_csv.id
-#         assert revalidated_import_job.failed_rows_csv is not None
-#         validation_report = revalidated_import_job.validation_report
-#         assert validation_report.error_rows == 1
 #
 #     def test_related_audio_speakers(self):
 #         file_content = get_sample_file("import_job/related_audio.csv", self.MIMETYPE)
