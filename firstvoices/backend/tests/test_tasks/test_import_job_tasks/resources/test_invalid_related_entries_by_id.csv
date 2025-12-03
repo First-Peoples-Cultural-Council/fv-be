@@ -1,0 +1,3 @@
+﻿title,type,related_entry_ids
+test_invalid_related_entries_by_id_word_1,  word," invalid_uuid,invalid"
+test_invalid_related_entries_by_id_word_2,WORD,d11ab39f-7767-4d34-9145-37c51006ba73
