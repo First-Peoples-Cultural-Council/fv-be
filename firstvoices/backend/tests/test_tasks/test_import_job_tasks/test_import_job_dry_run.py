@@ -5,6 +5,7 @@ import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
+from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
@@ -494,3 +495,44 @@ class TestImportJobDryRun:
 
         import_job_csv = File.objects.filter(id=failed_rows_csv_id)
         assert len(import_job_csv) == 0
+
+    def test_dictionary_entry_external_system_fields(self):
+        external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_1.save()
+        external_system_2 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_2.save()
+
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_dictionary_entry_external_system_fields.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+        # Refreshed instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        accepted_columns = validation_report.accepted_columns
+        ignored_columns = validation_report.ignored_columns
+
+        assert validation_report.new_rows == 2
+        assert validation_report.error_rows == 0
+
+        expected_valid_columns = [
+            "title",
+            "type",
+            "external_system",
+            "external_system_entry_id",
+        ]
+
+        for column in expected_valid_columns:
+            assert column in accepted_columns
+
+        assert len(ignored_columns) == 0

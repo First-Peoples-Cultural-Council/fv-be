@@ -1,0 +1,5 @@
+TITLE,TYPE,AUDIO_FILENAME,AUDIO_2_FILENAME,IMG_FILENAME,IMG_2_FILENAME,VIDEO_FILENAME,VIDEO_2_FILENAME,DOCUMENT_FILENAME,DOCUMENT_2_FILENAME
+test_missing_media_multiple_word_1,word,test_missing_media_multiple.mp3,missing_audio.mp3,,,,,,
+test_missing_media_multiple_phrase_1,phrase,,,test_missing_media_multiple.jpg,missing_image.jpg,,,,
+test_missing_media_multiple_word_2,word,,,,,test_missing_media_multiple.mp4,missing_video.mp4,,
+test_missing_media_multiple_phrase_2,phrase,,,,,,,test_missing_media_multiple.pdf,missing_document.pdf
