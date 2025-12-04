@@ -1,3 +1,3 @@
 TITLE,TYPE,IMG_FILENAME,IMG_TITLE,IMG_DESCRIPTION,IMG_ACKNOWLEDGEMENT,IMG_INCLUDE_IN_KIDS_SITE
-Word 1,word,sample-image.jpg,Related Image,Testing image upload,Test Ack,TRUE
-Word 2,word,Another image.jpg,"","","",""
+Related Images CSV Word 1,word,related-images-image-1.jpg,Related Image,Testing image upload,Test Ack,TRUE
+Related Images CSV Word 2,word,related-images-image-2.jpg,,,,
