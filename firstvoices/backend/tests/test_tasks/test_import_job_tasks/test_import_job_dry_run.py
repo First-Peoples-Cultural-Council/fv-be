@@ -16,7 +16,7 @@ from backend.tests.utils import get_sample_file
 @pytest.mark.django_db
 class TestImportJobDryRun:
     MIMETYPE = "text/csv"
-    MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
+    CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
 
     def setup_method(self):
         self.user = factories.factories.get_superadmin()
@@ -24,7 +24,7 @@ class TestImportJobDryRun:
 
     def test_task_logs(self, caplog):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_task_logs.csv",
             mimetype=self.MIMETYPE,
         )
@@ -47,7 +47,7 @@ class TestImportJobDryRun:
 
     def test_unknown_columns(self):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_unknown_columns.csv",
             mimetype=self.MIMETYPE,
         )
@@ -78,7 +78,7 @@ class TestImportJobDryRun:
         # if the initial column i.e. 'note' is missing, rest of the columns are ignored
 
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_initial_header_missing.csv",
             mimetype=self.MIMETYPE,
         )
@@ -106,7 +106,7 @@ class TestImportJobDryRun:
 
     def test_base_case_dictionary_entries(self):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_base_case_dictionary_entries.csv",
             mimetype=self.MIMETYPE,
         )
@@ -133,7 +133,7 @@ class TestImportJobDryRun:
         # This test should be updated as new columns are added
 
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_all_non_media_columns_dictionary_entries.csv",
             mimetype=self.MIMETYPE,
         )
@@ -204,7 +204,7 @@ class TestImportJobDryRun:
 
     def test_default_values(self):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_default_values.csv",
             mimetype=self.MIMETYPE,
         )
@@ -232,7 +232,7 @@ class TestImportJobDryRun:
         # Also verify the CSV generated
 
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_invalid_rows.csv",
             mimetype=self.MIMETYPE,
         )
@@ -264,7 +264,7 @@ class TestImportJobDryRun:
 
         # re-opening the file
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_invalid_rows.csv",
             mimetype=self.MIMETYPE,
         )
@@ -287,7 +287,7 @@ class TestImportJobDryRun:
 
     def test_invalid_categories(self):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_invalid_categories.csv",
             mimetype=self.MIMETYPE,
         )
@@ -315,7 +315,7 @@ class TestImportJobDryRun:
 
     def test_boolean_variations(self):
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_boolean_variations.csv",
             mimetype=self.MIMETYPE,
         )
@@ -346,7 +346,7 @@ class TestImportJobDryRun:
     def test_dry_run_failed(self, caplog):
         # Valid CSV
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_dry_run_failed.csv",
             mimetype=self.MIMETYPE,
         )
@@ -375,7 +375,7 @@ class TestImportJobDryRun:
 
         # Valid CSV
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_failed_rows_csv_not_generated_on_valid_rows.csv",
             mimetype=self.MIMETYPE,
         )
@@ -399,7 +399,7 @@ class TestImportJobDryRun:
     def test_invalid_validation_status(self, validation_status, caplog):
         # Valid CSV
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_invalid_validation_status.csv",
             mimetype=self.MIMETYPE,
         )
@@ -422,7 +422,7 @@ class TestImportJobDryRun:
     def test_invalid_job_status(self, status, caplog):
         # Valid CSV
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_invalid_job_status.csv",
             mimetype=self.MIMETYPE,
         )
@@ -447,7 +447,7 @@ class TestImportJobDryRun:
         # If the last validation is successful, the failed rows csv should
         # be updated or deleted
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_failed_rows_csv_invalid_category.csv",
             mimetype=self.MIMETYPE,
         )
@@ -497,13 +497,17 @@ class TestImportJobDryRun:
         assert len(import_job_csv) == 0
 
     def test_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_1 = ExternalDictionaryEntrySystem(
+            title="Fieldworks_import_job_dry_run"
+        )
         external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_2 = ExternalDictionaryEntrySystem(
+            title="Dreamworks_import_job_dry_run"
+        )
         external_system_2.save()
 
         file_content = get_sample_file(
-            file_dir=self.MEDIA_FILES_DIR,
+            file_dir=self.CSV_FILES_DIR,
             filename="test_dictionary_entry_external_system_fields.csv",
             mimetype=self.MIMETYPE,
         )

@@ -1,0 +1,4 @@
+﻿title,type,related_entry,note
+test_related_entries_duplicate_titles_word_1, word,test_related_entries_duplicate_titles_word_2,
+test_related_entries_duplicate_titles_word_2, word,,first instance
+test_related_entries_duplicate_titles_word_2, word,,second instance

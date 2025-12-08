@@ -10,7 +10,7 @@ from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobMediaDryRun:
+class TestImportJobRelatedMediaDryRun:
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"
