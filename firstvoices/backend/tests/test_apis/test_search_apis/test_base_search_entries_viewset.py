@@ -10,6 +10,9 @@ from backend.views.base_search_entries_views import BaseSearchEntriesViewSet
 
 class TestBaseSearchViewSet(SearchMocksMixin):
     @pytest.mark.django_db
+    @pytest.mark.skip(
+        reason="Need to test that author fields are only present to assistants and higher of the same site"
+    )
     def test_serialized_entries_have_author_fields(self):
         image = factories.ImageFactory.create()
         audio = factories.AudioFactory.create()

@@ -59,6 +59,13 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
     def get_expected_list_response_item(self, instance, site):
         return self.get_expected_response(instance, site)
 
+    def get_expected_list_response_item_no_email_access(self, instance, site):
+        response_item = self.get_expected_list_response_item(instance, site)
+        response_item.pop("createdBy", None)
+        response_item.pop("lastModifiedBy", None)
+        response_item.pop("systemLastModifiedBy", None)
+        return response_item
+
     def assert_minimal_list_response(self, response, instance):
         assert response.status_code == 200
         response_data = json.loads(response.content)
@@ -106,12 +113,16 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
 class SiteContentListPermissionTestMixin:
     """Test cases for view permissions by site and content visibility. Use with SiteContentListApiTestMixin"""
 
-    def get_expected_member_list_response_item(self, instance, site):
-        response_item = self.get_expected_list_response_item(instance, site)
-        response_item.pop("createdBy", None)
-        response_item.pop("lastModifiedBy", None)
-        response_item.pop("systemLastModifiedBy", None)
-        return response_item
+    def assert_minimal_list_response_no_email_access(self, response, instance):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+        assert response_data["results"][
+            0
+        ] == self.get_expected_list_response_item_no_email_access(
+            instance, instance.site
+        )
 
     @pytest.mark.parametrize("role", Role)
     @pytest.mark.django_db
@@ -126,13 +137,7 @@ class SiteContentListPermissionTestMixin:
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         if role == Role.MEMBER:
-            assert response.status_code == 200
-            response_data = json.loads(response.content)
-            assert response_data["count"] == 1
-
-            assert response_data["results"][
-                0
-            ] == self.get_expected_member_list_response_item(instance, site)
+            self.assert_minimal_list_response_no_email_access(response, instance)
         else:
             self.assert_minimal_list_response(response, instance)
 

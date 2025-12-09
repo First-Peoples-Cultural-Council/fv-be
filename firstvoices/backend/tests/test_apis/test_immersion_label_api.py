@@ -38,9 +38,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def get_expected_response(self, instance, site):
         standard_fields = self.get_expected_standard_fields(instance, site)
-        standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        standard_fields["url"] = (
+            f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        )
         return {
             **standard_fields,
             "dictionaryEntry": {
@@ -71,6 +71,19 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
         del response_item["dictionaryEntry"]["translations"][0]["id"]
 
         assert response_item == self.get_expected_list_response_item(
+            instance, instance.site
+        )
+
+    def assert_minimal_list_response_no_email_access(self, response, instance):
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+
+        response_item = response_data["results"][0]
+        assert "id" in response_item["dictionaryEntry"]["translations"][0]
+        del response_item["dictionaryEntry"]["translations"][0]["id"]
+
+        assert response_item == self.get_expected_list_response_item_no_email_access(
             instance, instance.site
         )
 
@@ -143,9 +156,9 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
 
     def assert_immersion_label_response(self, instance, response_data, request_data):
         standard_fields = self.get_expected_standard_fields(instance, instance.site)
-        standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        standard_fields["url"] = (
+            f"http://testserver{self.get_detail_endpoint(instance.key, instance.site.slug)}"
+        )
         for key, value in standard_fields.items():
             assert response_data[key] == value
 
