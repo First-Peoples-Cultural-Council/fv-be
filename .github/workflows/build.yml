@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
-        group: [ 1 ]
+        group: [ 1, 2, 3, 4, 5 ]
     services:
       postgres:
         image: postgres:latest
@@ -56,13 +56,13 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          pytest --cache-clear --cov --cov-config=.coveragerc --splits 1 --group ${{ matrix.group }}
+          pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
           if-no-files-found: error
           include-hidden-files: true
-          name: coverage
+          name: coverage${{ matrix.group }}
           path: firstvoices/.coverage
 
 
