@@ -65,6 +65,10 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
 
 
 class MediaMinimalSerializer(DefaultTimestampFieldsMixin, serializers.ModelSerializer):
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         fields = (
@@ -164,6 +168,11 @@ class DictionaryEntryMinimalSerializer(
     DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
     site = LinkedSiteMinimalSerializer(read_only=True)
     translations = TextListField(required=False, allow_empty=True)
     related_audio = AudioMinimalSerializer(many=True, required=False, read_only=True)
@@ -202,6 +211,11 @@ class SongMinimalSerializer(
     DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True
@@ -231,6 +245,11 @@ class StoryMinimalSerializer(
     DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
     site = LinkedSiteMinimalSerializer(read_only=True)
     related_images = RelatedImageMinimalSerializer(
         many=True, required=False, read_only=True

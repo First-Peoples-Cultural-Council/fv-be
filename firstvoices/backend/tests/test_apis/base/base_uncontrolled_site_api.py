@@ -106,6 +106,13 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
 class SiteContentListPermissionTestMixin:
     """Test cases for view permissions by site and content visibility. Use with SiteContentListApiTestMixin"""
 
+    def get_expected_member_list_response_item(self, instance, site):
+        response_item = self.get_expected_list_response_item(instance, site)
+        response_item.pop("createdBy", None)
+        response_item.pop("lastModifiedBy", None)
+        response_item.pop("systemLastModifiedBy", None)
+        return response_item
+
     @pytest.mark.parametrize("role", Role)
     @pytest.mark.django_db
     def test_list_member_access_success(self, role):
@@ -117,7 +124,17 @@ class SiteContentListPermissionTestMixin:
         )
 
         response = self.client.get(self.get_list_endpoint(site.slug))
-        self.assert_minimal_list_response(response, instance)
+
+        if role == Role.MEMBER:
+            assert response.status_code == 200
+            response_data = json.loads(response.content)
+            assert response_data["count"] == 1
+
+            assert response_data["results"][
+                0
+            ] == self.get_expected_member_list_response_item(instance, site)
+        else:
+            self.assert_minimal_list_response(response, instance)
 
     @pytest.mark.parametrize("visibility", [Visibility.TEAM, Visibility.MEMBERS])
     @pytest.mark.django_db
