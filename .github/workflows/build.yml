@@ -14,6 +14,42 @@ on:
     types: [ checks_requested ]
 
 jobs:
+  cooldown-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch timestamp
+        uses: actions/cache@v4
+        with:
+          path: .last-merge
+          key: merge-timestamp
+
+      - name: Check cooldown
+        run: |
+          if [ -f .last-merge ]; then
+            LAST=$(cat .last-merge)
+            NOW=$(date +%s)
+            DIFF=$((NOW - LAST))
+            if [ "$DIFF" -lt 600 ]; then
+              echo "Only $DIFF seconds since last merge. Need 600."
+              exit 1
+            fi
+          fi
+          echo "Cooldown OK."
+
+  update-timestamp:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: cooldown-check
+    steps:
+      - name: Write timestamp
+        run: |
+          date +%s > .last-merge
+      - name: Save timestamp
+        uses: actions/cache@v4
+        with:
+          path: .last-merge
+          key: merge-timestamp
+
   pytest:
     name: pytest
     runs-on: ubuntu-22.04
