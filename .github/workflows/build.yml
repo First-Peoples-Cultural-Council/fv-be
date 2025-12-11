@@ -16,7 +16,6 @@ jobs:
   pytest:
     name: pytest
     runs-on: ubuntu-22.04
-    if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
         python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
