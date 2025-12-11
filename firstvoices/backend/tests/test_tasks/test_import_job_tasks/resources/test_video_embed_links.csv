@@ -1,0 +1,4 @@
+TITLE,TYPE,VIDEO_EMBED_LINKS
+test_video_embed_links_youtube,word,https://www.youtube.com/watch?v=N_Iyb0LkDUc
+test_video_embed_links_vimeo,phrase,https://vimeo.com/226053498
+test_video_embed_links_both,word,"https://www.youtube.com/watch?v=N_Iyb0LkDUc,https://vimeo.com/226053498"
