@@ -290,13 +290,19 @@ class TestImportJob:
         )
 
     def test_dictionary_entry_external_system_fields(self):
-        external_system_1 = ExternalDictionaryEntrySystem(title="Fieldworks")
+        external_system_1 = ExternalDictionaryEntrySystem(
+            title="Fieldworks_import_job_dry_run"
+        )
         external_system_1.save()
-        external_system_2 = ExternalDictionaryEntrySystem(title="Dreamworks")
+        external_system_2 = ExternalDictionaryEntrySystem(
+            title="Dreamworks_import_job_dry_run"
+        )
         external_system_2.save()
 
         file_content = get_sample_file(
-            "import_job/dictionary_entry_external_system_fields.csv", self.MIMETYPE
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_dictionary_entry_external_system_fields.csv",
+            mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
@@ -310,10 +316,14 @@ class TestImportJob:
         confirm_import_job(import_job.id)
 
         # Entry 1
-        word = DictionaryEntry.objects.filter(title="abc")[0]
+        word = DictionaryEntry.objects.filter(
+            title="test_dictionary_entry_external_system_fields_word_1"
+        )[0]
         assert word.external_system.title == external_system_1.title
         assert word.external_system_entry_id == "abc123"
         # Entry 2
-        phrase = DictionaryEntry.objects.filter(title="xyz")[0]
+        phrase = DictionaryEntry.objects.filter(
+            title="test_dictionary_entry_external_system_fields_word_2"
+        )[0]
         assert phrase.external_system.title == external_system_2.title
         assert phrase.external_system_entry_id == "xyz007"

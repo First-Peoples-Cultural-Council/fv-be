@@ -997,8 +997,9 @@ class TestImportJobRelatedMedia:
 
     def test_related_media_multiple_invalid(self):
         file_content = get_sample_file(
-            "import_job/related_media_multiple_invalid.csv",
-            self.MIMETYPE,
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_related_media_multiple_invalid.csv",
+            mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
         import_job = factories.ImportJobFactory(
