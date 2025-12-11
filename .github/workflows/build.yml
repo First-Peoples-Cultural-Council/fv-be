@@ -57,6 +57,8 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
+      - name: Debug files
+        run: ls
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -138,7 +140,7 @@ jobs:
     if: ((github.ref == 'refs/heads/dev') || (github.base_ref == 'main') || (github.base_ref == 'dev'))
     strategy:
       matrix:
-        python-version: [ "3.13.2" ]  # Keep this in sync with the image in our Dockerfile
+        python-version: [ "3.13.5" ]  # Keep this in sync with the image in our Dockerfile
     steps:
       - uses: actions/checkout@v6
         with:
@@ -154,6 +156,10 @@ jobs:
           pip install -r requirements.sonarcov.txt
       - name: Download all artifacts
         uses: actions/download-artifact@v6
+      - name: Debug list files
+        run: ls
+      - name: Additional debug list files
+        run: ls ./coverage*
       - name: Run coverage
         run: |
           coverage combine ./coverage*/.coverage*
