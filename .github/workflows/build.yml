@@ -58,7 +58,7 @@ jobs:
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Debug files
-        run: ls
+        run: ls -a
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -157,9 +157,9 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v6
       - name: Debug list files
-        run: ls
+        run: ls -a
       - name: Additional debug list files
-        run: ls ./coverage*
+        run: ls -a ./coverage*
       - name: Run coverage
         run: |
           coverage combine ./coverage*/.coverage*
