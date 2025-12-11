@@ -53,7 +53,7 @@ MarkupSafe==3.0.3
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@0ea975a
 munkres==1.1.4
 nh3==0.3.2 # https://github.com/messense/nh3
-networkx==3.4.2
+networkx==3.6.1
 numpy==1.26.4
 openpyxl==3.1.5
 packaging==25.0
