@@ -1,4 +1,4 @@
-name: "Scan-branch2"
+name: "Scan-branch2-attempt-2"
 description: "Scan container images, generate CycloneDX SBOMs, and print Python dependency tree"
 
 inputs:
