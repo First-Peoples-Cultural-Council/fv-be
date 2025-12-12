@@ -57,10 +57,6 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
-      - name: Debug list files
-        run: ls -a
-      - name: Debug list files in FV dir
-        run: ls -a firstvoices
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
@@ -158,14 +154,8 @@ jobs:
           pip install -r requirements.sonarcov.txt
       - name: Download all artifacts
         uses: actions/download-artifact@v6
-      - name: Debug list files
-        run: ls -a
-      - name: Additional debug list files
-        run: ls -a ./coverage*
       - name: Combine coverage
         run: coverage combine ./coverage*/.coverage*
-      - name: Debug list files
-        run: ls -a
       - name: Additional debug list files
         run: ls -a ./coverage*
       - name: Run coverage
