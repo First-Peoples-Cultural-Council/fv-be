@@ -48,6 +48,67 @@ runs:
     -   uses: azure/setup-helm@v4.2.0
         id: install
 
+    - name: Get the last Helm deployment time and status
+      id: get_deployment_info
+      shell: bash
+      run: |
+        RELEASE_NAME=${{  inputs.helm_chart_name  }}
+        NAMESPACE=${{  inputs.k8_namespace }}
+
+        # Get the latest deployment time from Helm history
+        LAST_DEPLOY_TIME=$(helm history $RELEASE_NAME -n $NAMESPACE --max 1 --output json | jq -r '.[0].updated')
+
+        # Get current time in seconds
+        CURRENT_TIME=$(date +%s)
+
+        # Convert last deploy time to seconds since epoch
+        LAST_DEPLOY_TIME_EPOCH=$(date -d "$LAST_DEPLOY_TIME" +%s)
+
+        # Calculate time difference in minutes
+        TIME_DIFF=$(( (CURRENT_TIME - LAST_DEPLOY_TIME_EPOCH) / 60 ))
+
+        # Get the current status of the Helm release
+        RELEASE_STATUS=$(helm status $RELEASE_NAME -n $NAMESPACE -o json | jq -r '.info.status')
+
+        echo "Last deployment was $TIME_DIFF minutes ago."
+        echo "Current release status: $RELEASE_STATUS"
+
+        # Set outputs for later steps
+        echo "time_diff=$TIME_DIFF" >> $GITHUB_OUTPUT
+        echo "release_status=$RELEASE_STATUS" >> $GITHUB_OUTPUT
+
+
+    - name: Wait until deployment gap is greater than 5 minutes and no ongoing deployment
+      id: wait_for_deploy_gap
+      shell: bash
+      run: |
+        TIME_DIFF=${{ steps.get_deployment_info.outputs.time_diff }}
+        RELEASE_STATUS=${{ steps.get_deployment_info.outputs.release_status }}
+        RELEASE_NAME=${{  inputs.helm_chart_name  }}
+        NAMESPACE=${{  inputs.k8_namespace }}
+
+        # Loop until the gap is greater than 5 minutes and no ongoing deployment
+        while [ $TIME_DIFF -lt 5 ] || [[ "$RELEASE_STATUS" == "pending-upgrade" ]] || [[ "$RELEASE_STATUS" == "pending-install" ]] || [[ "$RELEASE_STATUS" == "failed" ]]; do
+          if [[ "$RELEASE_STATUS" == "failed" ]]; then
+            echo "Helm release has failed. Exiting..."
+            exit 1  # Or handle the failure as you see fit (e.g., send notification, retry, etc.)
+          fi
+
+          echo "Waiting for 5 minutes since last deployment or until the release is no longer ongoing..."
+          sleep 300  # Wait for 5 minutes
+
+          # Recheck the deployment time and status after waiting
+          LAST_DEPLOY_TIME=$(helm history $RELEASE_NAME -n $NAMESPACE --max 1 --output json | jq -r '.[0].updated')
+          CURRENT_TIME=$(date +%s)
+          LAST_DEPLOY_TIME_EPOCH=$(date -d "$LAST_DEPLOY_TIME" +%s)
+          TIME_DIFF=$(( (CURRENT_TIME - LAST_DEPLOY_TIME_EPOCH) / 60 ))
+
+          RELEASE_STATUS=$(helm status $RELEASE_NAME -n $NAMESPACE -o json | jq -r '.info.status')
+
+          echo "Last deployment was $TIME_DIFF minutes ago."
+          echo "Current release status: $RELEASE_STATUS"
+        done
+
     -   name: helm upgrade
         shell: bash
         run: |
