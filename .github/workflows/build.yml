@@ -57,7 +57,9 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
-      - name: Debug files
+      - name: Debug list files
+        run: ls -a
+      - name: Debug list files in FV dir
         run: ls -a
       - name: Upload coverage
         uses: actions/upload-artifact@v5
