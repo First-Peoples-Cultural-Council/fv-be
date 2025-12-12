@@ -1,0 +1,3 @@
+title,type,category
+test_invalid_m2m_entries_not_imported_valid_entry,word,Animals
+test_invalid_m2m_entries_not_imported_invalid_category,word, invalid

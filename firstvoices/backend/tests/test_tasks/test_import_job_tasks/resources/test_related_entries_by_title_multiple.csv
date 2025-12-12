@@ -1,0 +1,7 @@
+﻿title,type,related_entry,related_entry_2,related_entry_3,related_entry_4,related_entry_5
+test_related_entries_by_title_multiple_word_1, word,test_related_entries_by_title_multiple_word_2,test_related_entries_by_title_multiple_word_3,test_related_entries_by_title_multiple_phrase_1,test_related_entries_by_title_multiple_phrase_2,test_related_entries_by_title_multiple_phrase_3
+test_related_entries_by_title_multiple_word_2, word,,,,,
+test_related_entries_by_title_multiple_word_3, word,,,,,
+test_related_entries_by_title_multiple_phrase_1,phrase,,,,,
+test_related_entries_by_title_multiple_phrase_2,phrase,,,,,
+test_related_entries_by_title_multiple_phrase_3,phrase,,,,,

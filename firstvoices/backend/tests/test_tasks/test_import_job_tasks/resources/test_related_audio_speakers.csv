@@ -1,0 +1,3 @@
+TITLE,TYPE,AUDIO_FILENAME,AUDIO_TITLE,AUDIO_DESCRIPTION,AUDIO_SPEAKER,AUDIO_SPEAKER_2,AUDIO_ACKNOWLEDGEMENT,AUDIO_INCLUDE_IN_KIDS_SITE,AUDIO_INCLUDE_IN_GAMES
+test_related_audio_speakers_word_1,word,test_related_audio_speakers.mp3,Related Audio,Testing audio upload,test_related_audio_speakers_speaker_1,test_related_audio_speakers_speaker_2,Test Ack,TRUE,FALSE
+test_related_audio_speakers_word_2,word,test_related_audio_speakers_2.mp3,,,,,,,

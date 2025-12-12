@@ -1,4 +1,0 @@
-TITLE,TYPE,VIDEO_FILENAME,VIDEO_TITLE,VIDEO_DESCRIPTION,VIDEO_ACKNOWLEDGEMENT,VIDEO_INCLUDE_IN_KIDS_SITE,VIDEO_2_FILENAME,VIDEO_2_TITLE,VIDEO_2_DESCRIPTION,VIDEO_2_ACKNOWLEDGEMENT,VIDEO_2_INCLUDE_IN_KIDS_SITE
-Word 1,word,related_video-1.mp4,Related Video-1,Testing video upload-1,Test Ack-1,TRUE,related_video-2.mp4,Related Video-2,Testing video upload-2,Test Ack-2,TRUE
-Word 2,word,related_video-3.mp4,Related Video-3,Testing video upload-3,Test Ack-3,TRUE,related_video-4.mp4,Related Video-4,Testing video upload-4,Test Ack-4,TRUE
-Word 3,word,related_video-5.mp4,Related Video-5,Testing video upload-5,Test Ack-5,TRUE,related_video-6.mp4,Related Video-6,Testing video upload-6,Test Ack-6,TRUE

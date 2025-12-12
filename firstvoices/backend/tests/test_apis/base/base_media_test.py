@@ -556,9 +556,9 @@ class BaseMediaApiTest(
     def get_valid_patch_file_data(self, site):
         return {
             "original": get_sample_file(
-                self.sample_filename,
-                self.sample_filetype,
-                f"patch-{self.sample_filename}",
+                filename=self.sample_filename,
+                mimetype=self.sample_filetype,
+                title=f"patch-{self.sample_filename}",
             ),
         }
 

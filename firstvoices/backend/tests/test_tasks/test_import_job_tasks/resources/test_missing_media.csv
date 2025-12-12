@@ -1,0 +1,5 @@
+TITLE,TYPE,AUDIO_FILENAME,IMG_FILENAME,VIDEO_FILENAME,DOCUMENT_FILENAME
+test_missing_media_word_1,word,sample_audio.mp3,,,
+test_missing_media_phrase_1,phrase,,sample_image.jpg,,
+test_missing_media_word_2,word,,,sample_video.mp4,
+test_missing_media_phrase_2,phrase,,,,sample_document.pdf

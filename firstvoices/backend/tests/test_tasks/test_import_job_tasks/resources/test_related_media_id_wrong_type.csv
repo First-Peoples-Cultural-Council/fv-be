@@ -1,0 +1,6 @@
+TITLE,TYPE,AUDIO_IDS,img_ids,video_ids,document_ids
+test_related_media_id_wrong_type_word_with_audio,word,84d7f036-ac6e-4066-a259-881f1499d756,,,
+test_related_media_id_wrong_type_word_with_image,word,,51edee56-f81b-4fa4-8f2b-ed1e5cda75d0,,
+test_related_media_id_wrong_type_word_with_video,word,,,79642798-23f5-49bb-8f38-b6502419981b,
+test_related_media_id_wrong_type_word_with_document,word,,,,59d9b20c-a0d9-43bf-8940-b714f185c40d
+test_related_media_id_wrong_type_word_with_all_media,word,84d7f036-ac6e-4066-a259-881f1499d756,51edee56-f81b-4fa4-8f2b-ed1e5cda75d0,79642798-23f5-49bb-8f38-b6502419981b,59d9b20c-a0d9-43bf-8940-b714f185c40d

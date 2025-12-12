@@ -97,7 +97,6 @@ class TestImportJobMediaEndpoint(
             "file": [
                 get_sample_file("sample-image.jpg", "image/jpeg"),
                 get_sample_file("sample-image.heic", "image/heic"),
-                get_sample_file("import_job/Another image.jpg", "image/jpeg"),
             ]
         }
 

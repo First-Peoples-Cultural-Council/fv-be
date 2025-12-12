@@ -1,2 +1,0 @@
-TITLE,TYPE,INCLUDE_IN_GAMES,AUDIO_FILENAME,AUDIO_SPEAKER,IMG_FILENAME,IMG_INCLUDE_IN_KIDS_SITE,VIDEO_FILENAME,VIDEO_INCLUDE_IN_KIDS_SITE
-Word 1,word,NotABool,sample-audio.mp3,invalid_speaker,sample-image.jpg,AlsoNotABool,video_example_small.mp4,VeryNotBool

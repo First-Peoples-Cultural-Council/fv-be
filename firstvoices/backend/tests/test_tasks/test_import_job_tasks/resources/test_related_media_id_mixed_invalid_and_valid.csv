@@ -1,0 +1,6 @@
+TITLE,TYPE,AUDIO_IDS,img_ids,video_ids,document_ids
+test_related_media_id_mixed_invalid_and_valid_word_1,word,"8f601ae2-da53-4f8d-bde2-f57e0ed1a54b,3edc514a-498d-4296-baaa-f12c8120b61c",,,
+test_related_media_id_mixed_invalid_and_valid_word_2,word,,"3c578433-236b-4039-8486-fecc61ca4784,ec55af8a-740e-4033-9507-5800cb1e0844",,
+test_related_media_id_mixed_invalid_and_valid_word_3,word,,,"72fda2e6-6343-4c45-abd3-903e8b2e1614,cacd3b7c-6e71-42b4-b757-69e1710b2455",
+test_related_media_id_mixed_invalid_and_valid_word_4,word,,,,"391b21d7-50db-499f-bf09-c7190b21d5b5,db46bb73-eb49-4731-b8ce-b4e00eed771f"
+test_related_media_id_mixed_invalid_and_valid_word_5,word,"8f601ae2-da53-4f8d-bde2-f57e0ed1a54b,3edc514a-498d-4296-baaa-f12c8120b61c","3c578433-236b-4039-8486-fecc61ca4784,ec55af8a-740e-4033-9507-5800cb1e0844","72fda2e6-6343-4c45-abd3-903e8b2e1614,cacd3b7c-6e71-42b4-b757-69e1710b2455","391b21d7-50db-499f-bf09-c7190b21d5b5,db46bb73-eb49-4731-b8ce-b4e00eed771f"

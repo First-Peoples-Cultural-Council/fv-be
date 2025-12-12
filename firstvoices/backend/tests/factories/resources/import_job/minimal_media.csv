@@ -1,5 +1,0 @@
-TITLE,TYPE,AUDIO_FILENAME,IMG_FILENAME,VIDEO_FILENAME,DOCUMENT_FILENAME
-Word 1,word,sample-audio.mp3,,,
-Phrase 1,phrase,,sample-image.jpg,,
-Word 2,word,,,video_example_small.mp4,
-Phrase 2,phrase,,,,sample-document.pdf
