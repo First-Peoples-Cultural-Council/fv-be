@@ -162,9 +162,14 @@ jobs:
         run: ls -a
       - name: Additional debug list files
         run: ls -a ./coverage*
+      - name: Combine coverage
+        run: coverage combine ./coverage*/.coverage*
+      - name: Debug list files
+        run: ls -a
+      - name: Additional debug list files
+        run: ls -a ./coverage*
       - name: Run coverage
         run: |
-          coverage combine ./coverage*/.coverage*
           coverage report --fail-under=75
           coverage xml
       - name: SonarCloud Scan
