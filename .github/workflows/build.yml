@@ -60,7 +60,7 @@ jobs:
       - name: Debug list files
         run: ls -a
       - name: Debug list files in FV dir
-        run: ls -a
+        run: ls -a firstvoices
       - name: Upload coverage
         uses: actions/upload-artifact@v5
         with:
