@@ -156,8 +156,6 @@ jobs:
         uses: actions/download-artifact@v6
       - name: Combine coverage
         run: coverage combine ./coverage*/.coverage*
-      - name: Additional debug list files
-        run: ls -a ./coverage*
       - name: Run coverage
         run: |
           coverage report --fail-under=75
