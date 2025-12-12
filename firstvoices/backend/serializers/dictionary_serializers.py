@@ -5,6 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import ImmersionLabel, category, dictionary, part_of_speech
+from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
     WritableControlledSiteContentSerializer,
@@ -102,6 +103,22 @@ class DictionaryEntryDetailSerializer(
         allow_null=True,
         default=None,
     )
+
+    external_system = serializers.SlugRelatedField(
+        slug_field="title",
+        queryset=ExternalDictionaryEntrySystem.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
+    )
+
+    external_system_entry_id = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default="",
+    )
+
     notes = TextListField(required=False, allow_empty=True)
     translations = TextListField(required=False, allow_empty=True)
     acknowledgements = TextListField(required=False, allow_empty=True)
@@ -227,6 +244,8 @@ class DictionaryEntryDetailSerializer(
                 "part_of_speech",
                 "pronunciations",
                 "is_immersion_label",
+                "external_system",
+                "external_system_entry_id",
             )
             + RelatedMediaSerializerMixin.Meta.fields
             + RelatedDictionaryEntrySerializerMixin.Meta.fields
