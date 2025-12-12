@@ -155,7 +155,9 @@ class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
             filter(lambda x: x["id"] == str(instance.id), response_data["results"])
         )[0]
 
-        assert widget == self.get_expected_list_response_item(instance, site)
+        assert widget == self.get_expected_list_response_item_no_email_access(
+            instance, site
+        )
 
     @pytest.mark.skip(
         reason="Test is same as test_list_permissions. Removed the code to reduce duplication."

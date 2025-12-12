@@ -38,9 +38,9 @@ class ControlledListApiTestMixin(SiteContentListApiTestMixin):
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
+        assert response_data["results"][
+            0
+        ] == self.get_expected_list_response_item_no_email_access(instance, site)
 
 
 class ControlledDetailApiTestMixin(SiteContentDetailApiTestMixin):

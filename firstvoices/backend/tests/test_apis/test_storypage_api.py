@@ -278,9 +278,9 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            page, site
-        )
+        assert response_data["results"][
+            0
+        ] == self.get_expected_list_response_item_no_email_access(page, site)
 
     @pytest.mark.django_db
     def test_create_invalid_400(self):
@@ -456,9 +456,9 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
             args=[site.slug, str(instance.story.id)],
         )
         standard_fields = self.get_expected_standard_fields(instance, site)
-        standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}"
+        standard_fields["url"] = (
+            f"http://testserver{self.get_detail_endpoint(key=instance.id, site_slug=site.slug)}"
+        )
 
         return {
             **standard_fields,
@@ -597,9 +597,9 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert response_data["count"] == 1
         assert len(response_data["results"]) == 1
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            instance, site
-        )
+        assert response_data["results"][
+            0
+        ] == self.get_expected_list_response_item_no_email_access(instance, site)
 
     @pytest.mark.django_db
     def test_story_page_list_in_order(self):
@@ -619,15 +619,15 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         assert response_data["count"] == 3
         assert len(response_data["results"]) == 3
 
-        assert response_data["results"][0] == self.get_expected_list_response_item(
-            page1, site
-        )
-        assert response_data["results"][1] == self.get_expected_list_response_item(
-            page2, site
-        )
-        assert response_data["results"][2] == self.get_expected_list_response_item(
-            page3, site
-        )
+        assert response_data["results"][
+            0
+        ] == self.get_expected_list_response_item_no_email_access(page1, site)
+        assert response_data["results"][
+            1
+        ] == self.get_expected_list_response_item_no_email_access(page2, site)
+        assert response_data["results"][
+            2
+        ] == self.get_expected_list_response_item_no_email_access(page3, site)
 
     @pytest.mark.django_db
     def test_story_page_related_media_ordered_by_created(self):

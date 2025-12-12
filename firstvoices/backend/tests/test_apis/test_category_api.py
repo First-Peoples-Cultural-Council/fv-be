@@ -57,6 +57,9 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
         ).count()
         assert response_data["count"] == expected_count
 
+    def assert_minimal_list_response_no_email_access(self, response, instance):
+        self.assert_minimal_list_response(response, instance)
+
     def get_valid_data(self, site=None):
         parent = CategoryFactory.create(site=site)
 

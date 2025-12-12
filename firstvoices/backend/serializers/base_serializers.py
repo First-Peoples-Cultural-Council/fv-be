@@ -10,20 +10,95 @@ from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from backend.serializers.utils.context_utils import get_site_from_context
 
 from ..models import Membership, Site
-from ..models.constants import Role, Visibility
+from ..models.app import AppMembership
+from ..models.constants import AppRole, Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
 
-base_timestamp_fields = (
+default_timestamp_fields = (
     "created",
     "created_by",
     "last_modified",
     "last_modified_by",
+)
+system_timestamp_fields = (
     "system_last_modified",
     "system_last_modified_by",
 )
+base_timestamp_fields = default_timestamp_fields + system_timestamp_fields
 base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
+
+
+class DefaultTimestampFieldsMixin:
+    """
+    A mixin providing basic timestamp fields for serializers.
+    """
+
+    created = serializers.DateTimeField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    last_modified = serializers.DateTimeField(read_only=True)
+    last_modified_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        fields = default_timestamp_fields
+
+
+class SystemTimestampFieldsMixin(DefaultTimestampFieldsMixin):
+    """
+    A mixin providing system timestamp fields for serializers.
+    """
+
+    system_last_modified = serializers.DateTimeField(read_only=True)
+    system_last_modified_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        fields = base_timestamp_fields
+
+
+class HideEmailFieldsMixin:
+    """
+    A mixin for ModelSerializers that hides email fields based on user permissions.
+    """
+
+    @staticmethod
+    def _remove_email_fields(fields):
+        """
+        Remove email-related fields from the serializer fields.
+        """
+        for field_name in ["created_by", "last_modified_by", "system_last_modified_by"]:
+            if field_name in fields:
+                fields.pop(field_name)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get("request", None)
+        user = request.user if request else None
+        site = get_site_from_context(self)
+
+        if user is None or not user.is_authenticated:
+            self._remove_email_fields(fields)
+            return fields
+
+        try:
+            membership = Membership.objects.get(user=user, site=site)
+        except Membership.DoesNotExist:
+            membership = None
+
+        try:
+            app_role = AppMembership.objects.get(
+                user=user,
+            )
+        except AppMembership.DoesNotExist:
+            app_role = None
+
+        is_not_staff = app_role.role < AppRole.STAFF if app_role else True
+
+        #  Hide email fields if the user is not staff and not an assistant or higher in site membership
+        if is_not_staff and (not membership or membership.role < Role.ASSISTANT):
+            self._remove_email_fields(fields)
+
+        return fields
 
 
 class SiteContentUrlMixin:
@@ -194,7 +269,9 @@ class LinkedSiteMinimalSerializer(
         read_only_fields = ("id", "slug", "title", "is_hidden")
 
 
-class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
+class BaseSiteContentSerializer(
+    HideEmailFieldsMixin, SystemTimestampFieldsMixin, SiteContentLinkedTitleSerializer
+):
     """
     Base serializer for site content models.
     """
