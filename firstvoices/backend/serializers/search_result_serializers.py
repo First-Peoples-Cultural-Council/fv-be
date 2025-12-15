@@ -13,6 +13,7 @@ from backend.models import (
 )
 from backend.serializers.base_serializers import (
     DefaultTimestampFieldsMixin,
+    HideEmailFieldsMixin,
     LinkedSiteMinimalSerializer,
     ReadOnlyVisibilityFieldMixin,
     default_timestamp_fields,
@@ -64,7 +65,9 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "bio")
 
 
-class MediaMinimalSerializer(DefaultTimestampFieldsMixin, serializers.ModelSerializer):
+class MediaMinimalSerializer(
+    HideEmailFieldsMixin, DefaultTimestampFieldsMixin, serializers.ModelSerializer
+):
     created = serializers.DateTimeField(read_only=True)
     created_by = serializers.StringRelatedField(read_only=True)
     last_modified = serializers.DateTimeField(read_only=True)
@@ -163,6 +166,7 @@ class VideoMinimalSerializer(ImageMinimalSerializer):
 
 
 class DictionaryEntryMinimalSerializer(
+    HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
     DefaultTimestampFieldsMixin,
@@ -206,6 +210,7 @@ class DictionaryEntryMinimalSerializer(
 
 
 class SongMinimalSerializer(
+    HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
     DefaultTimestampFieldsMixin,
@@ -240,6 +245,7 @@ class SongMinimalSerializer(
 
 
 class StoryMinimalSerializer(
+    HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
     DefaultTimestampFieldsMixin,
