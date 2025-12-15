@@ -75,7 +75,7 @@ python-dotenv==1.2.1
 python-magic==0.4.27
 pytz==2025.2
 PyYAML==6.0.3
-redis==7.0.1
+redis==7.1.0
 regex==2025.11.3
 requests==2.32.5
 rules==3.5
