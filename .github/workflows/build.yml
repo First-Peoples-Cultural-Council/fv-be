@@ -58,7 +58,7 @@ jobs:
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           if-no-files-found: error
           include-hidden-files: true
@@ -124,7 +124,7 @@ jobs:
           path: helm
 
       - name: Upload Helm charts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: helm
