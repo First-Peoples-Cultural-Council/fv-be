@@ -46,6 +46,26 @@ class TestBaseSearchViewSet(SearchMocksMixin):
             word,
         )
 
+    def assert_author_fields_present(self, viewset, site=None):
+        mock_search_results, image, audio, video, document, song, story, word = (
+            self.set_up_mock_search_result(site=site)
+        )
+
+        hydrated_data = viewset.hydrate(mock_search_results)
+        serialized_data = viewset.serialize_search_results(
+            mock_search_results, hydrated_data
+        )
+
+        for serialized_entry, original_entry in zip(
+            serialized_data, [image, audio, video, document, song, story, word]
+        ):
+            assert str(serialized_entry["entry"]["created_by"]) == str(
+                original_entry.created_by
+            )
+            assert str(serialized_entry["entry"]["last_modified_by"]) == str(
+                original_entry.last_modified_by
+            )
+
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "app_role",
@@ -58,28 +78,11 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         user = factories.UserFactory.create()
         factories.AppMembershipFactory.create(user=user, role=app_role)
 
-        mock_search_results, image, audio, video, document, song, story, word = (
-            self.set_up_mock_search_result()
-        )
-
         viewset = BaseSearchEntriesViewSet()
         viewset.request = self.create_mock_request(user=user, query_dict={})
         viewset.format_kwarg = MagicMock()
 
-        hydrated_data = viewset.hydrate(mock_search_results)
-        serialized_data = viewset.serialize_search_results(
-            mock_search_results, hydrated_data
-        )
-
-        for serialized_entry, original_entry in zip(
-            serialized_data, [image, audio, video, document, song, story, word]
-        ):
-            assert str(serialized_entry["entry"]["created_by"]) == str(
-                original_entry.created_by
-            )
-            assert str(serialized_entry["entry"]["last_modified_by"]) == str(
-                original_entry.last_modified_by
-            )
+        self.assert_author_fields_present(viewset)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
@@ -88,28 +91,11 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         site = factories.SiteFactory.create()
         factories.MembershipFactory.create(user=user, role=role, site=site)
 
-        mock_search_results, image, audio, video, document, song, story, word = (
-            self.set_up_mock_search_result(site=site)
-        )
-
         viewset = BaseSearchEntriesViewSet()
         viewset.request = self.create_mock_request(user=user, query_dict={})
         viewset.format_kwarg = MagicMock()
 
-        hydrated_data = viewset.hydrate(mock_search_results)
-        serialized_data = viewset.serialize_search_results(
-            mock_search_results, hydrated_data
-        )
-
-        for serialized_entry, original_entry in zip(
-            serialized_data, [image, audio, video, document, song, story, word]
-        ):
-            assert str(serialized_entry["entry"]["created_by"]) == str(
-                original_entry.created_by
-            )
-            assert str(serialized_entry["entry"]["last_modified_by"]) == str(
-                original_entry.last_modified_by
-            )
+        self.assert_author_fields_present(viewset, site=site)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
