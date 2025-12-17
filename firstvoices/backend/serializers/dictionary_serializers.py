@@ -114,7 +114,6 @@ class DictionaryEntryDetailSerializer(
 
     external_system_entry_id = serializers.CharField(
         required=False,
-        allow_null=True,
         allow_blank=True,
         default="",
     )
