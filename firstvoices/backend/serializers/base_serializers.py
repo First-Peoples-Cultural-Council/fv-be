@@ -270,9 +270,7 @@ class BaseSiteContentSerializer(HideEmailFieldsMixin, SiteContentLinkedTitleSeri
     system_last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
-        fields = (
-            base_timestamp_fields + system_timestamp_fields + base_id_fields + ("site",)
-        )
+        fields = base_timestamp_fields + base_id_fields + ("site",)
 
 
 class WritableSiteContentSerializer(
