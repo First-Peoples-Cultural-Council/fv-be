@@ -1,0 +1,3 @@
+title,type,category
+test_failed_rows_csv_invalid_category_valid_category,word,Animals
+test_failed_rows_csv_invalid_category_invalid_category,word, invalid

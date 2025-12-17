@@ -1,0 +1,3 @@
+TITLE,TYPE,EXTERNAL_SYSTEM,EXTERNAL_SYSTEM_ENTRY_ID
+test_dictionary_entry_external_system_fields_word_1,word,Fieldworks_import_job_dry_run,abc123
+test_dictionary_entry_external_system_fields_word_2,phrase,Dreamworks_import_job_dry_run,xyz007

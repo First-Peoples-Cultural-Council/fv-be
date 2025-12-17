@@ -1,0 +1,5 @@
+﻿title,type,category,category_2
+test_invalid_categories_word_1,word,Animals,Body
+test_invalid_categories_word_2,word,invalid_category,Animals
+test_invalid_categories_word_3,word,Body,invalid_category
+test_invalid_categories_word_4,word,invalid_category,invalid_category

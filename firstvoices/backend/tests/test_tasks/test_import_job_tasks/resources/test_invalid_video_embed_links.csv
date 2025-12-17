@@ -1,0 +1,4 @@
+TITLE,TYPE,VIDEO_EMBED_LINKS
+test_invalid_video_embed_links_invalid_link,word,"not,valid,links"
+test_invalid_video_embed_links_duplicate_links,phrase,"https://www.youtube.com/watch?v=N_Iyb0LkDUc,https://www.youtube.com/watch?v=N_Iyb0LkDUc"
+test_invalid_video_embed_links_both,word,"invalid,https://www.youtube.com/watch?v=N_Iyb0LkDUc,https://www.youtube.com/watch?v=N_Iyb0LkDUc"

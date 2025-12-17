@@ -1,0 +1,14 @@
+﻿title,type,include_in_games,include_on_kids_site
+test_boolean_variations_word_1,word,  TRUE,TRUE
+test_boolean_variations_phrase_1,phrase,True  ,TRUE
+test_boolean_variations_word_2,word,  TrUE  ,TRUE
+test_boolean_variations_phrase_2,phrase,  Yes,TRUE
+test_boolean_variations_word_3,word,Y  ,TRUE
+test_boolean_variations_phrase_3,phrase,1,TRUE
+test_boolean_variations_word_4,word,  FALSE,TRUE
+test_boolean_variations_phrase_4,phrase,False  ,TRUE
+test_boolean_variations_word_5,word,  FalSE  ,TRUE
+test_boolean_variations_phrase_5,phrase,  No,TRUE
+test_boolean_variations_word_6,word,N  ,TRUE
+test_boolean_variations_phrase_6,phrase,0,TRUE
+test_boolean_variations_phrase_7,phrase,0,NotABool

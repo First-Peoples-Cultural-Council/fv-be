@@ -1,0 +1,5 @@
+﻿title,type,visibility,unknown_column_1,unknown_column_2
+test_unknown_columns_word_1,word,Public,a,e
+test_unknown_columns_phrase_1,phrase,Team,b,f
+test_unknown_columns_word_2,word,Public,c,g
+test_unknown_columns_phrase_2,phrase,Team,d,h
