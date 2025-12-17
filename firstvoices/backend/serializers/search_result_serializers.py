@@ -74,7 +74,7 @@ class MediaMinimalSerializer(
     last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
-        fields = (
+        fields = default_timestamp_fields + (
             "id",
             "original",
             "title",
