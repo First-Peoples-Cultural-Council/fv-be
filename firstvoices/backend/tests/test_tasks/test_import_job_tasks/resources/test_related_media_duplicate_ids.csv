@@ -1,6 +1,6 @@
 TITLE,TYPE,AUDIO_IDS,img_ids,video_ids,document_ids
-test_related_media_duplicate_ids_duplicate_audio,word,"869a8617-6285-49b2-ada2-96b4f9145451,869a8617-6285-49b2-ada2-96b4f9145451",,,
-test_related_media_duplicate_ids_duplicate_image,word,,"271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e,271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e",,
-test_related_media_duplicate_ids_duplicate_video,word,,,"5b79d515-41ff-4404-beb2-acec6ec91a57,5b79d515-41ff-4404-beb2-acec6ec91a57",
-test_related_media_duplicate_ids_duplicate_document,word,,,,"23dd1f83-be6b-42b7-9aa8-2310601f5497,23dd1f83-be6b-42b7-9aa8-2310601f5497"
-test_related_media_duplicate_ids_duplicate_all_media,word,"869a8617-6285-49b2-ada2-96b4f9145451,869a8617-6285-49b2-ada2-96b4f9145451","271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e,271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e","5b79d515-41ff-4404-beb2-acec6ec91a57,5b79d515-41ff-4404-beb2-acec6ec91a57","23dd1f83-be6b-42b7-9aa8-2310601f5497,23dd1f83-be6b-42b7-9aa8-2310601f5497"
+test_related_media_duplicate_ids_audio,word,"869a8617-6285-49b2-ada2-96b4f9145451,869a8617-6285-49b2-ada2-96b4f9145451",,,
+test_related_media_duplicate_ids_image,word,,"271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e,271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e",,
+test_related_media_duplicate_ids_video,word,,,"5b79d515-41ff-4404-beb2-acec6ec91a57,5b79d515-41ff-4404-beb2-acec6ec91a57",
+test_related_media_duplicate_ids_document,word,,,,"23dd1f83-be6b-42b7-9aa8-2310601f5497,23dd1f83-be6b-42b7-9aa8-2310601f5497"
+test_related_media_duplicate_ids_all_media,word,"869a8617-6285-49b2-ada2-96b4f9145451,869a8617-6285-49b2-ada2-96b4f9145451","271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e,271e4aa1-e7ed-4e6c-8e31-e3f28f68b50e","5b79d515-41ff-4404-beb2-acec6ec91a57,5b79d515-41ff-4404-beb2-acec6ec91a57","23dd1f83-be6b-42b7-9aa8-2310601f5497,23dd1f83-be6b-42b7-9aa8-2310601f5497"

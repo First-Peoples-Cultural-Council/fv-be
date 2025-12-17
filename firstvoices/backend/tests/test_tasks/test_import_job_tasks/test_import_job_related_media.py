@@ -863,7 +863,7 @@ class TestImportJobRelatedMedia:
         assert entry5.related_documents.filter(id__in=sample_doc_ids).count() == 2
         assert entry5.related_documents.count() == 4
 
-    def test_related_media_duplicate_ids(self):
+    def test_related_media_duplicate_ids_confirm_import(self):
         sample_audio_id = "cd03befe-0910-4d39-8d16-e969ba589f40"
         sample_image_id = "d7b5d063-e9e3-4d6b-bc16-ba3c4e9e856b"
         sample_video_id = "46c4530f-9d4e-416c-822e-03df81991396"
@@ -890,31 +890,31 @@ class TestImportJobRelatedMedia:
 
         assert DictionaryEntry.objects.all().count() == 5
         entry1 = DictionaryEntry.objects.get(
-            title="test_related_media_duplicate_ids_duplicate_audio"
+            title="test_related_media_duplicate_ids_confirm_audio"
         )
         assert entry1.related_audio.filter(id=sample_audio_id).count() == 1
         assert entry1.related_audio.count() == 1
 
         entry2 = DictionaryEntry.objects.get(
-            title="test_related_media_duplicate_ids_duplicate_image"
+            title="test_related_media_duplicate_ids_confirm_image"
         )
         assert entry2.related_images.filter(id=sample_image_id).count() == 1
         assert entry2.related_images.count() == 1
 
         entry3 = DictionaryEntry.objects.get(
-            title="test_related_media_duplicate_ids_duplicate_video"
+            title="test_related_media_duplicate_ids_confirm_video"
         )
         assert entry3.related_videos.filter(id=sample_video_id).count() == 1
         assert entry3.related_videos.count() == 1
 
         entry4 = DictionaryEntry.objects.get(
-            title="test_related_media_duplicate_ids_duplicate_doc"
+            title="test_related_media_duplicate_ids_confirm_doc"
         )
         assert entry4.related_documents.filter(id=sample_doc_id).count() == 1
         assert entry4.related_documents.count() == 1
 
         entry5 = DictionaryEntry.objects.get(
-            title="test_related_media_duplicate_ids_duplicate_all"
+            title="test_related_media_duplicate_ids_confirm_all"
         )
         assert entry5.related_audio.filter(id=sample_audio_id).count() == 1
         assert entry5.related_audio.count() == 1
