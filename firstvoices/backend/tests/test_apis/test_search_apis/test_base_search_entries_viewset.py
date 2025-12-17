@@ -118,9 +118,16 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         site = factories.SiteFactory.create()
         factories.MembershipFactory.create(user=user, role=role, site=site)
 
-        mock_search_results, image, audio, video, document, song, story, word = (
-            self.set_up_mock_search_result()
-        )
+        (
+            mock_search_results,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self.set_up_mock_search_result()
 
         viewset = BaseSearchEntriesViewSet()
         viewset.request = self.create_mock_request(user=user, query_dict={})
@@ -141,9 +148,16 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         site = factories.SiteFactory.create()
         factories.MembershipFactory.create(user=user, role=Role.MEMBER, site=site)
 
-        mock_search_results, image, audio, video, document, song, story, word = (
-            self.set_up_mock_search_result(site=site)
-        )
+        (
+            mock_search_results,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self.set_up_mock_search_result(site=site)
 
         viewset = BaseSearchEntriesViewSet()
         viewset.request = self.create_mock_request(user=user, query_dict={})
@@ -161,9 +175,16 @@ class TestBaseSearchViewSet(SearchMocksMixin):
     @pytest.mark.django_db
     def test_serialized_entries_hide_author_fields_anonymous(self):
         user = factories.get_anonymous_user()
-        mock_search_results, image, audio, video, document, song, story, word = (
-            self.set_up_mock_search_result()
-        )
+        (
+            mock_search_results,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self.set_up_mock_search_result()
 
         viewset = BaseSearchEntriesViewSet()
         viewset.request = self.create_mock_request(user=user, query_dict={})
