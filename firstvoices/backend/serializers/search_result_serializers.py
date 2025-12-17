@@ -12,11 +12,10 @@ from backend.models import (
     dictionary,
 )
 from backend.serializers.base_serializers import (
-    DefaultTimestampFieldsMixin,
     HideEmailFieldsMixin,
     LinkedSiteMinimalSerializer,
     ReadOnlyVisibilityFieldMixin,
-    default_timestamp_fields,
+    minimal_timestamp_fields,
 )
 from backend.serializers.fields import TextListField
 from backend.serializers.files_serializers import FileSerializer
@@ -65,23 +64,21 @@ class PersonMinimalSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "bio")
 
 
-class MediaMinimalSerializer(
-    HideEmailFieldsMixin, DefaultTimestampFieldsMixin, serializers.ModelSerializer
-):
+class MediaMinimalSerializer(HideEmailFieldsMixin, serializers.ModelSerializer):
     created = serializers.DateTimeField(read_only=True)
     created_by = serializers.StringRelatedField(read_only=True)
     last_modified = serializers.DateTimeField(read_only=True)
     last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
-        fields = default_timestamp_fields + (
+        fields = minimal_timestamp_fields + (
             "id",
             "original",
             "title",
             "description",
             "acknowledgement",
         )
-        read_only_fields = default_timestamp_fields + (
+        read_only_fields = minimal_timestamp_fields + (
             "id",
             "original",
             "title",
@@ -169,7 +166,6 @@ class DictionaryEntryMinimalSerializer(
     HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
-    DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
     created = serializers.DateTimeField(read_only=True)
@@ -194,7 +190,7 @@ class DictionaryEntryMinimalSerializer(
 
     class Meta:
         model = dictionary.DictionaryEntry
-        fields = default_timestamp_fields + (
+        fields = minimal_timestamp_fields + (
             "id",
             "visibility",
             "title",
@@ -206,14 +202,13 @@ class DictionaryEntryMinimalSerializer(
             "split_chars_base",
             "external_system",
         )
-        read_only_fields = ("id", "title", "type")
+        read_only_fields = minimal_timestamp_fields + ("id", "title", "type")
 
 
 class SongMinimalSerializer(
     HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
-    DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
     created = serializers.DateTimeField(read_only=True)
@@ -231,7 +226,7 @@ class SongMinimalSerializer(
 
     class Meta:
         model = Song
-        fields = default_timestamp_fields + (
+        fields = minimal_timestamp_fields + (
             "id",
             "visibility",
             "title",
@@ -241,14 +236,18 @@ class SongMinimalSerializer(
             "related_images",
             "related_videos",
         )
-        read_only_fields = ("id", "title", "title_translation", "hide_overlay")
+        read_only_fields = minimal_timestamp_fields + (
+            "id",
+            "title",
+            "title_translation",
+            "hide_overlay",
+        )
 
 
 class StoryMinimalSerializer(
     HideEmailFieldsMixin,
     ReadOnlyVisibilityFieldMixin,
     SearchResultPrefetchMixin,
-    DefaultTimestampFieldsMixin,
     serializers.ModelSerializer,
 ):
     created = serializers.DateTimeField(read_only=True)
@@ -266,7 +265,7 @@ class StoryMinimalSerializer(
 
     class Meta:
         model = Story
-        fields = default_timestamp_fields + (
+        fields = minimal_timestamp_fields + (
             "id",
             "visibility",
             "title",

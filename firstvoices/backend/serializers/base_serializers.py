@@ -15,7 +15,7 @@ from ..models.constants import AppRole, Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
 
-default_timestamp_fields = (
+minimal_timestamp_fields = (
     "created",
     "created_by",
     "last_modified",
@@ -25,35 +25,9 @@ system_timestamp_fields = (
     "system_last_modified",
     "system_last_modified_by",
 )
-base_timestamp_fields = default_timestamp_fields + system_timestamp_fields
+base_timestamp_fields = minimal_timestamp_fields + system_timestamp_fields
 base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
-
-
-class DefaultTimestampFieldsMixin:
-    """
-    A mixin providing basic timestamp fields for serializers.
-    """
-
-    created = serializers.DateTimeField(read_only=True)
-    created_by = serializers.StringRelatedField(read_only=True)
-    last_modified = serializers.DateTimeField(read_only=True)
-    last_modified_by = serializers.StringRelatedField(read_only=True)
-
-    class Meta:
-        fields = default_timestamp_fields
-
-
-class SystemTimestampFieldsMixin(DefaultTimestampFieldsMixin):
-    """
-    A mixin providing system timestamp fields for serializers.
-    """
-
-    system_last_modified = serializers.DateTimeField(read_only=True)
-    system_last_modified_by = serializers.StringRelatedField(read_only=True)
-
-    class Meta:
-        fields = base_timestamp_fields
 
 
 class HideEmailFieldsMixin:
@@ -232,9 +206,6 @@ class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
     def get_visibility(instance):
         return instance.get_visibility_display().lower()
 
-    class Meta:
-        fields = ("visibility",)
-
 
 class ValidateNonNullableCharFieldsMixin:
     """
@@ -283,9 +254,7 @@ class LinkedSiteMinimalSerializer(
         read_only_fields = ("id", "slug", "title", "is_hidden")
 
 
-class BaseSiteContentSerializer(
-    HideEmailFieldsMixin, SystemTimestampFieldsMixin, SiteContentLinkedTitleSerializer
-):
+class BaseSiteContentSerializer(HideEmailFieldsMixin, SiteContentLinkedTitleSerializer):
     """
     Base serializer for site content models.
     """
@@ -301,7 +270,9 @@ class BaseSiteContentSerializer(
     system_last_modified_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
-        fields = base_timestamp_fields + base_id_fields + ("site",)
+        fields = (
+            base_timestamp_fields + system_timestamp_fields + base_id_fields + ("site",)
+        )
 
 
 class WritableSiteContentSerializer(
