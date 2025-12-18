@@ -390,11 +390,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         def get_expected_widget_response(widget_instance, widget_settings):
             return {
                 "created": widget_instance.created.astimezone().isoformat(),
-                "createdBy": widget_instance.created_by.email,
                 "lastModified": widget_instance.last_modified.astimezone().isoformat(),
-                "lastModifiedBy": widget_instance.last_modified_by.email,
                 "systemLastModified": widget_instance.system_last_modified.astimezone().isoformat(),
-                "systemLastModifiedBy": widget_instance.system_last_modified_by.email,
                 "id": str(widget_instance.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/widgets/{str(widget_instance.id)}",
                 "title": widget_instance.title,

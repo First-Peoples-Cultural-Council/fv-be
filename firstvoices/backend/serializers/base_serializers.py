@@ -10,20 +10,83 @@ from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from backend.serializers.utils.context_utils import get_site_from_context
 
 from ..models import Membership, Site
-from ..models.constants import Role, Visibility
+from ..models.app import AppMembership
+from ..models.constants import AppRole, Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
 
-base_timestamp_fields = (
+minimal_timestamp_fields = (
     "created",
     "created_by",
     "last_modified",
     "last_modified_by",
+)
+system_timestamp_fields = (
     "system_last_modified",
     "system_last_modified_by",
 )
+base_timestamp_fields = minimal_timestamp_fields + system_timestamp_fields
 base_id_fields = ("id", "url", "title")
 audience_fields = ("exclude_from_games", "exclude_from_kids")
+
+
+class HideEmailFieldsMixin:
+    """
+    A mixin for ModelSerializers that hides email fields based on user permissions.
+    """
+
+    EMAIL_FIELDS = {
+        "created_by",
+        "last_modified_by",
+        "system_last_modified_by",
+    }
+
+    @classmethod
+    def _remove_email_fields(cls, data):
+        for field in cls.EMAIL_FIELDS:
+            if field in data:
+                data.pop(field)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get("request", None)
+        user = request.user if request else None
+
+        # always remove email fields for unauthenticated users
+        if user is None or not user.is_authenticated:
+            self._remove_email_fields(fields)
+
+        return fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        request = self.context.get("request", None)
+        user = request.user if request else None
+
+        if user is None or not user.is_authenticated:
+            return data
+
+        site = instance.site
+
+        try:
+            membership = Membership.objects.get(user=user, site=site)
+        except Membership.DoesNotExist:
+            membership = None
+
+        try:
+            app_role = AppMembership.objects.get(
+                user=user,
+            )
+        except AppMembership.DoesNotExist:
+            app_role = None
+
+        is_not_staff = app_role.role < AppRole.STAFF if app_role else True
+        #  Hide email fields if the user is not staff and not an assistant or higher in site membership
+        if is_not_staff and (not membership or membership.role < Role.ASSISTANT):
+            self._remove_email_fields(data)
+
+        return data
 
 
 class SiteContentUrlMixin:
@@ -143,9 +206,6 @@ class ReadOnlyVisibilityFieldMixin(metaclass=serializers.SerializerMetaclass):
     def get_visibility(instance):
         return instance.get_visibility_display().lower()
 
-    class Meta:
-        fields = ("visibility",)
-
 
 class ValidateNonNullableCharFieldsMixin:
     """
@@ -194,7 +254,7 @@ class LinkedSiteMinimalSerializer(
         read_only_fields = ("id", "slug", "title", "is_hidden")
 
 
-class BaseSiteContentSerializer(SiteContentLinkedTitleSerializer):
+class BaseSiteContentSerializer(HideEmailFieldsMixin, SiteContentLinkedTitleSerializer):
     """
     Base serializer for site content models.
     """
