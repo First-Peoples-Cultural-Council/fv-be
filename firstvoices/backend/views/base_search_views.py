@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
-from backend.utils.character_utils import clean_input
+from backend.search.utils import get_base_search_params
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -21,15 +21,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
     serializer_classes = {}
 
     def get_search_params(self):
-        """
-        Returns validated search parameters based on request inputs.
-        """
-        cleaned_q = clean_input(self.request.GET.get("q", ""))
-
-        return {
-            "q": cleaned_q.lower(),
-            "user": self.request.user,
-        }
+        return get_base_search_params(self.request)
 
     def get_pagination_params(self):
         """

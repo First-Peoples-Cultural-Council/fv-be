@@ -6,6 +6,7 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 from elasticsearch.dsl import Q, Search
+from search.utils import get_base_search_params
 
 from backend.models.sites import Site
 from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
@@ -101,7 +102,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         """
         Returns validated search parameters based on request inputs.
         """
-        search_params = super().get_search_params()
+        search_params = get_base_search_params(self.request)
 
         explorable_input = self.request.GET.get("explorable", None)
 
