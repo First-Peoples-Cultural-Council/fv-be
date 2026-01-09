@@ -8,6 +8,7 @@ from drf_spectacular.utils import (
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from search.utils import get_site_entries_search_params
 
 from backend.models.constants import AppRole, Role
 from backend.permissions.utils import get_app_role, get_site_role
@@ -128,7 +129,9 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         site = self.get_validated_site()
         filename = f"dictionary_export_{site.slug}_{timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")}"
 
-        search_params = self.get_search_params()
+        search_params = get_site_entries_search_params(
+            request, site, self.default_search_types, self.allowed_search_types
+        )
         if self.has_invalid_input(search_params):
             return Response(
                 data=[],
