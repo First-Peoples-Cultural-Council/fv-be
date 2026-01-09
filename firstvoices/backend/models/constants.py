@@ -19,6 +19,21 @@ WIDGET_STATS = "WIDGET_STATS"
 WIDGET_WOTD = "WIDGET_WOTD"
 WIDGET_TEXT = "WIDGET_TEXT"
 
+# Default limits for related media on dictionary entries
+MAX_AUDIO_PER_ENTRY = 10
+MAX_DOCUMENTS_PER_ENTRY = 10
+MAX_IMAGES_PER_ENTRY = 10
+MAX_VIDEOS_PER_ENTRY = 10
+
+# Default limits for related items on dictionary entries
+MAX_ACKNOWLEDGEMENTS_PER_ENTRY = 10
+MAX_CATEGORIES_PER_ENTRY = 10
+MAX_NOTES_PER_ENTRY = 10
+MAX_PRONUNCIATIONS_PER_ENTRY = 3
+MAX_RELATED_ENTRIES_PER_ENTRY = 10
+MAX_SPELLINGS_PER_ENTRY = 10
+MAX_TRANSLATIONS_PER_ENTRY = 10
+
 
 class Visibility(models.IntegerChoices):
     # enum intentionally has gaps to allow future changes to keep sequential order
