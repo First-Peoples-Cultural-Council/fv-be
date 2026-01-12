@@ -2,8 +2,7 @@ import json
 
 import pytest
 
-import backend.tests.factories.dictionary_entry
-from backend.models.constants import AppRole, Role, Visibility
+from backend.models.constants import Role, Visibility
 from backend.models.dictionary import (
     DictionaryEntry,
     ExternalDictionaryEntrySystem,
@@ -11,8 +10,6 @@ from backend.models.dictionary import (
 )
 from backend.tests import factories
 from backend.tests.test_apis.base.base_media_test import (
-    MOCK_EMBED_LINK,
-    MOCK_THUMBNAIL_LINK,
     VIMEO_VIDEO_LINK,
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
@@ -76,6 +73,8 @@ class TestDictionaryEndpoint(
             "pronunciations": [{"text": "pronunciations 1"}],
             "site": str(site.id),
             "relatedDictionaryEntries": [],
+            "externalSystem": None,
+            "externalSystemEntryId": "",
             **related_media,
         }
 
@@ -124,26 +123,22 @@ class TestDictionaryEndpoint(
         assert actual_instance.exclude_from_games == expected_data["excludeFromGames"]
         assert actual_instance.exclude_from_kids == expected_data["excludeFromKids"]
 
-        assert (
-            format_dictionary_entry_related_field(actual_instance.acknowledgements)
-            == expected_data["acknowledgements"]
-        )
-        assert (
-            format_dictionary_entry_related_field(actual_instance.notes)
-            == expected_data["notes"]
-        )
-        assert (
-            format_dictionary_entry_related_field(actual_instance.translations)
-            == expected_data["translations"]
-        )
-        assert (
-            format_dictionary_entry_related_field(actual_instance.alternate_spellings)
-            == expected_data["alternateSpellings"]
-        )
-        assert (
-            format_dictionary_entry_related_field(actual_instance.pronunciations)
-            == expected_data["pronunciations"]
-        )
+        for index, acknowledgement in enumerate(actual_instance.acknowledgements):
+            assert expected_data["acknowledgements"][index]["text"] == acknowledgement
+
+        for index, note in enumerate(actual_instance.notes):
+            assert expected_data["notes"][index]["text"] == note
+
+        for index, translation in enumerate(actual_instance.translations):
+            assert expected_data["translations"][index]["text"] == translation
+
+        for index, alternate_spelling in enumerate(actual_instance.alternate_spellings):
+            assert (
+                expected_data["alternateSpellings"][index]["text"] == alternate_spelling
+            )
+
+        for index, pronunciation in enumerate(actual_instance.pronunciations):
+            assert expected_data["pronunciations"][index]["text"] == pronunciation
 
         self.assert_updated_instance_related_media(expected_data, actual_instance)
 
@@ -218,6 +213,8 @@ class TestDictionaryEndpoint(
             "relatedDictionaryEntries": [],
             **self.RELATED_MEDIA_DEFAULTS,
             "isImmersionLabel": False,
+            "externalSystem": None,
+            "externalSystemEntryId": "",
         }
 
     def create_original_instance_for_patch(self, site):
@@ -378,24 +375,28 @@ class TestDictionaryEndpoint(
 
     @pytest.mark.django_db
     def test_list_permissions(self):
-        # create some visible words and some invisible words
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
+        # overwriting the base test to test text list field ids
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
 
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.PUBLIC)
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.MEMBERS
-        )
-        factories.DictionaryEntryFactory.create(site=site, visibility=Visibility.TEAM)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+        self.create_minimal_instance(site=site, visibility=Visibility.MEMBERS)
+        self.create_minimal_instance(site=site, visibility=Visibility.TEAM)
 
-        response = self.client.get(self.get_list_endpoint(site.slug))
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
 
         assert response.status_code == 200
-        response_data = json.loads(response.content)
 
-        assert response_data["count"] == 1, "did not filter out blocked sites"
-        assert len(response_data["results"]) == 1, "did not include available site"
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert len(response_data["results"]) == 1
+
+        assert_dictionary_entry_summary_response(
+            response_data["results"][0], instance, response.wsgi_request
+        )
+
+        assert "createdBy" not in response_data["results"][0]
+        assert "lastModifiedBy" not in response_data["results"][0]
+        assert "systemLastModifiedBy" not in response_data["results"][0]
 
     @pytest.mark.django_db
     def test_detail_categories(self):
@@ -489,359 +490,6 @@ class TestDictionaryEndpoint(
         assert response_data["id"] == str(entry.id)
 
     @pytest.mark.django_db
-    def test_character_lists_generation(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="bc a"
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_character_lists_generation_with_variants(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="x")
-        factories.CharacterFactory.create(site=site, title="y")
-        factories.CharacterFactory.create(site=site, title="c")
-        aa = factories.CharacterFactory.create(site=site, title="aa")
-        h = factories.CharacterFactory.create(site=site, title="h")
-        ch = factories.CharacterFactory.create(site=site, title="ch")
-
-        factories.CharacterVariantFactory.create(
-            site=site, title="AA", base_character=aa
-        )
-        factories.CharacterVariantFactory.create(
-            site=site, title="Ch", base_character=ch
-        )
-        factories.CharacterVariantFactory.create(site=site, title="H", base_character=h)
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="ChxyAA hcH"
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_character_lists_unrecognized_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="abc"
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_character_lists_with_ignored_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        factories.AlphabetFactory.create(site=site)
-
-        factories.CharacterFactory.create(site=site, title="x")
-        factories.CharacterFactory.create(site=site, title="y")
-        factories.IgnoredCharacterFactory.create(site=site, title="&")
-
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x&y"
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_character_lists_ignored_character_edge_case(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-        factories.AlphabetFactory.create(site=site)
-
-        factories.CharacterFactory.create(site=site, title="x-")
-        factories.CharacterFactory.create(site=site, title="y")
-        factories.IgnoredCharacterFactory.create(site=site, title="-")
-
-        factories.DictionaryEntryFactory.create(
-            site=site, visibility=Visibility.PUBLIC, title="x-y"
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_word_lists(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            title="abc bca caba",
-            type=TypeOfDictionaryEntry.PHRASE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_word_lists_with_variants(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="x")
-        char = factories.CharacterFactory.create(site=site, title="y")
-        factories.CharacterVariantFactory.create(
-            site=site, title="Y", base_character=char
-        )
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            title="xyY yYx xYy",
-            type=TypeOfDictionaryEntry.PHRASE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_word_lists_single_word(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            title="abc",
-            type=TypeOfDictionaryEntry.PHRASE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_word_lists_with_unknown_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="x")
-        y = factories.CharacterFactory.create(site=site, title="y")
-        factories.CharacterVariantFactory.create(site=site, title="Y", base_character=y)
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            title="xyY yYx xYy Hello",
-            type=TypeOfDictionaryEntry.PHRASE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_word_lists_with_ignored_characters(self):
-        user = factories.get_non_member_user()
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory(visibility=Visibility.PUBLIC)
-
-        factories.CharacterFactory.create(site=site, title="x")
-        factories.CharacterFactory.create(site=site, title="y")
-        factories.IgnoredCharacterFactory.create(site=site, title="-")
-
-        factories.AlphabetFactory.create(site=site)
-
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            title="xy-y -y-x x-y-",
-            type=TypeOfDictionaryEntry.PHRASE,
-        )
-
-        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["count"] == 1
-        assert len(response_data["results"]) == 1
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create_no_content(self):
-        user = factories.get_app_admin(AppRole.SUPERADMIN)
-        self.client.force_authenticate(user=user)
-
-        site = factories.SiteFactory()
-        data = {}
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        factories.AlphabetFactory.create(site=site)
-        category = factories.CategoryFactory.create(site=site)
-        part_of_speech = (
-            backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
-        )
-        related_entry = factories.DictionaryEntryFactory.create(site=site)
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "team",
-            "categories": [str(category.id)],
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
-            "acknowledgements": [{"text": "Thank"}, {"text": "You"}],
-            "alternate_spellings": [{"text": "Hello"}, {"text": "World"}],
-            "notes": [{"text": self.NOTE_TEXT}, {"text": "Note 2"}],
-            "translations": [{"text": "Hallo"}],
-            "part_of_speech": str(part_of_speech.id),
-            "pronunciations": [{"text": "Huh-lo"}],
-            "related_dictionary_entries": [str(related_entry.id)],
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-
-        assert response.status_code == 201
-
-        # Test API response
-        response_data = json.loads(response.content)
-        assert response_data["title"] == "Hello"
-        assert response_data["type"] == TypeOfDictionaryEntry.WORD
-        assert response_data["visibility"] == "team"
-        assert response_data["categories"][0]["id"] == str(category.id)
-        assert response_data["excludeFromGames"] is False
-        assert response_data["excludeFromKids"] is False
-        assert response_data["acknowledgements"][0]["text"] == "Thank"
-        assert response_data["acknowledgements"][1]["text"] == "You"
-        assert response_data["alternateSpellings"][0]["text"] == "Hello"
-        assert response_data["alternateSpellings"][1]["text"] == "World"
-        assert response_data["notes"][0]["text"] == self.NOTE_TEXT
-        assert response_data["notes"][1]["text"] == "Note 2"
-        assert response_data["translations"][0]["text"] == "Hallo"
-        assert response_data["partOfSpeech"]["id"] == str(part_of_speech.id)
-        assert response_data["pronunciations"][0]["text"] == "Huh-lo"
-        assert response_data["relatedDictionaryEntries"][0]["id"] == str(
-            related_entry.id
-        )
-
-        # Test DB changes
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.title == "Hello"
-        assert entry_in_db.type == TypeOfDictionaryEntry.WORD
-        assert entry_in_db.visibility == Visibility.TEAM
-        assert entry_in_db.categories.first().id == category.id
-        assert entry_in_db.exclude_from_games is False
-        assert entry_in_db.exclude_from_kids is False
-        assert entry_in_db.part_of_speech.id == part_of_speech.id
-        assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
-
-    @pytest.mark.django_db
     def test_dictionary_entry_create_invalid_related_entries(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
@@ -862,35 +510,6 @@ class TestDictionaryEndpoint(
         )
 
         assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create_related_media(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        factories.AlphabetFactory.create(site=site)
-        related_media = self.get_valid_related_media_data(site=site)
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "public",
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
-            **related_media,
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-
-        assert response.status_code == 201
-        response_data = json.loads(response.content)
-        self.assert_update_response_related_media(
-            expected_data=data, actual_response=response_data
-        )
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
@@ -990,100 +609,6 @@ class TestDictionaryEndpoint(
         assert response.status_code == expected_response_code
 
     @pytest.mark.django_db
-    def test_dictionary_entry_update(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        factories.AlphabetFactory.create(site=site)
-        category = factories.CategoryFactory.create(site=site)
-        part_of_speech = (
-            backend.tests.factories.dictionary_entry.PartOfSpeechFactory.create()
-        )
-        related_entry = factories.DictionaryEntryFactory.create(site=site)
-
-        entry = factories.DictionaryEntryFactory.create(
-            site=site,
-            title="Hello",
-            type=TypeOfDictionaryEntry.WORD,
-            visibility=Visibility.PUBLIC,
-            exclude_from_games=False,
-            exclude_from_kids=False,
-        )
-
-        data = {
-            "title": "Goodbye",
-            "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility": "team",
-            "categories": [str(category.id)],
-            "exclude_from_games": True,
-            "exclude_from_kids": True,
-            "acknowledgements": [{"text": "Thanks"}],
-            "alternate_spellings": [{"text": "Gooodbye"}],
-            "notes": [{"text": self.NOTE_TEXT}],
-            "translations": [{"text": self.TRANSLATION_TEXT}],
-            "part_of_speech": str(part_of_speech.id),
-            "pronunciations": [{"text": "Good-bye"}],
-            "related_dictionary_entries": [str(related_entry.id)],
-            "related_video_links": [YOUTUBE_VIDEO_LINK, VIMEO_VIDEO_LINK],
-        }
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
-
-        assert response.status_code == 200
-
-        # Test API response
-        response_data = json.loads(response.content)
-        assert response_data["title"] == "Goodbye"
-        assert response_data["type"] == TypeOfDictionaryEntry.PHRASE
-        assert response_data["visibility"] == "team"
-        assert response_data["categories"][0]["id"] == str(category.id)
-        assert response_data["excludeFromGames"] is True
-        assert response_data["excludeFromKids"] is True
-        assert response_data["acknowledgements"][0]["text"] == "Thanks"
-        assert response_data["alternateSpellings"][0]["text"] == "Gooodbye"
-        assert response_data["notes"][0]["text"] == self.NOTE_TEXT
-        assert response_data["translations"][0]["text"] == self.TRANSLATION_TEXT
-        assert response_data["partOfSpeech"]["id"] == str(part_of_speech.id)
-        assert response_data["pronunciations"][0]["text"] == "Good-bye"
-        assert response_data["relatedDictionaryEntries"][0]["id"] == str(
-            related_entry.id
-        )
-        assert response_data["relatedVideoLinks"] == [
-            {
-                "videoLink": YOUTUBE_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-            {
-                "videoLink": VIMEO_VIDEO_LINK,
-                "embedLink": MOCK_EMBED_LINK,
-                "thumbnail": MOCK_THUMBNAIL_LINK,
-            },
-        ]
-
-        # Test DB changes
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert entry_in_db.title == "Goodbye"
-        assert entry_in_db.type == TypeOfDictionaryEntry.PHRASE
-        assert entry_in_db.visibility == Visibility.TEAM
-        assert entry_in_db.categories.first().id == category.id
-        assert entry_in_db.exclude_from_games is True
-        assert entry_in_db.exclude_from_kids is True
-        assert entry_in_db.part_of_speech.id == part_of_speech.id
-        assert entry_in_db.related_dictionary_entries.first().id == related_entry.id
-
-        assert entry_in_db.related_video_links == [
-            YOUTUBE_VIDEO_LINK,
-            VIMEO_VIDEO_LINK,
-        ]
-
-    @pytest.mark.django_db
     def test_dictionary_entry_update_invalid_related_entries(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
@@ -1108,182 +633,6 @@ class TestDictionaryEndpoint(
         )
 
         assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_update_no_content(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(
-            site=site,
-            title="Hello",
-            type=TypeOfDictionaryEntry.WORD,
-            visibility=Visibility.PUBLIC,
-            exclude_from_games=False,
-            exclude_from_kids=False,
-        )
-
-        data = {}
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
-
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_create_external_system_fields(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        ExternalDictionaryEntrySystem.objects.create(title="External One")
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "team",
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
-            "external_system": "External One",
-            "external_system_entry_id": "abc-123",
-        }
-
-        response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-        )
-        assert response.status_code == 201
-
-        response_data = json.loads(response.content)
-        assert response_data["externalSystem"] == "External One"
-        assert response_data["externalSystemEntryId"] == "abc-123"
-
-        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert (
-            entry_in_db.external_system
-            and entry_in_db.external_system.title == "External One"
-        )
-        assert entry_in_db.external_system_entry_id == "abc-123"
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_update_external_system_fields_put(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        sys_a = ExternalDictionaryEntrySystem.objects.create(title="ExtA")
-        sys_b = ExternalDictionaryEntrySystem.objects.create(title="ExtB")
-
-        entry = factories.DictionaryEntryFactory.create(
-            site=site,
-            title="Hello",
-            type=TypeOfDictionaryEntry.WORD,
-            visibility=Visibility.PUBLIC,
-            exclude_from_games=False,
-            exclude_from_kids=False,
-            external_system=sys_a,
-            external_system_entry_id="old-id",
-        )
-
-        data = {
-            "title": "Hello",
-            "type": TypeOfDictionaryEntry.WORD,
-            "visibility": "public",
-            "exclude_from_games": False,
-            "exclude_from_kids": False,
-            "external_system": "ExtB",
-            "external_system_entry_id": "new-id",
-        }
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["externalSystem"] == "ExtB"
-        assert response_data["externalSystemEntryId"] == "new-id"
-
-        entry.refresh_from_db()
-        assert entry.external_system_id == sys_b.id
-        assert entry.external_system_entry_id == "new-id"
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_patch_clear_external_system_fields(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        system = ExternalDictionaryEntrySystem.objects.create(title="ExtClear")
-        entry = factories.DictionaryEntryFactory.create(
-            site=site,
-            title="Hello",
-            type=TypeOfDictionaryEntry.WORD,
-            visibility=Visibility.PUBLIC,
-            external_system=system,
-            external_system_entry_id="to-clear",
-        )
-
-        data = {
-            "external_system": None,
-            "external_system_entry_id": "",
-        }
-
-        response = self.client.patch(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        assert response_data["externalSystem"] is None
-        assert response_data["externalSystemEntryId"] == ""
-
-        entry.refresh_from_db()
-        assert entry.external_system is None
-        assert entry.external_system_entry_id == ""
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_update_related_media(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(site=site)
-        related_media = self.get_valid_related_media_data(site=site)
-
-        data = {
-            "title": "Goodbye",
-            "type": TypeOfDictionaryEntry.PHRASE,
-            "visibility": "team",
-            "exclude_from_games": True,
-            "exclude_from_kids": True,
-            **related_media,
-        }
-
-        response = self.client.put(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-            format="json",
-            data=data,
-        )
-
-        assert response.status_code == 200
-
-        response_data = json.loads(response.content)
-        self.assert_update_response_related_media(
-            expected_data=data, actual_response=response_data
-        )
 
     @pytest.mark.parametrize(
         "invalid_data_key, invalid_data_value",
@@ -1334,7 +683,7 @@ class TestDictionaryEndpoint(
         assert response.status_code == 400
 
     @pytest.mark.django_db
-    def test_dictionary_entry_same_site_validation(self):
+    def test_dictionary_entry_category_same_site_validation(self):
         site, user = factories.get_site_with_member(
             site_visibility=Visibility.TEAM, user_role=Role.EDITOR
         )
@@ -1358,22 +707,6 @@ class TestDictionaryEndpoint(
         )
 
         assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_dictionary_entry_delete(self):
-        site, user = factories.get_site_with_member(
-            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-        )
-        self.client.force_authenticate(user=user)
-
-        entry = factories.DictionaryEntryFactory.create(site=site)
-
-        response = self.client.delete(
-            self.get_detail_endpoint(key=entry.id, site_slug=site.slug)
-        )
-
-        assert response.status_code == 204
-        assert DictionaryEntry.objects.filter(id=entry.id).exists() is False
 
     @pytest.mark.django_db
     def test_dictionary_entry_delete_does_not_delete_related_entry(self):
@@ -1449,6 +782,124 @@ class TestDictionaryEndpoint(
         assert response_data["translations"] == [
             "Expected the objects in the list to contain key 'text'."
         ]
+
+        @pytest.mark.django_db
+        def test_dictionary_entry_create_external_system_fields(self):
+            site, user = factories.get_site_with_member(
+                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+            )
+            self.client.force_authenticate(user=user)
+
+            ExternalDictionaryEntrySystem.objects.create(title="External One")
+
+            data = {
+                "title": "Hello",
+                "type": TypeOfDictionaryEntry.WORD,
+                "visibility": "team",
+                "exclude_from_games": False,
+                "exclude_from_kids": False,
+                "external_system": "External One",
+                "external_system_entry_id": "abc-123",
+            }
+
+            response = self.client.post(
+                self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+            )
+            assert response.status_code == 201
+
+            response_data = json.loads(response.content)
+            assert response_data["externalSystem"] == "External One"
+            assert response_data["externalSystemEntryId"] == "abc-123"
+
+            entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
+            assert (
+                entry_in_db.external_system
+                and entry_in_db.external_system.title == "External One"
+            )
+            assert entry_in_db.external_system_entry_id == "abc-123"
+
+        @pytest.mark.django_db
+        def test_dictionary_entry_update_external_system_fields_put(self):
+            site, user = factories.get_site_with_member(
+                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+            )
+            self.client.force_authenticate(user=user)
+
+            sys_a = ExternalDictionaryEntrySystem.objects.create(title="ExtA")
+            sys_b = ExternalDictionaryEntrySystem.objects.create(title="ExtB")
+
+            entry = factories.DictionaryEntryFactory.create(
+                site=site,
+                title="Hello",
+                type=TypeOfDictionaryEntry.WORD,
+                visibility=Visibility.PUBLIC,
+                exclude_from_games=False,
+                exclude_from_kids=False,
+                external_system=sys_a,
+                external_system_entry_id="old-id",
+            )
+
+            data = {
+                "title": "Hello",
+                "type": TypeOfDictionaryEntry.WORD,
+                "visibility": "public",
+                "exclude_from_games": False,
+                "exclude_from_kids": False,
+                "external_system": "ExtB",
+                "external_system_entry_id": "new-id",
+            }
+
+            response = self.client.put(
+                self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+                format="json",
+                data=data,
+            )
+            assert response.status_code == 200
+
+            response_data = json.loads(response.content)
+            assert response_data["externalSystem"] == "ExtB"
+            assert response_data["externalSystemEntryId"] == "new-id"
+
+            entry.refresh_from_db()
+            assert entry.external_system_id == sys_b.id
+            assert entry.external_system_entry_id == "new-id"
+
+        @pytest.mark.django_db
+        def test_dictionary_entry_patch_clear_external_system_fields(self):
+            site, user = factories.get_site_with_member(
+                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+            )
+            self.client.force_authenticate(user=user)
+
+            system = ExternalDictionaryEntrySystem.objects.create(title="ExtClear")
+            entry = factories.DictionaryEntryFactory.create(
+                site=site,
+                title="Hello",
+                type=TypeOfDictionaryEntry.WORD,
+                visibility=Visibility.PUBLIC,
+                external_system=system,
+                external_system_entry_id="to-clear",
+            )
+
+            data = {
+                "external_system": None,
+                "external_system_entry_id": "",
+            }
+
+            response = self.client.patch(
+                self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+                format="json",
+                data=data,
+            )
+            assert response.status_code == 200
+
+            response_data = json.loads(response.content)
+            assert response_data["externalSystem"] is None
+            assert response_data["externalSystemEntryId"] == ""
+
+            entry.refresh_from_db()
+            assert entry.external_system is None
+            assert entry.external_system_entry_id == ""
 
 
 def assert_dictionary_entry_summary_response(data, entry, request_data):

@@ -47,7 +47,7 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
                 "id": str(instance.dictionary_entry.id),
                 "url": f"http://testserver/api/1.0/sites/{site.slug}/dictionary/{instance.dictionary_entry.id}",
                 "title": instance.dictionary_entry.title,
-                "type": instance.dictionary_entry.type,
+                "type": str(instance.dictionary_entry.type),
                 "translations": format_dictionary_entry_related_field(
                     instance.dictionary_entry.translations
                 ),
@@ -59,6 +59,15 @@ class TestImmersionEndpoints(BaseUncontrolledSiteContentApiTest):
             },
             "key": str(instance.key),
         }
+
+    def get_expected_list_response_item(self, instance, site):
+        # overriding to deal with ID values in text list fields
+        expected_response = self.get_expected_response(instance, site)
+
+        for translation in expected_response["dictionaryEntry"]["translations"]:
+            assert "id" in translation
+            del translation["id"]
+        return expected_response
 
     def assert_minimal_list_response(self, response, instance):
         """Customized to handle dynamically added stub IDs from the serializers."""

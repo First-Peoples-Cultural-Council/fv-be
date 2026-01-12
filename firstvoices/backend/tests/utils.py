@@ -140,7 +140,7 @@ def get_sample_file(filename, mimetype, file_dir="factories/resources", title=No
 
 def format_dictionary_entry_related_field(entries):
     # To format the provided ArrayField to expected API response structure
-    return [{"text": entry} for entry in entries]
+    return [{"text": entry, "id": str(uuid.uuid4())} for entry in entries]
 
 
 def is_valid_uuid(uuid_string):
