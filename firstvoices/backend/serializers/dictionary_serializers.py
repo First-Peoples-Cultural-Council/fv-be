@@ -190,7 +190,6 @@ class DictionaryEntryDetailSerializer(
                 field_name="categories", max_instances=MAX_CATEGORIES_PER_ENTRY
             )
         )
-
         self.fields["related_audio"].validators.append(
             MaxInstancesValidator(
                 field_name="related_audio", max_instances=MAX_AUDIO_PER_ENTRY

@@ -933,7 +933,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_text_list_field_limits_create(
         self, text_list_field, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
 
         data = {
             "title": "Test Word",
@@ -966,8 +966,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_text_list_field_limits_update(
         self, text_list_field, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
 
         entry = factories.DictionaryEntryFactory.create(site=site)
 
@@ -1004,8 +1003,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_text_list_field_limits_patch(
         self, text_list_field, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
 
         entry = factories.DictionaryEntryFactory.create(site=site)
 
@@ -1044,8 +1042,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_related_model_field_limits_create(
         self, related_model_field, related_model_factory, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
         related_items = [
             str(related_model_factory.create(site=site).id)
             for _ in range(maximum_items + 1)
@@ -1088,8 +1085,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_related_model_field_limits_update(
         self, related_model_field, related_model_factory, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
 
         entry = factories.DictionaryEntryFactory.create(site=site)
         related_items = [
@@ -1136,8 +1132,7 @@ class TestDictionaryEndpoint(
     def test_dictionary_entry_related_model_field_limits_patch(
         self, related_model_field, related_model_factory, maximum_items
     ):
-        site, user = factories.get_site_with_app_admin(client=self.client)
-        self.client.force_authenticate(user=user)
+        site, _ = factories.get_site_with_app_admin(client=self.client)
 
         entry = factories.DictionaryEntryFactory.create(site=site)
         related_items = [
