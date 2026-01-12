@@ -110,11 +110,6 @@ class DictionaryEntryDetailSerializer(
         queryset=category.Category.objects.all(),
         many=True,
         required=False,
-        validators=[
-            MaxInstancesValidator(
-                field_name="categories", max_instances=MAX_CATEGORIES_PER_ENTRY
-            )
-        ],
     )
     part_of_speech = WritablePartsOfSpeechSerializer(
         queryset=part_of_speech.PartOfSpeech.objects.all(),
@@ -189,7 +184,13 @@ class DictionaryEntryDetailSerializer(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Add max instance validators to related media and entry fields
+        # Add max instance validators to related model m2m fields
+        self.fields["categories"].validators.append(
+            MaxInstancesValidator(
+                field_name="categories", max_instances=MAX_CATEGORIES_PER_ENTRY
+            )
+        )
+
         self.fields["related_audio"].validators.append(
             MaxInstancesValidator(
                 field_name="related_audio", max_instances=MAX_AUDIO_PER_ENTRY

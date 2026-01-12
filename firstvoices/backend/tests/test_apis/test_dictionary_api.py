@@ -2,7 +2,21 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import (
+    MAX_ACKNOWLEDGEMENTS_PER_ENTRY,
+    MAX_AUDIO_PER_ENTRY,
+    MAX_CATEGORIES_PER_ENTRY,
+    MAX_DOCUMENTS_PER_ENTRY,
+    MAX_IMAGES_PER_ENTRY,
+    MAX_NOTES_PER_ENTRY,
+    MAX_PRONUNCIATIONS_PER_ENTRY,
+    MAX_RELATED_ENTRIES_PER_ENTRY,
+    MAX_SPELLINGS_PER_ENTRY,
+    MAX_TRANSLATIONS_PER_ENTRY,
+    MAX_VIDEOS_PER_ENTRY,
+    Role,
+    Visibility,
+)
 from backend.models.dictionary import (
     DictionaryEntry,
     ExternalDictionaryEntrySystem,
@@ -14,7 +28,11 @@ from backend.tests.test_apis.base.base_media_test import (
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
 )
-from backend.tests.utils import format_dictionary_entry_related_field, is_valid_uuid
+from backend.tests.utils import (
+    format_dictionary_entry_related_field,
+    is_valid_uuid,
+    to_camel_case,
+)
 
 from ...models import ImmersionLabel
 from ...serializers.category_serializers import CategoryDetailSerializer
@@ -783,123 +801,366 @@ class TestDictionaryEndpoint(
             "Expected the objects in the list to contain key 'text'."
         ]
 
-        @pytest.mark.django_db
-        def test_dictionary_entry_create_external_system_fields(self):
-            site, user = factories.get_site_with_member(
-                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-            )
-            self.client.force_authenticate(user=user)
+    @pytest.mark.django_db
+    def test_dictionary_entry_create_external_system_fields(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
 
-            ExternalDictionaryEntrySystem.objects.create(title="External One")
+        ExternalDictionaryEntrySystem.objects.create(title="External One")
 
-            data = {
-                "title": "Hello",
-                "type": TypeOfDictionaryEntry.WORD,
-                "visibility": "team",
-                "exclude_from_games": False,
-                "exclude_from_kids": False,
-                "external_system": "External One",
-                "external_system_entry_id": "abc-123",
-            }
+        data = {
+            "title": "Hello",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "team",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "external_system": "External One",
+            "external_system_entry_id": "abc-123",
+        }
 
-            response = self.client.post(
-                self.get_list_endpoint(site_slug=site.slug), format="json", data=data
-            )
-            assert response.status_code == 201
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 201
 
-            response_data = json.loads(response.content)
-            assert response_data["externalSystem"] == "External One"
-            assert response_data["externalSystemEntryId"] == "abc-123"
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] == "External One"
+        assert response_data["externalSystemEntryId"] == "abc-123"
 
-            entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-            assert (
-                entry_in_db.external_system
-                and entry_in_db.external_system.title == "External One"
-            )
-            assert entry_in_db.external_system_entry_id == "abc-123"
+        entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
+        assert (
+            entry_in_db.external_system
+            and entry_in_db.external_system.title == "External One"
+        )
+        assert entry_in_db.external_system_entry_id == "abc-123"
 
-        @pytest.mark.django_db
-        def test_dictionary_entry_update_external_system_fields_put(self):
-            site, user = factories.get_site_with_member(
-                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-            )
-            self.client.force_authenticate(user=user)
+    @pytest.mark.django_db
+    def test_dictionary_entry_update_external_system_fields_put(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
 
-            sys_a = ExternalDictionaryEntrySystem.objects.create(title="ExtA")
-            sys_b = ExternalDictionaryEntrySystem.objects.create(title="ExtB")
+        sys_a = ExternalDictionaryEntrySystem.objects.create(title="ExtA")
+        sys_b = ExternalDictionaryEntrySystem.objects.create(title="ExtB")
 
-            entry = factories.DictionaryEntryFactory.create(
-                site=site,
-                title="Hello",
-                type=TypeOfDictionaryEntry.WORD,
-                visibility=Visibility.PUBLIC,
-                exclude_from_games=False,
-                exclude_from_kids=False,
-                external_system=sys_a,
-                external_system_entry_id="old-id",
-            )
+        entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            title="Hello",
+            type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+            exclude_from_games=False,
+            exclude_from_kids=False,
+            external_system=sys_a,
+            external_system_entry_id="old-id",
+        )
 
-            data = {
-                "title": "Hello",
-                "type": TypeOfDictionaryEntry.WORD,
-                "visibility": "public",
-                "exclude_from_games": False,
-                "exclude_from_kids": False,
-                "external_system": "ExtB",
-                "external_system_entry_id": "new-id",
-            }
+        data = {
+            "title": "Hello",
+            "type": TypeOfDictionaryEntry.WORD,
+            "visibility": "public",
+            "exclude_from_games": False,
+            "exclude_from_kids": False,
+            "external_system": "ExtB",
+            "external_system_entry_id": "new-id",
+        }
 
-            response = self.client.put(
-                self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-                format="json",
-                data=data,
-            )
-            assert response.status_code == 200
+        response = self.client.put(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 200
 
-            response_data = json.loads(response.content)
-            assert response_data["externalSystem"] == "ExtB"
-            assert response_data["externalSystemEntryId"] == "new-id"
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] == "ExtB"
+        assert response_data["externalSystemEntryId"] == "new-id"
 
-            entry.refresh_from_db()
-            assert entry.external_system_id == sys_b.id
-            assert entry.external_system_entry_id == "new-id"
+        entry.refresh_from_db()
+        assert entry.external_system_id == sys_b.id
+        assert entry.external_system_entry_id == "new-id"
 
-        @pytest.mark.django_db
-        def test_dictionary_entry_patch_clear_external_system_fields(self):
-            site, user = factories.get_site_with_member(
-                site_visibility=Visibility.TEAM, user_role=Role.EDITOR
-            )
-            self.client.force_authenticate(user=user)
+    @pytest.mark.django_db
+    def test_dictionary_entry_patch_clear_external_system_fields(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.TEAM, user_role=Role.EDITOR
+        )
+        self.client.force_authenticate(user=user)
 
-            system = ExternalDictionaryEntrySystem.objects.create(title="ExtClear")
-            entry = factories.DictionaryEntryFactory.create(
-                site=site,
-                title="Hello",
-                type=TypeOfDictionaryEntry.WORD,
-                visibility=Visibility.PUBLIC,
-                external_system=system,
-                external_system_entry_id="to-clear",
-            )
+        system = ExternalDictionaryEntrySystem.objects.create(title="ExtClear")
+        entry = factories.DictionaryEntryFactory.create(
+            site=site,
+            title="Hello",
+            type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+            external_system=system,
+            external_system_entry_id="to-clear",
+        )
 
-            data = {
-                "external_system": None,
-                "external_system_entry_id": "",
-            }
+        data = {
+            "external_system": None,
+            "external_system_entry_id": "",
+        }
 
-            response = self.client.patch(
-                self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
-                format="json",
-                data=data,
-            )
-            assert response.status_code == 200
+        response = self.client.patch(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 200
 
-            response_data = json.loads(response.content)
-            assert response_data["externalSystem"] is None
-            assert response_data["externalSystemEntryId"] == ""
+        response_data = json.loads(response.content)
+        assert response_data["externalSystem"] is None
+        assert response_data["externalSystemEntryId"] == ""
 
-            entry.refresh_from_db()
-            assert entry.external_system is None
-            assert entry.external_system_entry_id == ""
+        entry.refresh_from_db()
+        assert entry.external_system is None
+        assert entry.external_system_entry_id == ""
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "text_list_field, maximum_items",
+        [
+            ("acknowledgements", 10),
+            ("alternate_spellings", 3),
+            ("notes", 10),
+            ("pronunciations", 3),
+            ("translations", 10),
+        ],
+    )
+    def test_dictionary_entry_text_list_field_limits_create(
+        self, text_list_field, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+
+        data = {
+            "title": "Test Word",
+            "type": str(TypeOfDictionaryEntry.WORD),
+            "visibility": "public",
+            text_list_field: [{"text": f"item {i}"} for i in range(1, 12)],
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(text_list_field)][0]
+            == f"Maximum number of {text_list_field} exceeded. - Found: 11, Maximum allowed: {maximum_items}."
+        )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "text_list_field, maximum_items",
+        [
+            ("acknowledgements", 10),
+            ("alternate_spellings", 3),
+            ("notes", 10),
+            ("pronunciations", 3),
+            ("translations", 10),
+        ],
+    )
+    def test_dictionary_entry_text_list_field_limits_update(
+        self, text_list_field, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site)
+
+        data = {
+            "title": entry.title,
+            "type": str(entry.type),
+            "visibility": "public",
+            text_list_field: [{"text": f"item {i}"} for i in range(1, 12)],
+        }
+
+        response = self.client.put(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(text_list_field)][0]
+            == f"Maximum number of {text_list_field} exceeded. - Found: 11, Maximum allowed: {maximum_items}."
+        )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "text_list_field, maximum_items",
+        [
+            ("acknowledgements", MAX_ACKNOWLEDGEMENTS_PER_ENTRY),
+            ("alternate_spellings", MAX_SPELLINGS_PER_ENTRY),
+            ("notes", MAX_NOTES_PER_ENTRY),
+            ("pronunciations", MAX_PRONUNCIATIONS_PER_ENTRY),
+            ("translations", MAX_TRANSLATIONS_PER_ENTRY),
+        ],
+    )
+    def test_dictionary_entry_text_list_field_limits_patch(
+        self, text_list_field, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site)
+
+        data = {
+            text_list_field: [{"text": f"item {i}"} for i in range(1, 12)],
+        }
+
+        response = self.client.patch(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(text_list_field)][0]
+            == f"Maximum number of {text_list_field} exceeded. - Found: 11, Maximum allowed: {maximum_items}."
+        )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "related_model_field, related_model_factory, maximum_items",
+        [
+            ("categories", factories.CategoryFactory, MAX_CATEGORIES_PER_ENTRY),
+            (
+                "related_dictionary_entries",
+                factories.DictionaryEntryFactory,
+                MAX_RELATED_ENTRIES_PER_ENTRY,
+            ),
+            ("related_audio", factories.AudioFactory, MAX_AUDIO_PER_ENTRY),
+            ("related_documents", factories.DocumentFactory, MAX_DOCUMENTS_PER_ENTRY),
+            ("related_images", factories.ImageFactory, MAX_IMAGES_PER_ENTRY),
+            ("related_videos", factories.VideoFactory, MAX_VIDEOS_PER_ENTRY),
+        ],
+    )
+    def test_dictionary_entry_related_model_field_limits_create(
+        self, related_model_field, related_model_factory, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+        self.client.force_authenticate(user=user)
+        related_items = [
+            str(related_model_factory.create(site=site).id)
+            for _ in range(maximum_items + 1)
+        ]
+
+        data = {
+            "title": "Test Word",
+            "type": str(TypeOfDictionaryEntry.WORD),
+            "visibility": "public",
+            related_model_field: related_items,
+        }
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json", data=data
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(related_model_field)][0]
+            == f"Maximum number of {related_model_field} exceeded. - "
+            f"Found: {maximum_items + 1}, Maximum allowed: {maximum_items}."
+        )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "related_model_field, related_model_factory, maximum_items",
+        [
+            ("categories", factories.CategoryFactory, MAX_CATEGORIES_PER_ENTRY),
+            (
+                "related_dictionary_entries",
+                factories.DictionaryEntryFactory,
+                MAX_RELATED_ENTRIES_PER_ENTRY,
+            ),
+            ("related_audio", factories.AudioFactory, MAX_AUDIO_PER_ENTRY),
+            ("related_documents", factories.DocumentFactory, MAX_DOCUMENTS_PER_ENTRY),
+            ("related_images", factories.ImageFactory, MAX_IMAGES_PER_ENTRY),
+            ("related_videos", factories.VideoFactory, MAX_VIDEOS_PER_ENTRY),
+        ],
+    )
+    def test_dictionary_entry_related_model_field_limits_update(
+        self, related_model_field, related_model_factory, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site)
+        related_items = [
+            str(related_model_factory.create(site=site).id)
+            for _ in range(maximum_items + 1)
+        ]
+
+        data = {
+            "title": entry.title,
+            "type": str(entry.type),
+            "visibility": "public",
+            related_model_field: related_items,
+        }
+        response = self.client.put(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(related_model_field)][0]
+            == f"Maximum number of {related_model_field} exceeded. "
+            f"- Found: {maximum_items + 1}, Maximum allowed: {maximum_items}."
+        )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "related_model_field, related_model_factory, maximum_items",
+        [
+            ("categories", factories.CategoryFactory, MAX_CATEGORIES_PER_ENTRY),
+            (
+                "related_dictionary_entries",
+                factories.DictionaryEntryFactory,
+                MAX_RELATED_ENTRIES_PER_ENTRY,
+            ),
+            ("related_audio", factories.AudioFactory, MAX_AUDIO_PER_ENTRY),
+            ("related_documents", factories.DocumentFactory, MAX_DOCUMENTS_PER_ENTRY),
+            ("related_images", factories.ImageFactory, MAX_IMAGES_PER_ENTRY),
+            ("related_videos", factories.VideoFactory, MAX_VIDEOS_PER_ENTRY),
+        ],
+    )
+    def test_dictionary_entry_related_model_field_limits_patch(
+        self, related_model_field, related_model_factory, maximum_items
+    ):
+        site, user = factories.get_site_with_app_admin(client=self.client)
+        self.client.force_authenticate(user=user)
+
+        entry = factories.DictionaryEntryFactory.create(site=site)
+        related_items = [
+            str(related_model_factory.create(site=site).id)
+            for _ in range(maximum_items + 1)
+        ]
+
+        data = {
+            related_model_field: related_items,
+        }
+        response = self.client.patch(
+            self.get_detail_endpoint(key=entry.id, site_slug=site.slug),
+            format="json",
+            data=data,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert (
+            response_data[to_camel_case(related_model_field)][0]
+            == f"Maximum number of {related_model_field} exceeded. - "
+            f"Found: {maximum_items + 1}, Maximum allowed: {maximum_items}."
+        )
 
 
 def assert_dictionary_entry_summary_response(data, entry, request_data):

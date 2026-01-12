@@ -121,11 +121,10 @@ class MaxInstancesValidator:
     """
 
     field_name = None
-    max_instances = 10
 
     def __init__(self, field_name=None, max_instances=None, message=None):
         self.field_name = field_name
-        self.max_instances = max_instances or self.max_instances
+        self.max_instances = max_instances
         self.message = message or _(f"Maximum number of {self.field_name} exceeded.")
 
     def __call__(self, value):
