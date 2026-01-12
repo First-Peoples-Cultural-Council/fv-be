@@ -8,7 +8,10 @@ from drf_spectacular.utils import (
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from search.utils import get_site_entries_search_params
+from search.utils import (
+    get_site_entries_search_params,
+    has_invalid_site_entries_search_input,
+)
 
 from backend.models.constants import AppRole, Role
 from backend.permissions.utils import get_app_role, get_site_role
@@ -132,7 +135,7 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
         search_params = get_site_entries_search_params(
             request, site, self.default_search_types, self.allowed_search_types
         )
-        if self.has_invalid_input(search_params):
+        if has_invalid_site_entries_search_input(search_params):
             return Response(
                 data=[],
                 headers={"Content-Disposition": f'attachment; filename= "{filename}"'},

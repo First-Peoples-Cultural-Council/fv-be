@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
-from backend.search.utils import get_base_search_params
+from backend.search.utils import get_base_search_params, get_ids_by_type
 from backend.views.exceptions import ElasticSearchConnectionError
 
 
@@ -114,7 +114,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
             Returns: a dictionary where the keys are model names and the values are maps of { model_id: model_instance}
                 for that type.
         """
-        ids = self.get_ids_by_type(search_results)
+        ids = get_ids_by_type(search_results)
         data = {}
 
         for model_name, model_ids in ids.items():
@@ -138,22 +138,6 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
             return serializer.make_queryset_eager(queryset)
         else:
             return queryset
-
-    def get_ids_by_type(self, search_results):
-        """Organizes model IDs of the search results by data type.
-
-        Returns: a dictionary where the keys are model names and the values are lists of ids
-        """
-        data = {}
-        for result in search_results:
-            model_name = result["_source"]["document_type"]
-            model_id = result["_source"]["document_id"]
-
-            if model_name not in data:
-                data[model_name] = []
-
-            data[model_name].append(model_id)
-        return data
 
     def serialize_search_results(self, search_results, data, **kwargs):
         """

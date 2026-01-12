@@ -7,7 +7,10 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers
-from search.utils import get_base_entries_search_params
+from search.utils import (
+    get_base_entries_search_params,
+    has_invalid_base_entries_search_input,
+)
 
 from backend.search.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
 from backend.search.queries.query_builder import get_search_query
@@ -510,17 +513,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
                 )
 
     def has_invalid_input(self, search_params):
-        return (
-            not search_params["types"]
-            or not search_params["domain"]
-            or search_params["visibility"] is None
-            or search_params["external_system_id"] is None
-            or (
-                search_params["min_words"]
-                and search_params["max_words"]
-                and search_params["max_words"] < search_params["min_words"]
-            )
-        )
+        return has_invalid_base_entries_search_input(search_params)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

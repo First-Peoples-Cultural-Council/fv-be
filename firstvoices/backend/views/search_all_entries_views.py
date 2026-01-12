@@ -4,7 +4,10 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from search.utils import get_base_entries_search_params
+from search.utils import (
+    get_base_entries_search_params,
+    has_invalid_all_entries_search_input,
+)
 
 from backend.search.validators import get_valid_site_ids_from_slugs
 from backend.views.base_search_entries_views import (
@@ -57,6 +60,4 @@ class SearchAllEntriesViewSet(BaseSearchEntriesViewSet):
         }
 
     def has_invalid_input(self, search_params):
-        return (
-            super().has_invalid_input(search_params) or search_params["sites"] is None
-        )
+        return has_invalid_all_entries_search_input(search_params)

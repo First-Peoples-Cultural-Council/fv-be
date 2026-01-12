@@ -157,3 +157,49 @@ def get_site_entries_search_params(
         search_params["import_job_id"] = ""
 
     return search_params
+
+
+def has_invalid_base_entries_search_input(search_params):
+    return (
+        not search_params["types"]
+        or not search_params["domain"]
+        or search_params["visibility"] is None
+        or search_params["external_system_id"] is None
+        or (
+            search_params["min_words"]
+            and search_params["max_words"]
+            and search_params["max_words"] < search_params["min_words"]
+        )
+    )
+
+
+def has_invalid_site_entries_search_input(search_params):
+    return (
+        has_invalid_base_entries_search_input(search_params)
+        or search_params["category_id"] is None
+        or search_params["import_job_id"] is None
+    )
+
+
+def has_invalid_all_entries_search_input(search_params):
+    return (
+        has_invalid_base_entries_search_input(search_params)
+        or search_params["sites"] is None
+    )
+
+
+def get_ids_by_type(search_results):
+    """Organizes model IDs of the search results by data type.
+
+    Returns: a dictionary where the keys are model names and the values are lists of ids
+    """
+    data = {}
+    for result in search_results:
+        model_name = result["_source"]["document_type"]
+        model_id = result["_source"]["document_id"]
+
+        if model_name not in data:
+            data[model_name] = []
+
+        data[model_name].append(model_id)
+    return data
