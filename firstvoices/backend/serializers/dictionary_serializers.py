@@ -5,6 +5,19 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from backend.models import ImmersionLabel, category, dictionary, part_of_speech
+from backend.models.constants import (
+    MAX_ACKNOWLEDGEMENTS_PER_ENTRY,
+    MAX_AUDIO_PER_ENTRY,
+    MAX_CATEGORIES_PER_ENTRY,
+    MAX_DOCUMENTS_PER_ENTRY,
+    MAX_IMAGES_PER_ENTRY,
+    MAX_NOTES_PER_ENTRY,
+    MAX_PRONUNCIATIONS_PER_ENTRY,
+    MAX_RELATED_ENTRIES_PER_ENTRY,
+    MAX_SPELLINGS_PER_ENTRY,
+    MAX_TRANSLATIONS_PER_ENTRY,
+    MAX_VIDEOS_PER_ENTRY,
+)
 from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.serializers.base_serializers import (
     SiteContentLinkedTitleSerializer,
@@ -18,6 +31,7 @@ from backend.serializers.parts_of_speech_serializers import (
     PartsOfSpeechSerializer,
     WritablePartsOfSpeechSerializer,
 )
+from backend.serializers.validators import MaxInstancesValidator
 
 
 class DictionaryContentMeta:
@@ -118,15 +132,90 @@ class DictionaryEntryDetailSerializer(
         default="",
     )
 
-    notes = TextListField(required=False, allow_empty=True)
-    translations = TextListField(required=False, allow_empty=True)
-    acknowledgements = TextListField(required=False, allow_empty=True)
-    pronunciations = TextListField(required=False, allow_empty=True)
-    alternate_spellings = TextListField(required=False, allow_empty=True)
+    acknowledgements = TextListField(
+        required=False,
+        allow_empty=True,
+        validators=[
+            MaxInstancesValidator(
+                field_name="acknowledgements",
+                max_instances=MAX_ACKNOWLEDGEMENTS_PER_ENTRY,
+            )
+        ],
+    )
+    notes = TextListField(
+        required=False,
+        allow_empty=True,
+        validators=[
+            MaxInstancesValidator(field_name="notes", max_instances=MAX_NOTES_PER_ENTRY)
+        ],
+    )
+    pronunciations = TextListField(
+        required=False,
+        allow_empty=True,
+        validators=[
+            MaxInstancesValidator(
+                field_name="pronunciations", max_instances=MAX_PRONUNCIATIONS_PER_ENTRY
+            )
+        ],
+    )
+    alternate_spellings = TextListField(
+        required=False,
+        allow_empty=True,
+        validators=[
+            MaxInstancesValidator(
+                field_name="alternate_spellings", max_instances=MAX_SPELLINGS_PER_ENTRY
+            )
+        ],
+    )
+    translations = TextListField(
+        required=False,
+        allow_empty=True,
+        validators=[
+            MaxInstancesValidator(
+                field_name="translations", max_instances=MAX_TRANSLATIONS_PER_ENTRY
+            )
+        ],
+    )
 
     is_immersion_label = serializers.SerializerMethodField(read_only=True)
 
     logger = logging.getLogger(__name__)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Add max instance validators to related model m2m fields
+        self.fields["categories"].validators.append(
+            MaxInstancesValidator(
+                field_name="categories", max_instances=MAX_CATEGORIES_PER_ENTRY
+            )
+        )
+        self.fields["related_audio"].validators.append(
+            MaxInstancesValidator(
+                field_name="related_audio", max_instances=MAX_AUDIO_PER_ENTRY
+            )
+        )
+        self.fields["related_images"].validators.append(
+            MaxInstancesValidator(
+                field_name="related_images", max_instances=MAX_IMAGES_PER_ENTRY
+            )
+        )
+        self.fields["related_videos"].validators.append(
+            MaxInstancesValidator(
+                field_name="related_videos", max_instances=MAX_VIDEOS_PER_ENTRY
+            )
+        )
+        self.fields["related_documents"].validators.append(
+            MaxInstancesValidator(
+                field_name="related_documents", max_instances=MAX_DOCUMENTS_PER_ENTRY
+            )
+        )
+        self.fields["related_dictionary_entries"].validators.append(
+            MaxInstancesValidator(
+                field_name="related_dictionary_entries",
+                max_instances=MAX_RELATED_ENTRIES_PER_ENTRY,
+            )
+        )
 
     def validate(self, attrs):
         # Categories must be in the same site as the dictionary entry

@@ -113,3 +113,28 @@ class SupportedFileEncodingValidator:
         if encoding.lower() not in self.encodings:
             message = f"{self.message} - Encoding: [{encoding}]. Supported encodings: {self.encodings}."
             raise serializers.ValidationError(message)
+
+
+class MaxInstancesValidator:
+    """
+    Validates that the number of instances related to a parent entry does not exceed a maximum.
+    """
+
+    field_name = None
+
+    def __init__(self, field_name=None, max_instances=None, message=None):
+        self.field_name = field_name
+        self.max_instances = max_instances
+        self.message = message or _(f"Maximum number of {self.field_name} exceeded.")
+
+    def __call__(self, value):
+        if isinstance(value, list):
+            # Field is an ArrayField (e.g., translations)
+            count = len(value)
+        else:
+            # Field is a related manager (e.g., related_images)
+            count = value.all().count()
+
+        if count > self.max_instances:
+            message = f"{self.message} - Found: {count}, Maximum allowed: {self.max_instances}."
+            raise serializers.ValidationError(message)
