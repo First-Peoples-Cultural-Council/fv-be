@@ -13,7 +13,10 @@ from search.utils import (
 )
 
 from backend.search.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
-from backend.search.queries.query_builder import get_search_query
+from backend.search.queries.query_builder import (
+    get_base_entries_search_query,
+    get_base_entries_sort_query,
+)
 from backend.search.validators import get_valid_boolean
 from backend.serializers.search_result_serializers import (
     AudioSearchResultSerializer,
@@ -471,46 +474,10 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         return get_base_entries_search_params(self.request)
 
     def build_query(self, **kwargs):
-        # Get search query
-        search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
-
-        return get_search_query(**search_params)
+        return get_base_entries_search_query(**kwargs)
 
     def sort_query(self, search_query, **kwargs):
-        sort_direction = "desc" if kwargs.get("descending", False) else "asc"
-        custom_order_sort = {
-            "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
-        }
-        title_order_sort = {"title.raw": {"order": sort_direction}}
-
-        match kwargs.get("sort", ""):
-            case "created":
-                # Sort by created, then by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    {"created": {"order": sort_direction}},
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case "modified":
-                # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    {"last_modified": {"order": sort_direction}},
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case "title":
-                # Sort by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case _:
-                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
-                return search_query.sort(
-                    "_score",
-                    custom_order_sort,
-                    title_order_sort,
-                )
+        return get_base_entries_sort_query(search_query, **kwargs)
 
     def has_invalid_input(self, search_params):
         return has_invalid_base_entries_search_input(search_params)

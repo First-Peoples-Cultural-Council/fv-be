@@ -8,7 +8,13 @@ from drf_spectacular.utils import (
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from search.queries.query_builder import (
+    get_base_entries_search_query,
+    get_base_entries_sort_query,
+    get_base_paginate_query,
+)
 from search.utils import (
+    get_search_response,
     get_site_entries_search_params,
     has_invalid_site_entries_search_input,
 )
@@ -143,7 +149,11 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
 
         pagination_params = self.get_pagination_params()
 
-        response = self.get_search_response(search_params, pagination_params)
+        search_query = get_base_entries_search_query(**search_params)
+        search_query = get_base_paginate_query(search_query, **pagination_params)
+        search_query = get_base_entries_sort_query(search_query, **search_params)
+
+        response = get_search_response(search_query)
         search_results = response["hits"]["hits"]
 
         data = self.hydrate(search_results)

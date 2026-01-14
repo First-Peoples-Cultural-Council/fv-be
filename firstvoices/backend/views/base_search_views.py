@@ -1,13 +1,16 @@
 import logging
 
-from elasticsearch.exceptions import ConnectionError
 from rest_framework import viewsets
 from rest_framework.response import Response
+from search.queries.query_builder import get_base_paginate_query
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
-from backend.search.utils import get_base_search_params, get_ids_by_type
-from backend.views.exceptions import ElasticSearchConnectionError
+from backend.search.utils import (
+    get_base_search_params,
+    get_ids_by_type,
+    get_search_response,
+)
 
 
 def queryset_as_map(queryset):
@@ -49,17 +52,6 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
 
         return self.serializer_class
 
-    def get_search_response(self, search_params, pagination_params):
-        search_query = self.build_query(**search_params)
-        search_query = self.paginate_query(search_query, **pagination_params)
-        search_query = self.sort_query(search_query, **search_params)
-
-        try:
-            response = search_query.execute()
-            return response
-        except ConnectionError:
-            raise ElasticSearchConnectionError()
-
     def list(self, request, **kwargs):
         search_params = self.get_search_params()
         pagination_params = self.get_pagination_params()
@@ -67,7 +59,11 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         if self.has_invalid_input(search_params):
             return self.paginate_search_response(request, [], 0)
 
-        response = self.get_search_response(search_params, pagination_params)
+        search_query = self.build_query(**search_params)
+        search_query = get_base_paginate_query(search_query, **pagination_params)
+        search_query = self.sort_query(search_query, **search_params)
+
+        response = get_search_response(search_query)
         search_results = response["hits"]["hits"]
         data = self.hydrate(search_results)
         serialized_data = self.serialize_search_results(
@@ -101,7 +97,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet):
         raise NotImplementedError()
 
     def paginate_query(self, search_query, **kwargs):
-        return search_query.extra(from_=kwargs["start"], size=kwargs["page_size"])
+        return get_base_paginate_query(search_query, **kwargs)
 
     def sort_query(self, search_query, **kwargs):
         """Subclasses can implement to add sort parameters."""

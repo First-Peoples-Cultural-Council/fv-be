@@ -1,3 +1,6 @@
+from elasticsearch.exceptions import ConnectionError
+from views.exceptions import ElasticSearchConnectionError
+
 from backend.models import Category, ImportJob
 from backend.search.constants import ALL_SEARCH_TYPES, ENTRY_SEARCH_TYPES
 from backend.search.validators import (
@@ -203,3 +206,11 @@ def get_ids_by_type(search_results):
 
         data[model_name].append(model_id)
     return data
+
+
+def get_search_response(search_query):
+    try:
+        response = search_query.execute()
+        return response
+    except ConnectionError:
+        raise ElasticSearchConnectionError()
