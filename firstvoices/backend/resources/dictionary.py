@@ -160,7 +160,7 @@ class DictionaryEntryResource(
     def save_m2m(self, instance, row, **kwargs):
         super().save_m2m(instance, row, **kwargs)
 
-        # Override to replace existing related entries
+        # Override to replace existing M2M relations
         m2m_field_map = {
             "related_entry_ids": "related_dictionary_entries",
             "related_audio": "related_audio",
