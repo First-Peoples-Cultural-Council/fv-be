@@ -5,6 +5,8 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from pagination import SearchPageNumberPagination
+from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -18,6 +20,9 @@ from search.utils import (
     get_site_entries_search_params,
     has_invalid_site_entries_search_input,
 )
+from search.validators import get_valid_boolean
+from views.base_search_views import HydrateSearchResultsMixin
+from views.base_views import SiteContentViewSetMixin
 
 from backend.models.constants import AppRole, Role
 from backend.permissions.utils import get_app_role, get_site_role
@@ -25,10 +30,7 @@ from backend.search.constants import TYPE_PHRASE, TYPE_WORD
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
 from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
-from backend.views.search_site_entries_views import (
-    SITE_SEARCH_PARAMS,
-    SearchSiteEntriesViewSet,
-)
+from backend.views.search_site_entries_views import SITE_SEARCH_PARAMS
 
 
 @extend_schema_view(
@@ -64,8 +66,11 @@ from backend.views.search_site_entries_views import (
         ],
     )
 )
-class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
+class DictionaryEntryExportViewSet(
+    viewsets.GenericViewSet, SiteContentViewSetMixin, HydrateSearchResultsMixin
+):
     http_method_names = ["get"]
+    pagination_class = SearchPageNumberPagination
     serializer_classes = {
         "DictionaryEntry": DictionaryEntryExportSerializer,
     }
@@ -132,6 +137,31 @@ class DictionaryEntryExportViewSet(SearchSiteEntriesViewSet):
             response["Content-Type"] = renderer.media_type
             response.render()
         return response
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        games_flag = self.request.GET.get("games", None)
+        games_flag = get_valid_boolean(games_flag)
+        context["games_flag"] = games_flag
+        return context
+
+    def get_data_to_serialize(self, result, data):
+        entry_data = super().get_data_to_serialize(result, data)
+        if entry_data is None:
+            return None
+
+        return {"search_result_id": result["_id"], "entry": entry_data}
+
+    def make_queryset_eager(self, model_name, queryset):
+        """Custom method to pass the user to serializers, to allow for permission-based prefetching.
+
+        Returns: updated queryset
+        """
+        serializer = self.get_serializer_class_for_model_type(model_name)
+        if hasattr(serializer, "make_queryset_eager"):
+            return serializer.make_queryset_eager(queryset, self.request.user)
+        else:
+            return queryset
 
     # Overriding to return CSV instead of search results
     def list(self, request, **kwargs):

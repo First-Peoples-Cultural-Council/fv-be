@@ -501,7 +501,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
 
         Returns: updated queryset
         """
-        serializer = self.get_serializer_class(model_name)
+        serializer = self.get_serializer_class_for_model_type(model_name)
         if hasattr(serializer, "make_queryset_eager"):
             return serializer.make_queryset_eager(queryset, self.request.user)
         else:
