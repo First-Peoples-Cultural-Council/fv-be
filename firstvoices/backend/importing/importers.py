@@ -110,6 +110,10 @@ class BaseMediaFileImporter(BaseImporter):
         return columns
 
     @classmethod
+    def get_supported_update_columns(cls):
+        return cls.get_supported_columns()
+
+    @classmethod
     def get_referenced_id_col(cls):
         return f"{cls.column_prefix}_ids"
 
@@ -511,7 +515,20 @@ class DictionaryEntryImporter(BaseImporter):
         Updates dictionary entries and returns the update result.
         """
 
-        filtered_data = cls.filter_data(csv_data, cls.get_supported_update_columns())
+        site_id = update_job.site.id
+        data_with_audio = AudioImporter.add_related_media_column(site_id, csv_data, {})
+        data_with_audio_and_images = ImageImporter.add_related_media_column(
+            site_id, data_with_audio, {}
+        )
+        data_with_audio_images_video = VideoImporter.add_related_media_column(
+            site_id, data_with_audio_and_images, {}
+        )
+        data_with_media = DocumentImporter.add_related_media_column(
+            site_id, data_with_audio_images_video, {}
+        )
+        filtered_data = cls.filter_data(
+            data_with_media, cls.get_supported_update_columns()
+        )
 
         dictionary_entry_update_result = DictionaryEntryResource(
             site=update_job.site,

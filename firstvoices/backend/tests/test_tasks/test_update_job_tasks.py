@@ -26,6 +26,26 @@ TEST_ENTRY_IDS = [
     "92782704-d2c9-47fc-b628-abdca150ed54",
 ]
 
+TEST_AUDIO_IDS = [
+    "7763ae50-1b6e-46bc-bd3a-91037ac736cb",
+    "addd0095-581f-40b9-afef-fbb394876df7",
+]
+
+TEST_DOCUMENT_IDS = [
+    "0c0cdd67-2858-4e15-8092-0df9d061e28d",
+    "a00d78b1-159b-4c6a-b417-96d4e5819fdd",
+]
+
+TEST_IMAGE_IDS = [
+    "daf8e74f-f20b-4c81-95c2-7dd744277009",
+    "90c561ee-c8ae-4430-b2d2-28bf0c3cf6ff",
+]
+
+TEST_VIDEO_IDS = [
+    "4764e764-7830-4bea-b30e-4e35cc93b12b",
+    "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
+]
+
 
 def setup_for_external_systems(site):
     external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
@@ -927,3 +947,83 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert existing_related_entry.id not in related_entries
         assert new_related_entry.id in related_entries
         assert new_related_entry_2.id in related_entries
+
+    def test_related_media_ids_multiple(self):
+        # Replace existing related media with supplied media IDs
+        old_audio_1 = factories.AudioFactory.create(site=self.site)
+        old_audio_2 = factories.AudioFactory.create(site=self.site)
+        old_doc_1 = factories.DocumentFactory.create(site=self.site)
+        old_doc_2 = factories.DocumentFactory.create(site=self.site)
+        old_img_1 = factories.ImageFactory.create(site=self.site)
+        old_img_2 = factories.ImageFactory.create(site=self.site)
+        old_video_1 = factories.VideoFactory.create(site=self.site)
+        old_video_2 = factories.VideoFactory.create(site=self.site)
+
+        # Adding existing entries
+        entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("964b2b52-45c3-4c2f-90db-7f34c6599c1c")
+        )
+        entry.related_audio.add(old_audio_1)
+        entry.related_audio.add(old_audio_2)
+        entry.related_images.add(old_img_1)
+        entry.related_images.add(old_img_2)
+        entry.related_documents.add(old_doc_1)
+        entry.related_documents.add(old_doc_2)
+        entry.related_videos.add(old_video_1)
+        entry.related_videos.add(old_video_2)
+
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[0], site=self.site)
+        factories.AudioFactory.create(id=TEST_AUDIO_IDS[1], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[0], site=self.site)
+        factories.DocumentFactory.create(id=TEST_DOCUMENT_IDS[1], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[0], site=self.site)
+        factories.ImageFactory.create(id=TEST_IMAGE_IDS[1], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[0], site=self.site)
+        factories.VideoFactory.create(id=TEST_VIDEO_IDS[1], site=self.site)
+
+        file_content = get_sample_file(
+            "update_job/related_media_ids_multiple.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+        confirm_update_job(update_job.id)
+
+        primary_entry = DictionaryEntry.objects.get(id=entry.id)
+
+        related_audio = primary_entry.related_audio.all().values_list("id", flat=True)
+        related_audio = [str(idx) for idx in related_audio]
+        related_documents = primary_entry.related_documents.all().values_list(
+            "id", flat=True
+        )
+        related_documents = [str(idx) for idx in related_documents]
+        related_videos = primary_entry.related_videos.all().values_list("id", flat=True)
+        related_videos = [str(idx) for idx in related_videos]
+        related_images = primary_entry.related_images.all().values_list("id", flat=True)
+        related_images = [str(idx) for idx in related_images]
+
+        assert old_audio_1.id not in related_audio
+        assert old_audio_2.id not in related_audio
+        assert TEST_AUDIO_IDS[0] in related_audio
+        assert TEST_AUDIO_IDS[1] in related_audio
+
+        assert old_doc_1.id not in related_documents
+        assert old_doc_2.id not in related_documents
+        assert TEST_DOCUMENT_IDS[0] in related_documents
+        assert TEST_DOCUMENT_IDS[1] in related_documents
+
+        assert old_img_1.id not in related_images
+        assert old_img_2.id not in related_images
+        assert TEST_IMAGE_IDS[0] in related_images
+        assert TEST_IMAGE_IDS[1] in related_images
+
+        assert old_video_1.id not in related_videos
+        assert old_video_2.id not in related_videos
+        assert TEST_VIDEO_IDS[0] in related_videos
+        assert TEST_VIDEO_IDS[1] in related_videos
