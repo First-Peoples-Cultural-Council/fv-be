@@ -1,5 +1,4 @@
 from copy import deepcopy
-from functools import reduce
 
 import tablib
 from celery import current_task, shared_task
@@ -35,10 +34,10 @@ def get_valid_update_headers():
         VideoImporter,
         DictionaryEntryImporter,
     ]
-    supported_columns = map(
-        lambda importer: importer.get_supported_update_columns(), importers
-    )
-    return reduce(lambda a, b: a + b, supported_columns)
+    supported_columns = []
+    for importer in importers:
+        supported_columns += importer.get_supported_update_columns()
+    return supported_columns
 
 
 def clean_update_csv(
