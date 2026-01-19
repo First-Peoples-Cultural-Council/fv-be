@@ -17,7 +17,7 @@ def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}
 
 
-class HydrateSearchResultsMixin:
+class HydrateSerializeSearchResultsMixin:
     serializer_classes = {}
 
     def get_serializer_class_for_model_type(self, model_type):
@@ -122,7 +122,7 @@ class HydrateSearchResultsMixin:
         )
 
 
-class BaseSearchViewSet(viewsets.GenericViewSet, HydrateSearchResultsMixin):
+class BaseSearchViewSet(viewsets.GenericViewSet, HydrateSerializeSearchResultsMixin):
     http_method_names = ["get"]
     pagination_class = SearchPageNumberPagination
     queryset = ""
