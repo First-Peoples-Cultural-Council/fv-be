@@ -5,7 +5,6 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from pagination import SearchPageNumberPagination
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.renderers import JSONRenderer
@@ -25,6 +24,7 @@ from views.base_search_views import HydrateSerializeSearchResultsMixin
 from views.base_views import SiteContentViewSetMixin
 
 from backend.models.constants import AppRole, Role
+from backend.pagination import SearchPageNumberPagination
 from backend.permissions.utils import get_app_role, get_site_role
 from backend.search.constants import TYPE_PHRASE, TYPE_WORD
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
