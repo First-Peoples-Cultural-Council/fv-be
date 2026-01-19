@@ -6,7 +6,6 @@ from drf_spectacular.utils import (
     extend_schema_view,
 )
 from elasticsearch.dsl import Q, Search
-from search.utils import get_base_search_params
 
 from backend.models.sites import Site
 from backend.search.constants import ELASTICSEARCH_LANGUAGE_INDEX
@@ -15,6 +14,7 @@ from backend.search.queries.text_matching import (
     fuzzy_match,
     substring_match,
 )
+from backend.search.utils import get_base_search_params
 from backend.serializers.language_serializers import (
     LanguagePlaceholderSerializer,
     LanguageSerializer,
