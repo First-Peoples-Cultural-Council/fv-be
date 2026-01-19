@@ -100,7 +100,14 @@ class SupportedFileEncodingValidator:
     """
 
     message = _("File encoding must be of supported type.")
-    encodings = ["utf-8-sig", "ascii", "iso-8859-1", "windows-1252", "macroman"]
+    encodings = [
+        "utf-8",
+        "utf-8-sig",
+        "ascii",
+        "iso-8859-1",
+        "windows-1252",
+        "macroman",
+    ]
 
     def __init__(self, encodings=None, message=None):
         self.encodings = encodings or self.encodings
