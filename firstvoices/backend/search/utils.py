@@ -1,5 +1,4 @@
 from elasticsearch.exceptions import ConnectionError
-from views.exceptions import ElasticSearchConnectionError
 
 from backend.models import Category, ImportJob
 from backend.search.constants import ALL_SEARCH_TYPES, ENTRY_SEARCH_TYPES
@@ -16,6 +15,7 @@ from backend.search.validators import (
     get_valid_visibility,
 )
 from backend.utils.character_utils import clean_input
+from backend.views.exceptions import ElasticSearchConnectionError
 
 
 def get_base_search_params(request):

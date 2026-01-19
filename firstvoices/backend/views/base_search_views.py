@@ -2,10 +2,10 @@ import logging
 
 from rest_framework import viewsets
 from rest_framework.response import Response
-from search.queries.query_builder import get_base_paginate_query
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
+from backend.search.queries.query_builder import get_base_paginate_query
 from backend.search.utils import (
     get_base_search_params,
     get_ids_by_type,

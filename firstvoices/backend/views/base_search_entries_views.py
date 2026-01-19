@@ -7,15 +7,15 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers
-from search.utils import (
-    get_base_entries_search_params,
-    has_invalid_base_entries_search_input,
-)
 
 from backend.search.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
 from backend.search.queries.query_builder import (
     get_base_entries_search_query,
     get_base_entries_sort_query,
+)
+from backend.search.utils import (
+    get_base_entries_search_params,
+    has_invalid_base_entries_search_input,
 )
 from backend.search.validators import get_valid_boolean
 from backend.serializers.search_result_serializers import (
