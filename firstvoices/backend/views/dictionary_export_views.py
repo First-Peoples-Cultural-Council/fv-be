@@ -21,7 +21,7 @@ from search.utils import (
     has_invalid_site_entries_search_input,
 )
 from search.validators import get_valid_boolean
-from views.base_search_views import HydrateSearchResultsMixin
+from views.base_search_views import HydrateSerializeSearchResultsMixin
 from views.base_views import SiteContentViewSetMixin
 
 from backend.models.constants import AppRole, Role
@@ -67,7 +67,7 @@ from backend.views.search_site_entries_views import SITE_SEARCH_PARAMS
     )
 )
 class DictionaryEntryExportViewSet(
-    viewsets.GenericViewSet, SiteContentViewSetMixin, HydrateSearchResultsMixin
+    SiteContentViewSetMixin, HydrateSerializeSearchResultsMixin, viewsets.GenericViewSet
 ):
     http_method_names = ["get"]
     pagination_class = SearchPageNumberPagination
