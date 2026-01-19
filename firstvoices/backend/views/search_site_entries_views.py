@@ -4,11 +4,11 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from search.utils import (
+
+from backend.search.utils import (
     get_site_entries_search_params,
     has_invalid_site_entries_search_input,
 )
-
 from backend.views.api_doc_variables import site_slug_parameter
 from backend.views.base_search_entries_views import (
     BASE_SEARCH_PARAMS,
