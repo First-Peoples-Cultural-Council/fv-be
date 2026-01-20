@@ -8,23 +8,16 @@ from drf_spectacular.utils import (
 )
 from rest_framework import serializers
 
-from backend.search.constants import (
-    ALL_SEARCH_TYPES,
-    ENTRY_SEARCH_TYPES,
-    LENGTH_FILTER_MAX,
-    SearchIndexEntryTypes,
+from backend.search.constants import LENGTH_FILTER_MAX, SearchIndexEntryTypes
+from backend.search.queries.query_builder import (
+    get_base_entries_search_query,
+    get_base_entries_sort_query,
 )
-from backend.search.queries.query_builder import get_search_query
-from backend.search.validators import (
-    get_valid_boolean,
-    get_valid_count,
-    get_valid_domain,
-    get_valid_external_system_id,
-    get_valid_search_types,
-    get_valid_site_features,
-    get_valid_sort,
-    get_valid_visibility,
+from backend.search.utils import (
+    get_base_entries_search_params,
+    has_invalid_base_entries_search_input,
 )
+from backend.search.validators import get_valid_boolean
 from backend.serializers.search_result_serializers import (
     AudioSearchResultSerializer,
     DictionaryEntrySearchResultSerializer,
@@ -476,148 +469,18 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
         "Image": ImageSearchResultSerializer,
         "Video": VideoSearchResultSerializer,
     }
-    default_search_types = ENTRY_SEARCH_TYPES
-    allowed_search_types = ALL_SEARCH_TYPES
 
     def get_search_params(self):
-        """
-        Function to return search params in a structured format.
-        """
-        base_search_params = super().get_search_params()
-
-        input_types_str = self.request.GET.get("types", "")
-        valid_types_list = get_valid_search_types(
-            input_types_str, self.default_search_types, self.allowed_search_types
-        )
-
-        input_domain_str = self.request.GET.get("domain", "")
-        valid_domain = get_valid_domain(input_domain_str, "both")
-
-        external_system_input_str = self.request.GET.get("externalSystem", "")
-        external_system_id = get_valid_external_system_id(external_system_input_str)
-
-        kids_flag = self.request.GET.get("kids", None)
-        kids_flag = get_valid_boolean(kids_flag)
-
-        games_flag = self.request.GET.get("games", None)
-        games_flag = get_valid_boolean(games_flag)
-
-        visibility = self.request.GET.get("visibility", "")
-        valid_visibility = get_valid_visibility(visibility, "")
-
-        has_audio = self.request.GET.get("hasAudio", None)
-        has_audio = get_valid_boolean(has_audio)
-
-        has_document = self.request.GET.get("hasDocument", None)
-        has_document = get_valid_boolean(has_document)
-
-        has_image = self.request.GET.get("hasImage", None)
-        has_image = get_valid_boolean(has_image)
-
-        has_video = self.request.GET.get("hasVideo", None)
-        has_video = get_valid_boolean(has_video)
-
-        has_translation = self.request.GET.get("hasTranslation", None)
-        has_translation = get_valid_boolean(has_translation)
-
-        has_unrecognized_chars = self.request.GET.get("hasUnrecognizedChars", None)
-        has_unrecognized_chars = get_valid_boolean(has_unrecognized_chars)
-
-        has_categories = self.request.GET.get("hasCategories", None)
-        has_categories = get_valid_boolean(has_categories)
-
-        has_related_entries = self.request.GET.get("hasRelatedEntries", None)
-        has_related_entries = get_valid_boolean(has_related_entries)
-
-        has_site_feature = self.request.GET.get("hasSiteFeature", "")
-        has_site_feature = get_valid_site_features(has_site_feature)
-
-        min_words = self.request.GET.get("minWords", None)
-        min_words = get_valid_count(min_words, "minWords")
-
-        max_words = self.request.GET.get("maxWords", None)
-        max_words = get_valid_count(max_words, "maxWords")
-
-        sort = self.request.GET.get("sort", "")
-        valid_sort, descending = get_valid_sort(sort)
-
-        return {
-            **base_search_params,
-            "types": valid_types_list,
-            "domain": valid_domain,
-            "kids": kids_flag,
-            "games": games_flag,
-            "visibility": valid_visibility,
-            "has_audio": has_audio,
-            "has_document": has_document,
-            "has_image": has_image,
-            "has_video": has_video,
-            "has_translation": has_translation,
-            "has_unrecognized_chars": has_unrecognized_chars,
-            "has_categories": has_categories,
-            "has_related_entries": has_related_entries,
-            "has_site_feature": has_site_feature,
-            "min_words": min_words,
-            "max_words": max_words,
-            "sort": valid_sort,
-            "descending": descending,
-            "external_system_id": external_system_id,
-        }
+        return get_base_entries_search_params(self.request)
 
     def build_query(self, **kwargs):
-        # Get search query
-        search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
-
-        return get_search_query(**search_params)
+        return get_base_entries_search_query(**kwargs)
 
     def sort_query(self, search_query, **kwargs):
-        sort_direction = "desc" if kwargs.get("descending", False) else "asc"
-        custom_order_sort = {
-            "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
-        }
-        title_order_sort = {"title.raw": {"order": sort_direction}}
-
-        match kwargs.get("sort", ""):
-            case "created":
-                # Sort by created, then by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    {"created": {"order": sort_direction}},
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case "modified":
-                # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    {"last_modified": {"order": sort_direction}},
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case "title":
-                # Sort by custom sort order, and finally title. Allows descending order.
-                return search_query.sort(
-                    custom_order_sort,
-                    title_order_sort,
-                )
-            case _:
-                # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
-                return search_query.sort(
-                    "_score",
-                    custom_order_sort,
-                    title_order_sort,
-                )
+        return get_base_entries_sort_query(search_query, **kwargs)
 
     def has_invalid_input(self, search_params):
-        return (
-            not search_params["types"]
-            or not search_params["domain"]
-            or search_params["visibility"] is None
-            or search_params["external_system_id"] is None
-            or (
-                search_params["min_words"]
-                and search_params["max_words"]
-                and search_params["max_words"] < search_params["min_words"]
-            )
-        )
+        return has_invalid_base_entries_search_input(search_params)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -638,7 +501,7 @@ class BaseSearchEntriesViewSet(BaseSearchViewSet):
 
         Returns: updated queryset
         """
-        serializer = self.get_serializer_class(model_name)
+        serializer = self.get_serializer_class_for_model_type(model_name)
         if hasattr(serializer, "make_queryset_eager"):
             return serializer.make_queryset_eager(queryset, self.request.user)
         else:

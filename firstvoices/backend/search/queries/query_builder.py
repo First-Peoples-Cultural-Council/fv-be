@@ -61,7 +61,7 @@ def get_search_query(
     min_words=None,
     max_words=None,
     random_sort=False,
-    **kwargs
+    **kwargs,
 ):
     # Building initial query
     indices = get_indices(types)
@@ -163,3 +163,51 @@ def get_search_query(
         search_query = search_query.query(get_max_words_query(max_words))
 
     return search_query
+
+
+def get_base_entries_search_query(**kwargs):
+    # Get search query
+    search_params = {"random_sort": kwargs.get("sort", "") == "random", **kwargs}
+
+    return get_search_query(**search_params)
+
+
+def get_base_entries_sort_query(search_query, **kwargs):
+    sort_direction = "desc" if kwargs.get("descending", False) else "asc"
+    custom_order_sort = {
+        "custom_order": {"unmapped_type": "keyword", "order": sort_direction}
+    }
+    title_order_sort = {"title.raw": {"order": sort_direction}}
+
+    match kwargs.get("sort", ""):
+        case "created":
+            # Sort by created, then by custom sort order, and finally title. Allows descending order.
+            return search_query.sort(
+                {"created": {"order": sort_direction}},
+                custom_order_sort,
+                title_order_sort,
+            )
+        case "modified":
+            # Sort by last_modified, then by custom sort order, and finally title. Allows descending order.
+            return search_query.sort(
+                {"last_modified": {"order": sort_direction}},
+                custom_order_sort,
+                title_order_sort,
+            )
+        case "title":
+            # Sort by custom sort order, and finally title. Allows descending order.
+            return search_query.sort(
+                custom_order_sort,
+                title_order_sort,
+            )
+        case _:
+            # No order_by param is passed case. Sort by score, then by custom sort order, and finally title.
+            return search_query.sort(
+                "_score",
+                custom_order_sort,
+                title_order_sort,
+            )
+
+
+def get_base_paginate_query(search_query, **kwargs):
+    return search_query.extra(from_=kwargs["start"], size=kwargs["page_size"])

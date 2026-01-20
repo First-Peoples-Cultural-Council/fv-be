@@ -14,6 +14,7 @@ from backend.search.queries.text_matching import (
     fuzzy_match,
     substring_match,
 )
+from backend.search.utils import get_base_search_params
 from backend.serializers.language_serializers import (
     LanguagePlaceholderSerializer,
     LanguageSerializer,
@@ -101,7 +102,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         """
         Returns validated search parameters based on request inputs.
         """
-        search_params = super().get_search_params()
+        search_params = get_base_search_params(self.request)
 
         explorable_input = self.request.GET.get("explorable", None)
 
