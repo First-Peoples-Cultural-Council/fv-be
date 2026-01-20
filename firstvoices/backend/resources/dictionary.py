@@ -160,14 +160,20 @@ class DictionaryEntryResource(
     def save_m2m(self, instance, row, **kwargs):
         super().save_m2m(instance, row, **kwargs)
 
-        # Override to replace existing related entries
-        data_field = "related_entry_ids"
-        instance_field = "related_dictionary_entries"
+        # Override to replace existing M2M relations
+        m2m_field_map = {
+            "related_entry_ids": "related_dictionary_entries",
+            "related_audio": "related_audio",
+            "related_images": "related_images",
+            "related_videos": "related_videos",
+            "related_documents": "related_documents",
+        }
 
-        if data_field in row:
-            new_values = row[data_field].split(",")
-            new_values = [value.strip() for value in new_values]
-            getattr(instance, instance_field).set(new_values)
+        for data_field, instance_field in m2m_field_map.items():
+            if data_field in row:
+                new_values = row[data_field].split(",")
+                new_values = [value.strip() for value in new_values if value]
+                getattr(instance, instance_field).set(new_values)
 
     class Meta:
         model = DictionaryEntry

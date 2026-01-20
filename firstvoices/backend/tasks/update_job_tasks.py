@@ -4,7 +4,13 @@ import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 
-from backend.importing.importers import DictionaryEntryImporter
+from backend.importing.importers import (
+    AudioImporter,
+    DictionaryEntryImporter,
+    DocumentImporter,
+    ImageImporter,
+    VideoImporter,
+)
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
 from backend.tasks.import_job_tasks import (
     attach_csv_to_report,
@@ -21,7 +27,17 @@ from backend.tasks.utils import (
 
 
 def get_valid_update_headers():
-    return DictionaryEntryImporter.get_supported_update_columns()
+    importers = [
+        AudioImporter,
+        DocumentImporter,
+        ImageImporter,
+        VideoImporter,
+        DictionaryEntryImporter,
+    ]
+    supported_columns = []
+    for importer in importers:
+        supported_columns += importer.get_supported_update_columns()
+    return supported_columns
 
 
 def clean_update_csv(
