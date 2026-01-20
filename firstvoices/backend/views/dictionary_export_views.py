@@ -24,7 +24,6 @@ from backend.search.utils import (
     get_site_entries_search_params,
     has_invalid_site_entries_search_input,
 )
-from backend.search.validators import get_valid_boolean
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.utils.CustomCsvRenderer import CustomCsvRenderer
 from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
@@ -137,13 +136,6 @@ class DictionaryEntryExportViewSet(
             response["Content-Type"] = renderer.media_type
             response.render()
         return response
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        games_flag = self.request.GET.get("games", None)
-        games_flag = get_valid_boolean(games_flag)
-        context["games_flag"] = games_flag
-        return context
 
     def get_data_to_serialize(self, result, data):
         entry_data = super().get_data_to_serialize(result, data)
