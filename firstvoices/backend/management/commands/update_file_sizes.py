@@ -25,7 +25,14 @@ class Command(BaseCommand):
         )
 
     def update_file_size(self, file_instance, model):
-        file_size = file_instance.content.size
+        try:
+            file_size = file_instance.content.size
+        except Exception as e:
+            self.logger.warning(
+                f"Error accessing file size for {model.__name__} with ID {file_instance.id}: {e}"
+            )
+            file_size = None
+
         if file_size and file_instance.size != file_size:
             model.objects.filter(id=file_instance.id).update(
                 size=file_size, system_last_modified=timezone.now()
