@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from django.core.files.base import ContentFile
@@ -162,3 +162,45 @@ class TestUpdateFileSizes:
 
         assert videofile.system_last_modified != videofile.last_modified
         assert videofile.system_last_modified > videofile.last_modified
+
+    def test_error_getting_file_size(self, caplog):
+        site = factories.SiteFactory.create()
+        file = factories.FileFactory.create(site=site)
+        imagefile = factories.ImageFileFactory.create(site=site)
+        videofile = factories.VideoFileFactory.create(site=site)
+
+        broken_content = Mock()
+        type(broken_content).size = PropertyMock(
+            side_effect=Exception("Mocked exception accessing file")
+        )
+
+        with patch.object(
+            File,
+            "content",
+            new_callable=PropertyMock,
+            return_value=broken_content,
+        ), patch.object(
+            ImageFile,
+            "content",
+            new_callable=PropertyMock,
+            return_value=broken_content,
+        ), patch.object(
+            VideoFile,
+            "content",
+            new_callable=PropertyMock,
+            return_value=broken_content,
+        ):
+            call_command("update_file_sizes", site_slugs=site.slug)
+
+        assert (
+            f"Error accessing file size for File with ID {file.id}: Mocked exception accessing file"
+            in caplog.text
+        )
+        assert (
+            f"Error accessing file size for ImageFile with ID {imagefile.id}: Mocked exception accessing file"
+            in caplog.text
+        )
+        assert (
+            f"Error accessing file size for VideoFile with ID {videofile.id}: Mocked exception accessing file"
+            in caplog.text
+        )
