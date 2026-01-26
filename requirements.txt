@@ -29,7 +29,7 @@ djangorestframework-camel-case==1.4.2
 djangorestframework-csv==3.0.2
 draftjs_exporter==5.2.0 # https://github.com/springload/draftjs_exporter
 drf-nested-routers==0.95.0  # https://github.com/alanjds/drf-nested-routers/
-drf-spectacular==0.28.0
+drf-spectacular==0.29.0
 editdistance==0.8.1
 elastic-transport==8.17.1
 elasticsearch==8.18.0
