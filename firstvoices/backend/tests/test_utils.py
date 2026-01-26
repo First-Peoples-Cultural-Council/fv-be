@@ -2,12 +2,12 @@ from itertools import product
 
 import pytest
 from rest_framework import serializers
-from utils.export_utils import expand_row, get_first_seen_keys, get_max_lengths
 
 from backend.serializers.utils.import_job_utils import check_required_headers
 from backend.tasks.import_job_tasks import clean_csv
 from backend.tests.utils import get_batch_import_test_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
+from backend.utils.export_utils import expand_row, get_first_seen_keys, get_max_lengths
 
 
 class TestCharacterUtils:
