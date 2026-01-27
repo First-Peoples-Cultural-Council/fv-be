@@ -344,6 +344,5 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
     categories = LinkedCategorySerializer(many=True)
     part_of_speech = PartsOfSpeechSerializer()
 
-    class Meta:
-        model = dictionary.DictionaryEntry
-        fields = DictionaryEntryDetailSerializer.Meta.fields
+    class Meta(DictionaryEntryDetailSerializer.Meta):
+        pass
