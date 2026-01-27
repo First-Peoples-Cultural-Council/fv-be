@@ -26,7 +26,13 @@ from backend.serializers.base_serializers import (
 )
 from backend.serializers.category_serializers import LinkedCategorySerializer
 from backend.serializers.fields import TextListField
-from backend.serializers.media_serializers import RelatedMediaSerializerMixin
+from backend.serializers.media_serializers import (
+    AudioSerializer,
+    DocumentSerializer,
+    ImageSerializer,
+    RelatedMediaSerializerMixin,
+    VideoSerializer,
+)
 from backend.serializers.parts_of_speech_serializers import (
     PartsOfSpeechSerializer,
     WritablePartsOfSpeechSerializer,
@@ -343,6 +349,11 @@ class DictionaryEntryDetailSerializer(
 class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializer):
     categories = LinkedCategorySerializer(many=True)
     part_of_speech = PartsOfSpeechSerializer()
+    related_audio = AudioSerializer(many=True)
+    related_documents = DocumentSerializer(many=True)
+    related_images = ImageSerializer(many=True)
+    related_videos = VideoSerializer(many=True)
+    related_dictionary_entries = DictionaryEntryDetailSerializer(many=True)
 
     class Meta(DictionaryEntryDetailSerializer.Meta):
         pass
