@@ -154,7 +154,7 @@ class TestCleanCsv:
         assert "note_99" in invalid_headers
 
 
-class TestCustomCsvRenderer:
+class TestExportUtils:
     def test_get_max_lengths(self):
         rows = [
             {
