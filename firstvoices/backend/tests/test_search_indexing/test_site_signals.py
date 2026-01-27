@@ -13,7 +13,7 @@ from backend.search.indexing import (
     StoryIndexManager,
     VideoDocumentManager,
 )
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from backend.tests.utils import TransactionOnCommitMixin
 

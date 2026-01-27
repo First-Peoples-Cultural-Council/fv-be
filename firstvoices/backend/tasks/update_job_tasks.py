@@ -12,6 +12,7 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.import_job_tasks import (
     attach_csv_to_report,
     generate_report,
@@ -19,8 +20,6 @@ from backend.tasks.import_job_tasks import (
     get_missing_referenced_media,
 )
 from backend.tasks.utils import (
-    ASYNC_TASK_END_TEMPLATE,
-    ASYNC_TASK_START_TEMPLATE,
     is_valid_header_variation,
     verify_no_other_import_jobs_running,
 )

@@ -23,9 +23,8 @@ from backend.models.import_jobs import (
     JobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.utils import (
-    ASYNC_TASK_END_TEMPLATE,
-    ASYNC_TASK_START_TEMPLATE,
     create_or_append_error_row,
     get_failed_rows_csv_file,
     get_related_entry_headers,

@@ -16,9 +16,6 @@ from backend.models.import_jobs import (
 )
 from backend.utils.character_utils import clean_input
 
-ASYNC_TASK_START_TEMPLATE = "Task started. Additional info: %s."
-ASYNC_TASK_END_TEMPLATE = "Task ended."
-
 
 def verify_no_other_import_jobs_running(current_job):
     # Method to verify that no other ImportJob tasks are running

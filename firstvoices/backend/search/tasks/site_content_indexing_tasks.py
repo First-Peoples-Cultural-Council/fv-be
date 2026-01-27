@@ -12,7 +12,7 @@ from backend.search.indexing import (
     StoryDocumentManager,
     VideoDocumentManager,
 )
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from firstvoices.celery import link_error_handler
 
 

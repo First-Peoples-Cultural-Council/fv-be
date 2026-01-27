@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from elasticsearch import ConnectionError, NotFoundError
 
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from backend.tests.utils import TransactionOnCommitMixin
 
