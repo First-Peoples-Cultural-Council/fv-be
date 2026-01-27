@@ -135,11 +135,11 @@ class ExportJobViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ExportJob.objects.filter(site=site).order_by("created")
+        return ExportJob.objects.filter(site=site).order_by("-created")
 
     def perform_create(self, serializer):
         export_job_instance = serializer.save()
-        export_job_instance.validation_status = JobStatus.ACCEPTED
+        export_job_instance.status = JobStatus.ACCEPTED
         export_job_instance.save()
 
         # Trigger the search and export csv generation after model creation
@@ -151,7 +151,7 @@ class ExportJobViewSet(
 
         results = self.get_search_results()
 
-        export_job_instance.validation_status = JobStatus.STARTED
+        export_job_instance.status = JobStatus.STARTED
         export_job_instance.save()
 
         csv_string = convert_queryset_to_csv_content(results, self.flatten_fields)
@@ -165,7 +165,7 @@ class ExportJobViewSet(
         export_csv_file.save()
 
         export_job_instance.export_csv = export_csv_file
-        export_job_instance.validation_status = JobStatus.COMPLETE
+        export_job_instance.status = JobStatus.COMPLETE
         export_job_instance.save()
 
         return export_job_instance.id
