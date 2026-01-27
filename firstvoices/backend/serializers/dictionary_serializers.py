@@ -346,20 +346,4 @@ class DictionaryEntryDetailWriteResponseSerializer(DictionaryEntryDetailSerializ
 
     class Meta:
         model = dictionary.DictionaryEntry
-        fields = (
-            "title",
-            "type",
-            "visibility",
-            "categories",
-            "acknowledgements",
-            "alternate_spellings",
-            "notes",
-            "translations",
-            "part_of_speech",
-            "pronunciations",
-            "related_dictionary_entries",
-            "related_audio",
-            "related_images",
-            "related_videos",
-            "related_video_links",
-        ) + audience_fields
+        fields = DictionaryEntryDetailSerializer.Meta.fields
