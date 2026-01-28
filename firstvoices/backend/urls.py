@@ -13,6 +13,7 @@ from backend.views.dictionary_cleanup_views import (
 from backend.views.dictionary_export_views import DictionaryEntryExportViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.document_views import DocumentViewSet
+from backend.views.export_job_views import ExportJobViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
 from backend.views.image_views import ImageViewSet
@@ -101,6 +102,7 @@ stories_router = NestedSimpleRouter(sites_router, r"stories", lookup="story")
 stories_router.register(r"pages", StoryPageViewSet, basename="storypage")
 
 # import and update jobs
+sites_router.register(r"export-jobs", ExportJobViewSet, basename="exportjob")
 sites_router.register(r"import-jobs", ImportJobViewSet, basename="importjob")
 sites_router.register(r"update-jobs", UpdateJobViewSet, basename="updatejob")
 import_jobs_router = NestedSimpleRouter(

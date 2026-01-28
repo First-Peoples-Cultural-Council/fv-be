@@ -1,6 +1,7 @@
 import factory
 
 from backend.models import BulkVisibilityJob, DictionaryCleanupJob, MTDExportJob
+from backend.models.jobs import ExportJob
 from backend.tests.factories.base_factories import BaseSiteContentFactory
 
 
@@ -19,3 +20,8 @@ class BulkVisibilityJobFactory(BaseSiteContentFactory):
 class MTDExportJobFactory(BaseSiteContentFactory):
     class Meta:
         model = MTDExportJob
+
+
+class ExportJobFactory(BaseSiteContentFactory):
+    class Meta:
+        model = ExportJob

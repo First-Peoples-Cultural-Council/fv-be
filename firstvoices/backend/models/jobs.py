@@ -13,6 +13,7 @@ class JobStatus(models.TextChoices):
     COMPLETE = "complete", _("Complete")
     FAILED = "failed", _("Failed")
     CANCELLED = "cancelled", _("Cancelled")
+    EXPIRED = "expired", _("Expired")
 
 
 class BaseJob(BaseSiteContentModel):
@@ -80,3 +81,25 @@ class BulkVisibilityJob(BaseJob):
 
     def __str__(self):
         return self.site.title + " - BulkVisibility - " + self.status
+
+
+class ExportJob(BaseJob):
+    class Meta:
+        verbose_name = _("Export Job")
+        verbose_name_plural = _("Export Jobs")
+        rules_permissions = {
+            "view": predicates.is_at_least_assistant_or_super,
+            "add": predicates.is_at_least_assistant_or_super,
+            "change": predicates.is_at_least_assistant_or_super,
+            "delete": predicates.is_at_least_assistant_or_super,
+        }
+
+    export_csv = models.ForeignKey(
+        "backend.File",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="export_job_export_csv_set",
+    )
+
+    def __str__(self):
+        return f"{self.site.title} Export Job (id: {str(self.id)})"

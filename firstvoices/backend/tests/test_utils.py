@@ -7,7 +7,7 @@ from backend.serializers.utils.import_job_utils import check_required_headers
 from backend.tasks.import_job_tasks import clean_csv
 from backend.tests.utils import get_batch_import_test_dataset
 from backend.utils.character_utils import ArbSorter, CustomSorter, nfc
-from backend.utils.CustomCsvRenderer import CustomCsvRenderer
+from backend.utils.export_utils import expand_row, get_first_seen_keys, get_max_lengths
 
 
 class TestCharacterUtils:
@@ -154,7 +154,7 @@ class TestCleanCsv:
         assert "note_99" in invalid_headers
 
 
-class TestCustomCsvRenderer:
+class TestExportUtils:
     def test_get_max_lengths(self):
         rows = [
             {
@@ -170,7 +170,7 @@ class TestCustomCsvRenderer:
             },
         ]
         fields = ["translations", "notes"]
-        max_lengths = CustomCsvRenderer().get_max_lengths(rows, fields)
+        max_lengths = get_max_lengths(rows, fields)
         assert max_lengths["translations"] == 2
         assert max_lengths["notes"] == 3
 
@@ -183,7 +183,7 @@ class TestCustomCsvRenderer:
             },
             {"id": 456, "notes": ["note_1", "note_2"]},
         ]
-        assert CustomCsvRenderer().get_first_seen_keys(rows) == [
+        assert get_first_seen_keys(rows) == [
             "id",
             "title",
             "translations",
@@ -197,7 +197,7 @@ class TestCustomCsvRenderer:
             "translations": ["translation_1", "translation_2", "translation_3"],
         }
         flatten_fields = {"translations": "translation"}
-        max_lengths = CustomCsvRenderer().get_max_lengths([row], flatten_fields)
+        max_lengths = get_max_lengths([row], flatten_fields.keys())
 
         expanded_headers = [
             "id",
@@ -206,9 +206,7 @@ class TestCustomCsvRenderer:
             "translation_2",
             "translation_3",
         ]
-        expanded_row = CustomCsvRenderer().expand_row(
-            row, expanded_headers, flatten_fields, max_lengths
-        )
+        expanded_row = expand_row(row, expanded_headers, flatten_fields, max_lengths)
         assert expanded_row["id"] == 123
         assert expanded_row["title"] == "abc"
         assert expanded_row["translation"] == "translation_1"
