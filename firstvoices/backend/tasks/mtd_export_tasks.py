@@ -21,7 +21,7 @@ from backend.models.dictionary import DictionaryEntryCategory
 from backend.models.jobs import JobStatus
 from backend.models.media import Audio, Image, Video
 from backend.serializers.site_data_serializers import DictionaryEntryDataSerializer
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from firstvoices.celery import link_error_handler
 
 

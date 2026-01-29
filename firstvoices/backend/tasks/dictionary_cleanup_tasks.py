@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 
 from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 @shared_task

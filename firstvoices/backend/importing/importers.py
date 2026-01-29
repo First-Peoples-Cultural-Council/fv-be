@@ -510,21 +510,32 @@ class DictionaryEntryImporter(BaseImporter):
         return dictionary_entry_import_result, title_map, filtered_data
 
     @classmethod
-    def update_data(cls, update_job, csv_data, dry_run):
+    def update_data(
+        cls,
+        update_job,
+        csv_data,
+        dry_run,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+        document_filename_map,
+    ):
         """
         Updates dictionary entries and returns the update result.
         """
 
         site_id = update_job.site.id
-        data_with_audio = AudioImporter.add_related_media_column(site_id, csv_data, {})
+        data_with_audio = AudioImporter.add_related_media_column(
+            site_id, csv_data, audio_filename_map
+        )
         data_with_audio_and_images = ImageImporter.add_related_media_column(
-            site_id, data_with_audio, {}
+            site_id, data_with_audio, img_filename_map
         )
         data_with_audio_images_video = VideoImporter.add_related_media_column(
-            site_id, data_with_audio_and_images, {}
+            site_id, data_with_audio_and_images, video_filename_map
         )
         data_with_media = DocumentImporter.add_related_media_column(
-            site_id, data_with_audio_images_video, {}
+            site_id, data_with_audio_images_video, document_filename_map
         )
         filtered_data = cls.filter_data(
             data_with_media, cls.get_supported_update_columns()

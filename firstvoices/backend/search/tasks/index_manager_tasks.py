@@ -4,7 +4,7 @@ from django.db import transaction
 
 from backend.search import es_logging, indexing
 from backend.search.indexing import DocumentManager
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from firstvoices.celery import link_error_handler
 
 

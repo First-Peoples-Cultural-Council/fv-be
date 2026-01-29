@@ -5,8 +5,8 @@ import pytest
 
 from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE
 from backend.tasks.dictionary_cleanup_tasks import cleanup_dictionary
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 

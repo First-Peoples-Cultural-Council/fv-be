@@ -5,6 +5,7 @@ import sys
 import tablib
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
+from django.utils.text import get_valid_filename
 from rest_framework.exceptions import ValidationError
 
 from backend.models.files import File
@@ -14,10 +15,8 @@ from backend.models.import_jobs import (
     JobStatus,
     RowStatus,
 )
+from backend.models.media import ImageFile, VideoFile
 from backend.utils.character_utils import clean_input
-
-ASYNC_TASK_START_TEMPLATE = "Task started. Additional info: %s."
-ASYNC_TASK_END_TEMPLATE = "Task ended."
 
 
 def verify_no_other_import_jobs_running(current_job):
@@ -134,3 +133,81 @@ def normalize_columns(import_data, columns):
         normalized_data.append([new_row[h] for h in import_data.headers])
 
     return normalized_data
+
+
+def get_associated_filenames(import_job):
+    """
+    Get a list of filenames for the uploaded files associated with the import-job.
+    """
+    associated_audio_and_document_files = list(
+        File.objects.filter(import_job=import_job).values_list("content", flat=True)
+    )
+    associated_video_files = list(
+        VideoFile.objects.filter(import_job=import_job).values_list(
+            "content", flat=True
+        )
+    )
+    associated_image_files = list(
+        ImageFile.objects.filter(import_job=import_job).values_list(
+            "content", flat=True
+        )
+    )
+    associated_files = (
+        associated_image_files
+        + associated_video_files
+        + associated_audio_and_document_files
+    )
+
+    return [file.split("/")[-1] for file in associated_files]
+
+
+def get_missing_uploaded_media(data, import_job):
+    """
+    Checks for missing media files in the specified import-job by comparing file names present in the data
+    with the uploaded files associated with the import-job.
+    Returns a list of missing media files.
+    """
+
+    associated_filenames = get_associated_filenames(import_job)
+    missing_media = []
+    media_fields = [
+        "AUDIO_FILENAME",
+        "AUDIO_2_FILENAME",
+        "AUDIO_3_FILENAME",
+        "AUDIO_4_FILENAME",
+        "AUDIO_5_FILENAME",
+        "DOCUMENT_FILENAME",
+        "DOCUMENT_2_FILENAME",
+        "DOCUMENT_3_FILENAME",
+        "DOCUMENT_4_FILENAME",
+        "DOCUMENT_5_FILENAME",
+        "IMG_FILENAME",
+        "IMG_2_FILENAME",
+        "IMG_3_FILENAME",
+        "IMG_4_FILENAME",
+        "IMG_5_FILENAME",
+        "VIDEO_FILENAME",
+        "VIDEO_2_FILENAME",
+        "VIDEO_3_FILENAME",
+        "VIDEO_4_FILENAME",
+        "VIDEO_5_FILENAME",
+    ]
+
+    for field in media_fields:
+        field = field.lower()
+        data.headers = [h.lower() for h in data.headers]
+        if field not in data.headers:
+            continue
+        for idx, filename in enumerate(data[field]):
+            if not filename:
+                # Do nothing if the field is empty
+                continue
+            valid_filename = get_valid_filename(filename)
+            if valid_filename not in associated_filenames:
+                # If a filename is provided, but the file cannot be found in the associated files
+                # add an error row for that in missing media
+                missing_media.append(
+                    {"idx": idx + 1, "filename": filename, "column": field}
+                )
+
+    return missing_media

@@ -6,11 +6,11 @@ from backend.models import MTDExportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.jobs import JobStatus
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE
 from backend.tasks.mtd_export_tasks import (
     build_index_and_calculate_scores,
     check_sites_for_mtd_sync,
 )
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from firstvoices.celery import link_error_handler

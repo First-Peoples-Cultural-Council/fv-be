@@ -4,7 +4,6 @@ from functools import reduce
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
-from django.utils.text import get_valid_filename
 from import_export.results import RowResult
 
 from backend.importing.importers import (
@@ -23,11 +22,11 @@ from backend.models.import_jobs import (
     JobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.utils import (
-    ASYNC_TASK_END_TEMPLATE,
-    ASYNC_TASK_START_TEMPLATE,
     create_or_append_error_row,
     get_failed_rows_csv_file,
+    get_missing_uploaded_media,
     get_related_entry_headers,
     is_valid_header_variation,
     normalize_columns,
@@ -472,84 +471,6 @@ def dry_run_import_job(data, import_job):
         import_job.validation_status = JobStatus.FAILED
     finally:
         import_job.save()
-
-
-def get_associated_filenames(import_job):
-    """
-    Get a list of filenames for the uploaded files associated with the import-job.
-    """
-    associated_audio_and_document_files = list(
-        File.objects.filter(import_job=import_job).values_list("content", flat=True)
-    )
-    associated_video_files = list(
-        VideoFile.objects.filter(import_job=import_job).values_list(
-            "content", flat=True
-        )
-    )
-    associated_image_files = list(
-        ImageFile.objects.filter(import_job=import_job).values_list(
-            "content", flat=True
-        )
-    )
-    associated_files = (
-        associated_image_files
-        + associated_video_files
-        + associated_audio_and_document_files
-    )
-
-    return [file.split("/")[-1] for file in associated_files]
-
-
-def get_missing_uploaded_media(data, import_job):
-    """
-    Checks for missing media files in the specified import-job by comparing file names present in the data
-    with the uploaded files associated with the import-job.
-    Returns a list of missing media files.
-    """
-
-    associated_filenames = get_associated_filenames(import_job)
-    missing_media = []
-    media_fields = [
-        "AUDIO_FILENAME",
-        "AUDIO_2_FILENAME",
-        "AUDIO_3_FILENAME",
-        "AUDIO_4_FILENAME",
-        "AUDIO_5_FILENAME",
-        "DOCUMENT_FILENAME",
-        "DOCUMENT_2_FILENAME",
-        "DOCUMENT_3_FILENAME",
-        "DOCUMENT_4_FILENAME",
-        "DOCUMENT_5_FILENAME",
-        "IMG_FILENAME",
-        "IMG_2_FILENAME",
-        "IMG_3_FILENAME",
-        "IMG_4_FILENAME",
-        "IMG_5_FILENAME",
-        "VIDEO_FILENAME",
-        "VIDEO_2_FILENAME",
-        "VIDEO_3_FILENAME",
-        "VIDEO_4_FILENAME",
-        "VIDEO_5_FILENAME",
-    ]
-
-    for field in media_fields:
-        field = field.lower()
-        data.headers = [h.lower() for h in data.headers]
-        if field not in data.headers:
-            continue
-        for idx, filename in enumerate(data[field]):
-            if not filename:
-                # Do nothing if the field is empty
-                continue
-            valid_filename = get_valid_filename(filename)
-            if valid_filename not in associated_filenames:
-                # If a filename is provided, but the file cannot be found in the associated files
-                # add an error row for that in missing media
-                missing_media.append(
-                    {"idx": idx + 1, "filename": filename, "column": field}
-                )
-
-    return missing_media
 
 
 def get_missing_referenced_media(data, site_id):

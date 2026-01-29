@@ -12,6 +12,7 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.import_job_tasks import (
     attach_csv_to_report,
     generate_report,
@@ -19,9 +20,10 @@ from backend.tasks.import_job_tasks import (
     get_missing_referenced_media,
 )
 from backend.tasks.utils import (
-    ASYNC_TASK_END_TEMPLATE,
-    ASYNC_TASK_START_TEMPLATE,
+    get_missing_uploaded_media,
+    get_related_entry_headers,
     is_valid_header_variation,
+    normalize_columns,
     verify_no_other_import_jobs_running,
 )
 
@@ -42,9 +44,12 @@ def get_valid_update_headers():
 
 def clean_update_csv(
     data,
+    missing_uploaded_media=None,
     missing_referenced_media=None,
     missing_entries=None,
 ):
+    if missing_uploaded_media is None:
+        missing_uploaded_media = []
     if missing_entries is None:
         missing_entries = []
     if missing_referenced_media is None:
@@ -70,11 +75,15 @@ def clean_update_csv(
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
     # Remove rows that have missing media or entries
-    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_referenced_media]
+    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
+    missing_referenced_media_row_idx = [
+        (obj["idx"] - 1) for obj in missing_referenced_media
+    ]
     missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
 
     rows_to_delete = {
         *missing_media_row_idx,
+        *missing_referenced_media_row_idx,
         *missing_entries_row_idx,
     }
     rows_to_delete = list(rows_to_delete)
@@ -83,26 +92,56 @@ def clean_update_csv(
     for row_index in rows_to_delete:
         del cleaned_data[row_index]
 
+    # normalize title and related entry columns
+    columns_to_normalize = ["title"] + get_related_entry_headers(cleaned_data)
+    cleaned_data = normalize_columns(cleaned_data, columns_to_normalize)
+
     return accepted_headers, invalid_headers, cleaned_data
 
 
-def process_update_job_data(data, update_job, dry_run=True):
+def process_update_job_data(
+    data,
+    update_job,
+    missing_uploaded_media=[],
+    missing_referenced_media=[],
+    dry_run=True,
+):
     """
     Primary method that cleans the CSV data, uses resources to update models, and generates a report.
     Used for both dry_run and actual imports.
     """
-    missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
     missing_entries = get_missing_referenced_entries(data, update_job.site.id)
 
     accepted_headers, invalid_headers, cleaned_data = clean_update_csv(
         data,
-        missing_referenced_media=missing_referenced_media,
-        missing_entries=missing_entries,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
+    )
+
+    # import media first
+    audio_import_results, audio_filename_map = AudioImporter.import_data(
+        update_job, cleaned_data, dry_run
+    )
+    document_import_results, document_filename_map = DocumentImporter.import_data(
+        update_job, cleaned_data, dry_run
+    )
+    img_import_results, img_filename_map = ImageImporter.import_data(
+        update_job, cleaned_data, dry_run
+    )
+    video_import_results, video_filename_map = VideoImporter.import_data(
+        update_job, cleaned_data, dry_run
     )
 
     # import dictionary entries
     dictionary_entry_update_result = DictionaryEntryImporter.update_data(
-        update_job, cleaned_data, dry_run
+        update_job,
+        cleaned_data,
+        dry_run,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+        document_filename_map,
     )
 
     if dry_run:
@@ -110,13 +149,13 @@ def process_update_job_data(data, update_job, dry_run=True):
             import_job=update_job,
             accepted_columns=accepted_headers,
             ignored_columns=invalid_headers,
-            missing_uploaded_media=[],
+            missing_uploaded_media=missing_uploaded_media,
             missing_referenced_media=missing_referenced_media,
             missing_entries=missing_entries,
-            audio_import_results=[],
-            document_import_results=[],
-            img_import_results=[],
-            video_import_results=[],
+            audio_import_results=audio_import_results,
+            document_import_results=document_import_results,
+            img_import_results=img_import_results,
+            video_import_results=video_import_results,
             dictionary_entry_import_result=dictionary_entry_update_result,
         )
         attach_csv_to_report(data, update_job, report)
@@ -128,8 +167,17 @@ def run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
+    missing_uploaded_media = get_missing_uploaded_media(data, update_job)
+    missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
+
     try:
-        process_update_job_data(data, update_job, dry_run=False)
+        process_update_job_data(
+            data,
+            update_job,
+            missing_uploaded_media,
+            missing_referenced_media,
+            dry_run=False,
+        )
         update_job.status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
@@ -144,8 +192,19 @@ def dry_run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
+    missing_uploaded_media = get_missing_uploaded_media(data, update_job)
+    missing_referenced_media_ids = get_missing_referenced_media(
+        data, update_job.site.id
+    )
+
     try:
-        process_update_job_data(data, update_job, dry_run=True)
+        process_update_job_data(
+            data,
+            update_job,
+            missing_uploaded_media,
+            missing_referenced_media_ids,
+            dry_run=True,
+        )
         update_job.validation_status = JobStatus.COMPLETE
     except Exception as e:
         logger.error(e)

@@ -10,7 +10,7 @@ from backend.models.widget import SiteWidget
 from backend.search.tasks.site_content_indexing_tasks import (
     request_sync_all_site_content_in_indexes,
 )
-from backend.tasks.utils import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 @shared_task
