@@ -147,3 +147,30 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
             doc.categories,
         )
         assert doc.has_categories
+
+    @pytest.mark.django_db
+    def test_create_document_with_speakers(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        instance = self.factory.create(
+            exclude_from_kids=False, exclude_from_games=True, site=site
+        )
+        speaker1 = factories.PersonFactory.create(name="Speaker One", site=site)
+        speaker2 = factories.PersonFactory.create(name="Speaker Two", site=site)
+        speaker3 = factories.PersonFactory.create(name="Speaker Three", site=site)
+        speaker4 = factories.PersonFactory.create(name="Speaker Four", site=site)
+
+        audio1 = factories.AudioFactory.create(site=site)
+        audio1.speakers.add(speaker1, speaker2)
+        audio2 = factories.AudioFactory.create(site=site)
+        audio2.speakers.add(speaker3, speaker4)
+
+        instance.related_audio.add(audio1, audio2)
+
+        doc = self.manager.create_index_document(instance)
+
+        assert doc.speakers == [
+            "Speaker One",
+            "Speaker Two",
+            "Speaker Three",
+            "Speaker Four",
+        ]

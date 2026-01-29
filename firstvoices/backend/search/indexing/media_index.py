@@ -45,6 +45,12 @@ class MediaDocumentManager(DocumentManager):
 class AudioDocumentManager(MediaDocumentManager):
     model = Audio
 
+    @classmethod
+    def create_index_document(cls, instance):
+        document = super().create_index_document(instance)
+        document.speakers = list(instance.speakers.values_list("name", flat=True))
+        return document
+
 
 class DocumentDocumentManager(MediaDocumentManager):
     model = Document
