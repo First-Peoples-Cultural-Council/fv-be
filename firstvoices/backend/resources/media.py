@@ -1,8 +1,11 @@
+import uuid
+
 from django.utils.text import get_valid_filename
 from import_export import fields
 from import_export.widgets import ForeignKeyWidget
 
 from backend.models.files import File
+from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.media import (
     Audio,
     Document,
@@ -19,7 +22,18 @@ from backend.resources.utils.import_export_widgets import (
 )
 
 
-class AudioResource(SiteContentResource):
+class BaseMediaResource(SiteContentResource):
+    def before_import(self, dataset, **kwargs):
+        super().before_import(dataset, **kwargs)
+
+        # Adding "id" column if in update mode,
+        # since media is always imported and not updated
+        import_job = ImportJob.objects.get(id=self.import_job)
+        if import_job.mode == ImportJobMode.UPDATE:
+            dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
+
+
+class AudioResource(BaseMediaResource):
     original = fields.Field(
         column_name="audio_original",
         attribute="original",
@@ -80,7 +94,7 @@ class AudioResource(SiteContentResource):
         clean_model_instances = True
 
 
-class DocumentResource(SiteContentResource):
+class DocumentResource(BaseMediaResource):
     original = fields.Field(
         column_name="document_original",
         attribute="original",
@@ -126,7 +140,7 @@ class DocumentResource(SiteContentResource):
         clean_model_instances = True
 
 
-class ImageResource(SiteContentResource):
+class ImageResource(BaseMediaResource):
     original = fields.Field(
         column_name="img_original",
         attribute="original",
@@ -170,7 +184,7 @@ class ImageResource(SiteContentResource):
         clean_model_instances = True
 
 
-class VideoResource(SiteContentResource):
+class VideoResource(BaseMediaResource):
     original = fields.Field(
         column_name="video_original",
         attribute="original",

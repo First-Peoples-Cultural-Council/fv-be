@@ -1027,3 +1027,127 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert old_video_2.id not in related_videos
         assert TEST_VIDEO_IDS[0] in related_videos
         assert TEST_VIDEO_IDS[1] in related_videos
+
+    def test_related_media_mixed_multiple(self):
+        # Adding existing media to an existing entry
+        old_audio = factories.AudioFactory.create(site=self.site)
+        old_doc = factories.DocumentFactory.create(site=self.site)
+        old_img = factories.ImageFactory.create(site=self.site)
+        old_video = factories.VideoFactory.create(site=self.site)
+
+        # Adding existing entries
+        entry = factories.DictionaryEntryFactory(
+            site=self.site, id=UUID("0b8a73ea-82ce-4605-9147-3276d103a1f8")
+        )
+        entry.related_audio.add(old_audio)
+        entry.related_images.add(old_img)
+        entry.related_documents.add(old_doc)
+        entry.related_videos.add(old_video)
+
+        file_content = get_sample_file(
+            "update_job/related_media_mixed_multiple.csv", self.MIMETYPE
+        )
+
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        sample_audio_ids = [
+            "fcd0f265-c5d0-414f-90aa-b3895da97160",
+            "8ba8d508-d4a5-4832-a53f-20fd8ee5fbb6",
+        ]
+        sample_image_ids = [
+            "a87fde6d-b8b6-40df-96c5-d1550f764487",
+            "5dfc3faa-f552-4d5c-b301-ae1e621687e7",
+        ]
+        sample_video_ids = [
+            "0dffae26-f63d-40e2-a5fb-008ef070404c",
+            "4f4792b6-189d-4a2c-ad53-58edf88cdcff",
+        ]
+        sample_doc_ids = [
+            "ed055251-4dfd-4b7b-91ce-a34e40068d15",
+            "74d35fce-2d93-4164-924f-ffed5cea132f",
+        ]
+        factories.ImageFileFactory(
+            site=self.site,
+            content=get_sample_file(
+                filename="sample-image.jpg",
+                mimetype="image/jpeg",
+            ),
+            import_job=update_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                filename="sample-audio.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=update_job,
+        )
+        factories.VideoFileFactory(
+            site=self.site,
+            content=get_sample_file(
+                filename="video_example_small.mp4",
+                mimetype="video/mp4",
+            ),
+            import_job=update_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                filename="sample-document.pdf",
+                mimetype="application/pdf",
+            ),
+            import_job=update_job,
+        )
+
+        factories.AudioFactory.create(id=sample_audio_ids[0], site=self.site)
+        factories.AudioFactory.create(id=sample_audio_ids[1], site=self.site)
+        factories.DocumentFactory.create(id=sample_doc_ids[0], site=self.site)
+        factories.DocumentFactory.create(id=sample_doc_ids[1], site=self.site)
+        factories.ImageFactory.create(id=sample_image_ids[0], site=self.site)
+        factories.ImageFactory.create(id=sample_image_ids[1], site=self.site)
+        factories.VideoFactory.create(id=sample_video_ids[0], site=self.site)
+        factories.VideoFactory.create(id=sample_video_ids[1], site=self.site)
+
+        confirm_update_job(update_job.id)
+
+        entry = DictionaryEntry.objects.get(
+            title="test_related_media_update_mixed_multiple_all_media"
+        )
+
+        related_audio = list(entry.related_audio.all().values_list("id", flat=True))
+        related_audio = [str(idx) for idx in related_audio]
+        assert len(related_audio) == 3
+        assert str(old_audio.id) not in related_audio
+        assert sample_audio_ids[0] in related_audio
+        assert sample_audio_ids[1] in related_audio
+
+        related_images = list(entry.related_images.all().values_list("id", flat=True))
+        related_images = [str(idx) for idx in related_images]
+        assert len(related_images) == 3
+        assert str(old_img.id) not in related_images
+        assert sample_image_ids[0] in related_images
+        assert sample_image_ids[1] in related_images
+
+        related_videos = list(entry.related_videos.all().values_list("id", flat=True))
+        related_videos = [str(idx) for idx in related_videos]
+        assert len(related_videos) == 3
+        assert str(old_video.id) not in related_videos
+        assert sample_video_ids[0] in related_videos
+        assert sample_video_ids[1] in related_videos
+
+        related_documents = list(
+            entry.related_documents.all().values_list("id", flat=True)
+        )
+        related_documents = [str(idx) for idx in related_documents]
+        assert len(related_documents) == 3
+        assert str(old_doc.id) not in related_documents
+        assert sample_doc_ids[0] in related_documents
+        assert sample_doc_ids[1] in related_documents
