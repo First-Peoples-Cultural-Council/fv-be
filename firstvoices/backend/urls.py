@@ -35,6 +35,7 @@ from backend.views.song_views import SongViewSet
 from backend.views.stats_views import StatsViewSet
 from backend.views.story_views import StoryViewSet
 from backend.views.storypage_views import StoryPageViewSet
+from backend.views.update_job_media_views import UpdateJobMediaViewSet
 from backend.views.update_job_views import UpdateJobViewSet
 from backend.views.video_views import VideoViewSet
 from backend.views.widget_views import SiteWidgetViewSet
@@ -109,10 +110,19 @@ import_jobs_router = NestedSimpleRouter(
     sites_router, r"import-jobs", lookup="importjob"
 )
 import_jobs_router.register(r"media", ImportJobMediaViewSet, basename="importjob-media")
+update_jobs_router = NestedSimpleRouter(
+    sites_router, r"update-jobs", lookup="updatejob"
+)
+update_jobs_router.register(r"media", UpdateJobMediaViewSet, basename="updatejob-media")
 
 app_name = "api"
 
 urlpatterns = []
 
 urlpatterns += ROUTER.urls
-urlpatterns += sites_router.urls + stories_router.urls + import_jobs_router.urls
+urlpatterns += (
+    sites_router.urls
+    + stories_router.urls
+    + import_jobs_router.urls
+    + update_jobs_router.urls
+)
