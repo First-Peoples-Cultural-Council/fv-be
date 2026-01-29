@@ -154,10 +154,10 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         instance = self.factory.create(
             exclude_from_kids=False, exclude_from_games=True, site=site
         )
-        speaker1 = factories.PersonFactory.create(name="Speaker One", site=site)
-        speaker2 = factories.PersonFactory.create(name="Speaker Two", site=site)
-        speaker3 = factories.PersonFactory.create(name="Speaker Three", site=site)
-        speaker4 = factories.PersonFactory.create(name="Speaker Four", site=site)
+        speaker1 = factories.PersonFactory.create(site=site)
+        speaker2 = factories.PersonFactory.create(site=site)
+        speaker3 = factories.PersonFactory.create(site=site)
+        speaker4 = factories.PersonFactory.create(site=site)
 
         audio1 = factories.AudioFactory.create(site=site)
         audio1.speakers.add(speaker1, speaker2)
@@ -169,8 +169,8 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
         doc = self.manager.create_index_document(instance)
 
         assert doc.speakers == [
-            "Speaker One",
-            "Speaker Two",
-            "Speaker Three",
-            "Speaker Four",
+            str(speaker1.id),
+            str(speaker2.id),
+            str(speaker3.id),
+            str(speaker4.id),
         ]

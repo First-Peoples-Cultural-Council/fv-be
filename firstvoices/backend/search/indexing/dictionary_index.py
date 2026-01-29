@@ -22,8 +22,8 @@ class DictionaryEntryDocumentManager(DocumentManager):
             speakers = []
             for audio in instance.related_audio.all():
                 for speaker in audio.speakers.all():
-                    if speaker.name not in speakers:
-                        speakers.append(speaker.name)
+                    if str(speaker.id) not in speakers:
+                        speakers.append(str(speaker.id))
         else:
             speakers = []
 

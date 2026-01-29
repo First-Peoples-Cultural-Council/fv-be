@@ -87,13 +87,13 @@ class TestAudioDocumentManager(BaseMediaDocumentManagerTest):
         instance = self.factory.create(
             exclude_from_kids=False, exclude_from_games=True, site=site
         )
-        speaker1 = factories.PersonFactory.create(name="Speaker One", site=site)
-        speaker2 = factories.PersonFactory.create(name="Speaker Two", site=site)
+        speaker1 = factories.PersonFactory.create(site=site)
+        speaker2 = factories.PersonFactory.create(site=site)
         instance.speakers.add(speaker1, speaker2)
 
         doc = self.manager.create_index_document(instance)
 
-        assert doc.speakers == ["Speaker One", "Speaker Two"]
+        assert doc.speakers == [str(speaker1.id), str(speaker2.id)]
 
 
 class TestDocumentDocumentManager(BaseMediaDocumentManagerTest):
