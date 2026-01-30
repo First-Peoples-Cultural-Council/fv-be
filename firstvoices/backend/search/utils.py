@@ -1,6 +1,6 @@
 from elasticsearch.exceptions import ConnectionError
 
-from backend.models import Category, ImportJob
+from backend.models import Category, ImportJob, Person
 from backend.search.constants import ALL_SEARCH_TYPES, ENTRY_SEARCH_TYPES
 from backend.search.validators import (
     get_valid_boolean,
@@ -137,11 +137,10 @@ def get_site_entries_search_params(
 
     starts_with_input_str = request.GET.get("startsWithChar", "")
     starts_with_char = get_valid_starts_with_char(starts_with_input_str)
-
     if starts_with_char:
         search_params["starts_with_char"] = starts_with_char
-    category_input_str = request.GET.get("category", "")
 
+    category_input_str = request.GET.get("category", "")
     if category_input_str:
         category_id = get_valid_instance_id(
             site,
@@ -151,13 +150,31 @@ def get_site_entries_search_params(
         search_params["category_id"] = category_id
     else:
         search_params["category_id"] = ""
-    import_job_input_str = request.GET.get("importJobId", "")
 
+    import_job_input_str = request.GET.get("importJobId", "")
     if import_job_input_str:
         import_job_id = get_valid_instance_id(site, ImportJob, import_job_input_str)
         search_params["import_job_id"] = import_job_id
     else:
         search_params["import_job_id"] = ""
+
+    speaker_ids = request.GET.get("speakers", "")
+    if speaker_ids:
+        speaker_ids = speaker_ids.split(",")
+        for _id in speaker_ids:
+            if not get_valid_instance_id(
+                site,
+                Person,
+                _id,
+            ):
+                speaker_ids.remove(_id)
+
+        if len(speaker_ids) == 0:
+            speaker_ids = ""
+
+        search_params["speakers"] = speaker_ids
+    else:
+        search_params["speakers"] = ""
 
     return search_params
 
@@ -181,6 +198,7 @@ def has_invalid_site_entries_search_input(search_params):
         has_invalid_base_entries_search_input(search_params)
         or search_params["category_id"] is None
         or search_params["import_job_id"] is None
+        or search_params["speakers"] is None
     )
 
 
