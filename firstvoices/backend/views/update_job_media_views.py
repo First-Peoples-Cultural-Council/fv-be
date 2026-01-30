@@ -3,7 +3,7 @@ from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 
-from backend.models import ImportJob
+from backend.models import ImportJob, ImportJobMode
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.import_job_media_views import ImportJobMediaViewSet
@@ -27,7 +27,9 @@ from backend.views.import_job_media_views import ImportJobMediaViewSet
 class UpdateJobMediaViewSet(ImportJobMediaViewSet):
     def get_validated_import_job(self):
         update_job_id = self.kwargs["updatejob_pk"]
-        import_jobs = ImportJob.objects.filter(id=update_job_id)
+        import_jobs = ImportJob.objects.filter(
+            id=update_job_id, mode=ImportJobMode.UPDATE
+        )
 
         if not import_jobs.exists():
             raise Http404
