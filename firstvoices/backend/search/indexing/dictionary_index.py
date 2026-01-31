@@ -16,6 +16,17 @@ class DictionaryEntryDocumentManager(DocumentManager):
     @classmethod
     def create_index_document(cls, instance: DictionaryEntry):
         """Returns a DictionaryEntryDocument populated for the given DictionaryEntry instance."""
+        has_audio = instance.related_audio.exists()
+
+        if has_audio:
+            speakers = []
+            for audio in instance.related_audio.all():
+                for speaker in audio.speakers.all():
+                    if str(speaker.id) not in speakers:
+                        speakers.append(str(speaker.id))
+        else:
+            speakers = []
+
         return cls.document(
             document_id=str(instance.id),
             document_type=type(instance).__name__,
@@ -36,7 +47,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             exclude_from_games=instance.exclude_from_games,
             custom_order=instance.custom_order,
             visibility=instance.visibility,
-            has_audio=instance.related_audio.exists(),
+            has_audio=has_audio,
             has_document=instance.related_documents.exists(),
             has_image=instance.related_images.exists(),
             has_video=instance.related_videos.exists()
@@ -47,6 +58,7 @@ class DictionaryEntryDocumentManager(DocumentManager):
             has_unrecognized_chars=UNKNOWN_CHARACTER_FLAG in instance.custom_order,
             has_categories=instance.categories.exists(),
             has_related_entries=instance.related_dictionary_entries.exists(),
+            speakers=speakers,
         )
 
 

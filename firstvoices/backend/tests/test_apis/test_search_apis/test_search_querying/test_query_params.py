@@ -1232,3 +1232,52 @@ class TestWordLengthParams:
 
         assert expected_min_words_filter in str(search_query)
         assert expected_max_words_filter in str(search_query)
+
+
+@pytest.mark.django_db
+class TestSpeakersParam:
+    def setup_method(self):
+        self.site = factories.SiteFactory()
+        self.speaker1 = factories.PersonFactory(site=self.site)
+        self.speaker2 = factories.PersonFactory(site=self.site)
+
+    def test_default(self):
+        search_query = get_search_query(user=AnonymousUser())
+        search_query = search_query.to_dict()
+
+        assert "speakers" not in str(search_query)
+
+    def test_single_speaker(self):
+        search_query = get_search_query(
+            speakers=[str(self.speaker1.id)], user=AnonymousUser()
+        )
+        search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
+
+        speakers_filter = None
+        for f in filters:
+            if "terms" in f and "speakers" in f["terms"]:
+                speakers_filter = f["terms"]
+                break
+
+        assert speakers_filter is not None
+        assert str(self.speaker1.id) in speakers_filter["speakers"]
+        assert str(self.speaker2.id) not in speakers_filter["speakers"]
+
+    def test_multiple_speakers(self):
+        search_query = get_search_query(
+            speakers=[str(self.speaker1.id), str(self.speaker2.id)],
+            user=AnonymousUser(),
+        )
+        search_query = search_query.to_dict()
+        filters = search_query["query"]["bool"]["filter"]
+
+        speakers_filter = None
+        for f in filters:
+            if "terms" in f and "speakers" in f["terms"]:
+                speakers_filter = f["terms"]
+                break
+
+        assert speakers_filter is not None
+        assert str(self.speaker1.id) in speakers_filter["speakers"]
+        assert str(self.speaker2.id) in speakers_filter["speakers"]
