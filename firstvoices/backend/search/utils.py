@@ -170,7 +170,7 @@ def get_site_entries_search_params(
                 speaker_ids.remove(_id)
 
         if len(speaker_ids) == 0:
-            speaker_ids = ""
+            speaker_ids = None
 
         search_params["speakers"] = speaker_ids
     else:
