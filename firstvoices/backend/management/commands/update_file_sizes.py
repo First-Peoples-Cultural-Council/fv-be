@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from backend.models import Site
 from backend.models.files import File
-from backend.models.media import ImageFile, VideoFile
 
 
 class Command(BaseCommand):
@@ -59,16 +58,10 @@ class Command(BaseCommand):
         for site in sites:
             self.logger.info(f"Updating file sizes for media files in {site.slug}...")
             files_to_update = File.objects.filter(site=site)
-            image_files_to_update = ImageFile.objects.filter(site=site)
-            video_files_to_update = VideoFile.objects.filter(site=site)
 
             with transaction.atomic():
                 for file in files_to_update:
                     self.update_file_size(file_instance=file, model=File)
-                for image_file in image_files_to_update:
-                    self.update_file_size(file_instance=image_file, model=ImageFile)
-                for video_file in video_files_to_update:
-                    self.update_file_size(file_instance=video_file, model=VideoFile)
 
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 
