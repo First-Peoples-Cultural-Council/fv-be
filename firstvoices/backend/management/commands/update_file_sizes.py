@@ -1,11 +1,12 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.utils import timezone
 
 from backend.models import Site
 from backend.models.files import File
+
+BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
@@ -23,25 +24,6 @@ class Command(BaseCommand):
             default=None,
         )
 
-    def update_file_size(self, file_instance, model):
-        try:
-            file_size = file_instance.content.size
-        except Exception as e:
-            self.logger.warning(
-                f"Error accessing file size for {model.__name__} with ID {file_instance.id}: {e}"
-            )
-            file_size = None
-
-        if file_size and file_instance.size != file_size:
-            model.objects.filter(id=file_instance.id).update(
-                size=file_size, system_last_modified=timezone.now()
-            )
-        elif not file_size:
-            # File size not found, log a warning
-            self.logger.warning(
-                f"File size not found for {model.__name__} with ID {file_instance.id}"
-            )
-
     def handle(self, *args, **options):
 
         if options.get("site_slugs"):
@@ -57,11 +39,33 @@ class Command(BaseCommand):
 
         for site in sites:
             self.logger.info(f"Updating file sizes for media files in {site.slug}...")
-            files_to_update = File.objects.filter(site=site)
+            files_to_update = (
+                File.objects.filter(site=site, size__isnull=True)
+                .only("id", "content", "size", "system_last_modified")
+                .iterator(chunk_size=1000)
+            )
 
-            with transaction.atomic():
-                for file in files_to_update:
-                    self.update_file_size(file_instance=file, model=File)
+            batch = []
+            for file in files_to_update:
+                try:
+                    content_size = file.content.size
+                except Exception as e:
+                    self.logger.warning(
+                        f"Error accessing file size for File with ID {file.id}: {e}"
+                    )
+                    continue
+
+                if content_size and file.size != content_size:
+                    file.size = content_size
+                    file.system_last_modified = timezone.now()
+                    batch.append(file)
+
+                if len(batch) >= BATCH_SIZE:
+                    File.objects.bulk_update(batch, ["size", "system_last_modified"])
+                    batch.clear()
+
+            if batch:
+                File.objects.bulk_update(batch, ["size", "system_last_modified"])
 
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 

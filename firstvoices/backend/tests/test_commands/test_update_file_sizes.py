@@ -75,34 +75,6 @@ class TestUpdateFileSizes:
         assert file1.size == file1.content.size
         assert file2.size == file2.content.size
 
-    def test_update_file_sizes_missing_content(self, caplog):
-        site = factories.SiteFactory.create()
-        file = self.setup_file_with_missing_content(site)
-
-        call_command("update_file_sizes", site_slugs=site.slug)
-
-        assert f"File size not found for File with ID {file.id}" in caplog.text
-
-        file.refresh_from_db()
-        assert file.size == 0
-
-    def test_rollback_on_error(self, caplog):
-        site = factories.SiteFactory.create()
-        file = self.setup_file_with_missing_size(site)
-
-        file.refresh_from_db()
-
-        with patch(
-            "backend.management.commands.update_file_sizes.Command.update_file_size",
-            side_effect=Exception("Mocked exception"),
-        ):
-            with pytest.raises(Exception, match="Mocked exception"):
-                call_command("update_file_sizes", site_slugs=site.slug)
-
-        file.refresh_from_db()
-
-        assert file.size is None
-
     def test_timestamps(self):
         # ensure last_modified is not updated, and that system_last_modified is updated
         site = factories.SiteFactory.create()
@@ -120,7 +92,7 @@ class TestUpdateFileSizes:
 
     def test_error_getting_file_size(self, caplog):
         site = factories.SiteFactory.create()
-        file = factories.FileFactory.create(site=site)
+        file = self.setup_file_with_missing_size(site)
 
         broken_content = Mock()
         type(broken_content).size = PropertyMock(
