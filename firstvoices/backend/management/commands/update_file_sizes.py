@@ -24,6 +24,28 @@ class Command(BaseCommand):
             default=None,
         )
 
+    def bulk_update_files(self, batch, files_to_update):
+        for file in files_to_update:
+            try:
+                content_size = file.content.size
+            except Exception as e:
+                self.logger.warning(
+                    f"Error accessing file size for File with ID {file.id}: {e}"
+                )
+                continue
+
+            if content_size and file.size != content_size:
+                file.size = content_size
+                file.system_last_modified = timezone.now()
+                batch.append(file)
+
+            if len(batch) >= BATCH_SIZE:
+                File.objects.bulk_update(batch, ["size", "system_last_modified"])
+                batch.clear()
+
+        if batch:
+            File.objects.bulk_update(batch, ["size", "system_last_modified"])
+
     def handle(self, *args, **options):
 
         if options.get("site_slugs"):
@@ -46,26 +68,7 @@ class Command(BaseCommand):
             )
 
             batch = []
-            for file in files_to_update:
-                try:
-                    content_size = file.content.size
-                except Exception as e:
-                    self.logger.warning(
-                        f"Error accessing file size for File with ID {file.id}: {e}"
-                    )
-                    continue
-
-                if content_size and file.size != content_size:
-                    file.size = content_size
-                    file.system_last_modified = timezone.now()
-                    batch.append(file)
-
-                if len(batch) >= BATCH_SIZE:
-                    File.objects.bulk_update(batch, ["size", "system_last_modified"])
-                    batch.clear()
-
-            if batch:
-                File.objects.bulk_update(batch, ["size", "system_last_modified"])
+            self.bulk_update_files(batch, files_to_update)
 
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 
