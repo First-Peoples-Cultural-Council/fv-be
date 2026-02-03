@@ -24,6 +24,14 @@ class Command(BaseCommand):
             default=None,
         )
 
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="If set, the command will simulate the update without making any changes to the database, "
+            "and will log the results instead.",
+            default=False,
+        )
+
     def bulk_update_files(self, batch, files_to_update):
         for file in files_to_update:
             try:
@@ -53,6 +61,26 @@ class Command(BaseCommand):
         if batch:
             File.objects.bulk_update(batch, ["size", "system_last_modified"])
 
+    def bulk_update_files_dry_run(self, files_to_update):
+        for file in files_to_update:
+            try:
+                content_size = file.content.size
+            except Exception as e:
+                self.logger.warning(
+                    f"Error accessing file size for File with ID {file.id}: {e}"
+                )
+                continue
+
+            if content_size:
+                self.logger.info(
+                    f"File with ID {file.id} on site {file.site.slug} would be updated with size {content_size}."
+                )
+            else:
+                self.logger.warning(
+                    f"File with ID {file.id} on site {file.site.slug} has no content size available. "
+                    f"File would be updated with size 0."
+                )
+
     def handle(self, *args, **options):
 
         if options.get("site_slugs"):
@@ -67,16 +95,32 @@ class Command(BaseCommand):
             sites = Site.objects.all()
 
         for site in sites:
-            self.logger.info(f"Updating file sizes for media files in {site.slug}...")
             files_to_update = (
                 File.objects.filter(site=site, size__isnull=True)
                 .only("id", "content", "size", "system_last_modified")
                 .iterator(chunk_size=1000)
             )
 
-            batch = []
-            self.bulk_update_files(batch, files_to_update)
+            if options.get("dry_run"):
+                self.logger.info(
+                    f"Starting update_file_sizes dry run for site {site.slug}..."
+                )
+                self.bulk_update_files_dry_run(files_to_update)
+                self.logger.info(
+                    f"Dry run completed for site {site.slug}. No changes were made."
+                )
+                continue
 
+            batch = []
+            self.logger.info(f"Updating file sizes for media files in {site.slug}...")
+            self.bulk_update_files(batch, files_to_update)
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 
-        self.logger.info("File size update process completed for all sites.")
+        if options.get("dry_run"):
+            self.logger.info(
+                "Dry run process completed for all specified sites. No changes were made."
+            )
+        else:
+            self.logger.info(
+                "File size update process completed for all specified sites."
+            )

@@ -48,7 +48,25 @@ class TestUpdateFileSizes:
             assert f"Updating file sizes for media files in {slug}..." in caplog.text
             assert f"Completed updating file sizes for site {slug}." in caplog.text
 
-        assert "File size update process completed for all sites." in caplog.text
+        assert (
+            "File size update process completed for all specified sites." in caplog.text
+        )
+
+    @staticmethod
+    def assert_dry_run_caplog_text(caplog, site_slugs):
+        for slug in site_slugs:
+            assert (
+                f"Starting update_file_sizes dry run for site {slug}..." in caplog.text
+            )
+            assert (
+                f"Dry run completed for site {slug}. No changes were made."
+                in caplog.text
+            )
+
+        assert (
+            "Dry run process completed for all specified sites. No changes were made."
+            in caplog.text
+        )
 
     def test_update_file_sizes_no_site(self, caplog):
         call_command("update_file_sizes", site_slugs="invalid-site")
@@ -143,3 +161,59 @@ class TestUpdateFileSizes:
         for file in files:
             file.refresh_from_db()
             assert file.size == file.content.size
+
+    def test_dry_run(self, caplog):
+        site = factories.SiteFactory.create()
+        file = self.setup_files_with_missing_size(site)
+
+        call_command("update_file_sizes", site_slugs=site.slug, dry_run=True)
+
+        assert (
+            f"File with ID {file.id} on site {site.slug} would be updated with size {file.content.size}."
+            in caplog.text
+        )
+
+        self.assert_dry_run_caplog_text(caplog, [site.slug])
+
+        file.refresh_from_db()
+        assert file.size is None
+
+    def test_dry_run_missing_content(self, caplog):
+        site = factories.SiteFactory.create()
+        file = self.setup_file_with_missing_content(site)
+        File.objects.filter(id=file.id).update(size=None)
+        file.refresh_from_db()
+
+        call_command("update_file_sizes", site_slugs=site.slug, dry_run=True)
+
+        assert (
+            f"File with ID {file.id} on site {site.slug} has no content size available. "
+            f"File would be updated with size 0."
+        ) in caplog.text
+
+        self.assert_dry_run_caplog_text(caplog, [site.slug])
+
+        file.refresh_from_db()
+        assert file.size is None
+
+    def test_dry_run_error_getting_file_size(self, caplog):
+        site = factories.SiteFactory.create()
+        file = self.setup_files_with_missing_size(site)
+
+        broken_content = Mock()
+        type(broken_content).size = PropertyMock(
+            side_effect=Exception("Mocked exception accessing file")
+        )
+
+        with patch.object(
+            File,
+            "content",
+            new_callable=PropertyMock,
+            return_value=broken_content,
+        ):
+            call_command("update_file_sizes", site_slugs=site.slug, dry_run=True)
+
+        assert (
+            f"Error accessing file size for File with ID {file.id}: Mocked exception accessing file"
+            in caplog.text
+        )
