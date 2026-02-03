@@ -13,18 +13,25 @@ from backend.tests.utils import get_sample_file
 class TestUpdateFileSizes:
 
     @staticmethod
-    def setup_file_with_missing_size(site):
-        file = factories.FileFactory.create(
-            site=site,
-            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
-        )
+    def setup_files_with_missing_size(site, count=1):
+        files = []
+        for _ in range(count):
+            file = factories.FileFactory.create(
+                site=site,
+                content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+            )
 
-        File.objects.filter(id=file.id).update(size=None)
-        file.refresh_from_db()
+            File.objects.filter(id=file.id).update(size=None)
+            file.refresh_from_db()
 
-        assert file.size is None
+            assert file.size is None
 
-        return file
+            files.append(file)
+
+            if count == 1:
+                return file
+
+        return files
 
     @staticmethod
     def setup_file_with_missing_content(site):
@@ -49,7 +56,7 @@ class TestUpdateFileSizes:
 
     def test_update_file_sizes_single_site(self, caplog):
         site = factories.SiteFactory.create()
-        file = self.setup_file_with_missing_size(site)
+        file = self.setup_files_with_missing_size(site)
 
         call_command("update_file_sizes", site_slugs=site.slug)
 
@@ -62,8 +69,8 @@ class TestUpdateFileSizes:
     def test_update_file_sizes_all_sites(self, caplog):
         site1 = factories.SiteFactory.create()
         site2 = factories.SiteFactory.create()
-        file1 = self.setup_file_with_missing_size(site1)
-        file2 = self.setup_file_with_missing_size(site2)
+        file1 = self.setup_files_with_missing_size(site1)
+        file2 = self.setup_files_with_missing_size(site2)
 
         call_command("update_file_sizes")
 
@@ -78,7 +85,7 @@ class TestUpdateFileSizes:
     def test_timestamps(self):
         # ensure last_modified is not updated, and that system_last_modified is updated
         site = factories.SiteFactory.create()
-        file = self.setup_file_with_missing_size(site)
+        file = self.setup_files_with_missing_size(site)
 
         old_last_modified = file.last_modified
 
@@ -92,7 +99,7 @@ class TestUpdateFileSizes:
 
     def test_error_getting_file_size(self, caplog):
         site = factories.SiteFactory.create()
-        file = self.setup_file_with_missing_size(site)
+        file = self.setup_files_with_missing_size(site)
 
         broken_content = Mock()
         type(broken_content).size = PropertyMock(
@@ -111,3 +118,28 @@ class TestUpdateFileSizes:
             f"Error accessing file size for File with ID {file.id}: Mocked exception accessing file"
             in caplog.text
         )
+
+    def test_update_file_size_missing_content(self, caplog):
+        site = factories.SiteFactory.create()
+        file = self.setup_file_with_missing_content(site)
+        File.objects.filter(id=file.id).update(size=None)
+        file.refresh_from_db()
+
+        call_command("update_file_sizes", site_slugs=site.slug)
+
+        assert f"File with ID {file.id} has no content size available." in caplog.text
+
+        file.refresh_from_db()
+        assert file.size == 0
+
+    def test_files_updated_in_batches(self, caplog):
+        site = factories.SiteFactory.create()
+        files = self.setup_files_with_missing_size(site, count=1200)
+
+        call_command("update_file_sizes", site_slugs=site.slug)
+
+        self.assert_caplog_text(caplog, [site.slug])
+
+        for file in files:
+            file.refresh_from_db()
+            assert file.size == file.content.size

@@ -34,8 +34,15 @@ class Command(BaseCommand):
                 )
                 continue
 
-            if content_size and file.size != content_size:
+            if content_size:
                 file.size = content_size
+                file.system_last_modified = timezone.now()
+                batch.append(file)
+            else:
+                self.logger.warning(
+                    f"File with ID {file.id} has no content size available."
+                )
+                file.size = 0
                 file.system_last_modified = timezone.now()
                 batch.append(file)
 
