@@ -2,7 +2,7 @@ from enum import Enum
 
 from elasticsearch.dsl import Q
 
-from backend.models import Membership
+from backend.models import Membership, Person
 from backend.models.category import Category
 from backend.models.characters import Alphabet
 from backend.models.constants import AppRole, Role, Visibility
@@ -236,3 +236,13 @@ def get_min_words_query(min_words):
 
 def get_max_words_query(max_words):
     return Q("bool", filter=Q("range", title__token_count={"lte": max_words}))
+
+
+def get_speaker_query(speaker_ids):
+    query_speakers = []
+
+    for speaker_id in speaker_ids:
+        if Person.objects.filter(id=speaker_id).exists():
+            query_speakers.append(str(speaker_id))
+
+    return Q("bool", filter=[Q("terms", speakers=speaker_ids)])

@@ -13,6 +13,7 @@ class MediaDocument(BaseSiteEntryDocument):
     # filter and sorting
     type = Keyword()  # possible values => audio, image, video
     has_site_feature = Keyword()
+    speakers = Keyword()
 
     class Index:
         name = ELASTICSEARCH_MEDIA_INDEX
