@@ -141,6 +141,11 @@ class TestImportJob:
             "third_translation",
             "fourth_translation",
             "fifth_translation",
+            "sixth_translation",
+            "seventh_translation",
+            "eighth_translation",
+            "ninth_translation",
+            "tenth_translation",
         ]
         assert first_entry.acknowledgements == [
             "first_ack",
@@ -148,6 +153,11 @@ class TestImportJob:
             "third_ack",
             "fourth_ack",
             "fifth_ack",
+            "sixth_ack",
+            "seventh_ack",
+            "eighth_ack",
+            "ninth_ack",
+            "tenth_ack",
         ]
         assert first_entry.notes == [
             "first_note",
@@ -155,25 +165,34 @@ class TestImportJob:
             "third_note",
             "fourth_note",
             "fifth_note",
+            "sixth_note",
+            "seventh_note",
+            "eighth_note",
+            "ninth_note",
+            "tenth_note",
         ]
         assert first_entry.alternate_spellings == [
             "alt_s_1",
             "alt_s_2",
             "alt_s_3",
-            "alt_s_4",
-            "alt_s_5",
         ]
         assert first_entry.pronunciations == [
             "first_p",
             "second_p",
             "third_p",
-            "fourth_p",
-            "fifth_p",
         ]
 
         categories = list(first_entry.categories.all().values_list("title", flat=True))
         assert "Animals" in categories
         assert "Body" in categories
+        assert "Colours" in categories
+        assert "Essential Phrases" in categories
+        assert "Food" in categories
+        assert "Human Relations" in categories
+        assert "Movement" in categories
+        assert "Numbers" in categories
+        assert "Plants" in categories
+        assert "Time" in categories
 
     def test_default_values(self):
         file_content = get_sample_file(

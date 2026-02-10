@@ -114,7 +114,7 @@ class TextListWidget(Widget):
         super().__init__(*args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        match_pattern = rf"{self.prefix}[_2-5]*"
+        match_pattern = rf"{self.prefix}(?:_(?:[2-9]|10))?$"
         return [
             value
             for key, value in row.items()
@@ -141,7 +141,7 @@ class CustomManyToManyWidget(ManyToManyWidget):
         super().__init__(model=self.model, field=field, *args, **kwargs)
 
     def clean(self, value, row=None, **kwargs):
-        column_name_pattern = rf"{self.column_name}[_2-5]*"
+        column_name_pattern = rf"{self.column_name}(?:_(?:[2-9]|10))?$"
 
         # to be used in exceptions if need be
         error_message_field = "id" if self.field == "pk" else self.field
