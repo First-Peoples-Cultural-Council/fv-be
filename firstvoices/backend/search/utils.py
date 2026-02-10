@@ -232,3 +232,7 @@ def get_search_response(search_query):
         return response
     except ConnectionError:
         raise ElasticSearchConnectionError()
+
+
+def queryset_as_map(queryset):
+    return {str(x.id): x for x in queryset}
