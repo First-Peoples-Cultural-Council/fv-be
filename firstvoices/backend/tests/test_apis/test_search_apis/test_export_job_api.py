@@ -41,7 +41,6 @@ class TestExportJobAPI(
             "status": instance.status,
             "message": instance.message,
             "exportCsv": instance.export_csv,
-            "exportParams": instance.export_params,
         }
 
     def get_expected_response(self, instance, site):
@@ -58,12 +57,7 @@ class TestExportJobAPI(
         site_id = expected_data["site"]
         pk = actual_response["id"]
         job = self.model.objects.get(site=site_id, pk=pk)
-        expected_response = self.get_expected_response(job, job.site)
-
-        assert actual_response["taskId"] == expected_response["taskId"]
-        assert actual_response["status"] == expected_response["status"]
-        assert actual_response["message"] == expected_response["message"]
-        assert actual_response["exportCsv"] == expected_response["exportCsv"]
+        assert actual_response == self.get_expected_response(job, job.site)
 
     @pytest.mark.skip(reason="Export jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):

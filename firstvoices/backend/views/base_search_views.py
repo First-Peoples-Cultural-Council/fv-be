@@ -10,8 +10,11 @@ from backend.search.utils import (
     get_base_search_params,
     get_ids_by_type,
     get_search_response,
-    queryset_as_map,
 )
+
+
+def queryset_as_map(queryset):
+    return {str(x.id): x for x in queryset}
 
 
 class HydrateSerializeSearchResultsMixin:
