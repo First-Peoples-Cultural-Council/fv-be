@@ -30,6 +30,7 @@ class DictionaryEntryDocument(BaseSiteEntryWithMediaDocument):
     has_unrecognized_chars = Boolean()
     has_categories = Boolean()
     has_related_entries = Boolean()
+    speakers = Keyword()
 
     class Index:
         name = ELASTICSEARCH_DICTIONARY_ENTRY_INDEX

@@ -75,3 +75,17 @@ class TestSiteSearchAPI(
             )
 
             assert mock_get_search_query.call_args.kwargs["starts_with_char"] == "x"
+
+    def test_invalid_speaker_ids(self):
+        site, user = factories.get_site_with_member(
+            site_visibility=Visibility.PUBLIC, user_role=Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug) + "?speakers=invalidSpeaker"
+        )
+        response_data = json.loads(response.content)
+
+        assert len(response_data["results"]) == 0
+        assert response_data["count"] == 0
