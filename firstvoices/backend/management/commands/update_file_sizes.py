@@ -32,7 +32,8 @@ class Command(BaseCommand):
             default=False,
         )
 
-    def bulk_update_files(self, batch, files_to_update):
+    def bulk_update_files(self, files_to_update):
+        batch = []
         for file in files_to_update:
             try:
                 content_size = file.content.size
@@ -111,9 +112,8 @@ class Command(BaseCommand):
                 )
                 continue
 
-            batch = []
             self.logger.info(f"Updating file sizes for media files in {site.slug}...")
-            self.bulk_update_files(batch, files_to_update)
+            self.bulk_update_files(files_to_update)
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 
         if options.get("dry_run"):
