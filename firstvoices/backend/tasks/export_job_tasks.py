@@ -41,12 +41,11 @@ def generate_export_csv(export_job_id):
         JobStatus.COMPLETE,
     ]:
         logger.info(
-            "This job could not be started as it is either queued, or already running or completed. "
+            "This job could not be started as it is either already running or completed. "
             f"ExportJob id: {export_job_id}."
         )
         return
 
-    export_job.status = JobStatus.STARTED
     export_job.task_id = task_id
     export_job.save()
 
