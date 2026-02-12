@@ -65,7 +65,11 @@ def generate_export(export_job_instance):
         "related_dictionary_entries": "related_entry_id",
     }
 
+    logger = get_task_logger(__name__)
     user = get_user_model().objects.filter(email=export_job_instance.created_by).first()
+
+    export_job_instance.status = JobStatus.STARTED
+    export_job_instance.save()
 
     search_params = export_job_instance.export_params.copy()
     search_params["user"] = user
@@ -73,26 +77,48 @@ def generate_export(export_job_instance):
         timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")
     }.csv"
 
-    results = get_search_results(search_params)
+    results = None
 
-    export_job_instance.status = JobStatus.STARTED
-    export_job_instance.save()
+    try:
+        results = get_search_results(search_params)
+    except Exception as e:
+        logger.error(
+            f"Unable to get search results for export_job: {str(export_job_instance.id)}. Error: {e}."
+        )
+        export_job_instance.status = JobStatus.FAILED
 
-    csv_string = convert_queryset_to_csv_content(results, flatten_fields)
-    csv_file_content = ContentFile(csv_string, filename)
-    export_csv_file = File(
-        content=csv_file_content,
-        site=export_job_instance.site,
-        created_by=export_job_instance.last_modified_by,
-        last_modified_by=export_job_instance.last_modified_by,
-    )
-    export_csv_file.save()
+    csv_string = None
 
-    export_job_instance.export_csv = export_csv_file
-    export_job_instance.status = JobStatus.COMPLETE
-    export_job_instance.save()
+    if results:
+        try:
+            csv_string = convert_queryset_to_csv_content(results, flatten_fields)
+        except Exception as e:
+            logger.error(
+                f"Unable to convert queryset to csv content for export_job: {str(export_job_instance.id)}. Error: {e}."
+            )
+            export_job_instance.status = JobStatus.FAILED
+            export_job_instance.save()
 
-    return export_job_instance.id
+    if csv_string:
+        try:
+            csv_file_content = ContentFile(csv_string, filename)
+            export_csv_file = File(
+                content=csv_file_content,
+                site=export_job_instance.site,
+                created_by=export_job_instance.last_modified_by,
+                last_modified_by=export_job_instance.last_modified_by,
+            )
+            export_csv_file.save()
+            export_job_instance.export_csv = export_csv_file
+            export_job_instance.status = JobStatus.COMPLETE
+        except Exception as e:
+            logger.error(
+                "Unable to either create, save, or attach csv for export_job: "
+                f"{str(export_job_instance.id)}. Error: {e}."
+            )
+            export_job_instance.status = JobStatus.FAILED
+        finally:
+            export_job_instance.save()
 
 
 def get_search_results(search_params):
