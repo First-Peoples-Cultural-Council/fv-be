@@ -9,11 +9,11 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import BulkMediaFileCreationMixin, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobRelatedMedia:
+class TestImportJobRelatedMedia(BulkMediaFileCreationMixin):
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"
@@ -1021,3 +1021,78 @@ class TestImportJobRelatedMedia:
 
         confirm_import_job(import_job.id)
         assert DictionaryEntry.objects.filter(site=self.site).count() == 0
+
+    def test_related_media_maximum(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_audio_filename",
+            file_type="audio",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_document_filename",
+            file_type="document",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_img_filename",
+            file_type="image",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_video_filename",
+            file_type="video",
+            import_job=import_job,
+        )
+        for i in range(1, 11):
+            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.filter(site=self.site).count() == 5
+        entry1 = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_audio"
+        )
+        assert entry1.related_audio.count() == 10
+        audio_filenames = entry1.related_audio.values_list(
+            "original__content__name", flat=True
+        )
+        for i in range(1, 11):
+            assert any(
+                f"test_all_media_audio_filename-{i}.mp3" in filename
+                for filename in audio_filenames
+            )
+        audio_titles = entry1.related_audio.values_list("title", flat=True)
+        for i in range(1, 11):
+            assert f"test_all_media_audio_title-{i}" in audio_titles
+        audio_descriptions = entry1.related_audio.values_list("description", flat=True)
+        for i in range(1, 11):
+            assert f"test_all_media_audio_description-{i}" in audio_descriptions
+        audio_acknowledgements = entry1.related_audio.values_list(
+            "acknowledgement", flat=True
+        )
+        for i in range(1, 11):
+            assert f"test_all_media_audio_acknowledgement-{i}" in audio_acknowledgements
+        for audio in entry1.related_audio.all():
+            assert audio.exclude_from_kids is False
+            assert audio.exclude_from_games is False
+            assert audio.speakers.count() == 10
+
+        # TODO: Finish test for all media types

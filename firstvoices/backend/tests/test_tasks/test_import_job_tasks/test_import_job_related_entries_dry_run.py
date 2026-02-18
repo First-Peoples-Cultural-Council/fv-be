@@ -119,6 +119,50 @@ class TestImportJobRelatedEntriesDryRun:
         assert validation_report.new_rows == 2
         assert validation_report.error_rows == 0
 
+    def test_related_entries_by_title_maximum(self):
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_related_entries_by_title_multiple.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        # Refreshed instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.new_rows == 11
+        assert validation_report.error_rows == 0
+
+        expected_valid_columns = [
+            "title",
+            "type",
+            "related_entry",
+            "related_entry_2",
+            "related_entry_3",
+            "related_entry_4",
+            "related_entry_5",
+            "related_entry_6",
+            "related_entry_7",
+            "related_entry_8",
+            "related_entry_9",
+            "related_entry_10",
+        ]
+
+        for column in expected_valid_columns:
+            assert column in validation_report.accepted_columns
+
+        assert len(validation_report.ignored_columns) == 0
+
     def test_related_entry_by_title_invalid_from_entry(self):
         file_content = get_sample_file(
             file_dir=self.MEDIA_FILES_DIR,

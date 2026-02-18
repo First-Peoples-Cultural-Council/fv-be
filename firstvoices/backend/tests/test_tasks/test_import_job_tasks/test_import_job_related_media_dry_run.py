@@ -6,11 +6,11 @@ from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import BulkMediaFileCreationMixin, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobRelatedMediaDryRun:
+class TestImportJobRelatedMediaDryRun(BulkMediaFileCreationMixin):
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"
@@ -663,3 +663,88 @@ class TestImportJobRelatedMediaDryRun:
         assert (
             "related_video_links: Duplicate urls found in list." in error_rows[2].errors
         )
+
+    def test_related_media_fields_maximum(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_audio_filename",
+            file_type="audio",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_document_filename",
+            file_type="document",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_img_filename",
+            file_type="image",
+            import_job=import_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_all_media_video_filename",
+            file_type="video",
+            import_job=import_job,
+        )
+        for i in range(1, 11):
+            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.new_rows == 5
+
+        # use loops to list out all accepted columns then test they are accepted
+        expected_valid_columns = ["title", "type"]
+        media_prefixes = ["audio", "document", "img", "video"]
+        media_suffixes = [
+            "filename",
+            "title",
+            "description",
+            "acknowledgement",
+            "include_in_kids_site",
+        ]
+
+        for prefix in media_prefixes:
+            for suffix in media_suffixes:
+                expected_valid_columns.append(f"{prefix}_{suffix}")
+
+                for i in range(2, 11):
+                    expected_valid_columns.append(f"{prefix}_{i}_{suffix}")
+
+        for i in range(1, 11):
+            if i == 1:
+                expected_valid_columns.append("audio_include_in_games")
+            else:
+                expected_valid_columns.append(f"audio_{i}_include_in_games")
+
+            for j in range(1, 11):
+                if i == 1 and j == 1:
+                    expected_valid_columns.append("audio_speaker")
+                elif i == 1:
+                    expected_valid_columns.append(f"audio_speaker_{j}")
+                elif j == 1:
+                    expected_valid_columns.append(f"audio_{i}_speaker")
+                else:
+                    expected_valid_columns.append(f"audio_{i}_speaker_{j}")
+
+        assert set(expected_valid_columns) == set(validation_report.accepted_columns)

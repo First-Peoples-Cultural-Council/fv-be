@@ -201,3 +201,39 @@ class TransactionOnCommitMixin:
                 )
         else:
             callback()
+
+
+class BulkMediaFileCreationMixin:
+    def upload_multiple_media_files(self, count, filename, file_type, import_job):
+        if file_type == "audio":
+            base_file = "sample-audio.mp3"
+            file_ext = ".mp3"
+            media_factory = factories.FileFactory
+            mimetype = "audio/mpeg"
+        elif file_type == "image":
+            base_file = "sample-image.jpg"
+            file_ext = ".jpg"
+            media_factory = factories.ImageFileFactory
+            mimetype = "image/jpeg"
+        elif file_type == "video":
+            base_file = "video_example_small.mp4"
+            file_ext = ".mp4"
+            media_factory = factories.VideoFileFactory
+            mimetype = "video/mp4"
+        elif file_type == "document":
+            base_file = "sample-document.pdf"
+            file_ext = ".pdf"
+            media_factory = factories.FileFactory
+            mimetype = "application/pdf"
+        else:
+            return
+        for x in range(1, count + 1):
+            media_factory(
+                site=self.site,
+                content=get_sample_file(
+                    filename=f"{base_file}",
+                    mimetype=mimetype,
+                    title=f"{filename}-{x}{file_ext}",
+                ),
+                import_job=import_job,
+            )
