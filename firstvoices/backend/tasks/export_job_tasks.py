@@ -101,7 +101,8 @@ def generate_export(export_job_instance):
 
     if csv_string:
         try:
-            csv_file_content = ContentFile(csv_string, filename)
+            encoded_bytes = csv_string.encode("utf-8")
+            csv_file_content = ContentFile(encoded_bytes, name=filename)
             export_csv_file = File(
                 content=csv_file_content,
                 site=export_job_instance.site,
