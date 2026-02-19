@@ -6,11 +6,11 @@ from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
-from backend.tests.utils import BulkMediaFileCreationMixin, get_sample_file
+from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobRelatedMediaDryRun(BulkMediaFileCreationMixin):
+class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"

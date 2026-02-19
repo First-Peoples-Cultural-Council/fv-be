@@ -9,11 +9,11 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
-from backend.tests.utils import BulkMediaFileCreationMixin, get_sample_file
+from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobRelatedMedia(BulkMediaFileCreationMixin):
+class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"
@@ -1067,32 +1067,35 @@ class TestImportJobRelatedMedia(BulkMediaFileCreationMixin):
         confirm_import_job(import_job.id)
 
         assert DictionaryEntry.objects.filter(site=self.site).count() == 5
-        entry1 = DictionaryEntry.objects.get(
+
+        audio_entry = DictionaryEntry.objects.get(
             title="test_all_media_columns_dictionary_entries_audio"
         )
-        assert entry1.related_audio.count() == 10
-        audio_filenames = entry1.related_audio.values_list(
-            "original__content__name", flat=True
-        )
-        for i in range(1, 11):
-            assert any(
-                f"test_all_media_audio_filename-{i}.mp3" in filename
-                for filename in audio_filenames
-            )
-        audio_titles = entry1.related_audio.values_list("title", flat=True)
-        for i in range(1, 11):
-            assert f"test_all_media_audio_title-{i}" in audio_titles
-        audio_descriptions = entry1.related_audio.values_list("description", flat=True)
-        for i in range(1, 11):
-            assert f"test_all_media_audio_description-{i}" in audio_descriptions
-        audio_acknowledgements = entry1.related_audio.values_list(
-            "acknowledgement", flat=True
-        )
-        for i in range(1, 11):
-            assert f"test_all_media_audio_acknowledgement-{i}" in audio_acknowledgements
-        for audio in entry1.related_audio.all():
-            assert audio.exclude_from_kids is False
-            assert audio.exclude_from_games is False
-            assert audio.speakers.count() == 10
+        self.assert_maximum_audio_file_data(audio_entry, "test_all_media_audio")
 
-        # TODO: Finish test for all media types
+        document_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_document"
+        )
+        self.assert_maximum_document_file_data(
+            document_entry, "test_all_media_document"
+        )
+
+        image_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_image"
+        )
+        self.assert_maximum_image_file_data(image_entry, "test_all_media_img")
+
+        video_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_video"
+        )
+        self.assert_maximum_video_file_data(video_entry, "test_all_media_video")
+
+        all_media_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_all"
+        )
+        self.assert_maximum_audio_file_data(all_media_entry, "test_all_media_audio")
+        self.assert_maximum_document_file_data(
+            all_media_entry, "test_all_media_document"
+        )
+        self.assert_maximum_image_file_data(all_media_entry, "test_all_media_img")
+        self.assert_maximum_video_file_data(all_media_entry, "test_all_media_video")

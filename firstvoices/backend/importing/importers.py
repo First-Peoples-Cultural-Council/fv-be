@@ -163,11 +163,9 @@ class BaseMediaFileImporter(BaseImporter):
         for i in range(1, 11):
             # Build regex pattern for the i-th file group
             if i == 1:
-                pattern = (
-                    rf"^{cls.column_prefix}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
-                )
+                pattern = rf"^{cls.column_prefix}_[a-z]+(?:_[a-z]+)*(_(?:[2-9]|10))?$"  # noqa: E231
             else:
-                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
+                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?:_[a-z]+)*(_(?:[2-9]|10))?$"  # noqa: E231
 
             file_columns = [
                 col for col in headers if re.match(pattern, col, re.IGNORECASE)
@@ -202,7 +200,9 @@ class BaseMediaFileImporter(BaseImporter):
         for dataset in split_file_data:
             # replace numbered prefixes with the base prefix
             dataset.headers = [
-                re.sub(rf"^{cls.column_prefix}_\d_", f"{cls.column_prefix}_", col)
+                re.sub(
+                    rf"^{cls.column_prefix}_\d{{1,2}}_", f"{cls.column_prefix}_", col
+                )
                 for col in dataset.headers
             ]
 

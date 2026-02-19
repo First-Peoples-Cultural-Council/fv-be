@@ -203,7 +203,120 @@ class TransactionOnCommitMixin:
             callback()
 
 
-class BulkMediaFileCreationMixin:
+class BatchRelatedMediaMixin:
+
+    @staticmethod
+    def assert_maximum_audio_file_data(dictionary_entry, entry_prefix):
+        assert dictionary_entry.related_audio.count() == 10
+        audio_filenames = dictionary_entry.related_audio.values_list(
+            "original__content", flat=True
+        )
+        for i in range(1, 11):
+            assert any(
+                f"{entry_prefix}_filename-{i}.mp3" in filename
+                for filename in audio_filenames
+            )
+        audio_titles = dictionary_entry.related_audio.values_list("title", flat=True)
+        for i in range(1, 11):
+            assert f"{entry_prefix}_title-{i}" in audio_titles
+        audio_descriptions = dictionary_entry.related_audio.values_list(
+            "description", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_description-{i}" in audio_descriptions
+        audio_acknowledgements = dictionary_entry.related_audio.values_list(
+            "acknowledgement", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_acknowledgement-{i}" in audio_acknowledgements
+        for audio in dictionary_entry.related_audio.all():
+            assert audio.exclude_from_kids is True
+            assert audio.exclude_from_games is True
+            assert audio.speakers.count() == 10
+
+    @staticmethod
+    def assert_maximum_document_file_data(dictionary_entry, entry_prefix):
+        assert dictionary_entry.related_documents.count() == 10
+        document_filenames = dictionary_entry.related_documents.values_list(
+            "original__content", flat=True
+        )
+        for i in range(1, 11):
+            assert any(
+                f"{entry_prefix}_filename-{i}.pdf" in filename
+                for filename in document_filenames
+            )
+        document_titles = dictionary_entry.related_documents.values_list(
+            "title", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_title-{i}" in document_titles
+        document_descriptions = dictionary_entry.related_documents.values_list(
+            "description", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_description-{i}" in document_descriptions
+        document_acknowledgements = dictionary_entry.related_documents.values_list(
+            "acknowledgement", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_acknowledgement-{i}" in document_acknowledgements
+        for document in dictionary_entry.related_documents.all():
+            assert document.exclude_from_kids is True
+
+    @staticmethod
+    def assert_maximum_image_file_data(dictionary_entry, entry_prefix):
+        assert dictionary_entry.related_images.count() == 10
+        image_filenames = dictionary_entry.related_images.values_list(
+            "original__content", flat=True
+        )
+        for i in range(1, 11):
+            assert any(
+                f"{entry_prefix}_filename-{i}.jpg" in filename
+                for filename in image_filenames
+            )
+        image_titles = dictionary_entry.related_images.values_list("title", flat=True)
+        for i in range(1, 11):
+            assert f"{entry_prefix}_title-{i}" in image_titles
+        image_descriptions = dictionary_entry.related_images.values_list(
+            "description", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_description-{i}" in image_descriptions
+        image_acknowledgements = dictionary_entry.related_images.values_list(
+            "acknowledgement", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_acknowledgement-{i}" in image_acknowledgements
+        for image in dictionary_entry.related_images.all():
+            assert image.exclude_from_kids is True
+
+    @staticmethod
+    def assert_maximum_video_file_data(dictionary_entry, entry_prefix):
+        assert dictionary_entry.related_videos.count() == 10
+        video_filenames = dictionary_entry.related_videos.values_list(
+            "original__content", flat=True
+        )
+        for i in range(1, 11):
+            assert any(
+                f"{entry_prefix}_filename-{i}.mp4" in filename
+                for filename in video_filenames
+            )
+        video_titles = dictionary_entry.related_videos.values_list("title", flat=True)
+        for i in range(1, 11):
+            assert f"{entry_prefix}_title-{i}" in video_titles
+        video_descriptions = dictionary_entry.related_videos.values_list(
+            "description", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_description-{i}" in video_descriptions
+        video_acknowledgements = dictionary_entry.related_videos.values_list(
+            "acknowledgement", flat=True
+        )
+        for i in range(1, 11):
+            assert f"{entry_prefix}_acknowledgement-{i}" in video_acknowledgements
+        for video in dictionary_entry.related_videos.all():
+            assert video.exclude_from_kids is True
+
     def upload_multiple_media_files(self, count, filename, file_type, import_job):
         if file_type == "audio":
             base_file = "sample-audio.mp3"
