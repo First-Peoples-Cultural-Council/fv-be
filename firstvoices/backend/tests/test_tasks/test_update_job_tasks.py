@@ -13,7 +13,7 @@ from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
 
 TEST_ENTRY_IDS = [
     "ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
@@ -66,7 +66,7 @@ def setup_for_external_systems(site):
 
 
 @pytest.mark.django_db
-class TestBulkUpdateDryRun:
+class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
 
     def setup_method(self):
@@ -516,9 +516,67 @@ class TestBulkUpdateDryRun:
 
         self.validate_related_entries()
 
+    def test_update_related_media_fields_maximum_dry_run(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+
+        file_content = get_sample_file(
+            filename="update_job/test_update_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_audio_filename",
+            file_type="audio",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_document_filename",
+            file_type="document",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_img_filename",
+            file_type="image",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_video_filename",
+            file_type="video",
+            import_job=update_job,
+        )
+        for i in range(1, 11):
+            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id, mode=ImportJobMode.UPDATE)
+        validation_report = update_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.updated_rows == 5
+
+        expected_valid_columns = self.get_maximum_valid_related_media_columns()
+
+        assert set(expected_valid_columns + ["id"]) == set(
+            validation_report.accepted_columns
+        )
+
 
 @pytest.mark.django_db
-class TestBulkUpdate(IgnoreTaskResultsMixin):
+class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     TASK = confirm_update_job
 
@@ -1186,3 +1244,79 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert str(old_doc.id) not in related_documents
         assert sample_doc_ids[0] in related_documents
         assert sample_doc_ids[1] in related_documents
+
+    def test_update_related_media_fields_maximum(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+
+        file_content = get_sample_file(
+            filename="update_job/test_update_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_audio_filename",
+            file_type="audio",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_document_filename",
+            file_type="document",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_img_filename",
+            file_type="image",
+            import_job=update_job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename="test_update_all_media_video_filename",
+            file_type="video",
+            import_job=update_job,
+        )
+        for i in range(1, 11):
+            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+
+        confirm_update_job(update_job.id)
+
+        audio_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        self.assert_maximum_audio_file_data(audio_entry, "test_update_all_media_audio")
+
+        document_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        self.assert_maximum_document_file_data(
+            document_entry, "test_update_all_media_document"
+        )
+
+        image_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[2])
+        self.assert_maximum_image_file_data(image_entry, "test_update_all_media_img")
+
+        video_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[3])
+        self.assert_maximum_video_file_data(video_entry, "test_update_all_media_video")
+
+        all_media_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[4])
+        self.assert_maximum_audio_file_data(
+            all_media_entry, "test_update_all_media_audio"
+        )
+        self.assert_maximum_document_file_data(
+            all_media_entry, "test_update_all_media_document"
+        )
+        self.assert_maximum_image_file_data(
+            all_media_entry, "test_update_all_media_img"
+        )
+        self.assert_maximum_video_file_data(
+            all_media_entry, "test_update_all_media_video"
+        )

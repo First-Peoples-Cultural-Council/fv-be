@@ -317,6 +317,43 @@ class BatchRelatedMediaMixin:
         for video in dictionary_entry.related_videos.all():
             assert video.exclude_from_kids is True
 
+    @staticmethod
+    def get_maximum_valid_related_media_columns():
+        expected_valid_columns = ["title", "type"]
+        media_prefixes = ["audio", "document", "img", "video"]
+        media_suffixes = [
+            "filename",
+            "title",
+            "description",
+            "acknowledgement",
+            "include_in_kids_site",
+        ]
+
+        for prefix in media_prefixes:
+            for suffix in media_suffixes:
+                expected_valid_columns.append(f"{prefix}_{suffix}")
+
+                for i in range(2, 11):
+                    expected_valid_columns.append(f"{prefix}_{i}_{suffix}")
+
+        for i in range(1, 11):
+            if i == 1:
+                expected_valid_columns.append("audio_include_in_games")
+            else:
+                expected_valid_columns.append(f"audio_{i}_include_in_games")
+
+            for j in range(1, 11):
+                if i == 1 and j == 1:
+                    expected_valid_columns.append("audio_speaker")
+                elif i == 1:
+                    expected_valid_columns.append(f"audio_speaker_{j}")
+                elif j == 1:
+                    expected_valid_columns.append(f"audio_{i}_speaker")
+                else:
+                    expected_valid_columns.append(f"audio_{i}_speaker_{j}")
+
+        return expected_valid_columns
+
     def upload_multiple_media_files(self, count, filename, file_type, import_job):
         if file_type == "audio":
             base_file = "sample-audio.mp3"
