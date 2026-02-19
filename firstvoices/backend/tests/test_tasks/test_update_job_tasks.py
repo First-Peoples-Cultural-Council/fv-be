@@ -190,32 +190,48 @@ class TestBulkUpdateDryRun:
             "translation_3",
             "translation_4",
             "translation_5",
+            "translation_6",
+            "translation_7",
+            "translation_8",
+            "translation_9",
+            "translation_10",
             "acknowledgement",
             "acknowledgement_2",
             "acknowledgement_3",
             "acknowledgement_4",
             "acknowledgement_5",
+            "acknowledgement_6",
+            "acknowledgement_7",
+            "acknowledgement_8",
+            "acknowledgement_9",
+            "acknowledgement_10",
             "note",
             "note_2",
             "note_3",
             "note_4",
             "note_5",
+            "note_6",
+            "note_7",
+            "note_8",
+            "note_9",
+            "note_10",
             "alternate_spelling",
             "alternate_spelling_2",
             "alternate_spelling_3",
-            "alternate_spelling_4",
-            "alternate_spelling_5",
             "category",
             "category_2",
             "category_3",
             "category_4",
             "category_5",
+            "category_6",
+            "category_7",
+            "category_8",
+            "category_9",
+            "category_10",
             "part_of_speech",
             "pronunciation",
             "pronunciation_2",
             "pronunciation_3",
-            "pronunciation_4",
-            "pronunciation_5",
         ]
 
         for column in expected_valid_columns:
@@ -593,6 +609,11 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_translation",
             "fourth_translation",
             "fifth_translation",
+            "sixth_translation",
+            "seventh_translation",
+            "eighth_translation",
+            "ninth_translation",
+            "tenth_translation",
         ]
         assert entry.acknowledgements == [
             "first_ack",
@@ -600,6 +621,11 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_ack",
             "fourth_ack",
             "fifth_ack",
+            "sixth_ack",
+            "seventh_ack",
+            "eighth_ack",
+            "ninth_ack",
+            "tenth_ack",
         ]
         assert entry.notes == [
             "first_note",
@@ -607,25 +633,34 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_note",
             "fourth_note",
             "fifth_note",
+            "sixth_note",
+            "seventh_note",
+            "eighth_note",
+            "ninth_note",
+            "tenth_note",
         ]
         assert entry.alternate_spellings == [
             "alt_s_1",
             "alt_s_2",
             "alt_s_3",
-            "alt_s_4",
-            "alt_s_5",
         ]
         assert entry.pronunciations == [
             "first_p",
             "second_p",
             "third_p",
-            "fourth_p",
-            "fifth_p",
         ]
 
         categories = list(entry.categories.all().values_list("title", flat=True))
         assert "Animals" in categories
         assert "Body" in categories
+        assert "Colours" in categories
+        assert "Essential Phrases" in categories
+        assert "Food" in categories
+        assert "Human Relations" in categories
+        assert "Movement" in categories
+        assert "Numbers" in categories
+        assert "Plants" in categories
+        assert "Time" in categories
 
     def test_update_default_values(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
