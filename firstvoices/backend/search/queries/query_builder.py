@@ -23,6 +23,7 @@ from backend.search.queries.query_builder_utils import (
     get_max_words_query,
     get_min_words_query,
     get_site_filter_query,
+    get_speaker_query,
     get_starts_with_query,
     get_types_query,
     get_view_permissions_filter,
@@ -61,6 +62,7 @@ def get_search_query(
     min_words=None,
     max_words=None,
     random_sort=False,
+    speakers="",
     **kwargs,
 ):
     # Building initial query
@@ -161,6 +163,9 @@ def get_search_query(
 
     if max_words is not None:
         search_query = search_query.query(get_max_words_query(max_words))
+
+    if speakers:
+        search_query = search_query.query(get_speaker_query(speakers))
 
     return search_query
 

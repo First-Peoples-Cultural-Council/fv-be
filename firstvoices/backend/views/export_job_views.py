@@ -6,8 +6,6 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import status
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.jobs import ExportJob, JobStatus
@@ -155,5 +153,3 @@ class ExportJobViewSet(
                 ignore_result=True,
             )
         )
-
-        return Response(status=status.HTTP_202_ACCEPTED)

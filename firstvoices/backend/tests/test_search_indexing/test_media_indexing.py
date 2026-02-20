@@ -81,6 +81,20 @@ class TestAudioDocumentManager(BaseMediaDocumentManagerTest):
     factory = factories.AudioFactory
     expected_type = "Audio"
 
+    @pytest.mark.django_db
+    def test_create_document_with_speakers(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+        instance = self.factory.create(
+            exclude_from_kids=False, exclude_from_games=True, site=site
+        )
+        speaker1 = factories.PersonFactory.create(site=site)
+        speaker2 = factories.PersonFactory.create(site=site)
+        instance.speakers.add(speaker1, speaker2)
+
+        doc = self.manager.create_index_document(instance)
+
+        assert doc.speakers == [str(speaker1.id), str(speaker2.id)]
+
 
 class TestDocumentDocumentManager(BaseMediaDocumentManagerTest):
     manager = DocumentDocumentManager
