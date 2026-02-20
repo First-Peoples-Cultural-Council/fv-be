@@ -173,6 +173,63 @@ def to_camel_case(snake_str):
     return components[0] + "".join(x.title() for x in components[1:])
 
 
+def get_maximum_dictionary_entry_columns():
+    return [
+        "title",
+        "type",
+        "visibility",
+        "include_in_games",
+        "include_on_kids_site",
+        "translation",
+        "translation_2",
+        "translation_3",
+        "translation_4",
+        "translation_5",
+        "translation_6",
+        "translation_7",
+        "translation_8",
+        "translation_9",
+        "translation_10",
+        "acknowledgement",
+        "acknowledgement_2",
+        "acknowledgement_3",
+        "acknowledgement_4",
+        "acknowledgement_5",
+        "acknowledgement_6",
+        "acknowledgement_7",
+        "acknowledgement_8",
+        "acknowledgement_9",
+        "acknowledgement_10",
+        "note",
+        "note_2",
+        "note_3",
+        "note_4",
+        "note_5",
+        "note_6",
+        "note_7",
+        "note_8",
+        "note_9",
+        "note_10",
+        "alternate_spelling",
+        "alternate_spelling_2",
+        "alternate_spelling_3",
+        "category",
+        "category_2",
+        "category_3",
+        "category_4",
+        "category_5",
+        "category_6",
+        "category_7",
+        "category_8",
+        "category_9",
+        "category_10",
+        "part_of_speech",
+        "pronunciation",
+        "pronunciation_2",
+        "pronunciation_3",
+    ]
+
+
 class TransactionOnCommitMixin:
     @classmethod
     @contextmanager
@@ -332,9 +389,7 @@ class BatchRelatedMediaMixin:
             ImageImporter,
             VideoImporter,
         ]
-        supported_columns = map(
-            lambda importer: importer.get_supported_columns(), importers
-        )
+        supported_columns = [importer.get_supported_columns() for importer in importers]
 
         expected_valid_columns = reduce(lambda a, b: a + b, supported_columns) + [
             "title",

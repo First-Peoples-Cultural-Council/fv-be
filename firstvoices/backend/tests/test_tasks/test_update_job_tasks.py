@@ -13,7 +13,11 @@ from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
-from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
+from backend.tests.utils import (
+    BatchRelatedMediaMixin,
+    get_maximum_dictionary_entry_columns,
+    get_sample_file,
+)
 
 TEST_ENTRY_IDS = [
     "ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
@@ -179,60 +183,7 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert update_job.validation_report.updated_rows == 6
         assert update_job.validation_report.error_rows == 0
 
-        expected_valid_columns = [
-            "title",
-            "type",
-            "visibility",
-            "include_in_games",
-            "include_on_kids_site",
-            "translation",
-            "translation_2",
-            "translation_3",
-            "translation_4",
-            "translation_5",
-            "translation_6",
-            "translation_7",
-            "translation_8",
-            "translation_9",
-            "translation_10",
-            "acknowledgement",
-            "acknowledgement_2",
-            "acknowledgement_3",
-            "acknowledgement_4",
-            "acknowledgement_5",
-            "acknowledgement_6",
-            "acknowledgement_7",
-            "acknowledgement_8",
-            "acknowledgement_9",
-            "acknowledgement_10",
-            "note",
-            "note_2",
-            "note_3",
-            "note_4",
-            "note_5",
-            "note_6",
-            "note_7",
-            "note_8",
-            "note_9",
-            "note_10",
-            "alternate_spelling",
-            "alternate_spelling_2",
-            "alternate_spelling_3",
-            "category",
-            "category_2",
-            "category_3",
-            "category_4",
-            "category_5",
-            "category_6",
-            "category_7",
-            "category_8",
-            "category_9",
-            "category_10",
-            "part_of_speech",
-            "pronunciation",
-            "pronunciation_2",
-            "pronunciation_3",
-        ]
+        expected_valid_columns = get_maximum_dictionary_entry_columns()
 
         for column in expected_valid_columns:
             assert column in update_job.validation_report.accepted_columns
