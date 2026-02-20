@@ -534,32 +534,13 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             mode=ImportJobMode.UPDATE,
         )
 
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_audio_filename",
-            file_type="audio",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_document_filename",
-            file_type="document",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_img_filename",
-            file_type="image",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_video_filename",
-            file_type="video",
-            import_job=update_job,
-        )
-        for i in range(1, 11):
-            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+        filename_set = [
+            "test_update_all_media_audio_filename",
+            "test_update_all_media_document_filename",
+            "test_update_all_media_img_filename",
+            "test_update_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(update_job, filename_set)
 
         validate_update_job(update_job.id)
 
@@ -1264,32 +1245,13 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             mode=ImportJobMode.UPDATE,
         )
 
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_audio_filename",
-            file_type="audio",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_document_filename",
-            file_type="document",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_img_filename",
-            file_type="image",
-            import_job=update_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_update_all_media_video_filename",
-            file_type="video",
-            import_job=update_job,
-        )
-        for i in range(1, 11):
-            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+        filename_set = [
+            "test_update_all_media_audio_filename",
+            "test_update_all_media_document_filename",
+            "test_update_all_media_img_filename",
+            "test_update_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(update_job, filename_set)
 
         confirm_update_job(update_job.id)
 

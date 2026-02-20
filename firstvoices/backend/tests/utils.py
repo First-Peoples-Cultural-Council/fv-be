@@ -5,12 +5,19 @@ import string
 import sys
 import uuid
 from contextlib import contextmanager
+from functools import reduce
 
 import pytest
 import tablib
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import DEFAULT_DB_ALIAS, connections
 
+from backend.importing.importers import (
+    AudioImporter,
+    DocumentImporter,
+    ImageImporter,
+    VideoImporter,
+)
 from backend.models.constants import Visibility
 from backend.models.widget import SiteWidgetListOrder
 from backend.tests import factories
@@ -319,38 +326,25 @@ class BatchRelatedMediaMixin:
 
     @staticmethod
     def get_maximum_valid_related_media_columns():
-        expected_valid_columns = ["title", "type"]
-        media_prefixes = ["audio", "document", "img", "video"]
-        media_suffixes = [
-            "filename",
+        importers = [
+            AudioImporter,
+            DocumentImporter,
+            ImageImporter,
+            VideoImporter,
+        ]
+        supported_columns = map(
+            lambda importer: importer.get_supported_columns(), importers
+        )
+
+        expected_valid_columns = reduce(lambda a, b: a + b, supported_columns) + [
             "title",
-            "description",
-            "acknowledgement",
-            "include_in_kids_site",
+            "type",
         ]
 
-        for prefix in media_prefixes:
-            for suffix in media_suffixes:
-                expected_valid_columns.append(f"{prefix}_{suffix}")
-
-                for i in range(2, 11):
-                    expected_valid_columns.append(f"{prefix}_{i}_{suffix}")
-
-        for i in range(1, 11):
-            if i == 1:
-                expected_valid_columns.append("audio_include_in_games")
-            else:
-                expected_valid_columns.append(f"audio_{i}_include_in_games")
-
-            for j in range(1, 11):
-                if i == 1 and j == 1:
-                    expected_valid_columns.append("audio_speaker")
-                elif i == 1:
-                    expected_valid_columns.append(f"audio_speaker_{j}")
-                elif j == 1:
-                    expected_valid_columns.append(f"audio_{i}_speaker")
-                else:
-                    expected_valid_columns.append(f"audio_{i}_speaker_{j}")
+        expected_valid_columns.remove("audio_ids")
+        expected_valid_columns.remove("document_ids")
+        expected_valid_columns.remove("img_ids")
+        expected_valid_columns.remove("video_ids")
 
         return expected_valid_columns
 
@@ -387,3 +381,31 @@ class BatchRelatedMediaMixin:
                 ),
                 import_job=import_job,
             )
+
+    def setup_maximum_related_media(self, job, filename_set):
+        self.upload_multiple_media_files(
+            count=10,
+            filename=filename_set[0],
+            file_type="audio",
+            import_job=job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename=filename_set[1],
+            file_type="document",
+            import_job=job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename=filename_set[2],
+            file_type="image",
+            import_job=job,
+        )
+        self.upload_multiple_media_files(
+            count=10,
+            filename=filename_set[3],
+            file_type="video",
+            import_job=job,
+        )
+        for i in range(1, 11):
+            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)

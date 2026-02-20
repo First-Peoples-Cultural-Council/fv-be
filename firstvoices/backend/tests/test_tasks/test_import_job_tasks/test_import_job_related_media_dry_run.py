@@ -679,32 +679,13 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             validation_status=JobStatus.ACCEPTED,
         )
 
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_all_media_audio_filename",
-            file_type="audio",
-            import_job=import_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_all_media_document_filename",
-            file_type="document",
-            import_job=import_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_all_media_img_filename",
-            file_type="image",
-            import_job=import_job,
-        )
-        self.upload_multiple_media_files(
-            count=10,
-            filename="test_all_media_video_filename",
-            file_type="video",
-            import_job=import_job,
-        )
-        for i in range(1, 11):
-            factories.PersonFactory.create(name=f"Speaker {i}", site=self.site)
+        filename_set = [
+            "test_all_media_audio_filename",
+            "test_all_media_document_filename",
+            "test_all_media_img_filename",
+            "test_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(import_job, filename_set)
 
         validate_import_job(import_job.id)
 
