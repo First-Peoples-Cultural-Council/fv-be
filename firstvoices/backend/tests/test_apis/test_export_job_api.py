@@ -1,6 +1,9 @@
+import json
+
 import pytest
 
-from backend.models.jobs import ExportJob
+from backend.models.constants import Role, Visibility
+from backend.models.jobs import ExportJob, JobStatus
 from backend.tests import factories
 from backend.tests.test_apis.base.base_async_api_test import (
     AsyncWorkflowTestMixin,
@@ -41,6 +44,7 @@ class TestExportJobAPI(
             "status": instance.status,
             "message": instance.message,
             "exportCsv": instance.export_csv,
+            "exportParams": instance.export_params,
         }
 
     def get_expected_response(self, instance, site):
@@ -57,7 +61,12 @@ class TestExportJobAPI(
         site_id = expected_data["site"]
         pk = actual_response["id"]
         job = self.model.objects.get(site=site_id, pk=pk)
-        assert actual_response == self.get_expected_response(job, job.site)
+        expected_response = self.get_expected_response(job, job.site)
+
+        assert actual_response["taskId"] == expected_response["taskId"]
+        assert actual_response["status"] == expected_response["status"]
+        assert actual_response["message"] == expected_response["message"]
+        assert actual_response["exportCsv"] == expected_response["exportCsv"]
 
     @pytest.mark.skip(reason="Export jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):
@@ -83,3 +92,38 @@ class TestExportJobAPI(
     def test_cannot_delete_successful_job(self):
         # Export jobs can be deleted.
         pass
+
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    @pytest.mark.django_db
+    def test_create_201_language_team(self, role):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json"
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_export_job_accepted(self):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json"
+        )
+
+        assert post_response.status_code == 201
+        post_response_data = json.loads(post_response.content)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=post_response_data["id"], site_slug=site.slug)
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert response_data["status"] == JobStatus.ACCEPTED

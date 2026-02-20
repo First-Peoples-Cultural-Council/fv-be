@@ -94,6 +94,7 @@ class ExportJob(BaseJob):
             "delete": predicates.is_at_least_assistant_or_super,
         }
 
+    export_params = models.JSONField(default=dict)
     export_csv = models.ForeignKey(
         "backend.File",
         null=True,
