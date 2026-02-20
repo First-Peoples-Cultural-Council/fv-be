@@ -87,12 +87,13 @@ runs:
         RELEASE_NAME=${{  inputs.helm_chart_name  }}
         NAMESPACE=${{  inputs.k8_namespace }}
 
+        # Break the pipeline if the release is already broken
+        if [[ "$RELEASE_STATUS" == "failed" ]]; then
+          echo "Helm release has failed. Exiting..."
+          exit 1  # Or handle the failure in the future (e.g., send notification, email, etc.)
+        fi
         # Loop until the gap is greater than 5 minutes and no ongoing deployment
-        while [ $TIME_DIFF -lt 5 ] || [[ "$RELEASE_STATUS" == "pending-upgrade" ]] || [[ "$RELEASE_STATUS" == "pending-install" ]] || [[ "$RELEASE_STATUS" == "failed" ]]; do
-          if [[ "$RELEASE_STATUS" == "failed" ]]; then
-            echo "Helm release has failed. Exiting..."
-            exit 1  # Or handle the failure as you see fit (e.g., send notification, retry, etc.)
-          fi
+        while [ $TIME_DIFF -lt 5 ] || [[ "$RELEASE_STATUS" == "pending-upgrade" ]] || [[ "$RELEASE_STATUS" == "pending-install" ]] ; do
 
           echo "Waiting for 5 minutes since last deployment or until the release is no longer ongoing..."
           sleep 300  # Wait for 5 minutes
