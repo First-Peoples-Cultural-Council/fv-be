@@ -1,12 +1,12 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.utils import timezone
 
 from backend.models import Site
 from backend.models.files import File
-from backend.models.media import ImageFile, VideoFile
+
+BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
@@ -24,24 +24,63 @@ class Command(BaseCommand):
             default=None,
         )
 
-    def update_file_size(self, file_instance, model):
-        try:
-            file_size = file_instance.content.size
-        except Exception as e:
-            self.logger.warning(
-                f"Error accessing file size for {model.__name__} with ID {file_instance.id}: {e}"
-            )
-            file_size = None
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="If set, the command will simulate the update without making any changes to the database, "
+            "and will log the results instead.",
+            default=False,
+        )
 
-        if file_size and file_instance.size != file_size:
-            model.objects.filter(id=file_instance.id).update(
-                size=file_size, system_last_modified=timezone.now()
-            )
-        elif not file_size:
-            # File size not found, log a warning
-            self.logger.warning(
-                f"File size not found for {model.__name__} with ID {file_instance.id}"
-            )
+    def bulk_update_files(self, files_to_update):
+        batch = []
+        for file in files_to_update:
+            try:
+                content_size = file.content.size
+            except Exception as e:
+                self.logger.warning(
+                    f"Error accessing file size for File with ID {file.id}: {e}"
+                )
+                continue
+
+            if content_size:
+                file.size = content_size
+                file.system_last_modified = timezone.now()
+                batch.append(file)
+            else:
+                self.logger.warning(
+                    f"File with ID {file.id} has no content size available."
+                )
+                file.size = 0
+                file.system_last_modified = timezone.now()
+                batch.append(file)
+
+            if len(batch) >= BATCH_SIZE:
+                File.objects.bulk_update(batch, ["size", "system_last_modified"])
+                batch.clear()
+
+        if batch:
+            File.objects.bulk_update(batch, ["size", "system_last_modified"])
+
+    def bulk_update_files_dry_run(self, files_to_update):
+        for file in files_to_update:
+            try:
+                content_size = file.content.size
+            except Exception as e:
+                self.logger.warning(
+                    f"Error accessing file size for File with ID {file.id}: {e}"
+                )
+                continue
+
+            if content_size:
+                self.logger.info(
+                    f"File with ID {file.id} on site {file.site.slug} would be updated with size {content_size}."
+                )
+            else:
+                self.logger.warning(
+                    f"File with ID {file.id} on site {file.site.slug} has no content size available. "
+                    f"File would be updated with size 0."
+                )
 
     def handle(self, *args, **options):
 
@@ -57,19 +96,31 @@ class Command(BaseCommand):
             sites = Site.objects.all()
 
         for site in sites:
+            files_to_update = (
+                File.objects.filter(site=site, size__isnull=True)
+                .only("id", "content", "size", "system_last_modified")
+                .iterator(chunk_size=1000)
+            )
+
+            if options.get("dry_run"):
+                self.logger.info(
+                    f"Starting update_file_sizes dry run for site {site.slug}..."
+                )
+                self.bulk_update_files_dry_run(files_to_update)
+                self.logger.info(
+                    f"Dry run completed for site {site.slug}. No changes were made."
+                )
+                continue
+
             self.logger.info(f"Updating file sizes for media files in {site.slug}...")
-            files_to_update = File.objects.filter(site=site)
-            image_files_to_update = ImageFile.objects.filter(site=site)
-            video_files_to_update = VideoFile.objects.filter(site=site)
-
-            with transaction.atomic():
-                for file in files_to_update:
-                    self.update_file_size(file_instance=file, model=File)
-                for image_file in image_files_to_update:
-                    self.update_file_size(file_instance=image_file, model=ImageFile)
-                for video_file in video_files_to_update:
-                    self.update_file_size(file_instance=video_file, model=VideoFile)
-
+            self.bulk_update_files(files_to_update)
             self.logger.info(f"Completed updating file sizes for site {site.slug}.")
 
-        self.logger.info("File size update process completed for all sites.")
+        if options.get("dry_run"):
+            self.logger.info(
+                "Dry run process completed for all specified sites. No changes were made."
+            )
+        else:
+            self.logger.info(
+                "File size update process completed for all specified sites."
+            )
