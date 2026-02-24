@@ -2,7 +2,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.db import transaction
 
-from backend.models import Site
+from backend.models import DictionaryEntry, Site
 from backend.search.indexing import (
     AudioDocumentManager,
     DictionaryEntryDocumentManager,
@@ -71,6 +71,14 @@ def sync_all_media_site_content_in_indexes(site_id):
     logger.info(ASYNC_TASK_END_TEMPLATE)
 
 
+@shared_task
+def sync_batch_processed_dictionary_entries_in_index(job_id):
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE, f"import/update job id: {job_id}")
+    entries = DictionaryEntry.objects.filter(import_job_id=job_id)
+    sync_all(DictionaryEntryDocumentManager, entries)
+
+
 def request_remove_all_site_content_from_indexes(site_title, site_content_ids):
     transaction.on_commit(
         lambda: remove_all_site_content_from_indexes.apply_async(
@@ -93,6 +101,15 @@ def request_sync_all_media_site_content_in_indexes(site):
     transaction.on_commit(
         lambda: sync_all_media_site_content_in_indexes.apply_async(
             (site.id,),
+            link_error=link_error_handler.s(),
+        )
+    )
+
+
+def request_sync_batch_processed_dictionary_entries_in_index(job_id):
+    transaction.on_commit(
+        lambda: sync_batch_processed_dictionary_entries_in_index.apply_async(
+            (job_id,),
             link_error=link_error_handler.s(),
         )
     )

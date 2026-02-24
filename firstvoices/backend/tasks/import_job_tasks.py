@@ -22,6 +22,9 @@ from backend.models.import_jobs import (
     JobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
+from backend.search.tasks.site_content_indexing_tasks import (
+    request_sync_batch_processed_dictionary_entries_in_index,
+)
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.utils import (
     create_or_append_error_row,
@@ -418,6 +421,7 @@ def process_import_job_data(
         attach_csv_to_report(data, import_job, report)
     else:
         handle_related_entries(entry_title_map, import_data)
+        request_sync_batch_processed_dictionary_entries_in_index(import_job.id)
 
 
 def run_import_job(data, import_job):

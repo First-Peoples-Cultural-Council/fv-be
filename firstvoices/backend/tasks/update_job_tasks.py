@@ -12,6 +12,9 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
+from backend.search.tasks.site_content_indexing_tasks import (
+    request_sync_batch_processed_dictionary_entries_in_index,
+)
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.import_job_tasks import (
     attach_csv_to_report,
@@ -159,6 +162,8 @@ def process_update_job_data(
             dictionary_entry_import_result=dictionary_entry_update_result,
         )
         attach_csv_to_report(data, update_job, report)
+    else:
+        request_sync_batch_processed_dictionary_entries_in_index(update_job.id)
 
 
 def run_update_job(data, update_job):

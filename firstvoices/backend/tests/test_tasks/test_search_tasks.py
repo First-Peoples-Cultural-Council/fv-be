@@ -9,6 +9,7 @@ from backend.search.tasks.site_content_indexing_tasks import (
     remove_all_site_content_from_indexes,
     sync_all_media_site_content_in_indexes,
     sync_all_site_content_in_indexes,
+    sync_batch_processed_dictionary_entries_in_index,
 )
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
@@ -63,6 +64,13 @@ class TestSyncAllSiteContentInIndexes(IgnoreTaskResultsMixin):
 
 class TestSyncAllMediaSiteContentInIndexes(IgnoreTaskResultsMixin):
     TASK = sync_all_media_site_content_in_indexes
+
+    def get_valid_task_args(self):
+        return [uuid.uuid4()]
+
+
+class TestSyncBatchProcessedDictionaryEntriesInIndex(IgnoreTaskResultsMixin):
+    TASK = sync_batch_processed_dictionary_entries_in_index
 
     def get_valid_task_args(self):
         return [uuid.uuid4()]
