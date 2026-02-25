@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
@@ -224,3 +225,29 @@ def get_serializer_class_for_model_type(model_type):
         return serializer_classes[model_type]
 
     return None
+
+
+@shared_task
+def delete_old_exports(self):
+    """
+    Deletes export jobs and their associated csv files that are older 7 days.
+    """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE)
+
+    seven_days_ago = timezone.now() - timedelta(days=7)
+
+    try:
+        old_exports = ExportJob.objects.filter(
+            created__lte=seven_days_ago,
+        )
+
+        for export in old_exports:
+            if export.export_csv:
+                export.export_csv.delete()
+            export.delete()
+    except Exception as e:
+        self.state = JobStatus.FAILED
+        logger.error(f"Error deleting old exports: {e}")
+        logger.info(ASYNC_TASK_START_TEMPLATE)
+        raise e

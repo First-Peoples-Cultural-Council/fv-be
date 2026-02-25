@@ -17,7 +17,11 @@ from backend.tasks.export_job_tasks import generate_export_csv
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_search_entries_views import BASE_SEARCH_PARAMS
-from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.base_views import (
+    AsyncJobDeleteMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 from backend.views.search_site_entries_views import SITE_SEARCH_PARAMS
 from firstvoices.celery import link_error_handler
 
@@ -100,6 +104,7 @@ from firstvoices.celery import link_error_handler
     ),
 )
 class ExportJobViewSet(
+    AsyncJobDeleteMixin,
     SiteContentViewSetMixin,
     FVPermissionViewSetMixin,
     ModelViewSet,
@@ -124,6 +129,7 @@ class ExportJobViewSet(
         "pronunciations": "pronunciation",
         "related_dictionary_entries": "related_entry_id",
     }
+    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
 
     def get_queryset(self):
         site = self.get_validated_site()

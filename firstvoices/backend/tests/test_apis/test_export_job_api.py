@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.jobs import ExportJob, JobStatus
 from backend.tests import factories
 from backend.tests.test_apis.base.base_async_api_test import (
@@ -88,10 +88,26 @@ class TestExportJobAPI(
         # Export jobs have no eligible optional charfields.
         pass
 
-    @pytest.mark.skip(reason="Export jobs can be deleted.")
-    def test_cannot_delete_successful_job(self):
-        # Export jobs can be deleted.
-        pass
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "job_status", [JobStatus.ACCEPTED, JobStatus.COMPLETE, JobStatus.STARTED]
+    )
+    def test_cannot_delete_successful_job(self, job_status):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+        )
+        job = factories.ExportJobFactory.create(site=site)
+        job.status = job_status
+        job.save()
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=self.get_lookup_key(job), site_slug=site.slug)
+        )
+
+        assert response.status_code == 400
+
+        jobs = ExportJob.objects.filter(id=job.id)
+        assert jobs.count() == 1
 
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
