@@ -10,7 +10,7 @@ from backend.models.files import File
 from backend.models.import_jobs import JobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import get_maximum_dictionary_entry_columns, get_sample_file
 
 
 @pytest.mark.django_db
@@ -158,44 +158,7 @@ class TestImportJobDryRun:
         assert validation_report.new_rows == 6
         assert validation_report.error_rows == 0
 
-        expected_valid_columns = [
-            "title",
-            "type",
-            "visibility",
-            "include_in_games",
-            "include_on_kids_site",
-            "translation",
-            "translation_2",
-            "translation_3",
-            "translation_4",
-            "translation_5",
-            "acknowledgement",
-            "acknowledgement_2",
-            "acknowledgement_3",
-            "acknowledgement_4",
-            "acknowledgement_5",
-            "note",
-            "note_2",
-            "note_3",
-            "note_4",
-            "note_5",
-            "alternate_spelling",
-            "alternate_spelling_2",
-            "alternate_spelling_3",
-            "alternate_spelling_4",
-            "alternate_spelling_5",
-            "category",
-            "category_2",
-            "category_3",
-            "category_4",
-            "category_5",
-            "part_of_speech",
-            "pronunciation",
-            "pronunciation_2",
-            "pronunciation_3",
-            "pronunciation_4",
-            "pronunciation_5",
-        ]
+        expected_valid_columns = get_maximum_dictionary_entry_columns()
 
         for column in expected_valid_columns:
             assert column in accepted_columns

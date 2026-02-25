@@ -13,7 +13,11 @@ from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import (
+    BatchRelatedMediaMixin,
+    get_maximum_dictionary_entry_columns,
+    get_sample_file,
+)
 
 TEST_ENTRY_IDS = [
     "ba93662a-e1bc-4c0b-8fa1-12b0bc108be1",
@@ -66,7 +70,7 @@ def setup_for_external_systems(site):
 
 
 @pytest.mark.django_db
-class TestBulkUpdateDryRun:
+class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
 
     def setup_method(self):
@@ -179,44 +183,7 @@ class TestBulkUpdateDryRun:
         assert update_job.validation_report.updated_rows == 6
         assert update_job.validation_report.error_rows == 0
 
-        expected_valid_columns = [
-            "title",
-            "type",
-            "visibility",
-            "include_in_games",
-            "include_on_kids_site",
-            "translation",
-            "translation_2",
-            "translation_3",
-            "translation_4",
-            "translation_5",
-            "acknowledgement",
-            "acknowledgement_2",
-            "acknowledgement_3",
-            "acknowledgement_4",
-            "acknowledgement_5",
-            "note",
-            "note_2",
-            "note_3",
-            "note_4",
-            "note_5",
-            "alternate_spelling",
-            "alternate_spelling_2",
-            "alternate_spelling_3",
-            "alternate_spelling_4",
-            "alternate_spelling_5",
-            "category",
-            "category_2",
-            "category_3",
-            "category_4",
-            "category_5",
-            "part_of_speech",
-            "pronunciation",
-            "pronunciation_2",
-            "pronunciation_3",
-            "pronunciation_4",
-            "pronunciation_5",
-        ]
+        expected_valid_columns = get_maximum_dictionary_entry_columns()
 
         for column in expected_valid_columns:
             assert column in update_job.validation_report.accepted_columns
@@ -500,9 +467,48 @@ class TestBulkUpdateDryRun:
 
         self.validate_related_entries()
 
+    def test_update_related_media_fields_maximum_dry_run(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+
+        file_content = get_sample_file(
+            filename="update_job/test_update_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        filename_set = [
+            "test_update_all_media_audio_filename",
+            "test_update_all_media_document_filename",
+            "test_update_all_media_img_filename",
+            "test_update_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(update_job, filename_set)
+
+        validate_update_job(update_job.id)
+
+        update_job = ImportJob.objects.get(id=update_job.id, mode=ImportJobMode.UPDATE)
+        validation_report = update_job.validation_report
+        assert validation_report.error_rows == 0
+        assert validation_report.updated_rows == 5
+
+        expected_valid_columns = self.get_maximum_valid_related_media_columns()
+
+        assert set(expected_valid_columns + ["id"]) == set(
+            validation_report.accepted_columns
+        )
+
 
 @pytest.mark.django_db
-class TestBulkUpdate(IgnoreTaskResultsMixin):
+class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     TASK = confirm_update_job
 
@@ -593,6 +599,11 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_translation",
             "fourth_translation",
             "fifth_translation",
+            "sixth_translation",
+            "seventh_translation",
+            "eighth_translation",
+            "ninth_translation",
+            "tenth_translation",
         ]
         assert entry.acknowledgements == [
             "first_ack",
@@ -600,6 +611,11 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_ack",
             "fourth_ack",
             "fifth_ack",
+            "sixth_ack",
+            "seventh_ack",
+            "eighth_ack",
+            "ninth_ack",
+            "tenth_ack",
         ]
         assert entry.notes == [
             "first_note",
@@ -607,25 +623,34 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
             "third_note",
             "fourth_note",
             "fifth_note",
+            "sixth_note",
+            "seventh_note",
+            "eighth_note",
+            "ninth_note",
+            "tenth_note",
         ]
         assert entry.alternate_spellings == [
             "alt_s_1",
             "alt_s_2",
             "alt_s_3",
-            "alt_s_4",
-            "alt_s_5",
         ]
         assert entry.pronunciations == [
             "first_p",
             "second_p",
             "third_p",
-            "fourth_p",
-            "fifth_p",
         ]
 
         categories = list(entry.categories.all().values_list("title", flat=True))
         assert "Animals" in categories
         assert "Body" in categories
+        assert "Colours" in categories
+        assert "Essential Phrases" in categories
+        assert "Food" in categories
+        assert "Human Relations" in categories
+        assert "Movement" in categories
+        assert "Numbers" in categories
+        assert "Plants" in categories
+        assert "Time" in categories
 
     def test_update_default_values(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
@@ -1151,3 +1176,60 @@ class TestBulkUpdate(IgnoreTaskResultsMixin):
         assert str(old_doc.id) not in related_documents
         assert sample_doc_ids[0] in related_documents
         assert sample_doc_ids[1] in related_documents
+
+    def test_update_related_media_fields_maximum(self):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+
+        file_content = get_sample_file(
+            filename="update_job/test_update_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        filename_set = [
+            "test_update_all_media_audio_filename",
+            "test_update_all_media_document_filename",
+            "test_update_all_media_img_filename",
+            "test_update_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(update_job, filename_set)
+
+        confirm_update_job(update_job.id)
+
+        audio_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        self.assert_maximum_audio_file_data(audio_entry, "test_update_all_media_audio")
+
+        document_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
+        self.assert_maximum_document_file_data(
+            document_entry, "test_update_all_media_document"
+        )
+
+        image_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[2])
+        self.assert_maximum_image_file_data(image_entry, "test_update_all_media_img")
+
+        video_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[3])
+        self.assert_maximum_video_file_data(video_entry, "test_update_all_media_video")
+
+        all_media_entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[4])
+        self.assert_maximum_audio_file_data(
+            all_media_entry, "test_update_all_media_audio"
+        )
+        self.assert_maximum_document_file_data(
+            all_media_entry, "test_update_all_media_document"
+        )
+        self.assert_maximum_image_file_data(
+            all_media_entry, "test_update_all_media_img"
+        )
+        self.assert_maximum_video_file_data(
+            all_media_entry, "test_update_all_media_video"
+        )

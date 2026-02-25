@@ -104,7 +104,7 @@ class BaseMediaFileImporter(BaseImporter):
         for suffix in cls.supported_column_suffixes:
             columns.append(f"{cls.column_prefix}_{suffix}")
 
-            for i in range(2, 6):
+            for i in range(2, 11):
                 columns.append(f"{cls.column_prefix}_{i}_{suffix}")
 
         return columns
@@ -160,14 +160,12 @@ class BaseMediaFileImporter(BaseImporter):
             return datasets
 
         # if column name includes _\d_ and \d is the same digit, then it is the data of the same file
-        for i in range(1, 6):
+        for i in range(1, 11):
             # Build regex pattern for the i-th file group
             if i == 1:
-                pattern = (
-                    rf"^{cls.column_prefix}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
-                )
+                pattern = rf"^{cls.column_prefix}_[a-z]+(?:_[a-z]+)*(_(?:[2-9]|10))?$"  # noqa: E231
             else:
-                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?:_[a-z]+)*(_[2-5])?$"  # noqa: E231
+                pattern = rf"^{cls.column_prefix}_{i}_[a-z]+(?:_[a-z]+)*(_(?:[2-9]|10))?$"  # noqa: E231
 
             file_columns = [
                 col for col in headers if re.match(pattern, col, re.IGNORECASE)
@@ -202,7 +200,9 @@ class BaseMediaFileImporter(BaseImporter):
         for dataset in split_file_data:
             # replace numbered prefixes with the base prefix
             dataset.headers = [
-                re.sub(rf"^{cls.column_prefix}_\d_", f"{cls.column_prefix}_", col)
+                re.sub(
+                    rf"^{cls.column_prefix}_\d{{1,2}}_", f"{cls.column_prefix}_", col
+                )
                 for col in dataset.headers
             ]
 
@@ -356,13 +356,13 @@ class AudioImporter(BaseMediaFileImporter):
     @classmethod
     def get_supported_columns(cls):
         speaker_columns = []
-        for i in range(1, 6):
+        for i in range(1, 11):
             if i == 1:
                 speaker_columns.append(f"{cls.column_prefix}_include_in_games")
             else:
                 speaker_columns.append(f"{cls.column_prefix}_{i}_include_in_games")
 
-            for j in range(1, 6):
+            for j in range(1, 11):
                 if i == 1 and j == 1:
                     speaker_columns.append(f"{cls.column_prefix}_speaker")
                 elif i == 1:
@@ -405,13 +405,13 @@ class DictionaryEntryImporter(BaseImporter):
         "external_system_entry_id",
         "related_entry_ids",
         "video_embed_links",
+        "part_of_speech",
     ]
     supported_columns_multiple = [
         "translation",
         "category",
         "note",
         "acknowledgement",
-        "part_of_speech",
         "pronunciation",
         "alternate_spelling",
         "related_entry",
@@ -451,8 +451,13 @@ class DictionaryEntryImporter(BaseImporter):
         for col in cls.supported_columns_multiple:
             target_columns.append(col)
 
-            for i in range(2, 6):
-                target_columns.append(f"{col}_{i}")
+            # pronunciation and alternate spelling are limited to 3 per entry
+            if col in ["pronunciation", "alternate_spelling"]:
+                for i in range(2, 4):
+                    target_columns.append(f"{col}_{i}")
+            else:
+                for i in range(2, 11):
+                    target_columns.append(f"{col}_{i}")
 
         return target_columns
 

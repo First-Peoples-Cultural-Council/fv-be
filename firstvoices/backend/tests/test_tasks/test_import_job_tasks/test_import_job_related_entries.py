@@ -112,20 +112,25 @@ class TestImportJobRelatedEntries:
 
         confirm_import_job(import_job.id)
 
-        assert DictionaryEntry.objects.count() == 6
+        assert DictionaryEntry.objects.count() == 11
 
         entry1 = DictionaryEntry.objects.get(
             title="test_related_entries_by_title_multiple_word_1"
         )
         related_entries = entry1.dictionaryentrylink_set.all()
-        assert related_entries.count() == 5
+        assert related_entries.count() == 10
 
         expected_related_titles = [
             "test_related_entries_by_title_multiple_word_2",
             "test_related_entries_by_title_multiple_word_3",
+            "test_related_entries_by_title_multiple_word_4",
+            "test_related_entries_by_title_multiple_word_5",
+            "test_related_entries_by_title_multiple_word_6",
             "test_related_entries_by_title_multiple_phrase_1",
             "test_related_entries_by_title_multiple_phrase_2",
             "test_related_entries_by_title_multiple_phrase_3",
+            "test_related_entries_by_title_multiple_phrase_4",
+            "test_related_entries_by_title_multiple_phrase_5",
         ]
         actual_related_titles = [
             related_entry.to_dictionary_entry.title for related_entry in related_entries

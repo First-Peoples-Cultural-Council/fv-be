@@ -9,11 +9,11 @@ from backend.models.import_jobs import ImportJob, JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
-from backend.tests.utils import get_sample_file
+from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobRelatedMedia:
+class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
     MEDIA_FILES_DIR = "test_tasks/test_import_job_tasks/resources/related_media"
@@ -1021,3 +1021,62 @@ class TestImportJobRelatedMedia:
 
         confirm_import_job(import_job.id)
         assert DictionaryEntry.objects.filter(site=self.site).count() == 0
+
+    def test_related_media_maximum(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_all_media_columns_dictionary_entries.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        filename_set = [
+            "test_all_media_audio_filename",
+            "test_all_media_document_filename",
+            "test_all_media_img_filename",
+            "test_all_media_video_filename",
+        ]
+        self.setup_maximum_related_media(import_job, filename_set)
+
+        confirm_import_job(import_job.id)
+
+        assert DictionaryEntry.objects.filter(site=self.site).count() == 5
+
+        audio_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_audio"
+        )
+        self.assert_maximum_audio_file_data(audio_entry, "test_all_media_audio")
+
+        document_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_document"
+        )
+        self.assert_maximum_document_file_data(
+            document_entry, "test_all_media_document"
+        )
+
+        image_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_image"
+        )
+        self.assert_maximum_image_file_data(image_entry, "test_all_media_img")
+
+        video_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_video"
+        )
+        self.assert_maximum_video_file_data(video_entry, "test_all_media_video")
+
+        all_media_entry = DictionaryEntry.objects.get(
+            title="test_all_media_columns_dictionary_entries_all"
+        )
+        self.assert_maximum_audio_file_data(all_media_entry, "test_all_media_audio")
+        self.assert_maximum_document_file_data(
+            all_media_entry, "test_all_media_document"
+        )
+        self.assert_maximum_image_file_data(all_media_entry, "test_all_media_img")
+        self.assert_maximum_video_file_data(all_media_entry, "test_all_media_video")

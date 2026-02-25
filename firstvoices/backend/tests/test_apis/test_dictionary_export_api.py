@@ -78,6 +78,7 @@ class TestDictionaryExportAPI(
         ), "Filename does match the expected format."
 
     def test_base_fields(self, mock_search_query_execute):
+        part_of_speech = factories.PartOfSpeechFactory.create(title="PartOfSpeechTest")
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=self.site,
             title="Title",
@@ -85,6 +86,7 @@ class TestDictionaryExportAPI(
             type=TypeOfDictionaryEntry.WORD,
             exclude_from_games=True,
             exclude_from_kids=True,
+            part_of_speech=part_of_speech,
         )
         self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
@@ -105,15 +107,57 @@ class TestDictionaryExportAPI(
         assert first_row["include_on_kids_site"] == str(
             not dictionary_entry.exclude_from_kids
         )
+        assert first_row["part_of_speech"] == dictionary_entry.part_of_speech.title
 
     def test_array_fields(self, mock_search_query_execute):
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=self.site,
-            translations=["translation_1", "translation_2"],
-            notes=["note_1", "note_2"],
-            pronunciations=["pronunciation_1", "pronunciation_2"],
-            acknowledgements=["acknowledgement_1", "acknowledgement_2"],
-            alternate_spellings=["alternate_spelling_1", "alternate_spelling_2"],
+            translations=[
+                "translation_1",
+                "translation_2",
+                "translation_3",
+                "translation_4",
+                "translation_5",
+                "translation_6",
+                "translation_7",
+                "translation_8",
+                "translation_9",
+                "translation_10",
+            ],
+            notes=[
+                "note_1",
+                "note_2",
+                "note_3",
+                "note_4",
+                "note_5",
+                "note_6",
+                "note_7",
+                "note_8",
+                "note_9",
+                "note_10",
+            ],
+            acknowledgements=[
+                "acknowledgement_1",
+                "acknowledgement_2",
+                "acknowledgement_3",
+                "acknowledgement_4",
+                "acknowledgement_5",
+                "acknowledgement_6",
+                "acknowledgement_7",
+                "acknowledgement_8",
+                "acknowledgement_9",
+                "acknowledgement_10",
+            ],
+            pronunciations=[
+                "pronunciation_1",
+                "pronunciation_2",
+                "pronunciation_3",
+            ],
+            alternate_spellings=[
+                "alternate_spelling_1",
+                "alternate_spelling_2",
+                "alternate_spelling_3",
+            ],
         )
         self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
 
@@ -124,36 +168,174 @@ class TestDictionaryExportAPI(
 
         first_row = csv_rows[0]
         assert first_row["translation"] == dictionary_entry.translations[0]
-        assert first_row["translation_2"] == dictionary_entry.translations[1]
+        for i in range(2, 11):
+            assert first_row[f"translation_{i}"] == dictionary_entry.translations[i - 1]
+
         assert first_row["note"] == dictionary_entry.notes[0]
-        assert first_row["note_2"] == dictionary_entry.notes[1]
+        for i in range(2, 11):
+            assert first_row[f"note_{i}"] == dictionary_entry.notes[i - 1]
+
+        assert first_row["acknowledgement"] == dictionary_entry.acknowledgements[0]
+        for i in range(2, 11):
+            assert (
+                first_row[f"acknowledgement_{i}"]
+                == dictionary_entry.acknowledgements[i - 1]
+            )
+
         assert first_row["pronunciation"] == dictionary_entry.pronunciations[0]
         assert first_row["pronunciation_2"] == dictionary_entry.pronunciations[1]
-        assert first_row["acknowledgement"] == dictionary_entry.acknowledgements[0]
-        assert first_row["acknowledgement_2"] == dictionary_entry.acknowledgements[1]
+        assert first_row["pronunciation_3"] == dictionary_entry.pronunciations[2]
+
         assert (
             first_row["alternate_spelling"] == dictionary_entry.alternate_spellings[0]
         )
         assert (
             first_row["alternate_spelling_2"] == dictionary_entry.alternate_spellings[1]
         )
+        assert (
+            first_row["alternate_spelling_3"] == dictionary_entry.alternate_spellings[2]
+        )
+
+    def test_category_fields(self, mock_search_query_execute):
+        category_1 = factories.CategoryFactory.create(title="Category1")
+        category_2 = factories.CategoryFactory.create(title="Category2")
+        category_3 = factories.CategoryFactory.create(title="Category3")
+        category_4 = factories.CategoryFactory.create(title="Category4")
+        category_5 = factories.CategoryFactory.create(title="Category5")
+        category_6 = factories.CategoryFactory.create(title="Category6")
+        category_7 = factories.CategoryFactory.create(title="Category7")
+        category_8 = factories.CategoryFactory.create(title="Category8")
+        category_9 = factories.CategoryFactory.create(title="Category9")
+        category_10 = factories.CategoryFactory.create(title="Category10")
+
+        dictionary_entry = factories.DictionaryEntryFactory.create(
+            site=self.site,
+        )
+        dictionary_entry.categories.set(
+            [
+                category_1,
+                category_2,
+                category_3,
+                category_4,
+                category_5,
+                category_6,
+                category_7,
+                category_8,
+                category_9,
+                category_10,
+            ]
+        )
+
+        self.mock_es_results(mock_search_query_execute, dictionary_entry.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=self.site.slug), format="csv"
+        )
+        csv_rows = self.get_csv_rows(response)
+
+        first_row = csv_rows[0]
+        assert first_row["category"] == dictionary_entry.categories.first().title
+        for i in range(2, 11):
+            assert (
+                first_row[f"category_{i}"]
+                == dictionary_entry.categories.all()[i - 1].title
+            )
 
     def test_media_fields(self, mock_search_query_execute):
         audio_1 = factories.AudioFactory.create(site=self.site)
         audio_2 = factories.AudioFactory.create(site=self.site)
+        audio_3 = factories.AudioFactory.create(site=self.site)
+        audio_4 = factories.AudioFactory.create(site=self.site)
+        audio_5 = factories.AudioFactory.create(site=self.site)
+        audio_6 = factories.AudioFactory.create(site=self.site)
+        audio_7 = factories.AudioFactory.create(site=self.site)
+        audio_8 = factories.AudioFactory.create(site=self.site)
+        audio_9 = factories.AudioFactory.create(site=self.site)
+        audio_10 = factories.AudioFactory.create(site=self.site)
+
         image_1 = factories.ImageFactory.create(site=self.site)
         image_2 = factories.ImageFactory.create(site=self.site)
+        image_3 = factories.ImageFactory.create(site=self.site)
+        image_4 = factories.ImageFactory.create(site=self.site)
+        image_5 = factories.ImageFactory.create(site=self.site)
+        image_6 = factories.ImageFactory.create(site=self.site)
+        image_7 = factories.ImageFactory.create(site=self.site)
+        image_8 = factories.ImageFactory.create(site=self.site)
+        image_9 = factories.ImageFactory.create(site=self.site)
+        image_10 = factories.ImageFactory.create(site=self.site)
+
         video_1 = factories.VideoFactory.create(site=self.site)
         video_2 = factories.VideoFactory.create(site=self.site)
+        video_3 = factories.VideoFactory.create(site=self.site)
+        video_4 = factories.VideoFactory.create(site=self.site)
+        video_5 = factories.VideoFactory.create(site=self.site)
+        video_6 = factories.VideoFactory.create(site=self.site)
+        video_7 = factories.VideoFactory.create(site=self.site)
+        video_8 = factories.VideoFactory.create(site=self.site)
+        video_9 = factories.VideoFactory.create(site=self.site)
+        video_10 = factories.VideoFactory.create(site=self.site)
+
         document_1 = factories.DocumentFactory.create(site=self.site)
         document_2 = factories.DocumentFactory.create(site=self.site)
+        document_3 = factories.DocumentFactory.create(site=self.site)
+        document_4 = factories.DocumentFactory.create(site=self.site)
+        document_5 = factories.DocumentFactory.create(site=self.site)
+        document_6 = factories.DocumentFactory.create(site=self.site)
+        document_7 = factories.DocumentFactory.create(site=self.site)
+        document_8 = factories.DocumentFactory.create(site=self.site)
+        document_9 = factories.DocumentFactory.create(site=self.site)
+        document_10 = factories.DocumentFactory.create(site=self.site)
 
         dictionary_entry = factories.DictionaryEntryFactory.create(
             site=self.site,
-            related_audio=[audio_1, audio_2],
-            related_images=[image_1, image_2],
-            related_videos=[video_1, video_2],
-            related_documents=[document_1, document_2],
+            related_audio=[
+                audio_1,
+                audio_2,
+                audio_3,
+                audio_4,
+                audio_5,
+                audio_6,
+                audio_7,
+                audio_8,
+                audio_9,
+                audio_10,
+            ],
+            related_images=[
+                image_1,
+                image_2,
+                image_3,
+                image_4,
+                image_5,
+                image_6,
+                image_7,
+                image_8,
+                image_9,
+                image_10,
+            ],
+            related_videos=[
+                video_1,
+                video_2,
+                video_3,
+                video_4,
+                video_5,
+                video_6,
+                video_7,
+                video_8,
+                video_9,
+                video_10,
+            ],
+            related_documents=[
+                document_1,
+                document_2,
+                document_3,
+                document_4,
+                document_5,
+                document_6,
+                document_7,
+                document_8,
+                document_9,
+                document_10,
+            ],
             related_video_links=[
                 "https://www.youtube.com/watch?v=abc123",
                 "https://www.youtube.com/watch?v=xyz456",
@@ -170,14 +352,23 @@ class TestDictionaryExportAPI(
         assert dictionary_entry.related_video_links[0] in first_row["video_embed_links"]
         assert dictionary_entry.related_video_links[1] in first_row["video_embed_links"]
 
-        assert str(audio_1.id) in first_row["audio_ids"]
-        assert str(audio_2.id) in first_row["audio_ids"]
-        assert str(image_1.id) in first_row["img_ids"]
-        assert str(image_2.id) in first_row["img_ids"]
-        assert str(video_1.id) in first_row["video_ids"]
-        assert str(video_2.id) in first_row["video_ids"]
-        assert str(document_1.id) in first_row["document_ids"]
-        assert str(document_2.id) in first_row["document_ids"]
+        audio_ids = [str(audio.id) for audio in dictionary_entry.related_audio.all()]
+        for audio_id in audio_ids:
+            assert audio_id in first_row["audio_ids"]
+
+        image_ids = [str(image.id) for image in dictionary_entry.related_images.all()]
+        for image_id in image_ids:
+            assert image_id in first_row["img_ids"]
+
+        video_ids = [str(video.id) for video in dictionary_entry.related_videos.all()]
+        for video_id in video_ids:
+            assert video_id in first_row["video_ids"]
+
+        document_ids = [
+            str(document.id) for document in dictionary_entry.related_documents.all()
+        ]
+        for document_id in document_ids:
+            assert document_id in first_row["document_ids"]
 
     def test_external_system(self, mock_search_query_execute):
         external_system = factories.ExternalDictionaryEntrySystemFactory.create()
