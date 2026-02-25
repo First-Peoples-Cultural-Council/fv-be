@@ -227,7 +227,7 @@ def get_serializer_class_for_model_type(model_type):
     return None
 
 
-@shared_task
+@shared_task(bind=True)
 def delete_old_exports(self):
     """
     Deletes export jobs and their associated csv files that are older 7 days.
@@ -247,7 +247,7 @@ def delete_old_exports(self):
                 export.export_csv.delete()
             export.delete()
     except Exception as e:
-        self.state = JobStatus.FAILED
+        self.state = "FAILURE"
         logger.error(f"Error deleting old exports: {e}")
         logger.info(ASYNC_TASK_START_TEMPLATE)
         raise e
