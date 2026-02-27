@@ -24,6 +24,7 @@ def setup_periodic_tasks(sender, **kwargs):
     # Importing after django.setup() to avoid AppRegistryNotReady error
     from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
+    from backend.tasks.export_job_tasks import delete_old_exports
     from backend.tasks.mtd_export_tasks import check_sites_for_mtd_sync
 
     # Create the PeriodicTask and schedule for the MTD export task if they don't exist
@@ -36,4 +37,19 @@ def setup_periodic_tasks(sender, **kwargs):
             crontab=schedule,
             name="check_sites_for_mtd_sync",
             task=check_sites_for_mtd_sync.name,
+        )
+
+    # Create the PeriodicTask and schedule to delete old export jobs if they don't exist
+    if not PeriodicTask.objects.filter(name="delete_old_exports").exists():
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute=0,
+            hour=0,
+            day_of_week="0",  # Sunday
+            day_of_month="*",
+            month_of_year="*",
+            timezone="America/Vancouver",
+        )
+
+        PeriodicTask.objects.create(
+            crontab=schedule, name="delete_old_exports", task=delete_old_exports.name
         )
