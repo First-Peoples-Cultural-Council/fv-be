@@ -74,7 +74,10 @@ def clean_csv(
 
     # If any invalid headers are present, skip them and raise a warning
     for header in all_headers:
-        if is_valid_header_variation(header, all_headers, valid_headers):
+        if (
+            is_valid_header_variation(header, all_headers, valid_headers)
+            and header.lower() in valid_headers
+        ):
             accepted_headers.append(header)
         else:
             invalid_headers.append(header)
