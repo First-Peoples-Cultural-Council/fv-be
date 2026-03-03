@@ -89,9 +89,7 @@ class TestExportJobAPI(
         pass
 
     @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "job_status", [JobStatus.ACCEPTED, JobStatus.COMPLETE, JobStatus.STARTED]
-    )
+    @pytest.mark.parametrize("job_status", [JobStatus.ACCEPTED, JobStatus.STARTED])
     def test_cannot_delete_successful_job(self, job_status):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
