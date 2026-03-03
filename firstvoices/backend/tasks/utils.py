@@ -86,7 +86,7 @@ def create_or_append_error_row(import_job, report, row_number, errors):
 def is_valid_header_variation(input_header, all_headers, valid_headers):
     # If the header is a numeric variation (e.g., note_2), verify that it has a valid form and
     # the original header is also present (i.e., note)
-    splits = re.match(r"^(.*?)(?:_([2-5]))?$", input_header)
+    splits = re.match(r"^(.*?)(?:_(10|[2-9]))?$", input_header)
 
     if not splits:
         return False
@@ -106,7 +106,10 @@ def is_valid_header_variation(input_header, all_headers, valid_headers):
     if prefix not in lower_headers:
         return False
 
-    return True
+    if input_header.lower() in valid_headers:
+        return True
+    else:
+        return False
 
 
 def get_related_entry_headers(import_data):
