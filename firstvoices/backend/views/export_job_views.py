@@ -129,7 +129,7 @@ class ExportJobViewSet(
         "pronunciations": "pronunciation",
         "related_dictionary_entries": "related_entry_id",
     }
-    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED]
 
     def get_queryset(self):
         site = self.get_validated_site()

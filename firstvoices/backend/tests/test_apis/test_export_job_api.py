@@ -88,11 +88,14 @@ class TestExportJobAPI(
         # Export jobs have no eligible optional charfields.
         pass
 
-    @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "job_status", [JobStatus.ACCEPTED, JobStatus.COMPLETE, JobStatus.STARTED]
-    )
+    @pytest.mark.skip(reason="Export jobs can be deleted after completion.")
     def test_cannot_delete_successful_job(self, job_status):
+        # Export jobs can be deleted after completion.
+        pass
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("job_status", [JobStatus.ACCEPTED, JobStatus.STARTED])
+    def test_cannot_delete_in_progress_job(self, job_status):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
