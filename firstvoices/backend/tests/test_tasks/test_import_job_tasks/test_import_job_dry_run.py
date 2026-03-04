@@ -503,3 +503,30 @@ class TestImportJobDryRun:
             assert column in accepted_columns
 
         assert len(ignored_columns) == 0
+
+    def test_invalid_alt_spellings_pronunciations(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_invalid_alt_spellings_pronunciations.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        ignored_columns = validation_report.ignored_columns
+
+        assert validation_report.new_rows == 1
+        assert validation_report.error_rows == 0
+
+        assert "alternate_spelling_4" in ignored_columns
+        assert "pronunciation_4" in ignored_columns
+        assert len(ignored_columns) == 2
