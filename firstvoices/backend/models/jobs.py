@@ -1,8 +1,9 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext as _
 
 from backend.models.base import BaseSiteContentModel
-from backend.models.constants import Visibility
+from backend.models.constants import MAX_EXPORT_JOBS, Visibility
 from backend.permissions import predicates
 
 
@@ -94,9 +95,10 @@ class ExportJob(BaseJob):
             "delete": predicates.is_at_least_assistant_or_super,
         }
 
-    export_params = models.JSONField(default=dict)
+    export_params = models.JSONField(blank=True, default=dict)
     export_csv = models.ForeignKey(
         "backend.File",
+        blank=True,
         null=True,
         on_delete=models.SET_NULL,
         related_name="export_job_export_csv_set",
@@ -104,3 +106,31 @@ class ExportJob(BaseJob):
 
     def __str__(self):
         return f"{self.site.title} Export Job (id: {str(self.id)})"
+
+    def clean(self):
+        if self.status in [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]:
+            count = (
+                ExportJob.objects.filter(
+                    created_by=self.created_by,
+                    status__in=[
+                        JobStatus.ACCEPTED,
+                        JobStatus.STARTED,
+                        JobStatus.COMPLETE,
+                    ],
+                )
+                .exclude(id=self.id)
+                .count()
+            )
+
+            if count >= MAX_EXPORT_JOBS:
+                raise ValidationError(
+                    _(
+                        f"You have reached the maximum number of simultaneous export jobs ({MAX_EXPORT_JOBS}). "
+                        "Please delete completed jobs that you no longer need to allow new export jobs to be created."
+                    )
+                )
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
