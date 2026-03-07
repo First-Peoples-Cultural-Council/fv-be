@@ -149,7 +149,7 @@ class TestExportJobAPI(
 
     @pytest.mark.django_db
     def test_export_job_limit_per_user(self):
-        site, user = factories.get_site_with_authenticated_member(
+        site, _ = factories.get_site_with_authenticated_member(
             self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
