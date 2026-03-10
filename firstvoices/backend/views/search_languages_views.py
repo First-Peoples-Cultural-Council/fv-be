@@ -93,7 +93,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
     """
 
     http_method_names = ["get"]
-    serializer_classes = {
+    hydration_serializers = {
         "Language": LanguageSerializer,
         "Site": LanguagePlaceholderSerializer,
     }
