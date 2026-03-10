@@ -146,3 +146,25 @@ class TestExportJobAPI(
         response_data = json.loads(response.content)
 
         assert response_data["status"] == JobStatus.ACCEPTED
+
+    @pytest.mark.django_db
+    def test_export_job_limit_per_user(self):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        for _ in range(10):
+            response = self.client.post(
+                self.get_list_endpoint(site_slug=site.slug), format="json"
+            )
+            assert response.status_code == 201
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug), format="json"
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["nonFieldErrors"][0]
+            == "You have reached the maximum number of simultaneous export jobs (10). "
+            "Please delete completed jobs that you no longer need to allow new export jobs to be created."
+        )

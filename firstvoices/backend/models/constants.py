@@ -34,6 +34,9 @@ MAX_RELATED_ENTRIES_PER_ENTRY = 10
 MAX_SPELLINGS_PER_ENTRY = 3
 MAX_TRANSLATIONS_PER_ENTRY = 10
 
+# Limit for number of simultaneous export jobs per user
+MAX_EXPORT_JOBS = 10
+
 
 class Visibility(models.IntegerChoices):
     # enum intentionally has gaps to allow future changes to keep sequential order
