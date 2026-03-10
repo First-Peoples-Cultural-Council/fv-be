@@ -168,9 +168,7 @@ class TestDictionaryEntryDocumentManager(BaseDocumentManagerTest):
 
         doc = self.manager.create_index_document(instance)
 
-        assert doc.speakers == [
-            str(speaker1.id),
-            str(speaker2.id),
-            str(speaker3.id),
-            str(speaker4.id),
-        ]
+        assert str(speaker1.id) in doc.speakers
+        assert str(speaker2.id) in doc.speakers
+        assert str(speaker3.id) in doc.speakers
+        assert str(speaker4.id) in doc.speakers

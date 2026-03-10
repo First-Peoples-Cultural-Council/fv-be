@@ -10,7 +10,6 @@ from backend.views.dictionary_cleanup_views import (
     DictionaryCleanupJobViewSet,
     DictionaryCleanupPreviewViewSet,
 )
-from backend.views.dictionary_export_views import DictionaryEntryExportViewSet
 from backend.views.dictionary_views import DictionaryViewSet
 from backend.views.document_views import DocumentViewSet
 from backend.views.export_job_views import ExportJobViewSet
@@ -70,9 +69,6 @@ sites_router.register(
     r"dictionary-cleanup",
     DictionaryCleanupJobViewSet,
     basename="dictionary-cleanup",
-)
-sites_router.register(
-    r"dictionary-export", DictionaryEntryExportViewSet, basename="dictionary-export"
 )
 sites_router.register(r"documents", DocumentViewSet, basename="document")
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
