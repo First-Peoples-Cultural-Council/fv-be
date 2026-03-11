@@ -37,7 +37,7 @@ def parse_queryset_for_mtd(
                 word=entry.title,
                 definition=DictionaryEntryDataSerializer.get_definition(entry),
                 sorting_form=DictionaryEntryDataSerializer.get_sorting_form(entry),
-                source=DictionaryEntryDataSerializer.get_source(entry),
+                source=entry.type,
                 audio=DictionaryEntryDataSerializer.get_audio(entry),
                 video=DictionaryEntryDataSerializer.get_video(entry),
                 img=DictionaryEntryDataSerializer.get_img(entry),
