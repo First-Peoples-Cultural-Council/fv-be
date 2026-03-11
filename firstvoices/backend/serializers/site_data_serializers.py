@@ -1,18 +1,8 @@
 from rest_framework import serializers
 
 from backend.models import Category
-from backend.models.dictionary import DictionaryEntry, TypeOfDictionaryEntry
+from backend.models.dictionary import DictionaryEntry
 from backend.models.media import Audio, Image, Video
-
-
-def dict_entry_type_mtd_conversion(type):
-    match type:
-        case TypeOfDictionaryEntry.WORD:
-            return "words"
-        case TypeOfDictionaryEntry.PHRASE:
-            return "phrases"
-        case _:
-            return None
 
 
 class CategoriesDataSerializer(serializers.ModelSerializer):
