@@ -42,7 +42,7 @@ runs:
             echo "If a new module or component is added the formatted diff can be skewed."
             echo "If the formatted diff printed above is not comprehendable or if a major feature is being added, use the verbose helm diff stored in diff.txt of the workflow artifacts."
 
-    -   uses: actions/upload-artifact@v4
+    -   uses: actions/upload-artifact@v7
         if: always()
         with:
             name: uploads
