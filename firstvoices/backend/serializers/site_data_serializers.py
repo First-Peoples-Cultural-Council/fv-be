@@ -73,7 +73,7 @@ class ImageDataSerializer(MediaDataSerializer):
 
 
 class DictionaryEntryDataSerializer(serializers.ModelSerializer):
-    source = serializers.SerializerMethodField(read_only=True)
+    source = serializers.CharField(source="type", read_only=True)
     entryID = serializers.UUIDField(source="id", read_only=True)
     word = serializers.CharField(source="title", read_only=True)
     definition = serializers.SerializerMethodField(read_only=True)
@@ -83,10 +83,6 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     secondary_theme = serializers.SerializerMethodField(read_only=True)
     optional = serializers.SerializerMethodField(read_only=True)
     sorting_form = serializers.SerializerMethodField(read_only=True)
-
-    @staticmethod
-    def get_source(dictionaryentry):
-        return dict_entry_type_mtd_conversion(dictionaryentry.type)
 
     @staticmethod
     def get_definition(dictionary_entry):
@@ -163,9 +159,9 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
         if len(dictionary_entry.notes):
             optional_information["Note"] = dictionary_entry.notes[0]
         if dictionary_entry.part_of_speech is not None:
-            optional_information[
-                "Part of Speech"
-            ] = dictionary_entry.part_of_speech.title
+            optional_information["Part of Speech"] = (
+                dictionary_entry.part_of_speech.title
+            )
         return optional_information
 
     @staticmethod
