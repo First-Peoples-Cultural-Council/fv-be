@@ -460,7 +460,7 @@ BASE_SEARCH_PARAMS = [
 class BaseSearchEntriesViewSet(BaseSearchViewSet):
     """A base viewset for searching language content, including dictionary entries, songs, stories, and media."""
 
-    serializer_classes = {
+    hydration_serializers = {
         "DictionaryEntry": DictionaryEntrySearchResultSerializer,
         "Song": SongSearchResultSerializer,
         "Story": StorySearchResultSerializer,

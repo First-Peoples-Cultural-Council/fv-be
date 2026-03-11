@@ -15,11 +15,11 @@ from backend.search.utils import (
 
 
 class HydrateSerializeSearchResultsMixin:
-    serializer_classes = {}
+    hydration_serializers = {}
 
     def get_serializer_class_for_model_type(self, model_type):
-        if model_type in self.serializer_classes:
-            return self.serializer_classes[model_type]
+        if model_type in self.hydration_serializers:
+            return self.hydration_serializers[model_type]
 
         return self.serializer_class
 

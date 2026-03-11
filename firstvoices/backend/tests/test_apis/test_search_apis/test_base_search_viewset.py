@@ -160,7 +160,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         ]
 
         viewset = BaseSearchViewSet()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
             "DictionaryEntry": EagerSerializer,
         }
@@ -180,7 +180,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         ]
 
         viewset = BaseSearchViewSet()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
             "DictionaryEntry": EagerSerializer,
         }
@@ -194,7 +194,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         mock_data = {"DictionaryEntry": {}, "Song": {}}
 
         viewset = BaseSearchViewSet()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
             "DictionaryEntry": EagerSerializer,
         }
@@ -211,7 +211,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         viewset = BaseSearchViewSet()
         viewset.request = MagicMock()
         viewset.format_kwarg = MagicMock()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
         }
 
@@ -234,7 +234,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         viewset = BaseSearchViewSet()
         viewset.request = MagicMock()
         viewset.format_kwarg = MagicMock()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
             "DictionaryEntry": EagerSerializer,
         }
@@ -257,7 +257,7 @@ class TestBaseSearchViewSet(SearchMocksMixin):
         viewset = BaseSearchViewSet()
         viewset.request = MagicMock()
         viewset.format_kwarg = MagicMock()
-        viewset.serializer_classes = {
+        viewset.hydration_serializers = {
             "Song": MinimalSerializer,
             "DictionaryEntry": EagerSerializer,
         }
