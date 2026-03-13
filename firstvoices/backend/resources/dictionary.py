@@ -17,6 +17,7 @@ from backend.resources.utils.import_export_widgets import (
     PartOfSpeechWidget,
     TextListWidget,
 )
+from backend.utils.character_utils import clean_input
 
 
 class DictionaryEntryResource(
@@ -103,6 +104,12 @@ class DictionaryEntryResource(
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._processed_ids = set()
+
+    def before_import_row(self, row, **kwargs):
+        title = row.get("title")
+        if title:
+            cleaned_title = clean_input(title)
+            row["title"] = cleaned_title
 
     def get_or_init_instance(self, instance_loader, row):
         """

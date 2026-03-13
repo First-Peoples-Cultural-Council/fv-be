@@ -346,3 +346,24 @@ class TestImportJob:
         )[0]
         assert phrase.external_system.title == external_system_2.title
         assert phrase.external_system_entry_id == "xyz007"
+
+    def test_dictionary_entry_normalization(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_dictionary_entry_normalization.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        confirm_import_job(import_job.id)
+
+        word = DictionaryEntry.objects.first()
+
+        assert word.title == "ááááá"
