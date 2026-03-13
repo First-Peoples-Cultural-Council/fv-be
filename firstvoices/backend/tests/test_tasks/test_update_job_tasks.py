@@ -1233,3 +1233,27 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.assert_maximum_video_file_data(
             all_media_entry, "test_update_all_media_video"
         )
+
+    def test_update_normalization(self):
+        self.create_dictionary_entries([TEST_ENTRY_IDS[0]])
+
+        file_content = get_sample_file(
+            filename="update_job/normalization.csv",
+            mimetype=self.MIMETYPE,
+        )
+
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        confirm_update_job(update_job.id)
+
+        entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+
+        assert entry.title == "ááááá"
