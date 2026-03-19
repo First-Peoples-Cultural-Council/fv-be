@@ -242,12 +242,20 @@ def delete_old_exports(self):
             created__lte=seven_days_ago,
         )
 
-        for export in old_exports:
-            if export.export_csv:
-                export.export_csv.delete()
-            export.delete()
+        if old_exports.exists():
+            logger.info(
+                f"Deleting {old_exports.count()} old export jobs and their associated csv files."
+            )
+            for export in old_exports:
+                if export.export_csv:
+                    export.export_csv.delete()
+                export.delete()
+        else:
+            logger.info("No eligible export jobs found for deletion. No action taken.")
+
+        logger.info(ASYNC_TASK_END_TEMPLATE)
     except Exception as e:
         self.state = "FAILURE"
         logger.error(f"Error deleting old exports: {e}")
-        logger.info(ASYNC_TASK_START_TEMPLATE)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
         raise e
