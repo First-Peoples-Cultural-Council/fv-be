@@ -14,6 +14,7 @@ from backend.models.jobs import ExportJob
 from backend.search.queries.query_builder import (
     get_base_entries_search_query,
     get_base_entries_sort_query,
+    get_base_paginate_query,
 )
 from backend.search.utils import get_ids_by_type, get_search_response, queryset_as_map
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
@@ -73,6 +74,12 @@ def generate_export(export_job_instance):
     export_job_instance.save()
 
     search_params = export_job_instance.export_params.copy()
+
+    pagination_keys = ["page", "page_size", "start"]
+    pagination_params = {
+        k: search_params.pop(k) for k in pagination_keys if k in search_params
+    }
+
     search_params["user"] = user
     filename = f"export_{export_job_instance.site.slug}_{
         timezone.localtime(timezone.now()).strftime("%Y_%m_%d_%H_%M_%S")
@@ -81,7 +88,7 @@ def generate_export(export_job_instance):
     results = None
 
     try:
-        results = get_search_results(search_params)
+        results = get_search_results(search_params, pagination_params)
     except Exception as e:
         logger.error(
             f"Unable to get search results for export_job: {str(export_job_instance.id)}. Error: {e}."
@@ -123,10 +130,15 @@ def generate_export(export_job_instance):
             export_job_instance.save()
 
 
-def get_search_results(search_params):
+def get_search_results(search_params, pagination_params):
 
-    search_query = get_base_entries_search_query(**search_params)
-    search_query = get_base_entries_sort_query(search_query, **search_params)
+    search_query = get_base_entries_search_query(**search_params)  # build_query
+    search_query = get_base_paginate_query(
+        search_query, **pagination_params
+    )  # paginate_query
+    search_query = get_base_entries_sort_query(
+        search_query, **search_params
+    )  # sort_query
 
     response = get_search_response(search_query)
     search_results = response["hits"]["hits"]

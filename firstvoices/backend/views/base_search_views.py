@@ -9,6 +9,7 @@ from backend.search.queries.query_builder import get_base_paginate_query
 from backend.search.utils import (
     get_base_search_params,
     get_ids_by_type,
+    get_pagination_params,
     get_search_response,
     queryset_as_map,
 )
@@ -173,21 +174,7 @@ class BaseSearchViewSet(viewsets.GenericViewSet, HydrateSerializeSearchResultsMi
         """
         Returns pagination parameters.
         """
-        default_page_size = self.paginator.get_page_size(self.request)
-
-        page = self.paginator.override_invalid_number(self.request.GET.get("page", 1))
-
-        page_size = self.paginator.override_invalid_number(
-            self.request.GET.get("pageSize", default_page_size), default_page_size
-        )
-
-        start = (page - 1) * page_size
-
-        return {
-            "page_size": page_size,
-            "page": page,
-            "start": start,
-        }
+        return get_pagination_params(self.request, self.paginator)
 
     def paginate_search_response(self, request, serialized_data, result_count):
         page = self.paginator.apply_search_pagination(

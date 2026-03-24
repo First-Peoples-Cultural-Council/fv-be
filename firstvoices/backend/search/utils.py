@@ -179,6 +179,27 @@ def get_site_entries_search_params(
     return search_params
 
 
+def get_pagination_params(request, paginator):
+    """
+    Returns pagination parameters.
+    """
+    default_page_size = paginator.get_page_size(request)
+
+    page = paginator.override_invalid_number(request.GET.get("page", 1))
+
+    page_size = paginator.override_invalid_number(
+        request.GET.get("pageSize", default_page_size), default_page_size
+    )
+
+    start = (page - 1) * page_size
+
+    return {
+        "page_size": page_size,
+        "page": page,
+        "start": start,
+    }
+
+
 def has_invalid_base_entries_search_input(search_params):
     return (
         not search_params["types"]
