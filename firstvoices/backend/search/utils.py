@@ -1,4 +1,5 @@
 from elasticsearch.exceptions import ConnectionError
+from rest_framework.exceptions import ValidationError
 
 from backend.models import Category, ImportJob, Person
 from backend.search.constants import ALL_SEARCH_TYPES, ENTRY_SEARCH_TYPES
@@ -179,7 +180,7 @@ def get_site_entries_search_params(
     return search_params
 
 
-def get_pagination_params(request, paginator):
+def get_pagination_params(request, paginator, page_size_limit=-1):
     """
     Returns pagination parameters.
     """
@@ -190,6 +191,13 @@ def get_pagination_params(request, paginator):
     page_size = paginator.override_invalid_number(
         request.GET.get("pageSize", default_page_size), default_page_size
     )
+
+    if page_size_limit > 0:
+        if page_size > page_size_limit:
+            raise ValidationError(
+                f"pageSize: The maximum number of items per page is {page_size_limit}. "
+                f"Please contact staff if you require more than {page_size_limit} items."
+            )
 
     start = (page - 1) * page_size
 

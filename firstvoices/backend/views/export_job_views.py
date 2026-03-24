@@ -143,7 +143,7 @@ class ExportJobViewSet(
         search_params = get_site_entries_search_params(
             self.request, site, self.default_search_types, self.allowed_search_types
         )
-        pagination_params = get_pagination_params(self.request, self.paginator)
+        pagination_params = get_pagination_params(self.request, self.paginator, 7500)
 
         export_params = {**search_params, **pagination_params}
 
