@@ -168,3 +168,22 @@ class TestExportJobAPI(
             == "You have reached the maximum number of simultaneous export jobs (10). "
             "Please delete completed jobs that you no longer need to allow new export jobs to be created."
         )
+
+    @pytest.mark.django_db
+    def test_export_job_page_size_maximum(self):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug) + "?page=1&pageSize=7501",
+            format="json",
+        )
+
+        assert post_response.status_code == 400
+        response_data = json.loads(post_response.content)
+        assert (
+            response_data[0]
+            == "pageSize: The maximum number of items per page is 7500. "
+            "Please contact staff if you require more than 7500 items."
+        )

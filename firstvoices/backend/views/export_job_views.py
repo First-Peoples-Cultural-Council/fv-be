@@ -9,8 +9,9 @@ from drf_spectacular.utils import (
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.jobs import ExportJob, JobStatus
+from backend.pagination import SearchPageNumberPagination
 from backend.search.constants import TYPE_PHRASE, TYPE_WORD
-from backend.search.utils import get_site_entries_search_params
+from backend.search.utils import get_pagination_params, get_site_entries_search_params
 from backend.serializers.export_job_serializers import ExportJobSerializer
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.tasks.export_job_tasks import generate_export_csv
@@ -136,12 +137,16 @@ class ExportJobViewSet(
         return ExportJob.objects.filter(site=site).order_by("-created")
 
     def perform_create(self, serializer):
+        self.pagination_class = SearchPageNumberPagination
+
         site = self.get_validated_site()
         search_params = get_site_entries_search_params(
             self.request, site, self.default_search_types, self.allowed_search_types
         )
+        pagination_params = get_pagination_params(self.request, self.paginator, 7500)
 
-        export_params = search_params.copy()
+        export_params = {**search_params, **pagination_params}
+
         key_to_remove = "user"
         if key_to_remove in export_params:
             del export_params[key_to_remove]
