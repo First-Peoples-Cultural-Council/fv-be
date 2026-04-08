@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -61,3 +62,24 @@ class TestDeleteOldExportsTask:
             assert "Error deleting old exports: Mocked exception" in caplog.text
             assert ASYNC_TASK_START_TEMPLATE in caplog.text
             assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
+    def test_delete_old_exports_no_export_csv(self, caplog):
+        export_job = factories.ExportJobFactory.create(
+            export_csv=None, export_csv_id=str(uuid.uuid4())
+        )
+        export_job.created = export_job.created - timedelta(days=8)
+        export_job.save()
+
+        result = delete_old_exports.apply()
+        assert result.state == "SUCCESS"
+        assert ExportJob.objects.count() == 0
+        assert File.objects.count() == 0
+        assert (
+            "Deleting 1 old export jobs and their associated csv files." in caplog.text
+        )
+        assert (
+            f"Missing export csv file for export job {export_job.id}. Skipping file deletion."
+            in caplog.text
+        )
+        assert ASYNC_TASK_START_TEMPLATE in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
