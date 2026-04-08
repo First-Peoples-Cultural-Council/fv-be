@@ -258,9 +258,15 @@ def delete_old_exports(self):
             logger.info(
                 f"Deleting {old_exports.count()} old export jobs and their associated csv files."
             )
+
             for export in old_exports:
-                if export.export_csv:
-                    export.export_csv.delete()
+                if export.export_csv_id:
+                    try:
+                        export.export_csv.delete()
+                    except File.DoesNotExist:
+                        logger.warning(
+                            f"Missing export csv file for export job {export.id}. Skipping file deletion."
+                        )
                 export.delete()
         else:
             logger.info("No eligible export jobs found for deletion. No action taken.")
