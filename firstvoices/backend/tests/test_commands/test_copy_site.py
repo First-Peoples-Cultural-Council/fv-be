@@ -14,35 +14,11 @@ from backend.models.constants import AppRole
 from backend.models.dictionary import DictionaryEntry
 from backend.models.galleries import Gallery
 from backend.models.immersion_labels import ImmersionLabel
-from backend.models.media import Audio, Image, Person, Video
+from backend.models.media import Audio, Document, Image, Person, Video
 from backend.models.sites import Site, SiteFeature
 from backend.models.song import Song
 from backend.models.story import Story
-from backend.tests.factories import (
-    AlphabetFactory,
-    AudioFactory,
-    AudioSpeakerFactory,
-    CharacterFactory,
-    CharacterVariantFactory,
-    ChildCategoryFactory,
-    DictionaryEntryFactory,
-    GalleryFactory,
-    GalleryItemFactory,
-    IgnoredCharacterFactory,
-    ImageFactory,
-    ImmersionLabelFactory,
-    ImportJobFactory,
-    LyricsFactory,
-    ParentCategoryFactory,
-    PersonFactory,
-    SiteFactory,
-    SiteFeatureFactory,
-    SongFactory,
-    StoryFactory,
-    StoryPageFactory,
-    VideoFactory,
-    get_app_admin,
-)
+from backend.tests import factories
 
 
 @pytest.mark.django_db
@@ -51,8 +27,10 @@ class TestCopySite:
     TARGET_SLUG = "target"
 
     def setup_method(self):
-        self.source_site = SiteFactory.create(slug=self.SOURCE_SLUG, title="source")
-        self.superadmin_user = get_app_admin(AppRole.SUPERADMIN)
+        self.source_site = factories.SiteFactory.create(
+            slug=self.SOURCE_SLUG, title="source"
+        )
+        self.superadmin_user = factories.get_app_admin(AppRole.SUPERADMIN)
 
     def call_copy_site_command(self, print_counts=False):
         # helper function
@@ -75,7 +53,7 @@ class TestCopySite:
         assert str(e.value) == "Provided source site does not exist."
 
     def test_force_delete_flag(self):
-        old_target_site = SiteFactory.create(slug=self.TARGET_SLUG)
+        old_target_site = factories.SiteFactory.create(slug=self.TARGET_SLUG)
         old_site_created_timestamp = old_target_site.created
 
         call_command(
@@ -90,7 +68,7 @@ class TestCopySite:
         assert new_target_site.created != old_site_created_timestamp
 
     def test_existing_target_site_raises_error(self):
-        SiteFactory.create(slug=self.TARGET_SLUG)
+        factories.SiteFactory.create(slug=self.TARGET_SLUG)
         with pytest.raises(AttributeError) as e:
             self.call_copy_site_command()
         assert (
@@ -116,6 +94,7 @@ class TestCopySite:
         assert "Site feature count:: source: 0, target: 0" in caplog.text
         assert "Speakers count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Audio count:: source: 0, target: 0, map: 0" in caplog.text
+        assert "Document count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Image count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Video count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Character count:: source: 0, target: 0, map: 0" in caplog.text
@@ -155,10 +134,10 @@ class TestCopySite:
         self.assert_system_last_modified_updated(source_site, target_site)
 
     def test_site_features(self):
-        source_feature_enabled = SiteFeatureFactory.create(
+        source_feature_enabled = factories.SiteFeatureFactory.create(
             site=self.source_site, key="first_feature", is_enabled=True
         )
-        source_feature_disabled = SiteFeatureFactory.create(
+        source_feature_disabled = factories.SiteFeatureFactory.create(
             site=self.source_site, key="second_feature", is_enabled=False
         )
 
@@ -179,17 +158,17 @@ class TestCopySite:
 
     @pytest.mark.parametrize("char_variant_present", [True, False])
     def test_characters_and_variants(self, char_variant_present):
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
-        source_video_1 = VideoFactory(site=self.source_site)
-        source_video_2 = VideoFactory(site=self.source_site)
-        source_audio_1 = AudioFactory(site=self.source_site)
-        source_audio_2 = AudioFactory(site=self.source_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
+        source_video_1 = factories.VideoFactory(site=self.source_site)
+        source_video_2 = factories.VideoFactory(site=self.source_site)
+        source_audio_1 = factories.AudioFactory(site=self.source_site)
+        source_audio_2 = factories.AudioFactory(site=self.source_site)
 
-        source_char = CharacterFactory(site=self.source_site)
+        source_char = factories.CharacterFactory(site=self.source_site)
         source_char_variant = None
         if char_variant_present:
-            source_char_variant = CharacterVariantFactory(
+            source_char_variant = factories.CharacterVariantFactory(
                 site=self.source_site, base_character=source_char
             )
 
@@ -219,7 +198,7 @@ class TestCopySite:
             assert target_char_variant.base_character == target_char
 
     def test_ignored_characters(self):
-        source_ignored_char = IgnoredCharacterFactory(site=self.source_site)
+        source_ignored_char = factories.IgnoredCharacterFactory(site=self.source_site)
 
         self.call_copy_site_command()
 
@@ -228,7 +207,7 @@ class TestCopySite:
         assert target_ignored_char.title == source_ignored_char.title
 
     def test_alphabet(self):
-        source_alphabet = AlphabetFactory(
+        source_alphabet = factories.AlphabetFactory(
             site=self.source_site, input_to_canonical_map="[{'in': '2', 'out': 'two'}]"
         )
 
@@ -246,17 +225,17 @@ class TestCopySite:
         Category.objects.filter(site=self.source_site).delete()
 
         # Adding new categories
-        source_parent_category = ParentCategoryFactory(
+        source_parent_category = factories.ParentCategoryFactory(
             site=self.source_site, title="parent_1"
         )
-        source_child_category_1 = ChildCategoryFactory(
+        source_child_category_1 = factories.ChildCategoryFactory(
             site=self.source_site, parent=source_parent_category, title="child_1"
         )
-        source_child_category_2 = ChildCategoryFactory(
+        source_child_category_2 = factories.ChildCategoryFactory(
             site=self.source_site, parent=source_parent_category, title="child_2"
         )
 
-        source_extra_category = ParentCategoryFactory(
+        source_extra_category = factories.ParentCategoryFactory(
             site=self.source_site, title="without_children"
         )
 
@@ -283,10 +262,12 @@ class TestCopySite:
         ).exists()
 
     def test_audio_and_speakers(self):
-        source_speaker = PersonFactory(site=self.source_site)
-        source_audio = AudioFactory(site=self.source_site)
-        AudioSpeakerFactory(audio=source_audio, speaker=source_speaker)
-        source_extra_person = PersonFactory(site=self.source_site)  # not a speaker
+        source_speaker = factories.PersonFactory(site=self.source_site)
+        source_audio = factories.AudioFactory(site=self.source_site)
+        factories.AudioSpeakerFactory(audio=source_audio, speaker=source_speaker)
+        source_extra_person = factories.PersonFactory(
+            site=self.source_site
+        )  # not a speaker
 
         self.call_copy_site_command()
 
@@ -305,8 +286,20 @@ class TestCopySite:
             site__slug=self.TARGET_SLUG, name=source_extra_person.name
         ).exists()
 
+    def test_documents(self):
+        source_document = factories.DocumentFactory(site=self.source_site)
+
+        self.call_copy_site_command()
+
+        target_document = Document.objects.filter(site__slug=self.TARGET_SLUG)[0]
+
+        assert target_document.original != source_document.original
+        assert target_document.title == source_document.title
+
+        self.assert_system_last_modified_updated(source_document, target_document)
+
     def test_images(self):
-        source_image = ImageFactory(site=self.source_site)
+        source_image = factories.ImageFactory(site=self.source_site)
 
         self.call_copy_site_command()
 
@@ -324,7 +317,7 @@ class TestCopySite:
         self.assert_system_last_modified_updated(source_image, target_image)
 
     def test_videos(self):
-        source_video = VideoFactory(site=self.source_site)
+        source_video = factories.VideoFactory(site=self.source_site)
 
         self.call_copy_site_command()
 
@@ -343,18 +336,20 @@ class TestCopySite:
 
     @pytest.mark.parametrize("cover_image_present", [True, False])
     def test_gallery(self, cover_image_present):
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
 
         source_cover_img = (
-            ImageFactory(site=self.source_site) if cover_image_present else None
+            factories.ImageFactory(site=self.source_site)
+            if cover_image_present
+            else None
         )
 
-        source_gallery = GalleryFactory(
+        source_gallery = factories.GalleryFactory(
             site=self.source_site, cover_image=source_cover_img
         )
-        GalleryItemFactory.create(gallery=source_gallery, image=source_img_1)
-        GalleryItemFactory.create(gallery=source_gallery, image=source_img_2)
+        factories.GalleryItemFactory.create(gallery=source_gallery, image=source_img_1)
+        factories.GalleryItemFactory.create(gallery=source_gallery, image=source_img_2)
 
         self.call_copy_site_command()
 
@@ -376,20 +371,23 @@ class TestCopySite:
         assert target_gallery_item_2.image.title == source_img_2.title
 
     def test_songs(self):
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
-        source_video_1 = VideoFactory(site=self.source_site)
-        source_video_2 = VideoFactory(site=self.source_site)
-        source_audio_1 = AudioFactory(site=self.source_site)
-        source_audio_2 = AudioFactory(site=self.source_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
+        source_video_1 = factories.VideoFactory(site=self.source_site)
+        source_video_2 = factories.VideoFactory(site=self.source_site)
+        source_audio_1 = factories.AudioFactory(site=self.source_site)
+        source_audio_2 = factories.AudioFactory(site=self.source_site)
+        source_document_1 = factories.DocumentFactory(site=self.source_site)
+        source_document_2 = factories.DocumentFactory(site=self.source_site)
 
-        source_song = SongFactory(site=self.source_site)
-        source_lyric_1 = LyricsFactory(song=source_song)
-        source_lyric_2 = LyricsFactory(song=source_song)
+        source_song = factories.SongFactory(site=self.source_site)
+        source_lyric_1 = factories.LyricsFactory(song=source_song)
+        source_lyric_2 = factories.LyricsFactory(song=source_song)
 
         source_song.related_images.set([source_img_1, source_img_2])
         source_song.related_videos.set([source_video_1, source_video_2])
         source_song.related_audio.set([source_audio_1, source_audio_2])
+        source_song.related_documents.set([source_document_1, source_document_2])
         source_song.related_video_links = ["https://test.com", "https://testing.com"]
         source_song.save()
 
@@ -413,35 +411,44 @@ class TestCopySite:
         assert target_song.related_images.count() == 2
         assert target_song.related_videos.count() == 2
         assert target_song.related_audio.count() == 2
+        assert target_song.related_documents.count() == 2
         assert target_song.related_video_links == source_song.related_video_links
         self.assert_system_last_modified_updated(source_song, target_song)
 
     def test_stories(self):
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
-        source_page_img_1 = ImageFactory(site=self.source_site)
-        source_page_img_2 = ImageFactory(site=self.source_site)
-        source_video_1 = VideoFactory(site=self.source_site)
-        source_video_2 = VideoFactory(site=self.source_site)
-        source_page_video_1 = VideoFactory(site=self.source_site)
-        source_page_video_2 = VideoFactory(site=self.source_site)
-        source_audio_1 = AudioFactory(site=self.source_site)
-        source_audio_2 = AudioFactory(site=self.source_site)
-        source_page_audio_1 = AudioFactory(site=self.source_site)
-        source_page_audio_2 = AudioFactory(site=self.source_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
+        source_page_img_1 = factories.ImageFactory(site=self.source_site)
+        source_page_img_2 = factories.ImageFactory(site=self.source_site)
+        source_video_1 = factories.VideoFactory(site=self.source_site)
+        source_video_2 = factories.VideoFactory(site=self.source_site)
+        source_page_video_1 = factories.VideoFactory(site=self.source_site)
+        source_page_video_2 = factories.VideoFactory(site=self.source_site)
+        source_audio_1 = factories.AudioFactory(site=self.source_site)
+        source_audio_2 = factories.AudioFactory(site=self.source_site)
+        source_page_audio_1 = factories.AudioFactory(site=self.source_site)
+        source_page_audio_2 = factories.AudioFactory(site=self.source_site)
+        source_document_1 = factories.DocumentFactory(site=self.source_site)
+        source_document_2 = factories.DocumentFactory(site=self.source_site)
+        source_page_document_1 = factories.DocumentFactory(site=self.source_site)
+        source_page_document_2 = factories.DocumentFactory(site=self.source_site)
 
-        source_story = StoryFactory(site=self.source_site)
-        source_story_page = StoryPageFactory(story=source_story)
+        source_story = factories.StoryFactory(site=self.source_site)
+        source_story_page = factories.StoryPageFactory(story=source_story)
 
         source_story.related_images.set([source_img_1, source_img_2])
         source_story.related_videos.set([source_video_1, source_video_2])
         source_story.related_audio.set([source_audio_1, source_audio_2])
+        source_story.related_documents.set([source_document_1, source_document_2])
         source_story.related_video_links = ["https://test.com", "https://testing.com"]
         source_story.save()
 
         source_story_page.related_images.set([source_page_img_1, source_page_img_2])
         source_story_page.related_videos.set([source_page_video_1, source_page_video_2])
         source_story_page.related_audio.set([source_page_audio_1, source_page_audio_2])
+        source_story_page.related_documents.set(
+            [source_page_document_1, source_page_document_2]
+        )
         source_story_page.save()
 
         self.call_copy_site_command()
@@ -459,6 +466,7 @@ class TestCopySite:
         assert target_story.related_images.count() == 2
         assert target_story.related_videos.count() == 2
         assert target_story.related_audio.count() == 2
+        assert target_story.related_documents.count() == 2
         assert target_story.related_video_links == source_story.related_video_links
         self.assert_system_last_modified_updated(source_story, target_story)
 
@@ -470,6 +478,7 @@ class TestCopySite:
         assert target_story_page.related_images.count() == 2
         assert target_story_page.related_videos.count() == 2
         assert target_story_page.related_audio.count() == 2
+        assert target_story_page.related_documents.count() == 2
 
         target_story_page_img_1 = target_story_page.related_images.all().order_by(
             "created"
@@ -489,6 +498,12 @@ class TestCopySite:
         target_story_page_audio_2 = target_story_page.related_audio.all().order_by(
             "created"
         )[1]
+        target_story_page_document_1 = (
+            target_story_page.related_documents.all().order_by("created")[0]
+        )
+        target_story_page_document_2 = (
+            target_story_page.related_documents.all().order_by("created")[1]
+        )
 
         assert target_story_page_img_1.title == source_page_img_1.title
         assert target_story_page_img_2.title == source_page_img_2.title
@@ -496,30 +511,34 @@ class TestCopySite:
         assert target_story_page_video_2.title == source_page_video_2.title
         assert target_story_page_audio_1.title == source_page_audio_1.title
         assert target_story_page_audio_2.title == source_page_audio_2.title
+        assert target_story_page_document_1.title == source_page_document_1.title
+        assert target_story_page_document_2.title == source_page_document_2.title
 
     def test_dictionary_entries(self):
-        source_category_1 = ParentCategoryFactory(site=self.source_site)
-        source_category_2 = ParentCategoryFactory(site=self.source_site)
-        source_child_category = ChildCategoryFactory(
+        source_category_1 = factories.ParentCategoryFactory(site=self.source_site)
+        source_category_2 = factories.ParentCategoryFactory(site=self.source_site)
+        source_child_category = factories.ChildCategoryFactory(
             site=self.source_site, parent=source_category_2
         )
-        source_related_entry_1 = DictionaryEntryFactory(
+        source_related_entry_1 = factories.DictionaryEntryFactory(
             site=self.source_site, title="related entry 1"
         )
-        source_related_entry_2 = DictionaryEntryFactory(
+        source_related_entry_2 = factories.DictionaryEntryFactory(
             site=self.source_site, title="related entry 2"
         )
-        source_related_char_1 = CharacterFactory(site=self.source_site)
-        source_related_char_2 = CharacterFactory(site=self.source_site)
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
-        source_video_1 = VideoFactory(site=self.source_site)
-        source_video_2 = VideoFactory(site=self.source_site)
-        source_audio_1 = AudioFactory(site=self.source_site)
-        source_audio_2 = AudioFactory(site=self.source_site)
-        source_import_job = ImportJobFactory(site=self.source_site)
+        source_related_char_1 = factories.CharacterFactory(site=self.source_site)
+        source_related_char_2 = factories.CharacterFactory(site=self.source_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
+        source_video_1 = factories.VideoFactory(site=self.source_site)
+        source_video_2 = factories.VideoFactory(site=self.source_site)
+        source_audio_1 = factories.AudioFactory(site=self.source_site)
+        source_audio_2 = factories.AudioFactory(site=self.source_site)
+        source_document_1 = factories.DocumentFactory(site=self.source_site)
+        source_document_2 = factories.DocumentFactory(site=self.source_site)
+        source_import_job = factories.ImportJobFactory(site=self.source_site)
 
-        source_entry = DictionaryEntryFactory(
+        source_entry = factories.DictionaryEntryFactory(
             site=self.source_site,
             title="Primary entry",
             legacy_batch_filename="legacyBatchFilename",
@@ -536,6 +555,7 @@ class TestCopySite:
         source_entry.related_images.set([source_img_1, source_img_2])
         source_entry.related_videos.set([source_video_1, source_video_2])
         source_entry.related_audio.set([source_audio_1, source_audio_2])
+        source_entry.related_documents.set([source_document_1, source_document_2])
         source_entry.related_video_links = ["https://test.com", "https://testing.com"]
         source_entry.save()
 
@@ -583,11 +603,12 @@ class TestCopySite:
         assert target_entry.related_images.count() == 2
         assert target_entry.related_videos.count() == 2
         assert target_entry.related_audio.count() == 2
+        assert target_entry.related_documents.count() == 2
         self.assert_system_last_modified_updated(source_entry, target_entry)
 
     def test_immersion_labels(self):
-        entry = DictionaryEntryFactory(site=self.source_site)
-        source_imm_label = ImmersionLabelFactory(
+        entry = factories.DictionaryEntryFactory(site=self.source_site)
+        source_imm_label = factories.ImmersionLabelFactory(
             site=self.source_site, key="test key", dictionary_entry=entry
         )
 
@@ -603,7 +624,7 @@ class TestCopySite:
         self.assert_system_last_modified_updated(source_imm_label, target_imm_label)
 
     def test_missing_audio_original(self, caplog):
-        src_audio = AudioFactory(site=self.source_site)
+        src_audio = factories.AudioFactory(site=self.source_site)
 
         with patch("django.core.files.storage.Storage.open") as mock_open:
             mock_open.side_effect = FileNotFoundError
@@ -611,8 +632,17 @@ class TestCopySite:
 
         assert f"Couldn't copy audio file with id: {src_audio.id}" in caplog.text
 
+    def test_missing_document_original(self, caplog):
+        src_document = factories.DocumentFactory(site=self.source_site)
+
+        with patch("django.core.files.storage.Storage.open") as mock_open:
+            mock_open.side_effect = FileNotFoundError
+            self.call_copy_site_command()
+
+        assert f"Couldn't copy document file with id: {src_document.id}" in caplog.text
+
     def test_missing_image_original(self, caplog):
-        src_image = ImageFactory(site=self.source_site)
+        src_image = factories.ImageFactory(site=self.source_site)
 
         with patch("django.core.files.storage.Storage.open") as mock_open:
             mock_open.side_effect = FileNotFoundError
@@ -621,7 +651,7 @@ class TestCopySite:
         assert f"Couldn't copy image file with id: {src_image.id}" in caplog.text
 
     def test_missing_video_original(self, caplog):
-        src_video = VideoFactory(site=self.source_site)
+        src_video = factories.VideoFactory(site=self.source_site)
 
         with patch("django.core.files.storage.Storage.open") as mock_open:
             mock_open.side_effect = FileNotFoundError
@@ -630,10 +660,12 @@ class TestCopySite:
         assert f"Couldn't copy video file with id: {src_video.id}" in caplog.text
 
     def test_gallery_associated_images_missing_original(self, caplog):
-        src_image = ImageFactory(site=self.source_site)
+        src_image = factories.ImageFactory(site=self.source_site)
 
-        src_gallery = GalleryFactory(site=self.source_site, cover_image=src_image)
-        GalleryItemFactory.create(gallery=src_gallery, image=src_image)
+        src_gallery = factories.GalleryFactory(
+            site=self.source_site, cover_image=src_image
+        )
+        factories.GalleryItemFactory.create(gallery=src_gallery, image=src_image)
 
         with patch("django.core.files.storage.Storage.open") as mock_open:
             mock_open.side_effect = FileNotFoundError
@@ -650,11 +682,11 @@ class TestCopySite:
 
     def test_cyclically_related_dictionary_entries(self):
         # Entries that are both related to each other
-        entry_1 = DictionaryEntryFactory.create(
+        entry_1 = factories.DictionaryEntryFactory.create(
             site=self.source_site,
             title="Entry 1",
         )
-        entry_2 = DictionaryEntryFactory.create(
+        entry_2 = factories.DictionaryEntryFactory.create(
             site=self.source_site,
             title="Entry 2",
         )
@@ -679,15 +711,15 @@ class TestCopySite:
         assert related_entries_for_entry_2[0].id == target_entry_1.id
 
     def test_shared_images_used_as_related_media(self):
-        shared_image_site = SiteFactory.create(slug="library")
-        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+        shared_image_site = factories.SiteFactory.create(slug="library")
+        factories.SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
 
-        shared_image_1 = ImageFactory(site=shared_image_site)
-        shared_image_2 = ImageFactory(site=shared_image_site)
-        source_img_1 = ImageFactory(site=self.source_site)
-        source_img_2 = ImageFactory(site=self.source_site)
+        shared_image_1 = factories.ImageFactory(site=shared_image_site)
+        shared_image_2 = factories.ImageFactory(site=shared_image_site)
+        source_img_1 = factories.ImageFactory(site=self.source_site)
+        source_img_2 = factories.ImageFactory(site=self.source_site)
 
-        source_entry = DictionaryEntryFactory(
+        source_entry = factories.DictionaryEntryFactory(
             site=self.source_site,
         )
         source_entry.related_images.set(
@@ -708,14 +740,16 @@ class TestCopySite:
         assert shared_image_2.id in target_related_images_ids
 
     def test_shared_images_used_in_gallery(self):
-        shared_image_site = SiteFactory.create(slug="library")
-        SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
+        shared_image_site = factories.SiteFactory.create(slug="library")
+        factories.SiteFeatureFactory.create(key="shared_media", site=shared_image_site)
 
-        shared_image_1 = ImageFactory(site=shared_image_site)
-        shared_image_2 = ImageFactory(site=shared_image_site)
+        shared_image_1 = factories.ImageFactory(site=shared_image_site)
+        shared_image_2 = factories.ImageFactory(site=shared_image_site)
 
-        src_gallery = GalleryFactory(site=self.source_site, cover_image=shared_image_1)
-        GalleryItemFactory.create(gallery=src_gallery, image=shared_image_2)
+        src_gallery = factories.GalleryFactory(
+            site=self.source_site, cover_image=shared_image_1
+        )
+        factories.GalleryItemFactory.create(gallery=src_gallery, image=shared_image_2)
 
         self.call_copy_site_command()
 

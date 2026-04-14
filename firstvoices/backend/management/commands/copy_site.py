@@ -17,7 +17,15 @@ from backend.models.dictionary import DictionaryEntry
 from backend.models.files import File
 from backend.models.galleries import Gallery, GalleryItem
 from backend.models.immersion_labels import ImmersionLabel
-from backend.models.media import Audio, Image, ImageFile, Person, Video, VideoFile
+from backend.models.media import (
+    Audio,
+    Document,
+    Image,
+    ImageFile,
+    Person,
+    Video,
+    VideoFile,
+)
 from backend.models.sites import Site, SiteFeature
 from backend.models.song import Lyric, Song
 from backend.models.story import Story, StoryPage
@@ -65,7 +73,13 @@ def copy_site_features(source_site, target_site, set_modified_date):
 
 
 def copy_all_characters_and_return_map(
-    source_site, target_site, audio_map, image_map, video_map, set_modified_date
+    source_site,
+    target_site,
+    audio_map,
+    document_map,
+    image_map,
+    video_map,
+    set_modified_date,
 ):
     character_map = {}
     characters = list(Character.objects.filter(site=source_site))
@@ -73,6 +87,9 @@ def copy_all_characters_and_return_map(
     for character in characters:
         source_media = {
             "audio": list(character.related_audio.all().values_list("id", flat=True)),
+            "documents": list(
+                character.related_documents.all().values_list("id", flat=True)
+            ),
             "images": list(character.related_images.all().values_list("id", flat=True)),
             "videos": list(character.related_videos.all().values_list("id", flat=True)),
         }
@@ -86,7 +103,13 @@ def copy_all_characters_and_return_map(
         character.save(set_modified_date=set_modified_date)
 
         copy_related_media(
-            character, source_media, audio_map, image_map, video_map, set_modified_date
+            character,
+            source_media,
+            audio_map,
+            document_map,
+            image_map,
+            video_map,
+            set_modified_date,
         )
 
     variants = list(CharacterVariant.objects.filter(site=source_site))
@@ -108,6 +131,8 @@ def copy_all_characters_and_return_map(
 
 
 def copy_alphabet(source_site, target_site, set_modified_date):
+    # TODO: Ensure only 1 alphabet is on the source site, or fail with error
+    # TODO: ensure copied site only has 1 alphabet
     alphabets = list(Alphabet.objects.filter(site=source_site))
     for alphabet in alphabets:
         alphabet.id = uuid.uuid4()
@@ -116,6 +141,7 @@ def copy_alphabet(source_site, target_site, set_modified_date):
 
 
 def copy_categories_and_return_map(source_site, target_site, user, set_modified_date):
+    # TODO: Why pass user?
     category_map = {}
 
     # Removing auto-generated categories
@@ -165,6 +191,7 @@ def copy_speakers_and_return_map(source_site, target_site, set_modified_date):
 def copy_audio_and_speakers_and_return_map(
     source_site, target_site, speaker_map, set_modified_date, logger
 ):
+    # TODO: Process in batches
     audio_map = {}
 
     audio_instances = list(Audio.objects.filter(site=source_site))
@@ -198,7 +225,39 @@ def copy_audio_and_speakers_and_return_map(
     return audio_map
 
 
+def copy_documents_and_return_map(source_site, target_site, set_modified_date, logger):
+    document_map = {}
+
+    documents = list(Document.objects.filter(site=source_site))
+    for document in documents:
+        try:
+            target_file = File(
+                content=UploadedFile(document.original.content.file),
+                site=target_site,
+            )
+            target_file.save()
+            document.original = target_file
+
+            document.site = target_site
+
+            source_doc_id = document.id
+            target_doc_id = uuid.uuid4()
+            document_map[source_doc_id] = target_doc_id
+
+            document.id = target_doc_id
+            # To skip conditionals in the base media models and copy document instance
+            document._state.adding = True
+            document.save(set_modified_date=set_modified_date)
+        except Exception as e:
+            logger.warning(
+                f"Couldn't copy document file with id: {document.id}", exc_info=e
+            )
+
+    return document_map
+
+
 def copy_images_and_return_map(source_site, target_site, set_modified_date, logger):
+    # TODO: Process in batches
     image_map = {}
 
     images = list(Image.objects.filter(site=source_site))
@@ -232,6 +291,7 @@ def copy_images_and_return_map(source_site, target_site, set_modified_date, logg
 
 
 def copy_videos_and_return_map(source_site, target_site, set_modified_date, logger):
+    # TODO: Process in batches
     video_map = {}
 
     videos = list(Video.objects.filter(site=source_site))
@@ -328,7 +388,13 @@ def get_target_image_id(source_image_id, image_map, shared_images_library):
 
 
 def copy_related_media(
-    instance, source_media, audio_map, image_map, video_map, set_modified_date
+    instance,
+    source_media,
+    audio_map,
+    document_map,
+    image_map,
+    video_map,
+    set_modified_date,
 ):
     # If the media is missing the original, that media file is not copied, and thus
     # also not added to the m2m for an instance
@@ -341,6 +407,11 @@ def copy_related_media(
         audio_map[audio_id]
         for audio_id in source_media["audio"]
         if audio_id in audio_map
+    ]
+    target_documents = [
+        document_map[document_id]
+        for document_id in source_media["documents"]
+        if document_id in document_map
     ]
 
     # If the image is present in the shared image library, refer to it directly
@@ -368,17 +439,30 @@ def copy_related_media(
         instance.related_videos.set(target_videos)
     if target_audio:
         instance.related_audio.set(target_audio)
+    if target_documents:
+        instance.related_documents.set(target_documents)
+
     instance.save(set_modified_date=set_modified_date)
 
 
 def copy_songs(
-    source_site, target_site, audio_map, image_map, video_map, set_modified_date
+    source_site,
+    target_site,
+    audio_map,
+    document_map,
+    image_map,
+    video_map,
+    set_modified_date,
 ):
+    # TODO: Process in batches
     songs = list(Song.objects.filter(site=source_site))
     for song in songs:
         source_lyrics = list(song.lyrics.all())
         source_media = {
             "audio": list(song.related_audio.all().values_list("id", flat=True)),
+            "documents": list(
+                song.related_documents.all().values_list("id", flat=True)
+            ),
             "images": list(song.related_images.all().values_list("id", flat=True)),
             "videos": list(song.related_videos.all().values_list("id", flat=True)),
         }
@@ -393,18 +477,34 @@ def copy_songs(
             lyric.save(set_modified_date=set_modified_date)
 
         copy_related_media(
-            song, source_media, audio_map, image_map, video_map, set_modified_date
+            song,
+            source_media,
+            audio_map,
+            document_map,
+            image_map,
+            video_map,
+            set_modified_date,
         )
 
 
 def copy_stories(
-    source_site, target_site, audio_map, image_map, video_map, set_modified_date
+    source_site,
+    target_site,
+    audio_map,
+    document_map,
+    image_map,
+    video_map,
+    set_modified_date,
 ):
+    # TODO: Process in batches
     stories = list(Story.objects.filter(site=source_site))
     for story in stories:
         source_pages = list(story.pages.all())
         source_media = {
             "audio": list(story.related_audio.all().values_list("id", flat=True)),
+            "documents": list(
+                story.related_documents.all().values_list("id", flat=True)
+            ),
             "images": list(story.related_images.all().values_list("id", flat=True)),
             "videos": list(story.related_videos.all().values_list("id", flat=True)),
         }
@@ -414,12 +514,21 @@ def copy_stories(
         story.save(set_modified_date=set_modified_date)
 
         copy_related_media(
-            story, source_media, audio_map, image_map, video_map, set_modified_date
+            story,
+            source_media,
+            audio_map,
+            document_map,
+            image_map,
+            video_map,
+            set_modified_date,
         )
 
         for page in source_pages:
             source_media = {
                 "audio": list(page.related_audio.all().values_list("id", flat=True)),
+                "documents": list(
+                    page.related_documents.all().values_list("id", flat=True)
+                ),
                 "images": list(page.related_images.all().values_list("id", flat=True)),
                 "videos": list(page.related_videos.all().values_list("id", flat=True)),
             }
@@ -429,7 +538,13 @@ def copy_stories(
             page.save(set_modified_date=set_modified_date)
 
             copy_related_media(
-                page, source_media, audio_map, image_map, video_map, set_modified_date
+                page,
+                source_media,
+                audio_map,
+                document_map,
+                image_map,
+                video_map,
+                set_modified_date,
             )
 
 
@@ -439,10 +554,12 @@ def copy_dictionary_entries_and_return_map(
     category_map,
     character_map,
     audio_map,
+    document_map,
     image_map,
     video_map,
     set_modified_date,
 ):
+    # TODO: Process in batches, ensure alphabet has been created on the site before copying
     dictionary_entry_map = {}
 
     dictionary_entries = list(DictionaryEntry.objects.filter(site=source_site))
@@ -486,6 +603,9 @@ def copy_dictionary_entries_and_return_map(
 
         source_media = {
             "audio": list(source_entry.related_audio.values_list("id", flat=True)),
+            "documents": list(
+                source_entry.related_documents.all().values_list("id", flat=True)
+            ),
             "images": list(source_entry.related_images.values_list("id", flat=True)),
             "videos": list(source_entry.related_videos.values_list("id", flat=True)),
         }
@@ -493,6 +613,7 @@ def copy_dictionary_entries_and_return_map(
             target_entry,
             source_media,
             audio_map,
+            document_map,
             image_map,
             video_map,
             set_modified_date,
@@ -538,27 +659,52 @@ def copy_related_objects(
         source_site, target_site, speaker_map, set_modified_date, logger
     )
     logger.info("Audio and speakers copied.")
+
+    document_map = copy_documents_and_return_map(
+        source_site, target_site, set_modified_date, logger
+    )
+    logger.info("Documents copied.")
+
     image_map = copy_images_and_return_map(
         source_site, target_site, set_modified_date, logger
     )
     logger.info("Images copied.")
+
     video_map = copy_videos_and_return_map(
         source_site, target_site, set_modified_date, logger
     )
     logger.info("Videos copied.")
 
     character_map = copy_all_characters_and_return_map(
-        source_site, target_site, audio_map, image_map, video_map, set_modified_date
+        source_site,
+        target_site,
+        audio_map,
+        document_map,
+        image_map,
+        video_map,
+        set_modified_date,
     )
     copy_alphabet(source_site, target_site, set_modified_date)
     logger.info("Characters and alphabet copied.")
 
     copy_galleries(source_site, target_site, image_map, set_modified_date, logger)
     copy_songs(
-        source_site, target_site, audio_map, image_map, video_map, set_modified_date
+        source_site,
+        target_site,
+        audio_map,
+        document_map,
+        image_map,
+        video_map,
+        set_modified_date,
     )
     copy_stories(
-        source_site, target_site, audio_map, image_map, video_map, set_modified_date
+        source_site,
+        target_site,
+        audio_map,
+        document_map,
+        image_map,
+        video_map,
+        set_modified_date,
     )
     logger.info("Galleries, songs and stories copied.")
 
@@ -568,6 +714,7 @@ def copy_related_objects(
         category_map,
         character_map,
         audio_map,
+        document_map,
         image_map,
         video_map,
         set_modified_date,
@@ -585,6 +732,7 @@ def copy_related_objects(
             category_map,
             speaker_map,
             audio_map,
+            document_map,
             image_map,
             video_map,
             character_map,
@@ -599,6 +747,7 @@ def log_objects_count(
     category_map,
     speaker_map,
     audio_map,
+    document_map,
     image_map,
     video_map,
     character_map,
@@ -628,6 +777,12 @@ def log_objects_count(
     target_audio_count = Audio.objects.filter(site=target_site).count()
     logger.info(
         f"Audio count:: source: {source_audio_count}, target: {target_audio_count}, map: {len(audio_map)}"
+    )
+
+    source_document_count = Document.objects.filter(site=source_site).count()
+    target_document_count = Document.objects.filter(site=target_site).count()
+    logger.info(
+        f"Document count:: source: {source_document_count}, target: {target_document_count}, map: {len(document_map)}"
     )
 
     source_image_count = Image.objects.filter(site=source_site).count()
