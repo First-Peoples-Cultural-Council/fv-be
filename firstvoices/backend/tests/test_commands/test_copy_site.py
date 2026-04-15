@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 
 from backend.models.category import Category
@@ -69,11 +70,11 @@ class TestCopySite:
 
     def test_existing_target_site_raises_error(self):
         factories.SiteFactory.create(slug=self.TARGET_SLUG)
-        with pytest.raises(AttributeError) as e:
+        with pytest.raises(ValidationError) as e:
             self.call_copy_site_command()
         assert (
             str(e.value)
-            == f"Site with slug {self.TARGET_SLUG} already exists. Use --force-delete to override."
+            == f"['Site with slug {self.TARGET_SLUG} already exists. Use --force-delete to override.']"
         )
 
     def test_invalid_target_user_raises_error(self):
@@ -91,14 +92,20 @@ class TestCopySite:
 
         # Since the initial site is empty, all values should be 0 except for category
         assert "Category count:: source: 38, target: 38, map: 38" in caplog.text
-        assert "Site feature count:: source: 0, target: 0" in caplog.text
+
+        # Target will always have the "indexing_paused" feature, even if source doesn't.
+        assert "Site feature count:: source: 0, target: 1" in caplog.text
+
         assert "Speakers count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Audio count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Document count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Image count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Video count:: source: 0, target: 0, map: 0" in caplog.text
         assert "Character count:: source: 0, target: 0, map: 0" in caplog.text
-        assert "Alphabet count:: source: 0, target: 0" in caplog.text
+
+        # Target will always have 1 alphabet to prevent situations where multiple alphabets are created while copying
+        assert "Alphabet count:: source: 0, target: 1" in caplog.text
+
         assert "Gallery count:: source: 0, target: 0" in caplog.text
         assert "GalleryItem count:: source: 0, target: 0" in caplog.text
         assert "Song count:: source: 0, target: 0" in caplog.text
@@ -758,3 +765,15 @@ class TestCopySite:
 
         target_gallery_item = target_gallery.galleryitem_set.all()[0]
         assert target_gallery_item.image == shared_image_2
+
+    def test_copy_site_with_multiple_alphabets_raises_error(self):
+        factories.AlphabetFactory.create(site=self.source_site)
+        factories.AlphabetFactory.create(site=self.source_site)
+
+        with pytest.raises(ValidationError) as e:
+            self.call_copy_site_command()
+
+        assert str(e.value) == (
+            "['Source site has more than 1 alphabet. Found 2 alphabets. "
+            "Please ensure only 1 alphabet is present on the source site before copying.']"
+        )

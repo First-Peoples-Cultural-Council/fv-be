@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.core.management.base import BaseCommand
 from django.db.models import Count
@@ -46,7 +47,7 @@ def verify_target_site_does_not_exist(target_slug, force_delete):
         if force_delete:
             Site.objects.filter(slug=target_slug).delete()
         else:
-            raise AttributeError(
+            raise ValidationError(
                 f"Site with slug {target_slug} already exists. Use --force-delete to override."
             )
 
@@ -134,13 +135,21 @@ def copy_all_characters_and_return_map(
 
 
 def copy_alphabet(source_site, target_site, set_modified_date):
-    # TODO: Ensure only 1 alphabet is on the source site, or fail with error
-    # TODO: ensure copied site only has 1 alphabet
     alphabets = list(Alphabet.objects.filter(site=source_site))
-    for alphabet in alphabets:
-        alphabet.id = uuid.uuid4()
-        alphabet.site = target_site
-        alphabet.save(set_modified_date=set_modified_date)
+
+    if len(alphabets) > 1:
+        raise ValidationError(
+            f"Source site has more than 1 alphabet. Found {len(alphabets)} alphabets. "
+            f"Please ensure only 1 alphabet is present on the source site before copying."
+        )
+
+    # Copy the source alphabet or create a new one
+    if len(alphabets) == 1:
+        alphabets[0].id = uuid.uuid4()
+        alphabets[0].site = target_site
+        alphabets[0].save(set_modified_date=set_modified_date)
+    else:
+        Alphabet.objects.create(site=target_site)
 
 
 def copy_categories_and_return_map(source_site, target_site, set_modified_date):
@@ -559,7 +568,15 @@ def copy_dictionary_entries_and_return_map(
     video_map,
     set_modified_date,
 ):
-    # TODO: Process in batches, ensure alphabet has been created on the site before copying
+    # TODO: Process in batches
+    target_site_alphabet = Alphabet.objects.filter(site=target_site)
+    if target_site_alphabet.count() != 1:
+        raise ValidationError(
+            f"Target site {target_site} does not have exactly one alphabet. "
+            f"Please ensure the alphabet is copied successfully before copying dictionary entries. "
+            f"Found {target_site_alphabet.count()} alphabets on target site."
+        )
+
     dictionary_entry_map = {}
 
     dictionary_entries = list(DictionaryEntry.objects.filter(site=source_site))
