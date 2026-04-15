@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import patch
 
 import pytest
+from django.core.exceptions import ValidationError
 
 from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
@@ -552,4 +553,27 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
             in caplog.text
         )
 
+        self.assert_async_task_logs(job, caplog)
+
+    @pytest.mark.django_db
+    def test_multiple_alphabets_raises_exception(self, site, caplog):
+        factories.AlphabetFactory.create(site=site)
+        factories.AlphabetFactory.create(site=site)
+
+        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+
+        with pytest.raises(ValidationError) as e:
+            cleanup_dictionary(job.id)
+
+        job.refresh_from_db()
+        assert str(e.value) == (
+            f"['Multiple alphabets found for site {site.slug}. Please ensure sites only have one alphabet. "
+            f"Cancelling dictionary cleanup job.']"
+        )
+
+        assert job.status == JobStatus.CANCELLED
+        assert job.message == (
+            f"Multiple alphabets found for site {site.slug}. Please ensure sites only have one alphabet. "
+            f"Cancelling dictionary cleanup job."
+        )
         self.assert_async_task_logs(job, caplog)
