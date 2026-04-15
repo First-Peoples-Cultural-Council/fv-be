@@ -34,6 +34,8 @@ from backend.search.tasks.site_content_indexing_tasks import (
     request_sync_all_site_content_in_indexes,
 )
 
+BATCH_SIZE = 500
+
 
 def get_valid_object(model, error, **filters):
     obj = model.objects.filter(**filters).first()
@@ -200,10 +202,13 @@ def copy_speakers_and_return_map(source_site, target_site, set_modified_date):
 def copy_audio_and_speakers_and_return_map(
     source_site, target_site, speaker_map, set_modified_date, logger
 ):
-    # TODO: Process in batches
     audio_map = {}
 
-    audio_instances = list(Audio.objects.filter(site=source_site))
+    audio_instances = (
+        Audio.objects.filter(site=source_site)
+        .prefetch_related("speakers")
+        .iterator(chunk_size=BATCH_SIZE)
+    )
     for audio in audio_instances:
         try:
             target_file = File(
@@ -237,8 +242,10 @@ def copy_audio_and_speakers_and_return_map(
 def copy_documents_and_return_map(source_site, target_site, set_modified_date, logger):
     document_map = {}
 
-    documents = list(Document.objects.filter(site=source_site))
-    for document in documents:
+    document_instances = Document.objects.filter(site=source_site).iterator(
+        chunk_size=BATCH_SIZE
+    )
+    for document in document_instances:
         try:
             target_file = File(
                 content=UploadedFile(document.original.content.file),
@@ -266,11 +273,12 @@ def copy_documents_and_return_map(source_site, target_site, set_modified_date, l
 
 
 def copy_images_and_return_map(source_site, target_site, set_modified_date, logger):
-    # TODO: Process in batches
     image_map = {}
 
-    images = list(Image.objects.filter(site=source_site))
-    for image in images:
+    image_instances = Image.objects.filter(site=source_site).iterator(
+        chunk_size=BATCH_SIZE
+    )
+    for image in image_instances:
         try:
             # Content
             target_file = ImageFile(
@@ -300,11 +308,12 @@ def copy_images_and_return_map(source_site, target_site, set_modified_date, logg
 
 
 def copy_videos_and_return_map(source_site, target_site, set_modified_date, logger):
-    # TODO: Process in batches
     video_map = {}
 
-    videos = list(Video.objects.filter(site=source_site))
-    for video in videos:
+    video_instances = Video.objects.filter(site=source_site).iterator(
+        chunk_size=BATCH_SIZE
+    )
+    for video in video_instances:
         try:
             # Content
             target_file = VideoFile(
@@ -463,9 +472,10 @@ def copy_songs(
     video_map,
     set_modified_date,
 ):
-    # TODO: Process in batches
-    songs = list(Song.objects.filter(site=source_site))
-    for song in songs:
+    song_instances = Song.objects.filter(site=source_site).iterator(
+        chunk_size=BATCH_SIZE
+    )
+    for song in song_instances:
         source_lyrics = list(song.lyrics.all())
         source_media = {
             "audio": list(song.related_audio.all().values_list("id", flat=True)),
@@ -505,9 +515,10 @@ def copy_stories(
     video_map,
     set_modified_date,
 ):
-    # TODO: Process in batches
-    stories = list(Story.objects.filter(site=source_site))
-    for story in stories:
+    story_instances = Story.objects.filter(site=source_site).iterator(
+        chunk_size=BATCH_SIZE
+    )
+    for story in story_instances:
         source_pages = list(story.pages.all())
         source_media = {
             "audio": list(story.related_audio.all().values_list("id", flat=True)),
@@ -568,7 +579,6 @@ def copy_dictionary_entries_and_return_map(
     video_map,
     set_modified_date,
 ):
-    # TODO: Process in batches
     target_site_alphabet = Alphabet.objects.filter(site=target_site)
     if target_site_alphabet.count() != 1:
         raise ValidationError(
@@ -579,9 +589,11 @@ def copy_dictionary_entries_and_return_map(
 
     dictionary_entry_map = {}
 
-    dictionary_entries = list(DictionaryEntry.objects.filter(site=source_site))
+    dictionary_entry_instances = DictionaryEntry.objects.filter(
+        site=source_site
+    ).iterator(chunk_size=BATCH_SIZE)
     # First pass to create new entries and fill up the map
-    for entry in dictionary_entries:
+    for entry in dictionary_entry_instances:
         source_entry_id = entry.id
         target_entry_id = uuid.uuid4()
         dictionary_entry_map[source_entry_id] = target_entry_id
@@ -675,7 +687,7 @@ def copy_related_objects(
     audio_map = copy_audio_and_speakers_and_return_map(
         source_site, target_site, speaker_map, set_modified_date, logger
     )
-    logger.info("Audio and speakers copied.")
+    logger.info("Audio copied and speakers attached.")
 
     document_map = copy_documents_and_return_map(
         source_site, target_site, set_modified_date, logger
@@ -701,10 +713,14 @@ def copy_related_objects(
         video_map,
         set_modified_date,
     )
+    logger.info("Characters copied.")
+
     copy_alphabet(source_site, target_site, set_modified_date)
-    logger.info("Characters and alphabet copied.")
+    logger.info("Alphabet copied.")
 
     copy_galleries(source_site, target_site, image_map, set_modified_date, logger)
+    logger.info("Galleries copied.")
+
     copy_songs(
         source_site,
         target_site,
@@ -714,6 +730,8 @@ def copy_related_objects(
         video_map,
         set_modified_date,
     )
+    logger.info("Songs copied.")
+
     copy_stories(
         source_site,
         target_site,
@@ -723,7 +741,7 @@ def copy_related_objects(
         video_map,
         set_modified_date,
     )
-    logger.info("Galleries, songs and stories copied.")
+    logger.info("Stories copied.")
 
     dictionary_entry_map = copy_dictionary_entries_and_return_map(
         source_site,
@@ -736,11 +754,12 @@ def copy_related_objects(
         video_map,
         set_modified_date,
     )
+    logger.info("Dictionary entries copied.")
 
     copy_immersion_labels(
         source_site, target_site, dictionary_entry_map, set_modified_date
     )
-    logger.info("Dictionary entries and immersion labels copied.")
+    logger.info("Immersion labels copied.")
 
     if print_counts:
         log_objects_count(
