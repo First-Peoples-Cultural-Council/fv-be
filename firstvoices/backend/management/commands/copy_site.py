@@ -29,6 +29,9 @@ from backend.models.media import (
 from backend.models.sites import Site, SiteFeature
 from backend.models.song import Lyric, Song
 from backend.models.story import Story, StoryPage
+from backend.search.tasks.site_content_indexing_tasks import (
+    request_sync_all_site_content_in_indexes,
+)
 
 
 def get_valid_object(model, error, **filters):
@@ -888,7 +891,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--email",
             dest="email",
-            help="User to be used for created and modified fields.",
+            help="User to be identified as the creator of the copied site.",
             required=True,
         )
         parser.add_argument(
@@ -937,7 +940,20 @@ class Command(BaseCommand):
 
         target_site = create_new_site(source_site, target_slug, user)
 
+        indexing_paused = SiteFeature.objects.get_or_create(
+            site=target_site, key="indexing_paused"
+        )
+        # Pause search indexing for the newly created site
+        indexing_paused[0].is_enabled = True
+        indexing_paused[0].save()
+
         copy_related_objects(
             source_site, target_site, set_modified_date, print_counts, self.logger
         )
+
+        # Resume search indexing for site, + reindex entire site
+        indexing_paused[0].is_enabled = False
+        indexing_paused[0].save()
+        request_sync_all_site_content_in_indexes(target_site)
+
         self.logger.info("Site copy completed successfully.")
