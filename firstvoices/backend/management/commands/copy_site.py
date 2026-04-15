@@ -140,8 +140,7 @@ def copy_alphabet(source_site, target_site, set_modified_date):
         alphabet.save(set_modified_date=set_modified_date)
 
 
-def copy_categories_and_return_map(source_site, target_site, user, set_modified_date):
-    # TODO: Why pass user?
+def copy_categories_and_return_map(source_site, target_site, set_modified_date):
     category_map = {}
 
     # Removing auto-generated categories
@@ -162,8 +161,6 @@ def copy_categories_and_return_map(source_site, target_site, user, set_modified_
 
         category.id = target_category_id
         category.site = target_site
-        category.created_by = user
-        category.last_modified_by = user
 
         if current_parent_id:
             category.parent_id = category_map[current_parent_id]
@@ -640,13 +637,13 @@ def copy_immersion_labels(
 
 
 def copy_related_objects(
-    source_site, target_site, user, set_modified_date, print_counts, logger
+    source_site, target_site, set_modified_date, print_counts, logger
 ):
     copy_site_features(source_site, target_site, set_modified_date)
     logger.info("Site features copied.")
 
     category_map = copy_categories_and_return_map(
-        source_site, target_site, user, set_modified_date
+        source_site, target_site, set_modified_date
     )
     logger.info("Categories copied.")
 
@@ -871,6 +868,10 @@ def log_objects_count(
 class Command(BaseCommand):
     help = "Copy a Site and all its contents from a source slug to a target slug."
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logger = logging.getLogger(__name__)
+
     def add_arguments(self, parser):
         parser.add_argument(
             "--source",
@@ -911,8 +912,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        logger = logging.getLogger(__name__)
-
         source_slug = options["source_slug"]
         target_slug = options["target_slug"]
         user_email = options["email"]
@@ -920,7 +919,7 @@ class Command(BaseCommand):
         force_delete = options["force_delete"]
         print_counts = options["print_counts"]
 
-        logger.info("Verifying requirements.")
+        self.logger.info("Verifying requirements.")
 
         source_site = get_valid_object(
             Site, slug=source_slug, error="Provided source site does not exist."
@@ -932,13 +931,13 @@ class Command(BaseCommand):
         )
         verify_target_site_does_not_exist(target_slug, force_delete)
 
-        logger.info(
+        self.logger.info(
             f"Creating new site: {target_slug} and copying content from {source_slug}."
         )
 
         target_site = create_new_site(source_site, target_slug, user)
 
         copy_related_objects(
-            source_site, target_site, user, set_modified_date, print_counts, logger
+            source_site, target_site, set_modified_date, print_counts, self.logger
         )
-        logger.info("Site copy completed successfully.")
+        self.logger.info("Site copy completed successfully.")
