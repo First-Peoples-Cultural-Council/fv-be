@@ -1,5 +1,6 @@
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from django.core.exceptions import ValidationError
 
 from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
@@ -35,6 +36,20 @@ def cleanup_dictionary(job_instance_id: str):
     job.save()
 
     site = job.site
+
+    alphabets = Alphabet.objects.filter(site=site)
+    if alphabets.count() > 1:
+        cancelled_message = (
+            f"Multiple alphabets found for site {site.slug}. Please ensure sites only have one alphabet. "
+            f"Cancelling dictionary cleanup job."
+        )
+        job.status = JobStatus.CANCELLED
+        job.message = cancelled_message
+        job.save()
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+
+        raise ValidationError(cancelled_message)
+
     alphabet = Alphabet.objects.get_or_create(site=site)[0]
     results = {}
 
