@@ -18,6 +18,8 @@ inputs:
     required: true
   tekton_interceptor_name:
     required: true
+  pipeline_name:
+    required: true
   pipeline_step1:
     required: true
   pipeline_step2:
@@ -51,11 +53,10 @@ runs:
         echo "Sorting jobs using: $SORT_CMD"
         echo "Filtering PipelineRuns with prefix: $PREFIX"
 
-        RUNID=$(kubectl -n ${{ inputs.tekton_namespace }} get pr \
-          --sort-by=.status.completionTime \
-          -l triggers.tekton.dev/trigger=${{ inputs.tekton_interceptor_name }} \
-          | grep "$PREFIX" \
-          | $SORT_CMD -n 1 | awk '{print $1}')
+        RUNID=$(kubectl get pr -n "${{ inputs.tekton_namespace }}" \
+          -l tekton.dev/pipeline="${{ inputs.pipeline_name }}",triggers.tekton.dev/trigger="${{ inputs.tekton_interceptor_name }}" \
+          --sort-by=.metadata.creationTimestamp \
+          -o jsonpath='{.items[*].metadata.name}' | awk '{print $NF}')
 
         echo "Found RUNID: $RUNID"
         echo "RUNID=$RUNID" >> "$GITHUB_ENV"
