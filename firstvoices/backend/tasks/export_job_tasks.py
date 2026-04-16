@@ -4,7 +4,6 @@ from datetime import timedelta
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
@@ -257,20 +256,10 @@ def delete_old_exports(self):
 
         if old_exports.exists():
             logger.info(
-                f"Deleting {old_exports.count()} old export jobs and their associated csv files."
+                f"Deleting {old_exports.count()} old export jobs and associated csv files."
             )
 
             for export in old_exports:
-                try:
-                    export_csv = export.export_csv
-                except ObjectDoesNotExist:
-                    logger.warning(
-                        f"Missing export csv file for export job {export.id}. Skipping file deletion."
-                    )
-                    export_csv = None
-
-                if export_csv:
-                    export_csv.delete()
                 export.delete()
         else:
             logger.info("No eligible export jobs found for deletion. No action taken.")

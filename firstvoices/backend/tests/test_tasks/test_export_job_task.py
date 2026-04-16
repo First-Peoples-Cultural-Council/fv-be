@@ -2,7 +2,6 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
-from django.db import connection
 
 from backend.models.files import File
 from backend.models.jobs import ExportJob
@@ -42,9 +41,7 @@ class TestDeleteOldExportsTask:
         assert ExportJob.objects.count() == 0
         assert File.objects.count() == 0
 
-        assert (
-            "Deleting 1 old export jobs and their associated csv files." in caplog.text
-        )
+        assert "Deleting 1 old export jobs and associated csv files." in caplog.text
         assert ASYNC_TASK_START_TEMPLATE in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
@@ -62,24 +59,3 @@ class TestDeleteOldExportsTask:
             assert "Error deleting old exports: Mocked exception" in caplog.text
             assert ASYNC_TASK_START_TEMPLATE in caplog.text
             assert ASYNC_TASK_END_TEMPLATE in caplog.text
-
-    def test_delete_old_exports_invalid_fk(self, caplog):
-        file = factories.FileFactory.create()
-        export_job = factories.ExportJobFactory.create(export_csv=file)
-        export_job.created = export_job.created - timedelta(days=8)
-        export_job.save()
-
-        with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM backend_file WHERE id = %s", [file.id])
-
-        result = delete_old_exports.apply()
-        assert result.state == "SUCCESS"
-        assert ExportJob.objects.count() == 0
-        assert File.objects.count() == 0
-        assert (
-            "Deleting 1 old export jobs and their associated csv files." in caplog.text
-        )
-        assert (
-            f"Missing export csv file for export job {export_job.id}. Skipping file deletion."
-            in caplog.text
-        )
