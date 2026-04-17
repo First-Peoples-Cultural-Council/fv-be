@@ -42,9 +42,7 @@ class TestDeleteOldExportsTask:
         assert ExportJob.objects.count() == 0
         assert File.objects.count() == 0
 
-        assert (
-            "Deleting 1 old export jobs and their associated csv files." in caplog.text
-        )
+        assert "Deleting 1 old export jobs and associated csv files." in caplog.text
         assert ASYNC_TASK_START_TEMPLATE in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
@@ -76,9 +74,7 @@ class TestDeleteOldExportsTask:
         assert result.state == "SUCCESS"
         assert ExportJob.objects.count() == 0
         assert File.objects.count() == 0
-        assert (
-            "Deleting 1 old export jobs and their associated csv files." in caplog.text
-        )
+        assert "Deleting 1 old export jobs and associated csv files." in caplog.text
         assert (
             f"Missing export csv file for export job {export_job.id}. Skipping file deletion."
             in caplog.text

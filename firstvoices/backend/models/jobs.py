@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -101,6 +102,21 @@ class ExportJob(BaseJob):
         on_delete=models.SET_NULL,
         related_name="export_job_export_csv_set",
     )
+
+    def _delete_export_csv(self):
+        try:
+            export_csv = self.export_csv
+        except ObjectDoesNotExist:
+            export_csv = None
+            self.logger.warning(
+                f"Missing export csv file for export job {self.id}. Skipping file deletion."
+            )
+        if export_csv:
+            export_csv.delete()
+
+    def delete(self, using=None, keep_parents=False):
+        self._delete_export_csv()
+        return super().delete(using, keep_parents)
 
     def __str__(self):
         return f"{self.site.title} Export Job (id: {str(self.id)})"
