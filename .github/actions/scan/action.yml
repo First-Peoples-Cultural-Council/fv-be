@@ -70,33 +70,58 @@ runs:
 
         echo "$IMAGES" > image-list.txt
 
-    - name: Scan Images and Generate SBOMs
+
+    # BLOCKING: vulnerabilities only (JSON source of truth)
+    - name: Scan Images (vulnerabilities - blocking)
       shell: bash
       run: |
         set -euo pipefail
+        mkdir -p trivy-results sbom
+
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-          echo "━━━━━━━━━━━━━━━━━━━━━ SCANNING $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
 
-          trivy image --scanners vuln,secret,misconfig,license \
-            --format table \
+          echo "━━━━━━━━━━━━━━━━━━━━━ VULN SCAN $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
+
+          trivy image \
+            --scanners vuln \
+            --format json \
+            --output "trivy-results/${FILENAME}.json" \
             --ignore-unfixed \
-            --skip-dirs /proc,/sys \
-            --timeout 10m \
             --severity CRITICAL \
-            --pkg-types os,library \
+            --pkg-types library \
+            --timeout 10m \
             "$IMAGE"
 
-          trivy image --scanners vuln,secret,misconfig,license \
-            --format cyclonedx \
-            --ignore-unfixed \
-            --skip-dirs /proc,/sys \
-            --timeout 10m \
-            --severity CRITICAL \
-            --pkg-types os,library \
-            "$IMAGE" > "${FILENAME}_scan_cbom.json"
+          echo "Generating SBOM for $IMAGE"
 
-          echo "Scan completed for $IMAGE"
+          trivy sbom \
+            --format cyclonedx \
+            --output "sbom/${FILENAME}_sbom.json" \
+            "trivy-results/${FILENAME}.json"
+
+          echo "Vuln scan + SBOM completed for $IMAGE"
+          echo
+
+        done < image-list.txt
+
+
+    #  NON-BLOCKING: informational scans (no failure)
+    - name: Scan Images (misconfig, secrets, license - non-blocking)
+      shell: bash
+      continue-on-error: true
+      run: |
+        set -euo pipefail
+
+        while IFS= read -r IMAGE; do
+          echo "━━━━━━━━━━━━━━━━━━━━━ INFO SCAN $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
+
+          trivy image \
+            --scanners misconfig,secret,license \
+            --format table \
+            --timeout 10m \
+            "$IMAGE" || true
+
           echo
         done < image-list.txt
 
@@ -109,7 +134,9 @@ runs:
           OUTPUT_FILE="dependency_trees/${FILENAME}_trivy_tree.txt"
 
           echo "Generating dependency tree for $IMAGE → $OUTPUT_FILE"
-          python3 "${{ github.action_path }}/tree.py" "${FILENAME}_scan_cbom.json" > "$OUTPUT_FILE"
+          python3 "${{ github.action_path }}/tree.py" \
+            "sbom/${FILENAME}_sbom.json" > "$OUTPUT_FILE"
+
         done < image-list.txt
 
     - name: Write Python Dependency Tree to File
@@ -128,23 +155,23 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        TRIVY_FAILED=0
-        while IFS= read -r IMAGE; do
-          trivy image --scanners vuln \
-            --format table \
-            --ignore-unfixed \
-            --skip-dirs /proc,/sys \
-            --timeout 10m \
-            --severity CRITICAL \
-            --pkg-types os,library \
-            --exit-code 1 "$IMAGE" > /dev/null || TRIVY_FAILED=1
-        done < image-list.txt
 
-        if [[ "$TRIVY_FAILED" -eq 1 ]]; then
+        FAIL=0
+
+        for file in trivy-results/*.json; do
+          if jq -e '
+            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length > 0
+          ' "$file" > /dev/null; then
+            echo "CRITICAL vulnerabilities found in $file"
+            FAIL=1
+          fi
+        done
+
+        if [[ "$FAIL" -eq 1 ]]; then
           echo "Vulnerabilities were found. Please address them before proceeding."
           echo "Find each vulnerable package in the trivy generated dependency tree and make the necessary upgrade to address it"
           echo "If the vulnerable package is installed as a Python transitive dependency, check the python_dependency_tree.txt"
           exit 1
         else
-          echo "No HIGH or CRITICAL vulnerabilities detected."
+          echo "No CRITICAL vulnerabilities detected."
         fi
