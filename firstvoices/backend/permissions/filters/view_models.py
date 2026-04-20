@@ -24,6 +24,13 @@ def can_view_membership_model(user):
     )
 
 
+# Export job model is visible to only the user who created the export job, and staff
+def can_view_self(user):
+    return base.is_at_least_staff_admin(user) | (
+        base.is_own_creator(user) & view.has_visible_site(user)
+    )
+
+
 # user can view an immersion label, if the user can view the related dictionary entry
 def can_view_immersion_label(user):
     return (

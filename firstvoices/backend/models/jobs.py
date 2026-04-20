@@ -89,7 +89,7 @@ class ExportJob(BaseJob):
         verbose_name = _("Export Job")
         verbose_name_plural = _("Export Jobs")
         rules_permissions = {
-            "view": predicates.is_at_least_assistant_or_super,
+            "view": predicates.can_view_self,
             "add": predicates.is_at_least_assistant_or_super,
             "change": predicates.is_at_least_assistant_or_super,
             "delete": predicates.is_at_least_assistant_or_super,

@@ -25,6 +25,12 @@ can_view_user_info = Predicate(
     name="can_view_membership_model",
 )
 
+# Export job model is visible to only the user who created the export job, and staff
+can_view_self = Predicate(
+    (base.is_at_least_staff_admin | (base.is_own_creator & view.has_visible_site)),
+    name="can_view_self",
+)
+
 
 # user can view an immersion label, if the user can view the related dictionary entry
 @predicate
