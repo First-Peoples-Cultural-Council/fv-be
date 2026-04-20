@@ -71,7 +71,10 @@ def create_new_site(source_site, target_site_slug, user):
 
 
 def copy_site_features(source_site, target_site, set_modified_date):
-    site_features = list(SiteFeature.objects.filter(site=source_site))
+    # exclude indexing_paused as it is expected to already be on the target site
+    site_features = list(
+        SiteFeature.objects.filter(site=source_site).exclude(key="indexing_paused")
+    )
     for site_feature in site_features:
         site_feature.id = uuid.uuid4()
         site_feature.site = target_site

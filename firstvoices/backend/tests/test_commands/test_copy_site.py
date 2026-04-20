@@ -777,3 +777,12 @@ class TestCopySite:
             "['Source site has more than 1 alphabet. Found 2 alphabets. "
             "Please ensure only 1 alphabet is present on the source site before copying.']"
         )
+
+    def test_copy_site_handles_indexing_paused_feature(self, caplog):
+        factories.SiteFeatureFactory.create(
+            site=self.source_site, key="indexing_paused"
+        )
+
+        self.call_copy_site_command()
+
+        assert "Site copy completed successfully." in caplog.text
