@@ -68,6 +68,22 @@ class TestExportJobAPI(
         assert actual_response["message"] == expected_response["message"]
         assert actual_response["exportCsv"] == expected_response["exportCsv"]
 
+    @staticmethod
+    def setup_multiple_jobs_for_staff(site):
+        user1 = factories.UserFactory.create()
+        factories.MembershipFactory.create(
+            site=site, user=user1, role=Role.LANGUAGE_ADMIN
+        )
+        user2 = factories.UserFactory.create()
+        factories.MembershipFactory.create(
+            site=site, user=user2, role=Role.LANGUAGE_ADMIN
+        )
+
+        created_job1 = factories.ExportJobFactory.create(site=site, created_by=user1)
+        created_job2 = factories.ExportJobFactory.create(site=site, created_by=user2)
+
+        return created_job1, created_job2
+
     @pytest.mark.skip(reason="Export jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):
         # Export jobs have no eligible nulls.
@@ -187,3 +203,90 @@ class TestExportJobAPI(
             == "pageSize: The maximum number of items per page is 7500. "
             "Please contact staff if you require more than 7500 items."
         )
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_only_creating_user_can_view_export_job(self, role):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+        user2 = factories.UserFactory.create()
+        factories.MembershipFactory.create(site=site, user=user2, role=role)
+
+        created_job = factories.ExportJobFactory.create(site=site, created_by=user1)
+        factories.ExportJobFactory.create(site=site, created_by=user2)
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 1
+        assert response_data["results"][0]["id"] == str(created_job.id)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
+    def test_only_creating_user_can_view_export_job_detail(self, role):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, role
+        )
+        user2 = factories.UserFactory.create()
+        factories.MembershipFactory.create(site=site, user=user2, role=role)
+
+        created_job = factories.ExportJobFactory.create(site=site, created_by=user1)
+        created_job_2 = factories.ExportJobFactory.create(site=site, created_by=user2)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(created_job), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(created_job.id)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(created_job_2), site_slug=site.slug
+            )
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("approle", [AppRole.STAFF, AppRole.SUPERADMIN])
+    def test_staff_can_view_all_export_jobs(self, approle):
+        site = factories.SiteFactory.create()
+        created_job1, created_job2 = self.setup_multiple_jobs_for_staff(site)
+
+        staff_user = factories.get_app_admin(approle)
+        self.client.force_authenticate(user=staff_user)
+
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["count"] == 2
+
+        result_id_list = [job["id"] for job in response_data["results"]]
+        assert str(created_job1.id) in result_id_list
+        assert str(created_job2.id) in result_id_list
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("approle", [AppRole.STAFF, AppRole.SUPERADMIN])
+    def test_staff_can_view_all_export_jobs_detail(self, approle):
+        site = factories.SiteFactory.create()
+        created_job1, created_job2 = self.setup_multiple_jobs_for_staff(site)
+
+        staff_user = factories.get_app_admin(approle)
+        self.client.force_authenticate(user=staff_user)
+        response = self.client.get(
+            self.get_detail_endpoint(key=created_job1.id, site_slug=site.slug)
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(created_job1.id)
+
+        response = self.client.get(
+            self.get_detail_endpoint(key=created_job2.id, site_slug=site.slug)
+        )
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["id"] == str(created_job2.id)

@@ -43,6 +43,10 @@ def is_own_obj(user):
     return Q(user=user)
 
 
+def is_own_creator(created_by):
+    return Q(created_by=created_by)
+
+
 #
 # visibility-based filters
 #

@@ -63,6 +63,14 @@ def is_own_obj(user, obj):
     return user.id == obj.user.id
 
 
+@predicate
+def is_own_creator(created_by, obj):
+    """
+    Used for models that can only be seen by the user that created them.
+    """
+    return created_by.id == obj.created_by.id
+
+
 #
 # role-based predicates
 #
