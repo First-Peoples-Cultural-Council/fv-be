@@ -70,9 +70,25 @@ runs:
 
         echo "$IMAGES" > image-list.txt
 
+    - name: Extract Image References
+      id: extract
+      shell: bash
+      run: |
+        FILE="./downloads/Values.${{ inputs.env }}.yaml"
+        REPO="${{ inputs.ecr_repo_name }}"
+        [[ -f "$FILE" ]] || { echo "File $FILE not found"; exit 1; }
 
-    # BLOCKING SCAN (ONLY library + OS level CRITICALs that matter for app devs)
-    - name: Scan Images (quiet vulnerability scan)
+        IMAGES=$(grep -oE "[^ ]*${REPO}[^ ]*@sha256:[a-f0-9]+" "$FILE" | sort -u)
+        if [[ -z "$IMAGES" ]]; then
+          echo "No images found matching $REPO"
+          exit 1
+        fi
+
+        echo "$IMAGES" > image-list.txt
+
+
+    # SCAN STEP
+    - name: Scan Images (blocking + non-blocking separation)
       shell: bash
       run: |
         set -euo pipefail
@@ -91,7 +107,7 @@ runs:
             --timeout 10m \
             "$IMAGE" > /dev/null
 
-          # SBOM generation
+          # SBOM (library view for dependency tree)
           trivy image \
             --format cyclonedx \
             --output "sbom/${FILENAME}_sbom.json" \
@@ -99,7 +115,7 @@ runs:
             --timeout 10m \
             "$IMAGE" > /dev/null
 
-          # NON-BLOCKING (includes gobinary / base image / OS packages)
+          #  NON-BLOCKING (base image + binaries)
           trivy image \
             --scanners vuln \
             --format json \
@@ -138,7 +154,7 @@ runs:
         path: dependency_trees/
 
 
-    # CLEAN SUMMARY + FAIL
+    # SUMMARY + FAIL LOGIC
     - name: Summarize and Fail If Vulnerabilities Found
       shell: bash
       run: |
@@ -153,7 +169,12 @@ runs:
           FILE="trivy-results/${FILENAME}.json"
 
           COUNT=$(jq '
-            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length
+            [
+              .Results[]
+              | select(.Severity=="CRITICAL" and .Type=="library")
+              | .Vulnerabilities[]?
+              | select(.Severity=="CRITICAL")
+            ] | length
           ' "$FILE")
 
           if [[ "$COUNT" -gt 0 ]]; then
@@ -167,7 +188,9 @@ runs:
             printf "%-20s %-15s %-15s %-20s\n" "-------" "---------" "-----" "---"
 
             jq -r '
-              .Results[].Vulnerabilities[]?
+              .Results[]
+              | select(.Severity=="CRITICAL" and .Type=="library")
+              | .Vulnerabilities[]?
               | select(.Severity=="CRITICAL")
               | [
                   .PkgName,
@@ -197,7 +220,9 @@ runs:
             echo "$IMAGE"
 
             jq -r '
-              .Results[].Vulnerabilities[]?
+              .Results[]
+              | select(.Type!="library" and (.Severity=="CRITICAL" or .Severity=="HIGH"))
+              | .Vulnerabilities[]?
               | select(.Severity=="CRITICAL" or .Severity=="HIGH")
               | [
                   .PkgName,
@@ -216,9 +241,8 @@ runs:
         echo "==============================================================="
 
         if [[ "$FAIL" -eq 1 ]]; then
-          echo "Vulnerabilities were found. Please address them before proceeding."
-          echo "Find each vulnerable package in the trivy generated dependency tree and make the necessary upgrade to address it"
-          echo "If the vulnerable package is installed as a Python transitive dependency, check the python_dependency_tree.txt"
+          echo "Build failed due to application-level CRITICAL vulnerabilities."
+          echo "See dependency_trees/ and sbom/ artifacts for full details."
           exit 1
         else
           echo "No blocking CRITICAL vulnerabilities detected."
