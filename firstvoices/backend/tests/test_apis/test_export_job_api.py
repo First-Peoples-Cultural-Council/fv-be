@@ -68,6 +68,22 @@ class TestExportJobAPI(
         assert actual_response["message"] == expected_response["message"]
         assert actual_response["exportCsv"] == expected_response["exportCsv"]
 
+    @staticmethod
+    def setup_multiple_jobs_for_staff(site):
+        user1 = factories.UserFactory.create()
+        factories.MembershipFactory.create(
+            site=site, user=user1, role=Role.LANGUAGE_ADMIN
+        )
+        user2 = factories.UserFactory.create()
+        factories.MembershipFactory.create(
+            site=site, user=user2, role=Role.LANGUAGE_ADMIN
+        )
+
+        created_job1 = factories.ExportJobFactory.create(site=site, created_by=user1)
+        created_job2 = factories.ExportJobFactory.create(site=site, created_by=user2)
+
+        return created_job1, created_job2
+
     @pytest.mark.skip(reason="Export jobs have no eligible nulls.")
     def test_create_with_nulls_success_201(self):
         # Export jobs have no eligible nulls.
@@ -239,18 +255,7 @@ class TestExportJobAPI(
     @pytest.mark.parametrize("approle", [AppRole.STAFF, AppRole.SUPERADMIN])
     def test_staff_can_view_all_export_jobs(self, approle):
         site = factories.SiteFactory.create()
-
-        user1 = factories.UserFactory.create()
-        factories.MembershipFactory.create(
-            site=site, user=user1, role=Role.LANGUAGE_ADMIN
-        )
-        user2 = factories.UserFactory.create()
-        factories.MembershipFactory.create(
-            site=site, user=user2, role=Role.LANGUAGE_ADMIN
-        )
-
-        created_job1 = factories.ExportJobFactory.create(site=site, created_by=user1)
-        created_job2 = factories.ExportJobFactory.create(site=site, created_by=user2)
+        created_job1, created_job2 = self.setup_multiple_jobs_for_staff(site)
 
         staff_user = factories.get_app_admin(approle)
         self.client.force_authenticate(user=staff_user)
@@ -268,18 +273,7 @@ class TestExportJobAPI(
     @pytest.mark.parametrize("approle", [AppRole.STAFF, AppRole.SUPERADMIN])
     def test_staff_can_view_all_export_jobs_detail(self, approle):
         site = factories.SiteFactory.create()
-
-        user1 = factories.UserFactory.create()
-        factories.MembershipFactory.create(
-            site=site, user=user1, role=Role.LANGUAGE_ADMIN
-        )
-        user2 = factories.UserFactory.create()
-        factories.MembershipFactory.create(
-            site=site, user=user2, role=Role.LANGUAGE_ADMIN
-        )
-
-        created_job1 = factories.ExportJobFactory.create(site=site, created_by=user1)
-        created_job2 = factories.ExportJobFactory.create(site=site, created_by=user2)
+        created_job1, created_job2 = self.setup_multiple_jobs_for_staff(site)
 
         staff_user = factories.get_app_admin(approle)
         self.client.force_authenticate(user=staff_user)
