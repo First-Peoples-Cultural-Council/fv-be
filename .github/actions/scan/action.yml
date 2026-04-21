@@ -71,8 +71,8 @@ runs:
         echo "$IMAGES" > image-list.txt
 
 
-    # BLOCKING: vulnerabilities only (JSON source of truth)
-    - name: Scan Images (vulnerabilities - blocking)
+    # BLOCKING SCAN (quiet, JSON only)
+    - name: Scan Images (quiet vulnerability scan)
       shell: bash
       run: |
         set -euo pipefail
@@ -80,8 +80,6 @@ runs:
 
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
-
-          echo "━━━━━━━━━━━━━━━━━━━━━ VULN SCAN $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
 
           trivy image \
             --scanners vuln \
@@ -91,22 +89,17 @@ runs:
             --severity CRITICAL \
             --pkg-types library \
             --timeout 10m \
-            "$IMAGE"
-
-          echo "Generating SBOM for $IMAGE"
+            "$IMAGE" > /dev/null
 
           trivy sbom \
             --format cyclonedx \
             --output "sbom/${FILENAME}_sbom.json" \
-            "trivy-results/${FILENAME}.json"
-
-          echo "Vuln scan + SBOM completed for $IMAGE"
-          echo
+            "trivy-results/${FILENAME}.json" > /dev/null
 
         done < image-list.txt
 
 
-    #  NON-BLOCKING: informational scans (no failure)
+    # NON-BLOCKING SCANS (silent, informational only)
     - name: Scan Images (misconfig, secrets, license - non-blocking)
       shell: bash
       continue-on-error: true
@@ -114,16 +107,13 @@ runs:
         set -euo pipefail
 
         while IFS= read -r IMAGE; do
-          echo "━━━━━━━━━━━━━━━━━━━━━ INFO SCAN $IMAGE ━━━━━━━━━━━━━━━━━━━━━"
-
           trivy image \
             --scanners misconfig,secret,license \
-            --format table \
+            --format json \
             --timeout 10m \
-            "$IMAGE" || true
-
-          echo
+            "$IMAGE" > /dev/null || true
         done < image-list.txt
+
 
     - name: Write CycloneDX Dependency Trees to Files
       shell: bash
@@ -133,7 +123,6 @@ runs:
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
           OUTPUT_FILE="dependency_trees/${FILENAME}_trivy_tree.txt"
 
-          echo "Generating dependency tree for $IMAGE → $OUTPUT_FILE"
           python3 "${{ github.action_path }}/tree.py" \
             "sbom/${FILENAME}_sbom.json" > "$OUTPUT_FILE"
 
@@ -151,21 +140,42 @@ runs:
         name: all-dependency-trees
         path: dependency_trees/
 
-    - name: Fail If Vulnerabilities Found
+
+    # CLEAN SUMMARY + FAIL
+    - name: Summarize and Fail If Vulnerabilities Found
       shell: bash
       run: |
         set -euo pipefail
 
         FAIL=0
 
+        echo "==================== VULNERABILITY SUMMARY ===================="
+
         for file in trivy-results/*.json; do
-          if jq -e '
-            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length > 0
-          ' "$file" > /dev/null; then
-            echo "CRITICAL vulnerabilities found in $file"
+          IMAGE=$(basename "$file" .json)
+
+          COUNT=$(jq '
+            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length
+          ' "$file")
+
+          if [[ "$COUNT" -gt 0 ]]; then
             FAIL=1
+
+            echo
+            echo "$IMAGE → $COUNT CRITICAL vulnerabilities"
+            echo "Fix these packages:"
+
+            jq -r '
+              .Results[].Vulnerabilities[]?
+              | select(.Severity=="CRITICAL")
+              | "- \(.PkgName) (\(.InstalledVersion)) → fix: \(.FixedVersion // "no fix available")"
+            ' "$file" | sort -u
           fi
+
         done
+
+        echo
+        echo "==============================================================="
 
         if [[ "$FAIL" -eq 1 ]]; then
           echo "Vulnerabilities were found. Please address them before proceeding."
