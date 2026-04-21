@@ -153,12 +153,7 @@ runs:
           FILE="trivy-results/${FILENAME}.json"
 
           COUNT=$(jq '
-            [
-              .Results[]
-              | select(.Severity=="CRITICAL" and .Type=="library")
-              | .Vulnerabilities[]?
-              | select(.Severity=="CRITICAL")
-            ] | length
+            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL" and .Type=="library")] | length
           ' "$FILE")
 
           if [[ "$COUNT" -gt 0 ]]; then
@@ -172,10 +167,8 @@ runs:
             printf "%-20s %-15s %-15s %-20s\n" "-------" "---------" "-----" "---"
 
             jq -r '
-              .Results[]
+              .Results[].Vulnerabilities[]?
               | select(.Severity=="CRITICAL" and .Type=="library")
-              | .Vulnerabilities[]?
-              | select(.Severity=="CRITICAL")
               | [
                   .PkgName,
                   .InstalledVersion,
@@ -204,10 +197,8 @@ runs:
             echo "$IMAGE"
 
             jq -r '
-              .Results[]
+              .Results[].Vulnerabilities[]?
               | select(.Type!="library" and (.Severity=="CRITICAL" or .Severity=="HIGH"))
-              | .Vulnerabilities[]?
-              | select(.Severity=="CRITICAL" or .Severity=="HIGH")
               | [
                   .PkgName,
                   .InstalledVersion,
