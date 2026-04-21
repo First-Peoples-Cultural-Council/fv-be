@@ -91,10 +91,12 @@ runs:
             --timeout 10m \
             "$IMAGE" > /dev/null
 
-          trivy sbom \
-            --format cyclonedx \
-            --output "sbom/${FILENAME}_sbom.json" \
-            "trivy-results/${FILENAME}.json" > /dev/null
+          trivy image \
+                  --format cyclonedx \
+                  --output "sbom/${FILENAME}_sbom.json" \
+                  --pkg-types library \
+                  --timeout 10m \
+                  "$IMAGE" > /dev/null
 
         done < image-list.txt
 
