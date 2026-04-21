@@ -70,22 +70,6 @@ runs:
 
         echo "$IMAGES" > image-list.txt
 
-    - name: Extract Image References
-      id: extract
-      shell: bash
-      run: |
-        FILE="./downloads/Values.${{ inputs.env }}.yaml"
-        REPO="${{ inputs.ecr_repo_name }}"
-        [[ -f "$FILE" ]] || { echo "File $FILE not found"; exit 1; }
-
-        IMAGES=$(grep -oE "[^ ]*${REPO}[^ ]*@sha256:[a-f0-9]+" "$FILE" | sort -u)
-        if [[ -z "$IMAGES" ]]; then
-          echo "No images found matching $REPO"
-          exit 1
-        fi
-
-        echo "$IMAGES" > image-list.txt
-
 
     # SCAN STEP
     - name: Scan Images (blocking + non-blocking separation)
