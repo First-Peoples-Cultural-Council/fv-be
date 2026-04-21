@@ -71,12 +71,12 @@ runs:
         echo "$IMAGES" > image-list.txt
 
 
-    # BLOCKING SCAN (quiet, JSON only)
+    # BLOCKING SCAN (ONLY library + OS level CRITICALs that matter for app devs)
     - name: Scan Images (quiet vulnerability scan)
       shell: bash
       run: |
         set -euo pipefail
-        mkdir -p trivy-results sbom
+        mkdir -p trivy-results sbom nonblocking-results
 
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
@@ -91,31 +91,26 @@ runs:
             --timeout 10m \
             "$IMAGE" > /dev/null
 
+          # SBOM generation
           trivy image \
-                  --format cyclonedx \
-                  --output "sbom/${FILENAME}_sbom.json" \
-                  --pkg-types library \
-                  --timeout 10m \
-                  "$IMAGE" > /dev/null
+            --format cyclonedx \
+            --output "sbom/${FILENAME}_sbom.json" \
+            --pkg-types library \
+            --timeout 10m \
+            "$IMAGE" > /dev/null
 
-        done < image-list.txt
-
-
-    # NON-BLOCKING SCANS (silent, informational only)
-    - name: Scan Images (misconfig, secrets, license - non-blocking)
-      shell: bash
-      continue-on-error: true
-      run: |
-        set -euo pipefail
-
-        while IFS= read -r IMAGE; do
+          # NON-BLOCKING (includes gobinary / base image / OS packages)
           trivy image \
-            --scanners misconfig,secret,license \
+            --scanners vuln \
             --format json \
+            --output "nonblocking-results/${FILENAME}.json" \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH \
+            --pkg-types os,library \
             --timeout 10m \
             "$IMAGE" > /dev/null || true
-        done < image-list.txt
 
+        done < image-list.txt
 
     - name: Write CycloneDX Dependency Trees to Files
       shell: bash
@@ -151,30 +146,71 @@ runs:
 
         FAIL=0
 
-        echo "==================== VULNERABILITY SUMMARY ===================="
+        echo "==================== BLOCKING VULNERABILITIES ===================="
 
-        for file in trivy-results/*.json; do
-          IMAGE=$(basename "$file" .json)
+        while IFS= read -r IMAGE; do
+          FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+          FILE="trivy-results/${FILENAME}.json"
 
           COUNT=$(jq '
             [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length
-          ' "$file")
+          ' "$FILE")
 
           if [[ "$COUNT" -gt 0 ]]; then
             FAIL=1
 
             echo
-            echo "$IMAGE → $COUNT CRITICAL vulnerabilities"
-            echo "Fix these packages:"
+            echo "$IMAGE → $COUNT CRITICAL vulnerabilities (BLOCKING)"
+            echo
+
+            printf "%-20s %-15s %-15s %-20s\n" "PACKAGE" "INSTALLED" "FIXED" "CVE"
+            printf "%-20s %-15s %-15s %-20s\n" "-------" "---------" "-----" "---"
 
             jq -r '
               .Results[].Vulnerabilities[]?
               | select(.Severity=="CRITICAL")
-              | "- \(.PkgName) (\(.InstalledVersion)) → fix: \(.FixedVersion // "no fix available")"
-            ' "$file" | sort -u
+              | [
+                  .PkgName,
+                  .InstalledVersion,
+                  (.FixedVersion // "none"),
+                  .VulnerabilityID
+                ]
+              | @tsv
+            ' "$FILE" | sort -u | while IFS=$'\t' read -r pkg inst fix cve; do
+              printf "%-20s %-15s %-15s %-20s\n" "$pkg" "$inst" "$fix" "$cve"
+            done
+
           fi
 
-        done
+        done < image-list.txt
+
+
+        echo
+        echo "==================== NON-BLOCKING (BASE IMAGE / GOBINARY) ===================="
+
+        while IFS= read -r IMAGE; do
+          FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
+          FILE="nonblocking-results/${FILENAME}.json"
+
+          if [[ -f "$FILE" ]]; then
+            echo
+            echo "$IMAGE"
+
+            jq -r '
+              .Results[].Vulnerabilities[]?
+              | select(.Severity=="CRITICAL" or .Severity=="HIGH")
+              | [
+                  .PkgName,
+                  .InstalledVersion,
+                  (.FixedVersion // "none"),
+                  .VulnerabilityID
+                ]
+              | @tsv
+            ' "$FILE" | sort -u | column -t
+          fi
+
+        done < image-list.txt
+
 
         echo
         echo "==============================================================="
@@ -185,5 +221,5 @@ runs:
           echo "If the vulnerable package is installed as a Python transitive dependency, check the python_dependency_tree.txt"
           exit 1
         else
-          echo "No CRITICAL vulnerabilities detected."
+          echo "No blocking CRITICAL vulnerabilities detected."
         fi
