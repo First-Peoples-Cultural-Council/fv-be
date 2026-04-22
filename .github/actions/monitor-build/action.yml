@@ -93,7 +93,7 @@ runs:
         echo "Monitoring Tekton build for RUNID: $RUNID"
         echo "===================================================================================="
 
-        for STEP in ${{ inputs.pipeline_step1 }} ${{ inputs.pipeline_step2 }} ${{ inputs.pipeline_step3 }} ${{ inputs.pipeline_step4 }}
+        for STEP in ${{ inputs.pipeline_step1 }} ${{ inputs.pipeline_step2 }}
         do
           echo "▶ Streaming logs for task: $STEP"
 
