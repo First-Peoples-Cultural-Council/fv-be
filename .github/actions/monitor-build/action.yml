@@ -47,9 +47,18 @@ runs:
     - name: Install tkn CLI
       shell: bash
       run: |
-        curl -LO https://github.com/tektoncd/cli/releases/latest/download/tkn-linux-amd64
-        chmod +x tkn-linux-amd64
-        sudo mv tkn-linux-amd64 /usr/local/bin/tkn
+        set -euo pipefail
+
+        VERSION=$(curl -s https://api.github.com/repos/tektoncd/cli/releases/latest | jq -r .tag_name)
+        VERSION_NO_V=${VERSION#v}
+
+        curl -L -o tkn.tar.gz "https://github.com/tektoncd/cli/releases/download/${VERSION}/tkn_${VERSION_NO_V}_Linux_x86_64.tar.gz"
+
+        tar -xzf tkn.tar.gz
+        chmod +x tkn
+        sudo mv tkn /usr/local/bin/tkn
+
+        tkn version
 
     - name: Setup RUNID
       shell: bash
