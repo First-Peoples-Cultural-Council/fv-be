@@ -146,7 +146,7 @@ runs:
 
         FAIL=0
 
-        echo "==================== BLOCKING VULNERABILITIES ===================="
+        echo "==================== BLOCKING VULNERABILITIES (RELATED TO APPLICATION PACKAGES) ===================="
 
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
@@ -163,8 +163,8 @@ runs:
             echo "$IMAGE → $COUNT CRITICAL vulnerabilities (BLOCKING)"
             echo
 
-            printf "%-20s %-15s %-15s %-20s\n" "PACKAGE" "INSTALLED" "FIXED" "CVE"
-            printf "%-20s %-15s %-15s %-20s\n" "-------" "---------" "-----" "---"
+            printf "%-20s %-15s %-15s %-12s %-20s\n" "PACKAGE" "INSTALLED" "FIXED" "SEVERITY" "CVE"
+            printf "%-20s %-15s %-15s %-12s %-20s\n" "-------" "---------" "-----" "--------" "---"
 
             jq -r '
               .Results[].Vulnerabilities[]?
@@ -173,40 +173,60 @@ runs:
                   .PkgName,
                   .InstalledVersion,
                   (.FixedVersion // "none"),
+                  .Severity,
                   .VulnerabilityID
                 ]
               | @tsv
-            ' "$FILE" | sort -u | while IFS=$'\t' read -r pkg inst fix cve; do
-              printf "%-20s %-15s %-15s %-20s\n" "$pkg" "$inst" "$fix" "$cve"
+            ' "$FILE" | sort -u | while IFS=$'\t' read -r pkg inst fix sev cve; do
+              printf "%-20s %-15s %-15s %-12s %-20s\n" "$pkg" "$inst" "$fix" "$sev" "$cve"
             done
-
           fi
 
         done < image-list.txt
 
 
         echo
-        echo "==================== NON-BLOCKING (BASE IMAGE / GOBINARY) ===================="
+        echo "==================== NON-BLOCKING (RELATED TO BASE IMAGE & OTHER BINARIES) ===================="
 
         while IFS= read -r IMAGE; do
           FILENAME=$(echo "$IMAGE" | tr '/:@' '___')
           FILE="nonblocking-results/${FILENAME}.json"
 
           if [[ -f "$FILE" ]]; then
+            NONBLOCK_COUNT=$(jq '
+              [.Results[].Vulnerabilities[]?
+                | select(.Type!="library" and (.Severity=="CRITICAL" or .Severity=="HIGH"))
+              ] | length
+            ' "$FILE")
+
             echo
             echo "$IMAGE"
 
-            jq -r '
-              .Results[].Vulnerabilities[]?
-              | select(.Type!="library" and (.Severity=="CRITICAL" or .Severity=="HIGH"))
-              | [
-                  .PkgName,
-                  .InstalledVersion,
-                  (.FixedVersion // "none"),
-                  .VulnerabilityID
-                ]
-              | @tsv
-            ' "$FILE" | sort -u | column -t
+            if [[ "$NONBLOCK_COUNT" -gt 0 ]]; then
+              printf "%-20s %-15s %-15s %-12s %-20s\n" "PACKAGE" "INSTALLED" "FIXED" "SEVERITY" "CVE"
+              printf "%-20s %-15s %-15s %-12s %-20s\n" "-------" "---------" "-----" "--------" "---"
+
+              jq -r '
+                .Results[].Vulnerabilities[]?
+                | select(.Type!="library" and (.Severity=="CRITICAL" or .Severity=="HIGH"))
+                | [
+                    .PkgName,
+                    .InstalledVersion,
+                    (.FixedVersion // "none"),
+                    .Severity,
+                    .VulnerabilityID
+                  ]
+                | @tsv
+              ' "$FILE" | sort -u | while IFS=$'\t' read -r pkg inst fix sev cve; do
+                printf "%-20s %-15s %-15s %-12s %-20s\n" "$pkg" "$inst" "$fix" "$sev" "$cve"
+              done
+
+              echo
+              echo "NOTE: Non-blocking vulnerabilities detected."
+              echo "Action: Review the base image and upgrade to a newer tag or patched digest if fixes are available."
+            else
+              echo "No non-blocking HIGH/CRITICAL vulnerabilities detected."
+            fi
           fi
 
         done < image-list.txt
