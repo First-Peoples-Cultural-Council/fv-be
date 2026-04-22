@@ -44,6 +44,13 @@ runs:
       run: |
         aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --region ${{ inputs.aws_region }}
 
+    - name: Install tkn CLI
+      shell: bash
+      run: |
+        curl -LO https://github.com/tektoncd/cli/releases/latest/download/tkn-linux-amd64
+        chmod +x tkn-linux-amd64
+        sudo mv tkn-linux-amd64 /usr/local/bin/tkn
+
     - name: Setup RUNID
       shell: bash
       run: |
@@ -74,16 +81,21 @@ runs:
     - name: Monitor RUNID
       shell: bash
       run: |
-        echo "🔍 Monitoring Tekton build for RUNID: $RUNID"
+        echo "Monitoring Tekton build for RUNID: $RUNID"
         echo "===================================================================================="
 
         for STEP in ${{ inputs.pipeline_step1 }} ${{ inputs.pipeline_step2 }} ${{ inputs.pipeline_step3 }} ${{ inputs.pipeline_step4 }}
         do
-          echo "▶ Waiting for task: $STEP"
-          kubectl wait --for=condition=Succeeded TaskRun "$RUNID-$STEP" --timeout=300s -n ${{ inputs.tekton_namespace }}
+          echo "▶ Streaming logs for task: $STEP"
 
-          echo "Logs for task: $STEP"
-          kubectl logs pod/"$RUNID-$STEP-pod" -n ${{ inputs.tekton_namespace }}
+          tkn taskrun logs -f "$RUNID-$STEP" -n "${{ inputs.tekton_namespace }}"
+
+          STATUS=$(kubectl get taskrun "$RUNID-$STEP" -n "${{ inputs.tekton_namespace }}" -o jsonpath='{.status.conditions[0].reason}')
+
+          if [ "$STATUS" != "Succeeded" ]; then
+            echo "Task $STEP failed with status: $STATUS"
+            exit 1
+          fi
 
           echo "------------------------------------------------------------------------------------"
           sleep 1
