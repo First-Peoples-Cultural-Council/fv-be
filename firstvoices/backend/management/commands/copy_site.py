@@ -179,6 +179,13 @@ def copy_categories_and_return_map(source_site, target_site, set_modified_date):
         category.id = target_category_id
         category.site = target_site
 
+        # Handle missing created_by and last_modified_by instances
+        if not category.created_by:
+            category.created_by = source_site.created_by
+
+        if not category.last_modified_by:
+            category.last_modified_by = source_site.created_by
+
         if current_parent_id:
             category.parent_id = category_map[current_parent_id]
 
