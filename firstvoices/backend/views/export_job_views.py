@@ -131,6 +131,7 @@ class ExportJobViewSet(
         "related_dictionary_entries": "related_entry_id",
     }
     started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED]
+    MAXIMUM_ENTRIES_PER_EXPORT = 50000
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -143,7 +144,9 @@ class ExportJobViewSet(
         search_params = get_site_entries_search_params(
             self.request, site, self.default_search_types, self.allowed_search_types
         )
-        pagination_params = get_pagination_params(self.request, self.paginator, 7500)
+        pagination_params = get_pagination_params(
+            self.request, self.paginator, self.MAXIMUM_ENTRIES_PER_EXPORT
+        )
 
         export_params = {**search_params, **pagination_params}
 

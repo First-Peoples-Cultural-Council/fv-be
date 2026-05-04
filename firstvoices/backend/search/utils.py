@@ -268,13 +268,18 @@ def get_export_search_response(search_query, page_size):
         all_hits = []
         search_after_point = None
 
+        # Set page_size to 10,000 (ES limit)
+        effective_page_size = min(page_size, 10000)
+
         while True:
             # Apply search_after if we have a previous result
             if search_after_point is not None:
                 search_query = search_query.extra(search_after=search_after_point)
 
+            search_query = search_query.extra(size=effective_page_size)
+
             response = search_query.execute()
-            hits = response.get("hits", {}).get("hits", [])
+            hits = response["hits"]["hits"]
 
             # If no more hits, break the loop
             if not hits:
@@ -284,10 +289,13 @@ def get_export_search_response(search_query, page_size):
 
             # Set the search_after point for the next iteration
             last_hit = hits[-1]
-            search_after_point = last_hit.get("sort", [])
+            search_after_point = last_hit["sort"]
 
-            if len(hits) < page_size:
+            # If we got fewer results than page_size, we've reached the end
+            if len(all_hits) == page_size:
                 break
+
+            effective_page_size = page_size - len(hits)
 
         return {
             "hits": {
