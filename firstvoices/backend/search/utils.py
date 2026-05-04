@@ -263,7 +263,7 @@ def get_search_response(search_query):
 
 
 def get_export_search_response(search_query, page_size):
-    # Modified get_serach_response using search_after for over 10000 results in dictionary exports
+    # Modified get_search_response using search_after for over 10000 results in dictionary exports
     try:
         all_hits = []
         search_after_point = None
