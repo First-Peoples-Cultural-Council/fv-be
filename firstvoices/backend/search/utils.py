@@ -262,5 +262,42 @@ def get_search_response(search_query):
         raise ElasticSearchConnectionError()
 
 
+def get_export_search_response(search_query, page_size):
+    # Modified get_serach_response using search_after for over 10000 results in dictionary exports
+    try:
+        all_hits = []
+        search_after_point = None
+
+        while True:
+            # Apply search_after if we have a previous result
+            if search_after_point is not None:
+                search_query = search_query.extra(search_after=search_after_point)
+
+            response = search_query.execute()
+            hits = response.get("hits", {}).get("hits", [])
+
+            # If no more hits, break the loop
+            if not hits:
+                break
+
+            all_hits.extend(hits)
+
+            # Set the search_after point for the next iteration
+            last_hit = hits[-1]
+            search_after_point = last_hit.get("sort", [])
+
+            if len(hits) < page_size:
+                break
+
+        return {
+            "hits": {
+                "hits": all_hits,
+                "total": {"value": len(all_hits), "relation": "eq"},
+            }
+        }
+    except ConnectionError:
+        raise ElasticSearchConnectionError()
+
+
 def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}

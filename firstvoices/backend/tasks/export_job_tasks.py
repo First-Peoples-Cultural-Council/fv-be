@@ -16,7 +16,11 @@ from backend.search.queries.query_builder import (
     get_base_entries_sort_query,
     get_base_paginate_query,
 )
-from backend.search.utils import get_ids_by_type, get_search_response, queryset_as_map
+from backend.search.utils import (
+    get_export_search_response,
+    get_ids_by_type,
+    queryset_as_map,
+)
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.utils.export_utils import convert_queryset_to_csv_content
@@ -140,7 +144,9 @@ def get_search_results(search_params, pagination_params):
         search_query, **search_params
     )  # sort_query
 
-    response = get_search_response(search_query)
+    response = get_export_search_response(
+        search_query, pagination_params.get("page_size")
+    )
     search_results = response["hits"]["hits"]
 
     data = hydrate(search_results, search_params["user"])
