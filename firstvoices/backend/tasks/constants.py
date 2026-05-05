@@ -1,2 +1,4 @@
 ASYNC_TASK_START_TEMPLATE = "Task started. Additional info: %s."
 ASYNC_TASK_END_TEMPLATE = "Task ended."
+
+MAXIMUM_ENTRIES_PER_EXPORT_JOB = 50000

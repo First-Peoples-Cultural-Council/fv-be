@@ -4,6 +4,7 @@ import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.jobs import ExportJob, JobStatus
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_EXPORT_JOB
 from backend.tests import factories
 from backend.tests.test_apis.base.base_async_api_test import (
     AsyncWorkflowTestMixin,
@@ -192,7 +193,8 @@ class TestExportJobAPI(
         )
 
         post_response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug) + "?page=1&pageSize=7501",
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?page=1&pageSize={MAXIMUM_ENTRIES_PER_EXPORT_JOB + 1}",
             format="json",
         )
 
@@ -200,8 +202,8 @@ class TestExportJobAPI(
         response_data = json.loads(post_response.content)
         assert (
             response_data[0]
-            == "pageSize: The maximum number of items per page is 7500. "
-            "Please contact staff if you require more than 7500 items."
+            == f"pageSize: The maximum number of items per page is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} items."
         )
 
     @pytest.mark.django_db

@@ -14,6 +14,7 @@ from backend.search.constants import TYPE_PHRASE, TYPE_WORD
 from backend.search.utils import get_pagination_params, get_site_entries_search_params
 from backend.serializers.export_job_serializers import ExportJobSerializer
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_EXPORT_JOB
 from backend.tasks.export_job_tasks import generate_export_csv
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -131,7 +132,6 @@ class ExportJobViewSet(
         "related_dictionary_entries": "related_entry_id",
     }
     started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED]
-    MAXIMUM_ENTRIES_PER_EXPORT = 50000
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -145,7 +145,7 @@ class ExportJobViewSet(
             self.request, site, self.default_search_types, self.allowed_search_types
         )
         pagination_params = get_pagination_params(
-            self.request, self.paginator, self.MAXIMUM_ENTRIES_PER_EXPORT
+            self.request, self.paginator, MAXIMUM_ENTRIES_PER_EXPORT_JOB
         )
 
         export_params = {**search_params, **pagination_params}
