@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from celery import current_app as celery_app
 from rest_framework.test import APIClient
 
 from backend.models.category import Category
@@ -31,6 +32,10 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
     API_DETAIL_VIEW = "api:category-detail"
     TITLE = "Cool new title"
     model = Category
+
+    @pytest.mark.django_db
+    def test_celery_is_eager(self):
+        assert celery_app.conf.task_always_eager is True
 
     def setup_method(self):
         self.client = APIClient()

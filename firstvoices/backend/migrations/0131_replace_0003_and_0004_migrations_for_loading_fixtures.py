@@ -35,7 +35,9 @@ def populate_dates(apps, schema_editor):
 
 
 def update_default_site_menu(apps, schema_editor):
-    # Update previously done in migration 0093
+    # Updates the appjson with new data
+    # Taken from migration 0093, where a check was added to skip if the row is not present
+    # So for all new environments, the instance is updated here
     AppJson = apps.get_model("backend", "AppJson")
 
     try:
@@ -43,7 +45,6 @@ def update_default_site_menu(apps, schema_editor):
     except AppJson.DoesNotExist:
         return
 
-    # Update the json field with the new data
     appjson.json = {
         "kids": {
             "id": "kids",
@@ -118,7 +119,6 @@ def update_default_site_menu(apps, schema_editor):
         }
     }
 
-    # Save the updated record
     appjson.save()
 
 
