@@ -271,10 +271,15 @@ def get_export_search_response(search_query, page_size):
         # Set page_size to 10,000 (ES limit)
         effective_page_size = min(page_size, 10000)
 
+        # track how many entries have been gathered
+        total_page_size_count = page_size
+
         while True:
             # Apply search_after if we have a previous result
             if search_after_point is not None:
                 search_query = search_query.extra(search_after=search_after_point)
+
+            effective_page_size = min(effective_page_size, 10000)
 
             search_query = search_query.extra(size=effective_page_size)
 
@@ -295,7 +300,9 @@ def get_export_search_response(search_query, page_size):
             if len(all_hits) == page_size:
                 break
 
-            effective_page_size = page_size - len(hits)
+            # decrement from total page size
+            effective_page_size = total_page_size_count - len(hits)
+            total_page_size_count -= len(hits)
 
         return {
             "hits": {
