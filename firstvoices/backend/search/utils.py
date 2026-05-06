@@ -262,5 +262,57 @@ def get_search_response(search_query):
         raise ElasticSearchConnectionError()
 
 
+def get_export_search_response(search_query, page_size):
+    # Modified get_search_response using search_after for over 10000 results in dictionary exports
+    try:
+        all_hits = []
+        search_after_point = None
+
+        # Set page_size to 10,000 (ES limit)
+        effective_page_size = min(page_size, 10000)
+
+        # track how many entries have been gathered
+        total_page_size_count = page_size
+
+        while True:
+            # Apply search_after if we have a previous result
+            if search_after_point is not None:
+                search_query = search_query.extra(search_after=search_after_point)
+
+            effective_page_size = min(effective_page_size, 10000)
+
+            search_query = search_query.extra(size=effective_page_size)
+
+            response = search_query.execute()
+            hits = response["hits"]["hits"]
+
+            # If no more hits, break the loop
+            if not hits:
+                break
+
+            all_hits.extend(hits)
+
+            # Set the search_after point for the next iteration
+            last_hit = hits[-1]
+            search_after_point = last_hit["sort"]
+
+            # If we got fewer results than page_size, we've reached the end
+            if len(all_hits) == page_size:
+                break
+
+            # decrement from total page size
+            effective_page_size = total_page_size_count - len(hits)
+            total_page_size_count -= len(hits)
+
+        return {
+            "hits": {
+                "hits": all_hits,
+                "total": {"value": len(all_hits), "relation": "eq"},
+            }
+        }
+    except ConnectionError:
+        raise ElasticSearchConnectionError()
+
+
 def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}
