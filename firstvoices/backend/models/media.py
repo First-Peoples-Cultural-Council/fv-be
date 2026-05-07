@@ -8,7 +8,7 @@ import rules
 from django.conf import settings
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
@@ -376,8 +376,10 @@ class ThumbnailMixin(models.Model):
         raise NotImplementedError
 
     def _request_thumbnail_generation(self):
-        generate_media_thumbnails.apply_async(
-            (self._meta.model_name, self.id), link_error=link_error_handler.s()
+        transaction.on_commit(
+            lambda: generate_media_thumbnails.apply_async(
+                (self._meta.model_name, self.id), link_error=link_error_handler.s()
+            )
         )
 
     def _delete_related_media(self, instance):
