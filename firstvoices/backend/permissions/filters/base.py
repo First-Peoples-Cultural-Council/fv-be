@@ -44,6 +44,9 @@ def is_own_obj(user):
 
 
 def is_own_creator(created_by):
+    if created_by.is_anonymous:
+        return always_false(created_by)
+
     return Q(created_by=created_by)
 
 
