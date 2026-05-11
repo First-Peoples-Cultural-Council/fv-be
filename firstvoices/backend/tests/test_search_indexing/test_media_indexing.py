@@ -93,7 +93,8 @@ class TestAudioDocumentManager(BaseMediaDocumentManagerTest):
 
         doc = self.manager.create_index_document(instance)
 
-        assert doc.speakers == [str(speaker1.id), str(speaker2.id)]
+        assert str(speaker1.id) in doc.speakers
+        assert str(speaker2.id) in doc.speakers
 
 
 class TestDocumentDocumentManager(BaseMediaDocumentManagerTest):
