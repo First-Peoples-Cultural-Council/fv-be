@@ -368,9 +368,9 @@ class ThumbnailMixin(models.Model):
         if is_modifying_original and not self._state.adding:
             # Prevent stale ids in python from being set as the ids on newly generated thumbnails
             # _delete_related_media() deletes the thumbnails and SET_NULL removes the db foreign key
-            self.thumbnail_id = None
-            self.small_id = None
-            self.medium_id = None
+            self.thumbnail = None
+            self.small = None
+            self.medium = None
 
         super().save(**kwargs)
 
