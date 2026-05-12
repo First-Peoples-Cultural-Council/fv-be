@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
+from backend.search.constants import MAXIMUM_ENTRIES_PER_SEARCH
 from backend.search.queries.query_builder import get_base_paginate_query
 from backend.search.utils import (
     get_base_search_params,
@@ -13,7 +14,6 @@ from backend.search.utils import (
     get_search_response,
     queryset_as_map,
 )
-from backend.tasks.constants import MAXIMUM_ENTRIES_PER_SEARCH
 
 
 class HydrateSerializeSearchResultsMixin:
