@@ -198,6 +198,12 @@ def get_pagination_params(request, paginator, page_size_limit=-1):
             f"Please contact staff if you require more than {page_size_limit} items."
         )
 
+    if page_size * page > page_size_limit:
+        raise ValidationError(
+            f"The maximum number of results retrieved by this action is {page_size_limit}. "
+            f"Please contact staff if you require more than {page_size_limit} results."
+        )
+
     start = (page - 1) * page_size
 
     return {
@@ -262,8 +268,16 @@ def get_search_response(search_query):
         raise ElasticSearchConnectionError()
 
 
-def get_export_search_response(search_query, page_size):
+def get_export_search_response(search_query, pagination_params):
     # Modified get_search_response using search_after for over 10000 results in dictionary exports
+    # To prevent initial queries over 10000 always start from page 1, and skip until desired entries
+
+    page_size = pagination_params.get("page_size")
+    page = pagination_params.get("page")
+    skip_until = page * page_size if page > 1 else -1
+
+    search_query = search_query.extra(from_=0)
+
     try:
         all_hits = []
         search_after_point = None
@@ -290,7 +304,13 @@ def get_export_search_response(search_query, page_size):
             if not hits:
                 break
 
-            all_hits.extend(hits)
+            if skip_until > 0 and len(hits) < skip_until:
+                skip_until -= len(hits)
+            else:
+                all_hits.extend(hits)
+                # decrement from total page size
+                effective_page_size = total_page_size_count - len(hits)
+                total_page_size_count -= len(hits)
 
             # Set the search_after point for the next iteration
             last_hit = hits[-1]
@@ -299,10 +319,6 @@ def get_export_search_response(search_query, page_size):
             # If we got fewer results than page_size, we've reached the end
             if len(all_hits) == page_size:
                 break
-
-            # decrement from total page size
-            effective_page_size = total_page_size_count - len(hits)
-            total_page_size_count -= len(hits)
 
         return {
             "hits": {

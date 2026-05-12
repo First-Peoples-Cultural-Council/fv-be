@@ -13,6 +13,7 @@ from backend.search.utils import (
     get_search_response,
     queryset_as_map,
 )
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_SEARCH
 
 
 class HydrateSerializeSearchResultsMixin:
@@ -174,7 +175,9 @@ class BaseSearchViewSet(viewsets.GenericViewSet, HydrateSerializeSearchResultsMi
         """
         Returns pagination parameters.
         """
-        return get_pagination_params(self.request, self.paginator)
+        return get_pagination_params(
+            self.request, self.paginator, page_size_limit=MAXIMUM_ENTRIES_PER_SEARCH
+        )
 
     def paginate_search_response(self, request, serialized_data, result_count):
         page = self.paginator.apply_search_pagination(
