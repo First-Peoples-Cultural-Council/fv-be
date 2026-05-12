@@ -13,10 +13,11 @@ from backend.tasks.mtd_export_tasks import (
 )
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
+from backend.tests.utils import TransactionOnCommitMixin
 from firstvoices.celery import link_error_handler
 
 
-class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin):
+class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin):
     sample_entry_title = "title_one word"
     TASK = build_index_and_calculate_scores
 
@@ -102,46 +103,49 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin):
     @pytest.mark.disable_thumbnail_mocks
     def test_build_and_score(self, site, caplog):
         # Add some entries
-        speaker = factories.PersonFactory.create(site=site)
-        audio = factories.AudioFactory.create(site=site)
-        factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
-        parent_category = factories.CategoryFactory.create(site=site)
-        child_category = factories.CategoryFactory.create(
-            site=site, parent=parent_category
-        )
-        entry_one = factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            type=TypeOfDictionaryEntry.WORD,
-            title=self.sample_entry_title,
-            related_audio=[audio],
-            related_images=[image],
-            related_videos=[video],
-        )
-        factories.DictionaryEntryCategoryFactory.create(
-            category=parent_category, dictionary_entry=entry_one
-        )
-        factories.DictionaryEntryCategoryFactory.create(
-            category=child_category, dictionary_entry=entry_one
-        )
 
-        # entry_two
-        factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            type=TypeOfDictionaryEntry.PHRASE,
-            title="title_two",
-        )
-        entry_three = factories.DictionaryEntryFactory.create(
-            site=site,
-            visibility=Visibility.PUBLIC,
-            type=TypeOfDictionaryEntry.PHRASE,
-            title="the word 'third' appears as the third word in this sentence",
-        )
+        with self.capture_on_commit_callbacks(execute=True):
+            speaker = factories.PersonFactory.create(site=site)
+            audio = factories.AudioFactory.create(site=site)
+            factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
+            image = factories.ImageFactory.create(site=site)
+            video = factories.VideoFactory.create(site=site)
+            parent_category = factories.CategoryFactory.create(site=site)
+            child_category = factories.CategoryFactory.create(
+                site=site, parent=parent_category
+            )
+            entry_one = factories.DictionaryEntryFactory.create(
+                site=site,
+                visibility=Visibility.PUBLIC,
+                type=TypeOfDictionaryEntry.WORD,
+                title=self.sample_entry_title,
+                related_audio=[audio],
+                related_images=[image],
+                related_videos=[video],
+            )
+            factories.DictionaryEntryCategoryFactory.create(
+                category=parent_category, dictionary_entry=entry_one
+            )
+            factories.DictionaryEntryCategoryFactory.create(
+                category=child_category, dictionary_entry=entry_one
+            )
+
+            # entry_two
+            factories.DictionaryEntryFactory.create(
+                site=site,
+                visibility=Visibility.PUBLIC,
+                type=TypeOfDictionaryEntry.PHRASE,
+                title="title_two",
+            )
+            entry_three = factories.DictionaryEntryFactory.create(
+                site=site,
+                visibility=Visibility.PUBLIC,
+                type=TypeOfDictionaryEntry.PHRASE,
+                title="the word 'third' appears as the third word in this sentence",
+            )
         # Build and index
         job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job.refresh_from_db()
         result = job.export_result
         assert len(result["data"]) == 3
         assert result["data"][1]["word"] == self.sample_entry_title
