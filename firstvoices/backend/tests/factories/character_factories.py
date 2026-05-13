@@ -8,6 +8,7 @@ from backend.tests.factories.base_factories import BaseSiteContentFactory
 class CharacterFactory(RelatedMediaBaseFactory, BaseSiteContentFactory):
     class Meta:
         model = Character
+        skip_postgeneration_save = True
 
     title = factory.Sequence(lambda n: "chr" + chr(n + 64))  # begin with A
     sort_order = factory.Sequence(int)

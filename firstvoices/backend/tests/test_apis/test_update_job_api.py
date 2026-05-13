@@ -55,7 +55,11 @@ class TestUpdateEndpoints(TestImportEndpoints):
         }
 
     def get_valid_data_with_nulls(self, site=None):
-        return self.get_valid_data(site=site)
+        return {
+            "title": "Update Job",
+            "data": get_sample_file("update_job/minimal_with_nulls.csv", "text/csv"),
+            "mode": "update",
+        }
 
     def get_valid_data_with_null_optional_charfields(self, site=None):
         # No optional char field

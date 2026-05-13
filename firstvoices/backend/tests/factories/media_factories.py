@@ -141,6 +141,7 @@ class AudioSpeakerFactory(DjangoModelFactory):
 class RelatedMediaBaseFactory(DjangoModelFactory):
     class Meta:
         abstract = True
+        skip_postgeneration_save = True
 
     @factory.post_generation
     def related_audio(self, create, extracted, **kwargs):
@@ -151,6 +152,7 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
             # A list of audios were passed in, use them
             for e in extracted:
                 self.related_audio.add(e)
+            self.save()
 
     @factory.post_generation
     def related_documents(self, create, extracted, **kwargs):
@@ -161,6 +163,7 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
             # A list of documents were passed in, use them
             for e in extracted:
                 self.related_documents.add(e)
+            self.save()
 
     @factory.post_generation
     def related_images(self, create, extracted, **kwargs):
@@ -172,6 +175,7 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
             # A list of image were passed in, use them
             for e in extracted:
                 self.related_images.add(e)
+            self.save()
 
     @factory.post_generation
     def related_videos(self, create, extracted, **kwargs):
@@ -183,3 +187,4 @@ class RelatedMediaBaseFactory(DjangoModelFactory):
             # A list of image were passed in, use them
             for e in extracted:
                 self.related_videos.add(e)
+            self.save()

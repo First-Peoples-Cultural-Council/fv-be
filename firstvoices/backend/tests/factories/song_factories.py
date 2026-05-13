@@ -9,6 +9,7 @@ from backend.tests.factories.base_factories import BaseSiteContentFactory
 class SongFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = Song
+        skip_postgeneration_save = True
 
     title = factory.Sequence(lambda n: "Song title %03d" % n)
     title_translation = factory.Sequence(lambda n: "Song title translation %03d" % n)
