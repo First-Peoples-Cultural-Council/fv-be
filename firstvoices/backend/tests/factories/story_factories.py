@@ -8,6 +8,7 @@ from backend.tests.factories.base_factories import BaseSiteContentFactory
 class StoryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = Story
+        skip_postgeneration_save = True
 
     title = factory.Sequence(lambda n: "Story title %03d" % n)
     title_translation = factory.Sequence(lambda n: "Story title translation %03d" % n)
@@ -17,6 +18,7 @@ class StoryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
 class StoryPageFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = StoryPage
+        skip_postgeneration_save = True
 
     story = factory.SubFactory(StoryFactory)
     text = factory.Sequence(lambda n: "Story text %03d" % n)
