@@ -138,6 +138,8 @@ class SiteContentViewSetMixin:
     Provides common methods for handling site content, usually for data models that use the ``BaseSiteContentModel``.
     """
 
+    _cached_site = None
+
     def get_site_slug(self):
         return self.kwargs["site_slug"]
 
@@ -150,6 +152,9 @@ class SiteContentViewSetMixin:
         return context
 
     def get_validated_site(self):
+        if self._cached_site is not None:
+            return self._cached_site
+
         site_slug = self.get_site_slug()
         sites = Site.objects.filter(slug=site_slug)
 
@@ -161,6 +166,7 @@ class SiteContentViewSetMixin:
         # Check permissions on the site first
         perm = Site.get_perm("view")
         if self.request.user.has_perm(perm, site):
+            self._cached_site = site
             return site
         else:
             raise PermissionDenied
