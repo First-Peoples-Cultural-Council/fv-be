@@ -144,9 +144,7 @@ def get_search_results(search_params, pagination_params):
         search_query, **search_params
     )  # sort_query
 
-    response = get_export_search_response(
-        search_query, pagination_params.get("page_size")
-    )
+    response = get_export_search_response(search_query, pagination_params)
     search_results = response["hits"]["hits"]
 
     data = hydrate(search_results, search_params["user"])
