@@ -66,9 +66,15 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     Summary information about language sites.
     """
 
+    _cached_site = None
     http_method_names = ["get", "put", "patch"]
     lookup_field = "slug"
     serializer_class = SiteDetailWriteSerializer
+
+    def get_object(self):
+        if self._cached_site is None:
+            self._cached_site = super().get_object()
+        return self._cached_site
 
     def get_detail_queryset(self):
         sites = (
