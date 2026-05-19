@@ -185,6 +185,7 @@ class ImportJobDetailSerializer(ImportJobSerializer):
                 }
             )
 
+        media_items = sorted(media_items, key=lambda item: item["filename"])
         return media_items
 
     class Meta:
