@@ -8,7 +8,10 @@ from rest_framework.response import Response
 
 from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
-from backend.serializers.update_job_serializers import UpdateJobSerializer
+from backend.serializers.update_job_serializers import (
+    UpdateJobDetailSerializer,
+    UpdateJobSerializer,
+)
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
@@ -130,6 +133,11 @@ class UpdateJobViewSet(ImportJobViewSet):
 
     def perform_create(self, serializer):
         serializer.save(mode=ImportJobMode.UPDATE)
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return UpdateJobDetailSerializer
+        return UpdateJobSerializer
 
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):

@@ -53,6 +53,13 @@ class TestImportEndpoints(
             "failedRowsCsv": instance.failed_rows_csv,
         }
 
+    def get_expected_detail_response(self, instance, site):
+        expected_response = self.get_expected_response(instance, site)
+        return {
+            **expected_response,
+            "media": [],  # Empty since it's a method field tested separately
+        }
+
     def get_valid_data(self, site=None):
         return {
             "title": "Test Title",
@@ -475,7 +482,7 @@ class TestImportEndpoints(
         )
         self.client.force_authenticate(user=user)
 
-        import_job = factories.ImportJobFactory.create(site=site)
+        import_job = self.create_minimal_instance(site)
 
         # Add media files to the job
         image = factories.ImageFileFactory(import_job=import_job)
