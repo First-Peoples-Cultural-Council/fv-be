@@ -9,7 +9,10 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models import ImportJobMode
 from backend.models.import_jobs import ImportJob, JobStatus
-from backend.serializers.import_job_serializers import ImportJobSerializer
+from backend.serializers.import_job_serializers import (
+    ImportJobDetailSerializer,
+    ImportJobSerializer,
+)
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
@@ -152,6 +155,11 @@ class ImportJobViewSet(
         ).order_by(
             "-created"
         )  # permissions are applied by the base view
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ImportJobDetailSerializer
+        return ImportJobSerializer
 
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):

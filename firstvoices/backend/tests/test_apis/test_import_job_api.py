@@ -53,6 +53,13 @@ class TestImportEndpoints(
             "failedRowsCsv": instance.failed_rows_csv,
         }
 
+    def get_expected_detail_response(self, instance, site):
+        expected_response = self.get_expected_response(instance, site)
+        return {
+            **expected_response,
+            "media": [],  # Empty since it's a method field tested separately
+        }
+
     def get_valid_data(self, site=None):
         return {
             "title": "Test Title",
@@ -468,3 +475,46 @@ class TestImportEndpoints(
 
         assert str(import_job.id) in returned_job_ids
         assert str(update_job.id) not in returned_job_ids
+
+    def test_detail_includes_media_field(self):
+        site, user = factories.get_site_with_app_admin(
+            self.client, Visibility.PUBLIC, AppRole.SUPERADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        import_job = self.create_minimal_instance(site)
+
+        # Add media files to the job
+        image = factories.ImageFileFactory(import_job=import_job)
+        video = factories.VideoFileFactory(import_job=import_job)
+        audio = factories.FileFactory(import_job=import_job, mimetype="audio/mpeg")
+        document = factories.FileFactory(
+            import_job=import_job, mimetype="application/pdf"
+        )
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(import_job), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert "media" in response_data
+        media = response_data["media"]
+
+        assert len(media) == 4
+
+        returned_ids = [item["id"] for item in media]
+        assert str(image.id) in returned_ids
+        assert str(video.id) in returned_ids
+        assert str(audio.id) in returned_ids
+        assert str(document.id) in returned_ids
+
+        # Validate structure of media items
+        for item in media:
+            assert "id" in item
+            assert "mimetype" in item
+            assert "size" in item
+            assert "filename" in item

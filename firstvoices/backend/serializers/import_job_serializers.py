@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 import chardet
 import tablib
@@ -157,3 +158,36 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
                     ]
                 }
             )
+
+
+class ImportJobDetailSerializer(ImportJobSerializer):
+    media = serializers.SerializerMethodField()
+
+    def get_media(self, instance):
+        audio_and_docs = instance.file_set.all()
+        images = instance.imagefile_set.all()
+        videos = instance.videofile_set.all()
+
+        all_files = list(audio_and_docs) + list(images) + list(videos)
+
+        media_items = []
+
+        for file in all_files:
+            file_content = file.content
+            filename = Path(file_content.name).name
+
+            media_items.append(
+                {
+                    "id": file.id,
+                    "mimetype": file.mimetype,
+                    "size": file.size,
+                    "filename": filename,
+                }
+            )
+
+        media_items = sorted(media_items, key=lambda item: item["filename"])
+        return media_items
+
+    class Meta:
+        model = ImportJob
+        fields = ImportJobSerializer.Meta.fields + ("media",)
