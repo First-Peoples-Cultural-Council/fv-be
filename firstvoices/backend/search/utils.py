@@ -270,33 +270,26 @@ def get_search_response(search_query):
 
 def get_export_search_response(search_query, pagination_params):
     # Modified get_search_response using search_after for over 10000 results in dictionary exports
-    # To prevent initial queries over 10000 always start from page 1, and skip until desired entries
-
     page_size = pagination_params.get("page_size")
-    page = pagination_params.get("page")
-    skip_until = page * page_size if page > 1 else -1
 
-    search_query = search_query.extra(from_=0)
+    skip_remaining = pagination_params.get("start")
+    collect_remaining = page_size
 
     try:
         all_hits = []
         search_after_point = None
-
-        # Set page_size to 10,000 (ES limit)
-        effective_page_size = min(page_size, 10000)
-
-        # track how many entries have been gathered
-        total_page_size_count = page_size
 
         while True:
             # Apply search_after if we have a previous result
             if search_after_point is not None:
                 search_query = search_query.extra(search_after=search_after_point)
 
-            effective_page_size = min(effective_page_size, 10000)
+            if skip_remaining > 0:
+                request_size = min(skip_remaining, 10000)
+            else:
+                request_size = min(collect_remaining, 10000)
 
-            search_query = search_query.extra(size=effective_page_size)
-
+            search_query = search_query.extra(size=request_size)
             response = search_query.execute()
             hits = response["hits"]["hits"]
 
@@ -304,26 +297,30 @@ def get_export_search_response(search_query, pagination_params):
             if not hits:
                 break
 
-            if skip_until > 0 and len(hits) < skip_until:
-                skip_until -= len(hits)
-            else:
+            if skip_remaining >= len(hits):
+                # Continue to skip
+                skip_remaining -= len(hits)
+            elif skip_remaining > 0:
+                # Skip some and collect the rest
+                hits = hits[skip_remaining:]
+                skip_remaining = 0
                 all_hits.extend(hits)
-                # decrement from total page size
-                effective_page_size = total_page_size_count - len(hits)
-                total_page_size_count -= len(hits)
+                collect_remaining -= len(hits)
+            else:
+                # Collect hits
+                all_hits.extend(hits)
+                collect_remaining -= len(hits)
 
-            # Set the search_after point for the next iteration
             last_hit = hits[-1]
             search_after_point = last_hit["sort"]
 
-            # If we got fewer results than page_size, we've reached the end
-            if len(all_hits) == page_size:
+            if collect_remaining <= 0:
                 break
 
         return {
             "hits": {
-                "hits": all_hits,
-                "total": {"value": len(all_hits), "relation": "eq"},
+                "hits": all_hits[:page_size],
+                "total": {"value": min(len(all_hits), page_size), "relation": "eq"},
             }
         }
     except ConnectionError:
