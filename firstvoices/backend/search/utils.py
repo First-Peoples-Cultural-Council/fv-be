@@ -271,7 +271,6 @@ def get_search_response(search_query):
 def get_export_search_response(search_query, pagination_params):
     # Modified get_search_response using search_after for over 10000 results in dictionary exports
     page_size = pagination_params.get("page_size")
-
     skip_remaining = pagination_params.get("start")
     collect_remaining = page_size
 
@@ -279,43 +278,49 @@ def get_export_search_response(search_query, pagination_params):
         all_hits = []
         search_after_point = None
 
-        while True:
-            # Apply search_after if we have a previous result
-            if search_after_point is not None:
-                search_query = search_query.extra(search_after=search_after_point)
+        # Run query with point_in_time and tiebreakers
+        with search_query.point_in_time(keep_alive="5m") as search_query:
+            # Always start from 0 and skip to desired page using search_after
+            search_query = search_query.extra(**{"from": 0})
+            search_query = search_query.sort(*search_query._sort, "_shard_doc")
 
-            if skip_remaining > 0:
-                request_size = min(skip_remaining, 10000)
-            else:
-                request_size = min(collect_remaining, 10000)
+            while True:
+                # Apply search_after if we have a previous result
+                if search_after_point is not None:
+                    search_query = search_query.extra(search_after=search_after_point)
 
-            search_query = search_query.extra(size=request_size)
-            response = search_query.execute()
-            hits = response["hits"]["hits"]
+                if skip_remaining > 0:
+                    request_size = min(skip_remaining, 10000)
+                else:
+                    request_size = min(collect_remaining, 10000)
 
-            # If no more hits, break the loop
-            if not hits:
-                break
+                search_query = search_query.extra(size=request_size)
+                response = search_query.execute()
+                hits = response["hits"]["hits"]
 
-            if skip_remaining >= len(hits):
-                # Continue to skip
-                skip_remaining -= len(hits)
-            elif skip_remaining > 0:
-                # Skip some and collect the rest
-                hits = hits[skip_remaining:]
-                skip_remaining = 0
-                all_hits.extend(hits)
-                collect_remaining -= len(hits)
-            else:
-                # Collect hits
-                all_hits.extend(hits)
-                collect_remaining -= len(hits)
+                # If no more hits, break the loop
+                if not hits:
+                    break
 
-            last_hit = hits[-1]
-            search_after_point = last_hit["sort"]
+                if skip_remaining >= len(hits):
+                    # Continue to skip
+                    skip_remaining -= len(hits)
+                elif skip_remaining > 0:
+                    # Skip some and collect the rest
+                    hits = hits[skip_remaining:]
+                    skip_remaining = 0
+                    all_hits.extend(hits)
+                    collect_remaining -= len(hits)
+                else:
+                    # Collect hits
+                    all_hits.extend(hits)
+                    collect_remaining -= len(hits)
 
-            if collect_remaining <= 0:
-                break
+                last_hit = hits[-1]
+                search_after_point = last_hit["sort"]
+
+                if collect_remaining <= 0:
+                    break
 
         return {
             "hits": {
