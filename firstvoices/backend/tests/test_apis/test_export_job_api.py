@@ -207,6 +207,26 @@ class TestExportJobAPI(
         )
 
     @pytest.mark.django_db
+    def test_export_job_page_and_page_size_maximum(self):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?page=5&pageSize={MAXIMUM_ENTRIES_PER_EXPORT_JOB}",
+            format="json",
+        )
+
+        assert post_response.status_code == 400
+        response_data = json.loads(post_response.content)
+        assert (
+            response_data[0]
+            == f"The maximum number of results retrieved by this action is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} results."
+        )
+
+    @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     def test_only_creating_user_can_view_export_job(self, role):
         site, user1 = factories.get_site_with_authenticated_member(
