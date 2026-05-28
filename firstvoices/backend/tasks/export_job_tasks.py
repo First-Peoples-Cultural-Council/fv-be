@@ -9,8 +9,7 @@ from django.utils import timezone
 
 from backend import models
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
-from backend.models.jobs import ExportJob
+from backend.models.jobs import ExportJob, JobStatus
 from backend.search.queries.query_builder import (
     get_base_entries_search_query,
     get_base_entries_sort_query,

@@ -11,7 +11,7 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
-from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
+from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.import_job_tasks import (
     attach_csv_to_report,
@@ -178,10 +178,10 @@ def run_update_job(data, update_job):
             missing_referenced_media,
             dry_run=False,
         )
-        update_job.status = JobStatus.COMPLETE
+        update_job.status = ImportJobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
     finally:
         update_job.save()
 
@@ -205,10 +205,10 @@ def dry_run_update_job(data, update_job):
             missing_referenced_media_ids,
             dry_run=True,
         )
-        update_job.validation_status = JobStatus.COMPLETE
+        update_job.validation_status = ImportJobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
     finally:
         update_job.save()
 
@@ -228,28 +228,28 @@ def validate_update_job(update_job_id):
     data = tablib.Dataset().load(file, format="csv")
 
     # Checks to ensure consistency
-    if update_job.validation_status != JobStatus.ACCEPTED:
+    if update_job.validation_status != ImportJobStatus.ACCEPTED:
         logger.info("This job cannot be run due to consistency issues.")
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     if update_job.status in [
-        JobStatus.ACCEPTED,
-        JobStatus.STARTED,
-        JobStatus.COMPLETE,
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+        ImportJobStatus.COMPLETE,
     ]:
         logger.info(
             "This job could not be started as it is either queued, or already running or completed. "
             f"Update job id: {update_job_id}."
         )
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     verify_no_other_import_jobs_running(update_job)
 
-    update_job.validation_status = JobStatus.STARTED
+    update_job.validation_status = ImportJobStatus.STARTED
     update_job.validation_task_id = task_id
 
     dry_run_update_job(data, update_job)
@@ -273,25 +273,25 @@ def confirm_update_job(update_job_id):
     data = tablib.Dataset().load(file, format="csv")
 
     # Checks to ensure consistency
-    if update_job.status != JobStatus.ACCEPTED:
+    if update_job.status != ImportJobStatus.ACCEPTED:
         logger.info(
             f"This job cannot be run due to consistency issues. Update job id: {update_job_id}."
         )
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
         update_job.save()
         return
 
-    if update_job.validation_status != JobStatus.COMPLETE:
+    if update_job.validation_status != ImportJobStatus.COMPLETE:
         logger.info(
             f"Please validate the job before confirming the import. Update job id: {update_job_id}."
         )
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     verify_no_other_import_jobs_running(update_job)
 
-    update_job.status = JobStatus.STARTED
+    update_job.status = ImportJobStatus.STARTED
     update_job.task_id = task_id
 
     run_update_job(data, update_job)

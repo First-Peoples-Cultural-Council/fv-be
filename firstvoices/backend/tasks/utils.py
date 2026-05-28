@@ -9,12 +9,8 @@ from django.utils.text import get_valid_filename
 from rest_framework.exceptions import ValidationError
 
 from backend.models.files import File
-from backend.models.import_jobs import (
-    ImportJob,
-    ImportJobReportRow,
-    JobStatus,
-    RowStatus,
-)
+from backend.models.import_jobs import ImportJob, ImportJobReportRow, RowStatus
+from backend.models.jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.utils.character_utils import clean_input
 

@@ -2,7 +2,7 @@ import pytest
 
 from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
 from backend.tests.utils import get_sample_file
@@ -36,8 +36,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -69,8 +69,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -106,8 +106,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -149,8 +149,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -180,8 +180,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -200,8 +200,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -226,7 +226,7 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
+            validation_status=ImportJobStatus.COMPLETE,
         )
         confirm_import_job(import_job.id)
 
@@ -250,8 +250,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -276,8 +276,8 @@ class TestImportJobRelatedEntries:
             site=self.site,
             data=file,
             run_as_user=self.user,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
