@@ -34,7 +34,6 @@ editdistance==0.8.1
 elastic-transport==8.17.1
 elasticsearch==8.18.0
 et-xmlfile==2.0.0
-eventlet==0.41.0
 factory-boy==3.3.3
 Faker==40.19.1
 ffmpeg-python==0.2.0
@@ -79,7 +78,7 @@ redis==7.4.0
 regex==2026.4.4
 requests==2.34.0
 rules==3.5
-sentry-sdk==2.55.0
+sentry-sdk==2.61.0
 six==1.17.0
 sqlparse==0.5.5
 tablib==3.9.0
