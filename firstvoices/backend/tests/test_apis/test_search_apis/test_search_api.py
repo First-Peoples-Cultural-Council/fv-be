@@ -418,6 +418,18 @@ class TestSearchAPI(
         assert len(response_data["results"]) == 0
         assert response_data["count"] == 0
 
+    def test_search_page_size_maximum(self):
+        response = self.client.get(
+            self.get_list_endpoint() + f"?pageSize={MAXIMUM_ENTRIES_PER_SEARCH + 1}"
+        )
+        response_data = json.loads(response.content)
+        assert response.status_code == 400
+        assert (
+            response_data[0]
+            == f"pageSize: The maximum number of results per page is {MAXIMUM_ENTRIES_PER_SEARCH}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_SEARCH} results."
+        )
+
     def test_search_page_and_page_size_maximum(self):
         response = self.client.get(
             self.get_list_endpoint() + f"?page=2&pageSize={MAXIMUM_ENTRIES_PER_SEARCH}"
