@@ -194,8 +194,8 @@ def get_pagination_params(request, paginator, page_size_limit=-1):
 
     if 0 < page_size_limit < page_size:
         raise ValidationError(
-            f"pageSize: The maximum number of items per page is {page_size_limit}. "
-            f"Please contact staff if you require more than {page_size_limit} items."
+            f"pageSize: The maximum number of results per page is {page_size_limit}. "
+            f"Please contact staff if you require more than {page_size_limit} results."
         )
 
     if page_size * page > page_size_limit:

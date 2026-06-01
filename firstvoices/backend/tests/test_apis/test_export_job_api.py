@@ -202,8 +202,8 @@ class TestExportJobAPI(
         response_data = json.loads(post_response.content)
         assert (
             response_data[0]
-            == f"pageSize: The maximum number of items per page is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
-            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} items."
+            == f"pageSize: The maximum number of results per page is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} results."
         )
 
     @pytest.mark.django_db
