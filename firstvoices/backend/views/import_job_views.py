@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import transaction
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -26,8 +27,7 @@ from backend.views.base_views import (
 )
 from firstvoices.celery import link_error_handler
 
-# todo: Add email from env
-SUPPORT_USER_EMAIL = ""
+SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 
 @extend_schema_view(
@@ -255,8 +255,20 @@ class ImportJobViewSet(
     @action(detail=True, methods=["post"])
     def notify(self, request, site_slug=None, pk=None):
 
-        # todo: Check current status
         import_job_id = self.kwargs["pk"]
+
+        curr_job = ImportJob.objects.get(id=import_job_id)
+        if curr_job.validation_status == ImportJobStatus.READY_FOR_IMPORT:
+            # todo: Review the following validation error
+            raise ValidationError(
+                "The test is already marked ready for import. "
+                "Please wait or reach out to us for any further help."
+            )
+
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
+            raise ValidationError(
+                "Please validate the job before marking it ready for import."
+            )
 
         url = request.build_absolute_uri(
             reverse(

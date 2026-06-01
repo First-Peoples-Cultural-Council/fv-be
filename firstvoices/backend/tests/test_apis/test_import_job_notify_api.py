@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.core import mail
 from rest_framework.reverse import reverse
@@ -16,7 +18,7 @@ from backend.views.import_job_views import SUPPORT_USER_EMAIL
 
 @pytest.mark.django_db
 class TestImportJobNotifyApi(BaseSiteContentApiTest):
-    API_CONFIRM_ACTION = "api:importjob-notify"
+    API_NOTIFY_ACTION = "api:importjob-notify"
 
     def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
@@ -43,8 +45,7 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         assert len(mail.outbox) == 0
 
         url = reverse(
-            "api:importjob-notify",
-            kwargs={"site_slug": self.site.slug, "pk": self.import_job.id},
+            self.API_NOTIFY_ACTION, args=[self.site.slug, str(self.import_job.id)]
         )
 
         response = self.client.post(url)
@@ -60,8 +61,7 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
 
     def test_notify_updates_job_status_to_ready(self):
         url = reverse(
-            "api:importjob-notify",
-            kwargs={"site_slug": self.site.slug, "pk": self.import_job.id},
+            self.API_NOTIFY_ACTION, args=[self.site.slug, str(self.import_job.id)]
         )
 
         response = self.client.post(url)
@@ -70,3 +70,43 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
 
         import_job = ImportJob.objects.get(id=self.import_job.id)
         assert import_job.status == ImportJobStatus.READY_FOR_IMPORT
+
+    @pytest.mark.parametrize(
+        "validation_status",
+        [
+            None,
+            ImportJobStatus.ACCEPTED,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.FAILED,
+            ImportJobStatus.CANCELLED,
+        ],
+    )
+    def test_notify_job_only_works_on_validated_jobs(self, validation_status):
+        self.import_job.validation_status = validation_status
+        self.import_job.save()
+
+        notify_endpoint = reverse(
+            self.API_NOTIFY_ACTION, args=[self.site.slug, str(self.import_job.id)]
+        )
+        response = self.client.post(notify_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert "Please validate the job before marking it ready for import." in response
+
+    def test_cannot_mark_a_test_already_marked_ready_for_import(self):
+        self.import_job.validation_status = ImportJobStatus.READY_FOR_IMPORT
+        self.import_job.save()
+
+        notify_endpoint = reverse(
+            self.API_NOTIFY_ACTION, args=[self.site.slug, str(self.import_job.id)]
+        )
+        response = self.client.post(notify_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+
+        assert (
+            "The test is already marked ready for import. Please wait or reach out to us for any further help."
+            in response
+        )
