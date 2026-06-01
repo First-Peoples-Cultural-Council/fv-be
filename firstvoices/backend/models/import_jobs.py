@@ -15,16 +15,12 @@ from backend.permissions import predicates
 
 
 class ImportJobStatus(models.TextChoices):
-    # todo: remove expired status
-
     # From BaseJob.JobStatus
     ACCEPTED = "accepted", "Accepted"
     STARTED = "started", "Started"
     COMPLETE = "complete", "Complete"
     FAILED = "failed", "Failed"
     CANCELLED = "cancelled", "Cancelled"
-    EXPIRED = "expired", "Expired"
-
     READY_FOR_IMPORT = "ready_for_import", "Ready for import"
 
 
