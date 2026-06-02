@@ -3,6 +3,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from redis.exceptions import ConnectionError
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -291,8 +292,8 @@ class ImportJobViewSet(
             import_job = ImportJob.objects.get(id=import_job_id)
             import_job.status = ImportJobStatus.READY_FOR_IMPORT
             import_job.save()
-        except Exception as e:
+        except ConnectionError as e:
             error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
-            raise Exception(error_message)
+            raise ConnectionError(error_message)
 
         return Response(status=status.HTTP_202_ACCEPTED)
