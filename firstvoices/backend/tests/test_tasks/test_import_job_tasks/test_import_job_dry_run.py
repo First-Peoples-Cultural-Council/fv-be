@@ -186,7 +186,7 @@ class TestImportJobDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
 
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 3
         assert validation_report.error_rows == 0
 
     def test_mix_of_invalid_rows(self):
@@ -222,8 +222,8 @@ class TestImportJobDryRun:
         )
 
         assert validation_report.new_rows == 1  # control row
-        assert len(error_rows) == 5
-        assert error_rows_numbers == [2, 3, 4, 5, 6]
+        assert len(error_rows) == 6
+        assert error_rows_numbers == [2, 3, 4, 5, 6, 7]
 
         # re-opening the file
         file_content = get_sample_file(
@@ -240,7 +240,7 @@ class TestImportJobDryRun:
             format="csv",
         )
 
-        assert len(failed_rows_csv_table) == 5
+        assert len(failed_rows_csv_table) == 6
 
         for i in range(0, len(error_rows_numbers)):
             input_index = (

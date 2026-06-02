@@ -210,10 +210,6 @@ class TestImportJob:
         )
         confirm_import_job(import_job.id)
 
-        # Verifying default type
-        empty_type = DictionaryEntry.objects.get(title="test_default_values_empty_type")
-        assert empty_type.type == TypeOfDictionaryEntry.WORD
-
         # default visibility
         empty_visibility = DictionaryEntry.objects.get(
             title="test_default_values_empty_visibility"
