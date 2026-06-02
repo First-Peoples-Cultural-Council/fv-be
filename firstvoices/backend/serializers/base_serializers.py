@@ -68,10 +68,7 @@ class HideEmailFieldsMixin:
 
         site = instance.site
 
-        try:
-            membership = Membership.objects.get(user=user, site=site)
-        except Membership.DoesNotExist:
-            membership = None
+        membership = user.get_site_membership_cached(site)
 
         app_role = user.app_role_cached
         is_not_staff = app_role < AppRole.STAFF

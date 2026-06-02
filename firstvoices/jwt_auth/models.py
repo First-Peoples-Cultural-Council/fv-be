@@ -34,6 +34,10 @@ class User(AbstractUser):
 
     password = models.CharField(null=True, blank=False, max_length=128)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._site_membership_cache = {}
+
     @property
     def username(self):
         return self.id
@@ -49,6 +53,19 @@ class User(AbstractUser):
     def app_role_cached(self):
         membership = getattr(self, "app_role", None)
         return membership.role if membership else -1
+
+    def get_site_membership_cached(self, site):
+        if site is None:
+            return None
+        key = str(site.pk)
+        if key not in self._site_membership_cache:
+            # Importing here to avoid circular imports issue
+            from backend.models import Membership
+
+            self._site_membership_cache[key] = Membership.objects.filter(
+                user=self, site=site
+            ).first()
+        return self._site_membership_cache[key]
 
     class Meta:
         db_table = "user"
