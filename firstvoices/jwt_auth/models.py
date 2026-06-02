@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.functional import cached_property
 
 from .managers import UserManager
 
@@ -43,6 +44,11 @@ class User(AbstractUser):
     @property
     def natural_key(self):
         return (self.email,)
+
+    @cached_property
+    def app_role_cached(self):
+        membership = getattr(self, "app_role", None)
+        return membership.role if membership else -1
 
     class Meta:
         db_table = "user"
