@@ -40,19 +40,32 @@ class SearchResultPrefetchMixin:
             Prefetch(
                 "related_audio",
                 queryset=Audio.objects.visible(user)
-                .select_related("original")
+                .select_related(
+                    "original",
+                    "created_by",
+                    "last_modified_by",
+                    "system_last_modified_by",
+                )
                 .prefetch_related("speakers"),
             ),
             Prefetch(
                 "related_images",
                 queryset=Image.objects.visible(user).select_related(
-                    "original", "small"
+                    "original",
+                    "small",
+                    "created_by",
+                    "last_modified_by",
+                    "system_last_modified_by",
                 ),
             ),
             Prefetch(
                 "related_videos",
                 queryset=Video.objects.visible(user).select_related(
-                    "original", "small"
+                    "original",
+                    "small",
+                    "created_by",
+                    "last_modified_by",
+                    "system_last_modified_by",
                 ),
             ),
         )

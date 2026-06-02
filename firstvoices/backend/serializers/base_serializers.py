@@ -10,7 +10,6 @@ from rest_framework_nested.relations import NestedHyperlinkedIdentityField
 from backend.serializers.utils.context_utils import get_site_from_context
 
 from ..models import Membership, Site
-from ..models.app import AppMembership
 from ..models.constants import AppRole, Role, Visibility
 from . import fields
 from .fields import WritableVisibilityField
@@ -69,19 +68,11 @@ class HideEmailFieldsMixin:
 
         site = instance.site
 
-        try:
-            membership = Membership.objects.get(user=user, site=site)
-        except Membership.DoesNotExist:
-            membership = None
+        membership = user.get_site_membership_cached(site)
 
-        try:
-            app_role = AppMembership.objects.get(
-                user=user,
-            )
-        except AppMembership.DoesNotExist:
-            app_role = None
+        app_role = user.app_role_cached
+        is_not_staff = app_role < AppRole.STAFF
 
-        is_not_staff = app_role.role < AppRole.STAFF if app_role else True
         #  Hide email fields if the user is not staff and not an assistant or higher in site membership
         if is_not_staff and (not membership or membership.role < Role.ASSISTANT):
             self._remove_email_fields(data)
