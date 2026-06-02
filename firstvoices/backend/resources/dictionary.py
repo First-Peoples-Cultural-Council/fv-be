@@ -27,7 +27,7 @@ class DictionaryEntryResource(
     type = fields.Field(
         column_name="type",
         widget=ChoicesWidget(
-            TypeOfDictionaryEntry.choices, default=TypeOfDictionaryEntry.WORD
+            TypeOfDictionaryEntry.choices,
         ),
         attribute="type",
     )

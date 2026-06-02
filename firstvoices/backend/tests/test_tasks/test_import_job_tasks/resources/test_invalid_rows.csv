@@ -5,3 +5,4 @@ test_invalid_rows_word_1,xyz,Public,123,TRUE,FALSE,Adjective,invalid type entry
 test_invalid_rows_phrase_2,phrase,notAValidVis,123,FALSE,TRUE,Suffix,invalid visibility
 test_invalid_rows_phrase_3,phrase,Team,123,notBoolValue,TRUE,Adjective,invalid boolean value
 test_invalid_rows_word_2,xyz,Public,123,TRUE,FALSE,invalid_part,invalid_part_of_speech
+test_invalid_rows_word_3,,Public,123,TRUE,TRUE,Adjective,Missing type
