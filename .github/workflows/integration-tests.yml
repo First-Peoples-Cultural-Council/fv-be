@@ -44,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.debug.txt ]; then pip install -r requirements.debug.txt; fi
       - name: Install ffmpeg
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Start docker-compose
         run: |
           docker compose -f docker-compose.yml up -d
