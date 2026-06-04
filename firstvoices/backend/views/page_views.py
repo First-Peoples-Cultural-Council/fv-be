@@ -127,6 +127,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 "site__language",
                 "created_by",
                 "last_modified_by",
+                "system_last_modified_by",
             )
             .annotate(title_lower=Lower("title"))
             .order_by("title_lower")
@@ -144,6 +145,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 "site__language",
                 "created_by",
                 "last_modified_by",
+                "system_last_modified_by",
                 *get_select_related_media_fields("banner_image"),
                 *get_select_related_media_fields("banner_video"),
             )
@@ -152,7 +154,11 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                     "widgets__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        "site",
+                        "site__language",
+                        "created_by",
+                        "last_modified_by",
+                        "system_last_modified_by",
                     )
                     .prefetch_related("widgetsettings_set"),
                 ),

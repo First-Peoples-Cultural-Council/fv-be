@@ -90,17 +90,23 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(
-                        is_enabled=True
-                    ).prefetch_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        "site",
+                        "site__language",
+                        "created_by",
+                        "last_modified_by",
+                        "system_last_modified_by",
                     ),
                 ),
                 Prefetch(
                     "homepage__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        "site",
+                        "site__language",
+                        "created_by",
+                        "last_modified_by",
+                        "system_last_modified_by",
                     )
                     .prefetch_related(
                         Prefetch(
@@ -121,7 +127,13 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        "site",
+                        "site__language",
+                        "created_by",
+                        "last_modified_by",
+                        "system_last_modified_by",
+                    ),
                 ),
             )
         )
@@ -165,12 +177,23 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         queryset = (
             Membership.objects.filter(user=self.request.user)
             .select_related(
-                "site", "site__language", *get_select_related_media_fields("site__logo")
+                "site",
+                "site__language",
+                *get_select_related_media_fields("site__logo"),
+                "created_by",
+                "last_modified_by",
+                "system_last_modified_by",
             )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        "site",
+                        "site__language",
+                        "created_by",
+                        "last_modified_by",
+                        "system_last_modified_by",
+                    ),
                 ),
             )
             .order_by(Upper("site__title"))
