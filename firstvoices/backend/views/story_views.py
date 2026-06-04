@@ -19,7 +19,11 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
-from .utils import get_created_ordered_media_prefetch_list, get_media_prefetch_list
+from .utils import (
+    get_created_ordered_media_prefetch_list,
+    get_media_prefetch_list,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -124,7 +128,9 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
         site = self.get_validated_site()
         return (
             Story.objects.filter(site=site)
-            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .select_related(
+                *get_site_content_select_related_fields(),
+            )
             .prefetch_related(
                 *get_media_prefetch_list(self.request.user),
                 Prefetch(
@@ -132,12 +138,12 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
                     queryset=StoryPage.objects.filter(site=site)
                     .order_by("ordering")
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related(
                         *get_created_ordered_media_prefetch_list(self.request.user)
                     ),
-                )
+                ),
             )
         )
 
@@ -146,7 +152,9 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
         return (
             Story.objects.filter(site=site)
             .order_by("title")
-            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .select_related(
+                *get_site_content_select_related_fields(),
+            )
             .prefetch_related(
                 *get_media_prefetch_list(self.request.user),
                 Prefetch(
@@ -154,12 +162,12 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
                     queryset=StoryPage.objects.filter(site=site)
                     .order_by("ordering")
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related(
                         *get_created_ordered_media_prefetch_list(self.request.user)
                     ),
-                )
+                ),
             )
         )
 

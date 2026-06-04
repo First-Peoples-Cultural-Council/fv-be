@@ -11,7 +11,10 @@ from backend.serializers.character_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-from backend.views.utils import get_media_prefetch_list
+from backend.views.utils import (
+    get_media_prefetch_list,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -85,7 +88,7 @@ class CharactersViewSet(
         return (
             Character.objects.filter(site=site)
             .order_by("sort_order")
-            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .select_related(*get_site_content_select_related_fields())
             .prefetch_related(
                 "variants",
                 *media_prefetches,
@@ -135,5 +138,5 @@ class IgnoredCharactersViewSet(
     def get_queryset(self):
         site = self.get_validated_site()
         return IgnoredCharacter.objects.filter(site=site).select_related(
-            "site", "site__language", "created_by", "last_modified_by"
+            *get_site_content_select_related_fields()
         )

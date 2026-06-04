@@ -17,6 +17,7 @@ from backend.serializers.immersion_label_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import key_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_site_content_select_related_fields
 
 
 @extend_schema_view(
@@ -135,11 +136,7 @@ class ImmersionLabelViewSet(
         return (
             ImmersionLabel.objects.filter(site=site)
             .select_related(
-                "site",
-                "site__language",
-                "created_by",
-                "last_modified_by",
-                "dictionary_entry",
+                *get_site_content_select_related_fields() + "dictionary_entry",
             )
             .order_by("key")
         )

@@ -17,7 +17,10 @@ from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
 from ..models.constants import Role
-from .utils import get_select_related_media_fields
+from .utils import (
+    get_select_related_media_fields,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -91,22 +94,14 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
                 Prefetch(
                     "sitefeature_set",
                     queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
-                        "site",
-                        "site__language",
-                        "created_by",
-                        "last_modified_by",
-                        "system_last_modified_by",
+                        *get_site_content_select_related_fields(),
                     ),
                 ),
                 Prefetch(
                     "homepage__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site",
-                        "site__language",
-                        "created_by",
-                        "last_modified_by",
-                        "system_last_modified_by",
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related(
                         Prefetch(
@@ -128,11 +123,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
                 Prefetch(
                     "sitefeature_set",
                     queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
-                        "site",
-                        "site__language",
-                        "created_by",
-                        "last_modified_by",
-                        "system_last_modified_by",
+                        *get_site_content_select_related_fields(),
                     ),
                 ),
             )
@@ -177,22 +168,14 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         queryset = (
             Membership.objects.filter(user=self.request.user)
             .select_related(
-                "site",
-                "site__language",
+                *get_site_content_select_related_fields(),
                 *get_select_related_media_fields("site__logo"),
-                "created_by",
-                "last_modified_by",
-                "system_last_modified_by",
             )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",
                     queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
-                        "site",
-                        "site__language",
-                        "created_by",
-                        "last_modified_by",
-                        "system_last_modified_by",
+                        *get_site_content_select_related_fields(),
                     ),
                 ),
             )

@@ -25,7 +25,10 @@ from backend.serializers.join_request_serializers import JoinRequestDetailSerial
 from backend.tasks.send_email_tasks import send_email_task
 from backend.views import doc_strings
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-from backend.views.utils import get_site_url_from_appjson
+from backend.views.utils import (
+    get_site_content_select_related_fields,
+    get_site_url_from_appjson,
+)
 
 
 @extend_schema_view(
@@ -146,9 +149,7 @@ class JoinRequestViewSet(
         return (
             JoinRequest.objects.filter(site=site, status=JoinRequestStatus.PENDING)
             .order_by("-created")
-            .select_related(
-                "site", "site__language", "created_by", "last_modified_by", "user"
-            )
+            .select_related(*get_site_content_select_related_fields() + "user")
         )
 
     def get_validated_site(self):

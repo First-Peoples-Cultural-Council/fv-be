@@ -8,6 +8,10 @@ from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import (
+    get_site_content_select_related_fields,
+    get_standard_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -103,11 +107,7 @@ class SiteWidgetViewSet(
             SiteWidget.objects.filter(site=site)
             .order_by("title")
             .select_related(
-                "site",
-                "site__language",
-                "created_by",
-                "last_modified_by",
-                "system_last_modified_by",
+                *get_site_content_select_related_fields(),
             )
             .prefetch_related(
                 Prefetch(
@@ -115,9 +115,7 @@ class SiteWidgetViewSet(
                     queryset=WidgetSettings.objects.visible(
                         self.request.user
                     ).select_related(
-                        "created_by",
-                        "last_modified_by",
-                        "system_last_modified_by",
+                        *get_standard_select_related_fields(),
                     ),
                 ),
             )
