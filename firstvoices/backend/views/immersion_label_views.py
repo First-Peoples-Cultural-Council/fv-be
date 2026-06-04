@@ -136,7 +136,8 @@ class ImmersionLabelViewSet(
         return (
             ImmersionLabel.objects.filter(site=site)
             .select_related(
-                *get_site_content_select_related_fields() + "dictionary_entry",
+                *get_site_content_select_related_fields(),
+                "dictionary_entry",
             )
             .order_by("key")
         )

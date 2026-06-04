@@ -133,5 +133,5 @@ class MembershipViewSet(
         return (
             Membership.objects.filter(site=site)
             .order_by("-role", "user")
-            .select_related(*get_site_content_select_related_fields() + "user")
+            .select_related(*get_site_content_select_related_fields(), "user")
         )

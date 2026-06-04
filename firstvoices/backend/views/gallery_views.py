@@ -123,14 +123,14 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
                     queryset=GalleryItem.objects.visible(
                         self.request.user
                     ).select_related(
-                        *get_standard_select_related_fields()
-                        * get_select_related_media_fields("image"),
+                        *get_standard_select_related_fields(),
+                        *get_select_related_media_fields("image"),
                     ),
                 ),
             )
             .select_related(
-                *get_site_content_select_related_fields()
-                * get_select_related_media_fields("cover_image"),
+                *get_site_content_select_related_fields(),
+                *get_select_related_media_fields("cover_image"),
             )
         )
 

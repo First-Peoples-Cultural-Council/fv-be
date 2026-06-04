@@ -149,7 +149,7 @@ class JoinRequestViewSet(
         return (
             JoinRequest.objects.filter(site=site, status=JoinRequestStatus.PENDING)
             .order_by("-created")
-            .select_related(*get_site_content_select_related_fields() + "user")
+            .select_related(*get_site_content_select_related_fields(), "user")
         )
 
     def get_validated_site(self):
