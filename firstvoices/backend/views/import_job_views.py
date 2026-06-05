@@ -260,11 +260,7 @@ class ImportJobViewSet(
 
         curr_job = ImportJob.objects.get(id=import_job_id)
         if curr_job.validation_status == ImportJobStatus.READY_FOR_IMPORT:
-            # todo: Review the following validation error
-            raise ValidationError(
-                "The test is already marked ready for import. "
-                "Please wait or reach out to us for any further help."
-            )
+            raise ValidationError("The import-job is already marked ready for import. ")
 
         if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
