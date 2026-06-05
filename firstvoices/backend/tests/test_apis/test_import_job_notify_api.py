@@ -106,7 +106,4 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
 
         response = json.loads(response.content)
 
-        assert (
-            "The test is already marked ready for import. Please wait or reach out to us for any further help."
-            in response
-        )
+        assert "The import-job is already marked ready for import." in response
