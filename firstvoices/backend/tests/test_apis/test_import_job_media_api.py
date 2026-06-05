@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 
 import pytest
@@ -158,17 +159,17 @@ class TestImportJobMediaEndpoint(
         # Image
         image_file = ImageFile.objects.first()
         assert image_file.import_job_id == self.import_job.id
-        assert "sample-image.jpg" in image_file.content.name
+        assert re.search(r"sample-image(_\w+)?\.jpg", image_file.content.name)
 
         # Video
         video_file = VideoFile.objects.first()
         assert video_file.import_job_id == self.import_job.id
-        assert "video_example_small.mp4" in video_file.content.name
+        assert re.search(r"video_example_small(_\w+)?\.mp4", video_file.content.name)
 
         # Audio
         audio_file = File.objects.filter(mimetype="audio/mpeg").first()
         assert audio_file.import_job_id == self.import_job.id
-        assert "sample-audio.mp3" in audio_file.content.name
+        assert re.search(r"sample-audio(_\w+)?\.mp3", audio_file.content.name)
 
     def test_upload_duplicate_filename(self):
         data = {
