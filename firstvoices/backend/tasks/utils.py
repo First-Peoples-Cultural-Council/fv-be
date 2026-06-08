@@ -9,8 +9,12 @@ from django.utils.text import get_valid_filename
 from rest_framework.exceptions import ValidationError
 
 from backend.models.files import File
-from backend.models.import_jobs import ImportJob, ImportJobReportRow, RowStatus
-from backend.models.jobs import JobStatus
+from backend.models.import_jobs import (
+    ImportJob,
+    ImportJobReportRow,
+    ImportJobStatus,
+    RowStatus,
+)
 from backend.models.media import ImageFile, VideoFile
 from backend.utils.character_utils import clean_input
 
@@ -21,8 +25,8 @@ def verify_no_other_import_jobs_running(current_job):
 
     existing_incomplete_jobs = ImportJob.objects.filter(
         Q(site=current_job.site),
-        Q(status__in=[JobStatus.ACCEPTED, JobStatus.STARTED])
-        | Q(validation_status__in=[JobStatus.ACCEPTED, JobStatus.STARTED]),
+        Q(status__in=[ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED])
+        | Q(validation_status__in=[ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]),
     ).exclude(id=current_job.id)
 
     if len(existing_incomplete_jobs):

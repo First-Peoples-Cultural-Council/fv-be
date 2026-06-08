@@ -14,8 +14,8 @@ from backend.models.import_jobs import (
     ImportJobMode,
     ImportJobReport,
     ImportJobReportRow,
+    ImportJobStatus,
 )
-from backend.models.jobs import JobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
 from backend.serializers.files_serializers import FileSerializer, FileUploadSerializer
@@ -65,9 +65,10 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             SupportedFileEncodingValidator(),
         ],
     )
+    status = fields.EnumLabelField(enum=ImportJobStatus, read_only=True)
     run_as_user = serializers.CharField(required=False)
     validation_task_id = serializers.CharField(read_only=True)
-    validation_status = fields.EnumLabelField(enum=JobStatus, read_only=True)
+    validation_status = fields.EnumLabelField(enum=ImportJobStatus, read_only=True)
     validation_report = ImportReportSerializer(read_only=True)
     failed_rows_csv = FileSerializer(read_only=True)
 

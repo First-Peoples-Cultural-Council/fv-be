@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
 from backend.models.files import File
-from backend.models.jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tests.factories import FileFactory, ImportJobFactory, get_site_with_member
 from backend.tests.test_apis.base.base_media_test import FormDataMixin
@@ -115,7 +115,7 @@ class TestImportJobMediaEndpoint(
         images = ImageFile.objects.filter(import_job_id=self.import_job.id)
         assert images.count() == 0
 
-    @pytest.mark.parametrize("job_status", JobStatus.names)
+    @pytest.mark.parametrize("job_status", ImportJobStatus.names)
     def test_already_confirmed(self, job_status):
         data = {
             "file": [

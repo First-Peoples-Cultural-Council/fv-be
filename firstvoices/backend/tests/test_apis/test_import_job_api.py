@@ -3,8 +3,7 @@ import json
 import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
-from backend.models.import_jobs import ImportJob, ImportJobMode
-from backend.models.jobs import JobStatus
+from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.tests import factories
 from backend.tests.factories.import_job_factories import ImportJobFactory
 from backend.tests.test_apis.base.base_async_api_test import (
@@ -417,7 +416,8 @@ class TestImportEndpoints(
         assert "failedRowsCsv" in response_data
 
     @pytest.mark.parametrize(
-        "job_status", [JobStatus.ACCEPTED, JobStatus.COMPLETE, JobStatus.STARTED]
+        "job_status",
+        [ImportJobStatus.ACCEPTED, ImportJobStatus.COMPLETE, ImportJobStatus.STARTED],
     )
     def test_cannot_delete_successful_job(self, job_status):
         site, _ = factories.get_site_with_app_admin(
@@ -436,7 +436,9 @@ class TestImportEndpoints(
         jobs = ImportJob.objects.filter(id=job.id)
         assert jobs.count() == 1
 
-    @pytest.mark.parametrize("job_status", [JobStatus.ACCEPTED, JobStatus.STARTED])
+    @pytest.mark.parametrize(
+        "job_status", [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]
+    )
     def test_cannot_delete_job_with_started_validation(self, job_status):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
