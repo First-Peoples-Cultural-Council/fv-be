@@ -17,7 +17,10 @@ from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
 from ..models.constants import Role
-from .utils import get_select_related_media_fields
+from .utils import (
+    get_select_related_media_fields,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -90,17 +93,15 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(
-                        is_enabled=True
-                    ).prefetch_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
                     ),
                 ),
                 Prefetch(
                     "homepage__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related(
                         Prefetch(
@@ -121,7 +122,9 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
+                    ),
                 ),
             )
         )
@@ -165,12 +168,15 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         queryset = (
             Membership.objects.filter(user=self.request.user)
             .select_related(
-                "site", "site__language", *get_select_related_media_fields("site__logo")
+                *get_site_content_select_related_fields(),
+                *get_select_related_media_fields("site__logo"),
             )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
+                    ),
                 ),
             )
             .order_by(Upper("site__title"))

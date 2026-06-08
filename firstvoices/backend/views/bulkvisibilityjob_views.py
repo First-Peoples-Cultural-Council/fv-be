@@ -8,6 +8,7 @@ from backend.tasks.visibility_tasks import bulk_change_visibility
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_site_content_select_related_fields
 from firstvoices.celery import link_error_handler
 
 
@@ -58,7 +59,7 @@ class BulkVisibilityJobViewSet(
         site = self.get_validated_site()
         return (
             BulkVisibilityJob.objects.filter(site=site)
-            .select_related("site", "created_by", "last_modified_by")
+            .select_related(*get_site_content_select_related_fields())
             .order_by("created")
         )
 

@@ -19,7 +19,10 @@ from backend.views.api_doc_variables import (
     site_slug_parameter,
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-from backend.views.utils import get_select_related_media_fields
+from backend.views.utils import (
+    get_select_related_media_fields,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -123,10 +126,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 "widgets",
                 "banner_image",
                 "banner_video",
-                "site",
-                "site__language",
-                "created_by",
-                "last_modified_by",
+                *get_site_content_select_related_fields(),
             )
             .annotate(title_lower=Lower("title"))
             .order_by("title_lower")
@@ -140,10 +140,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 "widgets",
                 "banner_image",
                 "banner_video",
-                "site",
-                "site__language",
-                "created_by",
-                "last_modified_by",
+                *get_site_content_select_related_fields(),
                 *get_select_related_media_fields("banner_image"),
                 *get_select_related_media_fields("banner_video"),
             )
@@ -152,7 +149,7 @@ class SitePageViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                     "widgets__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related("widgetsettings_set"),
                 ),

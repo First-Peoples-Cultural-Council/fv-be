@@ -11,7 +11,11 @@ from backend.serializers.gallery_serializers import (
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
-from backend.views.utils import get_select_related_media_fields
+from backend.views.utils import (
+    get_select_related_media_fields,
+    get_site_content_select_related_fields,
+    get_standard_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -119,13 +123,13 @@ class GalleryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVie
                     queryset=GalleryItem.objects.visible(
                         self.request.user
                     ).select_related(
+                        *get_standard_select_related_fields(),
                         *get_select_related_media_fields("image"),
                     ),
                 ),
             )
             .select_related(
-                "created_by",
-                "last_modified_by",
+                *get_site_content_select_related_fields(),
                 *get_select_related_media_fields("cover_image"),
             )
         )

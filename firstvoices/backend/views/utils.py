@@ -8,6 +8,21 @@ from backend.models import AppJson
 from backend.models.media import Audio, Document, Image, Video
 
 
+def get_standard_select_related_fields():
+    return [
+        "created_by",
+        "last_modified_by",
+        "system_last_modified_by",
+    ]
+
+
+def get_site_content_select_related_fields():
+    return get_standard_select_related_fields() + [
+        "site",
+        "site__language",
+    ]
+
+
 def get_select_related_media_fields(media_field_name):
     """
     Args:

@@ -24,6 +24,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
+from .utils import get_site_content_select_related_fields
 
 
 @extend_schema_view(
@@ -155,7 +156,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
         site = self.get_validated_site()
         return (
             Category.objects.filter(site=site)
-            .select_related("site", "created_by", "last_modified_by", "parent")
+            .select_related(*get_site_content_select_related_fields(), "parent")
             .prefetch_related("children")
             .all()
         )
@@ -220,12 +221,14 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
                 nested_query.add(~Q(pk__in=children_without_parents_in_query), Q.AND)
             return (
                 Category.objects.filter(query)
-                .select_related("parent")
+                .select_related(*get_site_content_select_related_fields(), "parent")
                 .prefetch_related(
                     Prefetch(
                         "children",
                         queryset=Category.objects.filter(nested_query)
-                        .select_related("parent")
+                        .select_related(
+                            *get_site_content_select_related_fields(), "parent"
+                        )
                         .order_by(Lower("title"))
                         .distinct(),
                     )
@@ -237,7 +240,7 @@ class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelVi
             nested_query = deepcopy(query)
             return (
                 Category.objects.filter(query)
-                .select_related("parent")
+                .select_related(*get_site_content_select_related_fields(), "parent")
                 .prefetch_related(
                     Prefetch(
                         "children",

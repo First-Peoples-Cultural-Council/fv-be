@@ -57,7 +57,9 @@ class TestUpdateEndpoints(TestImportEndpoints):
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "Update Job",
-            "data": get_sample_file("update_job/minimal_with_nulls.csv", "text/csv"),
+            "data": get_sample_file(
+                "update_job/test_create_with_nulls.csv", "text/csv"
+            ),
             "mode": "update",
         }
 

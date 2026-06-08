@@ -10,6 +10,7 @@ from backend.serializers.membership_serializers import MembershipDetailSerialize
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_site_content_select_related_fields
 
 
 @extend_schema_view(
@@ -132,7 +133,5 @@ class MembershipViewSet(
         return (
             Membership.objects.filter(site=site)
             .order_by("-role", "user")
-            .select_related(
-                "site", "site__language", "created_by", "last_modified_by", "user"
-            )
+            .select_related(*get_site_content_select_related_fields(), "user")
         )

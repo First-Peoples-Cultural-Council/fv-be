@@ -25,6 +25,7 @@ from backend.views.base_views import (
     SiteContentViewSetMixin,
 )
 from backend.views.search_site_entries_views import SITE_SEARCH_PARAMS
+from backend.views.utils import get_site_content_select_related_fields
 from firstvoices.celery import link_error_handler
 
 
@@ -135,7 +136,11 @@ class ExportJobViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ExportJob.objects.filter(site=site).order_by("-created")
+        return (
+            ExportJob.objects.filter(site=site)
+            .order_by("-created")
+            .select_related(*get_site_content_select_related_fields())
+        )
 
     def perform_create(self, serializer):
         self.pagination_class = SearchPageNumberPagination
