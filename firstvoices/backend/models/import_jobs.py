@@ -10,8 +10,18 @@ from backend.models.constants import (
     MAX_DESCRIPTION_LENGTH,
     MAX_NOTE_LENGTH,
 )
-from backend.models.jobs import BaseJob, JobStatus
+from backend.models.jobs import BaseJob
 from backend.permissions import predicates
+
+
+class ImportJobStatus(models.TextChoices):
+    # From BaseJob.JobStatus
+    ACCEPTED = "accepted", "Accepted"
+    STARTED = "started", "Started"
+    COMPLETE = "complete", "Complete"
+    FAILED = "failed", "Failed"
+    CANCELLED = "cancelled", "Cancelled"
+    READY_FOR_IMPORT = "ready_for_import", "Ready for import"
 
 
 class ImportJobMode(models.TextChoices):
@@ -106,8 +116,8 @@ class ImportJob(BaseJob):
 
     # overriding BaseJob
     status = models.CharField(
-        max_length=9,
-        choices=JobStatus.choices,
+        max_length=32,
+        choices=ImportJobStatus.choices,
         null=True,
         blank=True,
         default=None,
@@ -117,8 +127,8 @@ class ImportJob(BaseJob):
     validation_task_id = models.CharField(max_length=255, null=True, blank=True)
 
     validation_status = models.CharField(
-        max_length=9,
-        choices=JobStatus.choices,
+        max_length=32,
+        choices=ImportJobStatus.choices,
         null=True,
         blank=True,
         default=None,

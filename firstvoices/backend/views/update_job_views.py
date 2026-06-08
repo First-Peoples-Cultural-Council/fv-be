@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
+from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
 from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
@@ -165,7 +165,7 @@ class UpdateJobViewSet(ImportJobViewSet):
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for validation
-        curr_job.validation_status = JobStatus.ACCEPTED
+        curr_job.validation_status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
@@ -184,23 +184,23 @@ class UpdateJobViewSet(ImportJobViewSet):
 
         curr_job = ImportJob.objects.get(id=import_job_id, mode=ImportJobMode.UPDATE)
 
-        if curr_job.validation_status != JobStatus.COMPLETE:
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
                 "Please validate the job before confirming the import."
             )
 
-        if curr_job.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+        if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
             raise ValidationError(
                 "This job has already been confirmed and is currently being imported."
             )
 
-        if curr_job.status == JobStatus.COMPLETE:
+        if curr_job.status == ImportJobStatus.COMPLETE:
             raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for confirmation
-        curr_job.status = JobStatus.ACCEPTED
+        curr_job.status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(

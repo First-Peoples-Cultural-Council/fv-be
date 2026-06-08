@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
-from backend.models.jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tests import factories
 from backend.tests.factories import ImportJobFactory
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -27,7 +27,7 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         return {}
 
     def create_import_job(
-        self, site, status=None, validation_status=JobStatus.COMPLETE
+        self, site, status=None, validation_status=ImportJobStatus.COMPLETE
     ):
         return ImportJobFactory(
             site=site,
@@ -48,7 +48,7 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
         file = factories.FileFactory(content=file_content)
         self.import_job = ImportJobFactory(
-            site=self.site, data=file, validation_status=JobStatus.COMPLETE
+            site=self.site, data=file, validation_status=ImportJobStatus.COMPLETE
         )
 
     def test_confirm_action(self):
@@ -62,7 +62,9 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
 
         assert response.status_code == 202
 
-    @pytest.mark.parametrize("status", [JobStatus.ACCEPTED, JobStatus.STARTED])
+    @pytest.mark.parametrize(
+        "status", [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]
+    )
     def test_more_than_one_jobs_not_allowed(self, status):
         self.import_job.status = status
         self.import_job.save()
@@ -84,7 +86,9 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         )
 
     def test_reconfirming_a_completed_job_not_allowed(self):
-        import_job = self.create_import_job(site=self.site, status=JobStatus.COMPLETE)
+        import_job = self.create_import_job(
+            site=self.site, status=ImportJobStatus.COMPLETE
+        )
 
         confirm_endpoint = reverse(
             self.API_CONFIRM_ACTION,
@@ -97,10 +101,12 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
         response = json.loads(response.content)
         assert "This job has already finished importing." in response
 
-    @pytest.mark.parametrize("status", [JobStatus.ACCEPTED, JobStatus.STARTED])
+    @pytest.mark.parametrize(
+        "status", [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]
+    )
     def test_confirming_already_started_or_queued_job_not_allowed(self, status):
         # Completing the initial job
-        self.import_job.status = JobStatus.COMPLETE
+        self.import_job.status = ImportJobStatus.COMPLETE
         self.import_job.save()
 
         import_job = self.create_import_job(site=self.site, status=status)
@@ -121,7 +127,12 @@ class TestImportJobConfirmAction(BaseSiteContentApiTest):
 
     @pytest.mark.parametrize(
         "validation_status",
-        [None, JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED],
+        [
+            None,
+            ImportJobStatus.ACCEPTED,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.FAILED,
+        ],
     )
     def test_confirm_only_allowed_for_completed_dry_run(self, validation_status):
         # Cleaning up the job from setup_method

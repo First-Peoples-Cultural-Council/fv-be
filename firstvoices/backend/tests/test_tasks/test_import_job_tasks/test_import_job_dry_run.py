@@ -7,7 +7,7 @@ from backend.models import ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import ExternalDictionaryEntrySystem
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.utils import get_maximum_dictionary_entry_columns, get_sample_file
@@ -34,7 +34,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -56,7 +56,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -87,7 +87,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -116,7 +116,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -144,7 +144,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -177,7 +177,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -204,7 +204,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -259,7 +259,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -287,7 +287,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -319,7 +319,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         with patch(
@@ -330,7 +330,7 @@ class TestImportJobDryRun:
 
             # Refreshed import job instance
             import_job = ImportJob.objects.get(id=import_job.id)
-            assert import_job.validation_status == JobStatus.FAILED
+            assert import_job.validation_status == ImportJobStatus.FAILED
             assert "Random exception." in caplog.text
 
     def test_failed_rows_csv_not_generated_on_valid_rows(self):
@@ -347,7 +347,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -357,7 +357,12 @@ class TestImportJobDryRun:
 
     @pytest.mark.parametrize(
         "validation_status",
-        [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
+        [
+            None,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.COMPLETE,
+            ImportJobStatus.FAILED,
+        ],
     )
     def test_invalid_validation_status(self, validation_status, caplog):
         # Valid CSV
@@ -376,11 +381,12 @@ class TestImportJobDryRun:
 
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert "This job cannot be run due to consistency issues." in caplog.text
 
     @pytest.mark.parametrize(
-        "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+        "status",
+        [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED, ImportJobStatus.COMPLETE],
     )
     def test_invalid_job_status(self, status, caplog):
         # Valid CSV
@@ -394,13 +400,13 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
             status=status,
         )
 
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert (
             "This job could not be started as it is either queued, or already running or completed. "
             f"ImportJob id: {import_job.id}." in caplog.text
@@ -419,7 +425,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -440,7 +446,7 @@ class TestImportJobDryRun:
         factories.CategoryFactory.create(title="invalid", site=self.site)
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -479,7 +485,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -515,7 +521,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)

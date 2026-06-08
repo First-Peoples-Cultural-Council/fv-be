@@ -7,6 +7,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+
 import logging
 import os
 from decimal import Decimal
@@ -393,3 +394,5 @@ if ENABLE_SMTP_BACKEND:
 else:
     EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+SUPPORT_USER_EMAIL = os.getenv("SUPPORT_USER_EMAIL")

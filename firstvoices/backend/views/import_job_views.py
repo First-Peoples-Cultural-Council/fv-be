@@ -1,6 +1,9 @@
+from django.conf import settings
 from django.db import transaction
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from redis.exceptions import ConnectionError
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -8,12 +11,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import ImportJobMode
-from backend.models.import_jobs import ImportJob, JobStatus
+from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.serializers.import_job_serializers import (
     ImportJobDetailSerializer,
     ImportJobSerializer,
 )
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
+from backend.tasks.send_email_tasks import send_email_task
 from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -23,6 +27,8 @@ from backend.views.base_views import (
     SiteContentViewSetMixin,
 )
 from firstvoices.celery import link_error_handler
+
+SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 
 @extend_schema_view(
@@ -137,13 +143,18 @@ class ImportJobViewSet(
         **FVPermissionViewSetMixin.permission_type_map,
         "confirm": "change",
         "validate": "change",
+        "notify": "change",
     }
 
-    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    started_statuses = [
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+        ImportJobStatus.COMPLETE,
+    ]
 
     started_validation_statuses = [
-        JobStatus.ACCEPTED,
-        JobStatus.STARTED,
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
     ]
 
     import_job_modes = [ImportJobMode.SKIP_DUPLICATES, ImportJobMode.ALLOW_DUPLICATES]
@@ -185,7 +196,7 @@ class ImportJobViewSet(
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for validation
-        curr_job.validation_status = JobStatus.ACCEPTED
+        curr_job.validation_status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
@@ -204,22 +215,22 @@ class ImportJobViewSet(
 
         curr_job = ImportJob.objects.get(id=import_job_id)
 
-        if curr_job.validation_status != JobStatus.COMPLETE:
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
                 "Please validate the job before confirming the import."
             )
 
-        if curr_job.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+        if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
             raise ValidationError(
                 "This job has already been confirmed and is currently being imported."
             )
 
-        if curr_job.status == JobStatus.COMPLETE:
+        if curr_job.status == ImportJobStatus.COMPLETE:
             raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
 
-        curr_job.status = JobStatus.ACCEPTED
+        curr_job.status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         # Start the task
@@ -241,3 +252,44 @@ class ImportJobViewSet(
             )
 
         super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"])
+    def notify(self, request, site_slug=None, pk=None):
+
+        import_job_id = self.kwargs["pk"]
+
+        curr_job = ImportJob.objects.get(id=import_job_id)
+        if curr_job.validation_status == ImportJobStatus.READY_FOR_IMPORT:
+            raise ValidationError("The import-job is already marked ready for import.")
+
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
+            raise ValidationError(
+                "Please validate the job before marking it ready for import."
+            )
+
+        url = request.build_absolute_uri(
+            reverse(
+                "api:importjob-detail",
+                kwargs={"site_slug": site_slug, "pk": import_job_id},
+            )
+        )
+
+        subject = "FirstVoices Batch Import Job ready"
+        message = (
+            "The following team has a batch ready to be imported.\n"
+            f"Site slug: {site_slug}\n"
+            f"ImportJob id: {import_job_id}\n"
+            f"Requested by: {request.user.email}\n"
+            f"URL: {url}\n"
+        )
+
+        try:
+            send_email_task.apply_async((subject, message, [SUPPORT_USER_EMAIL]))
+            import_job = ImportJob.objects.get(id=import_job_id)
+            import_job.status = ImportJobStatus.READY_FOR_IMPORT
+            import_job.save()
+        except ConnectionError as e:
+            error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
+            raise ConnectionError(error_message)
+
+        return Response(status=status.HTTP_202_ACCEPTED)

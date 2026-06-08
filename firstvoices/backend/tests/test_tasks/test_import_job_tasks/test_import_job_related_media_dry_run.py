@@ -3,7 +3,7 @@ import pytest
 from backend.models import ImportJob
 from backend.models.constants import Visibility
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
@@ -30,7 +30,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -56,7 +56,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -97,7 +97,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding the media to the db
@@ -174,7 +174,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -221,7 +221,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         )
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -256,7 +256,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=audio.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -277,7 +277,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding the media to the db
@@ -343,7 +343,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         factories.FileFactory(
             site=self.site,
@@ -380,7 +380,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             name="test_related_audio_speakers_speaker_2", site=self.site
         )
 
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -398,7 +398,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -418,7 +418,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -456,7 +456,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         )
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -488,7 +488,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Add media to db
@@ -580,7 +580,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -621,7 +621,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -641,7 +641,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -676,7 +676,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         filename_set = [

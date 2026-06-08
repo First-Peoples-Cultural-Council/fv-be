@@ -54,6 +54,7 @@ jobs:
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SUPPORT_USER_EMAIL: ${{ secrets.SUPPORT_USER_EMAIL }}
         run: |
           pytest --cache-clear --cov --cov-config=.coveragerc --splits 5 --group ${{ matrix.group }}
       - name: Upload coverage

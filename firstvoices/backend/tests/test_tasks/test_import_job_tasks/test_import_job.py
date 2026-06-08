@@ -8,7 +8,7 @@ from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
 )
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
 from backend.tests.utils import get_sample_file
@@ -34,8 +34,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -58,8 +58,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         with patch(
@@ -70,7 +70,7 @@ class TestImportJob:
 
             # Updated import job instance
             import_job = ImportJob.objects.get(id=import_job.id)
-            assert import_job.status == JobStatus.FAILED
+            assert import_job.status == ImportJobStatus.FAILED
             assert "Random exception." in caplog.text
 
     def test_base_case_dictionary_entries(self):
@@ -84,8 +84,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -120,8 +120,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -205,8 +205,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
         confirm_import_job(import_job.id)
 
@@ -237,8 +237,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -256,7 +256,13 @@ class TestImportJob:
         assert phrase.import_job == import_job
 
     @pytest.mark.parametrize(
-        "status", [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED]
+        "status",
+        [
+            None,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.COMPLETE,
+            ImportJobStatus.FAILED,
+        ],
     )
     def test_invalid_status(self, status, caplog):
         file_content = get_sample_file(
@@ -271,7 +277,7 @@ class TestImportJob:
 
         confirm_import_job(import_job.id)
         import_job = ImportJob.objects.filter(id=import_job.id)[0]
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert (
             f"This job cannot be run due to consistency issues. ImportJob id: {import_job.id}."
             in caplog.text
@@ -279,7 +285,12 @@ class TestImportJob:
 
     @pytest.mark.parametrize(
         "validation_status",
-        [None, JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.FAILED],
+        [
+            None,
+            ImportJobStatus.ACCEPTED,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.FAILED,
+        ],
     )
     def test_invalid_validation_status(self, validation_status, caplog):
         file_content = get_sample_file(
@@ -292,13 +303,13 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            status=JobStatus.ACCEPTED,
+            status=ImportJobStatus.ACCEPTED,
             validation_status=validation_status,
         )
 
         confirm_import_job(import_job.id)
         import_job = ImportJob.objects.filter(id=import_job.id)[0]
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert (
             f"Please validate the job before confirming the import. ImportJob id: {import_job.id}."
             in caplog.text
@@ -324,8 +335,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -354,8 +365,8 @@ class TestImportJob:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
