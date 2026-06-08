@@ -259,7 +259,7 @@ class ImportJobViewSet(
         import_job_id = self.kwargs["pk"]
 
         curr_job = ImportJob.objects.get(id=import_job_id)
-        if curr_job.validation_status == ImportJobStatus.READY_FOR_IMPORT:
+        if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
             raise ValidationError("The import-job is already marked ready for import.")
 
         if curr_job.validation_status != ImportJobStatus.COMPLETE:

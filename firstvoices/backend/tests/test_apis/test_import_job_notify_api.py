@@ -95,7 +95,7 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         assert "Please validate the job before marking it ready for import." in response
 
     def test_cannot_mark_a_test_already_marked_ready_for_import(self):
-        self.import_job.validation_status = ImportJobStatus.READY_FOR_IMPORT
+        self.import_job.status = ImportJobStatus.READY_FOR_IMPORT
         self.import_job.save()
 
         notify_endpoint = reverse(
