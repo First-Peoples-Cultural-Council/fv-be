@@ -45,7 +45,7 @@ class Command(BaseCommand):
             now = datetime.now()
             timestamp = now.strftime("%Y_%m_%d_%H_%M")
             filename = f"site_stats_{timestamp}.csv"
-            output_file = Path(filename)
+            output_file = Path(Path.cwd() / filename)
 
         if site_slug:
             sites = Site.objects.filter(slug=site_slug)
