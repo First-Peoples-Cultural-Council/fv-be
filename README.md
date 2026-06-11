@@ -386,6 +386,7 @@ Note: use `python manage.py {command} -h` to list all the args and their use.
 - `python manage.py copy_site` - Copies all content (except for widgets and pages) to a new site.
 - `python manage.py rebuild_index` - Rebuilds the elasticsearch index.
 - `python manage.py unicode_export` - Generates the csv files for the orthography-resources folder for the [unicode-resources repository.](https://github.com/First-Peoples-Cultural-Council/unicode-resources)
+- `python manage.py export_site_data_stats` - Exports site-level content statistics to a CSV file.
 
 Management commands added for data cleanup purposes with niche use cases:
 - `python manage.py convert_draftjs_to_html` - Converts all draftJS content to sanitized HTML for all models that have a draftJS field.
