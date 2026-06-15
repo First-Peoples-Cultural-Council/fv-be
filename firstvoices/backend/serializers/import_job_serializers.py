@@ -7,15 +7,10 @@ from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
+from backend.models.batch_job_utils import BatchJobReport, BatchJobReportRow
 from backend.models.constants import AppRole
 from backend.models.files import File
-from backend.models.import_jobs import (
-    ImportJob,
-    ImportJobMode,
-    ImportJobReport,
-    ImportJobReportRow,
-    ImportJobStatus,
-)
+from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
 from backend.serializers.files_serializers import FileSerializer, FileUploadSerializer
@@ -34,7 +29,7 @@ from backend.serializers.validators import (
 
 class ImportReportRowSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ImportJobReportRow
+        model = BatchJobReportRow
         fields = ["row_number", "status", "errors"]
 
     row_number = serializers.IntegerField(read_only=True)
@@ -46,7 +41,7 @@ class ImportReportSerializer(serializers.ModelSerializer):
     error_details = ImportReportRowSerializer(many=True, source="rows")
 
     class Meta:
-        model = ImportJobReport
+        model = BatchJobReport
         fields = [
             "new_rows",
             "error_rows",

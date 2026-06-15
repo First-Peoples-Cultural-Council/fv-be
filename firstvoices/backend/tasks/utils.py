@@ -8,13 +8,9 @@ from django.db.models import Q
 from django.utils.text import get_valid_filename
 from rest_framework.exceptions import ValidationError
 
+from backend.models.batch_job_utils import BatchJobReportRow, RowStatus
 from backend.models.files import File
-from backend.models.import_jobs import (
-    ImportJob,
-    ImportJobReportRow,
-    ImportJobStatus,
-    RowStatus,
-)
+from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.utils.character_utils import clean_input
 
@@ -69,7 +65,7 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
 
 
 def create_or_append_error_row(import_job, report, row_number, errors):
-    error_row, created = ImportJobReportRow.objects.get_or_create(
+    error_row, created = BatchJobReportRow.objects.get_or_create(
         site=import_job.site,
         report=report,
         row_number=row_number,

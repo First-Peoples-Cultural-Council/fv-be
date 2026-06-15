@@ -13,14 +13,10 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
+from backend.models.batch_job_utils import BatchJobReport, BatchJobReportRow
 from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
 from backend.models.files import File
-from backend.models.import_jobs import (
-    ImportJob,
-    ImportJobReport,
-    ImportJobReportRow,
-    ImportJobStatus,
-)
+from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.utils import (
@@ -229,7 +225,7 @@ def handle_related_entries_dry_run(entry_title_map, import_data, import_job, rep
                 report.new_rows -= 1
                 report.save()
 
-        report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
+        report.error_rows = BatchJobReportRow.objects.filter(report=report).count()
         report.save()
 
 
@@ -257,14 +253,14 @@ def generate_report(
 
     if old_report:
         try:
-            old_report = ImportJobReport.objects.filter(id=old_report.id)
+            old_report = BatchJobReport.objects.filter(id=old_report.id)
             old_report.delete()
         except Exception as e:
             logger.error(
                 f"Unable to delete previous report for import_job: {str(import_job.id)}. Error: {e}."
             )
 
-    report = ImportJobReport(
+    report = BatchJobReport(
         site=import_job.site,
         importjob=import_job,
         accepted_columns=accepted_columns,
@@ -327,7 +323,7 @@ def generate_report(
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.updated_rows = dictionary_entry_import_result.totals["update"]
-    report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
+    report.error_rows = BatchJobReportRow.objects.filter(report=report).count()
     report.save()
 
     return report
@@ -345,7 +341,7 @@ def attach_csv_to_report(data, import_job, report):
 
     if report.error_rows:
         error_rows = list(
-            ImportJobReportRow.objects.filter(report=report).values_list(
+            BatchJobReportRow.objects.filter(report=report).values_list(
                 "row_number", flat=True
             )
         )

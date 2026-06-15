@@ -1,5 +1,6 @@
 from .app import AppJson  # noqa F401
 from .base import BaseModel  # noqa F401
+from .batch_job_utils import BatchJobReport, BatchJobReportRow  # noqa F401
 from .category import Category  # noqa F401
 from .characters import (  # noqa F401
     Alphabet,
@@ -9,12 +10,7 @@ from .characters import (  # noqa F401
 )
 from .dictionary import DictionaryEntry  # noqa F401
 from .immersion_labels import ImmersionLabel  # noqa F401
-from .import_jobs import (  # noqa F401
-    ImportJob,
-    ImportJobMode,
-    ImportJobReport,
-    ImportJobReportRow,
-)
+from .import_jobs import ImportJob, ImportJobMode  # noqa F401
 from .jobs import BulkVisibilityJob, DictionaryCleanupJob  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Audio, Document, Image, Person, Video  # noqa F401

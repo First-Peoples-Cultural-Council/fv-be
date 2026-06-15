@@ -1,7 +1,7 @@
 import pytest
 
 from backend.models.files import File
-from backend.models.import_jobs import ImportJobReport
+from backend.models.import_jobs import BatchJobReport
 from backend.models.jobs import JobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tests import factories
@@ -14,13 +14,13 @@ class TestImportJobModel:
         import_job = factories.ImportJobFactory.create()
 
         if add_report:
-            import_job.validation_report = factories.ImportJobReportFactory()
+            import_job.validation_report = factories.BatchJobReportFactory()
             import_job.validation_status = JobStatus.COMPLETE
             import_job.save()
 
         import_job.delete()
 
-        assert ImportJobReport.objects.count() == 0
+        assert BatchJobReport.objects.count() == 0
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("add_failed_rows_csv", [True, False])

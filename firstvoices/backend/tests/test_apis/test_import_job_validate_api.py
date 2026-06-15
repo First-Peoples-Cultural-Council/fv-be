@@ -64,7 +64,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         mock_report = MagicMock()
         mock_report.delete.side_effect = Exception("General Exception")
         with patch(
-            "backend.tasks.import_job_tasks.ImportJobReport.objects.filter",
+            "backend.tasks.import_job_tasks.BatchJobReport.objects.filter",
             return_value=mock_report,
         ):
             validate_endpoint = reverse(
