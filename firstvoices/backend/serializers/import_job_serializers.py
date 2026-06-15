@@ -7,12 +7,12 @@ from django.core.exceptions import PermissionDenied
 from rest_framework import serializers
 from tablib import InvalidDimensions
 
-from backend.models.batch_job_utils import BatchJobReport, BatchJobReportRow
 from backend.models.constants import AppRole
 from backend.models.files import File
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
+from backend.serializers.batch_job_util_serializers import BatchReportSerializer
 from backend.serializers.files_serializers import FileSerializer, FileUploadSerializer
 from backend.serializers.job_serializers import BaseJobSerializer
 from backend.serializers.utils.context_utils import get_site_from_context
@@ -27,31 +27,6 @@ from backend.serializers.validators import (
 )
 
 
-class ImportReportRowSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BatchJobReportRow
-        fields = ["row_number", "status", "errors"]
-
-    row_number = serializers.IntegerField(read_only=True)
-    status = serializers.CharField(read_only=True)
-    errors = serializers.ListField(child=serializers.CharField(), read_only=True)
-
-
-class ImportReportSerializer(serializers.ModelSerializer):
-    error_details = ImportReportRowSerializer(many=True, source="rows")
-
-    class Meta:
-        model = BatchJobReport
-        fields = [
-            "new_rows",
-            "error_rows",
-            "updated_rows",
-            "error_details",
-            "accepted_columns",
-            "ignored_columns",
-        ]
-
-
 class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     id = serializers.UUIDField(read_only=True)
     data = FileUploadSerializer(
@@ -64,7 +39,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     run_as_user = serializers.CharField(required=False)
     validation_task_id = serializers.CharField(read_only=True)
     validation_status = fields.EnumLabelField(enum=ImportJobStatus, read_only=True)
-    validation_report = ImportReportSerializer(read_only=True)
+    validation_report = BatchReportSerializer(read_only=True)
     failed_rows_csv = FileSerializer(read_only=True)
 
     class Meta:
