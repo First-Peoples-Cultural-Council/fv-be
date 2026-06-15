@@ -102,6 +102,7 @@ class ExportJob(BaseJob):
         on_delete=models.SET_NULL,
         related_name="export_job_export_csv_set",
     )
+    row_count = models.IntegerField(default=0)
 
     def _delete_export_csv(self):
         try:

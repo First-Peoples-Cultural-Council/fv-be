@@ -121,6 +121,7 @@ def generate_export(export_job_instance):
                 last_modified_by=export_job_instance.last_modified_by,
             )
             export_csv_file.save()
+            export_job_instance.row_count = len(results)
             export_job_instance.export_csv = export_csv_file
             export_job_instance.status = JobStatus.COMPLETE
         except Exception as e:
