@@ -6,9 +6,10 @@ from import_export.results import RowResult
 
 from backend.models import Document
 from backend.models.constants import Visibility
-from backend.models.import_jobs import ImportJob, ImportJobMode
+from backend.models.import_jobs import ImportJob
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
+from backend.models.update_jobs import UpdateJob
 from backend.resources.utils.import_export_widgets import (
     ArrayOfStringsWidget,
     ChoicesWidget,
@@ -34,20 +35,27 @@ class BaseResource(resources.ModelResource):
         widget=UserForeignKeyWidget(),
     )
 
-    def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
+    def __init__(
+        self, site=None, run_as_user=None, import_job=None, update_job=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.site = site
         self.run_as_user = run_as_user
         self.import_job = import_job
-        self.created_by = (
-            ImportJob.objects.get(id=import_job).created_by if import_job else ""
-        )
+        self.update_job = update_job
+
+        creator = ""
+        if import_job:
+            creator = ImportJob.objects.get(id=import_job).created_by
+        elif update_job:
+            creator = UpdateJob.objects.get(id=update_job).created_by
+        self.created_by = creator
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
-        # ID is only added if the import job mode is not update
+        # ID is only added if the batch job is an import job
         import_job = ImportJob.objects.get(id=self.import_job)
-        if import_job.mode != ImportJobMode.UPDATE:
+        if import_job:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
         dataset.append_col(lambda x: str(self.site.id), header="site")

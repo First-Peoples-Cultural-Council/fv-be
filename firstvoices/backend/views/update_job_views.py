@@ -6,8 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
-from backend.serializers.import_job_serializers import ImportJobSerializer
+from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
@@ -29,7 +28,7 @@ from firstvoices.celery import link_error_handler
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_list,
-                response=ImportJobSerializer,
+                response=UpdateJobSerializer,
             ),
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
@@ -41,7 +40,7 @@ from firstvoices.celery import link_error_handler
         responses={
             200: OpenApiResponse(
                 description=doc_strings.success_200_detail,
-                response=ImportJobSerializer,
+                response=UpdateJobSerializer,
             ),
             403: OpenApiResponse(description=doc_strings.error_403),
             404: OpenApiResponse(description=doc_strings.error_404),
@@ -58,7 +57,7 @@ from firstvoices.celery import link_error_handler
         responses={
             201: OpenApiResponse(
                 description=doc_strings.success_201,
-                response=ImportJobSerializer,
+                response=UpdateJobSerializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -91,7 +90,7 @@ from firstvoices.celery import link_error_handler
         responses={
             202: OpenApiResponse(
                 description=doc_strings.success_202_job_accepted,
-                response=ImportJobSerializer,
+                response=UpdateJobSerializer,
             ),
             400: OpenApiResponse(description=doc_strings.error_400_validation),
             403: OpenApiResponse(description=doc_strings.error_403),
@@ -127,12 +126,12 @@ class UpdateJobViewSet(ImportJobViewSet):
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(site=site, mode=ImportJobMode.UPDATE).order_by(
+        return UpdateJob.objects.filter(site=site).order_by(
             "-created"
         )  # permissions are applied by the base view
 
     def perform_create(self, serializer):
-        serializer.save(mode=ImportJobMode.UPDATE)
+        serializer.save()
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -144,9 +143,9 @@ class UpdateJobViewSet(ImportJobViewSet):
         """
         Method to start the validation process on a given update-job.
         """
-        import_job_id = self.kwargs["pk"]
-        curr_job = ImportJob.objects.filter(
-            id=import_job_id, mode=ImportJobMode.UPDATE
+        update_job_id = self.kwargs["pk"]
+        curr_job = UpdateJob.objects.filter(
+            id=update_job_id,
         )[0]
 
         # Checks to ensure consistency
@@ -165,12 +164,12 @@ class UpdateJobViewSet(ImportJobViewSet):
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for validation
-        curr_job.validation_status = ImportJobStatus.ACCEPTED
+        curr_job.validation_status = UpdateJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
             lambda: validate_update_job.apply_async(
-                (str(import_job_id),),
+                (str(update_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -180,32 +179,32 @@ class UpdateJobViewSet(ImportJobViewSet):
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, site_slug=None, pk=None):
-        import_job_id = self.kwargs["pk"]
+        update_job_id = self.kwargs["pk"]
 
-        curr_job = ImportJob.objects.get(id=import_job_id, mode=ImportJobMode.UPDATE)
+        curr_job = UpdateJob.objects.get(id=update_job_id)
 
-        if curr_job.validation_status != ImportJobStatus.COMPLETE:
+        if curr_job.validation_status != UpdateJobStatus.COMPLETE:
             raise ValidationError(
                 "Please validate the job before confirming the import."
             )
 
-        if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
+        if curr_job.status in [UpdateJobStatus.ACCEPTED, UpdateJobStatus.STARTED]:
             raise ValidationError(
                 "This job has already been confirmed and is currently being imported."
             )
 
-        if curr_job.status == ImportJobStatus.COMPLETE:
+        if curr_job.status == UpdateJobStatus.COMPLETE:
             raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for confirmation
-        curr_job.status = ImportJobStatus.ACCEPTED
+        curr_job.status = UpdateJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
             lambda: confirm_update_job.apply_async(
-                (str(import_job_id),),
+                (str(update_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )

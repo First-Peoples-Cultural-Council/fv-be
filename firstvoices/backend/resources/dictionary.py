@@ -6,6 +6,7 @@ from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
 )
+from backend.models.update_jobs import UpdateJob
 from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
@@ -82,6 +83,12 @@ class DictionaryEntryResource(
         column_name="import_job",
         attribute="import_job",
         widget=widgets.ForeignKeyWidget(ImportJob),
+    )
+
+    update_job = fields.Field(
+        column_name="update_job",
+        attribute="update_job",
+        widget=widgets.ForeignKeyWidget(UpdateJob),
     )
 
     external_system = fields.Field(

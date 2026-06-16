@@ -23,6 +23,7 @@ from .characters import Alphabet, Character
 from .import_jobs import ImportJob
 from .media import RelatedMediaMixin
 from .part_of_speech import PartOfSpeech
+from .update_jobs import UpdateJob
 
 
 class ExternalDictionaryEntrySystem(BaseModel):
@@ -153,6 +154,12 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
 
     import_job = models.ForeignKey(
         ImportJob,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+
+    update_job = models.ForeignKey(
+        UpdateJob,
         null=True,
         on_delete=models.SET_NULL,
     )
