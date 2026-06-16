@@ -46,6 +46,7 @@ class TestExportJobAPI(
             "message": instance.message,
             "exportCsv": instance.export_csv,
             "exportParams": instance.export_params,
+            "rowCount": instance.row_count,
         }
 
     def get_expected_response(self, instance, site):

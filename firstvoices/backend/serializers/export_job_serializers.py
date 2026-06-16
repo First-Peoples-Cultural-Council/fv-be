@@ -31,4 +31,5 @@ class ExportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
         fields = BaseJobSerializer.Meta.fields + (
             "export_csv",
             "export_params",
+            "row_count",
         )
