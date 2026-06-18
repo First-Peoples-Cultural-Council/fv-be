@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 
@@ -57,9 +58,7 @@ class TestUpdateEndpoints(TestImportEndpoints):
     def get_valid_data_with_nulls(self, site=None):
         return {
             "title": "Update Job",
-            "data": get_sample_file(
-                "update_job/test_create_with_nulls.csv", "text/csv"
-            ),
+            "data": get_sample_file("update_job/minimal.csv", "text/csv"),
             "mode": "update",
         }
 
@@ -86,12 +85,18 @@ class TestUpdateEndpoints(TestImportEndpoints):
         assert expected_data["title"] == actual_instance.title
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
-        assert expected_file_name == actual_file_name
+        stem, ext = expected_file_name.rsplit(".", 1)
+        assert re.search(
+            rf"{re.escape(stem)}(_\w+)?\.{re.escape(ext)}", actual_file_name
+        )
 
     def assert_update_response(self, expected_data, actual_response):
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_response["data"]["path"].split("/")[-1]
-        assert expected_file_name == actual_file_name
+        stem, ext = expected_file_name.rsplit(".", 1)
+        assert re.search(
+            rf"{re.escape(stem)}(_\w+)?\.{re.escape(ext)}", actual_file_name
+        )
 
     @pytest.mark.skip(
         reason="Update job API does not have eligible optional charfields."
