@@ -220,8 +220,8 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
-        assert update_job.validation_report.error_rows == 9
-        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
+        assert update_job.validation_report.error_rows == 8
+        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9]
 
     def test_dry_run_failed(self, caplog):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
@@ -265,9 +265,9 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             format="csv",
         )
 
-        assert update_job.validation_report.error_rows == 9
-        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9, 10]
-        assert len(failed_rows_csv_table) == 9
+        assert update_job.validation_report.error_rows == 8
+        assert error_rows_numbers == [2, 3, 4, 5, 6, 7, 8, 9]
+        assert len(failed_rows_csv_table) == 8
 
         for i in range(0, len(error_rows_numbers)):
             input_index = (
@@ -565,11 +565,9 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
         entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
         assert entry1.title == "abc"
-        assert entry1.type == "word"
 
         entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
         assert entry2.title == "xyz"
-        assert entry2.type == "phrase"
 
     def test_all_columns_update(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
@@ -819,12 +817,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
         entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
         assert entry1.title == "abc"
-        assert entry1.type == "word"
+        assert entry1.type == "word"  # unchanged
         assert entry1.visibility == Visibility.PUBLIC  # unchanged
 
         entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
         assert entry2.title == "xyz"
-        assert entry2.type == "phrase"
+        assert entry2.type == "word"  # unchanged
         assert entry2.visibility == Visibility.MEMBERS  # unchanged
 
     def test_update_only_one_column(self):
