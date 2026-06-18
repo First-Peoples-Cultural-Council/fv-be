@@ -82,6 +82,13 @@ class TestImportEndpoints(
             **data,
         }
 
+    @staticmethod
+    def assert_equivalent_filenames(expected_file_name, actual_file_name):
+        stem, ext = expected_file_name.rsplit(".", 1)
+        assert re.search(
+            rf"{re.escape(stem)}(_\w+)?\.{re.escape(ext)}", actual_file_name
+        )
+
     def assert_created_instance(self, pk, data):
         instance = ImportJob.objects.get(pk=pk)
         return self.assert_updated_instance(data, instance)
@@ -99,18 +106,12 @@ class TestImportEndpoints(
         assert expected_data["title"] == actual_instance.title
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
-        stem, ext = expected_file_name.rsplit(".", 1)
-        assert re.search(
-            rf"{re.escape(stem)}(_\w+)?\.{re.escape(ext)}", actual_file_name
-        )
+        self.assert_equivalent_filenames(expected_file_name, actual_file_name)
 
     def assert_update_response(self, expected_data, actual_response):
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_response["data"]["path"].split("/")[-1]
-        stem, ext = expected_file_name.rsplit(".", 1)
-        assert re.search(
-            rf"{re.escape(stem)}(_\w+)?\.{re.escape(ext)}", actual_file_name
-        )
+        self.assert_equivalent_filenames(expected_file_name, actual_file_name)
 
     def test_invalid_dimensions(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
