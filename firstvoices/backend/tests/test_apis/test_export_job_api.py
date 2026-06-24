@@ -166,8 +166,8 @@ class TestExportJobAPI(
         assert response_data["status"] == JobStatus.ACCEPTED
 
     @pytest.mark.django_db
-    def test_export_job_limit_per_user(self):
-        site, _ = factories.get_site_with_authenticated_member(
+    def test_export_job_limit_per_user_per_site(self):
+        site, user = factories.get_site_with_authenticated_member(
             self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
@@ -186,6 +186,17 @@ class TestExportJobAPI(
             == "You have reached the maximum number of simultaneous export jobs (10). "
             "Please delete completed jobs that you no longer need to allow new export jobs to be created."
         )
+
+        # Ensure export jobs on a separate site can still be created by the same user
+        site_2 = factories.SiteFactory.create()
+        factories.MembershipFactory.create(
+            user=user, site=site_2, role=Role.LANGUAGE_ADMIN
+        )
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site_2.slug), format="json"
+        )
+        assert response.status_code == 201
 
     @pytest.mark.django_db
     def test_export_job_page_size_maximum(self):
