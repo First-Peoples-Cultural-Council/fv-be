@@ -57,7 +57,7 @@ jobs:
           fi
 
           # Supply Chain Defense: Pin the exact ffmpeg package version
-            sudo apt-get install -y --no-install-recommends ffmpeg=7:6.1.1-1ubuntu2 # Update the package version whenever runner is updated
+            sudo apt-get install -y --no-install-recommends ffmpeg=7:4.4.2-0ubuntu0.22.04.1 # Update the package version whenever runner is updated
       - name: Start docker-compose
         run: |
           docker compose -f docker-compose.yml up -d
