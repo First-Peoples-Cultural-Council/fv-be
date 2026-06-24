@@ -14,8 +14,10 @@ class ExportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
     def validate(self, attrs):
         # Ensure that accepted, completed and started jobs created by the same user does not exceed MAX_EXPORT_JOBS
         user = self.context["request"].user
+        site = self.context["site"]
         count = ExportJob.objects.filter(
             created_by=user,
+            site=site,
             status__in=[JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE],
         ).count()
 
