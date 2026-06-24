@@ -131,12 +131,13 @@ class DictionaryEntryResource(
             if not row.get("id"):
                 raise ImportError(f"Missing 'id' for update in row: {row}.")
 
-            # Skip missing types
+            # Skip invalid types
             if "type" in row and (
-                row.get("type") is None or str(row.get("type")).strip() == ""
+                str(row["type"]).strip().lower() not in TypeOfDictionaryEntry.values
+                and row["type"]
             ):
                 raise ImportError(
-                    f"Missing 'type' for update in row with id {row.get('id')}."
+                    f"Invalid 'type' for update in row with id {row.get('id')}."
                 )
 
             # Enforce visibility restrictions

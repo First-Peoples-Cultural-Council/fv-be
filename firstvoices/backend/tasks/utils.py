@@ -30,6 +30,8 @@ def verify_no_other_import_jobs_running(current_job):
     ).exclude(id=current_job.id)
 
     if len(existing_incomplete_jobs):
+        current_job.status = ImportJobStatus.FAILED
+        current_job.save()
         raise ValidationError(
             "There is at least 1 job on this site that is already running or queued to run soon. "
             "Please wait for it to finish before starting a new one."
