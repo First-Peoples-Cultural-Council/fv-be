@@ -45,6 +45,11 @@ jobs:
         run: pip install --upgrade pyOpenSSL
       - name: Install ffmpeg safely with retries and version lock
         run: |
+          # Temp
+          apt-cache policy ffmpeg
+
+          apt-cache madison ffmpeg
+
           # Network retry
           echo "Acquire::Retries \"5\";" | sudo tee /etc/apt/apt.conf.d/80-retries
 
