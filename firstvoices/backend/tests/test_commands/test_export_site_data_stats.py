@@ -72,7 +72,7 @@ class TestExportSiteStats:
         totals_row = rows[3]
 
         assert header == [
-            "site_name",
+            "site_slug",
             "words",
             "phrases",
             "songs",
@@ -84,7 +84,7 @@ class TestExportSiteStats:
             "files",
         ]
 
-        assert data_row[0] == site.title
+        assert data_row[0] == site.slug
         assert data_row[1:] == totals_row[1:]
 
     def test_multiple_sites_export(self, tmp_path):
