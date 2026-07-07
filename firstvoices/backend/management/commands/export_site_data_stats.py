@@ -77,7 +77,7 @@ class Command(BaseCommand):
 
             writer.writerow(
                 [
-                    "site_name",
+                    "site_slug",
                     "words",
                     "phrases",
                     "songs",
@@ -126,7 +126,7 @@ class Command(BaseCommand):
 
                 writer.writerow(
                     [
-                        getattr(site, "title", ""),
+                        getattr(site, "slug", ""),
                         words,
                         phrases,
                         songs,
