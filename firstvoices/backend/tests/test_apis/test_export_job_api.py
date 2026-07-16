@@ -348,7 +348,7 @@ class TestExportJobAPI(
 
         post_response = self.client.post(
             self.get_list_endpoint(site_slug=site.slug)
-            + f"?import_job={import_job.id}",
+            + f"?importJobId={import_job.id}",
             format="json",
         )
 
