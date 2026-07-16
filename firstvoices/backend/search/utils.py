@@ -148,14 +148,14 @@ def get_site_entries_search_params(
             Category,
             category_input_str,
         )
-        search_params["category_id"] = category_id
+        search_params["category_id"] = str(category_id)
     else:
         search_params["category_id"] = ""
 
     import_job_input_str = request.GET.get("importJobId", "")
     if import_job_input_str:
         import_job_id = get_valid_instance_id(site, ImportJob, import_job_input_str)
-        search_params["import_job_id"] = import_job_id
+        search_params["import_job_id"] = str(import_job_id)
     else:
         search_params["import_job_id"] = ""
 

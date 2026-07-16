@@ -324,3 +324,32 @@ class TestExportJobAPI(
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["id"] == str(created_job2.id)
+
+    @pytest.mark.django_db
+    def test_category_param(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        category = factories.CategoryFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug) + f"?category={category.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_import_job_param(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        import_job = factories.ImportJobFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?import_job={import_job.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
