@@ -276,6 +276,46 @@ class TestImportJobDryRun:
         assert len(error_rows) == 3
         assert error_rows_numbers == [2, 3, 4]
 
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid_category in column category."
+        )
+
+        assert error_row.errors[0] == expected_error_message
+
+    def test_invalid_part_of_speech(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_invalid_part_of_speech.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=ImportJobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        # Refreshed instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all()
+
+        assert validation_report.new_rows == 0
+        assert len(error_rows) == 1
+
+        error_row = validation_report.rows.first()
+        expected_error_message = (
+            "No Part of Speech found with the provided title. "
+            "Value: invalid in column part_of_speech."
+        )
+
+        assert error_row.errors[0] == expected_error_message
+
     def test_boolean_variations(self):
         file_content = get_sample_file(
             file_dir=self.CSV_FILES_DIR,

@@ -2,7 +2,6 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.shortcuts import get_object_or_404
 from import_export.exceptions import ImportError
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget, Widget
 
@@ -130,7 +129,13 @@ class PartOfSpeechWidget(ForeignKeyWidget):
         value = value.strip().lower()
         if not value:
             return None
-        return get_object_or_404(PartOfSpeech, title__iexact=value)
+
+        if not PartOfSpeech.objects.filter(title__iexact=value).exists():
+            # model and column are hardcoded as only a part of speech can be handled by this widget
+            raise ImportError(
+                f"No Part of Speech found with the provided title. Value: {value} in column part_of_speech."
+            )
+        return value
 
 
 class CustomManyToManyWidget(ManyToManyWidget):
@@ -177,11 +182,12 @@ class CustomManyToManyWidget(ManyToManyWidget):
                 # Also catches "invalid uuid" validation error
                 raise ImportError(
                     f"Invalid {self.model.__name__} supplied in column: {column}. "
-                    f"Expected field: {error_message_field}"
+                    f"Expected field: {error_message_field}. Value: {input_value}"
                 )
             except ObjectDoesNotExist:
                 raise ImportError(
-                    f"No {self.model.__name__} found with the provided {error_message_field} in column {column}."
+                    f"No {self.model.__name__} found with the provided {error_message_field}. "
+                    f"Value: {input_value} in column {column}."
                 )
 
         return valid_entries

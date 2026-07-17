@@ -369,7 +369,8 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 1
         assert (
-            "No Person found with the provided name in column audio_speaker."
+            "No Person found with the provided name. "
+            "Value: test_related_audio_speakers_speaker_1 in column audio_speaker."
             in validation_report.rows.all()[0].errors
         )
 
@@ -542,7 +543,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             in error_row.errors
         )
         assert (
-            "No Person found with the provided name in column audio_speaker."
+            "No Person found with the provided name. Value: invalid_speaker in column audio_speaker."
             in error_row.errors
         )
         assert (
