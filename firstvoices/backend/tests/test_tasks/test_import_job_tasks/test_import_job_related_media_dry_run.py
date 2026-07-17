@@ -655,7 +655,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
 
         error_rows = validation_report.rows.all().order_by("row_number")
         assert (
-            "related_video_links: Item 1 in the array did not validate: Enter a valid URL."
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL. Invalid value: not"
             in error_rows[0].errors
         )
         assert (
