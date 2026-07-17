@@ -127,23 +127,7 @@ class DictionaryEntryResource(
         instance_loader.get_instance(row)
 
         # Raise errors for invalid type/visibility
-        if "type" in row and (
-            str(row["type"]).strip().lower() not in TypeOfDictionaryEntry.values
-            and row["type"]
-        ):
-            raise ImportError(
-                f"Invalid value '{row['type']}' in type column. Expected one of: {TypeOfDictionaryEntry.values}"
-            )
-
-        visibility_values = [v.lower() for v in Visibility.labels]
-
-        if "visibility" in row and (
-            str(row["visibility"]).strip().lower() not in visibility_values
-            and row["visibility"]
-        ):
-            raise ImportError(
-                f"Invalid value '{row['visibility']}' in visibility column. Expected one of: {visibility_values}"
-            )
+        self.raise_invalid_errors(row)
 
         if import_job.mode == ImportJobMode.UPDATE:
             # Skip missing IDs
@@ -192,6 +176,26 @@ class DictionaryEntryResource(
                 new_values = row[data_field].split(",")
                 new_values = [value.strip() for value in new_values if value]
                 getattr(instance, instance_field).set(new_values)
+
+    @staticmethod
+    def raise_invalid_errors(row):
+        if "type" in row and (
+            str(row["type"]).strip().lower() not in TypeOfDictionaryEntry.values
+            and row["type"]
+        ):
+            raise ImportError(
+                f"Invalid value '{row['type']}' in type column. Expected one of: {TypeOfDictionaryEntry.values}"
+            )
+
+        visibility_values = [v.lower() for v in Visibility.labels]
+
+        if "visibility" in row and (
+            str(row["visibility"]).strip().lower() not in visibility_values
+            and row["visibility"]
+        ):
+            raise ImportError(
+                f"Invalid value '{row['visibility']}' in visibility column. Expected one of: {visibility_values}"
+            )
 
     class Meta:
         model = DictionaryEntry
