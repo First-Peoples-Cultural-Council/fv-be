@@ -135,7 +135,7 @@ class PartOfSpeechWidget(ForeignKeyWidget):
             raise ImportError(
                 f"No Part of Speech found with the provided title. Value: {value} in column part_of_speech."
             )
-        return value
+        return PartOfSpeech.objects.get(title__iexact=value)
 
 
 class CustomManyToManyWidget(ManyToManyWidget):

@@ -5,7 +5,10 @@ import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import ExternalDictionaryEntrySystem
+from backend.models.dictionary import (
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.models.files import File
 from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
@@ -222,8 +225,8 @@ class TestImportJobDryRun:
         )
 
         assert validation_report.new_rows == 1  # control row
-        assert len(error_rows) == 6
-        assert error_rows_numbers == [2, 3, 4, 5, 6, 7]
+        assert len(error_rows) == 5
+        assert error_rows_numbers == [2, 3, 4, 5, 6]
 
         # re-opening the file
         file_content = get_sample_file(
@@ -240,13 +243,49 @@ class TestImportJobDryRun:
             format="csv",
         )
 
-        assert len(failed_rows_csv_table) == 6
+        assert len(failed_rows_csv_table) == 5
 
         for i in range(0, len(error_rows_numbers)):
             input_index = (
                 error_rows_numbers[i] - 1
             )  # since we do +1 while generating error row numbers
             assert input_csv_table[input_index] == failed_rows_csv_table[i]
+
+        # check error messages
+
+        # missing type
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = "type: This field cannot be null."
+        assert error_row.errors[0] == expected_error_message
+
+        # missing title
+        error_row = validation_report.rows.get(row_number=3)
+        expected_error_message = "title: This field cannot be blank."
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid type
+        error_row = validation_report.rows.get(row_number=4)
+        expected_error_message = (
+            f"Invalid value 'invalid' in type column. "
+            f"Expected one of: {TypeOfDictionaryEntry.values}"
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid visibility
+        visibility_values = [v.lower() for v in Visibility.labels]
+        error_row = validation_report.rows.get(row_number=5)
+        expected_error_message = (
+            f"Invalid value 'invalid' in visibility column. "
+            f"Expected one of: {visibility_values}"
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid boolean
+        error_row = validation_report.rows.get(row_number=6)
+        expected_error_message = (
+            "Invalid value in include_in_games column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
 
     def test_invalid_categories(self):
         file_content = get_sample_file(
