@@ -159,8 +159,6 @@ def get_starts_with_query(site_id, starts_with_char):
 
 
 def get_category_query(category_id):
-    if not category_id:
-        return None
 
     query_categories = []
 
