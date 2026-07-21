@@ -324,3 +324,79 @@ class TestExportJobAPI(
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["id"] == str(created_job2.id)
+
+    @pytest.mark.django_db
+    def test_import_job_param(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        import_job = factories.ImportJobFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?importJobId={import_job.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_category_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        category = factories.CategoryFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug) + f"?category={category.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert response_data["results"][0]["exportParams"]["category"] == category.title
+
+    @pytest.mark.django_db
+    def test_speakers_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        speaker1 = factories.PersonFactory.create(site=site)
+        speaker2 = factories.PersonFactory.create(site=site)
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?speakers={speaker1.id},{speaker2.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert speaker1.name in response_data["results"][0]["exportParams"]["speakers"]
+        assert speaker2.name in response_data["results"][0]["exportParams"]["speakers"]
+
+    @pytest.mark.django_db
+    def test_visibility_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?visibility={Visibility.PUBLIC.label},{Visibility.MEMBERS.label}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert (
+            Visibility.PUBLIC.label
+            in response_data["results"][0]["exportParams"]["visibility"]
+        )
+        assert (
+            Visibility.MEMBERS.label
+            in response_data["results"][0]["exportParams"]["visibility"]
+        )

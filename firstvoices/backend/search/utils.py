@@ -143,19 +143,17 @@ def get_site_entries_search_params(
 
     category_input_str = request.GET.get("category", "")
     if category_input_str:
-        category_id = get_valid_instance_id(
-            site,
-            Category,
-            category_input_str,
+        search_params["category_id"] = get_valid_str_uuid(
+            site, Category, category_input_str
         )
-        search_params["category_id"] = category_id
     else:
         search_params["category_id"] = ""
 
     import_job_input_str = request.GET.get("importJobId", "")
     if import_job_input_str:
-        import_job_id = get_valid_instance_id(site, ImportJob, import_job_input_str)
-        search_params["import_job_id"] = import_job_id
+        search_params["import_job_id"] = get_valid_str_uuid(
+            site, ImportJob, import_job_input_str
+        )
     else:
         search_params["import_job_id"] = ""
 
@@ -334,3 +332,15 @@ def get_export_search_response(search_query, pagination_params):
 
 def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}
+
+
+def get_valid_str_uuid(site, model, uuid):
+    if not uuid:
+        return None
+
+    validated_id = get_valid_instance_id(site, model, uuid)
+
+    if validated_id:
+        return str(validated_id)
+    else:
+        return None
