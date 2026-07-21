@@ -144,7 +144,7 @@ def get_site_entries_search_params(
     category_input_str = request.GET.get("category", "")
     if category_input_str:
         search_params["category_id"] = get_valid_str_uuid(
-            category_input_str, site, Category
+            site, Category, category_input_str
         )
     else:
         search_params["category_id"] = ""
@@ -152,7 +152,7 @@ def get_site_entries_search_params(
     import_job_input_str = request.GET.get("importJobId", "")
     if import_job_input_str:
         search_params["import_job_id"] = get_valid_str_uuid(
-            import_job_input_str, site, ImportJob
+            site, ImportJob, import_job_input_str
         )
     else:
         search_params["import_job_id"] = ""
@@ -334,7 +334,7 @@ def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}
 
 
-def get_valid_str_uuid(uuid, site, model):
+def get_valid_str_uuid(site, model, uuid):
     if not uuid:
         return None
 
