@@ -385,21 +385,14 @@ ENVIRONMENT_NAME = os.getenv("SENTRY_ENVIRONMENT", "Local")
 ENVIRONMENT_COLOR = os.getenv("ENVIRONMENT_COLOR", "#9c9897")
 
 # Variables for the email backend (used in the contact us form)
-
-# Set DEFAULT_FROM_EMAIL so Django uses it globally if no explicit sender is passed
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
-SERVER_EMAIL = DEFAULT_FROM_EMAIL  # Used for system/error emails
-
-# Toggle between AWS SES (Production/Staging) and Console (Local Development/Dev)
 ENABLE_SMTP_BACKEND: bool = os.getenv("ENABLE_SMTP_BACKEND", "").upper() == "TRUE"
-
 if ENABLE_SMTP_BACKEND:
-    # Use django-ses API backend instead of SMTP
-    EMAIL_BACKEND = "django_ses.SESBackend"
-
-    # boto3 (used by django-ses) will automatically detect the Kubernetes
-    # IRSA Web Identity Token provided by your pod's Service Account.
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS")
+    EMAIL_HOST = os.getenv("EMAIL_HOST")
+    EMAIL_PORT = os.getenv("EMAIL_PORT")
 else:
+    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 SUPPORT_USER_EMAIL = os.getenv("SUPPORT_USER_EMAIL")
