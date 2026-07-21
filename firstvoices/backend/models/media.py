@@ -6,6 +6,7 @@ from io import BytesIO
 import ffmpeg
 import rules
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models, transaction
@@ -607,6 +608,37 @@ class Video(ThumbnailMixin, MediaBase):
             setattr(self, attribute_name, image_file_model)
 
 
+class VideoLinksArrayField(ArrayField):
+    """
+    Custom video links array field for verbose error messages, including the
+    invalid value.
+    """
+
+    def run_validators(self, value):
+        models.Field.run_validators(self, value)
+
+        errors = []
+        for idx, link in enumerate(value):
+            try:
+                self.base_field.run_validators(link)
+            except ValidationError as e:
+                errors.append(
+                    ValidationError(
+                        "Item %(nth)s in the array did not validate: %(error)s "
+                        "Invalid value: %(value)s",
+                        code="item_invalid",
+                        params={
+                            "nth": idx + 1,
+                            "error": e.messages[0],
+                            "value": link,
+                        },
+                    )
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
+
 class RelatedMediaMixin(models.Model):
     """
     Related media fields with standard names.
@@ -619,7 +651,7 @@ class RelatedMediaMixin(models.Model):
     related_documents = models.ManyToManyField(Document, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
-    related_video_links = ArrayField(
+    related_video_links = VideoLinksArrayField(
         EmbedVideoField(),
         blank=True,
         default=list,
