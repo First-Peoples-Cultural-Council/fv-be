@@ -79,7 +79,7 @@ class ContactInfo(BaseSiteContentModel):
             )
 
         # set defaults for inactive organizations
-        if not self.organization_status == OrganizationStatus.ACTIVE:
+        if self.organization_status != OrganizationStatus.ACTIVE:
             self.emails = ["ltp@fpcc.ca"]
             self.url_list = ["https://www.firstvoices.com/support"]
             self.contact_message = (
