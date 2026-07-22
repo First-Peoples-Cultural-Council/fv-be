@@ -7,6 +7,7 @@ from .characters import (  # noqa F401
     CharacterVariant,
     IgnoredCharacter,
 )
+from .contact_info import ContactInfo, TeamMember  # noqa F401
 from .dictionary import DictionaryEntry  # noqa F401
 from .immersion_labels import ImmersionLabel  # noqa F401
 from .import_jobs import (  # noqa F401
