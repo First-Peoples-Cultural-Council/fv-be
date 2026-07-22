@@ -64,7 +64,7 @@ class Person(BaseSiteContentModel):
 
     name = models.CharField(max_length=200)
 
-    bio = models.CharField(max_length=1000, blank=True, null=True)
+    bio = models.CharField(max_length=1000, blank=True, null=False, default="")
 
     def __str__(self):
         return f"{self.name} ({self.site})"

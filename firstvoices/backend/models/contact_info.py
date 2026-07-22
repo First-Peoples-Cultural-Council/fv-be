@@ -38,16 +38,17 @@ class ContactInfo(BaseSiteContentModel):
     # Active sites with contact information
     emails = ArrayField(
         models.EmailField(max_length=MAX_EMAIL_LENGTH),
-        blank=False,
         default=list,
+        blank=False,
+        null=False,
         validators=[MinLengthValidator(1)],
     )
     # JSON to store "label" : "number"
-    phone_numbers = models.JSONField(default=list, blank=True, null=True)
-    address = models.TextField(null=True, blank=True)
-    contact_message = models.TextField(null=True, blank=True)
+    phone_numbers = models.JSONField(default=list, blank=True, null=False)
+    address = models.TextField(default="", null=False, blank=True)
+    contact_message = models.TextField(default="", null=False, blank=True)
     # JSON to store "label" : "url"
-    url_list = models.JSONField(default=list, blank=True, null=True)
+    url_list = models.JSONField(default=list, blank=True, null=False)
 
     # historical site ownership data
     is_active_site_owner = models.BooleanField(default=True, null=False, blank=False)
@@ -103,12 +104,18 @@ class TeamMember(BaseSiteContentModel):
 
     # From Person model, no need to inherit as the Person model is used for entirely separate functions
     name = models.CharField(max_length=DEFAULT_TITLE_LENGTH, null=False, blank=False)
-    bio = models.TextField(max_length=EXTENDED_TITLE_LENGTH, null=True, blank=True)
+    bio = models.TextField(
+        max_length=EXTENDED_TITLE_LENGTH, default="", null=False, blank=True
+    )
 
-    position = models.CharField(max_length=DEFAULT_TITLE_LENGTH, blank=True, null=True)
-    email = models.EmailField(max_length=MAX_EMAIL_LENGTH, blank=True, null=True)
+    position = models.CharField(
+        max_length=DEFAULT_TITLE_LENGTH, default="", blank=True, null=False
+    )
+    email = models.EmailField(
+        max_length=MAX_EMAIL_LENGTH, default="", blank=True, null=False
+    )
     # JSON to store "label" : "number"
-    phone_numbers = models.JSONField(default=list, blank=True, null=True)
+    phone_numbers = models.JSONField(default=list, blank=True, null=False)
     organization_info = models.ForeignKey(
         ContactInfo, on_delete=models.CASCADE, related_name="team_members"
     )
