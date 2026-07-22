@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
@@ -105,7 +106,7 @@ class SiteWidgetViewSet(
         site = self.get_validated_site()
         return (
             SiteWidget.objects.filter(site=site)
-            .order_by("title")
+            .order_by(Lower("title"))
             .select_related(
                 *get_site_content_select_related_fields(),
             )

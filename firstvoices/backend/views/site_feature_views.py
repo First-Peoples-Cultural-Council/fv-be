@@ -107,8 +107,12 @@ class SiteFeatureViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return SiteFeature.objects.filter(site=site).select_related(
-            *get_site_content_select_related_fields(),
+        return (
+            SiteFeature.objects.filter(site=site)
+            .order_by("key")
+            .select_related(
+                *get_site_content_select_related_fields(),
+            )
         )
 
     def perform_create(self, serializer):

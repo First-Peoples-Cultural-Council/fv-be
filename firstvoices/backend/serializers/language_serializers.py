@@ -1,5 +1,5 @@
 from django.db.models import Prefetch
-from django.db.models.functions import Upper
+from django.db.models.functions import Lower
 from rest_framework import serializers
 
 from backend.models import Language
@@ -25,10 +25,10 @@ class LanguageSerializer(serializers.Serializer):
     @classmethod
     def make_queryset_eager(cls, queryset, visible_sites):
         """Add prefetching as required by this serializer"""
-        return queryset.order_by(Upper("title")).prefetch_related(
+        return queryset.order_by(Lower("title")).prefetch_related(
             Prefetch(
                 "sites",
-                queryset=visible_sites.order_by(Upper("title")).select_related(
+                queryset=visible_sites.order_by(Lower("title")).select_related(
                     *get_select_related_media_fields("logo")
                 ),
             ),
@@ -60,7 +60,7 @@ class LanguagePlaceholderSerializer(serializers.Serializer):
     def make_queryset_eager(cls, queryset):
         """Add prefetching as required by this serializer"""
         return (
-            queryset.order_by(Upper("title"))
+            queryset.order_by(Lower("title"))
             .select_related(*get_select_related_media_fields("logo"))
             .prefetch_related(
                 Prefetch(
