@@ -103,7 +103,6 @@ runs:
         echo "fvwebImage: $(get_image_digest_ref fv-web)" >> "$VALUES_FILE"
         echo "fvbeImage: $(get_image_digest_ref fv-be)" >> "$VALUES_FILE"
         echo "staticImage: $(get_image_digest_ref fv-be-static)" >> "$VALUES_FILE"
-        echo "smtpImage: $(get_image_digest_ref smtp-sidecar)" >> "$VALUES_FILE"
 
         echo "REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
           --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
