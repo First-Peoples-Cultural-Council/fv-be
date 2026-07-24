@@ -19,7 +19,7 @@ RUN apk update && \
     libmagic \
     openblas-dev
 RUN pip3 install gunicorn
-RUN pip3 install pipdeptree
+RUN pip3 install "pipdeptree<4.0.0"
 
 COPY requirements.txt /app
 RUN pip3 install -r requirements.txt
