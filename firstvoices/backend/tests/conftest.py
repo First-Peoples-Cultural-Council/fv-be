@@ -1,4 +1,7 @@
+import os
+
 import pytest
+from celery import current_app as celery_app
 
 from backend.models.media import Image, ImageFile, Video, VideoFile
 from backend.serializers.media_serializers import RelatedVideoLinksSerializer
@@ -9,11 +12,18 @@ from backend.tests.test_apis.base.base_media_test import (
 
 MOCK_MEDIA_DIMENSIONS = {"width": 100, "height": 100}
 
+os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "True")
+os.environ.setdefault("CELERY_TASK_EAGER_PROPAGATES", "True")
+os.environ.setdefault("CELERY_BROKER_URL", "memory://")
+os.environ.setdefault("CELERY_RESULT_BACKEND", "cache+memory://")
 
-@pytest.fixture(autouse=True)
-def configure_settings(settings):
-    # Celery tasks run synchronously for testing
-    settings.CELERY_TASK_ALWAYS_EAGER = True
+try:
+    # If Celery was already imported, patching its runtime config
+    celery_app.conf.task_always_eager = True
+    celery_app.conf.task_eager_propagates = True
+except Exception:
+    # Ignore if celery is not available
+    pass
 
 
 @pytest.fixture(autouse=True)

@@ -82,6 +82,8 @@ License: Apache Software License 2.0
 1. Apply migration
    - Navigate to the `firstvoices` directory: `cd firstvoices`
    - From the `firstvoices` directory: `python manage.py migrate`
+1. Set up the required periodic tasks
+   - From the `firstvoices` directory: `python manage.py setup_periodic_tasks`
 1. Start the server
    - Navigate to the `firstvoices` directory if you aren't already there: `cd firstvoices`
    - `python manage.py runserver`
@@ -383,6 +385,7 @@ virtual environment setup, execute `celery -A firstvoices worker -B` in the `./f
 ## Management Commands
 The following management commands are available to run from the `firstvoices` directory:
 Note: use `python manage.py {command} -h` to list all the args and their use.
+- `python manage.py setup_periodic_tasks` - Sets up the required periodic tasks.
 - `python manage.py copy_site` - Copies all content (except for widgets and pages) to a new site.
 - `python manage.py rebuild_index` - Rebuilds the elasticsearch index.
 - `python manage.py unicode_export` - Generates the csv files for the orthography-resources folder for the [unicode-resources repository.](https://github.com/First-Peoples-Cultural-Council/unicode-resources)
