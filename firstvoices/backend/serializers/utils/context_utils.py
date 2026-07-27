@@ -38,3 +38,15 @@ def get_story_from_context(serializer):
             "The required 'story' property was not found in the serializer context"
         )
         raise APIException
+
+
+def get_contact_info_from_context(serializer):
+    logger = logging.getLogger(__name__)
+    if "contact_info" in serializer.context:
+        return serializer.context["contact_info"]
+    else:
+        logger.error(
+            "get_contact_info_from_context - Failed to retrieve contact_info from the context. "
+            "The required 'contact_info' property was not found in the serializer context."
+        )
+        raise APIException

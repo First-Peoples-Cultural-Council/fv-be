@@ -7,7 +7,6 @@ from .characters import (  # noqa F401
     CharacterVariant,
     IgnoredCharacter,
 )
-from .contact_info import ContactInfo, TeamMember  # noqa F401
 from .dictionary import DictionaryEntry  # noqa F401
 from .immersion_labels import ImmersionLabel  # noqa F401
 from .import_jobs import (  # noqa F401
@@ -20,6 +19,7 @@ from .jobs import BulkVisibilityJob, DictionaryCleanupJob  # noqa F401
 from .join_request import JoinRequest  # noqa F401
 from .media import Audio, Document, Image, Person, Video  # noqa F401
 from .mtd import MTDExportJob  # noqa F401
+from .organizations import Organization  # noqa F401
 from .page import SitePage  # noqa F401
 from .part_of_speech import PartOfSpeech  # noqa F401
 from .sites import Language, Membership, Site  # noqa F401
