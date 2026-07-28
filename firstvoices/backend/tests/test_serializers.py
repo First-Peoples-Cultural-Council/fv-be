@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from backend.models import Category
 from backend.serializers import validators
+from backend.serializers.category_serializers import CategoryDetailSerializer
 from backend.tests import factories
 
 
@@ -126,3 +127,46 @@ class TestHasNoParentValidator:
         serializer = HasNoParentSerializer(data=data, context=context)
         assert not serializer.is_valid()
         assert serializer.errors == {"parent": ["Must not have a parent."]}
+
+
+class TestCategoryDetailSerializerValidation:
+    @pytest.mark.django_db
+    def test_duplicate_category_title_on_same_site_fails(self):
+        """
+        Verify CategoryDetailSerializer safely catches duplicate titles on the same site,
+        turning what used to be a database 500 integrity error into a clean 400 validation error.
+        """
+        unique_title = "UniqueTestCategoryXYZ"
+        site = factories.SiteFactory.create()
+        factories.CategoryFactory.create(title=unique_title, site=site)
+
+        duplicate_payload = {
+            "title": unique_title,
+            "description": "A different description, but a duplicated name!",
+        }
+        context = {"site": site}
+        serializer = CategoryDetailSerializer(data=duplicate_payload, context=context)
+
+        assert not serializer.is_valid()
+        assert serializer.errors == {
+            "title": ["This field must be unique within the site."]
+        }
+
+    @pytest.mark.django_db
+    def test_same_category_title_on_different_sites_succeeds(self):
+        """
+        Verify that having an identical category title across different sites is perfectly
+        legal and passes our site-scoped validation check successfully.
+        """
+        unique_title = "UniqueTestCategoryXYZ"
+        site_a = factories.SiteFactory.create()
+        factories.CategoryFactory.create(title=unique_title, site=site_a)
+
+        site_b = factories.SiteFactory.create()
+        cross_site_payload = {
+            "title": unique_title,
+        }
+        context = {"site": site_b}
+        serializer = CategoryDetailSerializer(data=cross_site_payload, context=context)
+
+        assert serializer.is_valid()

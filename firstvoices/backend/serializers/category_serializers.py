@@ -49,6 +49,10 @@ class ParentCategoryFlatListSerializer(ChildCategoryListSerializer):
 class CategoryDetailSerializer(
     WritableSiteContentSerializer,
 ):
+    title = serializers.CharField(
+        max_length=CATEGORY_POS_MAX_TITLE_LENGTH,
+        validators=[UniqueForSite(queryset=Category.objects.all())],
+    )
     description = serializers.CharField(
         required=False, allow_blank=True, allow_null=True, default=""
     )
