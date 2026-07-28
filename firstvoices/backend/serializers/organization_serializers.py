@@ -1,15 +1,18 @@
 from backend.models import Organization
 from backend.serializers.base_serializers import (
-    BaseSiteContentSerializer,
     WritableSiteContentSerializer,
+    base_timestamp_fields,
 )
 
 
 class OrganizationSerializer(WritableSiteContentSerializer):
     class Meta:
         model = Organization
-        fields = BaseSiteContentSerializer.Meta.fields + (
+        fields = base_timestamp_fields + (
+            "id",
+            "url",
             "name",
+            "site",
             "order",
             "emails",
             "phone_numbers",
