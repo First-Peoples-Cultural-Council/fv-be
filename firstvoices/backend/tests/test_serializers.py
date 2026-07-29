@@ -4,6 +4,7 @@ from rest_framework import serializers
 from backend.models import Category
 from backend.serializers import validators
 from backend.serializers.category_serializers import CategoryDetailSerializer
+from backend.serializers.story_serializers import StoryPageDetailSerializer
 from backend.tests import factories
 
 
@@ -168,5 +169,70 @@ class TestCategoryDetailSerializerValidation:
         }
         context = {"site": site_b}
         serializer = CategoryDetailSerializer(data=cross_site_payload, context=context)
+
+        assert serializer.is_valid()
+
+
+class MockRequest:
+    def __init__(self, user, data=None):
+        self.user = user
+        self.data = data or {}
+
+
+class TestStoryPageDetailSerializerValidation:
+    @pytest.mark.django_db
+    def test_duplicate_page_ordering_on_same_story_fails(self):
+        """
+        Verify StoryPageDetailSerializer blocks duplicate page order numbers on the same story.
+        """
+        story = factories.StoryFactory.create()
+        factories.StoryPageFactory.create(ordering=0, story=story, site=story.site)
+
+        duplicate_page_payload = {
+            "text": "This is page two, but using order '0'!",
+            "ordering": 0,
+        }
+
+        mock_user = factories.UserFactory.create()
+        request = MockRequest(user=mock_user, data=duplicate_page_payload)
+
+        context = {
+            "site": story.site,
+            "story": story,
+            "request": request,
+        }
+        serializer = StoryPageDetailSerializer(
+            data=duplicate_page_payload, context=context
+        )
+
+        assert not serializer.is_valid()
+        assert "ordering" in serializer.errors
+        assert serializer.errors["ordering"] == [
+            "A page with this ordering number already exists in this story."
+        ]
+
+    @pytest.mark.django_db
+    def test_same_page_ordering_on_different_stories_succeeds(self):
+        """
+        Verify that separate stories are allowed to have pages with identical order integers.
+        """
+        story_a = factories.StoryFactory.create()
+        factories.StoryPageFactory.create(ordering=0, story=story_a, site=story_a.site)
+
+        story_b = factories.StoryFactory.create(site=story_a.site)
+        valid_page_payload = {
+            "text": "Page one of our second story book",
+            "ordering": 0,
+        }
+
+        mock_user = factories.UserFactory.create()
+        request = MockRequest(user=mock_user, data=valid_page_payload)
+
+        context = {
+            "site": story_b.site,
+            "story": story_b,
+            "request": request,
+        }
+        serializer = StoryPageDetailSerializer(data=valid_page_payload, context=context)
 
         assert serializer.is_valid()
