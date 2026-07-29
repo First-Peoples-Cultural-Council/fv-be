@@ -1,5 +1,5 @@
 from django.db.models import Prefetch, Q
-from django.db.models.functions import Upper
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
@@ -117,7 +117,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     def get_list_queryset(self):
         return (
             Site.objects.all()
-            .order_by(Upper("title"))
+            .order_by(Lower("title"))
             .select_related(*get_select_related_media_fields("logo"))
             .prefetch_related(
                 Prefetch(
@@ -179,7 +179,7 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
                     ),
                 ),
             )
-            .order_by(Upper("site__title"))
+            .order_by(Lower("site__title"))
         )
         queryset = queryset.exclude(Q(site__is_hidden=True) & Q(role__lte=Role.MEMBER))
         return queryset

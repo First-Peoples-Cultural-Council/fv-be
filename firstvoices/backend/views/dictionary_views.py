@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import viewsets
 
@@ -126,6 +127,7 @@ class DictionaryViewSet(
                 ),
                 *get_media_prefetch_list(self.request.user)
             )
+            .order_by("custom_order", Lower("title"))
             .defer(
                 "exclude_from_wotd",
                 "legacy_batch_filename",

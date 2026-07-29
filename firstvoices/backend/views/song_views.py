@@ -1,3 +1,4 @@
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -115,7 +116,7 @@ class SongViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSe
         site = self.get_validated_site()
         return (
             Song.objects.filter(site=site)
-            .order_by("title")
+            .order_by(Lower("title"))
             .all()
             .select_related(
                 *get_site_content_select_related_fields(),

@@ -87,7 +87,7 @@ class DictionaryCleanupJobViewSet(
         return (
             DictionaryCleanupJob.objects.filter(site=site, is_preview=self.is_preview)
             .select_related(*get_site_content_select_related_fields())
-            .order_by("created")
+            .order_by("-created")
         )
 
     def perform_create(self, serializer):

@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
     OpenApiParameter,
@@ -151,7 +152,7 @@ class StoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewS
         site = self.get_validated_site()
         return (
             Story.objects.filter(site=site)
-            .order_by("title")
+            .order_by(Lower("title"))
             .select_related(
                 *get_site_content_select_related_fields(),
             )

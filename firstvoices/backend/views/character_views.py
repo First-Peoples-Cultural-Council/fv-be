@@ -1,4 +1,5 @@
 from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -137,6 +138,8 @@ class IgnoredCharactersViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return IgnoredCharacter.objects.filter(site=site).select_related(
-            *get_site_content_select_related_fields()
+        return (
+            IgnoredCharacter.objects.filter(site=site)
+            .select_related(*get_site_content_select_related_fields())
+            .order_by(Lower("title"))
         )
