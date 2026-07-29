@@ -18,6 +18,7 @@ from backend.models.media import (
     Video,
     VideoFile,
 )
+from backend.tests.factories import BaseSiteContentFactory
 from backend.tests.factories.access import SiteFactory
 
 
@@ -104,7 +105,7 @@ class VideoFactory(DjangoModelFactory):
     )
 
 
-class PersonFactory(DjangoModelFactory):
+class PersonFactory(BaseSiteContentFactory):
     class Meta:
         model = Person
 

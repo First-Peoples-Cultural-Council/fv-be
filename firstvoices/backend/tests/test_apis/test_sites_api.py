@@ -98,6 +98,7 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
             "joinRequests": f"{site_url}/join-requests",
             "memberships": f"{site_url}/memberships",
             "mtdData": f"{site_url}/mtd-data",
+            "organizations": f"{site_url}/organizations",
             "pages": f"{site_url}/pages",
             "people": f"{site_url}/people",
             "songs": f"{site_url}/songs",

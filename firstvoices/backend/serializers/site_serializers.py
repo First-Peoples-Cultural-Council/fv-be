@@ -99,6 +99,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     join_requests = SiteViewLinkField(view_name="api:joinrequest-list")
     memberships = SiteViewLinkField(view_name="api:membership-list")
     mtd_data = SiteViewLinkField(view_name="api:mtd-data-list")
+    organizations = SiteViewLinkField(view_name="api:organization-list")
     pages = SiteViewLinkField(view_name="api:sitepage-list")
     people = SiteViewLinkField(view_name="api:person-list")
     songs = SiteViewLinkField(view_name="api:song-list")
@@ -149,6 +150,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "join_requests",
             "memberships",
             "mtd_data",
+            "organizations",
             "pages",
             "people",
             "songs",
