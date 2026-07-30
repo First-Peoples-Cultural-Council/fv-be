@@ -1,6 +1,10 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import (
+    NotAuthenticated,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.response import Response
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
@@ -51,6 +55,11 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         "update": "change",
     }
 
+    def _deny_for_user_state(self):
+        if self.request.user.is_anonymous:
+            raise NotAuthenticated
+        raise PermissionDenied
+
     def initial(self, *args, **kwargs):
         """Ensures user has permission to perform the requested action."""
         super().initial(*args, **kwargs)
@@ -96,7 +105,7 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         # Finally, check permission
         perm = self.get_queryset().model.get_perm(perm_type)
         if not self.request.user.has_perm(perm, obj):
-            raise PermissionDenied
+            self._deny_for_user_state()
 
     def get_object_for_create_permission(self):
         """Subclasses can override to return an object to be used for checking create permissions"""

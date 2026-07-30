@@ -581,6 +581,16 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_detail_401_unauthenticated(self):
+        site, _user = factories.get_site_with_anonymous_user(
+            visibility=Visibility.MEMBERS
+        )
+
+        response = self.client.get(f"{self.get_detail_endpoint(site.slug)}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_detail_404(self):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
@@ -907,6 +917,20 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_detail_patch_401_unauthenticated(self):
+        site, _user = factories.get_site_with_anonymous_user(
+            visibility=Visibility.PUBLIC
+        )
+
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(site.slug)}",
+            data=json.dumps(self.get_valid_patch_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_patch_site_missing_404(self):
         user = factories.get_app_admin(AppRole.SUPERADMIN)
         self.client.force_authenticate(user=user)
@@ -984,6 +1008,15 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_hidden_site_detail_401_unauthenticated(self):
+        instance, _user = factories.get_site_with_anonymous_user()
+        instance.is_hidden = True
+        instance.save()
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_hidden_site_detail_403_members(self):
         user = factories.get_non_member_user()
         instance = factories.SiteFactory.create(
@@ -994,6 +1027,15 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
 
         response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_hidden_site_detail_401_members_unauthenticated(self):
+        instance, _user = factories.get_site_with_anonymous_user()
+        instance.is_hidden = True
+        instance.save()
+
+        response = self.client.get(f"{self.get_detail_endpoint(instance.slug)}")
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("app_role", [AppRole.SUPERADMIN, AppRole.STAFF])
