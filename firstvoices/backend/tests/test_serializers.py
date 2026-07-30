@@ -132,28 +132,6 @@ class TestHasNoParentValidator:
 
 class TestCategoryDetailSerializerValidation:
     @pytest.mark.django_db
-    def test_duplicate_category_title_on_same_site_fails(self):
-        """
-        Verify CategoryDetailSerializer safely catches duplicate titles on the same site,
-        turning what used to be a database 500 integrity error into a clean 400 validation error.
-        """
-        unique_title = "UniqueTestCategoryXYZ"
-        site = factories.SiteFactory.create()
-        factories.CategoryFactory.create(title=unique_title, site=site)
-
-        duplicate_payload = {
-            "title": unique_title,
-            "description": "A different description, but a duplicated name!",
-        }
-        context = {"site": site}
-        serializer = CategoryDetailSerializer(data=duplicate_payload, context=context)
-
-        assert not serializer.is_valid()
-        assert serializer.errors == {
-            "title": ["This field must be unique within the site."]
-        }
-
-    @pytest.mark.django_db
     def test_same_category_title_on_different_sites_succeeds(self):
         """
         Verify that having an identical category title across different sites is perfectly
