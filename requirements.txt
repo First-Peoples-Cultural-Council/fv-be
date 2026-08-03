@@ -3,7 +3,7 @@ aniso8601==10.0.1
 asgiref==3.11.1
 async-timeout==5.0.1
 attrs==26.1.0
-boto3==1.43.56
+boto3==1.43.61
 botocore>=1.43.51
 celery==5.5.3
 certifi==2026.5.20
