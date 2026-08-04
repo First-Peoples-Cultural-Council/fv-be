@@ -306,3 +306,6 @@ class TestImportJobRelatedEntriesDryRun:
             "Duplicate related entry title 'test_related_entries_duplicate_titles_same_row_word_2' found in "
             "column 'related_entry_2'. Please ensure each related entry title is unique per entry."
         )
+
+    def test_missing_related_entries_with_other_errors(self):
+        pass

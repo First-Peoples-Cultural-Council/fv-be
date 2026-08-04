@@ -220,7 +220,11 @@ class VideoResource(BaseMediaResource):
         # Adding original
         associated_file = VideoFile.objects.filter(
             import_job__id=row["import_job"], content__contains=valid_filename
-        )[0]
+        ).first()
+        if associated_file is None:
+            raise ImportError(
+                f"Video file missing in uploaded files: {row['video_filename']}, column: video_filename."
+            )
         row["video_original"] = str(associated_file.id)
 
     class Meta:

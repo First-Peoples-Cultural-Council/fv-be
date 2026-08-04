@@ -467,6 +467,9 @@ class DictionaryEntryImporter(BaseImporter):
         import_job,
         csv_data,
         dry_run,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
@@ -497,6 +500,9 @@ class DictionaryEntryImporter(BaseImporter):
             site=import_job.site,
             run_as_user=import_job.run_as_user,
             import_job=import_job.id,
+            missing_uploaded_media=missing_uploaded_media,
+            missing_referenced_media=missing_referenced_media,
+            missing_entries=missing_entries,
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         # Remove IDs from skipped rows
