@@ -134,7 +134,7 @@ class DictionaryEntryResource(
             )
         for obj in missing_entries:
             self.missing_content_errors.setdefault(obj["idx"], []).append(
-                f"Referenced dictionary entry not found for ID: {obj['id']} in column: {obj['column']}."
+                f"Referenced dictionary entry not found for ID: {obj['id']} in column: 'related_entry_ids'."
             )
 
         self._current_row_number = None

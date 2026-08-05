@@ -252,7 +252,11 @@ def generate_report(
     )
     for result in all_results:
         for row in result.rows:
-            if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+            # skipped rows without error messages were skipped intentionally
+            if (
+                row.import_type == RowResult.IMPORT_TYPE_SKIP
+                and len(row.error_messages) > 0
+            ):
                 create_or_append_error_row(
                     import_job,
                     report,

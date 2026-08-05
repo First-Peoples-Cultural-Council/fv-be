@@ -23,6 +23,8 @@ from backend.resources.utils.import_export_widgets import (
 
 
 class BaseMediaResource(SiteContentResource):
+    original_column_name = None
+
     def before_import(self, dataset, **kwargs):
         super().before_import(dataset, **kwargs)
 
@@ -32,8 +34,15 @@ class BaseMediaResource(SiteContentResource):
         if import_job.mode == ImportJobMode.UPDATE:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
+    def skip_row(self, instance, original, row, import_validation_errors=None) -> bool:
+        if not row.get(self.original_column_name):
+            return True
+        return super().skip_row(instance, original, row, import_validation_errors)
+
 
 class AudioResource(BaseMediaResource):
+    original_column_name = "audio_original"
+
     original = fields.Field(
         column_name="audio_original",
         attribute="original",
@@ -86,8 +95,9 @@ class AudioResource(BaseMediaResource):
         # Adding original
         associated_file = File.objects.filter(
             import_job__id=row["import_job"], content__contains=valid_filename
-        )[0]
-        row["audio_original"] = str(associated_file.id)
+        ).first()
+        if associated_file:
+            row["audio_original"] = str(associated_file.id)
 
     class Meta:
         model = Audio
@@ -95,6 +105,8 @@ class AudioResource(BaseMediaResource):
 
 
 class DocumentResource(BaseMediaResource):
+    original_column_name = "document_original"
+
     original = fields.Field(
         column_name="document_original",
         attribute="original",
@@ -132,8 +144,9 @@ class DocumentResource(BaseMediaResource):
         # Adding original
         associated_file = File.objects.filter(
             import_job__id=row["import_job"], content__contains=valid_filename
-        )[0]
-        row["document_original"] = str(associated_file.id)
+        ).first()
+        if associated_file:
+            row["document_original"] = str(associated_file.id)
 
     class Meta:
         model = Document
@@ -141,6 +154,8 @@ class DocumentResource(BaseMediaResource):
 
 
 class ImageResource(BaseMediaResource):
+    original_column_name = "img_original"
+
     original = fields.Field(
         column_name="img_original",
         attribute="original",
@@ -176,8 +191,9 @@ class ImageResource(BaseMediaResource):
         # Adding original
         associated_file = ImageFile.objects.filter(
             import_job__id=row["import_job"], content__contains=valid_filename
-        )[0]
-        row["img_original"] = str(associated_file.id)
+        ).first()
+        if associated_file:
+            row["img_original"] = str(associated_file.id)
 
     class Meta:
         model = Image
@@ -185,6 +201,8 @@ class ImageResource(BaseMediaResource):
 
 
 class VideoResource(BaseMediaResource):
+    original_column_name = "video_original"
+
     original = fields.Field(
         column_name="video_original",
         attribute="original",
@@ -221,11 +239,8 @@ class VideoResource(BaseMediaResource):
         associated_file = VideoFile.objects.filter(
             import_job__id=row["import_job"], content__contains=valid_filename
         ).first()
-        if associated_file is None:
-            raise ImportError(
-                f"Video file missing in uploaded files: {row['video_filename']}, column: video_filename."
-            )
-        row["video_original"] = str(associated_file.id)
+        if associated_file:
+            row["video_original"] = str(associated_file.id)
 
     class Meta:
         model = Video
