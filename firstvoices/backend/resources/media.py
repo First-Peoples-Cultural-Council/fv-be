@@ -35,6 +35,8 @@ class BaseMediaResource(SiteContentResource):
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
     def skip_row(self, instance, original, row, import_validation_errors=None) -> bool:
+        # skip rows with missing originals (errors will be logged in DictionaryEntryResource)
+        # skipped rows with no error message will not appear in error report
         if not row.get(self.original_column_name):
             return True
         return super().skip_row(instance, original, row, import_validation_errors)

@@ -150,6 +150,7 @@ class DictionaryEntryResource(
         row_number = kwargs.get("row_number")
         self._current_row_number = row_number
 
+        # return individual error messages for missing content if missing content errors are present
         result = super().import_row(row, instance_loader, **kwargs)
         if (
             result.import_type == RowResult.IMPORT_TYPE_SKIP
@@ -161,7 +162,7 @@ class DictionaryEntryResource(
 
     def get_or_init_instance(self, instance_loader, row):
         """
-        Raise errors depending on import job type and row data (missing related data, visibility restrictions, etc.)
+        Raise errors depending on import job type and row data (missing related content, visibility restrictions, etc.)
         before initializing the instance.
         """
         missing_content_errors = self.missing_content_errors.get(
