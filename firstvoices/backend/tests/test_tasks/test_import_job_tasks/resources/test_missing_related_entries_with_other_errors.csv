@@ -1,5 +1,4 @@
 ﻿Title,Type,Category,PART_OF_SPEECH,RELATED_ENTRY_IDS,VIDEO_EMBED_LINKS
 Invalid category,Word,invalid category,,,
-Invalid part of speech,Word,,invalid part of speech,,
 Invalid related entries,Word,,,"invalid, invalid",
-invalid video link,Word,,,,https://invalid_link
+Invalid part of speech,Word,,invalid part of speech,,

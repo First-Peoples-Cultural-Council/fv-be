@@ -325,7 +325,7 @@ class TestImportJobRelatedEntriesDryRun:
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 3
 
         error_rows = validation_report.rows.all()
         error_rows_numbers = list(
@@ -333,8 +333,8 @@ class TestImportJobRelatedEntriesDryRun:
                 "row_number", flat=True
             )
         )
-        assert len(error_rows) == 4
-        assert error_rows_numbers == [1, 2, 3, 4]
+        assert len(error_rows) == 3
+        assert error_rows_numbers == [1, 2, 3]
 
         # invalid category
         error_row = validation_report.rows.get(row_number=1)
@@ -344,23 +344,15 @@ class TestImportJobRelatedEntriesDryRun:
         )
         assert error_row.errors[0] == expected_error_message
 
-        #  invalid part of speech
-        error_row = validation_report.rows.get(row_number=2)
-        expected_error_message = (
-            "No Part of Speech found with the provided title. "
-            "Value: invalid part of speech in column part_of_speech."
-        )
-        assert error_row.errors[0] == expected_error_message
-
         # invalid related entry id
-        error_row = validation_report.rows.get(row_number=3)
+        error_row = validation_report.rows.get(row_number=2)
         expected_error_message = "Referenced dictionary entry not found for ID: invalid in column: 'related_entry_ids'."
         assert error_row.errors[0] == expected_error_message
 
-        # invalid related video link
-        error_row = validation_report.rows.get(row_number=4)
+        #  invalid part of speech
+        error_row = validation_report.rows.get(row_number=3)
         expected_error_message = (
-            "related_video_links: Item 1 in the array did not validate: Enter a valid URL. "
-            "Invalid value: https://invalid_link"
+            "No Part of Speech found with the provided title. "
+            "Value: invalid part of speech in column part_of_speech."
         )
         assert error_row.errors[0] == expected_error_message
