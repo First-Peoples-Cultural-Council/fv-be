@@ -24,7 +24,7 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
     model = StoryPage
     model_factory = factories.StoryPageFactory
 
-    def get_list_endpoint(self, site_slug, story_id):
+    def get_list_endpoint(self, site_slug, story_id="123-fake-id"):
         # nested url needs both site and story
         url = reverse(
             self.API_LIST_VIEW, current_app=self.APP_NAME, args=[site_slug, story_id]

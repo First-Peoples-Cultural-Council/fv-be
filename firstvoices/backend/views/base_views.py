@@ -13,6 +13,12 @@ from backend.permissions import utils
 from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
 
 
+def raise_permission_denied_for_user(user):
+    if user.is_anonymous:
+        raise NotAuthenticated
+    raise PermissionDenied
+
+
 class ThrottlingMixin:
     """
     A mixin to provide request usage throttling for viewsets.
@@ -54,11 +60,6 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         "retrieve": "view",
         "update": "change",
     }
-
-    def _deny_for_user_state(self):
-        if self.request.user.is_anonymous:
-            raise NotAuthenticated
-        raise PermissionDenied
 
     def initial(self, *args, **kwargs):
         """Ensures user has permission to perform the requested action."""
@@ -105,7 +106,7 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         # Finally, check permission
         perm = self.get_queryset().model.get_perm(perm_type)
         if not self.request.user.has_perm(perm, obj):
-            self._deny_for_user_state()
+            raise_permission_denied_for_user(self.request.user)
 
     def get_object_for_create_permission(self):
         """Subclasses can override to return an object to be used for checking create permissions"""
@@ -178,7 +179,7 @@ class SiteContentViewSetMixin:
             self._cached_site = site
             return site
         else:
-            raise PermissionDenied
+            raise_permission_denied_for_user(self.request.user)
 
     def get_object_for_create_permission(self):
         """Check create permissions based on the relevant site"""
