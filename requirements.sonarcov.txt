@@ -1,5 +1,5 @@
 asgiref==3.11.1
-coverage==7.14.1
+coverage==7.15.2
 Django==5.1.6
 django-coverage-plugin==3.2.2
 sqlparse==0.5.5
