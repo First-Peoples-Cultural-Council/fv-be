@@ -1,4 +1,5 @@
 from import_export import fields, widgets
+from import_export.results import RowResult
 
 from backend.models import Category, DictionaryEntry, ImportJob, ImportJobMode
 from backend.models.constants import Visibility
@@ -101,8 +102,42 @@ class DictionaryEntryResource(
         widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        missing_uploaded_media=None,
+        missing_referenced_media=None,
+        missing_entries=None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
+        if missing_uploaded_media is None:
+            missing_uploaded_media = []
+        if missing_referenced_media is None:
+            missing_referenced_media = []
+        if missing_entries is None:
+            missing_entries = []
+        self.missing_uploaded_media = missing_uploaded_media
+        self.missing_referenced_media = missing_referenced_media
+        self.missing_entries = missing_entries
+
+        # create missing related content error lookup
+        self.missing_content_errors = {}
+        for obj in missing_uploaded_media:
+            self.missing_content_errors.setdefault(obj["idx"], []).append(
+                f"Media file missing in uploaded files: "
+                f"{obj['filename']}, column: {obj['column']}."
+            )
+        for obj in missing_referenced_media:
+            self.missing_content_errors.setdefault(obj["idx"], []).append(
+                "Referenced media not found for "
+                f"ID: {obj['id']} in column: {obj['column']}."
+            )
+        for obj in missing_entries:
+            self.missing_content_errors.setdefault(obj["idx"], []).append(
+                f"Referenced dictionary entry not found for ID: {obj['id']} in column: 'related_entry_ids'."
+            )
+
+        self._current_row_number = None
         self._processed_ids = set()
 
     def before_import_row(self, row, **kwargs):
@@ -111,51 +146,42 @@ class DictionaryEntryResource(
             cleaned_title = clean_input(title)
             row["title"] = cleaned_title
 
+    def import_row(self, row, instance_loader, **kwargs):
+        row_number = kwargs.get("row_number")
+        self._current_row_number = row_number
+
+        # return individual error messages for missing content if missing content errors are present
+        result = super().import_row(row, instance_loader, **kwargs)
+        if (
+            result.import_type == RowResult.IMPORT_TYPE_SKIP
+            and row_number in self.missing_content_errors
+        ):
+            result.error_messages = list(self.missing_content_errors[row_number])
+
+        return result
+
     def get_or_init_instance(self, instance_loader, row):
         """
-        If import job mode = update, update existing entries instead of creating new ones.
+        Raise errors depending on import job type and row data (missing related content, visibility restrictions, etc.)
+        before initializing the instance.
         """
-        import_job = ImportJob.objects.get(id=self.import_job)
-        site = import_job.site
-        valid_entry_ids = [
-            str(i)
-            for i in DictionaryEntry.objects.filter(site=site).values_list(
-                "id", flat=True
-            )
-        ]
+        missing_content_errors = self.missing_content_errors.get(
+            self._current_row_number
+        )
+        if missing_content_errors:
+            # raise an error and allow the import_row() method to add each individual error
+            raise ImportError()
 
         instance_loader.get_instance(row)
+        import_job = ImportJob.objects.get(id=self.import_job)
+        site = import_job.site
 
         # Raise errors for invalid type/visibility
-        self.raise_invalid_errors(row)
+        self.raise_invalid_value_errors(row)
 
+        # Raise errors for update data
         if import_job.mode == ImportJobMode.UPDATE:
-            # Skip missing IDs
-            if not row.get("id"):
-                raise ImportError(f"Missing 'id' for update in row: {row}.")
-
-            # Enforce visibility restrictions
-            if (
-                row.get("visibility")
-                and Visibility[row.get("visibility").upper().strip()].value
-                > site.visibility
-            ):
-                raise ImportError(
-                    f"Cannot update entry with id {row.get('id')} due to visibility restrictions."
-                )
-
-            # Ensure updated entries belong to the site
-            if row.get("id") not in valid_entry_ids:
-                raise ImportError(
-                    f"Entry with id {row.get('id')} does not belong to site '{site.title}'."
-                )
-
-            # Prevent duplicate updates within the same import
-            if str(row.get("id")) in self._processed_ids:
-                raise ImportError(
-                    f"Duplicate entry with id {row.get('id')} found in import."
-                )
-            self._processed_ids.add(str(row.get("id")))
+            self.raise_row_update_errors(row, site)
 
         return super().get_or_init_instance(instance_loader, row)
 
@@ -177,8 +203,43 @@ class DictionaryEntryResource(
                 new_values = [value.strip() for value in new_values if value]
                 getattr(instance, instance_field).set(new_values)
 
+    def raise_row_update_errors(self, row, site):
+        valid_entry_ids = [
+            str(i)
+            for i in DictionaryEntry.objects.filter(site=site).values_list(
+                "id", flat=True
+            )
+        ]
+
+        # Skip missing IDs
+        if not row.get("id"):
+            raise ImportError(f"Missing 'id' for update in row: {row}.")
+
+        # Enforce visibility restrictions
+        if (
+            row.get("visibility")
+            and Visibility[row.get("visibility").upper().strip()].value
+            > site.visibility
+        ):
+            raise ImportError(
+                f"Cannot update entry with id {row.get('id')} due to visibility restrictions."
+            )
+
+        # Ensure updated entries belong to the site
+        if row.get("id") not in valid_entry_ids:
+            raise ImportError(
+                f"Entry with id {row.get('id')} does not belong to site '{site.title}'."
+            )
+
+        # Prevent duplicate updates within the same import
+        if str(row.get("id")) in self._processed_ids:
+            raise ImportError(
+                f"Duplicate entry with id {row.get('id')} found in import."
+            )
+        self._processed_ids.add(str(row.get("id")))
+
     @staticmethod
-    def raise_invalid_errors(row):
+    def raise_invalid_value_errors(row):
         if "type" in row and (
             str(row["type"]).strip().lower() not in TypeOfDictionaryEntry.values
             and row["type"]

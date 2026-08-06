@@ -8,6 +8,13 @@ from django.db.models import Q
 from django.utils.text import get_valid_filename
 from rest_framework.exceptions import ValidationError
 
+from backend.importing.importers import (
+    AudioImporter,
+    DictionaryEntryImporter,
+    DocumentImporter,
+    ImageImporter,
+    VideoImporter,
+)
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
@@ -236,3 +243,25 @@ def get_missing_uploaded_media(data, import_job):
                 )
 
     return missing_media
+
+
+def get_missing_referenced_media(data, site_id):
+    """
+    Checks the media files referenced by ID in the csv data file and returns errors for any that do not exist or are not
+    from an accessible site (same site or one with shared media)
+    """
+
+    return (
+        AudioImporter.get_missing_referenced_media(site_id, data)
+        + DocumentImporter.get_missing_referenced_media(site_id, data)
+        + ImageImporter.get_missing_referenced_media(site_id, data)
+        + VideoImporter.get_missing_referenced_media(site_id, data)
+    )
+
+
+def get_missing_referenced_entries(data, site_id):
+    """
+    Checks the dictionary entries referenced by ID in the csv data file and returns errors for any that do not exist.
+    """
+
+    return DictionaryEntryImporter.get_missing_referenced_entries(site_id, data)

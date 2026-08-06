@@ -26,6 +26,8 @@ from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TE
 from backend.tasks.utils import (
     create_or_append_error_row,
     get_failed_rows_csv_file,
+    get_missing_referenced_entries,
+    get_missing_referenced_media,
     get_missing_uploaded_media,
     get_related_entry_headers,
     is_valid_header_variation,
@@ -48,23 +50,12 @@ def get_valid_headers():
     return reduce(lambda a, b: a + b, supported_columns)
 
 
-def clean_csv(
-    data,
-    missing_uploaded_media=None,
-    missing_referenced_media=None,
-    missing_entries=None,
-):
+def clean_csv(data):
     """
     Method to run validations on a csv file and returns a list of
     accepted columns, ignored columns and a cleaned csv for importing.
     This method also drops the ignored columns as those will not be used during import.
     """
-    if missing_uploaded_media is None:
-        missing_uploaded_media = []
-    if missing_referenced_media is None:
-        missing_referenced_media = []
-    if missing_entries is None:
-        missing_entries = []
 
     valid_headers = get_valid_headers()
     cleaned_data = deepcopy(data)  # so we keep an original copy for return purposes
@@ -85,24 +76,6 @@ def clean_csv(
 
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
-
-    # Remove rows that have missing media or entries
-    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
-    missing_referenced_media_row_idx = [
-        (obj["idx"] - 1) for obj in missing_referenced_media
-    ]
-    missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
-
-    rows_to_delete = {
-        *missing_media_row_idx,
-        *missing_referenced_media_row_idx,
-        *missing_entries_row_idx,
-    }
-    rows_to_delete = list(rows_to_delete)
-
-    rows_to_delete.sort(reverse=True)
-    for row_index in rows_to_delete:
-        del cleaned_data[row_index]
 
     # normalize title and related entry columns
     columns_to_normalize = ["title"] + get_related_entry_headers(cleaned_data)
@@ -237,9 +210,6 @@ def generate_report(
     import_job,
     accepted_columns,
     ignored_columns,
-    missing_uploaded_media,
-    missing_referenced_media,
-    missing_entries,
     audio_import_results,
     document_import_results,
     img_import_results,
@@ -272,41 +242,6 @@ def generate_report(
     )
     report.save()
 
-    # Add media errors to report
-    for missing_media_row in missing_uploaded_media:
-        create_or_append_error_row(
-            import_job,
-            report,
-            row_number=missing_media_row["idx"],
-            errors=[
-                f"Media file missing in uploaded files: "
-                f"{missing_media_row['filename']}, column: {missing_media_row['column']}."
-            ],
-        )
-
-    # Add media errors to report
-    for missing_media_id_row in missing_referenced_media:
-        create_or_append_error_row(
-            import_job,
-            report,
-            row_number=missing_media_id_row["idx"],
-            errors=[
-                f"Referenced media not found for "
-                f"ID: {missing_media_id_row['id']} in column: {missing_media_id_row['column']}."
-            ],
-        )
-
-    # Add entry ID errors to report
-    for missing_entry_row in missing_entries:
-        create_or_append_error_row(
-            import_job,
-            report,
-            row_number=missing_entry_row["idx"],
-            errors=[
-                f"Referenced dictionary entry not found for ID: {missing_entry_row['id']}"
-            ],
-        )
-
     # Add errors from individual import results to report
     all_results = (
         [dictionary_entry_import_result]
@@ -317,7 +252,11 @@ def generate_report(
     )
     for result in all_results:
         for row in result.rows:
-            if row.import_type == RowResult.IMPORT_TYPE_SKIP:
+            # skipped rows without error messages were skipped intentionally
+            if (
+                row.import_type == RowResult.IMPORT_TYPE_SKIP
+                and len(row.error_messages) > 0
+            ):
                 create_or_append_error_row(
                     import_job,
                     report,
@@ -369,9 +308,7 @@ def process_import_job_data(
     """
     missing_entries = get_missing_referenced_entries(data, import_job.site.id)
 
-    accepted_columns, ignored_columns, cleaned_data = clean_csv(
-        data, missing_uploaded_media, missing_referenced_media, missing_entries
-    )
+    accepted_columns, ignored_columns, cleaned_data = clean_csv(data)
 
     # import media first
     audio_import_results, audio_filename_map = AudioImporter.import_data(
@@ -393,6 +330,9 @@ def process_import_job_data(
             import_job,
             cleaned_data,
             dry_run,
+            missing_uploaded_media,
+            missing_referenced_media,
+            missing_entries,
             audio_filename_map,
             img_filename_map,
             video_filename_map,
@@ -405,9 +345,6 @@ def process_import_job_data(
             import_job,
             accepted_columns,
             ignored_columns,
-            missing_uploaded_media,
-            missing_referenced_media,
-            missing_entries,
             audio_import_results,
             document_import_results,
             img_import_results,
@@ -471,28 +408,6 @@ def dry_run_import_job(data, import_job):
         import_job.validation_status = ImportJobStatus.FAILED
     finally:
         import_job.save()
-
-
-def get_missing_referenced_media(data, site_id):
-    """
-    Checks the media files referenced by ID in the csv data file and returns errors for any that do not exist or are not
-    from an accessible site (same site or one with shared media)
-    """
-
-    return (
-        AudioImporter.get_missing_referenced_media(site_id, data)
-        + DocumentImporter.get_missing_referenced_media(site_id, data)
-        + ImageImporter.get_missing_referenced_media(site_id, data)
-        + VideoImporter.get_missing_referenced_media(site_id, data)
-    )
-
-
-def get_missing_referenced_entries(data, site_id):
-    """
-    Checks the dictionary entries referenced by ID in the csv data file and returns errors for any that do not exist.
-    """
-
-    return DictionaryEntryImporter.get_missing_referenced_entries(site_id, data)
 
 
 def delete_unused_media(import_job):

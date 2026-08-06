@@ -1,0 +1,5 @@
+﻿Title,Type,Category,PART_OF_SPEECH,AUDIO_FILENAME,AUDIO_TITLE,AUDIO_SPEAKER,VIDEO_EMBED_LINKS
+Invalid category,Word,invalid category,,,,,
+Invalid part of speech,Word,,invalid part of speech,,,,
+Invalid audio and speaker,Word,,,test_missing_related_media_with_other_errors.mp3,Test audio,invalid speaker,
+invalid video link,Word,,,,,,https://invalid_link

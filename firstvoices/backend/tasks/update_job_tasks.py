@@ -13,13 +13,10 @@ from backend.importing.importers import (
 )
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.import_job_tasks import (
-    attach_csv_to_report,
-    generate_report,
+from backend.tasks.import_job_tasks import attach_csv_to_report, generate_report
+from backend.tasks.utils import (
     get_missing_referenced_entries,
     get_missing_referenced_media,
-)
-from backend.tasks.utils import (
     get_missing_uploaded_media,
     get_related_entry_headers,
     is_valid_header_variation,
@@ -149,9 +146,6 @@ def process_update_job_data(
             import_job=update_job,
             accepted_columns=accepted_headers,
             ignored_columns=invalid_headers,
-            missing_uploaded_media=missing_uploaded_media,
-            missing_referenced_media=missing_referenced_media,
-            missing_entries=missing_entries,
             audio_import_results=audio_import_results,
             document_import_results=document_import_results,
             img_import_results=img_import_results,

@@ -698,3 +698,64 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         expected_valid_columns = self.get_maximum_valid_related_media_columns()
 
         assert set(expected_valid_columns) == set(validation_report.accepted_columns)
+
+    def test_missing_related_media_with_other_errors(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_missing_related_media_with_other_errors.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=ImportJobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 4
+
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 4
+        assert error_rows_numbers == [1, 2, 3, 4]
+
+        # invalid category
+        error_row = validation_report.rows.get(row_number=1)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid category in column category."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        #  invalid part of speech
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = (
+            "No Part of Speech found with the provided title. "
+            "Value: invalid part of speech in column part_of_speech."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # missing audio
+        error_row = validation_report.rows.get(row_number=3)
+        expected_error_message = (
+            "Media file missing in uploaded files: test_missing_related_media_with_other_errors.mp3, "
+            "column: audio_filename."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid related video link
+        error_row = validation_report.rows.get(row_number=4)
+        expected_error_message = (
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL. "
+            "Invalid value: https://invalid_link"
+        )
+        assert error_row.errors[0] == expected_error_message
