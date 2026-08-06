@@ -221,6 +221,38 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         self.assert_async_task_logs(site, caplog)
 
     @pytest.mark.django_db
+    @pytest.mark.disable_thumbnail_mocks
+    def test_build_and_score_uses_first_valid_image(self, site, caplog):
+        bad_image = factories.ImageFactory.create(site=site)
+        bad_image.small = None
+        bad_image.save()
+
+        good_image = factories.ImageFactory.create(site=site)
+        good_image_small = factories.ImageFileFactory(site=site)
+        good_image.small = good_image_small
+        good_image.save()
+
+        assert bad_image.small is None
+        assert good_image.small is not None
+
+        factories.DictionaryEntryFactory.create(
+            site=site,
+            visibility=Visibility.PUBLIC,
+            type=TypeOfDictionaryEntry.WORD,
+            title=self.sample_entry_title,
+            related_images=[bad_image, good_image],
+        )
+
+        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        result = job.export_result
+
+        assert len(result["data"]) == 1
+
+        # Ensure the exporter skipped the first image (no small thumbnail)
+        # and used the second valid image instead.
+        assert result["data"][0]["img"] is not None
+
+    @pytest.mark.django_db
     def test_old_results_removed(self, site):
         build_index_and_calculate_scores(site.slug)
         build_index_and_calculate_scores(site.slug)
