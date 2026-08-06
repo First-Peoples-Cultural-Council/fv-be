@@ -1,6 +1,7 @@
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from backend.models import Alphabet, DictionaryCleanupJob, DictionaryEntry
 from backend.models.jobs import JobStatus
@@ -57,44 +58,49 @@ def cleanup_dictionary(job_instance_id: str):
     updated_entries = []
     unknown_character_count = {}
 
-    # Return the results of the recalculation i.e. the changes in custom order and title for every entry
-    for entry in DictionaryEntry.objects.filter(site=site):
-        original_title = entry.title
-        original_custom_order = entry.custom_order
+    # Wrapped in a transation so a failure partway through doesn't leave the dictionary half recalculated.
+    # The except needs to stay outside the atomic block, otherwise the changes get committed instead of rolled back.
+    try:
+        with transaction.atomic():
+            # Return the results of the recalculation i.e. the changes in custom order and title for every entry
+            for entry in DictionaryEntry.objects.filter(site=site).iterator(
+                chunk_size=1000
+            ):
+                original_title = entry.title
+                original_custom_order = entry.custom_order
 
-        cleaned_title = alphabet.clean_confusables(entry.title)
-        new_order = alphabet.get_custom_order(cleaned_title)
+                cleaned_title = alphabet.clean_confusables(entry.title)
+                new_order = alphabet.get_custom_order(cleaned_title)
 
-        # If job is not preview, save the entry to recalculate custom order and clean title
-        if not job.is_preview:
-            try:
-                entry.system_last_modified_by = job.created_by
-                entry.save(set_modified_date=False)
-            except Exception as e:
-                job.status = JobStatus.FAILED
-                job.message = str(e)
-                job.save()
+                # If job is not preview, save the entry to recalculate custom order and clean title
+                if not job.is_preview:
+                    entry.system_last_modified_by = job.created_by
+                    entry.save(set_modified_date=False)
 
-                logger.error(e)
-                logger.info(ASYNC_TASK_END_TEMPLATE)
-                return
-
-        append_updated_entry(
-            updated_entries,
-            original_title,
-            original_custom_order,
-            cleaned_title,
-            new_order,
-        )
-
-        # Count unknown characters remaining in each entry, first split by character, then apply custom order
-        chars = alphabet.get_character_list(cleaned_title)
-        for char in chars:
-            custom_order = alphabet.get_custom_order(char)
-            if "⚑" in custom_order:
-                unknown_character_count[custom_order] = (
-                    unknown_character_count.get(custom_order, 0) + 1
+                append_updated_entry(
+                    updated_entries,
+                    original_title,
+                    original_custom_order,
+                    cleaned_title,
+                    new_order,
                 )
+
+                # Count unknown characters remaining in each entry, first split by character, then apply custom order
+                chars = alphabet.get_character_list(cleaned_title)
+                for char in chars:
+                    custom_order = alphabet.get_custom_order(char)
+                    if "⚑" in custom_order:
+                        unknown_character_count[custom_order] = (
+                            unknown_character_count.get(custom_order, 0) + 1
+                        )
+    except Exception as e:
+        job.status = JobStatus.FAILED
+        job.message = str(e)
+        job.save()
+
+        logger.error(e)
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        return
 
     results["unknown_character_count"] = unknown_character_count
     results["updated_entries"] = updated_entries
