@@ -9,26 +9,20 @@ from backend.models.jobs import BaseJob
 from backend.permissions import predicates
 
 
-class ImportJobStatus(models.TextChoices):
+class UpdateJobStatus(models.TextChoices):
     # From BaseJob.JobStatus
     ACCEPTED = "accepted", "Accepted"
     STARTED = "started", "Started"
     COMPLETE = "complete", "Complete"
     FAILED = "failed", "Failed"
     CANCELLED = "cancelled", "Cancelled"
-    READY_FOR_IMPORT = "ready_for_import", "Ready for import"
+    READY_FOR_UPDATE = "ready_for_update", "Ready for update"
 
 
-class ImportJobMode(models.TextChoices):
-    SKIP_DUPLICATES = "skip_duplicates", _("Skip Duplicates")
-    ALLOW_DUPLICATES = "allow_duplicates", _("Allow Duplicates")
-    UPDATE = "update", _("Update")
-
-
-class ImportJob(BaseJob):
+class UpdateJob(BaseJob):
     class Meta:
-        verbose_name = _("Import Job")
-        verbose_name_plural = _("Import Jobs")
+        verbose_name = _("Update Job")
+        verbose_name_plural = _("Update Jobs")
         rules_permissions = {
             "view": predicates.is_at_least_editor_or_super,
             "add": predicates.is_at_least_editor_or_super,
@@ -37,12 +31,6 @@ class ImportJob(BaseJob):
         }
 
     title = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
-
-    mode = models.CharField(
-        choices=ImportJobMode.choices,
-        max_length=16,
-        default=ImportJobMode.SKIP_DUPLICATES,
-    )
 
     run_as_user = models.ForeignKey(
         get_user_model(), blank=True, null=True, on_delete=models.PROTECT
@@ -53,7 +41,7 @@ class ImportJob(BaseJob):
     # overriding BaseJob
     status = models.CharField(
         max_length=32,
-        choices=ImportJobStatus.choices,
+        choices=UpdateJobStatus.choices,
         null=True,
         blank=True,
         default=None,
@@ -64,7 +52,7 @@ class ImportJob(BaseJob):
 
     validation_status = models.CharField(
         max_length=32,
-        choices=ImportJobStatus.choices,
+        choices=UpdateJobStatus.choices,
         null=True,
         blank=True,
         default=None,
@@ -82,9 +70,9 @@ class ImportJob(BaseJob):
     )
 
     def _delete_report(self):
-        import_job_report = self.validation_report
-        if import_job_report:
-            import_job_report.delete()
+        update_job_report = self.validation_report
+        if update_job_report:
+            update_job_report.delete()
 
     def _delete_data_csv(self):
         data_csv = self.data

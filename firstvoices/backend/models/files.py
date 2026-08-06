@@ -10,6 +10,7 @@ from backend.permissions import predicates
 from .base import BaseSiteContentModel
 from .constants import MAX_FILEFIELD_LENGTH
 from .import_jobs import ImportJob
+from .update_jobs import UpdateJob
 
 
 def file_directory_path(instance, filename):
@@ -31,6 +32,13 @@ class FileBase(BaseSiteContentModel):
     size = models.IntegerField(blank=True, null=True)
     import_job = models.ForeignKey(
         ImportJob,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    update_job = models.ForeignKey(
+        UpdateJob,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
