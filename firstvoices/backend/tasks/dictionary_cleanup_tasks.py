@@ -58,7 +58,7 @@ def cleanup_dictionary(job_instance_id: str):
     updated_entries = []
     unknown_character_count = {}
 
-    # Wrapped in a transation so a failure partway through doesn't leave the dictionary half recalculated.
+    # Wrapped in a transaction so a failure partway through doesn't leave the dictionary half recalculated.
     # The except needs to stay outside the atomic block, otherwise the changes get committed instead of rolled back.
     try:
         with transaction.atomic():
