@@ -92,13 +92,12 @@ class DictionaryEntryDataSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_img(dictionaryentry):
         # NOTE: MTD currently only allows one image. As a heuristic, I'm selecting the first one.
-        image = dictionaryentry.related_images.first()
-
         # If no small image is available (possibly due to the wrong file type), return None
-        if image is None or image.small is None:
-            return None
+        for image in dictionaryentry.related_images.all():
+            if image.small is not None:
+                return ImageDataSerializer(image).data["filename"]
 
-        return ImageDataSerializer(image).data["filename"]
+        return None
 
     @staticmethod
     def get_theme(dictionaryentry):
