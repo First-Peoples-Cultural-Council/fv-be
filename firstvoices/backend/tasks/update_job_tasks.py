@@ -39,18 +39,7 @@ def get_valid_update_headers():
     return supported_columns
 
 
-def clean_update_csv(
-    data,
-    missing_uploaded_media=None,
-    missing_referenced_media=None,
-    missing_entries=None,
-):
-    if missing_uploaded_media is None:
-        missing_uploaded_media = []
-    if missing_entries is None:
-        missing_entries = []
-    if missing_referenced_media is None:
-        missing_referenced_media = []
+def clean_update_csv(data):
 
     valid_headers = get_valid_update_headers()
     cleaned_data = deepcopy(data)
@@ -70,24 +59,6 @@ def clean_update_csv(
 
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
-
-    # Remove rows that have missing media or entries
-    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
-    missing_referenced_media_row_idx = [
-        (obj["idx"] - 1) for obj in missing_referenced_media
-    ]
-    missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
-
-    rows_to_delete = {
-        *missing_media_row_idx,
-        *missing_referenced_media_row_idx,
-        *missing_entries_row_idx,
-    }
-    rows_to_delete = list(rows_to_delete)
-
-    rows_to_delete.sort(reverse=True)
-    for row_index in rows_to_delete:
-        del cleaned_data[row_index]
 
     # normalize title and related entry columns
     columns_to_normalize = ["title"] + get_related_entry_headers(cleaned_data)
@@ -109,12 +80,7 @@ def process_update_job_data(
     """
     missing_entries = get_missing_referenced_entries(data, update_job.site.id)
 
-    accepted_headers, invalid_headers, cleaned_data = clean_update_csv(
-        data,
-        missing_uploaded_media,
-        missing_referenced_media,
-        missing_entries,
-    )
+    accepted_headers, invalid_headers, cleaned_data = clean_update_csv(data)
 
     # import media first
     audio_import_results, audio_filename_map = AudioImporter.import_data(
@@ -130,11 +96,14 @@ def process_update_job_data(
         update_job, cleaned_data, dry_run
     )
 
-    # import dictionary entries
+    # update dictionary entries
     dictionary_entry_update_result = DictionaryEntryImporter.update_data(
         update_job,
         cleaned_data,
         dry_run,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
         audio_filename_map,
         img_filename_map,
         video_filename_map,

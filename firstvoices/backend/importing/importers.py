@@ -526,6 +526,9 @@ class DictionaryEntryImporter(BaseImporter):
         update_job,
         csv_data,
         dry_run,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
@@ -556,6 +559,9 @@ class DictionaryEntryImporter(BaseImporter):
             site=update_job.site,
             run_as_user=update_job.run_as_user,
             import_job=update_job.id,
+            missing_uploaded_media=missing_uploaded_media,
+            missing_referenced_media=missing_referenced_media,
+            missing_entries=missing_entries,
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         return dictionary_entry_update_result
