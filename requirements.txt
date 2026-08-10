@@ -13,7 +13,7 @@ charset-normalizer==3.4.9
 coloredlogs==15.0.1
 cron-descriptor==2.1.0
 cryptography==49.0.0
-Django==5.1.14
+Django==6.1
 django-admin-env-notice==1.0.1
 django-celery-beat==2.8.1
 django-cors-headers==4.9.0
