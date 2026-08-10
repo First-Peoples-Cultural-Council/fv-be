@@ -21,7 +21,7 @@ class ImportJobStatus(models.TextChoices):
     COMPLETE = "complete", "Complete"
     FAILED = "failed", "Failed"
     CANCELLED = "cancelled", "Cancelled"
-    READY_FOR_IMPORT = "ready_for_import", "Ready for import"
+    READY_FOR_CONFIRMATION = "ready_for_confirmation", "Ready for confirmation"
 
 
 class ImportJobMode(models.TextChoices):

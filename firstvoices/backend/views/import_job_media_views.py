@@ -9,7 +9,7 @@ from rest_framework.status import HTTP_202_ACCEPTED
 
 from backend.models import ImportJob
 from backend.models.media import SUPPORTED_FILETYPES, File, ImageFile, VideoFile
-from backend.tasks.utils import get_associated_filenames
+from backend.tasks.batch_utils import get_associated_filenames
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import SiteContentViewSetMixin

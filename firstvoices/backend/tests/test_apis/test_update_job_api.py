@@ -5,6 +5,7 @@ import pytest
 from backend.models.constants import AppRole, Visibility
 from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.jobs import JobStatus
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_UPDATE_JOB
 from backend.tests import factories
 from backend.tests.test_apis.test_import_job_api import TestImportEndpoints
 from backend.tests.utils import get_sample_file
@@ -225,6 +226,30 @@ class TestUpdateEndpoints(TestImportEndpoints):
 
         assert str(update_job.id) in returned_job_ids
         assert str(import_job.id) not in returned_job_ids
+
+    def test_update_job_size_limit(self):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
+        )
+        data = {
+            "title": "Test Title",
+            "data": get_sample_file(
+                "update_job/check_update_size_limit.csv", "text/csv"
+            ),
+        }
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(data),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert response_data == [
+            f"The update job contains 2001 entries, which exceeds the maximum "
+            f"allowed limit of {MAXIMUM_ENTRIES_PER_UPDATE_JOB} entries."
+        ]
 
     @pytest.mark.skip(reason="Test does not apply to update jobs.")
     def test_update_jobs_not_in_list(self):

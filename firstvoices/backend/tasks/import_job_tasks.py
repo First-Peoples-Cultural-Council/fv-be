@@ -22,8 +22,7 @@ from backend.models.import_jobs import (
     ImportJobStatus,
 )
 from backend.models.media import ImageFile, VideoFile
-from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.utils import (
+from backend.tasks.batch_utils import (
     create_or_append_error_row,
     get_failed_rows_csv_file,
     get_missing_referenced_entries,
@@ -34,6 +33,7 @@ from backend.tasks.utils import (
     normalize_columns,
     verify_no_other_import_jobs_running,
 )
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
 def get_valid_headers():
