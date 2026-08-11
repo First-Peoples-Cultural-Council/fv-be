@@ -203,9 +203,7 @@ class BaseMediaFileImporter(BaseImporter):
             # replace numbered prefixes with the base prefix
             dataset.headers = [
                 (
-                    col
-                    if col == "_row_number"
-                    else re.sub(
+                    re.sub(
                         rf"^{cls.column_prefix}_\d{{1,2}}_",
                         f"{cls.column_prefix}_",
                         col,
