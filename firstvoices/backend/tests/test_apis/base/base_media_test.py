@@ -729,7 +729,10 @@ class BaseMediaApiTest(
             content_type=self.content_type,
         )
 
-        assert response.status_code == 403
+        expected_status = (
+            401 if get_site_with_user == get_site_with_anonymous_user else 403
+        )
+        assert response.status_code == expected_status
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
@@ -774,7 +777,10 @@ class BaseMediaApiTest(
             data=self.format_upload_data(data),
             content_type=self.content_type,
         )
-        assert response.status_code == 403
+        expected_status = (
+            401 if get_site_with_user == get_site_with_anonymous_user else 403
+        )
+        assert response.status_code == expected_status
 
     def get_media_instance_that_has_usages(self, site, visibility=Visibility.PUBLIC):
         """Create a media instance and add that instance to 5 separate entries

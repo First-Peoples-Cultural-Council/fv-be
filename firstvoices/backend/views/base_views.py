@@ -1,12 +1,22 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import (
+    NotAuthenticated,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.response import Response
 
 from backend.models import Alphabet, Character, CharacterVariant, IgnoredCharacter, Site
 from backend.models.jobs import JobStatus
 from backend.permissions import utils
 from backend.views.utils import BurstRateThrottle, SustainedRateThrottle
+
+
+def raise_permission_denied_for_user(user):
+    if user.is_anonymous:
+        raise NotAuthenticated
+    raise PermissionDenied
 
 
 class ThrottlingMixin:
@@ -96,7 +106,7 @@ class FVPermissionViewSetMixin(ThrottlingMixin):
         # Finally, check permission
         perm = self.get_queryset().model.get_perm(perm_type)
         if not self.request.user.has_perm(perm, obj):
-            raise PermissionDenied
+            raise_permission_denied_for_user(self.request.user)
 
     def get_object_for_create_permission(self):
         """Subclasses can override to return an object to be used for checking create permissions"""
@@ -169,7 +179,7 @@ class SiteContentViewSetMixin:
             self._cached_site = site
             return site
         else:
-            raise PermissionDenied
+            raise_permission_denied_for_user(self.request.user)
 
     def get_object_for_create_permission(self):
         """Check create permissions based on the relevant site"""
