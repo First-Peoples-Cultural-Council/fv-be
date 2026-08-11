@@ -2,6 +2,7 @@ import pytest
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.files import File
 from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
@@ -699,10 +700,10 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
 
         assert set(expected_valid_columns) == set(validation_report.accepted_columns)
 
-    def test_missing_related_media_with_other_errors(self):
+    def test_missing_related_media_with_all_errors(self):
         file_content = get_sample_file(
             file_dir=self.CSV_FILES_DIR,
-            filename="test_missing_related_media_with_other_errors.csv",
+            filename="test_missing_related_media_with_all_errors.csv",
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
@@ -713,49 +714,132 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             validation_status=ImportJobStatus.ACCEPTED,
         )
 
+        # create valid audio files/speaker for job
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_2.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_3.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+        factories.PersonFactory.create(name="Speaker", site=self.site)
+
         validate_import_job(import_job.id)
 
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
-        assert validation_report.error_rows == 4
+        assert validation_report.error_rows == 10
 
-        error_rows = validation_report.rows.all()
-        error_rows_numbers = list(
-            validation_report.rows.order_by("row_number").values_list(
-                "row_number", flat=True
-            )
-        )
-        assert len(error_rows) == 4
-        assert error_rows_numbers == [1, 2, 3, 4]
-
-        # invalid category
+        # invalid type
         error_row = validation_report.rows.get(row_number=1)
         expected_error_message = (
-            "No Category found with the provided title. "
-            "Value: invalid category in column category."
+            f"Invalid value 'invalid' in type column. "
+            f"Expected one of: {TypeOfDictionaryEntry.values}."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid visibility
+        visibility_values = [v.lower() for v in Visibility.labels]
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = (
+            f"Invalid value 'invalid' in visibility column. "
+            f"Expected one of: {visibility_values}."
         )
         assert error_row.errors[0] == expected_error_message
 
         #  invalid part of speech
-        error_row = validation_report.rows.get(row_number=2)
+        error_row = validation_report.rows.get(row_number=3)
         expected_error_message = (
             "No Part of Speech found with the provided title. "
             "Value: invalid part of speech in column part_of_speech."
         )
         assert error_row.errors[0] == expected_error_message
 
-        # missing audio
-        error_row = validation_report.rows.get(row_number=3)
+        # invalid include_in_games
+        error_row = validation_report.rows.get(row_number=4)
         expected_error_message = (
-            "Media file missing in uploaded files: test_missing_related_media_with_other_errors.mp3, "
+            "Invalid value in include_in_games column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid include_on_kids_site
+        error_row = validation_report.rows.get(row_number=5)
+        expected_error_message = (
+            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid category
+        error_row = validation_report.rows.get(row_number=6)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid category in column category."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # missing audio
+        error_row = validation_report.rows.get(row_number=7)
+        expected_error_message = (
+            "Media file missing in uploaded files: test_missing_related_media_with_all_errors_1.mp3, "
             "column: audio_filename."
         )
         assert error_row.errors[0] == expected_error_message
 
+        # invalid audio_include_in_games
+        error_row = validation_report.rows.get(row_number=8)
+        expected_error_message = "Invalid value in audio_include_in_games column. Expected 'true' or 'false'."
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid audio_include_in_kids_site
+        error_row = validation_report.rows.get(row_number=9)
+        expected_error_message = "Invalid value in audio_include_in_kids_site column. Expected 'true' or 'false'."
+        assert error_row.errors[0] == expected_error_message
+
         # invalid related video link
-        error_row = validation_report.rows.get(row_number=4)
+        error_row = validation_report.rows.get(row_number=10)
         expected_error_message = (
             "related_video_links: Item 1 in the array did not validate: Enter a valid URL. "
             "Invalid value: https://invalid_link"
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # add audio file to the import job and revalidate
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_1.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = ImportJobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert (
+            validation_report.error_rows == 10
+        )  # still 10 errors due to missing speaker
+
+        # missing speaker
+        error_row = validation_report.rows.get(row_number=7)
+        expected_error_message = (
+            "No Person found with the provided name. "
+            "Value: invalid_speaker in column audio_speaker."
         )
         assert error_row.errors[0] == expected_error_message

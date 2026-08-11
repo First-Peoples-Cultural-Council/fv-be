@@ -1,0 +1,11 @@
+﻿Title,Type,VISIBILITY,PART_OF_SPEECH,include_in_games,include_on_kids_site,Category,AUDIO_FILENAME,AUDIO_TITLE,AUDIO_SPEAKER,audio_include_in_games,audio_include_in_kids_site,VIDEO_EMBED_LINKS
+Invalid type,invalid,public,Noun,true,true,Animals,,,,,,
+Invalid visibility,Word,invalid,Noun,true,true,Animals,,,,,,
+Invalid part of speech,Word,public,invalid part of speech,true,true,Animals,,,,,,
+Invalid include in games,Word,public,Noun,invalid,true,Animals,,,,,,
+Invalid include in kids site,Word,public,Noun,true,invalid,Animals,,,,,,
+Invalid category,Word,public,Noun,true,true,invalid category,,,,,,
+Invalid audio and speaker,Word,public,Noun,true,true,Animals,test_missing_related_media_with_all_errors_1.mp3,Audio 1,invalid_speaker,,,
+Invalid audio include in games,Word,public,Noun,true,true,Animals,test_missing_related_media_with_all_errors_2.mp3,Audio 2,Speaker,invalid,true,
+Invalid audio include in kids site,Word,public,Noun,true,true,Animals,test_missing_related_media_with_all_errors_3.mp3,Audio 3,Speaker,true,invalid,
+invalid video link,Word,public,Noun,true,true,Animals,,,,,,https://invalid_link

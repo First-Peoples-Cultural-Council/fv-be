@@ -267,7 +267,7 @@ class TestImportJobDryRun:
         error_row = validation_report.rows.get(row_number=4)
         expected_error_message = (
             f"Invalid value 'invalid' in type column. "
-            f"Expected one of: {TypeOfDictionaryEntry.values}"
+            f"Expected one of: {TypeOfDictionaryEntry.values}."
         )
         assert error_row.errors[0] == expected_error_message
 
@@ -276,7 +276,7 @@ class TestImportJobDryRun:
         error_row = validation_report.rows.get(row_number=5)
         expected_error_message = (
             f"Invalid value 'invalid' in visibility column. "
-            f"Expected one of: {visibility_values}"
+            f"Expected one of: {visibility_values}."
         )
         assert error_row.errors[0] == expected_error_message
 
