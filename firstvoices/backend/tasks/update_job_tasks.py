@@ -11,8 +11,10 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
+from backend.models import Alphabet
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.tasks.batch_utils import (
+    create_or_append_error_row,
     get_missing_referenced_entries,
     get_missing_referenced_media,
     get_missing_uploaded_media,
@@ -65,6 +67,38 @@ def clean_update_csv(data):
     cleaned_data = normalize_columns(cleaned_data, columns_to_normalize)
 
     return accepted_headers, invalid_headers, cleaned_data
+
+
+def add_unknown_character_warnings(cleaned_data, update_job, report):
+    site = update_job.site
+    if not Alphabet.objects.filter(site=site).exists():
+        return
+    alphabet = Alphabet.objects.get(site=site)
+    warning_rows_count = 0
+
+    # get a list of tuples of (row_number, title) for each row in the cleaned data
+    data_titles = [
+        (i + 1, row["title"])
+        for i, row in enumerate(cleaned_data.dict)
+        if row.get("title")
+    ]
+
+    # for each title in the cleaned data, check the custom order with the alphabet
+    for row_number, title in data_titles:
+        unknown_characters = alphabet.get_unknown_characters(title)
+        if unknown_characters:
+            warning_message = (
+                f"WARNING: Title '{title}' contains unrecognized characters {unknown_characters} "
+                f"that may affect sorting."
+            )
+            create_or_append_error_row(
+                update_job, report, row_number, [warning_message]
+            )
+            warning_rows_count += 1
+
+    report.warning_rows = warning_rows_count
+    report.save()
+    return
 
 
 def process_update_job_data(
@@ -121,6 +155,7 @@ def process_update_job_data(
             video_import_results=video_import_results,
             dictionary_entry_import_result=dictionary_entry_update_result,
         )
+        add_unknown_character_warnings(cleaned_data, update_job, report)
         attach_csv_to_report(data, update_job, report)
 
 

@@ -54,6 +54,7 @@ class ImportJobReport(BaseSiteContentModel):
     new_rows = models.IntegerField(null=True)
     error_rows = models.IntegerField(null=True)
     updated_rows = models.IntegerField(null=True)
+    warning_rows = models.IntegerField(null=True)
 
     accepted_columns = ArrayField(
         models.CharField(max_length=DEFAULT_TITLE_LENGTH), blank=True, default=list

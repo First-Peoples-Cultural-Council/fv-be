@@ -1,3 +1,4 @@
+import string
 import uuid
 from unittest.mock import patch
 from uuid import UUID
@@ -76,6 +77,23 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
     def setup_method(self):
         self.user = factories.factories.get_superadmin()
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+    def setup_characters(self, site=None):
+        if site is None:
+            site = self.site
+
+        characters = {
+            letter: factories.CharacterFactory.create(site=site, title=letter)
+            for letter in string.ascii_lowercase
+        }
+
+        for letter, upper in zip(string.ascii_lowercase, string.ascii_uppercase):
+            factories.CharacterVariantFactory.create(
+                site=site, base_character=characters[letter], title=upper
+            )
+
+        for digit in string.digits:
+            factories.CharacterFactory.create(site=site, title=digit)
 
     def create_dictionary_entries(self, entry_ids, site=None):
         if site is None:
@@ -212,11 +230,13 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert update_job.validation_report.error_rows == 0
 
     def test_invalid_update_values(self):
+        self.setup_characters()
         update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
 
         error_rows_numbers = list(
             update_job.validation_report.rows.values_list("row_number", flat=True)
         )
+        error_rows_numbers.sort()
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
@@ -248,10 +268,12 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             assert "Test exception" in caplog.text
 
     def test_failed_rows_csv(self):
+        self.setup_characters()
         update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
         error_rows_numbers = list(
             update_job.validation_report.rows.values_list("row_number", flat=True)
         )
+        error_rows_numbers.sort()
 
         file_content = get_sample_file(
             "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
@@ -374,6 +396,7 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert update_job.validation_report.error_rows == expected_error_rows
 
     def test_updated_entries_not_in_site(self):
+        self.setup_characters()
         other_site = factories.SiteFactory()
         self.create_dictionary_entries(TEST_ENTRY_IDS, site=other_site)
 
@@ -505,6 +528,28 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert set(expected_valid_columns + ["id"]) == set(
             validation_report.accepted_columns
         )
+
+    def test_update_generates_unrecognized_character_warnings(self):
+        update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
+        validation_report = update_job.validation_report
+
+        assert validation_report.error_rows == 0
+        assert validation_report.warning_rows == 2
+
+        # check for the warning messages in the report rows
+        warning_row = validation_report.rows.get(row_number=1)
+        expected_warning_message = (
+            "WARNING: Title 'abc' contains unrecognized characters ['a', 'b', 'c'] "
+            "that may affect sorting."
+        )
+        assert warning_row.errors[0] == expected_warning_message
+
+        warning_row = validation_report.rows.get(row_number=2)
+        expected_warning_message = (
+            "WARNING: Title 'xyz' contains unrecognized characters ['x', 'y', 'z'] "
+            "that may affect sorting."
+        )
+        assert warning_row.errors[0] == expected_warning_message
 
 
 @pytest.mark.django_db
