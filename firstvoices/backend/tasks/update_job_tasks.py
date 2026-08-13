@@ -11,7 +11,7 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
-from backend.models import Alphabet
+from backend.models import Alphabet, DictionaryEntry
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.tasks.batch_utils import (
     create_or_append_error_row,
@@ -25,6 +25,7 @@ from backend.tasks.batch_utils import (
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.import_job_tasks import attach_csv_to_report, generate_report
+from backend.utils.uuid_utils import is_valid_uuid
 
 
 def get_valid_update_headers():
@@ -96,7 +97,126 @@ def add_unknown_character_warnings(cleaned_data, update_job, report):
             )
             warning_rows_count += 1
 
-    report.warning_rows = warning_rows_count
+    if report.warnings is None:
+        report.warnings = 0
+    report.warnings += warning_rows_count
+    report.save()
+    return
+
+
+def add_field_value_removal_warnings(cleaned_data, update_job, report):
+    warning_rows_count = 0
+    total_row_count = len(cleaned_data.dict)
+
+    # for each nullable field, track the number of rows where the field is being removed
+    nulled_field_counts = {
+        "part_of_speech": 0,
+        "category": 0,
+        "translation": 0,
+        "acknowledgement": 0,
+        "note": 0,
+        "alternate_spelling": 0,
+        "pronunciation": 0,
+        "related_entry_ids": 0,
+        "audio_ids": 0,
+        "document_ids": 0,
+        "img_ids": 0,
+        "video_ids": 0,
+        "video_embed_links": 0,
+        "external_system": 0,
+        "external_system_entry_id": 0,
+    }
+
+    # for each row in cleaned data, process a set of fields cross-referencing with the existing data
+    # to check if any fields are being removed
+    for row in cleaned_data.dict:
+        if (
+            not is_valid_uuid(row["id"])
+            or not DictionaryEntry.objects.filter(id=row["id"]).exists()
+        ):
+            continue
+        else:
+            entry = DictionaryEntry.objects.get(id=row["id"])
+
+        # check entry text list fields:
+        # part_of_speech', 'category', 'translation', 'acknowledgement', 'note', 'alternate_spelling', 'pronunciation'
+        if (
+            "part_of_speech" in row and not row.get("part_of_speech")
+        ) and entry.part_of_speech:
+            nulled_field_counts["part_of_speech"] += 1
+        if (
+            "category" in row and not row.get("category")
+        ) and entry.categories.exists():
+            nulled_field_counts["category"] += 1
+        if ("translation" in row and not row.get("translation")) and entry.translations:
+            nulled_field_counts["translation"] += 1
+        if (
+            "acknowledgement" in row and not row.get("acknowledgement")
+        ) and entry.acknowledgements:
+            nulled_field_counts["acknowledgement"] += 1
+        if ("note" in row and not row.get("note")) and entry.notes:
+            nulled_field_counts["note"] += 1
+        if (
+            "alternate_spelling" in row and not row.get("alternate_spelling")
+        ) and entry.alternate_spellings:
+            nulled_field_counts["alternate_spelling"] += 1
+        if (
+            "pronunciation" in row and not row.get("pronunciation")
+        ) and entry.pronunciations:
+            nulled_field_counts["pronunciation"] += 1
+
+        # check related id/media fields:
+        # 'related_entry_ids', 'audio_ids', 'document_ids', 'img_ids', 'video_ids', 'video_embed_links'
+        if (
+            "related_entry_ids" in row and not row.get("related_entry_ids")
+        ) and entry.related_dictionary_entries.exists():
+            nulled_field_counts["related_entry_ids"] += 1
+        if (
+            "audio_ids" in row and not row.get("audio_ids")
+        ) and entry.related_audio.exists():
+            nulled_field_counts["audio_ids"] += 1
+        if (
+            "document_ids" in row and not row.get("document_ids")
+        ) and entry.related_documents.exists():
+            nulled_field_counts["document_ids"] += 1
+        if (
+            "img_ids" in row and not row.get("img_ids")
+        ) and entry.related_images.exists():
+            nulled_field_counts["img_ids"] += 1
+        if (
+            "video_ids" in row and not row.get("video_ids")
+        ) and entry.related_videos.exists():
+            nulled_field_counts["video_ids"] += 1
+        if (
+            "video_embed_links" in row and not row.get("video_embed_links")
+        ) and entry.related_video_links:
+            nulled_field_counts["video_embed_links"] += 1
+
+        # check external system fields: 'external_system', 'external_system_entry_id'
+        if (
+            "external_system" in row and not row.get("external_system")
+        ) and entry.external_system:
+            nulled_field_counts["external_system"] += 1
+        if (
+            "external_system_entry_id" in row
+            and not row.get("external_system_entry_id")
+        ) and entry.external_system_entry_id:
+            nulled_field_counts["external_system_entry_id"] += 1
+
+    for key, value in nulled_field_counts.items():
+        # if any one field has been nulled in 30% or more of the rows, add a warning to the report
+        if value / total_row_count >= 0.3:
+            warning_message = (
+                f"WARNING: The field '{key}' is being removed in {value} out of {total_row_count} rows "
+                f"({value / total_row_count:.0%}). This may result in loss of data."
+            )
+            # a row number of -1 indicates that the errors are for the entire job, not a specific row
+            create_or_append_error_row(update_job, report, -1, [warning_message])
+            warning_rows_count += 1
+
+    if report.warnings is None:
+        report.warnings = 0
+    report.warnings += warning_rows_count
     report.save()
     return
 
@@ -156,6 +276,7 @@ def process_update_job_data(
             dictionary_entry_import_result=dictionary_entry_update_result,
         )
         add_unknown_character_warnings(cleaned_data, update_job, report)
+        add_field_value_removal_warnings(cleaned_data, update_job, report)
         attach_csv_to_report(data, update_job, report)
 
 
