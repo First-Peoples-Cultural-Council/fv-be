@@ -245,7 +245,7 @@ class DictionaryEntryResource(
             and row["type"]
         ):
             raise ImportError(
-                f"Invalid value '{row['type']}' in type column. Expected one of: {TypeOfDictionaryEntry.values}"
+                f"Invalid value '{row['type']}' in type column. Expected one of: {TypeOfDictionaryEntry.values}."
             )
 
         visibility_values = [v.lower() for v in Visibility.labels]
@@ -255,7 +255,7 @@ class DictionaryEntryResource(
             and row["visibility"]
         ):
             raise ImportError(
-                f"Invalid value '{row['visibility']}' in visibility column. Expected one of: {visibility_values}"
+                f"Invalid value '{row['visibility']}' in visibility column. Expected one of: {visibility_values}."
             )
 
     class Meta:
