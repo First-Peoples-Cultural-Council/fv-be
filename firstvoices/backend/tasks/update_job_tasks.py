@@ -101,7 +101,6 @@ def add_unknown_character_warnings(cleaned_data, update_job, report):
         report.warnings = 0
     report.warnings += warning_rows_count
     report.save()
-    return
 
 
 def add_field_value_removal_warnings(cleaned_data, update_job, report):
@@ -218,7 +217,6 @@ def add_field_value_removal_warnings(cleaned_data, update_job, report):
         report.warnings = 0
     report.warnings += warning_rows_count
     report.save()
-    return
 
 
 def process_update_job_data(
