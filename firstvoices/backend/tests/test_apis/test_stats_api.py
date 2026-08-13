@@ -38,6 +38,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
                 "total": 0,
                 "availableInChildrensArchive": 0,
                 "public": 0,
+                "members": 0,
+                "team": 0,
             }
 
         for media_model in media_models:
@@ -149,15 +151,23 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             visibility=Visibility.MEMBERS,
             exclude_from_kids=True,
         )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.TEAM,
+            exclude_from_kids=True,
+        )
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 3
+        assert response_data["aggregate"][key]["total"] == 4
         assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
         assert response_data["aggregate"][key]["public"] == 1
+        assert response_data["aggregate"][key]["team"] == 2
+        assert response_data["aggregate"][key]["members"] == 1
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -179,6 +189,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response_data["aggregate"][key]["total"] == 3
         assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
         assert response_data["aggregate"][key]["public"] == 1
+        assert response_data["aggregate"][key]["team"] == 1
+        assert response_data["aggregate"][key]["members"] == 1
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
