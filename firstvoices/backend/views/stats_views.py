@@ -49,6 +49,12 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
             aggregate_stats["public"] = len(
                 [obj for obj in queryset_list if obj.visibility == Visibility.PUBLIC]
             )
+            aggregate_stats["members"] = len(
+                [obj for obj in queryset_list if obj.visibility == Visibility.MEMBERS]
+            )
+            aggregate_stats["team"] = len(
+                [obj for obj in queryset_list if obj.visibility == Visibility.TEAM]
+            )
         return aggregate_stats
 
     @staticmethod
