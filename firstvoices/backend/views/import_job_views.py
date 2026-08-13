@@ -259,7 +259,7 @@ class ImportJobViewSet(
         import_job_id = self.kwargs["pk"]
 
         curr_job = ImportJob.objects.get(id=import_job_id)
-        if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
+        if curr_job.status == ImportJobStatus.READY_FOR_CONFIRMATION:
             raise ValidationError("The import-job is already marked ready for import.")
 
         if curr_job.validation_status != ImportJobStatus.COMPLETE:
@@ -286,7 +286,7 @@ class ImportJobViewSet(
         try:
             send_email_task.apply_async((subject, message, [SUPPORT_USER_EMAIL]))
             import_job = ImportJob.objects.get(id=import_job_id)
-            import_job.status = ImportJobStatus.READY_FOR_IMPORT
+            import_job.status = ImportJobStatus.READY_FOR_CONFIRMATION
             import_job.save()
         except ConnectionError as e:
             error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
