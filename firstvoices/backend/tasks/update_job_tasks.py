@@ -103,6 +103,53 @@ def add_unknown_character_warnings(cleaned_data, update_job, report):
     report.save()
 
 
+def _get_entry_for_row(row):
+    if not is_valid_uuid(row["id"]):
+        return None
+    try:
+        entry = DictionaryEntry.objects.get(id=row["id"])
+        return entry
+    except DictionaryEntry.DoesNotExist:
+        return None
+
+
+def _is_field_removed(row, field_name):
+    return field_name in row and not row.get(field_name)
+
+
+def _count_removed_text_fields(row, entry, nulled_field_counts):
+    text_fields_to_check = {
+        "part_of_speech": entry.part_of_speech,
+        "translation": entry.translations,
+        "acknowledgement": entry.acknowledgements,
+        "note": entry.notes,
+        "alternate_spelling": entry.alternate_spellings,
+        "pronunciation": entry.pronunciations,
+        "video_embed_links": entry.related_video_links,
+        "external_system": entry.external_system,
+        "external_system_entry_id": entry.external_system_entry_id,
+    }
+
+    for field_name, entry_value in text_fields_to_check.items():
+        if _is_field_removed(row, field_name) and entry_value:
+            nulled_field_counts[field_name] += 1
+
+
+def _count_removed_relation_fields(row, entry, nulled_field_counts):
+    relation_fields_to_check = {
+        "category": entry.categories,
+        "related_entry_ids": entry.related_dictionary_entries,
+        "audio_ids": entry.related_audio,
+        "document_ids": entry.related_documents,
+        "img_ids": entry.related_images,
+        "video_ids": entry.related_videos,
+    }
+
+    for field_name, related_manager in relation_fields_to_check.items():
+        if _is_field_removed(row, field_name) and related_manager.exists():
+            nulled_field_counts[field_name] += 1
+
+
 def add_field_value_removal_warnings(cleaned_data, update_job, report):
     warning_rows_count = 0
     total_row_count = len(cleaned_data.dict)
@@ -126,81 +173,21 @@ def add_field_value_removal_warnings(cleaned_data, update_job, report):
         "external_system_entry_id": 0,
     }
 
-    # for each row in cleaned data, process a set of fields cross-referencing with the existing data
-    # to check if any fields are being removed
+    # for each row in cleaned data check if any fields are being removed from the entry
     for row in cleaned_data.dict:
-        if (
-            not is_valid_uuid(row["id"])
-            or not DictionaryEntry.objects.filter(id=row["id"]).exists()
-        ):
+        entry = _get_entry_for_row(row)
+        if not entry:
             continue
-        else:
-            entry = DictionaryEntry.objects.get(id=row["id"])
 
-        # check entry text list fields:
-        # part_of_speech', 'category', 'translation', 'acknowledgement', 'note', 'alternate_spelling', 'pronunciation'
-        if (
-            "part_of_speech" in row and not row.get("part_of_speech")
-        ) and entry.part_of_speech:
-            nulled_field_counts["part_of_speech"] += 1
-        if (
-            "category" in row and not row.get("category")
-        ) and entry.categories.exists():
-            nulled_field_counts["category"] += 1
-        if ("translation" in row and not row.get("translation")) and entry.translations:
-            nulled_field_counts["translation"] += 1
-        if (
-            "acknowledgement" in row and not row.get("acknowledgement")
-        ) and entry.acknowledgements:
-            nulled_field_counts["acknowledgement"] += 1
-        if ("note" in row and not row.get("note")) and entry.notes:
-            nulled_field_counts["note"] += 1
-        if (
-            "alternate_spelling" in row and not row.get("alternate_spelling")
-        ) and entry.alternate_spellings:
-            nulled_field_counts["alternate_spelling"] += 1
-        if (
-            "pronunciation" in row and not row.get("pronunciation")
-        ) and entry.pronunciations:
-            nulled_field_counts["pronunciation"] += 1
+        # check entry text fields:
+        # 'part_of_speech', 'translation', 'acknowledgement', 'note', 'alternate_spelling', 'pronunciation'
+        # 'video_embed_links'
+        # 'external_system', 'external_system_entry_id'
+        _count_removed_text_fields(row, entry, nulled_field_counts)
 
-        # check related id/media fields:
-        # 'related_entry_ids', 'audio_ids', 'document_ids', 'img_ids', 'video_ids', 'video_embed_links'
-        if (
-            "related_entry_ids" in row and not row.get("related_entry_ids")
-        ) and entry.related_dictionary_entries.exists():
-            nulled_field_counts["related_entry_ids"] += 1
-        if (
-            "audio_ids" in row and not row.get("audio_ids")
-        ) and entry.related_audio.exists():
-            nulled_field_counts["audio_ids"] += 1
-        if (
-            "document_ids" in row and not row.get("document_ids")
-        ) and entry.related_documents.exists():
-            nulled_field_counts["document_ids"] += 1
-        if (
-            "img_ids" in row and not row.get("img_ids")
-        ) and entry.related_images.exists():
-            nulled_field_counts["img_ids"] += 1
-        if (
-            "video_ids" in row and not row.get("video_ids")
-        ) and entry.related_videos.exists():
-            nulled_field_counts["video_ids"] += 1
-        if (
-            "video_embed_links" in row and not row.get("video_embed_links")
-        ) and entry.related_video_links:
-            nulled_field_counts["video_embed_links"] += 1
-
-        # check external system fields: 'external_system', 'external_system_entry_id'
-        if (
-            "external_system" in row and not row.get("external_system")
-        ) and entry.external_system:
-            nulled_field_counts["external_system"] += 1
-        if (
-            "external_system_entry_id" in row
-            and not row.get("external_system_entry_id")
-        ) and entry.external_system_entry_id:
-            nulled_field_counts["external_system_entry_id"] += 1
+        # check entry relation fields:
+        # 'category', 'related_entry_ids', 'audio_ids', 'document_ids', 'img_ids', 'video_ids',
+        _count_removed_relation_fields(row, entry, nulled_field_counts)
 
     for key, value in nulled_field_counts.items():
         # if any one field has been nulled in 30% or more of the rows, add a warning to the report
