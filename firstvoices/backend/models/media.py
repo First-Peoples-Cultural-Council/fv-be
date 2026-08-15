@@ -174,7 +174,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         abstract = True
 
     # from fvm:content
-    original = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+    original = models.OneToOneField(File, null=False, on_delete=models.CASCADE)
 
     # from dc:title
     title = models.CharField(max_length=200)
@@ -438,7 +438,7 @@ class Image(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
+        ImageFile, related_name="image", null=False, on_delete=models.CASCADE
     )
 
     def __str__(self):
@@ -529,7 +529,7 @@ class Video(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        VideoFile, related_name="video", null=True, on_delete=models.SET_NULL
+        VideoFile, related_name="video", null=False, on_delete=models.CASCADE
     )
 
     # acknowledgement from fvm:recorder, fvm:source

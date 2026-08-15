@@ -116,27 +116,21 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin, TransactionOnCommitMixin):
         assert "Task ended." in caplog.text
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_image_does_not_exist(self, caplog):
+    def test_delete_original_cascades_to_image(self):
         site = SiteFactory()
-        with self.capture_on_commit_callbacks(execute=True):
-            image = ImageFactory.create(site=site)
-            image.original.delete()
-            image._request_thumbnail_generation()
+        image = ImageFactory.create(site=site)
+        image_id = image.id
 
-        assert f"Thumbnail generation failed for image model {image.id}" in caplog.text
-        assert "Error: Original image file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        image.original.delete()
+
+        assert not Image.objects.filter(id=image_id).exists()
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_video_does_not_exist(self, caplog):
+    def test_delete_original_cascades_to_video(self):
         site = SiteFactory()
-        with self.capture_on_commit_callbacks(execute=True):
-            video = VideoFactory.create(site=site)
-            video.original.delete()
-            video._request_thumbnail_generation()
+        video = VideoFactory.create(site=site)
+        video_id = video.id
 
-        assert f"Thumbnail generation failed for video model {video.id}" in caplog.text
-        assert "Error: Original video file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        video.original.delete()
+
+        assert not Video.objects.filter(id=video_id).exists()
