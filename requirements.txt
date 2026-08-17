@@ -83,7 +83,7 @@ six==1.17.0
 sqlparse==0.5.5
 tablib==3.9.0
 text-unidecode==1.3
-tqdm==4.68.1
+tqdm==4.70.0
 tzdata==2026.3
 unicodecsv==0.14.1
 uritemplate==4.2.0
