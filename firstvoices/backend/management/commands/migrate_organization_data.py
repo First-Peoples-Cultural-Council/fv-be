@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 urls = value.split(",")
                 for url in urls:
                     if url.strip():
-                        org_urls.append({f"url_{idx}": url.strip()})
+                        org_urls.append({f"url_{idx + 1}": url.strip()})
 
         return org_addresses, org_contact_messages, org_urls
 
@@ -77,7 +77,7 @@ class Command(BaseCommand):
             org_emails.append({"contact_email_old": site.contact_email_old})
         if site.contact_emails:
             for idx, contact_email in enumerate(site.contact_emails):
-                org_emails.append({f"contact_email_{idx}": contact_email})
+                org_emails.append({f"contact_email_{idx + 1}": contact_email})
         return org_emails
 
     def migrate_organization_data(self, site, dry_run=False):
@@ -114,7 +114,7 @@ class Command(BaseCommand):
         organization = organization[0]  # get the instance from the tuple
 
         # Don't have to worry about overwriting existing data as no sites have organization data yet.
-        organization.contact_emails = org_emails
+        organization.emails = org_emails
         organization.address = org_addresses if org_addresses else ""
         organization.contact_message = (
             org_contact_messages
@@ -126,9 +126,12 @@ class Command(BaseCommand):
         self.logger.info(f"Organization data migrated for site '{site.slug}'.")
 
     def handle(self, *args, **options):
+        dry_run = options.get("dry_run")
         if options.get("site_slugs"):
-            site_slugs_list = options.get("site_slugs", "").split(",").strip()
-            sites = Site.objects.filter(slug__in=site_slugs_list)
+            site_slug_list = [
+                s.strip() for s in options.get("site_slugs", "").split(",")
+            ]
+            sites = Site.objects.filter(slug__in=site_slug_list)
             if not sites:
                 self.logger.warning("No sites with the provided slug(s) found.")
                 return
@@ -137,7 +140,7 @@ class Command(BaseCommand):
             sites = Site.objects.all()
 
         for site in sites:
-            if options.get("dry_run"):
+            if dry_run:
                 self.logger.info(f"Performing dry run for site '{site.slug}'...")
                 self.migrate_organization_data(site, dry_run=True)
             else:
@@ -145,3 +148,10 @@ class Command(BaseCommand):
                     f"Performing organization info migration for site '{site.slug}'..."
                 )
                 self.migrate_organization_data(site, dry_run=False)
+
+        if dry_run:
+            self.logger.info(
+                "Dry run process completed for all specified sites. No changes were made."
+            )
+        else:
+            self.logger.info("Organization data migrated for all specified sites.")
