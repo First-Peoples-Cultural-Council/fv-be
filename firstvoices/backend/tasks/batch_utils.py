@@ -23,6 +23,7 @@ from backend.models.import_jobs import (
     RowStatus,
 )
 from backend.models.media import ImageFile, VideoFile
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_UPDATE_JOB
 from backend.utils.character_utils import clean_input
 
 
@@ -42,6 +43,20 @@ def verify_no_other_import_jobs_running(current_job):
         raise ValidationError(
             "There is at least 1 job on this site that is already running or queued to run soon. "
             "Please wait for it to finish before starting a new one."
+        )
+
+
+def verify_update_job_size_limit(current_job):
+    # ensure the job data csv contains fewer entries than a set limit
+    file = current_job.data.content.open().read().decode("utf-8-sig")
+    data = tablib.Dataset().load(file, format="csv")
+
+    if len(data) > MAXIMUM_ENTRIES_PER_UPDATE_JOB:
+        current_job.status = ImportJobStatus.FAILED
+        current_job.save()
+        raise ValidationError(
+            f"The update job contains {len(data)} entries, "
+            f"which exceeds the maximum allowed limit of {MAXIMUM_ENTRIES_PER_UPDATE_JOB} entries."
         )
 
 
