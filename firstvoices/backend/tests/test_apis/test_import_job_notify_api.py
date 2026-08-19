@@ -69,7 +69,7 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         assert response.status_code == 202
 
         import_job = ImportJob.objects.get(id=self.import_job.id)
-        assert import_job.status == ImportJobStatus.READY_FOR_CONFIRMATION
+        assert import_job.status == ImportJobStatus.READY_FOR_IMPORT
 
     @pytest.mark.parametrize(
         "validation_status",
@@ -94,8 +94,8 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         response = json.loads(response.content)
         assert "Please validate the job before marking it ready for import." in response
 
-    def test_cannot_mark_a_test_already_marked_READY_FOR_CONFIRMATION(self):
-        self.import_job.status = ImportJobStatus.READY_FOR_CONFIRMATION
+    def test_cannot_mark_a_test_already_marked_READY_FOR_IMPORT(self):
+        self.import_job.status = ImportJobStatus.READY_FOR_IMPORT
         self.import_job.save()
 
         notify_endpoint = reverse(
