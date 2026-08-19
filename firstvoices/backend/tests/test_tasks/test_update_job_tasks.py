@@ -1,3 +1,4 @@
+import string
 import uuid
 from unittest.mock import patch
 from uuid import UUID
@@ -7,7 +8,11 @@ import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import DictionaryEntry, ExternalDictionaryEntrySystem
+from backend.models.dictionary import (
+    DictionaryEntry,
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
@@ -50,6 +55,8 @@ TEST_VIDEO_IDS = [
     "8d998d21-862b-4288-9a3a-ec2fb0a67ad3",
 ]
 
+YOUTUBE_VIDEO_LINK = "https://www.youtube.com/watch?v=N_Iyb0LkDUc"
+
 
 def setup_for_external_systems(site):
     external_system_1 = ExternalDictionaryEntrySystem(title="Dreamworks")
@@ -76,6 +83,25 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
     def setup_method(self):
         self.user = factories.factories.get_superadmin()
         self.site = factories.SiteFactory(visibility=Visibility.PUBLIC)
+
+    def setup_characters(self, site=None):
+        if site is None:
+            site = self.site
+
+        characters = {
+            letter: factories.CharacterFactory.create(site=site, title=letter)
+            for letter in string.ascii_lowercase
+        }
+
+        for letter, upper in zip(string.ascii_lowercase, string.ascii_uppercase):
+            factories.CharacterVariantFactory.create(
+                site=site, base_character=characters[letter], title=upper
+            )
+
+        for digit in string.digits:
+            factories.CharacterFactory.create(site=site, title=digit)
+
+        factories.IgnoredCharacterFactory.create(site=site, title=" ")
 
     def create_dictionary_entries(self, entry_ids, site=None):
         if site is None:
@@ -212,11 +238,13 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert update_job.validation_report.error_rows == 0
 
     def test_invalid_update_values(self):
+        self.setup_characters()
         update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
 
         error_rows_numbers = list(
             update_job.validation_report.rows.values_list("row_number", flat=True)
         )
+        error_rows_numbers.sort()
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
@@ -248,10 +276,12 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             assert "Test exception" in caplog.text
 
     def test_failed_rows_csv(self):
+        self.setup_characters()
         update_job = self.update_invalid_dictionary_entries(TEST_ENTRY_IDS)
         error_rows_numbers = list(
             update_job.validation_report.rows.values_list("row_number", flat=True)
         )
+        error_rows_numbers.sort()
 
         file_content = get_sample_file(
             "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
@@ -374,6 +404,7 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert update_job.validation_report.error_rows == expected_error_rows
 
     def test_updated_entries_not_in_site(self):
+        self.setup_characters()
         other_site = factories.SiteFactory()
         self.create_dictionary_entries(TEST_ENTRY_IDS, site=other_site)
 
@@ -505,6 +536,131 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         assert set(expected_valid_columns + ["id"]) == set(
             validation_report.accepted_columns
         )
+
+    def test_update_generates_unrecognized_character_warnings(self):
+        update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
+        validation_report = update_job.validation_report
+
+        assert validation_report.error_rows == 0
+        assert validation_report.warnings == 2
+
+        # check for the warning messages in the report rows
+        warning_row = validation_report.rows.get(row_number=1)
+        expected_warning_message = (
+            "WARNING: Title 'abc' contains unrecognized characters ['a', 'b', 'c'] "
+            "that may affect sorting."
+        )
+        assert warning_row.errors[0] == expected_warning_message
+
+        warning_row = validation_report.rows.get(row_number=2)
+        expected_warning_message = (
+            "WARNING: Title 'xyz' contains unrecognized characters ['x', 'y', 'z'] "
+            "that may affect sorting."
+        )
+        assert warning_row.errors[0] == expected_warning_message
+
+    def test_update_generates_field_removal_warnings(self):
+        self.setup_characters()
+
+        # create an entry with all nullable fields populated
+        audio = factories.AudioFactory.create(site=self.site)
+        document = factories.DocumentFactory.create(site=self.site)
+        image = factories.ImageFactory.create(site=self.site)
+        video = factories.VideoFactory.create(site=self.site)
+        external_system = factories.ExternalDictionaryEntrySystemFactory.create()
+
+        entry = factories.DictionaryEntryFactory.create(
+            id=TEST_ENTRY_IDS[0],
+            site=self.site,
+            title="test_entry",
+            type=TypeOfDictionaryEntry.WORD,
+            visibility=Visibility.PUBLIC,
+            part_of_speech=factories.PartOfSpeechFactory.create(),
+            exclude_from_games=False,
+            exclude_from_kids=False,
+            translations=["translation1", "translation2"],
+            acknowledgements=["ack1", "ack2"],
+            notes=["note1", "note2"],
+            alternate_spellings=["alt1", "alt2"],
+            pronunciations=["pron1", "pron2"],
+            related_audio=(audio,),
+            related_documents=(document,),
+            related_images=(image,),
+            related_videos=(video,),
+            related_video_links=[
+                YOUTUBE_VIDEO_LINK,
+            ],
+            external_system=external_system,
+            external_system_entry_id="FW123",
+        )
+
+        category = factories.CategoryFactory.create(site=self.site)
+        factories.DictionaryEntryCategoryFactory.create(
+            category=category, dictionary_entry=entry
+        )
+
+        entry_two = factories.DictionaryEntryFactory.create(site=self.site)
+        factories.DictionaryEntryLinkFactory.create(
+            from_dictionary_entry=entry, to_dictionary_entry=entry_two
+        )
+
+        file_content = get_sample_file(
+            "update_job/field_removal_warnings.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            mode=ImportJobMode.UPDATE,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = ImportJob.objects.get(id=update_job.id)
+
+        assert update_job.validation_status == JobStatus.COMPLETE
+        assert update_job.validation_report.updated_rows == 1
+        assert update_job.validation_report.warnings == 15
+
+        nullable_headers = [
+            "part_of_speech",
+            "category",
+            "translation",
+            "acknowledgement",
+            "note",
+            "alternate_spelling",
+            "pronunciation",
+            "related_entry_ids",
+            "audio_ids",
+            "document_ids",
+            "img_ids",
+            "video_ids",
+            "video_embed_links",
+            "external_system",
+            "external_system_entry_id",
+        ]
+        # a row number of -1 indicates that the errors are for the entire job, not a specific row
+        validation_report_errors = update_job.validation_report.rows.get(
+            row_number=-1
+        ).errors
+
+        for header in nullable_headers:
+            expected_warning_message = (
+                f"WARNING: The field '{header}' is being removed in 1 out of 1 rows "
+                f"({1 / 1:.0%}). This may result in loss of data."
+            )
+            assert expected_warning_message in validation_report_errors
 
 
 @pytest.mark.django_db

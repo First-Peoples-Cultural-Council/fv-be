@@ -12,8 +12,11 @@ from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
 )
+from backend.tasks.batch_utils import (
+    verify_no_other_import_jobs_running,
+    verify_update_job_size_limit,
+)
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
-from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.import_job_views import ImportJobViewSet
@@ -133,6 +136,7 @@ class UpdateJobViewSet(ImportJobViewSet):
 
     def perform_create(self, serializer):
         serializer.save(mode=ImportJobMode.UPDATE)
+        verify_update_job_size_limit(serializer.instance)
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -145,9 +149,7 @@ class UpdateJobViewSet(ImportJobViewSet):
         Method to start the validation process on a given update-job.
         """
         import_job_id = self.kwargs["pk"]
-        curr_job = ImportJob.objects.filter(
-            id=import_job_id, mode=ImportJobMode.UPDATE
-        )[0]
+        curr_job = ImportJob.objects.get(id=import_job_id, mode=ImportJobMode.UPDATE)
 
         # Checks to ensure consistency
 
@@ -163,6 +165,7 @@ class UpdateJobViewSet(ImportJobViewSet):
             )
 
         verify_no_other_import_jobs_running(curr_job)
+        verify_update_job_size_limit(curr_job)
 
         # Queue the job for validation
         curr_job.validation_status = ImportJobStatus.ACCEPTED
@@ -198,6 +201,7 @@ class UpdateJobViewSet(ImportJobViewSet):
             raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
+        verify_update_job_size_limit(curr_job)
 
         # Queue the job for confirmation
         curr_job.status = ImportJobStatus.ACCEPTED

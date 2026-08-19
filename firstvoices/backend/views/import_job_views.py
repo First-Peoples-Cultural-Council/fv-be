@@ -16,9 +16,9 @@ from backend.serializers.import_job_serializers import (
     ImportJobDetailSerializer,
     ImportJobSerializer,
 )
+from backend.tasks.batch_utils import verify_no_other_import_jobs_running
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
 from backend.tasks.send_email_tasks import send_email_task
-from backend.tasks.utils import verify_no_other_import_jobs_running
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import (
