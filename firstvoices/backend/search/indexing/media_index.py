@@ -14,7 +14,11 @@ class MediaDocumentManager(DocumentManager):
     def create_index_document(cls, instance):
         """Returns a MediaDocument populated for the given media instance."""
 
-        instance_filename = instance.original.content.name
+        # Handle the case where the media instance has no original file
+        if instance.original:
+            instance_filename = instance.original.content.name
+        else:
+            instance_filename = None
 
         return cls.document(
             document_id=str(instance.id),
