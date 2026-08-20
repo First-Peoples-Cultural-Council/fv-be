@@ -34,6 +34,15 @@ class BaseMediaResource(SiteContentResource):
         if import_job.mode == ImportJobMode.UPDATE:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
+    def import_row(self, row, instance_loader, **kwargs):
+        result = super().import_row(row, instance_loader, **kwargs)
+
+        original_row_number = row.get("_row_number")
+        if original_row_number:
+            result.number = int(original_row_number)
+
+        return result
+
     def skip_row(self, instance, original, row, import_validation_errors=None) -> bool:
         # skip rows with missing originals (errors will be logged in DictionaryEntryResource)
         # skipped rows with no error message will not appear in error report

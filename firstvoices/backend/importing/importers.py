@@ -174,9 +174,11 @@ class BaseMediaFileImporter(BaseImporter):
             if not file_columns:
                 continue
 
-            file_data = tablib.Dataset(headers=file_columns)
-            for row in data.dict:
+            # add a column to preserve the original row number of the media file for error reporting
+            file_data = tablib.Dataset(headers=file_columns + ["_row_number"])
+            for idx, row in enumerate(data.dict):
                 row_values = [row[col] for col in file_columns]
+                row_values.append(idx + 1)  # add the original row number
                 file_data.append(row_values)
             datasets.append(file_data)
 
@@ -200,8 +202,12 @@ class BaseMediaFileImporter(BaseImporter):
         for dataset in split_file_data:
             # replace numbered prefixes with the base prefix
             dataset.headers = [
-                re.sub(
-                    rf"^{cls.column_prefix}_\d{{1,2}}_", f"{cls.column_prefix}_", col
+                (
+                    re.sub(
+                        rf"^{cls.column_prefix}_\d{{1,2}}_",
+                        f"{cls.column_prefix}_",
+                        col,
+                    )
                 )
                 for col in dataset.headers
             ]
@@ -526,6 +532,9 @@ class DictionaryEntryImporter(BaseImporter):
         update_job,
         csv_data,
         dry_run,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
@@ -556,6 +565,9 @@ class DictionaryEntryImporter(BaseImporter):
             site=update_job.site,
             run_as_user=update_job.run_as_user,
             import_job=update_job.id,
+            missing_uploaded_media=missing_uploaded_media,
+            missing_referenced_media=missing_referenced_media,
+            missing_entries=missing_entries,
         ).import_data(dataset=filtered_data, dry_run=dry_run)
 
         return dictionary_entry_update_result

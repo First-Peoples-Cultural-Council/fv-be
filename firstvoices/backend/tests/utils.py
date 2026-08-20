@@ -150,14 +150,6 @@ def format_dictionary_entry_related_field(entries):
     return [{"text": entry, "id": str(uuid.uuid4())} for entry in entries]
 
 
-def is_valid_uuid(uuid_string):
-    try:
-        val = uuid.UUID(uuid_string)
-    except ValueError:
-        return False
-    return str(val) == uuid_string
-
-
 def get_batch_import_test_dataset(filename):
     path = (
         os.path.dirname(os.path.realpath(__file__))
