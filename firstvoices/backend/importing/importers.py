@@ -468,6 +468,29 @@ class DictionaryEntryImporter(BaseImporter):
         return target_columns
 
     @classmethod
+    def add_related_media_columns_from_maps(
+        cls,
+        site_id,
+        csv_data,
+        audio_filename_map,
+        img_filename_map,
+        video_filename_map,
+        document_filename_map,
+    ):
+        data_with_audio = AudioImporter.add_related_media_column(
+            site_id, csv_data, audio_filename_map
+        )
+        data_with_audio_and_images = ImageImporter.add_related_media_column(
+            site_id, data_with_audio, img_filename_map
+        )
+        data_with_audio_images_video = VideoImporter.add_related_media_column(
+            site_id, data_with_audio_and_images, video_filename_map
+        )
+        return DocumentImporter.add_related_media_column(
+            site_id, data_with_audio_images_video, document_filename_map
+        )
+
+    @classmethod
     def import_data(
         cls,
         import_job,
@@ -486,18 +509,13 @@ class DictionaryEntryImporter(BaseImporter):
         This method adds related media columns, i.e. "related_images", "related_audio" and fills
         them up with ids from the media maps, by looking them up against the filename columns.
         """
-        site_id = import_job.site.id
-        data_with_audio = AudioImporter.add_related_media_column(
-            site_id, csv_data, audio_filename_map
-        )
-        data_with_audio_and_images = ImageImporter.add_related_media_column(
-            site_id, data_with_audio, img_filename_map
-        )
-        data_with_audio_images_video = VideoImporter.add_related_media_column(
-            site_id, data_with_audio_and_images, video_filename_map
-        )
-        data_with_media = DocumentImporter.add_related_media_column(
-            site_id, data_with_audio_images_video, document_filename_map
+        data_with_media = cls.add_related_media_columns_from_maps(
+            import_job.site.id,
+            csv_data,
+            audio_filename_map,
+            img_filename_map,
+            video_filename_map,
+            document_filename_map,
         )
 
         filtered_data = cls.filter_data(data_with_media)
@@ -544,18 +562,13 @@ class DictionaryEntryImporter(BaseImporter):
         Updates dictionary entries and returns the update result.
         """
 
-        site_id = update_job.site.id
-        data_with_audio = AudioImporter.add_related_media_column(
-            site_id, csv_data, audio_filename_map
-        )
-        data_with_audio_and_images = ImageImporter.add_related_media_column(
-            site_id, data_with_audio, img_filename_map
-        )
-        data_with_audio_images_video = VideoImporter.add_related_media_column(
-            site_id, data_with_audio_and_images, video_filename_map
-        )
-        data_with_media = DocumentImporter.add_related_media_column(
-            site_id, data_with_audio_images_video, document_filename_map
+        data_with_media = cls.add_related_media_columns_from_maps(
+            update_job.site.id,
+            csv_data,
+            audio_filename_map,
+            img_filename_map,
+            video_filename_map,
+            document_filename_map,
         )
         filtered_data = cls.filter_data(
             data_with_media, cls.get_supported_update_columns()
