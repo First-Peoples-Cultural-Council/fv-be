@@ -1,10 +1,14 @@
+from django.conf import settings
 from django.db import transaction
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import status
+from redis.exceptions import ConnectionError
+from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
 from backend.serializers.import_job_serializers import ImportJobSerializer
@@ -13,12 +17,19 @@ from backend.serializers.update_job_serializers import (
     UpdateJobSerializer,
 )
 from backend.tasks.batch_utils import verify_no_other_import_jobs_running
+from backend.tasks.send_email_tasks import send_email_task
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.import_job_views import ImportJobViewSet
+from backend.views.base_views import (
+    AsyncJobDeleteMixin,
+    FVPermissionViewSetMixin,
+    SiteContentViewSetMixin,
+)
 from firstvoices.celery import link_error_handler
+
+SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 
 @extend_schema_view(
@@ -123,8 +134,34 @@ from firstvoices.celery import link_error_handler
         ],
     ),
 )
-class UpdateJobViewSet(ImportJobViewSet):
+class UpdateJobViewSet(
+    AsyncJobDeleteMixin, SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
+):
     serializer_class = UpdateJobSerializer
+    http_method_names = ["get", "post", "delete"]
+    parser_classes = [
+        parsers.FormParser,
+        parsers.MultiPartParser,  # to support file uploads
+        parsers.JSONParser,
+    ]
+
+    permission_type_map = {
+        **FVPermissionViewSetMixin.permission_type_map,
+        "confirm": "change",
+        "validate": "change",
+        "notify": "change",
+    }
+
+    started_statuses = [
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+        ImportJobStatus.COMPLETE,
+    ]
+
+    started_validation_statuses = [
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+    ]
 
     def get_queryset(self):
         site = self.get_validated_site()
@@ -212,5 +249,55 @@ class UpdateJobViewSet(ImportJobViewSet):
                 ignore_result=True,
             )
         )
+
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+    def perform_destroy(self, instance):
+        if instance.validation_status in self.started_validation_statuses:
+            raise ValidationError(
+                f"This job cannot be deleted as it is being validated. "
+                f"This job has the validation status: {instance.status}"
+            )
+
+        super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"])
+    def notify(self, request, site_slug=None, pk=None):
+
+        import_job_id = self.kwargs["pk"]
+
+        curr_job = ImportJob.objects.get(id=import_job_id)
+        if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
+            raise ValidationError("The import-job is already marked ready for import.")
+
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
+            raise ValidationError(
+                "Please validate the job before marking it ready for import."
+            )
+
+        url = request.build_absolute_uri(
+            reverse(
+                "api:importjob-detail",
+                kwargs={"site_slug": site_slug, "pk": import_job_id},
+            )
+        )
+
+        subject = "FirstVoices Batch Import Job ready"
+        message = (
+            "The following team has a batch ready to be imported.\n"
+            f"Site slug: {site_slug}\n"
+            f"ImportJob id: {import_job_id}\n"
+            f"Requested by: {request.user.email}\n"
+            f"URL: {url}\n"
+        )
+
+        try:
+            send_email_task.apply_async((subject, message, [SUPPORT_USER_EMAIL]))
+            import_job = ImportJob.objects.get(id=import_job_id)
+            import_job.status = ImportJobStatus.READY_FOR_IMPORT
+            import_job.save()
+        except ConnectionError as e:
+            error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
+            raise ConnectionError(error_message)
 
         return Response(status=status.HTTP_202_ACCEPTED)
