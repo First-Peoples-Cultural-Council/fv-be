@@ -12,11 +12,9 @@ from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
 )
-from backend.tasks.batch_utils import (
-    verify_no_other_import_jobs_running,
-    verify_update_job_size_limit,
-)
+from backend.tasks.batch_utils import verify_no_other_import_jobs_running
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
+from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.import_job_views import ImportJobViewSet
