@@ -1,9 +1,7 @@
 from django.conf import settings
 from django.db import transaction
-from django.urls import reverse
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from redis.exceptions import ConnectionError
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -17,7 +15,6 @@ from backend.serializers.update_job_serializers import (
     UpdateJobSerializer,
 )
 from backend.tasks.batch_utils import verify_no_other_import_jobs_running
-from backend.tasks.send_email_tasks import send_email_task
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views import doc_strings
@@ -27,6 +24,7 @@ from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
 )
+from backend.views.import_update_job_view_helpers import notify_job_ready
 from firstvoices.celery import link_error_handler
 
 SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
@@ -265,41 +263,20 @@ class UpdateJobViewSet(
     def notify(self, request, site_slug=None, pk=None):
 
         import_job_id = self.kwargs["pk"]
-
-        curr_job = ImportJob.objects.get(id=import_job_id)
-        if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
-            raise ValidationError(
-                "The update job is already marked ready for processing."
-            )
-
-        if curr_job.validation_status != ImportJobStatus.COMPLETE:
-            raise ValidationError(
-                "Please validate the job before marking it ready for processing."
-            )
-
-        url = request.build_absolute_uri(
-            reverse(
-                "api:updatejob-detail",
-                kwargs={"site_slug": site_slug, "pk": import_job_id},
-            )
+        return notify_job_ready(
+            request=request,
+            site_slug=site_slug,
+            job_id=import_job_id,
+            detail_view_name="api:updatejob-detail",
+            already_ready_message="The update job is already marked ready for processing.",
+            requires_validation_message="Please validate the job before marking it ready for processing.",
+            subject="FirstVoices Batch Update Job ready",
+            message_template=(
+                "The following team has a batch update job ready to be processed.\n"
+                "Site slug: {site_slug}\n"
+                "UpdateJob id: {job_id}\n"
+                "Requested by: {requester_email}\n"
+                "URL: {url}\n"
+            ),
+            support_user_email=SUPPORT_USER_EMAIL,
         )
-
-        subject = "FirstVoices Batch Update Job ready"
-        message = (
-            "The following team has a batch update job ready to be processed.\n"
-            f"Site slug: {site_slug}\n"
-            f"UpdateJob id: {import_job_id}\n"
-            f"Requested by: {request.user.email}\n"
-            f"URL: {url}\n"
-        )
-
-        try:
-            send_email_task.apply_async((subject, message, [SUPPORT_USER_EMAIL]))
-            import_job = ImportJob.objects.get(id=import_job_id)
-            import_job.status = ImportJobStatus.READY_FOR_IMPORT
-            import_job.save()
-        except ConnectionError as e:
-            error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
-            raise ConnectionError(error_message)
-
-        return Response(status=status.HTTP_202_ACCEPTED)
