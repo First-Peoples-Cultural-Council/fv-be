@@ -27,7 +27,7 @@ class TestMigrateOrganizationData:
             )
             factories.WidgetSettingsFactory.create(
                 widget=widget,
-                key="url",
+                key="urls",
                 value=f"https://example.com/{site.slug}/url{x + 1}",
             )
 
@@ -71,6 +71,8 @@ class TestMigrateOrganizationData:
 
         self.assert_caplog_text(caplog, [site.slug])
         organization = Organization.objects.get(site=site)
+
+        assert organization.name == f"{site.title} Language Team"
         assert {"contact_email_old": "test_old@fpcc.ca"} in organization.emails
         assert {"contact_email_1": "test@fpcc.ca"} in organization.emails
         assert {"contact_email_2": "test2@fpcc.ca"} in organization.emails
@@ -91,6 +93,8 @@ class TestMigrateOrganizationData:
 
         self.assert_caplog_text(caplog, [site.slug])
         organization = Organization.objects.get(site=site)
+
+        assert organization.name == f"{site.title} Language Team"
         assert {"contact_email_old": "test_old@fpcc.ca"} in organization.emails
         assert {"contact_email_1": "test@fpcc.ca"} in organization.emails
         assert {"contact_email_2": "test2@fpcc.ca"} in organization.emails
@@ -112,6 +116,7 @@ class TestMigrateOrganizationData:
         organization = Organization.objects.get(site=site)
         assert organization.emails == []
 
+        assert organization.name == f"{site.title} Language Team"
         assert organization.address == f"Address 1 for site {site.slug}"
         assert organization.contact_message == f"Contact message 1 for site {site.slug}"
         assert organization.url_list == [
@@ -159,6 +164,8 @@ class TestMigrateOrganizationData:
 
         for site in [site1, site2]:
             organization = Organization.objects.get(site=site)
+
+            assert organization.name == f"{site.title} Language Team"
             assert {"contact_email_old": "test_old@fpcc.ca"} in organization.emails
             assert {"contact_email_1": "test@fpcc.ca"} in organization.emails
             assert {"contact_email_2": "test2@fpcc.ca"} in organization.emails

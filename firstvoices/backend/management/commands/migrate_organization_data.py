@@ -57,7 +57,7 @@ class Command(BaseCommand):
 
         org_urls = []
         url_values = list(
-            WidgetSettings.objects.filter(widget__in=contact_us_widgets, key="url")
+            WidgetSettings.objects.filter(widget__in=contact_us_widgets, key="urls")
             .values_list("value", flat=True)
             .distinct()
         )
@@ -110,8 +110,10 @@ class Command(BaseCommand):
             )
             return
 
-        organization = Organization.objects.get_or_create(site=site)
-        organization = organization[0]  # get the instance from the tuple
+        organization, created = Organization.objects.get_or_create(
+            site=site,
+            defaults={"name": f"{site.title} Language Team", "order": 0},
+        )
 
         # Don't have to worry about overwriting existing data as no sites have organization data yet.
         organization.emails = org_emails
@@ -121,7 +123,7 @@ class Command(BaseCommand):
             if org_contact_messages
             else self.default_contact_message
         )
-        organization.url_list = org_urls if org_urls else []
+        organization.url_list = org_urls
         organization.save()
         self.logger.info(f"Organization data migrated for site '{site.slug}'.")
 
