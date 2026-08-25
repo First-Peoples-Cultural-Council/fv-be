@@ -72,3 +72,27 @@ class TestUpdateJobValidateAction(TestImportJobValidateAction):
             "This job has already been queued and is currently being validated."
             in response
         )
+
+    @pytest.mark.parametrize(
+        "status",
+        [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE],
+    )
+    def test_confirmed_job_not_allowed_to_revalidate(self, status):
+        self.import_job.status = status
+        self.import_job.validation_status = None
+        self.import_job.save()
+
+        validate_endpoint = reverse(
+            self.API_VALIDATE_ACTION,
+            current_app=self.APP_NAME,
+            args=[self.site.slug, str(self.import_job.id)],
+        )
+
+        response = self.client.post(validate_endpoint)
+        assert response.status_code == 400
+
+        response = json.loads(response.content)
+        assert (
+            "This job has already been confirmed and is currently being processed."
+            in response
+        )

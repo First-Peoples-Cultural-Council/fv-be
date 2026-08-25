@@ -97,7 +97,7 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
         description=_(
             "Confirm and start processing a previously validated batch edit job. "
             "This action will make changes to the dictionary, so it should be used with caution. "
-            "In order to succeed, the validationStatus must already be 'COMPLETE' and there must be no other import "
+            "In order to succeed, the validationStatus must already be 'COMPLETE' and there must be no other update "
             "jobs in progress for the site. When finished, the status will be 'COMPLETE'."
         ),
         responses={
@@ -196,7 +196,7 @@ class UpdateJobViewSet(
 
         if curr_job.status in self.started_statuses:
             raise ValidationError(
-                "This job has already been confirmed and is currently being imported."
+                "This job has already been confirmed and is currently being processed."
             )
 
         verify_no_other_import_jobs_running(curr_job)
@@ -224,16 +224,16 @@ class UpdateJobViewSet(
 
         if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
-                "Please validate the job before confirming the import."
+                "Please validate the job before confirming the update job."
             )
 
         if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
             raise ValidationError(
-                "This job has already been confirmed and is currently being imported."
+                "This job has already been confirmed and is currently being processed."
             )
 
         if curr_job.status == ImportJobStatus.COMPLETE:
-            raise ValidationError("This job has already finished importing.")
+            raise ValidationError("This job has already finished processing.")
 
         verify_no_other_import_jobs_running(curr_job)
         verify_update_job_size_limit(curr_job)
@@ -268,25 +268,27 @@ class UpdateJobViewSet(
 
         curr_job = ImportJob.objects.get(id=import_job_id)
         if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
-            raise ValidationError("The import-job is already marked ready for import.")
+            raise ValidationError(
+                "The update job is already marked ready for processing."
+            )
 
         if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
-                "Please validate the job before marking it ready for import."
+                "Please validate the job before marking it ready for processing."
             )
 
         url = request.build_absolute_uri(
             reverse(
-                "api:importjob-detail",
+                "api:updatejob-detail",
                 kwargs={"site_slug": site_slug, "pk": import_job_id},
             )
         )
 
-        subject = "FirstVoices Batch Import Job ready"
+        subject = "FirstVoices Batch Update Job ready"
         message = (
-            "The following team has a batch ready to be imported.\n"
+            "The following team has a batch update job ready to be processed.\n"
             f"Site slug: {site_slug}\n"
-            f"ImportJob id: {import_job_id}\n"
+            f"UpdateJob id: {import_job_id}\n"
             f"Requested by: {request.user.email}\n"
             f"URL: {url}\n"
         )

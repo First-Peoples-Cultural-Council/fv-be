@@ -387,7 +387,7 @@ def confirm_update_job(update_job_id):
 
     if update_job.validation_status != ImportJobStatus.COMPLETE:
         logger.info(
-            f"Please validate the job before confirming the import. Update job id: {update_job_id}."
+            f"Please validate the job before confirming the update job. Update job id: {update_job_id}."
         )
         update_job.status = ImportJobStatus.FAILED
         update_job.save()
