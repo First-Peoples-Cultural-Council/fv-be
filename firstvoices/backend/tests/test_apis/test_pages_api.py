@@ -132,9 +132,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         controlled_standard_fields = self.get_expected_controlled_standard_fields(
             instance, site
         )
-        controlled_standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
+        controlled_standard_fields["url"] = (
+            f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
+        )
         return {
             **controlled_standard_fields,
             "subtitle": "",
@@ -145,9 +145,9 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         controlled_standard_fields = self.get_expected_controlled_standard_fields(
             instance, site
         )
-        controlled_standard_fields[
-            "url"
-        ] = f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
+        controlled_standard_fields["url"] = (
+            f"http://testserver{self.get_detail_endpoint(key=instance.slug, site_slug=site.slug)}"
+        )
         return {
             **controlled_standard_fields,
             "subtitle": "",
@@ -233,6 +233,22 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         response_data = json.loads(response.content)
 
         assert len(response_data["results"]) == expected_visible_pages
+
+    @pytest.mark.django_db
+    def test_detail_case_insensitive_slug(self):
+        user = factories.get_non_member_user()
+        self.client.force_authenticate(user=user)
+
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        page = factories.SitePageFactory.create(
+            site=site, visibility=Visibility.PUBLIC, slug="Our-Language-EN"
+        )
+
+        response = self.client.get(
+            self.get_detail_endpoint(page.slug.lower(), site.slug)
+        )
+        assert response.status_code == 200
+        assert json.loads(response.content)["slug"] == page.slug
 
     @pytest.mark.django_db
     def test_detail_widget_order(self):
