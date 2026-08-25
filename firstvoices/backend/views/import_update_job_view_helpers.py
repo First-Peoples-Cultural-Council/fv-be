@@ -1,4 +1,5 @@
 from django.urls import reverse
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from redis.exceptions import ConnectionError
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -6,6 +7,98 @@ from rest_framework.response import Response
 
 from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.tasks.send_email_tasks import send_email_task
+from backend.views import doc_strings
+
+
+def get_import_update_job_schema_view_config(
+    *,
+    serializer,
+    site_slug_parameter,
+    id_parameter,
+    list_description,
+    retrieve_description,
+    create_description,
+    destroy_description,
+    confirm_description,
+    validate_description,
+):
+    detail_parameters = [site_slug_parameter, id_parameter]
+
+    return {
+        "list": extend_schema(
+            description=list_description,
+            responses={
+                200: OpenApiResponse(
+                    description=doc_strings.success_200_list,
+                    response=serializer,
+                ),
+                403: OpenApiResponse(
+                    description=doc_strings.error_403_site_access_denied
+                ),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=[site_slug_parameter],
+        ),
+        "retrieve": extend_schema(
+            description=retrieve_description,
+            responses={
+                200: OpenApiResponse(
+                    description=doc_strings.success_200_detail,
+                    response=serializer,
+                ),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404),
+            },
+            parameters=detail_parameters,
+        ),
+        "create": extend_schema(
+            description=create_description,
+            responses={
+                201: OpenApiResponse(
+                    description=doc_strings.success_201,
+                    response=serializer,
+                ),
+                400: OpenApiResponse(description=doc_strings.error_400_validation),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=[site_slug_parameter],
+        ),
+        "destroy": extend_schema(
+            description=destroy_description,
+            responses={
+                204: OpenApiResponse(description=doc_strings.success_204_deleted),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=detail_parameters,
+        ),
+        "confirm": extend_schema(
+            description=confirm_description,
+            responses={
+                202: OpenApiResponse(
+                    description=doc_strings.success_202_job_accepted,
+                    response=serializer,
+                ),
+                400: OpenApiResponse(description=doc_strings.error_400_validation),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=detail_parameters,
+        ),
+        "validate": extend_schema(
+            description=validate_description,
+            responses={
+                202: OpenApiResponse(
+                    description=doc_strings.success_202_job_accepted,
+                ),
+                400: OpenApiResponse(description=doc_strings.error_400_validation),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=detail_parameters,
+        ),
+    }
 
 
 def notify_job_ready(

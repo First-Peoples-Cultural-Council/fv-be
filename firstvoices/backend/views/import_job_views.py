@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema_view
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -16,115 +16,48 @@ from backend.serializers.import_job_serializers import (
 )
 from backend.tasks.batch_utils import verify_no_other_import_jobs_running
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
-from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import (
     AsyncJobDeleteMixin,
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
 )
-from backend.views.import_update_job_view_helpers import notify_job_ready
+from backend.views.import_update_job_view_helpers import (
+    get_import_update_job_schema_view_config,
+    notify_job_ready,
+)
 from firstvoices.celery import link_error_handler
 
 SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 
 @extend_schema_view(
-    list=extend_schema(
-        description=_(
+    **get_import_update_job_schema_view_config(
+        serializer=ImportJobSerializer,
+        site_slug_parameter=site_slug_parameter,
+        id_parameter=id_parameter,
+        list_description=_(
             "A list of batch import jobs associated with the specified site. "
             "See the detail view for more information on specified fields."
         ),
-        responses={
-            200: OpenApiResponse(
-                description=doc_strings.success_200_list,
-                response=ImportJobSerializer,
-            ),
-            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[site_slug_parameter],
-    ),
-    retrieve=extend_schema(
-        description=_("Details about a specific batch import job."),
-        responses={
-            200: OpenApiResponse(
-                description=doc_strings.success_200_detail,
-                response=ImportJobSerializer,
-            ),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    create=extend_schema(
-        description=_(
+        retrieve_description=_("Details about a specific batch import job."),
+        create_description=_(
             "Creates a new batch import job. The job can be validated or confirmed using the relevant endpoints."
         ),
-        responses={
-            201: OpenApiResponse(
-                description=doc_strings.success_201, response=ImportJobSerializer
-            ),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-        ],
-    ),
-    destroy=extend_schema(
-        description="Deletes a single import-job and its associated file and result for the specified site. "
-        "This action does not delete any of the entries imported by the import-job.",
-        responses={
-            204: OpenApiResponse(description=doc_strings.success_204_deleted),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    confirm=extend_schema(
-        description=_(
+        destroy_description=(
+            "Deletes a single import-job and its associated file and result for the specified site. "
+            "This action does not delete any of the entries imported by the import-job."
+        ),
+        confirm_description=_(
             "Starts importing the data, as described in the validationReport. In order to succeed, the "
             "validationStatus must already be 'COMPLETE' and there must be no other imports jobs in progress "
             "for the site. When finished, the status will be 'COMPLETE'."
         ),
-        responses={
-            202: OpenApiResponse(
-                description=doc_strings.success_202_job_accepted,
-                response=ImportJobSerializer,
-            ),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    validate=extend_schema(
-        description=_(
+        validate_description=_(
             "Starts validating the data including any newly uploaded media. "
             "When finished, the validationStatus and validationReport will be updated."
         ),
-        responses={
-            202: OpenApiResponse(description=doc_strings.success_202_job_accepted),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
+    )
 )
 class ImportJobViewSet(
     AsyncJobDeleteMixin, SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
