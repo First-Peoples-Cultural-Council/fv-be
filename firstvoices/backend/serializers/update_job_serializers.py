@@ -4,10 +4,14 @@ from backend.serializers.import_job_serializers import (
     ImportJobDetailSerializer,
     ImportJobSerializer,
 )
+from backend.serializers.utils.import_job_utils import check_required_headers
 
 
 class UpdateJobSerializer(ImportJobSerializer):
     mode = serializers.CharField(read_only=True)
+
+    def validate_required_headers(self, headers):
+        check_required_headers(headers, update_mode=True)
 
     def build_url_field(self, field_name, model_class):
         """
