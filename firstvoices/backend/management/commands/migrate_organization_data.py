@@ -110,7 +110,7 @@ class Command(BaseCommand):
             )
             return
 
-        organization, created = Organization.objects.get_or_create(
+        organization, _ = Organization.objects.get_or_create(
             site=site,
             defaults={"name": f"{site.title} Language Team", "order": 0},
         )
