@@ -22,6 +22,16 @@ from backend.tests.utils import get_sample_file
 class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     API_LIST_VIEW = "api:importjob-list"
     API_VALIDATE_ACTION = "api:importjob-validate"
+    SAMPLE_FILE_PATH = "import_job/all_valid_columns.csv"
+    JOB_MODE = None
+    CONFIRMED_REVALIDATE_ERROR_MESSAGE = (
+        "This job has already been confirmed and is currently being imported."
+    )
+
+    def get_job_mode_kwargs(self):
+        if self.JOB_MODE is None:
+            return {}
+        return {"mode": self.JOB_MODE}
 
     def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
@@ -50,10 +60,13 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         self.site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
         # Initial job
-        file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
+        file_content = get_sample_file(self.SAMPLE_FILE_PATH, "text/csv")
         file = factories.FileFactory(content=file_content)
         self.import_job = ImportJobFactory(
-            site=self.site, data=file, validation_status=JobStatus.ACCEPTED
+            site=self.site,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+            **self.get_job_mode_kwargs(),
         )
         validate_import_job(self.import_job.id)
 
@@ -134,6 +147,7 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         import_job = ImportJobFactory(
             site=self.site,
             validation_status=validation_status,
+            **self.get_job_mode_kwargs(),
         )
 
         # Validate endpoint
@@ -172,7 +186,4 @@ class TestImportJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         assert response.status_code == 400
 
         response = json.loads(response.content)
-        assert (
-            "This job has already been confirmed and is currently being imported."
-            in response
-        )
+        assert self.CONFIRMED_REVALIDATE_ERROR_MESSAGE in response
