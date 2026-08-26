@@ -1,13 +1,79 @@
+# Version control
 .git
+.gitignore
+.gitattributes
+.github
+
+# IDE and editor files
 .idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Local environments and secrets
 .venv
 venv
+env
+.env
+.env.*
+.envrc
+.direnv
 
-**/.DS_Store
-**/.coverage*
-**/.pytest_cache
+# Python bytecode and caches
 **/__pycache__
 **/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.tox
+**/.nox
+**/.coverage*
+coverage.xml
+htmlcov
 
-firstvoices/backend/tests/tmp
+# Python packaging artefacts
+**/*.egg-info
+build
+dist
+wheels
+pip-wheel-metadata
+
+# Generated application files
 firstvoices/static
+firstvoices/backend/tests/tmp
+
+# Runtime files that should not enter an image
+**/*.log
+**/*.pid
+**/*.sock
+tmp
+temp
+.cache
+
+# Local databases and database exports
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/*.dump
+**/*.sql
+**/*.bak
+
+# Local media and exported reports
+**/media
+**/uploads
+**/exports
+**/*_site_stats.csv
+
+# Operating-system metadata
+**/.DS_Store
+**/Thumbs.db
+
+# Frontend artefacts, if created locally
+**/node_modules
+**/.npm
+**/.yarn
+**/.pnpm-store
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
