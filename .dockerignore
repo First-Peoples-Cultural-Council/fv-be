@@ -1,2 +1,13 @@
+.git
+.idea
+.venv
 venv
+
+**/.DS_Store
+**/.coverage*
+**/.pytest_cache
+**/__pycache__
+**/*.py[cod]
+
+firstvoices/backend/tests/tmp
 firstvoices/static
