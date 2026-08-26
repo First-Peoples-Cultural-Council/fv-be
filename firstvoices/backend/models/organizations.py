@@ -19,7 +19,11 @@ class Organization(BaseSiteContentModel):
     # JSON to store "label" : "number"
     phone_numbers = models.JSONField(default=list, blank=True, null=False)
     address = models.TextField(default="", null=False, blank=True)
-    contact_message = models.TextField(default="", null=False, blank=True)
+    contact_message = models.TextField(
+        default="Please contact us if you have any suggestions or feedback regarding our language content.",
+        null=False,
+        blank=True,
+    )
     # JSON to store "label" : "url"
     url_list = models.JSONField(default=list, blank=True, null=False)
 
