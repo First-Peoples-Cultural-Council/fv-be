@@ -1,14 +1,19 @@
 ARG python_image=python:3.13-alpine3.23
 ARG caddy_image=caddy:2.11.2-alpine
 
-FROM $python_image AS django-builder
+FROM $python_image AS python-base
 ENV DEBUG_DISABLE=True
 ENV PATH="/opt/venv/bin:$PATH"
 
+FROM python-base AS django-builder
+
 # To fix flagged vulnerabilities, can be removed later once
 # they're added to an updated python base image above
-RUN python3 -m venv /opt/venv && \
-    pip install "setuptools>=78.1.1" --no-cache-dir
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv /opt/venv && \
+    pip install \
+    "pipdeptree<4.0.0" \
+    "setuptools>=78.1.1"
 
 WORKDIR /app
 RUN apk update && \
@@ -20,11 +25,10 @@ RUN apk update && \
     libffi-dev \
     libmagic \
     openblas-dev
-RUN pip3 install gunicorn
-RUN pip3 install "pipdeptree<4.0.0"
 
 COPY requirements.txt /app
-RUN pip3 install -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install -r requirements.txt
 
 COPY . /app
 WORKDIR /app/firstvoices
@@ -39,9 +43,7 @@ COPY --from=django-builder /app/Caddyfile /etc/caddy
 COPY --from=static-collector /app/firstvoices/static /srv
 
 # or django-runtime for the api server. this is last so that it's the default if no target specified
-FROM $python_image AS django-runtime
-ENV DEBUG_DISABLE=True
-ENV PATH="/opt/venv/bin:$PATH"
+FROM python-base AS django-runtime
 
 WORKDIR /app
 RUN apk update && \
