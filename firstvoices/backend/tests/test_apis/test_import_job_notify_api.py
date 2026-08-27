@@ -19,6 +19,19 @@ from backend.views.import_job_views import SUPPORT_USER_EMAIL
 @pytest.mark.django_db
 class TestImportJobNotifyApi(BaseSiteContentApiTest):
     API_NOTIFY_ACTION = "api:importjob-notify"
+    SAMPLE_FILE_PATH = "import_job/all_valid_columns.csv"
+    JOB_MODE = None
+    JOB_ID_LABEL = "ImportJob"
+    NOT_VALIDATED_ERROR_MESSAGE = (
+        "Please validate the job before marking it ready for import."
+    )
+    ALREADY_READY_ERROR_MESSAGE = "The import-job is already marked ready for import."
+    SUPPORT_EMAIL = SUPPORT_USER_EMAIL
+
+    def get_job_mode_kwargs(self):
+        if self.JOB_MODE is None:
+            return {}
+        return {"mode": self.JOB_MODE}
 
     def create_minimal_instance(self, site, visibility):
         # Not required for this endpoint
@@ -35,10 +48,13 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         )
         self.client.force_authenticate(user=user)
 
-        file_content = get_sample_file("import_job/all_valid_columns.csv", "text/csv")
+        file_content = get_sample_file(self.SAMPLE_FILE_PATH, "text/csv")
         file = factories.FileFactory(content=file_content)
         self.import_job = ImportJobFactory(
-            site=self.site, data=file, validation_status=ImportJobStatus.COMPLETE
+            site=self.site,
+            data=file,
+            validation_status=ImportJobStatus.COMPLETE,
+            **self.get_job_mode_kwargs(),
         )
 
     def test_notify_sends_email_to_support(self):
@@ -54,10 +70,10 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
 
         assert len(mail.outbox) == 1
 
-        assert mail.outbox[0].to == [SUPPORT_USER_EMAIL]
+        assert mail.outbox[0].to == [self.SUPPORT_EMAIL]
 
         assert f"Site slug: {self.site.slug}" in mail.outbox[0].body
-        assert f"ImportJob id: {self.import_job.id}" in mail.outbox[0].body
+        assert f"{self.JOB_ID_LABEL} id: {self.import_job.id}" in mail.outbox[0].body
 
     def test_notify_updates_job_status_to_ready(self):
         url = reverse(
@@ -92,7 +108,7 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
         assert response.status_code == 400
 
         response = json.loads(response.content)
-        assert "Please validate the job before marking it ready for import." in response
+        assert self.NOT_VALIDATED_ERROR_MESSAGE in response
 
     def test_cannot_mark_a_test_already_marked_READY_FOR_IMPORT(self):
         self.import_job.status = ImportJobStatus.READY_FOR_IMPORT
@@ -106,4 +122,4 @@ class TestImportJobNotifyApi(BaseSiteContentApiTest):
 
         response = json.loads(response.content)
 
-        assert "The import-job is already marked ready for import." in response
+        assert self.ALREADY_READY_ERROR_MESSAGE in response

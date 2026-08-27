@@ -922,7 +922,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         update_job = ImportJob.objects.get(id=update_job.id)
         assert update_job.status == JobStatus.FAILED
         assert (
-            f"Please validate the job before confirming the import. Update job id: {update_job.id}."
+            f"Please validate the job before confirming the update job. Update job id: {update_job.id}."
             in caplog.text
         )
 

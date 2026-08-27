@@ -49,14 +49,24 @@ def generate_export_csv(export_job_id):
             "This job could not be started as it is either already running or completed. "
             f"ExportJob id: {export_job_id}."
         )
+        export_job.status = JobStatus.FAILED
+        export_job.save()
+        logger.info(ASYNC_TASK_END_TEMPLATE)
         return
 
     export_job.task_id = task_id
     export_job.save()
 
-    generate_export(export_job)
-
-    logger.info(ASYNC_TASK_END_TEMPLATE)
+    try:
+        generate_export(export_job)
+    except Exception as e:
+        logger.error(
+            f"An error occurred while generating export for ExportJob id: {export_job_id}. Error: {e}."
+        )
+        export_job.status = JobStatus.FAILED
+        export_job.save()
+    finally:
+        logger.info(ASYNC_TASK_END_TEMPLATE)
 
 
 def generate_export(export_job_instance):
@@ -71,10 +81,11 @@ def generate_export(export_job_instance):
     }
 
     logger = get_task_logger(__name__)
-    user = get_user_model().objects.filter(email=export_job_instance.created_by).first()
 
     export_job_instance.status = JobStatus.STARTED
     export_job_instance.save()
+
+    user = get_user_model().objects.filter(email=export_job_instance.created_by).first()
 
     search_params = export_job_instance.export_params.copy()
 
@@ -109,6 +120,15 @@ def generate_export(export_job_instance):
             )
             export_job_instance.status = JobStatus.FAILED
             export_job_instance.save()
+
+    else:
+        export_job_instance.status = JobStatus.COMPLETE
+        export_job_instance.save()
+        logger.info(
+            f"No results found for the export job with id {export_job_instance.id}. "
+            f"Export job marked as COMPLETE without generating a CSV file."
+        )
+        return
 
     if csv_string:
         try:

@@ -67,7 +67,8 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
             "emails": [],
             "phoneNumbers": [],
             "address": "",
-            "contactMessage": "",
+            "contactMessage": "Please contact us if you have any suggestions "
+            "or feedback regarding our language content.",
             "urlList": [],
             **data,
         }
@@ -79,7 +80,8 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
             "emails": [],
             "phoneNumbers": [],
             "address": "",
-            "contactMessage": "",
+            "contactMessage": "Please contact us if you have any suggestions "
+            "or feedback regarding our language content.",
             "urlList": [],
         }
 

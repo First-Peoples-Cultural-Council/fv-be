@@ -28,7 +28,7 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
     def test_bulk_visibility_change_job_invalid_id(self, caplog):
         invalid_id = uuid.uuid4()
         with pytest.raises(BulkVisibilityJob.DoesNotExist):
-            bulk_change_visibility(invalid_id)
+            bulk_change_visibility(str(invalid_id))
 
         assert (
             f"Task started. Additional info: job_instance_id: {invalid_id}"
