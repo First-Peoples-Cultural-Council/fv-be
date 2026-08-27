@@ -122,11 +122,11 @@ def generate_export(export_job_instance):
             export_job_instance.save()
 
     else:
-        export_job_instance.status = JobStatus.CANCELLED
+        export_job_instance.status = JobStatus.COMPLETE
         export_job_instance.save()
         logger.info(
             f"No results found for the export job with id {export_job_instance.id}. "
-            f"Export job marked as CANCELLED."
+            f"Export job marked as COMPLETE without generating a CSV file."
         )
         return
 
