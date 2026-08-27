@@ -56,8 +56,12 @@ class TestExportJob(IgnoreTaskResultsMixin):
         )
 
         export_job.refresh_from_db()
-        assert export_job.status == JobStatus.CANCELLED
+        assert export_job.status == JobStatus.COMPLETE
         assert export_job.export_csv is None
+        assert (
+            f"No results found for the export job with id {export_job.id}. "
+            f"Export job marked as COMPLETE without generating a CSV file."
+        ) in caplog.text
 
     def test_generate_export_csv_exception(self, caplog):
         export_job = factories.ExportJobFactory.create()
