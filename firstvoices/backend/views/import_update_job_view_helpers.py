@@ -21,6 +21,7 @@ def get_import_update_job_schema_view_config(
     destroy_description,
     confirm_description,
     validate_description,
+    notify_description,
 ):
     detail_parameters = [site_slug_parameter, id_parameter]
 
@@ -88,6 +89,18 @@ def get_import_update_job_schema_view_config(
         ),
         "validate": extend_schema(
             description=validate_description,
+            responses={
+                202: OpenApiResponse(
+                    description=doc_strings.success_202_job_accepted,
+                ),
+                400: OpenApiResponse(description=doc_strings.error_400_validation),
+                403: OpenApiResponse(description=doc_strings.error_403),
+                404: OpenApiResponse(description=doc_strings.error_404_missing_site),
+            },
+            parameters=detail_parameters,
+        ),
+        "notify": extend_schema(
+            description=notify_description,
             responses={
                 202: OpenApiResponse(
                     description=doc_strings.success_202_job_accepted,

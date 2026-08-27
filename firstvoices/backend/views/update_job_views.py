@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
-from backend.serializers.import_job_serializers import ImportJobSerializer
 from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
@@ -34,7 +33,7 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 @extend_schema_view(
     **get_import_update_job_schema_view_config(
-        serializer=ImportJobSerializer,
+        serializer=UpdateJobSerializer,
         site_slug_parameter=site_slug_parameter,
         id_parameter=id_parameter,
         list_description=_(
@@ -59,6 +58,9 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
             "Validate a newly created batch edit job. "
             "This action checks the uploaded file for errors. "
             "No changes are made to the dictionary during validation, and the job must be confirmed separately."
+        ),
+        notify_description=_(
+            "Marks a validated batch edit job as ready for processing and notifies support."
         ),
     )
 )

@@ -21,7 +21,7 @@ def generate_report(
 ):
     """
     Creates an ImportJobReport to summarize the results.
-    Also combines rows from missing_media, audio import and dictionary entries import.
+    Also Combines rows from media import and dictionary entries import.
     """
     logger = get_task_logger(__name__)
 

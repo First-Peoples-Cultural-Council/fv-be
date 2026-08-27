@@ -57,6 +57,9 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
             "Starts validating the data including any newly uploaded media. "
             "When finished, the validationStatus and validationReport will be updated."
         ),
+        notify_description=_(
+            "Marks a validated batch import job as ready for import and notifies support."
+        ),
     )
 )
 class ImportJobViewSet(
