@@ -64,6 +64,7 @@ class Command(BaseCommand):
         output_dir = self.validate_output_dir(output_dir)
         if output_dir is None:
             return
+        self.logger.info("Starting to delete media with null original files.")
         if dry_run:
             self.logger.info("Dry run mode enabled. No changes will be made.")
         with transaction.atomic():
@@ -71,21 +72,17 @@ class Command(BaseCommand):
                 queryset = model.objects.filter(original__isnull=True)
                 count = queryset.count()
                 if not count:
-                    self.logger.info(
-                        f"No {model.__name__} records with null original found."
-                    )
                     continue
                 if dry_run:
                     self.logger.info(
-                        f"[Dry Run] would deelete {count} {model.__name__} "
+                        f"[Dry Run] Would delete {count} {model.__name__} "
                         f"records with null original."
                     )
                     continue
-                for instance in queryset:
-                    self.logger.info(
-                        f"Deleting {model.__name__} with ID {instance.id} "
-                        f"and title '{instance.title}' from site '{instance.site.slug}'"
-                    )
+                self.logger.info(
+                    f"Deleting {count} {model.__name__} record(s) with null original."
+                )
+                for instance in list(queryset):
                     self.change_log.append(
                         {
                             "model": model.__name__,
@@ -94,11 +91,7 @@ class Command(BaseCommand):
                             "site": instance.site.slug,
                         }
                     )
-                    self.logger.info(
-                        f"Deleting {count} {model.__name__} record(s) with "
-                        f"null original from site '{instance.site.slug}'"
-                    )
                     instance.delete()
         if not dry_run and self.change_log:
             self.output_change_log(output_dir)
-        self.logger.info("Finished deleting media records with null original.")
+        self.logger.info("Finished deleting media with null original files.")
