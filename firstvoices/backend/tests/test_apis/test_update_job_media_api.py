@@ -5,13 +5,15 @@ from rest_framework.test import APIClient
 from backend.models.constants import Role, Visibility
 from backend.models.import_jobs import ImportJobMode
 from backend.tests.factories import FileFactory, ImportJobFactory, get_site_with_member
-from backend.tests.test_apis.test_import_job_media_api import TestImportJobMediaEndpoint
+from backend.tests.test_apis.base.import_update_jobs.base_media_endpoint_test import (
+    BaseImportUpdateJobMediaEndpoint,
+)
 from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
 class TestUpdateJobMediaEndpoint(
-    TestImportJobMediaEndpoint,
+    BaseImportUpdateJobMediaEndpoint,
 ):
     APP_NAME = "backend"
     UPLOAD_VIEW = "api:updatejob-media-list"

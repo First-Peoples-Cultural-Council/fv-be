@@ -1,12 +1,14 @@
 import pytest
 
 from backend.models.import_jobs import ImportJobMode
-from backend.tests.test_apis.test_import_job_notify_api import TestImportJobNotifyApi
+from backend.tests.test_apis.base.import_update_jobs.base_notify_api_test import (
+    BaseImportUpdateJobNotifyApi,
+)
 from backend.views.update_job_views import SUPPORT_USER_EMAIL
 
 
 @pytest.mark.django_db
-class TestUpdateJobNotifyApi(TestImportJobNotifyApi):
+class TestUpdateJobNotifyApi(BaseImportUpdateJobNotifyApi):
     API_NOTIFY_ACTION = "api:updatejob-notify"
     SAMPLE_FILE_PATH = "update_job/all_valid_columns.csv"
     JOB_MODE = ImportJobMode.UPDATE

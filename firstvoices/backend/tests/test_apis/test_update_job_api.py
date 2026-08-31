@@ -7,15 +7,16 @@ from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.jobs import JobStatus
 from backend.tasks.constants import MAXIMUM_ENTRIES_PER_UPDATE_JOB
 from backend.tests import factories
-from backend.tests.test_apis.test_import_job_api import TestImportEndpoints
+from backend.tests.test_apis.base.import_update_jobs.base_endpoints_test import (
+    BaseImportUpdateEndpoints,
+)
 from backend.tests.utils import get_sample_file
 
 
 @pytest.mark.django_db
-class TestUpdateEndpoints(TestImportEndpoints):
+class TestUpdateEndpoints(BaseImportUpdateEndpoints):
     """
-    End-to-end tests for the update-jobs API endpoints. Subclasses
-    the base import-job tests for admin permissions and overrides methods as necessary.
+    End-to-end tests for the update-jobs API endpoints.
     """
 
     API_LIST_VIEW = "api:updatejob-list"
