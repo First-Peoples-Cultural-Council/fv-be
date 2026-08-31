@@ -57,7 +57,7 @@ panphon==0.22.2
 Pillow==12.3.0
 pillow-heif==1.4.0
 pluggy==1.6.0
-prompt-toolkit==3.0.52
+prompt-toolkit==3.0.53
 psycopg2-binary==2.9.12
 pycparser==3.0
 PyJWT==2.13.0
