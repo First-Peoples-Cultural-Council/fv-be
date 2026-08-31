@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 self.logger.info(
                     f"Deleting {count} {model.__name__} record(s) with null original."
                 )
-                for instance in list(queryset):
+                for instance in queryset:
                     self.change_log.append(
                         {
                             "model": model.__name__,
