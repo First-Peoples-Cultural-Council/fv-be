@@ -21,7 +21,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
     @staticmethod
     def get_empty_stats_page():
         data_models = ["words", "phrases", "songs", "stories"]
-        media_models = ["images", "audio", "video"]
+        media_models = ["audio", "document", "images", "video"]
         time_periods = [
             "lastYear",
             "last6Months",
@@ -354,6 +354,9 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             (factories.AudioFactory, "audio", Visibility.PUBLIC, None),
             (factories.AudioFactory, "audio", Visibility.MEMBERS, Role.MEMBER),
             (factories.AudioFactory, "audio", Visibility.TEAM, Role.ASSISTANT),
+            (factories.DocumentFactory, "document", Visibility.PUBLIC, None),
+            (factories.DocumentFactory, "document", Visibility.MEMBERS, Role.MEMBER),
+            (factories.DocumentFactory, "document", Visibility.TEAM, Role.ASSISTANT),
             (factories.ImageFactory, "images", Visibility.PUBLIC, None),
             (factories.ImageFactory, "images", Visibility.MEMBERS, Role.MEMBER),
             (factories.ImageFactory, "images", Visibility.TEAM, Role.ASSISTANT),

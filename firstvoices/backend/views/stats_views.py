@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
 from backend.permissions.filters import view as view_filters
 from backend.serializers.stats_serializers import SiteStatsSerializer
 from backend.views import doc_strings
@@ -155,7 +155,7 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         visible_object_filter = view_filters.is_visible_object(user)
         visible_site_filter = view_filters.has_visible_site(user)
 
-        # Model query sets
+        # Content query sets that have visibility fields
         words_qs = list(
             DictionaryEntry.objects.filter(
                 visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
@@ -168,8 +168,11 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         )
         songs_qs = list(Song.objects.filter(visible_object_filter, site=site))
         stories_qs = list(Story.objects.filter(visible_object_filter, site=site))
-        images_qs = list(Image.objects.filter(visible_site_filter, site=site))
+
+        # Media query sets
         audio_qs = list(Audio.objects.filter(visible_site_filter, site=site))
+        document_qs = list(Document.objects.filter(visible_site_filter, site=site))
+        images_qs = list(Image.objects.filter(visible_site_filter, site=site))
         video_qs = list(Video.objects.filter(visible_site_filter, site=site))
 
         # Calculate aggregate stats from site models
@@ -178,8 +181,9 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
             "phrases": self.calculate_aggregate_stats(phrases_qs, has_visibility=True),
             "songs": self.calculate_aggregate_stats(songs_qs, has_visibility=True),
             "stories": self.calculate_aggregate_stats(stories_qs, has_visibility=True),
-            "images": self.calculate_aggregate_stats(images_qs),
             "audio": self.calculate_aggregate_stats(audio_qs),
+            "document": self.calculate_aggregate_stats(document_qs),
+            "images": self.calculate_aggregate_stats(images_qs),
             "video": self.calculate_aggregate_stats(video_qs),
         }
 
@@ -189,8 +193,9 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
             "phrases": self.calculate_temporal_stats(phrases_qs, has_visibility=True),
             "songs": self.calculate_temporal_stats(songs_qs, has_visibility=True),
             "stories": self.calculate_temporal_stats(stories_qs, has_visibility=True),
-            "images": self.calculate_temporal_stats(images_qs),
             "audio": self.calculate_temporal_stats(audio_qs),
+            "document": self.calculate_temporal_stats(document_qs),
+            "images": self.calculate_temporal_stats(images_qs),
             "video": self.calculate_temporal_stats(video_qs),
         }
 
