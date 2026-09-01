@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -74,6 +74,51 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         }
 
     @staticmethod
+    def setup_dictionary_entries(site, entry_type):
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.PUBLIC
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.PUBLIC,
+            exclude_from_kids=True,
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.MEMBERS
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.MEMBERS,
+            exclude_from_kids=True,
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.TEAM
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.TEAM,
+            exclude_from_kids=True,
+        )
+
+    @staticmethod
+    def setup_songs_stories(site, model_factory):
+        model_factory.create(site=site, visibility=Visibility.PUBLIC)
+        model_factory.create(
+            site=site, visibility=Visibility.PUBLIC, exclude_from_kids=True
+        )
+        model_factory.create(site=site, visibility=Visibility.MEMBERS)
+        model_factory.create(
+            site=site, visibility=Visibility.MEMBERS, exclude_from_kids=True
+        )
+        model_factory.create(site=site, visibility=Visibility.TEAM)
+        model_factory.create(
+            site=site, visibility=Visibility.TEAM, exclude_from_kids=True
+        )
+
+    @staticmethod
     def assert_temporal_stats(response_data, model, time_deltas):
         for time in time_deltas:
             assert response_data["temporal"][model][time]["created"] == 3
@@ -137,26 +182,28 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
-    def test_aggregate_stats_dictionary(self, entry_type):
+    def test_aggregate_stats_dictionary_public(self, entry_type):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.PUBLIC
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+        assert response_data["aggregate"][key]["total"] == 2
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 1
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 0
+        assert response_data["aggregate"][key]["members"] == 0
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
+    def test_aggregate_stats_dictionary_members(self, entry_type):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
         )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.TEAM
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type,
-            site=site,
-            visibility=Visibility.MEMBERS,
-            exclude_from_kids=True,
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type,
-            site=site,
-            visibility=Visibility.TEAM,
-            exclude_from_kids=True,
-        )
+        self.setup_dictionary_entries(site, entry_type)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
@@ -165,44 +212,164 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         key = f"{entry_type}s"
         assert response_data["aggregate"][key]["total"] == 4
         assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 1
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 0
+        assert response_data["aggregate"][key]["members"] == 2
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
+    def test_aggregate_stats_dictionary_team(self, entry_type):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+        assert response_data["aggregate"][key]["total"] == 6
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][key]["public"] == 2
         assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 1
+        assert response_data["aggregate"][key]["members"] == 2
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, app_role",
+        [
+            (TypeOfDictionaryEntry.WORD, AppRole.STAFF),
+            (TypeOfDictionaryEntry.PHRASE, AppRole.SUPERADMIN),
+        ],
+    )
+    def test_aggregate_stats_dictionary_app_admin(self, entry_type, app_role):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+        assert response_data["aggregate"][key]["total"] == 6
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 2
+        assert response_data["aggregate"][key]["members"] == 2
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
     )
-    def test_aggregate_stats_songs_stories(self, model_factory, key):
+    def test_aggregate_stats_songs_stories_public(self, model_factory, key):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.TEAM)
-        model_factory.create(
-            site=site, visibility=Visibility.MEMBERS, exclude_from_kids=True
-        )
+        self.setup_songs_stories(site, model_factory)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 3
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 1
-        assert response_data["aggregate"][key]["team"] == 1
-        assert response_data["aggregate"][key]["members"] == 1
+        assert response_data["aggregate"][key]["total"] == 2
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 1
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 0
+        assert response_data["aggregate"][key]["members"] == 0
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_aggregate_stats_songs_stories_members(self, model_factory, key):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["aggregate"][key]["total"] == 4
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 0
+        assert response_data["aggregate"][key]["members"] == 2
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_aggregate_stats_songs_stories_team(self, model_factory, key):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["aggregate"][key]["total"] == 6
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 2
+        assert response_data["aggregate"][key]["members"] == 2
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, app_role",
         [
-            (factories.ImageFactory, "images"),
-            (factories.AudioFactory, "audio"),
-            (factories.VideoFactory, "video"),
+            (factories.SongFactory, "songs", AppRole.STAFF),
+            (factories.StoryFactory, "stories", AppRole.SUPERADMIN),
         ],
     )
-    def test_aggregate_stats_media(self, model_factory, key):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+    def test_aggregate_stats_songs_stories_app_admin(
+        self, model_factory, key, app_role
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert response_data["aggregate"][key]["total"] == 6
+        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][key]["public"] == 2
+        assert response_data["aggregate"][key]["team"] == 2
+        assert response_data["aggregate"][key]["members"] == 2
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, visibility, role",
+        [
+            (factories.AudioFactory, "audio", Visibility.PUBLIC, None),
+            (factories.AudioFactory, "audio", Visibility.MEMBERS, Role.MEMBER),
+            (factories.AudioFactory, "audio", Visibility.TEAM, Role.ASSISTANT),
+            (factories.ImageFactory, "images", Visibility.PUBLIC, None),
+            (factories.ImageFactory, "images", Visibility.MEMBERS, Role.MEMBER),
+            (factories.ImageFactory, "images", Visibility.TEAM, Role.ASSISTANT),
+            (factories.VideoFactory, "video", Visibility.PUBLIC, None),
+            (factories.VideoFactory, "video", Visibility.MEMBERS, Role.MEMBER),
+            (factories.VideoFactory, "video", Visibility.TEAM, Role.ASSISTANT),
+        ],
+    )
+    def test_aggregate_stats_media(self, model_factory, key, visibility, role):
+        if role is None:
+            site, _ = factories.get_site_with_anonymous_user(self.client, visibility)
+        else:
+            site, _ = factories.get_site_with_authenticated_member(
+                self.client, visibility, role
+            )
+
         model_factory.create(site=site)
         model_factory.create(site=site, exclude_from_kids=True)
 

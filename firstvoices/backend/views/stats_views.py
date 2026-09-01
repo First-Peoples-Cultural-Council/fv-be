@@ -9,6 +9,7 @@ from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.media import Audio, Image, Video
+from backend.permissions.filters import view as view_filters
 from backend.serializers.stats_serializers import SiteStatsSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -149,19 +150,27 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
     def calculate_site_stats(self):
         """Calculate statistics for the specified site."""
         site = self.get_validated_site()
+        user = self.request.user
+
+        visible_object_filter = view_filters.is_visible_object(user)
+        visible_site_filter = view_filters.has_visible_site(user)
 
         # Model query sets
         words_qs = list(
-            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.WORD)
+            DictionaryEntry.objects.filter(
+                visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
+            )
         )
         phrases_qs = list(
-            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.PHRASE)
+            DictionaryEntry.objects.filter(
+                visible_object_filter, site=site, type=TypeOfDictionaryEntry.PHRASE
+            )
         )
-        songs_qs = list(Song.objects.filter(site=site))
-        stories_qs = list(Story.objects.filter(site=site))
-        images_qs = list(Image.objects.filter(site=site))
-        audio_qs = list(Audio.objects.filter(site=site))
-        video_qs = list(Video.objects.filter(site=site))
+        songs_qs = list(Song.objects.filter(visible_object_filter, site=site))
+        stories_qs = list(Story.objects.filter(visible_object_filter, site=site))
+        images_qs = list(Image.objects.filter(visible_site_filter, site=site))
+        audio_qs = list(Audio.objects.filter(visible_site_filter, site=site))
+        video_qs = list(Video.objects.filter(visible_site_filter, site=site))
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {
