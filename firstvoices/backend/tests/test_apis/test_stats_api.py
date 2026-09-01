@@ -53,19 +53,30 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             temporal_data[data_model] = {}
             for time_period in time_periods:
                 temporal_data[data_model][time_period] = {
-                    "created": 0,
-                    "lastModified": 0,
-                    "public": 0,
-                    "members": 0,
-                    "team": 0,
+                    "created": {
+                        "total": 0,
+                        "public": 0,
+                        "members": 0,
+                        "team": 0,
+                    },
+                    "lastModified": {
+                        "total": 0,
+                        "public": 0,
+                        "members": 0,
+                        "team": 0,
+                    },
                 }
 
         for media_model in media_models:
             temporal_data[media_model] = {}
             for time_period in time_periods:
                 temporal_data[media_model][time_period] = {
-                    "created": 0,
-                    "lastModified": 0,
+                    "created": {
+                        "total": 0,
+                    },
+                    "lastModified": {
+                        "total": 0,
+                    },
                 }
 
         return {
@@ -119,13 +130,49 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         )
 
     @staticmethod
-    def assert_temporal_stats(response_data, model, time_deltas):
+    def assert_temporal_stats_public(response_data, model, time_deltas):
         for time in time_deltas:
-            assert response_data["temporal"][model][time]["created"] == 3
-            assert response_data["temporal"][model][time]["lastModified"] == 3
-            assert response_data["temporal"][model][time]["public"] == 1
-            assert response_data["temporal"][model][time]["members"] == 1
-            assert response_data["temporal"][model][time]["team"] == 1
+            assert response_data["temporal"][model][time]["created"]["total"] == 2
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 0
+            assert response_data["temporal"][model][time]["created"]["team"] == 0
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 2
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 0
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 0
+
+    @staticmethod
+    def assert_temporal_stats_members(response_data, model, time_deltas):
+        for time in time_deltas:
+            assert response_data["temporal"][model][time]["created"]["total"] == 4
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 2
+            assert response_data["temporal"][model][time]["created"]["team"] == 0
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 4
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 2
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 0
+
+    @staticmethod
+    def assert_temporal_stats_team(response_data, model, time_deltas):
+        for time in time_deltas:
+            assert response_data["temporal"][model][time]["created"]["total"] == 6
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 2
+            assert response_data["temporal"][model][time]["created"]["team"] == 2
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 6
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 2
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 2
 
     @pytest.fixture
     def time_deltas(self):
@@ -391,49 +438,162 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             (TypeOfDictionaryEntry.PHRASE, "phrases"),
         ],
     )
-    def test_temporal_stats_dictionary(self, entry_type, key, time_deltas):
+    def test_temporal_stats_dictionary_public(self, entry_type, key, time_deltas):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.TEAM
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.MEMBERS
-        )
-
+        self.setup_dictionary_entries(site, entry_type)
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assert_temporal_stats(response_data, key, time_deltas)
+        self.assert_temporal_stats_public(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key",
+        [
+            (TypeOfDictionaryEntry.WORD, "words"),
+            (TypeOfDictionaryEntry.PHRASE, "phrases"),
+        ],
+    )
+    def test_temporal_stats_dictionary_members(self, entry_type, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_members(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key",
+        [
+            (TypeOfDictionaryEntry.WORD, "words"),
+            (TypeOfDictionaryEntry.PHRASE, "phrases"),
+        ],
+    )
+    def test_temporal_stats_dictionary_team(self, entry_type, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key, app_role",
+        [
+            (TypeOfDictionaryEntry.WORD, "words", AppRole.STAFF),
+            (TypeOfDictionaryEntry.PHRASE, "phrases", AppRole.SUPERADMIN),
+        ],
+    )
+    def test_temporal_stats_dictionary_app_admin(
+        self, entry_type, key, app_role, time_deltas
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
     )
-    def test_temporal_stats_songs_stories(self, model_factory, key, time_deltas):
+    def test_temporal_stats_songs_stories_public(self, model_factory, key, time_deltas):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.TEAM)
-        model_factory.create(site=site, visibility=Visibility.MEMBERS)
+        self.setup_songs_stories(site, model_factory)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assert_temporal_stats(response_data, key, time_deltas)
+        self.assert_temporal_stats_public(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_temporal_stats_songs_stories_members(
+        self, model_factory, key, time_deltas
+    ):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_members(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_temporal_stats_songs_stories_team(self, model_factory, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, app_role",
+        [
+            (factories.SongFactory, "songs", AppRole.STAFF),
+            (factories.StoryFactory, "stories", AppRole.SUPERADMIN),
+        ],
+    )
+    def test_temporal_stats_songs_stories_app_admin(
+        self, model_factory, key, app_role, time_deltas
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [
-            (factories.ImageFactory, "images"),
             (factories.AudioFactory, "audio"),
+            (factories.DocumentFactory, "document"),
+            (factories.ImageFactory, "images"),
             (factories.VideoFactory, "video"),
         ],
     )
@@ -447,5 +607,5 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         response_data = json.loads(response.content)
 
         for time in time_deltas:
-            assert response_data["temporal"][key][time]["created"] == 1
-            assert response_data["temporal"][key][time]["lastModified"] == 1
+            assert response_data["temporal"][key][time]["created"]["total"] == 1
+            assert response_data["temporal"][key][time]["lastModified"]["total"] == 1

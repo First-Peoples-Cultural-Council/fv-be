@@ -65,47 +65,44 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         """Calculate temporal statistics for a given queryset of objects from a specified time range"""
 
         individual_temporal_stats = {
-            "created": len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.created <= time_range[1]
-                ]
-            ),
-            "last_modified": len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                ]
-            ),
+            "created": {
+                "total": len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.created <= time_range[1]
+                    ]
+                ),
+            },
+            "last_modified": {
+                "total": len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.last_modified <= time_range[1]
+                    ]
+                ),
+            },
         }
 
         if has_visibility:
-            individual_temporal_stats["public"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.PUBLIC
-                ]
-            )
-            individual_temporal_stats["members"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.MEMBERS
-                ]
-            )
-            individual_temporal_stats["team"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.TEAM
-                ]
-            )
+            for v in Visibility:
+                individual_temporal_stats["created"][v.name.lower()] = len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.created <= time_range[1]
+                        and obj.visibility == v
+                    ]
+                )
+                individual_temporal_stats["last_modified"][v.name.lower()] = len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.last_modified <= time_range[1]
+                        and obj.visibility == v
+                    ]
+                )
 
         return individual_temporal_stats
 
