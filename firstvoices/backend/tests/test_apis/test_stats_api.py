@@ -130,6 +130,30 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         )
 
     @staticmethod
+    def assert_aggregate_stats_public(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 2
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 1
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 0
+        assert response_data["aggregate"][model]["team"] == 0
+
+    @staticmethod
+    def assert_aggregate_stats_members(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 4
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 2
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 2
+        assert response_data["aggregate"][model]["team"] == 0
+
+    @staticmethod
+    def assert_aggregate_stats_team(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 6
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 2
+        assert response_data["aggregate"][model]["team"] == 2
+
+    @staticmethod
     def assert_temporal_stats_public(response_data, model, time_deltas):
         for time in time_deltas:
             assert response_data["temporal"][model][time]["created"]["total"] == 2
@@ -238,11 +262,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 2
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 1
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 0
-        assert response_data["aggregate"][key]["members"] == 0
+
+        self.assert_aggregate_stats_public(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
@@ -257,11 +278,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 4
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 0
-        assert response_data["aggregate"][key]["members"] == 2
+        self.assert_aggregate_stats_members(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
@@ -276,11 +293,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 6
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 2
+        self.assert_aggregate_stats_team(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -301,11 +314,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 6
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 2
+
+        self.assert_aggregate_stats_team(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -320,11 +330,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 2
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 1
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 0
-        assert response_data["aggregate"][key]["members"] == 0
+
+        self.assert_aggregate_stats_public(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -341,11 +348,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 4
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 0
-        assert response_data["aggregate"][key]["members"] == 2
+
+        self.assert_aggregate_stats_members(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -362,11 +366,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 6
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 2
+
+        self.assert_aggregate_stats_team(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
@@ -388,11 +389,8 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 6
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 3
-        assert response_data["aggregate"][key]["public"] == 2
-        assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 2
+
+        self.assert_aggregate_stats_team(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
