@@ -59,8 +59,7 @@ class TestDeleteNullOriginalMedia:
         assert "Change log written to" not in caplog.text
 
     def test_dry_run(self, tmp_path, caplog):
-        self.create_media_with_null_original()
-
+        null_original = self.create_media_with_null_original()
         call_command(
             "delete_null_original_media", output_dir=str(tmp_path), dry_run=True
         )
@@ -73,6 +72,10 @@ class TestDeleteNullOriginalMedia:
         for model, _ in self.MEDIA_TYPES:
             assert (
                 f"[Dry Run] Would delete 1 {model.__name__} records with null original."
+                in caplog.text
+            )
+            assert (
+                f"{model.__name__}s: [{null_original[model.__name__].id}']"
                 in caplog.text
             )
         assert "Change log written to" not in caplog.text
