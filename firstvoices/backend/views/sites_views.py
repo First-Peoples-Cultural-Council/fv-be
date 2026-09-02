@@ -1,5 +1,6 @@
 from django.db.models import Prefetch, Q
 from django.db.models.functions import Lower
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
@@ -76,7 +77,11 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
 
     def get_object(self):
         if self._cached_site is None:
-            self._cached_site = super().get_object()
+            queryset = self.filter_queryset(self.get_queryset())
+            self._cached_site = get_object_or_404(
+                queryset, slug__iexact=self.kwargs["slug"]
+            )
+            self.check_object_permissions(self.request, self._cached_site)
         return self._cached_site
 
     def get_detail_queryset(self):

@@ -600,6 +600,17 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response.status_code == 404
 
     @pytest.mark.django_db
+    def test_detail_case_insensitive_slug(self):
+        site = factories.SiteFactory.create(
+            slug="Kanienkeha-Mohawk-EN", visibility=Visibility.PUBLIC
+        )
+
+        response = self.client.get(self.get_detail_endpoint(site.slug.lower()))
+
+        assert response.status_code == 200
+        assert json.loads(response.content)["slug"] == site.slug
+
+    @pytest.mark.django_db
     def test_update_confirm_user(self):
         site = factories.SiteFactory.create(visibility=Visibility.TEAM)
         image = factories.ImageFactory.create(site=site)
