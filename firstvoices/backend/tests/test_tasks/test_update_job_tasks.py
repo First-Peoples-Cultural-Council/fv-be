@@ -721,9 +721,11 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
         entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
         assert entry1.title == "abc"
+        assert entry1.import_job_id == update_job.id
 
         entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
         assert entry2.title == "xyz"
+        assert entry2.import_job_id == update_job.id
 
     def test_all_columns_update(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
