@@ -74,10 +74,12 @@ class Command(BaseCommand):
                 if not count:
                     continue
                 if dry_run:
+                    ids = [str(pk) for pk in queryset.values_list("id", flat=True)]
                     self.logger.info(
                         f"[Dry Run] Would delete {count} {model.__name__} "
                         f"records with null original."
                     )
+                    self.logger.info(f"{model.__name__}s: {ids}")
                     continue
                 self.logger.info(
                     f"Deleting {count} {model.__name__} record(s) with null original."
