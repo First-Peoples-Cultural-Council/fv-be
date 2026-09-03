@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from backend.models.constants import Role, Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -21,7 +21,7 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
     @staticmethod
     def get_empty_stats_page():
         data_models = ["words", "phrases", "songs", "stories"]
-        media_models = ["images", "audio", "video"]
+        media_models = ["audio", "document", "images", "video"]
         time_periods = [
             "lastYear",
             "last6Months",
@@ -53,19 +53,30 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             temporal_data[data_model] = {}
             for time_period in time_periods:
                 temporal_data[data_model][time_period] = {
-                    "created": 0,
-                    "lastModified": 0,
-                    "public": 0,
-                    "members": 0,
-                    "team": 0,
+                    "created": {
+                        "total": 0,
+                        "public": 0,
+                        "members": 0,
+                        "team": 0,
+                    },
+                    "lastModified": {
+                        "total": 0,
+                        "public": 0,
+                        "members": 0,
+                        "team": 0,
+                    },
                 }
 
         for media_model in media_models:
             temporal_data[media_model] = {}
             for time_period in time_periods:
                 temporal_data[media_model][time_period] = {
-                    "created": 0,
-                    "lastModified": 0,
+                    "created": {
+                        "total": 0,
+                    },
+                    "lastModified": {
+                        "total": 0,
+                    },
                 }
 
         return {
@@ -74,13 +85,118 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         }
 
     @staticmethod
-    def assert_temporal_stats(response_data, model, time_deltas):
+    def setup_dictionary_entries(site, entry_type):
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.PUBLIC
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.PUBLIC,
+            exclude_from_kids=True,
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.MEMBERS
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.MEMBERS,
+            exclude_from_kids=True,
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type, site=site, visibility=Visibility.TEAM
+        )
+        factories.DictionaryEntryFactory.create(
+            type=entry_type,
+            site=site,
+            visibility=Visibility.TEAM,
+            exclude_from_kids=True,
+        )
+
+    @staticmethod
+    def setup_songs_stories(site, model_factory):
+        model_factory.create(site=site, visibility=Visibility.PUBLIC)
+        model_factory.create(
+            site=site, visibility=Visibility.PUBLIC, exclude_from_kids=True
+        )
+        model_factory.create(site=site, visibility=Visibility.MEMBERS)
+        model_factory.create(
+            site=site, visibility=Visibility.MEMBERS, exclude_from_kids=True
+        )
+        model_factory.create(site=site, visibility=Visibility.TEAM)
+        model_factory.create(
+            site=site, visibility=Visibility.TEAM, exclude_from_kids=True
+        )
+
+    @staticmethod
+    def assert_aggregate_stats_public(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 2
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 1
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 0
+        assert response_data["aggregate"][model]["team"] == 0
+
+    @staticmethod
+    def assert_aggregate_stats_members(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 4
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 2
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 2
+        assert response_data["aggregate"][model]["team"] == 0
+
+    @staticmethod
+    def assert_aggregate_stats_team(response_data, model):
+        assert response_data["aggregate"][model]["total"] == 6
+        assert response_data["aggregate"][model]["availableInChildrensArchive"] == 3
+        assert response_data["aggregate"][model]["public"] == 2
+        assert response_data["aggregate"][model]["members"] == 2
+        assert response_data["aggregate"][model]["team"] == 2
+
+    @staticmethod
+    def assert_temporal_stats_public(response_data, model, time_deltas):
         for time in time_deltas:
-            assert response_data["temporal"][model][time]["created"] == 3
-            assert response_data["temporal"][model][time]["lastModified"] == 3
-            assert response_data["temporal"][model][time]["public"] == 1
-            assert response_data["temporal"][model][time]["members"] == 1
-            assert response_data["temporal"][model][time]["team"] == 1
+            assert response_data["temporal"][model][time]["created"]["total"] == 2
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 0
+            assert response_data["temporal"][model][time]["created"]["team"] == 0
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 2
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 0
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 0
+
+    @staticmethod
+    def assert_temporal_stats_members(response_data, model, time_deltas):
+        for time in time_deltas:
+            assert response_data["temporal"][model][time]["created"]["total"] == 4
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 2
+            assert response_data["temporal"][model][time]["created"]["team"] == 0
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 4
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 2
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 0
+
+    @staticmethod
+    def assert_temporal_stats_team(response_data, model, time_deltas):
+        for time in time_deltas:
+            assert response_data["temporal"][model][time]["created"]["total"] == 6
+            assert response_data["temporal"][model][time]["created"]["public"] == 2
+            assert response_data["temporal"][model][time]["created"]["members"] == 2
+            assert response_data["temporal"][model][time]["created"]["team"] == 2
+
+            assert response_data["temporal"][model][time]["lastModified"]["total"] == 6
+            assert response_data["temporal"][model][time]["lastModified"]["public"] == 2
+            assert (
+                response_data["temporal"][model][time]["lastModified"]["members"] == 2
+            )
+            assert response_data["temporal"][model][time]["lastModified"]["team"] == 2
 
     @pytest.fixture
     def time_deltas(self):
@@ -137,72 +253,171 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
-    def test_aggregate_stats_dictionary(self, entry_type):
+    def test_aggregate_stats_dictionary_public(self, entry_type):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.TEAM
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type,
-            site=site,
-            visibility=Visibility.MEMBERS,
-            exclude_from_kids=True,
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type,
-            site=site,
-            visibility=Visibility.TEAM,
-            exclude_from_kids=True,
-        )
+        self.setup_dictionary_entries(site, entry_type)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
         key = f"{entry_type}s"
-        assert response_data["aggregate"][key]["total"] == 4
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 1
-        assert response_data["aggregate"][key]["team"] == 2
-        assert response_data["aggregate"][key]["members"] == 1
+
+        self.assert_aggregate_stats_public(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
+    def test_aggregate_stats_dictionary_members(self, entry_type):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+        self.assert_aggregate_stats_members(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
+    def test_aggregate_stats_dictionary_team(self, entry_type):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+        self.assert_aggregate_stats_team(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, app_role",
+        [
+            (TypeOfDictionaryEntry.WORD, AppRole.STAFF),
+            (TypeOfDictionaryEntry.PHRASE, AppRole.SUPERADMIN),
+        ],
+    )
+    def test_aggregate_stats_dictionary_app_admin(self, entry_type, app_role):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_dictionary_entries(site, entry_type)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        key = f"{entry_type}s"
+
+        self.assert_aggregate_stats_team(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
     )
-    def test_aggregate_stats_songs_stories(self, model_factory, key):
+    def test_aggregate_stats_songs_stories_public(self, model_factory, key):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.TEAM)
-        model_factory.create(
-            site=site, visibility=Visibility.MEMBERS, exclude_from_kids=True
-        )
+        self.setup_songs_stories(site, model_factory)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data["aggregate"][key]["total"] == 3
-        assert response_data["aggregate"][key]["availableInChildrensArchive"] == 2
-        assert response_data["aggregate"][key]["public"] == 1
-        assert response_data["aggregate"][key]["team"] == 1
-        assert response_data["aggregate"][key]["members"] == 1
+
+        self.assert_aggregate_stats_public(response_data, key)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_aggregate_stats_songs_stories_members(self, model_factory, key):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_aggregate_stats_members(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_aggregate_stats_songs_stories_team(self, model_factory, key):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_aggregate_stats_team(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, app_role",
         [
-            (factories.ImageFactory, "images"),
-            (factories.AudioFactory, "audio"),
-            (factories.VideoFactory, "video"),
+            (factories.SongFactory, "songs", AppRole.STAFF),
+            (factories.StoryFactory, "stories", AppRole.SUPERADMIN),
         ],
     )
-    def test_aggregate_stats_media(self, model_factory, key):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+    def test_aggregate_stats_songs_stories_app_admin(
+        self, model_factory, key, app_role
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_aggregate_stats_team(response_data, key)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, visibility, role",
+        [
+            (factories.AudioFactory, "audio", Visibility.PUBLIC, None),
+            (factories.AudioFactory, "audio", Visibility.MEMBERS, Role.MEMBER),
+            (factories.AudioFactory, "audio", Visibility.TEAM, Role.ASSISTANT),
+            (factories.DocumentFactory, "document", Visibility.PUBLIC, None),
+            (factories.DocumentFactory, "document", Visibility.MEMBERS, Role.MEMBER),
+            (factories.DocumentFactory, "document", Visibility.TEAM, Role.ASSISTANT),
+            (factories.ImageFactory, "images", Visibility.PUBLIC, None),
+            (factories.ImageFactory, "images", Visibility.MEMBERS, Role.MEMBER),
+            (factories.ImageFactory, "images", Visibility.TEAM, Role.ASSISTANT),
+            (factories.VideoFactory, "video", Visibility.PUBLIC, None),
+            (factories.VideoFactory, "video", Visibility.MEMBERS, Role.MEMBER),
+            (factories.VideoFactory, "video", Visibility.TEAM, Role.ASSISTANT),
+        ],
+    )
+    def test_aggregate_stats_media(self, model_factory, key, visibility, role):
+        if role is None:
+            site, _ = factories.get_site_with_anonymous_user(self.client, visibility)
+        else:
+            site, _ = factories.get_site_with_authenticated_member(
+                self.client, visibility, role
+            )
+
         model_factory.create(site=site)
         model_factory.create(site=site, exclude_from_kids=True)
 
@@ -221,49 +436,162 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
             (TypeOfDictionaryEntry.PHRASE, "phrases"),
         ],
     )
-    def test_temporal_stats_dictionary(self, entry_type, key, time_deltas):
+    def test_temporal_stats_dictionary_public(self, entry_type, key, time_deltas):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.PUBLIC
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.TEAM
-        )
-        factories.DictionaryEntryFactory.create(
-            type=entry_type, site=site, visibility=Visibility.MEMBERS
-        )
-
+        self.setup_dictionary_entries(site, entry_type)
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assert_temporal_stats(response_data, key, time_deltas)
+        self.assert_temporal_stats_public(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key",
+        [
+            (TypeOfDictionaryEntry.WORD, "words"),
+            (TypeOfDictionaryEntry.PHRASE, "phrases"),
+        ],
+    )
+    def test_temporal_stats_dictionary_members(self, entry_type, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_members(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key",
+        [
+            (TypeOfDictionaryEntry.WORD, "words"),
+            (TypeOfDictionaryEntry.PHRASE, "phrases"),
+        ],
+    )
+    def test_temporal_stats_dictionary_team(self, entry_type, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "entry_type, key, app_role",
+        [
+            (TypeOfDictionaryEntry.WORD, "words", AppRole.STAFF),
+            (TypeOfDictionaryEntry.PHRASE, "phrases", AppRole.SUPERADMIN),
+        ],
+    )
+    def test_temporal_stats_dictionary_app_admin(
+        self, entry_type, key, app_role, time_deltas
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_dictionary_entries(site, entry_type)
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
     )
-    def test_temporal_stats_songs_stories(self, model_factory, key, time_deltas):
+    def test_temporal_stats_songs_stories_public(self, model_factory, key, time_deltas):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.PUBLIC)
-        model_factory.create(site=site, visibility=Visibility.TEAM)
-        model_factory.create(site=site, visibility=Visibility.MEMBERS)
+        self.setup_songs_stories(site, model_factory)
 
         response = self.client.get(self.get_list_endpoint(site.slug))
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assert_temporal_stats(response_data, key, time_deltas)
+        self.assert_temporal_stats_public(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_temporal_stats_songs_stories_members(
+        self, model_factory, key, time_deltas
+    ):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.MEMBERS, Role.MEMBER
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_members(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key",
+        [(factories.SongFactory, "songs"), (factories.StoryFactory, "stories")],
+    )
+    def test_temporal_stats_songs_stories_team(self, model_factory, key, time_deltas):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.TEAM, Role.ASSISTANT
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "model_factory, key, app_role",
+        [
+            (factories.SongFactory, "songs", AppRole.STAFF),
+            (factories.StoryFactory, "stories", AppRole.SUPERADMIN),
+        ],
+    )
+    def test_temporal_stats_songs_stories_app_admin(
+        self, model_factory, key, app_role, time_deltas
+    ):
+        site, _ = factories.get_site_with_app_admin(
+            self.client, Visibility.TEAM, app_role
+        )
+        self.setup_songs_stories(site, model_factory)
+
+        response = self.client.get(self.get_list_endpoint(site.slug))
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        self.assert_temporal_stats_team(response_data, key, time_deltas)
 
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "model_factory, key",
         [
-            (factories.ImageFactory, "images"),
             (factories.AudioFactory, "audio"),
+            (factories.DocumentFactory, "document"),
+            (factories.ImageFactory, "images"),
             (factories.VideoFactory, "video"),
         ],
     )
@@ -277,5 +605,5 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         response_data = json.loads(response.content)
 
         for time in time_deltas:
-            assert response_data["temporal"][key][time]["created"] == 1
-            assert response_data["temporal"][key][time]["lastModified"] == 1
+            assert response_data["temporal"][key][time]["created"]["total"] == 1
+            assert response_data["temporal"][key][time]["lastModified"]["total"] == 1

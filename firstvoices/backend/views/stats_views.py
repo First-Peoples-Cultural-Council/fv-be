@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from backend.models import DictionaryEntry, Song, Story
 from backend.models.constants import Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
-from backend.models.media import Audio, Image, Video
+from backend.models.media import Audio, Document, Image, Video
+from backend.permissions.filters import view as view_filters
 from backend.serializers.stats_serializers import SiteStatsSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -64,47 +65,44 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         """Calculate temporal statistics for a given queryset of objects from a specified time range"""
 
         individual_temporal_stats = {
-            "created": len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.created <= time_range[1]
-                ]
-            ),
-            "last_modified": len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                ]
-            ),
+            "created": {
+                "total": len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.created <= time_range[1]
+                    ]
+                ),
+            },
+            "last_modified": {
+                "total": len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.last_modified <= time_range[1]
+                    ]
+                ),
+            },
         }
 
         if has_visibility:
-            individual_temporal_stats["public"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.PUBLIC
-                ]
-            )
-            individual_temporal_stats["members"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.MEMBERS
-                ]
-            )
-            individual_temporal_stats["team"] = len(
-                [
-                    obj
-                    for obj in queryset_list
-                    if time_range[0] <= obj.last_modified <= time_range[1]
-                    and obj.visibility == Visibility.TEAM
-                ]
-            )
+            for v in Visibility:
+                individual_temporal_stats["created"][v.name.lower()] = len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.created <= time_range[1]
+                        and obj.visibility == v
+                    ]
+                )
+                individual_temporal_stats["last_modified"][v.name.lower()] = len(
+                    [
+                        obj
+                        for obj in queryset_list
+                        if time_range[0] <= obj.last_modified <= time_range[1]
+                        and obj.visibility == v
+                    ]
+                )
 
         return individual_temporal_stats
 
@@ -149,19 +147,30 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
     def calculate_site_stats(self):
         """Calculate statistics for the specified site."""
         site = self.get_validated_site()
+        user = self.request.user
 
-        # Model query sets
+        visible_object_filter = view_filters.is_visible_object(user)
+        visible_site_filter = view_filters.has_visible_site(user)
+
+        # Content query sets that have visibility fields
         words_qs = list(
-            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.WORD)
+            DictionaryEntry.objects.filter(
+                visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
+            )
         )
         phrases_qs = list(
-            DictionaryEntry.objects.filter(site=site, type=TypeOfDictionaryEntry.PHRASE)
+            DictionaryEntry.objects.filter(
+                visible_object_filter, site=site, type=TypeOfDictionaryEntry.PHRASE
+            )
         )
-        songs_qs = list(Song.objects.filter(site=site))
-        stories_qs = list(Story.objects.filter(site=site))
-        images_qs = list(Image.objects.filter(site=site))
-        audio_qs = list(Audio.objects.filter(site=site))
-        video_qs = list(Video.objects.filter(site=site))
+        songs_qs = list(Song.objects.filter(visible_object_filter, site=site))
+        stories_qs = list(Story.objects.filter(visible_object_filter, site=site))
+
+        # Media query sets
+        audio_qs = list(Audio.objects.filter(visible_site_filter, site=site))
+        document_qs = list(Document.objects.filter(visible_site_filter, site=site))
+        images_qs = list(Image.objects.filter(visible_site_filter, site=site))
+        video_qs = list(Video.objects.filter(visible_site_filter, site=site))
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {
@@ -169,8 +178,9 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
             "phrases": self.calculate_aggregate_stats(phrases_qs, has_visibility=True),
             "songs": self.calculate_aggregate_stats(songs_qs, has_visibility=True),
             "stories": self.calculate_aggregate_stats(stories_qs, has_visibility=True),
-            "images": self.calculate_aggregate_stats(images_qs),
             "audio": self.calculate_aggregate_stats(audio_qs),
+            "document": self.calculate_aggregate_stats(document_qs),
+            "images": self.calculate_aggregate_stats(images_qs),
             "video": self.calculate_aggregate_stats(video_qs),
         }
 
@@ -180,8 +190,9 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
             "phrases": self.calculate_temporal_stats(phrases_qs, has_visibility=True),
             "songs": self.calculate_temporal_stats(songs_qs, has_visibility=True),
             "stories": self.calculate_temporal_stats(stories_qs, has_visibility=True),
-            "images": self.calculate_temporal_stats(images_qs),
             "audio": self.calculate_temporal_stats(audio_qs),
+            "document": self.calculate_temporal_stats(document_qs),
+            "images": self.calculate_temporal_stats(images_qs),
             "video": self.calculate_temporal_stats(video_qs),
         }
 
