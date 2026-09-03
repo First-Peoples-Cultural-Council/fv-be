@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db.models import Count, Q
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import viewsets
@@ -36,111 +37,105 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         return Response(site_stats)
 
     @staticmethod
-    def calculate_aggregate_stats(queryset_list, has_visibility=False):
+    def calculate_aggregate_stats(queryset, has_visibility=False):
         """Calculate aggregate statistics for a given queryset of objects"""
-        aggregate_stats = {
-            "total": len(queryset_list),
-            "available_in_childrens_archive": len(
-                [obj for obj in queryset_list if obj.exclude_from_kids is False]
+        aggregates = {
+            "total": Count("id", distinct=True),
+            "available_in_childrens_archive": Count(
+                "id",
+                filter=Q(exclude_from_kids=False),
+                distinct=True,
             ),
         }
 
-        # check if visibility field is present on queryset model
         if has_visibility:
-            aggregate_stats["public"] = len(
-                [obj for obj in queryset_list if obj.visibility == Visibility.PUBLIC]
+            aggregates["public"] = Count(
+                "id", filter=Q(visibility=Visibility.PUBLIC), distinct=True
             )
-            aggregate_stats["members"] = len(
-                [obj for obj in queryset_list if obj.visibility == Visibility.MEMBERS]
+            aggregates["members"] = Count(
+                "id", filter=Q(visibility=Visibility.MEMBERS), distinct=True
             )
-            aggregate_stats["team"] = len(
-                [obj for obj in queryset_list if obj.visibility == Visibility.TEAM]
+            aggregates["team"] = Count(
+                "id", filter=Q(visibility=Visibility.TEAM), distinct=True
             )
-        return aggregate_stats
+
+        return queryset.aggregate(**aggregates)
 
     @staticmethod
-    def calculate_individual_temporal_stats(
-        queryset_list, time_range, has_visibility=False
-    ):
-        """Calculate temporal statistics for a given queryset of objects from a specified time range"""
-
-        individual_temporal_stats = {
-            "created": {
-                "total": len(
-                    [
-                        obj
-                        for obj in queryset_list
-                        if time_range[0] <= obj.created <= time_range[1]
-                    ]
-                ),
-            },
-            "last_modified": {
-                "total": len(
-                    [
-                        obj
-                        for obj in queryset_list
-                        if time_range[0] <= obj.last_modified <= time_range[1]
-                    ]
-                ),
-            },
+    def build_temporal_stats_aggregates(time_range, prefix, has_visibility=False):
+        """Create a dictionary of aggregate expressions for temporal stats"""
+        temporal_aggregates = {
+            f"{prefix}__created__total": Count(
+                "id",
+                filter=Q(created__range=time_range),
+                distinct=True,
+            ),
+            f"{prefix}__last_modified__total": Count(
+                "id",
+                filter=Q(last_modified__range=time_range),
+                distinct=True,
+            ),
         }
 
         if has_visibility:
             for v in Visibility:
-                individual_temporal_stats["created"][v.name.lower()] = len(
-                    [
-                        obj
-                        for obj in queryset_list
-                        if time_range[0] <= obj.created <= time_range[1]
-                        and obj.visibility == v
-                    ]
+                temporal_aggregates[f"{prefix}__created__{v.name.lower()}"] = Count(
+                    "id",
+                    filter=Q(created__range=time_range, visibility=v),
+                    distinct=True,
                 )
-                individual_temporal_stats["last_modified"][v.name.lower()] = len(
-                    [
-                        obj
-                        for obj in queryset_list
-                        if time_range[0] <= obj.last_modified <= time_range[1]
-                        and obj.visibility == v
-                    ]
+                temporal_aggregates[f"{prefix}__last_modified__{v.name.lower()}"] = (
+                    Count(
+                        "id",
+                        filter=Q(last_modified__range=time_range, visibility=v),
+                        distinct=True,
+                    )
                 )
 
-        return individual_temporal_stats
+        return temporal_aggregates
 
     def calculate_temporal_stats(self, queryset, has_visibility=False):
         """Calculate temporal statistics for a given queryset of objects"""
-        # Calculate time deltas
         now = timezone.now()
-        last_year = now - timedelta(days=365)
-        last_6_months = now - timedelta(days=183)
-        last_3_months = now - timedelta(days=91)
-        last_month = now - timedelta(days=30)
-        last_week = now - timedelta(days=7)
-        last_3_days = now - timedelta(days=3)
-        today = now - timedelta(days=1)
-
-        temporal_stats = {
-            "last_year": self.calculate_individual_temporal_stats(
-                queryset, (last_year, now), has_visibility
-            ),
-            "last_6_months": self.calculate_individual_temporal_stats(
-                queryset, (last_6_months, now), has_visibility
-            ),
-            "last_3_months": self.calculate_individual_temporal_stats(
-                queryset, (last_3_months, now), has_visibility
-            ),
-            "last_month": self.calculate_individual_temporal_stats(
-                queryset, (last_month, now), has_visibility
-            ),
-            "last_week": self.calculate_individual_temporal_stats(
-                queryset, (last_week, now), has_visibility
-            ),
-            "last_3_days": self.calculate_individual_temporal_stats(
-                queryset, (last_3_days, now), has_visibility
-            ),
-            "today": self.calculate_individual_temporal_stats(
-                queryset, (today, now), has_visibility
-            ),
+        time_ranges = {
+            "last_year": (now - timedelta(days=365), now),
+            "last_6_months": (now - timedelta(days=183), now),
+            "last_3_months": (now - timedelta(days=91), now),
+            "last_month": (now - timedelta(days=30), now),
+            "last_week": (now - timedelta(days=7), now),
+            "last_3_days": (now - timedelta(days=3), now),
+            "today": (now - timedelta(days=1), now),
         }
+
+        all_temporal_aggregates = {}
+        for prefix, time_range in time_ranges.items():
+            temporal_aggregates = self.build_temporal_stats_aggregates(
+                time_range, prefix, has_visibility=has_visibility
+            )
+            all_temporal_aggregates.update(temporal_aggregates)
+
+        flat_temporal_stats = queryset.aggregate(**all_temporal_aggregates)
+
+        temporal_stats = {}
+        for prefix in time_ranges.keys():
+            temporal_stats[prefix] = {
+                "created": {
+                    "total": flat_temporal_stats[f"{prefix}__created__total"],
+                },
+                "last_modified": {
+                    "total": flat_temporal_stats[f"{prefix}__last_modified__total"],
+                },
+            }
+            if has_visibility:
+                for v in Visibility:
+                    temporal_stats[prefix]["created"][v.name.lower()] = (
+                        flat_temporal_stats[f"{prefix}__created__{v.name.lower()}"]
+                    )
+                    temporal_stats[prefix]["last_modified"][v.name.lower()] = (
+                        flat_temporal_stats[
+                            f"{prefix}__last_modified__{v.name.lower()}"
+                        ]
+                    )
 
         return temporal_stats
 
@@ -153,24 +148,22 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         visible_site_filter = view_filters.has_visible_site(user)
 
         # Content query sets that have visibility fields
-        words_qs = list(
-            DictionaryEntry.objects.filter(
-                visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
-            )
+        words_qs = DictionaryEntry.objects.filter(
+            visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
         )
-        phrases_qs = list(
-            DictionaryEntry.objects.filter(
-                visible_object_filter, site=site, type=TypeOfDictionaryEntry.PHRASE
-            )
+
+        phrases_qs = DictionaryEntry.objects.filter(
+            visible_object_filter, site=site, type=TypeOfDictionaryEntry.PHRASE
         )
-        songs_qs = list(Song.objects.filter(visible_object_filter, site=site))
-        stories_qs = list(Story.objects.filter(visible_object_filter, site=site))
+
+        songs_qs = Song.objects.filter(visible_object_filter, site=site)
+        stories_qs = Story.objects.filter(visible_object_filter, site=site)
 
         # Media query sets
-        audio_qs = list(Audio.objects.filter(visible_site_filter, site=site))
-        document_qs = list(Document.objects.filter(visible_site_filter, site=site))
-        images_qs = list(Image.objects.filter(visible_site_filter, site=site))
-        video_qs = list(Video.objects.filter(visible_site_filter, site=site))
+        audio_qs = Audio.objects.filter(visible_site_filter, site=site)
+        document_qs = Document.objects.filter(visible_site_filter, site=site)
+        images_qs = Image.objects.filter(visible_site_filter, site=site)
+        video_qs = Video.objects.filter(visible_site_filter, site=site)
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {
