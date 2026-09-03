@@ -75,7 +75,7 @@ class TestDeleteNullOriginalMedia:
                 in caplog.text
             )
             assert (
-                f"{model.__name__}s: [{null_original[model.__name__].id}']"
+                f"{model.__name__}s: ['{null_original[model.__name__].id}']"
                 in caplog.text
             )
         assert "Change log written to" not in caplog.text
