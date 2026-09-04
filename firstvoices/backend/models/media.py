@@ -174,7 +174,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         abstract = True
 
     # from fvm:content
-    original = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+    original = models.OneToOneField(File, null=False, on_delete=models.RESTRICT)
 
     # from dc:title
     title = models.CharField(max_length=200)
@@ -190,13 +190,17 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
     # exclude_from_kids from fvaudience:children fvm:child_focused
 
     def save(self, generate_thumbnails=True, **kwargs):
+        old_instance = None
         if self._state.adding:
             self._add_media()
 
         elif self._is_updating_original():
-            self._update_media()
-
+            # captured before super().save();
+            # original still points here in the db
+            old_instance = self._get_saved_instance()
         super().save(**kwargs)
+        if old_instance is not None:
+            self._delete_old_media(old_instance)
 
     def _is_updating_original(self):
         if self._state.adding:
@@ -212,14 +216,10 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         """
         pass
 
-    def _update_media(self):
-        self._delete_old_media()
-
-    def _delete_old_media(self):
+    def _delete_old_media(self, old_instance):
         """
-        Deletes the old file model when the "original" field is updated, to prevent orphans.
+        Deletes the old file model after the "original" field is updated and saved, to prevent orphans.
         """
-        old_instance = self._get_saved_instance()
         try:
             self._delete_related_media(old_instance)
         except Exception as e:
@@ -438,7 +438,7 @@ class Image(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
+        ImageFile, related_name="image", null=False, on_delete=models.RESTRICT
     )
 
     def __str__(self):
@@ -529,7 +529,7 @@ class Video(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        VideoFile, related_name="video", null=True, on_delete=models.SET_NULL
+        VideoFile, related_name="video", null=False, on_delete=models.RESTRICT
     )
 
     # acknowledgement from fvm:recorder, fvm:source
