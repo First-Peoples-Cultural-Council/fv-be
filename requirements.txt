@@ -32,7 +32,7 @@ editdistance==0.8.1
 elastic-transport==8.17.1
 elasticsearch==8.18.0
 et-xmlfile==2.0.0
-Faker==40.36.0
+Faker==40.38.0
 ffmpeg-python==0.2.0
 g2p==2.3.1 # https://github.com/roedoejet/g2p
 greenlet==3.5.1
