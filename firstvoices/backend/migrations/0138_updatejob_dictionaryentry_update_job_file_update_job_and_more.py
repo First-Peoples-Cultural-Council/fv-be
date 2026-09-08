@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dictionaryentry',
             name='update_job',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='backend.updatejob'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='backend.updatejob'),
         ),
         migrations.AddField(
             model_name='file',

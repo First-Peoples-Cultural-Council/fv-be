@@ -14,7 +14,6 @@ from backend.models.jobs import BaseJob
 from backend.permissions import predicates
 
 
-# Todo: Verify status copy
 class UpdateJobStatus(models.TextChoices):
     ACCEPTED = "accepted", "Accepted"
     STARTED = "started", "Started"
@@ -44,8 +43,6 @@ class UpdateJobReport(BaseSiteContentModel):
             "delete": predicates.is_at_least_editor_or_super,
         }
 
-    # todo: Verify report rows structure
-    # todo: e.g. do we need updated_rows now ?
     new_rows = models.IntegerField(null=True)
     error_rows = models.IntegerField(null=True)
     updated_rows = models.IntegerField(null=True)

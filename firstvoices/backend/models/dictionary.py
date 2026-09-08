@@ -159,6 +159,7 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
     update_job = models.ForeignKey(
         "UpdateJob",
         null=True,
+        blank=True,
         on_delete=models.SET_NULL,
     )
 
