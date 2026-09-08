@@ -32,6 +32,8 @@ class UpdateJobRowStatus(models.TextChoices):
     DELETE = "delete", _("Delete")
 
 
+# NOTE: This intentionally mirrors ImportJobReport while the Import and Update
+# domains are being separated. A shared abstraction is to be reconsidered afterward.
 class UpdateJobReport(BaseSiteContentModel):
     class Meta:
         verbose_name = _("Update Job Report")
