@@ -35,7 +35,7 @@ et-xmlfile==2.0.0
 Faker==40.38.0
 ffmpeg-python==0.2.0
 g2p==2.3.1 # https://github.com/roedoejet/g2p
-greenlet==3.5.1
+greenlet==3.5.5
 gunicorn==26.0.0
 humanfriendly==10.0
 idna==3.19
