@@ -156,6 +156,11 @@ class DictionaryEntry(AudienceMixin, RelatedMediaMixin, BaseControlledSiteConten
         null=True,
         on_delete=models.SET_NULL,
     )
+    update_job = models.ForeignKey(
+        "UpdateJob",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
 
     external_system = models.ForeignKey(
         ExternalDictionaryEntrySystem,
