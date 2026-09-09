@@ -166,7 +166,7 @@ class SiteContentViewSetMixin:
             return self._cached_site
 
         site_slug = self.get_site_slug()
-        sites = Site.objects.filter(slug__iexact=site_slug)
+        sites = Site.objects.filter(slug=site_slug)
 
         if not sites.exists():
             raise Http404
