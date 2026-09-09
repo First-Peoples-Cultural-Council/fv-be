@@ -2,9 +2,10 @@ import uuid
 from unittest.mock import patch
 
 import pytest
+from django.db.models import RestrictedError
 from PIL import Image as PILImage
 
-from backend.models.media import SUPPORTED_FILETYPES, Image, Video
+from backend.models.media import SUPPORTED_FILETYPES, Image, ImageFile, Video, VideoFile
 from backend.tasks.media_tasks import generate_media_thumbnails
 from backend.tests.factories import (
     ImageFactory,
@@ -116,27 +117,31 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin, TransactionOnCommitMixin):
         assert "Task ended." in caplog.text
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_image_does_not_exist(self, caplog):
+    def test_delete_image_deletes_original(self):
         site = SiteFactory()
-        with self.capture_on_commit_callbacks(execute=True):
-            image = ImageFactory.create(site=site)
-            image.original.delete()
-            image._request_thumbnail_generation()
+        image = ImageFactory.create(site=site)
+        original_id = image.original.id
 
-        assert f"Thumbnail generation failed for image model {image.id}" in caplog.text
-        assert "Error: Original image file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        image.delete()
+
+        assert not ImageFile.objects.filter(id=original_id).exists()
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_video_does_not_exist(self, caplog):
+    def test_delete_video_deletes_original(self):
         site = SiteFactory()
-        with self.capture_on_commit_callbacks(execute=True):
-            video = VideoFactory.create(site=site)
-            video.original.delete()
-            video._request_thumbnail_generation()
+        video = VideoFactory.create(site=site)
+        original_id = video.original.id
 
-        assert f"Thumbnail generation failed for video model {video.id}" in caplog.text
-        assert "Error: Original video file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        video.delete()
+
+        assert not VideoFile.objects.filter(id=original_id).exists()
+
+    @pytest.mark.django_db
+    def test_delete_original_directly_is_protected(self):
+        site = SiteFactory()
+        image = ImageFactory.create(site=site)
+
+        with pytest.raises(RestrictedError):
+            image.original.delete()
+
+        assert Image.objects.filter(id=image.id).exists()

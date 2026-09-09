@@ -24,7 +24,7 @@ from backend.tasks.batch_utils import (
     verify_no_other_import_jobs_running,
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.import_job_tasks import attach_csv_to_report, generate_report
+from backend.tasks.utils.reporting_utils import attach_csv_to_report, generate_report
 from backend.utils.uuid_utils import is_valid_uuid
 
 
@@ -387,7 +387,7 @@ def confirm_update_job(update_job_id):
 
     if update_job.validation_status != ImportJobStatus.COMPLETE:
         logger.info(
-            f"Please validate the job before confirming the import. Update job id: {update_job_id}."
+            f"Please validate the job before confirming the update job. Update job id: {update_job_id}."
         )
         update_job.status = ImportJobStatus.FAILED
         update_job.save()

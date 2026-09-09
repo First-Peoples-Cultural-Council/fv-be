@@ -11,7 +11,6 @@ from backend.models.constants import AppRole
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
-    ImportJobMode,
     ImportJobReport,
     ImportJobReportRow,
     ImportJobStatus,
@@ -121,10 +120,12 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
         file.save()
         return file
 
+    def validate_required_headers(self, headers):
+        check_required_headers(headers, update_mode=False)
+
     def create(self, validated_data):
         validated_data["site"] = get_site_from_context(self)
         file = self.create_file(validated_data["data"], File, validated_data["site"])
-        update_mode = validated_data.get("mode") == ImportJobMode.UPDATE
 
         try:
             table = tablib.Dataset().load(
@@ -135,7 +136,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             # Validate headers
             # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
-            check_required_headers(table.headers, update_mode)
+            self.validate_required_headers(table.headers)
 
             # Check for duplicate headers
             check_duplicate_headers(table.headers)

@@ -204,17 +204,30 @@ class DictionaryEntryResource(
                 getattr(instance, instance_field).set(new_values)
 
     def raise_row_update_errors(self, row, site):
-        valid_entry_ids = [
+        valid_entry_ids = self._get_site_entry_ids(site)
+
+        self._validate_update_row_has_id(row)
+        self._validate_update_row_visibility(row, site)
+        self._validate_update_row_site_ownership(row, site, valid_entry_ids)
+        self._validate_update_row_not_duplicate(row)
+
+    @staticmethod
+    def _get_site_entry_ids(site):
+        return [
             str(i)
             for i in DictionaryEntry.objects.filter(site=site).values_list(
                 "id", flat=True
             )
         ]
 
+    @staticmethod
+    def _validate_update_row_has_id(row):
         # Skip missing IDs
         if not row.get("id"):
             raise ImportError(f"Missing 'id' for update in row: {row}.")
 
+    @staticmethod
+    def _validate_update_row_visibility(row, site):
         # Enforce visibility restrictions
         if (
             row.get("visibility")
@@ -225,12 +238,15 @@ class DictionaryEntryResource(
                 f"Cannot update entry with id {row.get('id')} due to visibility restrictions."
             )
 
+    @staticmethod
+    def _validate_update_row_site_ownership(row, site, valid_entry_ids):
         # Ensure updated entries belong to the site
         if row.get("id") not in valid_entry_ids:
             raise ImportError(
                 f"Entry with id {row.get('id')} does not belong to site '{site.title}'."
             )
 
+    def _validate_update_row_not_duplicate(self, row):
         # Prevent duplicate updates within the same import
         if str(row.get("id")) in self._processed_ids:
             raise ImportError(
