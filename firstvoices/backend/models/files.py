@@ -35,6 +35,12 @@ class FileBase(BaseSiteContentModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    update_job = models.ForeignKey(
+        "backend.UpdateJob",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return f"{self.content.name} ({self.site})"
