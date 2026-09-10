@@ -5,9 +5,20 @@ import pytest
 from django.db.models import RestrictedError
 from PIL import Image as PILImage
 
-from backend.models.media import SUPPORTED_FILETYPES, Image, ImageFile, Video, VideoFile
+from backend.models.media import (
+    SUPPORTED_FILETYPES,
+    Audio,
+    Document,
+    File,
+    Image,
+    ImageFile,
+    Video,
+    VideoFile,
+)
 from backend.tasks.media_tasks import generate_media_thumbnails
 from backend.tests.factories import (
+    AudioFactory,
+    DocumentFactory,
     ImageFactory,
     ImageFileFactory,
     SiteFactory,
@@ -117,31 +128,39 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin, TransactionOnCommitMixin):
         assert "Task ended." in caplog.text
 
     @pytest.mark.django_db
-    def test_delete_image_deletes_original(self):
+    @pytest.mark.parametrize(
+        "factory, file_model",
+        [
+            (AudioFactory, File),
+            (DocumentFactory, File),
+            (ImageFactory, ImageFile),
+            (VideoFactory, VideoFile),
+        ],
+    )
+    def test_delete_media_deletes_original(self, factory, file_model):
         site = SiteFactory()
-        image = ImageFactory.create(site=site)
-        original_id = image.original.id
+        instance = factory.create(site=site)
+        original_id = instance.original.id
 
-        image.delete()
+        instance.delete()
 
-        assert not ImageFile.objects.filter(id=original_id).exists()
+        assert not file_model.objects.filter(id=original_id).exists()
 
     @pytest.mark.django_db
-    def test_delete_video_deletes_original(self):
+    @pytest.mark.parametrize(
+        "factory, model",
+        [
+            (AudioFactory, Audio),
+            (DocumentFactory, Document),
+            (ImageFactory, Image),
+            (VideoFactory, Video),
+        ],
+    )
+    def test_delete_original_directly_is_restricted(self, factory, model):
         site = SiteFactory()
-        video = VideoFactory.create(site=site)
-        original_id = video.original.id
-
-        video.delete()
-
-        assert not VideoFile.objects.filter(id=original_id).exists()
-
-    @pytest.mark.django_db
-    def test_delete_original_directly_is_protected(self):
-        site = SiteFactory()
-        image = ImageFactory.create(site=site)
+        instance = factory.create(site=site)
 
         with pytest.raises(RestrictedError):
-            image.original.delete()
+            instance.original.delete()
 
-        assert Image.objects.filter(id=image.id).exists()
+        assert model.objects.filter(id=instance.id).exists()
