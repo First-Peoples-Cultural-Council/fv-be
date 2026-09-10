@@ -696,6 +696,79 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert response_data["logo"] == ["Must be in the same site."]
 
     @pytest.mark.django_db
+    def test_update_both_banners_400(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        self.client.force_authenticate(user=user)
+        req_body = {
+            "title": site.title,
+            "logo": None,
+            "bannerImage": str(image.id),
+            "bannerVideo": str(video.id),
+            "homepage": [],
+        }
+        response = self.client.put(
+            f"{self.get_detail_endpoint(site.slug)}", format="json", data=req_body
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_patch_second_banner_400(self):
+        # the other banner is already set on the site, so it won't be in the req body
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        site.banner_image = image
+        site.save()
+
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(site.slug)}",
+            data=json.dumps({"bannerVideo": str(video.id)}),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_patch_swap_banner_200(self):
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        site.banner_image = image
+        site.save()
+
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            f"{self.get_detail_endpoint(site.slug)}",
+            data=json.dumps({"bannerImage": None, "bannerVideo": str(video.id)}),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+
+        updated_site = Site.objects.get(id=site.id)
+        assert updated_site.banner_image is None
+        assert str(updated_site.banner_video.id) == str(video.id)
+
+    @pytest.mark.django_db
     def test_update_homepage_no_existing(self):
         site = factories.SiteFactory.create()
         user = factories.get_non_member_user()
