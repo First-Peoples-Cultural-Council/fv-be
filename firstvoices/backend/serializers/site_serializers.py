@@ -186,6 +186,24 @@ class SiteDetailWriteSerializer(SiteDetailSerializer):
         validators=[],
     )
 
+    def validate(self, attrs):
+        # fall back to the current values so a partial update can't end up with both set
+        banner_image = (
+            attrs["banner_image"]
+            if "banner_image" in attrs
+            else getattr(self.instance, "banner_image", None)
+        )
+        banner_video = (
+            attrs["banner_video"]
+            if "banner_video" in attrs
+            else getattr(self.instance, "banner_video", None)
+        )
+        if banner_image and banner_video:
+            raise serializers.ValidationError(
+                "A site can only have one banner. Set either bannerImage or bannerVideo, not both."
+            )
+        return super().validate(attrs)
+
     def validate_homepage(self, homepage):
         site = get_site_from_context(self)
         for site_widget in homepage:
