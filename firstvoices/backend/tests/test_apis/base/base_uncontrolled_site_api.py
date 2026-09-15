@@ -91,6 +91,17 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
 
         assert response.status_code == 403
 
+    @pytest.mark.parametrize(
+        "visibility",
+        [Visibility.MEMBERS, Visibility.TEAM],
+    )
+    @pytest.mark.django_db
+    def test_list_401_when_site_not_visible_for_guest(self, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+
+        assert response.status_code == 401
+
     @pytest.mark.django_db
     def test_list_empty(self):
         site = self.create_site_with_non_member(Visibility.PUBLIC)
@@ -257,6 +268,20 @@ class SiteContentDetailApiTestMixin(SiteContentDetailEndpointMixin):
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_detail_401_site_not_visible_for_guest(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.get(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_detail_minimal(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
@@ -322,7 +347,7 @@ class SiteContentDetailPermissionTestMixin:
             )
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     @pytest.mark.parametrize("role", [Role.ASSISTANT, Role.EDITOR, Role.LANGUAGE_ADMIN])
     @pytest.mark.django_db
@@ -384,6 +409,18 @@ class SiteContentCreateApiTestMixin:
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_create_private_site_401_unauthenticated(self):
+        site = factories.SiteFactory.create(visibility=Visibility.MEMBERS)
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     def test_create_site_missing_404(self):
@@ -532,6 +569,21 @@ class SiteContentUpdateApiTestMixin:
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_update_401_unauthenticated(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.put(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(self.get_valid_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_update_site_missing_404(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
@@ -678,6 +730,19 @@ class SiteContentDestroyApiTestMixin:
         assert response.status_code == 403
 
     @pytest.mark.django_db
+    def test_destroy_denied_401_unauthenticated(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.delete(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            )
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
     def test_destroy_missing_404(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
 
@@ -763,6 +828,21 @@ class SiteContentPatchApiTestMixin:
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_patch_401_unauthenticated(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        instance = self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.patch(
+            self.get_detail_endpoint(
+                key=self.get_lookup_key(instance), site_slug=site.slug
+            ),
+            data=self.format_upload_data(self.get_valid_patch_data(site)),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 401
 
     @pytest.mark.django_db
     def test_patch_site_missing_404(self):

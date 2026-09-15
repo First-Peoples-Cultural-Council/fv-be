@@ -50,6 +50,10 @@ class SiteWidgetListOrderFactory(DjangoModelFactory):
 
 
 class SiteWidgetListWithTwoWidgetsFactory(SiteWidgetListFactory):
+    class Meta:
+        model = SiteWidgetList
+        skip_postgeneration_save = True
+
     widget_one = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
@@ -65,6 +69,10 @@ class SiteWidgetListWithTwoWidgetsFactory(SiteWidgetListFactory):
 
 
 class SiteWidgetListWithEachWidgetVisibilityFactory(SiteWidgetListFactory):
+    class Meta:
+        model = SiteWidgetList
+        skip_postgeneration_save = True
+
     widget_public = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",
@@ -83,6 +91,10 @@ class SiteWidgetListWithEachWidgetVisibilityFactory(SiteWidgetListFactory):
 
 
 class SiteWidgetListWithThreeWidgetsFactory(SiteWidgetListFactory):
+    class Meta:
+        model = SiteWidgetList
+        skip_postgeneration_save = True
+
     widget_one = factory.RelatedFactory(
         SiteWidgetListOrderFactory,
         factory_related_name="site_widget_list",

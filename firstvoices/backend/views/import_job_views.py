@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema_view
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -8,116 +9,58 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import ImportJobMode
-from backend.models.import_jobs import ImportJob, JobStatus
-from backend.serializers.import_job_serializers import ImportJobSerializer
+from backend.models.import_jobs import ImportJob, ImportJobStatus
+from backend.serializers.import_job_serializers import (
+    ImportJobDetailSerializer,
+    ImportJobSerializer,
+)
+from backend.tasks.batch_utils import verify_no_other_import_jobs_running
 from backend.tasks.import_job_tasks import confirm_import_job, validate_import_job
-from backend.tasks.utils import verify_no_other_import_jobs_running
-from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
 from backend.views.base_views import (
     AsyncJobDeleteMixin,
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
 )
+from backend.views.import_update_job_view_helpers import (
+    get_import_update_job_schema_view_config,
+    notify_job_ready,
+)
 from firstvoices.celery import link_error_handler
+
+SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
 
 
 @extend_schema_view(
-    list=extend_schema(
-        description=_(
+    **get_import_update_job_schema_view_config(
+        serializer=ImportJobSerializer,
+        site_slug_parameter=site_slug_parameter,
+        id_parameter=id_parameter,
+        list_description=_(
             "A list of batch import jobs associated with the specified site. "
             "See the detail view for more information on specified fields."
         ),
-        responses={
-            200: OpenApiResponse(
-                description=doc_strings.success_200_list,
-                response=ImportJobSerializer,
-            ),
-            403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[site_slug_parameter],
-    ),
-    retrieve=extend_schema(
-        description=_("Details about a specific batch import job."),
-        responses={
-            200: OpenApiResponse(
-                description=doc_strings.success_200_detail,
-                response=ImportJobSerializer,
-            ),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    create=extend_schema(
-        description=_(
+        retrieve_description=_("Details about a specific batch import job."),
+        create_description=_(
             "Creates a new batch import job. The job can be validated or confirmed using the relevant endpoints."
         ),
-        responses={
-            201: OpenApiResponse(
-                description=doc_strings.success_201, response=ImportJobSerializer
-            ),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-        ],
-    ),
-    destroy=extend_schema(
-        description="Deletes a single import-job and its associated file and result for the specified site. "
-        "This action does not delete any of the entries imported by the import-job.",
-        responses={
-            204: OpenApiResponse(description=doc_strings.success_204_deleted),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    confirm=extend_schema(
-        description=_(
+        destroy_description=(
+            "Deletes a single import-job and its associated file and result for the specified site. "
+            "This action does not delete any of the entries imported by the import-job."
+        ),
+        confirm_description=_(
             "Starts importing the data, as described in the validationReport. In order to succeed, the "
             "validationStatus must already be 'COMPLETE' and there must be no other imports jobs in progress "
             "for the site. When finished, the status will be 'COMPLETE'."
         ),
-        responses={
-            202: OpenApiResponse(
-                description=doc_strings.success_202_job_accepted,
-                response=ImportJobSerializer,
-            ),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
-    validate=extend_schema(
-        description=_(
+        validate_description=_(
             "Starts validating the data including any newly uploaded media. "
             "When finished, the validationStatus and validationReport will be updated."
         ),
-        responses={
-            202: OpenApiResponse(description=doc_strings.success_202_job_accepted),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404_missing_site),
-        },
-        parameters=[
-            site_slug_parameter,
-            id_parameter,
-        ],
-    ),
+        notify_description=_(
+            "Marks a validated batch import job as ready for import and notifies support."
+        ),
+    )
 )
 class ImportJobViewSet(
     AsyncJobDeleteMixin, SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
@@ -134,13 +77,18 @@ class ImportJobViewSet(
         **FVPermissionViewSetMixin.permission_type_map,
         "confirm": "change",
         "validate": "change",
+        "notify": "change",
     }
 
-    started_statuses = [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+    started_statuses = [
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+        ImportJobStatus.COMPLETE,
+    ]
 
     started_validation_statuses = [
-        JobStatus.ACCEPTED,
-        JobStatus.STARTED,
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
     ]
 
     import_job_modes = [ImportJobMode.SKIP_DUPLICATES, ImportJobMode.ALLOW_DUPLICATES]
@@ -152,6 +100,11 @@ class ImportJobViewSet(
         ).order_by(
             "-created"
         )  # permissions are applied by the base view
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ImportJobDetailSerializer
+        return ImportJobSerializer
 
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):
@@ -177,7 +130,7 @@ class ImportJobViewSet(
         verify_no_other_import_jobs_running(curr_job)
 
         # Queue the job for validation
-        curr_job.validation_status = JobStatus.ACCEPTED
+        curr_job.validation_status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         transaction.on_commit(
@@ -196,22 +149,22 @@ class ImportJobViewSet(
 
         curr_job = ImportJob.objects.get(id=import_job_id)
 
-        if curr_job.validation_status != JobStatus.COMPLETE:
+        if curr_job.validation_status != ImportJobStatus.COMPLETE:
             raise ValidationError(
                 "Please validate the job before confirming the import."
             )
 
-        if curr_job.status in [JobStatus.ACCEPTED, JobStatus.STARTED]:
+        if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
             raise ValidationError(
                 "This job has already been confirmed and is currently being imported."
             )
 
-        if curr_job.status == JobStatus.COMPLETE:
+        if curr_job.status == ImportJobStatus.COMPLETE:
             raise ValidationError("This job has already finished importing.")
 
         verify_no_other_import_jobs_running(curr_job)
 
-        curr_job.status = JobStatus.ACCEPTED
+        curr_job.status = ImportJobStatus.ACCEPTED
         curr_job.save()
 
         # Start the task
@@ -233,3 +186,25 @@ class ImportJobViewSet(
             )
 
         super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"])
+    def notify(self, request, site_slug=None, pk=None):
+
+        import_job_id = self.kwargs["pk"]
+        return notify_job_ready(
+            request=request,
+            site_slug=site_slug,
+            job_id=import_job_id,
+            detail_view_name="api:importjob-detail",
+            already_ready_message="The import-job is already marked ready for import.",
+            requires_validation_message="Please validate the job before marking it ready for import.",
+            subject="FirstVoices Batch Import Job ready",
+            message_template=(
+                "The following team has a batch ready to be imported.\n"
+                "Site slug: {site_slug}\n"
+                "ImportJob id: {job_id}\n"
+                "Requested by: {requester_email}\n"
+                "URL: {url}\n"
+            ),
+            support_user_email=SUPPORT_USER_EMAIL,
+        )

@@ -5,9 +5,12 @@ import tablib
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
-from backend.models.dictionary import ExternalDictionaryEntrySystem
+from backend.models.dictionary import (
+    ExternalDictionaryEntrySystem,
+    TypeOfDictionaryEntry,
+)
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.utils import get_maximum_dictionary_entry_columns, get_sample_file
@@ -34,7 +37,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -56,7 +59,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -87,7 +90,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -116,7 +119,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -144,7 +147,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -177,7 +180,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -186,7 +189,7 @@ class TestImportJobDryRun:
         import_job = ImportJob.objects.get(id=import_job.id)
         validation_report = import_job.validation_report
 
-        assert validation_report.new_rows == 4
+        assert validation_report.new_rows == 3
         assert validation_report.error_rows == 0
 
     def test_mix_of_invalid_rows(self):
@@ -204,7 +207,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -248,6 +251,42 @@ class TestImportJobDryRun:
             )  # since we do +1 while generating error row numbers
             assert input_csv_table[input_index] == failed_rows_csv_table[i]
 
+        # check error messages
+
+        # missing type
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = "type: This field cannot be null."
+        assert error_row.errors[0] == expected_error_message
+
+        # missing title
+        error_row = validation_report.rows.get(row_number=3)
+        expected_error_message = "title: This field cannot be blank."
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid type
+        error_row = validation_report.rows.get(row_number=4)
+        expected_error_message = (
+            f"Invalid value 'invalid' in type column. "
+            f"Expected one of: {TypeOfDictionaryEntry.values}."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid visibility
+        visibility_values = [v.lower() for v in Visibility.labels]
+        error_row = validation_report.rows.get(row_number=5)
+        expected_error_message = (
+            f"Invalid value 'invalid' in visibility column. "
+            f"Expected one of: {visibility_values}."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid boolean
+        error_row = validation_report.rows.get(row_number=6)
+        expected_error_message = (
+            "Invalid value in include_in_games column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
+
     def test_invalid_categories(self):
         file_content = get_sample_file(
             file_dir=self.CSV_FILES_DIR,
@@ -259,7 +298,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -276,6 +315,46 @@ class TestImportJobDryRun:
         assert len(error_rows) == 3
         assert error_rows_numbers == [2, 3, 4]
 
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid_category in column category."
+        )
+
+        assert error_row.errors[0] == expected_error_message
+
+    def test_invalid_part_of_speech(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_invalid_part_of_speech.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=ImportJobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        # Refreshed instance
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        error_rows = validation_report.rows.all()
+
+        assert validation_report.new_rows == 0
+        assert len(error_rows) == 1
+
+        error_row = validation_report.rows.first()
+        expected_error_message = (
+            "No Part of Speech found with the provided title. "
+            "Value: invalid in column part_of_speech."
+        )
+
+        assert error_row.errors[0] == expected_error_message
+
     def test_boolean_variations(self):
         file_content = get_sample_file(
             file_dir=self.CSV_FILES_DIR,
@@ -287,7 +366,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -319,7 +398,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         with patch(
@@ -330,7 +409,7 @@ class TestImportJobDryRun:
 
             # Refreshed import job instance
             import_job = ImportJob.objects.get(id=import_job.id)
-            assert import_job.validation_status == JobStatus.FAILED
+            assert import_job.validation_status == ImportJobStatus.FAILED
             assert "Random exception." in caplog.text
 
     def test_failed_rows_csv_not_generated_on_valid_rows(self):
@@ -347,7 +426,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -357,7 +436,12 @@ class TestImportJobDryRun:
 
     @pytest.mark.parametrize(
         "validation_status",
-        [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
+        [
+            None,
+            ImportJobStatus.STARTED,
+            ImportJobStatus.COMPLETE,
+            ImportJobStatus.FAILED,
+        ],
     )
     def test_invalid_validation_status(self, validation_status, caplog):
         # Valid CSV
@@ -376,11 +460,12 @@ class TestImportJobDryRun:
 
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert "This job cannot be run due to consistency issues." in caplog.text
 
     @pytest.mark.parametrize(
-        "status", [JobStatus.ACCEPTED, JobStatus.STARTED, JobStatus.COMPLETE]
+        "status",
+        [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED, ImportJobStatus.COMPLETE],
     )
     def test_invalid_job_status(self, status, caplog):
         # Valid CSV
@@ -394,13 +479,13 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
             status=status,
         )
 
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
-        assert import_job.validation_status == JobStatus.FAILED
+        assert import_job.validation_status == ImportJobStatus.FAILED
         assert (
             "This job could not be started as it is either queued, or already running or completed. "
             f"ImportJob id: {import_job.id}." in caplog.text
@@ -419,7 +504,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -440,7 +525,7 @@ class TestImportJobDryRun:
         factories.CategoryFactory.create(title="invalid", site=self.site)
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -479,7 +564,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -515,7 +600,7 @@ class TestImportJobDryRun:
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)

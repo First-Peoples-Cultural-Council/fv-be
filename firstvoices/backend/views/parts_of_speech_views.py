@@ -1,3 +1,4 @@
+from django.db.models.functions import Lower
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
 
@@ -21,4 +22,8 @@ from backend.views.base_views import FVPermissionViewSetMixin
 class PartsOfSpeechViewSet(FVPermissionViewSetMixin, ModelViewSet):
     http_method_names = ["get"]
     serializer_class = PartsOfSpeechSerializer
-    queryset = PartOfSpeech.objects.prefetch_related("parent").all()
+    queryset = (
+        PartOfSpeech.objects.prefetch_related("parent")
+        .order_by(Lower("parent__title"), Lower("title"))
+        .all()
+    )

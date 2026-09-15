@@ -7,6 +7,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+
 import logging
 import os
 from decimal import Decimal
@@ -97,10 +98,11 @@ REST_FRAMEWORK = {
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # the first 2 are for admin app compatibility
+        # JWT must be first so DRF can return 401 for anonymous API requests.
+        # Session and basic auth remain available for admin compatibility.
+        "jwt_auth.authentication.JwtAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
-        "jwt_auth.authentication.JwtAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
@@ -393,3 +395,5 @@ if ENABLE_SMTP_BACKEND:
 else:
     EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "sender@example.com")
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+SUPPORT_USER_EMAIL = os.getenv("SUPPORT_USER_EMAIL")

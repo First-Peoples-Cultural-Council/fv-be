@@ -4,6 +4,7 @@ import pytest
 
 from backend.models.constants import AppRole, Role, Visibility
 from backend.models.jobs import ExportJob, JobStatus
+from backend.tasks.constants import MAXIMUM_ENTRIES_PER_EXPORT_JOB
 from backend.tests import factories
 from backend.tests.test_apis.base.base_async_api_test import (
     AsyncWorkflowTestMixin,
@@ -45,6 +46,7 @@ class TestExportJobAPI(
             "message": instance.message,
             "exportCsv": instance.export_csv,
             "exportParams": instance.export_params,
+            "rowCount": instance.row_count,
         }
 
     def get_expected_response(self, instance, site):
@@ -164,8 +166,8 @@ class TestExportJobAPI(
         assert response_data["status"] == JobStatus.ACCEPTED
 
     @pytest.mark.django_db
-    def test_export_job_limit_per_user(self):
-        site, _ = factories.get_site_with_authenticated_member(
+    def test_export_job_limit_per_user_per_site(self):
+        site, user = factories.get_site_with_authenticated_member(
             self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
         )
 
@@ -185,6 +187,17 @@ class TestExportJobAPI(
             "Please delete completed jobs that you no longer need to allow new export jobs to be created."
         )
 
+        # Ensure export jobs on a separate site can still be created by the same user
+        site_2 = factories.SiteFactory.create()
+        factories.MembershipFactory.create(
+            user=user, site=site_2, role=Role.LANGUAGE_ADMIN
+        )
+
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site_2.slug), format="json"
+        )
+        assert response.status_code == 201
+
     @pytest.mark.django_db
     def test_export_job_page_size_maximum(self):
         site, _ = factories.get_site_with_authenticated_member(
@@ -192,7 +205,8 @@ class TestExportJobAPI(
         )
 
         post_response = self.client.post(
-            self.get_list_endpoint(site_slug=site.slug) + "?page=1&pageSize=7501",
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?page=1&pageSize={MAXIMUM_ENTRIES_PER_EXPORT_JOB + 1}",
             format="json",
         )
 
@@ -200,8 +214,28 @@ class TestExportJobAPI(
         response_data = json.loads(post_response.content)
         assert (
             response_data[0]
-            == "pageSize: The maximum number of items per page is 7500. "
-            "Please contact staff if you require more than 7500 items."
+            == f"pageSize: The maximum number of results per page is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} results."
+        )
+
+    @pytest.mark.django_db
+    def test_export_job_page_and_page_size_maximum(self):
+        site, _ = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?page=5&pageSize={MAXIMUM_ENTRIES_PER_EXPORT_JOB}",
+            format="json",
+        )
+
+        assert post_response.status_code == 400
+        response_data = json.loads(post_response.content)
+        assert (
+            response_data[0]
+            == f"The maximum number of results retrieved by this action is {MAXIMUM_ENTRIES_PER_EXPORT_JOB}. "
+            f"Please contact staff if you require more than {MAXIMUM_ENTRIES_PER_EXPORT_JOB} results."
         )
 
     @pytest.mark.django_db
@@ -290,3 +324,79 @@ class TestExportJobAPI(
         assert response.status_code == 200
         response_data = json.loads(response.content)
         assert response_data["id"] == str(created_job2.id)
+
+    @pytest.mark.django_db
+    def test_import_job_param(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        import_job = factories.ImportJobFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?importJobId={import_job.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+
+    @pytest.mark.django_db
+    def test_category_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        category = factories.CategoryFactory.create(site=site)
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug) + f"?category={category.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert response_data["results"][0]["exportParams"]["category"] == category.title
+
+    @pytest.mark.django_db
+    def test_speakers_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        speaker1 = factories.PersonFactory.create(site=site)
+        speaker2 = factories.PersonFactory.create(site=site)
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?speakers={speaker1.id},{speaker2.id}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert speaker1.name in response_data["results"][0]["exportParams"]["speakers"]
+        assert speaker2.name in response_data["results"][0]["exportParams"]["speakers"]
+
+    @pytest.mark.django_db
+    def test_visibility_param_representation(self):
+        site, user1 = factories.get_site_with_authenticated_member(
+            self.client, Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+
+        post_response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug)
+            + f"?visibility={Visibility.PUBLIC.label},{Visibility.MEMBERS.label}",
+            format="json",
+        )
+
+        assert post_response.status_code == 201
+        get_response = self.client.get(self.get_list_endpoint(site_slug=site.slug))
+        response_data = json.loads(get_response.content)
+        assert (
+            Visibility.PUBLIC.label
+            in response_data["results"][0]["exportParams"]["visibility"]
+        )
+        assert (
+            Visibility.MEMBERS.label
+            in response_data["results"][0]["exportParams"]["visibility"]
+        )

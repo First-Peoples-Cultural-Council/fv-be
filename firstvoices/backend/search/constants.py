@@ -70,6 +70,9 @@ UNKNOWN_CHARACTER_FLAG = "⚑"
 
 LENGTH_FILTER_MAX = DEFAULT_TITLE_LENGTH
 
+# Set maximum entries per search to 10000 to conform to the ES limit.
+MAXIMUM_ENTRIES_PER_SEARCH = 10000
+
 
 class SearchIndexEntryTypes(TextChoices):
     DICTIONARY_ENTRY = "dictionary_entry", _("dictionary_entry")

@@ -5,7 +5,7 @@ import pytest
 from backend.models import DictionaryEntry
 from backend.models.constants import Visibility
 from backend.models.files import File
-from backend.models.import_jobs import ImportJob, JobStatus
+from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.tasks.import_job_tasks import confirm_import_job
 from backend.tests import factories
@@ -33,8 +33,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         confirm_import_job(import_job.id)
@@ -70,8 +70,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding media
@@ -159,8 +159,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.FileFactory(
@@ -233,8 +233,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.ImageFileFactory(
@@ -297,8 +297,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.VideoFileFactory(
@@ -360,8 +360,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.FileFactory(
@@ -432,8 +432,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.FileFactory(
@@ -513,8 +513,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding media that is referenced in the csv
@@ -620,8 +620,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            status=JobStatus.ACCEPTED,
-            validation_status=JobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
         )
 
         mock_objects = MagicMock()
@@ -638,7 +638,7 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
         )
 
         updated_import_job = ImportJob.objects.filter(id=import_job.id).first()
-        assert updated_import_job.status == JobStatus.COMPLETE
+        assert updated_import_job.status == ImportJobStatus.COMPLETE
 
     def test_related_media_ids_multiple(self):
         sample_audio_ids = [
@@ -677,8 +677,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
         confirm_import_job(import_job.id)
 
@@ -722,8 +722,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         sample_audio_ids = [
@@ -879,8 +879,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
         factories.AudioFactory.create(id=sample_audio_id, site=self.site)
         factories.DocumentFactory.create(id=sample_doc_id, site=self.site)
@@ -941,8 +941,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
         factories.AudioFactory.create(id=sample_audio_id, site=self.site)
         factories.DocumentFactory.create(id=sample_doc_id, site=self.site)
@@ -964,8 +964,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         factories.FileFactory(
@@ -1006,8 +1006,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
         factories.FileFactory(
             site=self.site,
@@ -1033,8 +1033,8 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.COMPLETE,
-            status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.COMPLETE,
+            status=ImportJobStatus.ACCEPTED,
         )
 
         filename_set = [

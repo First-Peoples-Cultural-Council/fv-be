@@ -4,7 +4,6 @@ import jwt
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 from django.db import IntegrityError
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.plumbing import build_bearer_security_scheme_object
@@ -159,7 +158,7 @@ class JwtAuthentication(authentication.BaseAuthentication):
         auth_header = request.META.get("HTTP_AUTHORIZATION", None)
 
         if not auth_header:
-            return AnonymousUser(), None
+            return None
 
         bearer_token = extract_bearer_token(auth_header)
         signing_key = get_signing_key(bearer_token)
@@ -167,6 +166,9 @@ class JwtAuthentication(authentication.BaseAuthentication):
         user = get_or_create_user_for_token(user_token, auth_header)
 
         return user, None
+
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
 
 
 class JWTScheme(OpenApiAuthenticationExtension):

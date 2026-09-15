@@ -77,6 +77,20 @@ class StoryPageDetailSerializer(
             )
         )
 
+    def validate_ordering(self, value):
+        """validate that the page ordering number is unique within the parent story"""
+        story = get_story_from_context(self)
+        if story:
+            queryset = StoryPage.objects.filter(story=story, ordering=value)
+            if self.instance:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+            if queryset.exists():
+                raise serializers.ValidationError(
+                    "A page with this ordering number already exists in this story."
+                )
+        return value
+
     def validate(self, attrs):
         """use the visibility from the parent story for all permission checks"""
         story = get_story_from_context(self)

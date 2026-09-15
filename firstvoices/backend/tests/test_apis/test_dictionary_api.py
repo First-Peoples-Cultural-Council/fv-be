@@ -28,11 +28,7 @@ from backend.tests.test_apis.base.base_media_test import (
     YOUTUBE_VIDEO_LINK,
     RelatedMediaTestMixin,
 )
-from backend.tests.utils import (
-    format_dictionary_entry_related_field,
-    is_valid_uuid,
-    to_camel_case,
-)
+from backend.tests.utils import format_dictionary_entry_related_field, to_camel_case
 
 from ...models import ImmersionLabel
 from ...serializers.category_serializers import CategoryDetailSerializer
@@ -45,6 +41,7 @@ from ...serializers.media_serializers import (
     VideoSerializer,
 )
 from ...serializers.parts_of_speech_serializers import PartsOfSpeechSerializer
+from ...utils.uuid_utils import is_valid_uuid
 from .base.base_controlled_site_api import BaseControlledSiteContentApiTest
 
 

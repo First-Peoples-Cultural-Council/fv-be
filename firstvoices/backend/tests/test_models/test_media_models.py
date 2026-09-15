@@ -29,6 +29,7 @@ from backend.tests.test_apis.base.base_media_test import (
     VIMEO_VIDEO_LINK,
     YOUTUBE_VIDEO_LINK,
 )
+from backend.tests.utils import TransactionOnCommitMixin
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +257,7 @@ class TestThumbnailDimensions:
         ) < 0.1
 
 
-class ThumbnailTestMixin:
+class ThumbnailTestMixin(TransactionOnCommitMixin):
     image_sizes = None
     size_names = ["thumbnail", "small", "medium"]
     media_model = None
@@ -290,7 +291,10 @@ class ThumbnailTestMixin:
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_related_file_removed_on_delete(self):
-        media_instance = self.create_media_model()
+        with self.capture_on_commit_callbacks(execute=True):
+            media_instance = self.create_media_model()
+
+        media_instance.refresh_from_db()
         related_id = media_instance.original.id
         related_image_ids = [
             media_instance.thumbnail.id,
@@ -311,13 +315,17 @@ class ThumbnailTestMixin:
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_related_file_removed_on_update(self):
-        media_instance = self.create_media_model()
+        with self.capture_on_commit_callbacks(execute=True):
+            media_instance = self.create_media_model()
+
+        media_instance.refresh_from_db()
         related_id = media_instance.original.id
         related_image_ids = [
             media_instance.thumbnail.id,
             media_instance.small.id,
             media_instance.medium.id,
         ]
+
         assert self.file_model.objects.filter(pk=related_id).count() == 1
         for related_id in related_image_ids:
             assert ImageFile.objects.filter(pk=related_id).count() == 1
@@ -332,8 +340,10 @@ class ThumbnailTestMixin:
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
     def test_thumbnail_paths_correct(self):
-        site, media_instance = self.create_site_and_instance()
+        with self.capture_on_commit_callbacks(execute=True):
+            site, media_instance = self.create_site_and_instance()
 
+        media_instance.refresh_from_db()
         for size_name in self.image_sizes:
             generated_image = getattr(media_instance, size_name)
             assert generated_image.content.file
@@ -399,7 +409,10 @@ class TestImageModel(ThumbnailTestMixin):
         original_file_exif = PILImage.open(original_file.content).getexif()
         assert original_file_exif.get(0x0112) == 6
 
-        image_instance = self.create_media_model(site=site, original=original_file)
+        with self.capture_on_commit_callbacks(execute=True):
+            image_instance = self.create_media_model(site=site, original=original_file)
+
+        image_instance.refresh_from_db()
         original_id = image_instance.original.id
         thumbnail_image_ids = [
             image_instance.thumbnail.id,

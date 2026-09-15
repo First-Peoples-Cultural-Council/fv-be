@@ -15,6 +15,7 @@ from backend.views.base_views import (
     FVPermissionViewSetMixin,
     SiteContentViewSetMixin,
 )
+from backend.views.utils import get_site_content_select_related_fields
 from firstvoices.celery import link_error_handler
 
 
@@ -85,8 +86,8 @@ class DictionaryCleanupJobViewSet(
         site = self.get_validated_site()
         return (
             DictionaryCleanupJob.objects.filter(site=site, is_preview=self.is_preview)
-            .select_related("site", "created_by", "last_modified_by")
-            .order_by("created")
+            .select_related(*get_site_content_select_related_fields())
+            .order_by("-created")
         )
 
     def perform_create(self, serializer):

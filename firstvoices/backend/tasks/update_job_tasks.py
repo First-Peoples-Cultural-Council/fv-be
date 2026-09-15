@@ -11,21 +11,21 @@ from backend.importing.importers import (
     ImageImporter,
     VideoImporter,
 )
-from backend.models.import_jobs import ImportJob, ImportJobMode, JobStatus
-from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.import_job_tasks import (
-    attach_csv_to_report,
-    generate_report,
+from backend.models import Alphabet, DictionaryEntry
+from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
+from backend.tasks.batch_utils import (
+    create_or_append_error_row,
     get_missing_referenced_entries,
     get_missing_referenced_media,
-)
-from backend.tasks.utils import (
     get_missing_uploaded_media,
     get_related_entry_headers,
     is_valid_header_variation,
     normalize_columns,
     verify_no_other_import_jobs_running,
 )
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.utils.reporting_utils import attach_csv_to_report, generate_report
+from backend.utils.uuid_utils import is_valid_uuid
 
 
 def get_valid_update_headers():
@@ -42,18 +42,7 @@ def get_valid_update_headers():
     return supported_columns
 
 
-def clean_update_csv(
-    data,
-    missing_uploaded_media=None,
-    missing_referenced_media=None,
-    missing_entries=None,
-):
-    if missing_uploaded_media is None:
-        missing_uploaded_media = []
-    if missing_entries is None:
-        missing_entries = []
-    if missing_referenced_media is None:
-        missing_referenced_media = []
+def clean_update_csv(data):
 
     valid_headers = get_valid_update_headers()
     cleaned_data = deepcopy(data)
@@ -74,29 +63,147 @@ def clean_update_csv(
     # lower-casing headers
     cleaned_data.headers = [header.lower() for header in cleaned_data.headers]
 
-    # Remove rows that have missing media or entries
-    missing_media_row_idx = [(obj["idx"] - 1) for obj in missing_uploaded_media]
-    missing_referenced_media_row_idx = [
-        (obj["idx"] - 1) for obj in missing_referenced_media
-    ]
-    missing_entries_row_idx = [(obj["idx"] - 1) for obj in missing_entries]
-
-    rows_to_delete = {
-        *missing_media_row_idx,
-        *missing_referenced_media_row_idx,
-        *missing_entries_row_idx,
-    }
-    rows_to_delete = list(rows_to_delete)
-
-    rows_to_delete.sort(reverse=True)
-    for row_index in rows_to_delete:
-        del cleaned_data[row_index]
-
     # normalize title and related entry columns
     columns_to_normalize = ["title"] + get_related_entry_headers(cleaned_data)
     cleaned_data = normalize_columns(cleaned_data, columns_to_normalize)
 
     return accepted_headers, invalid_headers, cleaned_data
+
+
+def add_unknown_character_warnings(cleaned_data, update_job, report):
+    site = update_job.site
+    if not Alphabet.objects.filter(site=site).exists():
+        return
+    alphabet = Alphabet.objects.get(site=site)
+    warning_rows_count = 0
+
+    # get a list of tuples of (row_number, title) for each row in the cleaned data
+    data_titles = [
+        (i + 1, row["title"])
+        for i, row in enumerate(cleaned_data.dict)
+        if row.get("title")
+    ]
+
+    # for each title in the cleaned data, check the custom order with the alphabet
+    for row_number, title in data_titles:
+        unknown_characters = alphabet.get_unknown_characters(title)
+        if unknown_characters:
+            warning_message = (
+                f"WARNING: Title '{title}' contains unrecognized characters {unknown_characters} "
+                f"that may affect sorting."
+            )
+            create_or_append_error_row(
+                update_job, report, row_number, [warning_message]
+            )
+            warning_rows_count += 1
+
+    if report.warnings is None:
+        report.warnings = 0
+    report.warnings += warning_rows_count
+    report.save()
+
+
+def _get_entry_for_row(row):
+    if not is_valid_uuid(row["id"]):
+        return None
+    try:
+        entry = DictionaryEntry.objects.get(id=row["id"])
+        return entry
+    except DictionaryEntry.DoesNotExist:
+        return None
+
+
+def _is_field_removed(row, field_name):
+    return field_name in row and not row.get(field_name)
+
+
+def _count_removed_text_fields(row, entry, nulled_field_counts):
+    text_fields_to_check = {
+        "part_of_speech": entry.part_of_speech,
+        "translation": entry.translations,
+        "acknowledgement": entry.acknowledgements,
+        "note": entry.notes,
+        "alternate_spelling": entry.alternate_spellings,
+        "pronunciation": entry.pronunciations,
+        "video_embed_links": entry.related_video_links,
+        "external_system": entry.external_system,
+        "external_system_entry_id": entry.external_system_entry_id,
+    }
+
+    for field_name, entry_value in text_fields_to_check.items():
+        if _is_field_removed(row, field_name) and entry_value:
+            nulled_field_counts[field_name] += 1
+
+
+def _count_removed_relation_fields(row, entry, nulled_field_counts):
+    relation_fields_to_check = {
+        "category": entry.categories,
+        "related_entry_ids": entry.related_dictionary_entries,
+        "audio_ids": entry.related_audio,
+        "document_ids": entry.related_documents,
+        "img_ids": entry.related_images,
+        "video_ids": entry.related_videos,
+    }
+
+    for field_name, related_manager in relation_fields_to_check.items():
+        if _is_field_removed(row, field_name) and related_manager.exists():
+            nulled_field_counts[field_name] += 1
+
+
+def add_field_value_removal_warnings(cleaned_data, update_job, report):
+    warning_rows_count = 0
+    total_row_count = len(cleaned_data.dict)
+
+    # for each nullable field, track the number of rows where the field is being removed
+    nulled_field_counts = {
+        "part_of_speech": 0,
+        "category": 0,
+        "translation": 0,
+        "acknowledgement": 0,
+        "note": 0,
+        "alternate_spelling": 0,
+        "pronunciation": 0,
+        "related_entry_ids": 0,
+        "audio_ids": 0,
+        "document_ids": 0,
+        "img_ids": 0,
+        "video_ids": 0,
+        "video_embed_links": 0,
+        "external_system": 0,
+        "external_system_entry_id": 0,
+    }
+
+    # for each row in cleaned data check if any fields are being removed from the entry
+    for row in cleaned_data.dict:
+        entry = _get_entry_for_row(row)
+        if not entry:
+            continue
+
+        # check entry text fields:
+        # 'part_of_speech', 'translation', 'acknowledgement', 'note', 'alternate_spelling', 'pronunciation'
+        # 'video_embed_links'
+        # 'external_system', 'external_system_entry_id'
+        _count_removed_text_fields(row, entry, nulled_field_counts)
+
+        # check entry relation fields:
+        # 'category', 'related_entry_ids', 'audio_ids', 'document_ids', 'img_ids', 'video_ids',
+        _count_removed_relation_fields(row, entry, nulled_field_counts)
+
+    for key, value in nulled_field_counts.items():
+        # if any one field has been nulled in 30% or more of the rows, add a warning to the report
+        if value / total_row_count >= 0.3:
+            warning_message = (
+                f"WARNING: The field '{key}' is being removed in {value} out of {total_row_count} rows "
+                f"({value / total_row_count:.0%}). This may result in loss of data."
+            )
+            # a row number of -1 indicates that the errors are for the entire job, not a specific row
+            create_or_append_error_row(update_job, report, -1, [warning_message])
+            warning_rows_count += 1
+
+    if report.warnings is None:
+        report.warnings = 0
+    report.warnings += warning_rows_count
+    report.save()
 
 
 def process_update_job_data(
@@ -112,12 +219,7 @@ def process_update_job_data(
     """
     missing_entries = get_missing_referenced_entries(data, update_job.site.id)
 
-    accepted_headers, invalid_headers, cleaned_data = clean_update_csv(
-        data,
-        missing_uploaded_media,
-        missing_referenced_media,
-        missing_entries,
-    )
+    accepted_headers, invalid_headers, cleaned_data = clean_update_csv(data)
 
     # import media first
     audio_import_results, audio_filename_map = AudioImporter.import_data(
@@ -133,11 +235,14 @@ def process_update_job_data(
         update_job, cleaned_data, dry_run
     )
 
-    # import dictionary entries
+    # update dictionary entries
     dictionary_entry_update_result = DictionaryEntryImporter.update_data(
         update_job,
         cleaned_data,
         dry_run,
+        missing_uploaded_media,
+        missing_referenced_media,
+        missing_entries,
         audio_filename_map,
         img_filename_map,
         video_filename_map,
@@ -149,15 +254,14 @@ def process_update_job_data(
             import_job=update_job,
             accepted_columns=accepted_headers,
             ignored_columns=invalid_headers,
-            missing_uploaded_media=missing_uploaded_media,
-            missing_referenced_media=missing_referenced_media,
-            missing_entries=missing_entries,
             audio_import_results=audio_import_results,
             document_import_results=document_import_results,
             img_import_results=img_import_results,
             video_import_results=video_import_results,
             dictionary_entry_import_result=dictionary_entry_update_result,
         )
+        add_unknown_character_warnings(cleaned_data, update_job, report)
+        add_field_value_removal_warnings(cleaned_data, update_job, report)
         attach_csv_to_report(data, update_job, report)
 
 
@@ -178,10 +282,10 @@ def run_update_job(data, update_job):
             missing_referenced_media,
             dry_run=False,
         )
-        update_job.status = JobStatus.COMPLETE
+        update_job.status = ImportJobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
     finally:
         update_job.save()
 
@@ -205,10 +309,10 @@ def dry_run_update_job(data, update_job):
             missing_referenced_media_ids,
             dry_run=True,
         )
-        update_job.validation_status = JobStatus.COMPLETE
+        update_job.validation_status = ImportJobStatus.COMPLETE
     except Exception as e:
         logger.error(e)
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
     finally:
         update_job.save()
 
@@ -228,28 +332,28 @@ def validate_update_job(update_job_id):
     data = tablib.Dataset().load(file, format="csv")
 
     # Checks to ensure consistency
-    if update_job.validation_status != JobStatus.ACCEPTED:
+    if update_job.validation_status != ImportJobStatus.ACCEPTED:
         logger.info("This job cannot be run due to consistency issues.")
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     if update_job.status in [
-        JobStatus.ACCEPTED,
-        JobStatus.STARTED,
-        JobStatus.COMPLETE,
+        ImportJobStatus.ACCEPTED,
+        ImportJobStatus.STARTED,
+        ImportJobStatus.COMPLETE,
     ]:
         logger.info(
             "This job could not be started as it is either queued, or already running or completed. "
             f"Update job id: {update_job_id}."
         )
-        update_job.validation_status = JobStatus.FAILED
+        update_job.validation_status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     verify_no_other_import_jobs_running(update_job)
 
-    update_job.validation_status = JobStatus.STARTED
+    update_job.validation_status = ImportJobStatus.STARTED
     update_job.validation_task_id = task_id
 
     dry_run_update_job(data, update_job)
@@ -273,25 +377,25 @@ def confirm_update_job(update_job_id):
     data = tablib.Dataset().load(file, format="csv")
 
     # Checks to ensure consistency
-    if update_job.status != JobStatus.ACCEPTED:
+    if update_job.status != ImportJobStatus.ACCEPTED:
         logger.info(
             f"This job cannot be run due to consistency issues. Update job id: {update_job_id}."
         )
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
         update_job.save()
         return
 
-    if update_job.validation_status != JobStatus.COMPLETE:
+    if update_job.validation_status != ImportJobStatus.COMPLETE:
         logger.info(
-            f"Please validate the job before confirming the import. Update job id: {update_job_id}."
+            f"Please validate the job before confirming the update job. Update job id: {update_job_id}."
         )
-        update_job.status = JobStatus.FAILED
+        update_job.status = ImportJobStatus.FAILED
         update_job.save()
         return
 
     verify_no_other_import_jobs_running(update_job)
 
-    update_job.status = JobStatus.STARTED
+    update_job.status = ImportJobStatus.STARTED
     update_job.task_id = task_id
 
     run_update_job(data, update_job)

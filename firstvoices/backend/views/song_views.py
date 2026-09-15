@@ -1,3 +1,4 @@
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -14,7 +15,7 @@ from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSe
 
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
-from .utils import get_media_prefetch_list
+from .utils import get_media_prefetch_list, get_site_content_select_related_fields
 
 
 @extend_schema_view(
@@ -115,9 +116,11 @@ class SongViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSe
         site = self.get_validated_site()
         return (
             Song.objects.filter(site=site)
-            .order_by("title")
+            .order_by(Lower("title"))
             .all()
-            .select_related("site", "site__language", "created_by", "last_modified_by")
+            .select_related(
+                *get_site_content_select_related_fields(),
+            )
             .prefetch_related("lyrics", *get_media_prefetch_list(self.request.user))
         )
 

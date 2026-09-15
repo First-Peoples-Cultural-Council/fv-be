@@ -2,8 +2,9 @@ import pytest
 
 from backend.models import ImportJob
 from backend.models.constants import Visibility
+from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
+from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
 from backend.tests.utils import BatchRelatedMediaMixin, get_sample_file
@@ -30,7 +31,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -56,7 +57,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -97,7 +98,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding the media to the db
@@ -174,7 +175,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -221,7 +222,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         )
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -256,7 +257,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=audio.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -277,7 +278,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Adding the media to the db
@@ -343,7 +344,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         factories.FileFactory(
             site=self.site,
@@ -369,7 +370,8 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         validation_report = import_job.validation_report
         assert validation_report.error_rows == 1
         assert (
-            "No Person found with the provided name in column audio_speaker."
+            "No Person found with the provided name. "
+            "Value: test_related_audio_speakers_speaker_1 in column audio_speaker."
             in validation_report.rows.all()[0].errors
         )
 
@@ -380,7 +382,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             name="test_related_audio_speakers_speaker_2", site=self.site
         )
 
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
         import_job = ImportJob.objects.get(id=import_job.id)
@@ -398,7 +400,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -418,7 +420,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -456,7 +458,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         )
 
         # Validating again
-        import_job.validation_status = JobStatus.ACCEPTED
+        import_job.validation_status = ImportJobStatus.ACCEPTED
         import_job.save()
         validate_import_job(import_job.id)
 
@@ -488,7 +490,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         # Add media to db
@@ -542,7 +544,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             in error_row.errors
         )
         assert (
-            "No Person found with the provided name in column audio_speaker."
+            "No Person found with the provided name. Value: invalid_speaker in column audio_speaker."
             in error_row.errors
         )
         assert (
@@ -580,7 +582,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -621,7 +623,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
         validate_import_job(import_job.id)
 
@@ -641,7 +643,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         validate_import_job(import_job.id)
@@ -654,7 +656,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
 
         error_rows = validation_report.rows.all().order_by("row_number")
         assert (
-            "related_video_links: Item 1 in the array did not validate: Enter a valid URL."
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL. Invalid value: not"
             in error_rows[0].errors
         )
         assert (
@@ -676,7 +678,7 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
             site=self.site,
             run_as_user=self.user,
             data=file,
-            validation_status=JobStatus.ACCEPTED,
+            validation_status=ImportJobStatus.ACCEPTED,
         )
 
         filename_set = [
@@ -697,3 +699,147 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         expected_valid_columns = self.get_maximum_valid_related_media_columns()
 
         assert set(expected_valid_columns) == set(validation_report.accepted_columns)
+
+    def test_missing_related_media_with_all_errors(self):
+        file_content = get_sample_file(
+            file_dir=self.CSV_FILES_DIR,
+            filename="test_missing_related_media_with_all_errors.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=ImportJobStatus.ACCEPTED,
+        )
+
+        # create valid audio files/speaker for job
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_2.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_3.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+        factories.PersonFactory.create(name="Speaker", site=self.site)
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 10
+
+        # invalid type
+        error_row = validation_report.rows.get(row_number=1)
+        expected_error_message = (
+            f"Invalid value 'invalid' in type column. "
+            f"Expected one of: {TypeOfDictionaryEntry.values}."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid visibility
+        visibility_values = [v.lower() for v in Visibility.labels]
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = (
+            f"Invalid value 'invalid' in visibility column. "
+            f"Expected one of: {visibility_values}."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        #  invalid part of speech
+        error_row = validation_report.rows.get(row_number=3)
+        expected_error_message = (
+            "No Part of Speech found with the provided title. "
+            "Value: invalid part of speech in column part_of_speech."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid include_in_games
+        error_row = validation_report.rows.get(row_number=4)
+        expected_error_message = (
+            "Invalid value in include_in_games column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid include_on_kids_site
+        error_row = validation_report.rows.get(row_number=5)
+        expected_error_message = (
+            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid category
+        error_row = validation_report.rows.get(row_number=6)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid category in column category."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # missing audio
+        error_row = validation_report.rows.get(row_number=7)
+        expected_error_message = (
+            "Media file missing in uploaded files: test_missing_related_media_with_all_errors_1.mp3, "
+            "column: audio_filename."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid audio_include_in_games
+        error_row = validation_report.rows.get(row_number=8)
+        expected_error_message = "Invalid value in audio_include_in_games column. Expected 'true' or 'false'."
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid audio_include_in_kids_site
+        error_row = validation_report.rows.get(row_number=9)
+        expected_error_message = "Invalid value in audio_include_in_kids_site column. Expected 'true' or 'false'."
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid related video link
+        error_row = validation_report.rows.get(row_number=10)
+        expected_error_message = (
+            "related_video_links: Item 1 in the array did not validate: Enter a valid URL. "
+            "Invalid value: https://invalid_link"
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # add audio file to the import job and revalidate
+        factories.FileFactory(
+            site=self.site,
+            content=get_sample_file(
+                file_dir=self.MEDIA_FILES_DIR,
+                filename="test_missing_related_media_with_all_errors_1.mp3",
+                mimetype="audio/mpeg",
+            ),
+            import_job=import_job,
+        )
+
+        # Validating again
+        import_job.validation_status = ImportJobStatus.ACCEPTED
+        import_job.save()
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert (
+            validation_report.error_rows == 10
+        )  # still 10 errors due to missing speaker
+
+        # missing speaker
+        error_row = validation_report.rows.get(row_number=7)
+        expected_error_message = (
+            "No Person found with the provided name. "
+            "Value: invalid_speaker in column audio_speaker."
+        )
+        assert error_row.errors[0] == expected_error_message

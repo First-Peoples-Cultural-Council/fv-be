@@ -143,19 +143,17 @@ def get_site_entries_search_params(
 
     category_input_str = request.GET.get("category", "")
     if category_input_str:
-        category_id = get_valid_instance_id(
-            site,
-            Category,
-            category_input_str,
+        search_params["category_id"] = get_valid_str_uuid(
+            site, Category, category_input_str
         )
-        search_params["category_id"] = category_id
     else:
         search_params["category_id"] = ""
 
     import_job_input_str = request.GET.get("importJobId", "")
     if import_job_input_str:
-        import_job_id = get_valid_instance_id(site, ImportJob, import_job_input_str)
-        search_params["import_job_id"] = import_job_id
+        search_params["import_job_id"] = get_valid_str_uuid(
+            site, ImportJob, import_job_input_str
+        )
     else:
         search_params["import_job_id"] = ""
 
@@ -194,8 +192,14 @@ def get_pagination_params(request, paginator, page_size_limit=-1):
 
     if 0 < page_size_limit < page_size:
         raise ValidationError(
-            f"pageSize: The maximum number of items per page is {page_size_limit}. "
-            f"Please contact staff if you require more than {page_size_limit} items."
+            f"pageSize: The maximum number of results per page is {page_size_limit}. "
+            f"Please contact staff if you require more than {page_size_limit} results."
+        )
+
+    if page_size * page > page_size_limit:
+        raise ValidationError(
+            f"The maximum number of results retrieved by this action is {page_size_limit}. "
+            f"Please contact staff if you require more than {page_size_limit} results."
         )
 
     start = (page - 1) * page_size
@@ -262,5 +266,81 @@ def get_search_response(search_query):
         raise ElasticSearchConnectionError()
 
 
+def get_export_search_response(search_query, pagination_params):
+    # Modified get_search_response using search_after for over 10000 results in dictionary exports
+    page_size = pagination_params.get("page_size")
+    skip_remaining = pagination_params.get("start")
+    collect_remaining = page_size
+
+    try:
+        all_hits = []
+        search_after_point = None
+
+        # Run query with point_in_time and tiebreakers
+        with search_query.point_in_time(keep_alive="5m") as search_query:
+            # Always start from 0 and skip to desired page using search_after
+            search_query = search_query.extra(**{"from": 0})
+            search_query = search_query.sort(*search_query._sort, "_shard_doc")
+
+            while True:
+                # Apply search_after if we have a previous result
+                if search_after_point is not None:
+                    search_query = search_query.extra(search_after=search_after_point)
+
+                if skip_remaining > 0:
+                    request_size = min(skip_remaining, 10000)
+                else:
+                    request_size = min(collect_remaining, 10000)
+
+                search_query = search_query.extra(size=request_size)
+                response = search_query.execute()
+                hits = response["hits"]["hits"]
+
+                # If no more hits, break the loop
+                if not hits:
+                    break
+
+                if skip_remaining >= len(hits):
+                    # Continue to skip
+                    skip_remaining -= len(hits)
+                elif skip_remaining > 0:
+                    # Skip some and collect the rest
+                    hits = hits[skip_remaining:]
+                    skip_remaining = 0
+                    all_hits.extend(hits)
+                    collect_remaining -= len(hits)
+                else:
+                    # Collect hits
+                    all_hits.extend(hits)
+                    collect_remaining -= len(hits)
+
+                last_hit = hits[-1]
+                search_after_point = last_hit["sort"]
+
+                if collect_remaining <= 0:
+                    break
+
+        return {
+            "hits": {
+                "hits": all_hits[:page_size],
+                "total": {"value": min(len(all_hits), page_size), "relation": "eq"},
+            }
+        }
+    except ConnectionError:
+        raise ElasticSearchConnectionError()
+
+
 def queryset_as_map(queryset):
     return {str(x.id): x for x in queryset}
+
+
+def get_valid_str_uuid(site, model, uuid):
+    if not uuid:
+        return None
+
+    validated_id = get_valid_instance_id(site, model, uuid)
+
+    if validated_id:
+        return str(validated_id)
+    else:
+        return None

@@ -86,13 +86,13 @@ class TestImportJobRelatedEntriesDryRun:
 
         assert validation_error_rows[0].row_number == 1
         assert (
-            "Referenced dictionary entry not found for ID: invalid_uuid"
+            "Referenced dictionary entry not found for ID: invalid_uuid in column: 'related_entry_ids'."
             in validation_error_rows[0].errors
         )
 
         assert validation_error_rows[1].row_number == 2
         assert (
-            f"Referenced dictionary entry not found for ID: {song.id}"
+            f"Referenced dictionary entry not found for ID: {song.id} in column: 'related_entry_ids'."
             in validation_error_rows[1].errors
         )
 
@@ -306,3 +306,53 @@ class TestImportJobRelatedEntriesDryRun:
             "Duplicate related entry title 'test_related_entries_duplicate_titles_same_row_word_2' found in "
             "column 'related_entry_2'. Please ensure each related entry title is unique per entry."
         )
+
+    def test_missing_related_entries_with_other_errors(self):
+        file_content = get_sample_file(
+            file_dir=self.MEDIA_FILES_DIR,
+            filename="test_missing_related_entries_with_other_errors.csv",
+            mimetype=self.MIMETYPE,
+        )
+        file = factories.FileFactory(content=file_content)
+        import_job = factories.ImportJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_import_job(import_job.id)
+
+        import_job = ImportJob.objects.get(id=import_job.id)
+        validation_report = import_job.validation_report
+        assert validation_report.error_rows == 3
+
+        error_rows = validation_report.rows.all()
+        error_rows_numbers = list(
+            validation_report.rows.order_by("row_number").values_list(
+                "row_number", flat=True
+            )
+        )
+        assert len(error_rows) == 3
+        assert error_rows_numbers == [1, 2, 3]
+
+        # invalid category
+        error_row = validation_report.rows.get(row_number=1)
+        expected_error_message = (
+            "No Category found with the provided title. "
+            "Value: invalid category in column category."
+        )
+        assert error_row.errors[0] == expected_error_message
+
+        # invalid related entry id
+        error_row = validation_report.rows.get(row_number=2)
+        expected_error_message = "Referenced dictionary entry not found for ID: invalid in column: 'related_entry_ids'."
+        assert error_row.errors[0] == expected_error_message
+
+        #  invalid part of speech
+        error_row = validation_report.rows.get(row_number=3)
+        expected_error_message = (
+            "No Part of Speech found with the provided title. "
+            "Value: invalid part of speech in column part_of_speech."
+        )
+        assert error_row.errors[0] == expected_error_message

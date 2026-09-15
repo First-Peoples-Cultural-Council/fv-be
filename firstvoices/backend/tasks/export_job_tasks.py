@@ -9,14 +9,17 @@ from django.utils import timezone
 
 from backend import models
 from backend.models.files import File
-from backend.models.import_jobs import JobStatus
-from backend.models.jobs import ExportJob
+from backend.models.jobs import ExportJob, JobStatus
 from backend.search.queries.query_builder import (
     get_base_entries_search_query,
     get_base_entries_sort_query,
     get_base_paginate_query,
 )
-from backend.search.utils import get_ids_by_type, get_search_response, queryset_as_map
+from backend.search.utils import (
+    get_export_search_response,
+    get_ids_by_type,
+    queryset_as_map,
+)
 from backend.serializers.export_serializers import DictionaryEntryExportSerializer
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.utils.export_utils import convert_queryset_to_csv_content
@@ -46,14 +49,24 @@ def generate_export_csv(export_job_id):
             "This job could not be started as it is either already running or completed. "
             f"ExportJob id: {export_job_id}."
         )
+        export_job.status = JobStatus.FAILED
+        export_job.save()
+        logger.info(ASYNC_TASK_END_TEMPLATE)
         return
 
     export_job.task_id = task_id
     export_job.save()
 
-    generate_export(export_job)
-
-    logger.info(ASYNC_TASK_END_TEMPLATE)
+    try:
+        generate_export(export_job)
+    except Exception as e:
+        logger.error(
+            f"An error occurred while generating export for ExportJob id: {export_job_id}. Error: {e}."
+        )
+        export_job.status = JobStatus.FAILED
+        export_job.save()
+    finally:
+        logger.info(ASYNC_TASK_END_TEMPLATE)
 
 
 def generate_export(export_job_instance):
@@ -68,10 +81,11 @@ def generate_export(export_job_instance):
     }
 
     logger = get_task_logger(__name__)
-    user = get_user_model().objects.filter(email=export_job_instance.created_by).first()
 
     export_job_instance.status = JobStatus.STARTED
     export_job_instance.save()
+
+    user = get_user_model().objects.filter(email=export_job_instance.created_by).first()
 
     search_params = export_job_instance.export_params.copy()
 
@@ -107,6 +121,15 @@ def generate_export(export_job_instance):
             export_job_instance.status = JobStatus.FAILED
             export_job_instance.save()
 
+    else:
+        export_job_instance.status = JobStatus.CANCELLED
+        export_job_instance.save()
+        logger.info(
+            f"No results found for the export job with id {export_job_instance.id}. "
+            f"Export job marked as CANCELLED."
+        )
+        return
+
     if csv_string:
         try:
             encoded_bytes = csv_string.encode("utf-8")
@@ -118,6 +141,7 @@ def generate_export(export_job_instance):
                 last_modified_by=export_job_instance.last_modified_by,
             )
             export_csv_file.save()
+            export_job_instance.row_count = len(results)
             export_job_instance.export_csv = export_csv_file
             export_job_instance.status = JobStatus.COMPLETE
         except Exception as e:
@@ -140,7 +164,7 @@ def get_search_results(search_params, pagination_params):
         search_query, **search_params
     )  # sort_query
 
-    response = get_search_response(search_query)
+    response = get_export_search_response(search_query, pagination_params)
     search_results = response["hits"]["hits"]
 
     data = hydrate(search_results, search_params["user"])

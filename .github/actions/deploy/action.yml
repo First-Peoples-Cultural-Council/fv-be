@@ -23,7 +23,7 @@ runs:
   using: "composite"
   steps:
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id: ${{ inputs.aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
@@ -45,7 +45,7 @@ runs:
         echo "version: $REMOTE_HELM_RELEASE_VERSION" | sudo tee -a ./helm/fv-be/Chart.yaml >/dev/null
 
 
-    -   uses: azure/setup-helm@v4.2.0
+    -   uses: azure/setup-helm@v5
         id: install
 
     - name: Get the last Helm deployment time and status

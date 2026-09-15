@@ -22,6 +22,7 @@ from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
 from backend.views.membership_views import MembershipViewSet
 from backend.views.mtd_data_views import MTDSitesDataViewSet
+from backend.views.organization_views import OrganizationViewSet
 from backend.views.page_views import SitePageViewSet
 from backend.views.parts_of_speech_views import PartsOfSpeechViewSet
 from backend.views.person_views import PersonViewSet
@@ -83,6 +84,7 @@ sites_router.register(
 sites_router.register(r"join-requests", JoinRequestViewSet, basename="joinrequest")
 sites_router.register(r"memberships", MembershipViewSet, basename="membership")
 sites_router.register(r"mtd-data", MTDSitesDataViewSet, basename="mtd-data")
+sites_router.register(r"organizations", OrganizationViewSet, basename="organization")
 sites_router.register(r"people", PersonViewSet, basename="person")
 sites_router.register(r"search", SearchSiteEntriesViewSet, basename="site-search")
 sites_router.register(r"word-of-the-day", WordOfTheDayView, basename="word-of-the-day")

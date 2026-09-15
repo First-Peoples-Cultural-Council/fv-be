@@ -6,9 +6,10 @@ from io import BytesIO
 import ffmpeg
 import rules
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 from embed_video.fields import EmbedVideoField
@@ -63,7 +64,7 @@ class Person(BaseSiteContentModel):
 
     name = models.CharField(max_length=200)
 
-    bio = models.CharField(max_length=1000, blank=True, null=False)
+    bio = models.CharField(max_length=1000, blank=True, null=False, default="")
 
     def __str__(self):
         return f"{self.name} ({self.site})"
@@ -173,7 +174,7 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         abstract = True
 
     # from fvm:content
-    original = models.OneToOneField(File, null=True, on_delete=models.SET_NULL)
+    original = models.OneToOneField(File, null=False, on_delete=models.RESTRICT)
 
     # from dc:title
     title = models.CharField(max_length=200)
@@ -189,13 +190,17 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
     # exclude_from_kids from fvaudience:children fvm:child_focused
 
     def save(self, generate_thumbnails=True, **kwargs):
+        old_instance = None
         if self._state.adding:
             self._add_media()
 
         elif self._is_updating_original():
-            self._update_media()
-
+            # captured before super().save();
+            # original still points here in the db
+            old_instance = self._get_saved_instance()
         super().save(**kwargs)
+        if old_instance is not None:
+            self._delete_old_media(old_instance)
 
     def _is_updating_original(self):
         if self._state.adding:
@@ -211,14 +216,10 @@ class MediaBase(AudienceMixin, BaseSiteContentModel):
         """
         pass
 
-    def _update_media(self):
-        self._delete_old_media()
-
-    def _delete_old_media(self):
+    def _delete_old_media(self, old_instance):
         """
-        Deletes the old file model when the "original" field is updated, to prevent orphans.
+        Deletes the old file model after the "original" field is updated and saved, to prevent orphans.
         """
-        old_instance = self._get_saved_instance()
         try:
             self._delete_related_media(old_instance)
         except Exception as e:
@@ -364,6 +365,14 @@ class ThumbnailMixin(models.Model):
 
     def save(self, generate_thumbnails=True, **kwargs):
         is_modifying_original = self._state.adding or self._is_updating_original()
+
+        if is_modifying_original and not self._state.adding:
+            # Prevent stale ids in python from being set as the ids on newly generated thumbnails
+            # _delete_related_media() deletes the thumbnails and SET_NULL removes the db foreign key
+            self.thumbnail = None
+            self.small = None
+            self.medium = None
+
         super().save(**kwargs)
 
         if generate_thumbnails and is_modifying_original:
@@ -376,8 +385,10 @@ class ThumbnailMixin(models.Model):
         raise NotImplementedError
 
     def _request_thumbnail_generation(self):
-        generate_media_thumbnails.apply_async(
-            (self._meta.model_name, self.id), link_error=link_error_handler.s()
+        transaction.on_commit(
+            lambda: generate_media_thumbnails.apply_async(
+                (self._meta.model_name, self.id), link_error=link_error_handler.s()
+            )
         )
 
     def _delete_related_media(self, instance):
@@ -427,7 +438,7 @@ class Image(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        ImageFile, related_name="image", null=True, on_delete=models.SET_NULL
+        ImageFile, related_name="image", null=False, on_delete=models.RESTRICT
     )
 
     def __str__(self):
@@ -518,7 +529,7 @@ class Video(ThumbnailMixin, MediaBase):
 
     # from fvm:content
     original = models.OneToOneField(
-        VideoFile, related_name="video", null=True, on_delete=models.SET_NULL
+        VideoFile, related_name="video", null=False, on_delete=models.RESTRICT
     )
 
     # acknowledgement from fvm:recorder, fvm:source
@@ -597,6 +608,37 @@ class Video(ThumbnailMixin, MediaBase):
             setattr(self, attribute_name, image_file_model)
 
 
+class VideoLinksArrayField(ArrayField):
+    """
+    Custom video links array field for verbose error messages, including the
+    invalid value.
+    """
+
+    def run_validators(self, value):
+        models.Field.run_validators(self, value)
+
+        errors = []
+        for idx, link in enumerate(value):
+            try:
+                self.base_field.run_validators(link)
+            except ValidationError as e:
+                errors.append(
+                    ValidationError(
+                        "Item %(nth)s in the array did not validate: %(error)s "
+                        "Invalid value: %(value)s",
+                        code="item_invalid",
+                        params={
+                            "nth": idx + 1,
+                            "error": e.messages[0],
+                            "value": link,
+                        },
+                    )
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
+
 class RelatedMediaMixin(models.Model):
     """
     Related media fields with standard names.
@@ -609,7 +651,7 @@ class RelatedMediaMixin(models.Model):
     related_documents = models.ManyToManyField(Document, blank=True)
     related_images = models.ManyToManyField(Image, blank=True)
     related_videos = models.ManyToManyField(Video, blank=True)
-    related_video_links = ArrayField(
+    related_video_links = VideoLinksArrayField(
         EmbedVideoField(),
         blank=True,
         default=list,

@@ -498,3 +498,18 @@ class Alphabet(BaseSiteContentModel):
                     for c in char_list
                 ]
                 return base_chars
+
+    def get_unknown_characters(self, text: str) -> list[str]:
+        """
+        Returns a list of characters in the text that are not in the site's alphabet or variants.
+        """
+        base_characters = self.base_characters.values_list("title", flat=True)
+        variant_characters = self.variant_characters.values_list("title", flat=True)
+        ignorable_characters = self.ignorable_characters.values_list("title", flat=True)
+
+        all_known_chars = (
+            set(base_characters) | set(variant_characters) | set(ignorable_characters)
+        )
+        char_list = self.get_character_list(text)
+        unknown_chars = [char for char in char_list if char not in all_known_chars]
+        return unknown_chars

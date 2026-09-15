@@ -9,6 +9,7 @@ from backend.serializers.site_feature_serializers import SiteFeatureDetailSerial
 from backend.views import doc_strings
 from backend.views.api_doc_variables import key_parameter, site_slug_parameter
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
+from backend.views.utils import get_site_content_select_related_fields
 
 
 @extend_schema_view(
@@ -106,11 +107,12 @@ class SiteFeatureViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return SiteFeature.objects.filter(site=site).select_related(
-            "site",
-            "site__language",
-            "created_by",
-            "last_modified_by",
+        return (
+            SiteFeature.objects.filter(site=site)
+            .order_by("key")
+            .select_related(
+                *get_site_content_select_related_fields(),
+            )
         )
 
     def perform_create(self, serializer):

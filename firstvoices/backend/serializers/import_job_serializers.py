@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 import chardet
 import tablib
@@ -10,11 +11,10 @@ from backend.models.constants import AppRole
 from backend.models.files import File
 from backend.models.import_jobs import (
     ImportJob,
-    ImportJobMode,
     ImportJobReport,
     ImportJobReportRow,
+    ImportJobStatus,
 )
-from backend.models.jobs import JobStatus
 from backend.serializers import fields
 from backend.serializers.base_serializers import CreateSiteContentSerializerMixin
 from backend.serializers.files_serializers import FileSerializer, FileUploadSerializer
@@ -64,9 +64,10 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             SupportedFileEncodingValidator(),
         ],
     )
+    status = fields.EnumLabelField(enum=ImportJobStatus, read_only=True)
     run_as_user = serializers.CharField(required=False)
     validation_task_id = serializers.CharField(read_only=True)
-    validation_status = fields.EnumLabelField(enum=JobStatus, read_only=True)
+    validation_status = fields.EnumLabelField(enum=ImportJobStatus, read_only=True)
     validation_report = ImportReportSerializer(read_only=True)
     failed_rows_csv = FileSerializer(read_only=True)
 
@@ -119,10 +120,12 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
         file.save()
         return file
 
+    def validate_required_headers(self, headers):
+        check_required_headers(headers, update_mode=False)
+
     def create(self, validated_data):
         validated_data["site"] = get_site_from_context(self)
         file = self.create_file(validated_data["data"], File, validated_data["site"])
-        update_mode = validated_data.get("mode") == ImportJobMode.UPDATE
 
         try:
             table = tablib.Dataset().load(
@@ -133,7 +136,7 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
             # Validate headers
             # If required headers are not present, raise ValidationError
             # else, print warnings for extra or invalid headers
-            check_required_headers(table.headers, update_mode)
+            self.validate_required_headers(table.headers)
 
             # Check for duplicate headers
             check_duplicate_headers(table.headers)
@@ -157,3 +160,36 @@ class ImportJobSerializer(CreateSiteContentSerializerMixin, BaseJobSerializer):
                     ]
                 }
             )
+
+
+class ImportJobDetailSerializer(ImportJobSerializer):
+    media = serializers.SerializerMethodField()
+
+    def get_media(self, instance):
+        audio_and_docs = instance.file_set.all()
+        images = instance.imagefile_set.all()
+        videos = instance.videofile_set.all()
+
+        all_files = list(audio_and_docs) + list(images) + list(videos)
+
+        media_items = []
+
+        for file in all_files:
+            file_content = file.content
+            filename = Path(file_content.name).name
+
+            media_items.append(
+                {
+                    "id": file.id,
+                    "mimetype": file.mimetype,
+                    "size": file.size,
+                    "filename": filename,
+                }
+            )
+
+        media_items = sorted(media_items, key=lambda item: item["filename"])
+        return media_items
+
+    class Meta:
+        model = ImportJob
+        fields = ImportJobSerializer.Meta.fields + ("media",)

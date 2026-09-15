@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from backend import models
 from backend.pagination import SearchPageNumberPagination
+from backend.search.constants import MAXIMUM_ENTRIES_PER_SEARCH
 from backend.search.queries.query_builder import get_base_paginate_query
 from backend.search.utils import (
     get_base_search_params,
@@ -174,7 +175,9 @@ class BaseSearchViewSet(viewsets.GenericViewSet, HydrateSerializeSearchResultsMi
         """
         Returns pagination parameters.
         """
-        return get_pagination_params(self.request, self.paginator)
+        return get_pagination_params(
+            self.request, self.paginator, page_size_limit=MAXIMUM_ENTRIES_PER_SEARCH
+        )
 
     def paginate_search_response(self, request, serialized_data, result_count):
         page = self.paginator.apply_search_pagination(

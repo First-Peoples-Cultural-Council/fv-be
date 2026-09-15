@@ -1,6 +1,7 @@
 from django.core.validators import validate_slug
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 
 from backend.models import Image, constants, validators
@@ -25,10 +26,11 @@ class SitePage(BaseControlledSiteContentModel):
             models.CheckConstraint(
                 check=(Q(banner_image__isnull=True) | Q(banner_video__isnull=True)),
                 name="sitepage_only_one_banner",
-            )
+            ),
+            models.UniqueConstraint(
+                Lower("slug"), "site", name="unique_sitepage_slug_ci"
+            ),
         ]
-        # Ensures a page slug is unique across a single site
-        unique_together = ["site", "slug"]
 
         indexes = [
             models.Index(fields=["slug", "site"], name="page_slug_idx"),

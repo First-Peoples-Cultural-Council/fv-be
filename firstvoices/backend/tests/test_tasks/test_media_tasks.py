@@ -2,9 +2,10 @@ import uuid
 from unittest.mock import patch
 
 import pytest
+from django.db.models import RestrictedError
 from PIL import Image as PILImage
 
-from backend.models.media import SUPPORTED_FILETYPES, Image, Video
+from backend.models.media import SUPPORTED_FILETYPES, Image, ImageFile, Video, VideoFile
 from backend.tasks.media_tasks import generate_media_thumbnails
 from backend.tests.factories import (
     ImageFactory,
@@ -15,9 +16,10 @@ from backend.tests.factories import (
     get_image_content,
 )
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
+from backend.tests.utils import TransactionOnCommitMixin
 
 
-class TestThumbnailGeneration(IgnoreTaskResultsMixin):
+class TestThumbnailGeneration(IgnoreTaskResultsMixin, TransactionOnCommitMixin):
     TASK = generate_media_thumbnails
 
     def get_valid_task_args(self):
@@ -31,7 +33,8 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
     )
     def test_thumbnail_generation_started(self, model_factory, model, caplog):
         site = SiteFactory()
-        media_item = model_factory.create(site=site)
+        with self.capture_on_commit_callbacks(execute=True):
+            media_item = model_factory.create(site=site)
 
         assert (
             f"Task started. Additional info: "
@@ -69,11 +72,12 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
     @pytest.mark.parametrize("file_type", SUPPORTED_FILETYPES["image"])
     def test_thumbnail_generation_adds_white_background(self, file_type):
         site = SiteFactory()
-        image_file = ImageFileFactory.create(
-            content=get_image_content(file_type=file_type),
-            site=site,
-        )
-        image = ImageFactory.create(original=image_file, site=site)
+        with self.capture_on_commit_callbacks(execute=True):
+            image_file = ImageFileFactory.create(
+                content=get_image_content(file_type=file_type),
+                site=site,
+            )
+            image = ImageFactory.create(original=image_file, site=site)
 
         image.generate_resized_images()
         image.refresh_from_db()
@@ -89,7 +93,7 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
-    def test_thumbail_generation_error(self, caplog):
+    def test_thumbnail_generation_error(self, caplog):
         site = SiteFactory()
         image = ImageFactory.create(site=site)
 
@@ -97,7 +101,7 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
             "PIL.Image.open",
             side_effect=Exception("test exception"),
         ):
-            image._request_thumbnail_generation()
+            generate_media_thumbnails("Image", image.id)
 
         assert "Error creating thumbnail for " in caplog.text
         assert "test exception" in caplog.text
@@ -113,25 +117,31 @@ class TestThumbnailGeneration(IgnoreTaskResultsMixin):
         assert "Task ended." in caplog.text
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_image_does_not_exist(self, caplog):
+    def test_delete_image_deletes_original(self):
         site = SiteFactory()
         image = ImageFactory.create(site=site)
-        image.original.delete()
-        image._request_thumbnail_generation()
+        original_id = image.original.id
 
-        assert f"Thumbnail generation failed for image model {image.id}" in caplog.text
-        assert "Error: Original image file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        image.delete()
+
+        assert not ImageFile.objects.filter(id=original_id).exists()
 
     @pytest.mark.django_db
-    @pytest.mark.disable_thumbnail_mocks
-    def test_generate_resized_images_original_video_does_not_exist(self, caplog):
+    def test_delete_video_deletes_original(self):
         site = SiteFactory()
         video = VideoFactory.create(site=site)
-        video.original.delete()
-        video._request_thumbnail_generation()
+        original_id = video.original.id
 
-        assert f"Thumbnail generation failed for video model {video.id}" in caplog.text
-        assert "Error: Original video file not found" in caplog.text
-        assert "Task ended." in caplog.text
+        video.delete()
+
+        assert not VideoFile.objects.filter(id=original_id).exists()
+
+    @pytest.mark.django_db
+    def test_delete_original_directly_is_protected(self):
+        site = SiteFactory()
+        image = ImageFactory.create(site=site)
+
+        with pytest.raises(RestrictedError):
+            image.original.delete()
+
+        assert Image.objects.filter(id=image.id).exists()

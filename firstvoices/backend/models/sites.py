@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import validate_slug
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils.translation import gettext as _
 from django_better_admin_arrayfield.models.fields import ArrayField
 
@@ -126,7 +127,8 @@ class Site(BaseModel):
             models.CheckConstraint(
                 check=(Q(banner_image__isnull=True) | Q(banner_video__isnull=True)),
                 name="site_only_one_banner",
-            )
+            ),
+            models.UniqueConstraint(Lower("slug"), name="unique_site_slug_ci"),
         ]
 
     # from dc:title
@@ -138,7 +140,6 @@ class Site(BaseModel):
         blank=False,
         validators=[validate_slug],
         db_index=True,
-        unique=True,
     )
 
     # from fvdialect:parent_language

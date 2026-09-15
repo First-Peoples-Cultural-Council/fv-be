@@ -1,5 +1,6 @@
 from django.db.models import Prefetch, Q
-from django.db.models.functions import Upper
+from django.db.models.functions import Lower
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.viewsets import ModelViewSet
@@ -17,7 +18,10 @@ from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
 from ..models.constants import Role
-from .utils import get_select_related_media_fields
+from .utils import (
+    get_select_related_media_fields,
+    get_site_content_select_related_fields,
+)
 
 
 @extend_schema_view(
@@ -66,9 +70,19 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     Summary information about language sites.
     """
 
+    _cached_site = None
     http_method_names = ["get", "put", "patch"]
     lookup_field = "slug"
     serializer_class = SiteDetailWriteSerializer
+
+    def get_object(self):
+        if self._cached_site is None:
+            queryset = self.filter_queryset(self.get_queryset())
+            self._cached_site = get_object_or_404(
+                queryset, slug__iexact=self.kwargs["slug"]
+            )
+            self.check_object_permissions(self.request, self._cached_site)
+        return self._cached_site
 
     def get_detail_queryset(self):
         sites = (
@@ -84,17 +98,15 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(
-                        is_enabled=True
-                    ).prefetch_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
                     ),
                 ),
                 Prefetch(
                     "homepage__widgets",
                     queryset=SiteWidget.objects.visible(self.request.user)
                     .select_related(
-                        "site", "site__language", "created_by", "last_modified_by"
+                        *get_site_content_select_related_fields(),
                     )
                     .prefetch_related(
                         Prefetch(
@@ -110,12 +122,14 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     def get_list_queryset(self):
         return (
             Site.objects.all()
-            .order_by(Upper("title"))
+            .order_by(Lower("title"))
             .select_related(*get_select_related_media_fields("logo"))
             .prefetch_related(
                 Prefetch(
                     "sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
+                    ),
                 ),
             )
         )
@@ -159,15 +173,18 @@ class MySitesViewSet(FVPermissionViewSetMixin, ModelViewSet):
         queryset = (
             Membership.objects.filter(user=self.request.user)
             .select_related(
-                "site", "site__language", *get_select_related_media_fields("site__logo")
+                *get_site_content_select_related_fields(),
+                *get_select_related_media_fields("site__logo"),
             )
             .prefetch_related(
                 Prefetch(
                     "site__sitefeature_set",
-                    queryset=SiteFeature.objects.filter(is_enabled=True),
+                    queryset=SiteFeature.objects.filter(is_enabled=True).select_related(
+                        *get_site_content_select_related_fields(),
+                    ),
                 ),
             )
-            .order_by(Upper("site__title"))
+            .order_by(Lower("site__title"))
         )
         queryset = queryset.exclude(Q(site__is_hidden=True) & Q(role__lte=Role.MEMBER))
         return queryset

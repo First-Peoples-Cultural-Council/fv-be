@@ -16,6 +16,7 @@ class PartOfSpeechFactory(BaseFactory):
 class DictionaryEntryFactory(BaseSiteContentFactory, RelatedMediaBaseFactory):
     class Meta:
         model = DictionaryEntry
+        skip_postgeneration_save = True
 
     title = factory.Sequence(lambda n: "Dictionary entry %03d" % n)
     custom_order = factory.Sequence(lambda n: "sort order %03d" % n)

@@ -326,9 +326,7 @@ class TestAuthenticate:
         mock_request = MagicMock()
         type(mock_request).META = {}
         auth = JwtAuthentication()
-        user, _ = auth.authenticate(mock_request)
-        assert user.is_anonymous
-        assert not user.is_authenticated
+        assert auth.authenticate(mock_request) is None
 
     @pytest.mark.parametrize(
         "token", ["Bearer ", "NotBearer 12345", "12345", "Bearer 12345 and then some"]
