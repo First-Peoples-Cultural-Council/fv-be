@@ -15,8 +15,20 @@ from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
     TASK = bulk_change_visibility
 
+    def get_site_and_job(self, from_visibility, to_visibility):
+        self.site = factories.SiteFactory.create(visibility=from_visibility)
+        self.job = factories.BulkVisibilityJobFactory.create(
+            site=self.site, from_visibility=from_visibility, to_visibility=to_visibility
+        )
+        return self.site, self.job
+
     def get_valid_task_args(self):
-        return (uuid.uuid4(),)
+        if not hasattr(self, "job"):
+            self.site, self.job = self.get_site_and_job(
+                Visibility.PUBLIC, Visibility.MEMBERS
+            )
+
+        return (str(self.job.id),)
 
     @pytest.fixture(scope="function", autouse=True)
     def mocked_indexing_async_func(self, mocker):
@@ -52,10 +64,7 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
     def test_bulk_visibility_change_job_site_only(
         self, from_visibility, to_visibility, existing_feature, caplog
     ):
-        site = factories.SiteFactory.create(visibility=from_visibility)
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site, from_visibility=from_visibility, to_visibility=to_visibility
-        )
+        site, job = self.get_site_and_job(from_visibility, to_visibility)
         if existing_feature:
             factories.SiteFeatureFactory.create(
                 site=site, key="indexing_paused", is_enabled=True
@@ -88,7 +97,7 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
     def test_bulk_visibility_change_job_full(
         self, from_visibility, to_visibility, caplog
     ):
-        site = factories.SiteFactory.create(visibility=from_visibility)
+        site, job = self.get_site_and_job(from_visibility, to_visibility)
         existing_widgets = SiteWidget.objects.filter(
             site=site, visibility=from_visibility
         ).count()
@@ -110,9 +119,6 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
             10, site=site, visibility=from_visibility
         )
 
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site, from_visibility=from_visibility, to_visibility=to_visibility
-        )
         bulk_change_visibility(job.id)
 
         job.refresh_from_db()
@@ -147,14 +153,9 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
 
     @pytest.mark.django_db
     def test_bulk_visibility_change_job_exception(self, caplog):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site, job = self.get_site_and_job(Visibility.PUBLIC, Visibility.MEMBERS)
         factories.DictionaryEntryFactory.create_batch(
             10, site=site, visibility=Visibility.PUBLIC
-        )
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site,
-            from_visibility=Visibility.PUBLIC,
-            to_visibility=Visibility.MEMBERS,
         )
 
         with patch(
@@ -191,7 +192,7 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
 
     @pytest.mark.django_db
     def test_bulkvisiblilityjob_not_triggered_while_running(self, caplog):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site, job = self.get_site_and_job(Visibility.PUBLIC, Visibility.MEMBERS)
         factories.DictionaryEntryFactory.create_batch(
             10, site=site, visibility=Visibility.PUBLIC
         )
@@ -200,11 +201,6 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
             from_visibility=Visibility.PUBLIC,
             to_visibility=Visibility.MEMBERS,
             status=JobStatus.STARTED,
-        )
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site,
-            from_visibility=Visibility.PUBLIC,
-            to_visibility=Visibility.MEMBERS,
         )
         bulk_change_visibility(job.id)
 
@@ -250,7 +246,7 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
         ],
     )
     def test_bulk_visibility_system_last_modified(self, from_visibility, to_visibility):
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site, job = self.get_site_and_job(from_visibility, to_visibility)
 
         entry = factories.DictionaryEntryFactory.create(
             site=site, visibility=from_visibility
@@ -278,9 +274,6 @@ class TestBulkVisibilityTasks(IgnoreTaskResultsMixin):
         )
         widget_last_modified = widget.last_modified
 
-        job = factories.BulkVisibilityJobFactory.create(
-            site=site, from_visibility=from_visibility, to_visibility=to_visibility
-        )
         bulk_change_visibility(job.id)
 
         entry.refresh_from_db()
