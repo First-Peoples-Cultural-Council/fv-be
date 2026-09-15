@@ -3,8 +3,9 @@ import json
 import pytest
 
 from backend.models.constants import AppRole, Visibility
-from backend.models.import_jobs import ImportJob, ImportJobMode
+from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
+from backend.models.update_jobs import UpdateJob
 from backend.tasks.constants import MAXIMUM_ENTRIES_PER_UPDATE_JOB
 from backend.tests import factories
 from backend.tests.test_apis.base.import_update_jobs.base_endpoints_test import (
@@ -21,10 +22,10 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
 
     API_LIST_VIEW = "api:updatejob-list"
     API_DETAIL_VIEW = "api:updatejob-detail"
-    model = ImportJob
+    model = UpdateJob
 
     def create_minimal_instance(self, site, visibility=None):
-        return factories.ImportJobFactory.create(site=site, mode=ImportJobMode.UPDATE)
+        return factories.UpdateJobFactory.create(site=site)
 
     def get_file_data(self, file):
         return {
@@ -73,7 +74,7 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
         }
 
     def assert_created_instance(self, pk, data):
-        instance = ImportJob.objects.get(pk=pk, mode=ImportJobMode.UPDATE)
+        instance = UpdateJob.objects.get(pk=pk)
         return self.assert_updated_instance(data, instance)
 
     def assert_created_response(self, expected_data, actual_response):
@@ -82,7 +83,7 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
         return self.assert_update_response(expected_data, actual_response)
 
     def assert_updated_instance(self, expected_data, actual_instance):
-        assert expected_data["mode"] == actual_instance.mode
+        assert expected_data["mode"] == "update"
         assert expected_data["title"] == actual_instance.title
         expected_file_name = expected_data["data"].file.name.split("/")[-1]
         actual_file_name = actual_instance.data.content.file.name.split("/")[-1]
@@ -175,7 +176,7 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
-        job = factories.ImportJobFactory.create(site=site, mode=ImportJobMode.UPDATE)
+        job = factories.UpdateJobFactory.create(site=site)
         job.status = job_status
         job.save()
 
@@ -185,7 +186,7 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
 
         assert response.status_code == 400
 
-        jobs = ImportJob.objects.filter(id=job.id)
+        jobs = UpdateJob.objects.filter(id=job.id)
         assert jobs.count() == 1
 
     @pytest.mark.parametrize("job_status", [JobStatus.ACCEPTED, JobStatus.STARTED])
@@ -193,7 +194,7 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
-        job = factories.ImportJobFactory.create(site=site, mode=ImportJobMode.UPDATE)
+        job = factories.UpdateJobFactory.create(site=site)
         job.validation_status = job_status
         job.save()
 
@@ -203,16 +204,14 @@ class TestUpdateEndpoints(BaseImportUpdateEndpoints):
 
         assert response.status_code == 400
 
-        jobs = ImportJob.objects.filter(id=job.id)
+        jobs = UpdateJob.objects.filter(id=job.id)
         assert jobs.count() == 1
 
     def test_update_job_list_only_update_jobs(self):
         site, _ = factories.get_site_with_app_admin(
             self.client, visibility=Visibility.PUBLIC, role=AppRole.SUPERADMIN
         )
-        update_job = factories.ImportJobFactory.create(
-            site=site, mode=ImportJobMode.UPDATE
-        )
+        update_job = factories.UpdateJobFactory.create(site=site)
         import_job = factories.ImportJobFactory.create(
             site=site, mode=ImportJobMode.SKIP_DUPLICATES
         )

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
+from backend.models.update_jobs import UpdateJob
 from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
@@ -95,12 +96,11 @@ class UpdateJobViewSet(
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(site=site, mode=ImportJobMode.UPDATE).order_by(
-            "-created"
-        )  # permissions are applied by the base view
+        return UpdateJob.objects.filter(site=site).order_by("-created")
+        # permissions are applied by the base view
 
     def perform_create(self, serializer):
-        serializer.save(mode=ImportJobMode.UPDATE)
+        serializer.save()
         verify_update_job_size_limit(serializer.instance)
 
     def get_serializer_class(self):
