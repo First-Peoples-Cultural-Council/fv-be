@@ -17,7 +17,7 @@ class TestUpdateJobValidateAction(BaseImportUpdateJobValidateAction):
     JOB_MODEL = UpdateJob
     JOB_FACTORY = factories.UpdateJobFactory
     REPORT_FILTER_PATCH_PATH = (
-        "backend.tasks.utils.reporting_utils.UpdateJobReport.objects.filter"
+        "backend.models.update_jobs.UpdateJobReport.objects.filter"
     )
     JOB_LOG_LABEL = "update_job"
     VALIDATE_JOB_TASK = validate_update_job

@@ -18,7 +18,12 @@ from backend.importing.importers import (
 from backend.models.files import File
 from backend.models.import_jobs import ImportJob, ImportJobReportRow, RowStatus
 from backend.models.media import ImageFile, VideoFile
-from backend.models.update_jobs import UpdateJob, UpdateJobReport, UpdateJobReportRow
+from backend.models.update_jobs import (
+    UpdateJob,
+    UpdateJobReport,
+    UpdateJobReportRow,
+    UpdateJobRowStatus,
+)
 from backend.utils.character_utils import clean_input
 
 
@@ -90,17 +95,15 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
 
 
 def create_or_append_error_row(import_job, report, row_number, errors):
-    report_row_model = (
-        UpdateJobReportRow
-        if isinstance(report, UpdateJobReport)
-        else ImportJobReportRow
-    )
+    is_update_report = isinstance(report, UpdateJobReport)
+    report_row_model = UpdateJobReportRow if is_update_report else ImportJobReportRow
+    row_status = UpdateJobRowStatus.ERROR if is_update_report else RowStatus.ERROR
     error_row, created = report_row_model.objects.get_or_create(
         site=import_job.site,
         report=report,
         row_number=row_number,
         defaults={
-            "status": RowStatus.ERROR,
+            "status": row_status,
             "errors": errors,
         },
     )

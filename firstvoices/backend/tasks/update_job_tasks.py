@@ -269,14 +269,15 @@ def process_update_job_data(
             report_job_relation_field="updatejob",
             report_log_label="update_job",
         )
-        add_unknown_character_warnings(cleaned_data, update_job, report)
-        add_field_value_removal_warnings(cleaned_data, update_job, report)
+        # the failed-rows csv is built first so warning-only rows are not reported as failures
         attach_csv_to_report(
             data,
             update_job,
             report,
             report_row_model=UpdateJobReportRow,
         )
+        add_unknown_character_warnings(cleaned_data, update_job, report)
+        add_field_value_removal_warnings(cleaned_data, update_job, report)
 
 
 def run_update_job(data, update_job):
