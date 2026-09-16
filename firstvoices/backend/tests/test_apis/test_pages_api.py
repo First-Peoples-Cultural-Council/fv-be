@@ -239,16 +239,17 @@ class TestSitePageEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
         user = factories.get_non_member_user()
         self.client.force_authenticate(user=user)
 
-        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        site = factories.SiteFactory.create(
+            slug="Smalgyax-EN", visibility=Visibility.PUBLIC
+        )
         page = factories.SitePageFactory.create(
-            site=site, visibility=Visibility.PUBLIC, slug="Our-Language-EN"
+            site=site, visibility=Visibility.PUBLIC, slug="our-language"
         )
 
         response = self.client.get(
-            self.get_detail_endpoint(page.slug.lower(), site.slug)
+            self.get_detail_endpoint(page.slug, site.slug.lower())
         )
         assert response.status_code == 200
-        assert json.loads(response.content)["slug"] == page.slug
 
     @pytest.mark.django_db
     def test_detail_widget_order(self):

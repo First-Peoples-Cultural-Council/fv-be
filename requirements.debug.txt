@@ -11,7 +11,7 @@ coverage==7.15.4  # https://github.com/nedbat/coveragepy
 django-coverage-plugin==3.2.2
 black==26.5.1  # https://github.com/psf/black
 pylint-django==2.7.0  # https://github.com/PyCQA/pylint-django
-pre-commit==4.6.1  # https://github.com/pre-commit/pre-commit
+pre-commit==4.6.2  # https://github.com/pre-commit/pre-commit
 
 # Pytest --------------------------
 factory-boy==3.3.3
