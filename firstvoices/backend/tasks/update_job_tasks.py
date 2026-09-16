@@ -12,24 +12,22 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models import Alphabet, DictionaryEntry
-from backend.models.update_jobs import (
-    UpdateJob,
-    UpdateJobReport,
-    UpdateJobReportRow,
-    UpdateJobStatus,
-)
+from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.tasks.batch_utils import (
-    create_or_append_error_row,
+    create_or_append_update_error_row,
     get_missing_referenced_entries,
     get_missing_referenced_media,
-    get_missing_uploaded_media,
+    get_missing_uploaded_media_for_update_job,
     get_related_entry_headers,
     is_valid_header_variation,
     normalize_columns,
-    verify_no_other_import_jobs_running,
+    verify_no_other_update_jobs_running,
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.utils.reporting_utils import attach_csv_to_report, generate_report
+from backend.tasks.utils.reporting_utils import (
+    attach_csv_to_update_job_report,
+    generate_update_job_report,
+)
 from backend.utils.uuid_utils import is_valid_uuid
 
 
@@ -97,7 +95,7 @@ def add_unknown_character_warnings(cleaned_data, update_job, report):
                 f"WARNING: Title '{title}' contains unrecognized characters {unknown_characters} "
                 f"that may affect sorting."
             )
-            create_or_append_error_row(
+            create_or_append_update_error_row(
                 update_job, report, row_number, [warning_message]
             )
             warning_rows_count += 1
@@ -202,7 +200,7 @@ def add_field_value_removal_warnings(cleaned_data, update_job, report):
                 f"({value / total_row_count:.0%}). This may result in loss of data."
             )
             # a row number of -1 indicates that the errors are for the entire job, not a specific row
-            create_or_append_error_row(update_job, report, -1, [warning_message])
+            create_or_append_update_error_row(update_job, report, -1, [warning_message])
             warning_rows_count += 1
 
     if report.warnings is None:
@@ -255,7 +253,7 @@ def process_update_job_data(
     )
 
     if dry_run:
-        report = generate_report(
+        report = generate_update_job_report(
             job=update_job,
             accepted_columns=accepted_headers,
             ignored_columns=invalid_headers,
@@ -264,17 +262,12 @@ def process_update_job_data(
             img_import_results=img_import_results,
             video_import_results=video_import_results,
             dictionary_entry_import_result=dictionary_entry_update_result,
-            report_model=UpdateJobReport,
-            report_row_model=UpdateJobReportRow,
-            report_job_relation_field="updatejob",
-            report_log_label="update_job",
         )
         # the failed-rows csv is built first so warning-only rows are not reported as failures
-        attach_csv_to_report(
+        attach_csv_to_update_job_report(
             data,
             update_job,
             report,
-            report_row_model=UpdateJobReportRow,
         )
         add_unknown_character_warnings(cleaned_data, update_job, report)
         add_field_value_removal_warnings(cleaned_data, update_job, report)
@@ -286,7 +279,7 @@ def run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_uploaded_media = get_missing_uploaded_media(data, update_job)
+    missing_uploaded_media = get_missing_uploaded_media_for_update_job(data, update_job)
     missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
 
     try:
@@ -311,7 +304,7 @@ def dry_run_update_job(data, update_job):
     """
     logger = get_task_logger(__name__)
 
-    missing_uploaded_media = get_missing_uploaded_media(data, update_job)
+    missing_uploaded_media = get_missing_uploaded_media_for_update_job(data, update_job)
     missing_referenced_media_ids = get_missing_referenced_media(
         data, update_job.site.id
     )
@@ -366,7 +359,7 @@ def validate_update_job(update_job_id):
         update_job.save()
         return
 
-    verify_no_other_import_jobs_running(update_job)
+    verify_no_other_update_jobs_running(update_job)
 
     update_job.validation_status = UpdateJobStatus.STARTED
     update_job.validation_task_id = task_id
@@ -408,7 +401,7 @@ def confirm_update_job(update_job_id):
         update_job.save()
         return
 
-    verify_no_other_import_jobs_running(update_job)
+    verify_no_other_update_jobs_running(update_job)
 
     update_job.status = UpdateJobStatus.STARTED
     update_job.task_id = task_id

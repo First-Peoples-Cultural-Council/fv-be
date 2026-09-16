@@ -216,10 +216,16 @@ class BaseMediaFileImporter(BaseImporter):
                 # filter out duplicate and empty filenames
                 dataset = cls.filter_rows(dataset, cls.get_key_col())
 
+                job_kwargs = (
+                    {"import_job": import_job.id}
+                    if isinstance(import_job, ImportJob)
+                    else {"update_job": import_job.id}
+                )
+
                 import_result = cls.resource(
                     site=import_job.site,
                     run_as_user=import_job.run_as_user,
-                    import_job=import_job.id,
+                    **job_kwargs,
                 ).import_data(dataset=dataset, dry_run=dry_run)
 
                 if import_result.totals["new"]:
@@ -577,7 +583,7 @@ class DictionaryEntryImporter(BaseImporter):
         dictionary_entry_update_result = DictionaryEntryResource(
             site=update_job.site,
             run_as_user=update_job.run_as_user,
-            import_job=update_job.id,
+            update_job=update_job.id,
             missing_uploaded_media=missing_uploaded_media,
             missing_referenced_media=missing_referenced_media,
             missing_entries=missing_entries,
