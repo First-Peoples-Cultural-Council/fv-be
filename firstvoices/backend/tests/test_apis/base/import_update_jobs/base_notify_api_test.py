@@ -23,9 +23,12 @@ class BaseImportUpdateJobNotifyApi(BaseSiteContentApiTest):
     NOT_VALIDATED_ERROR_MESSAGE = None
     ALREADY_READY_ERROR_MESSAGE = None
     SUPPORT_EMAIL = None
+    JOB_FACTORY = ImportJobFactory
+    JOB_MODEL = ImportJob
+    STATUS_ENUM = ImportJobStatus
 
     def get_job_mode_kwargs(self):
-        if self.JOB_MODE is None:
+        if self.JOB_MODE is None or self.JOB_MODEL is not ImportJob:
             return {}
         return {"mode": self.JOB_MODE}
 
@@ -44,7 +47,7 @@ class BaseImportUpdateJobNotifyApi(BaseSiteContentApiTest):
 
         file_content = get_sample_file(self.SAMPLE_FILE_PATH, "text/csv")
         file = factories.FileFactory(content=file_content)
-        self.job = ImportJobFactory(
+        self.job = self.JOB_FACTORY(
             site=self.site,
             data=file,
             validation_status=ImportJobStatus.COMPLETE,
@@ -69,8 +72,8 @@ class BaseImportUpdateJobNotifyApi(BaseSiteContentApiTest):
         response = self.client.post(self.get_notify_endpoint())
 
         assert response.status_code == 202
-        job = ImportJob.objects.get(id=self.job.id)
-        assert job.status == ImportJobStatus.READY_FOR_IMPORT
+        job = self.JOB_MODEL.objects.get(id=self.job.id)
+        assert job.status == self.STATUS_ENUM.READY_FOR_IMPORT
 
     @pytest.mark.parametrize(
         "validation_status",

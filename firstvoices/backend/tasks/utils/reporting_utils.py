@@ -10,7 +10,7 @@ from backend.tasks.batch_utils import (
 
 
 def generate_report(
-    import_job,
+    job,
     accepted_columns,
     ignored_columns,
     audio_import_results,
@@ -18,6 +18,10 @@ def generate_report(
     img_import_results,
     video_import_results,
     dictionary_entry_import_result,
+    report_model=ImportJobReport,
+    report_row_model=ImportJobReportRow,
+    report_job_relation_field="importjob",
+    report_log_label="import_job",
 ):
     """
     Creates an ImportJobReport to summarize the results.
@@ -26,22 +30,22 @@ def generate_report(
     logger = get_task_logger(__name__)
 
     # Clearing out old report if present
-    old_report = import_job.validation_report
+    old_report = job.validation_report
 
     if old_report:
         try:
-            old_report = ImportJobReport.objects.filter(id=old_report.id)
+            old_report = report_model.objects.filter(id=old_report.id)
             old_report.delete()
         except Exception as e:
             logger.error(
-                f"Unable to delete previous report for import_job: {str(import_job.id)}. Error: {e}."
+                f"Unable to delete previous report for {report_log_label}: {str(job.id)}. Error: {e}."
             )
 
-    report = ImportJobReport(
-        site=import_job.site,
-        importjob=import_job,
+    report = report_model(
+        site=job.site,
         accepted_columns=accepted_columns,
         ignored_columns=ignored_columns,
+        **{report_job_relation_field: job},
     )
     report.save()
 
@@ -61,7 +65,7 @@ def generate_report(
                 and len(row.error_messages) > 0
             ):
                 create_or_append_error_row(
-                    import_job,
+                    job,
                     report,
                     row_number=row.number,
                     errors=row.error_messages,
@@ -69,30 +73,30 @@ def generate_report(
 
     report.new_rows = dictionary_entry_import_result.totals["new"]
     report.updated_rows = dictionary_entry_import_result.totals["update"]
-    report.error_rows = ImportJobReportRow.objects.filter(report=report).count()
+    report.error_rows = report_row_model.objects.filter(report=report).count()
     report.save()
 
     return report
 
 
-def attach_csv_to_report(data, import_job, report):
+def attach_csv_to_report(data, job, report, report_row_model=ImportJobReportRow):
     """
     Attaches an updated CSV file to the importJob if any errors occurred.
     """
     # Deleting old failed_rows_csv file if it exists
-    if import_job.failed_rows_csv and import_job.failed_rows_csv.id:
-        old_failed_rows_csv = File.objects.get(id=import_job.failed_rows_csv.id)
+    if job.failed_rows_csv and job.failed_rows_csv.id:
+        old_failed_rows_csv = File.objects.get(id=job.failed_rows_csv.id)
         old_failed_rows_csv.delete()
-        import_job.failed_rows_csv = None
+        job.failed_rows_csv = None
 
     if report.error_rows:
         error_rows = list(
-            ImportJobReportRow.objects.filter(report=report).values_list(
+            report_row_model.objects.filter(report=report).values_list(
                 "row_number", flat=True
             )
         )
         error_rows.sort()
-        failed_row_csv_file = get_failed_rows_csv_file(import_job, data, error_rows)
-        import_job.failed_rows_csv = failed_row_csv_file
+        failed_row_csv_file = get_failed_rows_csv_file(job, data, error_rows)
+        job.failed_rows_csv = failed_row_csv_file
 
-    import_job.save()
+    job.save()
