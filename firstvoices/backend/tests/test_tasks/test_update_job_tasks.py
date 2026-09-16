@@ -1,5 +1,4 @@
 import string
-import uuid
 from unittest.mock import patch
 from uuid import UUID
 
@@ -17,7 +16,6 @@ from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
-from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 from backend.tests.utils import (
     BatchRelatedMediaMixin,
     get_maximum_dictionary_entry_columns,
@@ -664,12 +662,9 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
 
 
 @pytest.mark.django_db
-class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
+class TestBulkUpdate(BatchRelatedMediaMixin):
     MIMETYPE = "text/csv"
     TASK = confirm_update_job
-
-    def get_valid_task_args(self):
-        return (uuid.uuid4(),)
 
     def setup_method(self):
         self.user = factories.factories.get_superadmin()

@@ -17,16 +17,20 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
     TASK = cleanup_dictionary
     TASK_ADDITIONAL_INFO = "job_instance_id"
 
+    def setup_method(self):
+        self.site = factories.SiteFactory.create()
+        self.alphabet = factories.AlphabetFactory.create(site=self.site)
+
+    def get_job(self, is_preview=False):
+        self.job = factories.DictionaryCleanupJobFactory.create(
+            site=self.site, is_preview=is_preview
+        )
+        return self.job
+
     def get_valid_task_args(self):
-        return (uuid.uuid4(),)
-
-    @pytest.fixture
-    def site(self):
-        return factories.SiteFactory.create(slug="test")
-
-    @pytest.fixture
-    def alphabet(self, site):
-        return factories.AlphabetFactory.create(site=site)
+        if not hasattr(self, "job"):
+            self.get_job()
+        return (self.job.id,)
 
     @staticmethod
     def assert_async_task_logs(job, caplog):
@@ -37,7 +41,7 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
 
     @pytest.mark.django_db
     def test_dictionary_cleanup_job_invalid_id(self, caplog):
-        invalid_id = uuid.uuid4()
+        invalid_id = str(uuid.uuid4())
         with pytest.raises(DictionaryCleanupJob.DoesNotExist):
             cleanup_dictionary(invalid_id)
 
@@ -47,8 +51,8 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         )
 
     @pytest.mark.django_db
-    def test_recalculate_preview_empty(self, site, alphabet, caplog):
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_empty(self, caplog):
+        job = self.get_job(is_preview=True)
         cleanup_dictionary(job.id)
 
         job.refresh_from_db()
@@ -61,9 +65,9 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_unknown_only(self, site, alphabet, caplog):
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_unknown_only(self, caplog):
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        job = self.get_job(is_preview=True)
         cleanup_dictionary(job.id)
 
         job.refresh_from_db()
@@ -76,14 +80,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_updated_custom_order_only(
-        self, site, alphabet, caplog
-    ):
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_updated_custom_order_only(self, caplog):
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -105,12 +107,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_updated_confusables_only(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="A")
-        factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
-        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
-        alphabet.save()
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_updated_confusables_only(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="A")
+        factories.DictionaryEntryFactory.create(site=self.site, title="ᐱᐱᐱ")
+        self.alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        self.alphabet.save()
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -132,17 +134,17 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_full_update(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="A")
-        factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
-        factories.DictionaryEntryFactory.create(site=site, title="abcd")
-        factories.DictionaryEntryFactory.create(site=site, title="ᐱbcd")
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
-        alphabet.save()
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_full_update(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="A")
+        factories.DictionaryEntryFactory.create(site=self.site, title="ᐱᐱᐱ")
+        factories.DictionaryEntryFactory.create(site=self.site, title="abcd")
+        factories.DictionaryEntryFactory.create(site=self.site, title="ᐱbcd")
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        self.alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        self.alphabet.save()
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -178,13 +180,13 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_unaffected(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
-        factories.DictionaryEntryFactory.create(site=site, title="cab")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_unaffected(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        factories.DictionaryEntryFactory.create(site=self.site, title="cab")
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -198,14 +200,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_unknown_character_unaffected(
-        self, site, alphabet, caplog
-    ):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        factories.DictionaryEntryFactory.create(site=site, title="abcx")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_unknown_character_unaffected(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        factories.DictionaryEntryFactory.create(site=self.site, title="abcx")
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -219,12 +219,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_multichar(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.DictionaryEntryFactory.create(site=site, title="aab")
-        factories.CharacterFactory.create(site=site, title="aa")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+    def test_recalculate_preview_multichar(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.DictionaryEntryFactory.create(site=self.site, title="aab")
+        factories.CharacterFactory.create(site=self.site, title="aa")
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -246,8 +246,8 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_empty(self, site, alphabet, caplog):
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_empty(self, caplog):
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -261,9 +261,9 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_unknown_only(self, site, alphabet, caplog):
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_unknown_only(self, caplog):
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -277,12 +277,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_updated_custom_order_only(self, site, alphabet, caplog):
-        entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_updated_custom_order_only(self, caplog):
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -305,12 +305,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_updated_confusables_only(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="A")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="ᐱᐱᐱ")
-        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
-        alphabet.save()
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_updated_confusables_only(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="A")
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="ᐱᐱᐱ")
+        self.alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        self.alphabet.save()
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -335,14 +335,14 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_updated_full_update_single(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="A")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="ᐱbcd")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
-        alphabet.save()
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_updated_full_update_single(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="A")
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="ᐱbcd")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        self.alphabet.input_to_canonical_map = [{"in": "ᐱ", "out": "A"}]
+        self.alphabet.save()
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -367,13 +367,13 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_unaffected(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        entry1 = factories.DictionaryEntryFactory.create(site=site, title="abc")
-        entry2 = factories.DictionaryEntryFactory.create(site=site, title="cab")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_unaffected(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        entry1 = factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        entry2 = factories.DictionaryEntryFactory.create(site=self.site, title="cab")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -394,12 +394,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_unknown_character_unaffected(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        factories.CharacterFactory.create(site=site, title="c")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="abcx")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_unknown_character_unaffected(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        factories.CharacterFactory.create(site=self.site, title="c")
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="abcx")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -417,12 +417,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_multichar(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="aab")
-        factories.CharacterFactory.create(site=site, title="aa")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_recalculate_multichar(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="aab")
+        factories.CharacterFactory.create(site=self.site, title="aa")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -448,16 +448,16 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_last_modified_behaviour(self, site, alphabet, caplog):
-        factories.CharacterFactory.create(site=site, title="a")
-        factories.CharacterFactory.create(site=site, title="b")
-        entry = factories.DictionaryEntryFactory.create(site=site, title="abc")
+    def test_last_modified_behaviour(self, caplog):
+        factories.CharacterFactory.create(site=self.site, title="a")
+        factories.CharacterFactory.create(site=self.site, title="b")
+        entry = factories.DictionaryEntryFactory.create(site=self.site, title="abc")
 
         entry_last_modified = entry.last_modified
         original_system_last_modified = entry.system_last_modified
 
-        factories.CharacterFactory.create(site=site, title="c")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+        factories.CharacterFactory.create(site=self.site, title="c")
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -475,7 +475,7 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
                 }
             ],
         }
-        entry = DictionaryEntry.objects.get(site=site, title="abc")
+        entry = DictionaryEntry.objects.get(site=self.site, title="abc")
         assert entry.last_modified == entry_last_modified
         assert entry.system_last_modified > original_system_last_modified
         assert entry.system_last_modified_by == job.created_by
@@ -483,9 +483,10 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_preview_alphabet_missing(self, site, caplog):
+    def test_recalculate_preview_alphabet_missing(self, caplog):
+        self.alphabet.delete()
         assert Alphabet.objects.count() == 0
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=True)
+        job = self.get_job(is_preview=True)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -500,9 +501,10 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_recalculate_alphabet_missing(self, site, caplog):
+    def test_recalculate_alphabet_missing(self, caplog):
+        self.alphabet.delete()
         assert Alphabet.objects.count() == 0
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -517,9 +519,9 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_dictionary_cleanup_job_exception(self, site, caplog):
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+    def test_dictionary_cleanup_job_exception(self, caplog):
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
+        job = self.get_job(is_preview=False)
         with patch.object(
             DictionaryEntry, "save", side_effect=Exception("Mocked exception")
         ):
@@ -534,12 +536,12 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_dictionary_cleanup_job_not_triggered_while_running(self, site, caplog):
-        factories.DictionaryEntryFactory.create(site=site, title="abc")
+    def test_dictionary_cleanup_job_not_triggered_while_running(self, caplog):
+        factories.DictionaryEntryFactory.create(site=self.site, title="abc")
         factories.DictionaryCleanupJobFactory.create(
-            site=site, is_preview=False, status=JobStatus.STARTED
+            site=self.site, is_preview=False, status=JobStatus.STARTED
         )
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+        job = self.get_job(is_preview=False)
 
         cleanup_dictionary(job.id)
         job.refresh_from_db()
@@ -556,24 +558,24 @@ class TestDictionaryCleanupTasks(IgnoreTaskResultsMixin):
         self.assert_async_task_logs(job, caplog)
 
     @pytest.mark.django_db
-    def test_multiple_alphabets_raises_exception(self, site, caplog):
-        factories.AlphabetFactory.create(site=site)
-        factories.AlphabetFactory.create(site=site)
+    def test_multiple_alphabets_raises_exception(self, caplog):
+        factories.AlphabetFactory.create(site=self.site)
+        factories.AlphabetFactory.create(site=self.site)
 
-        job = factories.DictionaryCleanupJobFactory.create(site=site, is_preview=False)
+        job = self.get_job(is_preview=False)
 
         with pytest.raises(ValidationError) as e:
             cleanup_dictionary(job.id)
 
         job.refresh_from_db()
         assert str(e.value) == (
-            f"['Multiple alphabets found for site {site.slug}. Please ensure sites only have one alphabet. "
+            f"['Multiple alphabets found for site {self.site.slug}. Please ensure sites only have one alphabet. "
             f"Cancelling dictionary cleanup job.']"
         )
 
         assert job.status == JobStatus.CANCELLED
         assert job.message == (
-            f"Multiple alphabets found for site {site.slug}. Please ensure sites only have one alphabet. "
+            f"Multiple alphabets found for site {self.site.slug}. Please ensure sites only have one alphabet. "
             f"Cancelling dictionary cleanup job."
         )
         self.assert_async_task_logs(job, caplog)
