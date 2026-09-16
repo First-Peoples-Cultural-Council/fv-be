@@ -89,13 +89,15 @@ def attach_csv_to_report(data, job, report, report_row_model=ImportJobReportRow)
         old_failed_rows_csv.delete()
         job.failed_rows_csv = None
 
-    if report.error_rows:
-        error_rows = list(
-            report_row_model.objects.filter(report=report).values_list(
-                "row_number", flat=True
-            )
+    # row numbers below 1 are job-level warnings/errors rather than real csv rows
+    error_rows = list(
+        report_row_model.objects.filter(report=report, row_number__gte=1).values_list(
+            "row_number", flat=True
         )
-        error_rows.sort()
+    )
+    error_rows.sort()
+
+    if error_rows:
         failed_row_csv_file = get_failed_rows_csv_file(job, data, error_rows)
         job.failed_rows_csv = failed_row_csv_file
 

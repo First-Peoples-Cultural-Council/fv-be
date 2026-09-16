@@ -302,6 +302,53 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         update_job = self.update_minimal_dictionary_entries(TEST_ENTRY_IDS)
         assert update_job.failed_rows_csv is None
 
+    def test_failed_rows_csv_excludes_warning_rows(self):
+        factories.DictionaryEntryFactory.create(
+            id=TEST_ENTRY_IDS[0],
+            site=self.site,
+            part_of_speech=factories.PartOfSpeechFactory.create(),
+            translations=["translation1"],
+            notes=["note1"],
+        )
+        factories.DictionaryEntryFactory.create(id=TEST_ENTRY_IDS[1], site=self.site)
+
+        file_content = get_sample_file(
+            "update_job/errors_and_warnings.csv", self.MIMETYPE
+        )
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.UpdateJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            validation_status=JobStatus.ACCEPTED,
+        )
+
+        validate_update_job(update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
+        validation_report = update_job.validation_report
+
+        report_row_numbers = sorted(
+            validation_report.rows.values_list("row_number", flat=True)
+        )
+        # row 1 has a character warning only, row 2 is a real error, row -1 is job level
+        assert report_row_numbers == [-1, 1, 2]
+        assert validation_report.error_rows == 1
+        assert validation_report.warnings == 5
+
+        input_csv_table = tablib.Dataset().load(
+            get_sample_file("update_job/errors_and_warnings.csv", self.MIMETYPE)
+            .read()
+            .decode("utf-8-sig"),
+            format="csv",
+        )
+        failed_rows_csv_table = tablib.Dataset().load(
+            update_job.failed_rows_csv.content.read().decode("utf-8-sig"),
+            format="csv",
+        )
+
+        assert len(failed_rows_csv_table) == 1
+        assert failed_rows_csv_table[0] == input_csv_table[1]
+
     @pytest.mark.parametrize(
         "validation_status",
         [None, JobStatus.STARTED, JobStatus.COMPLETE, JobStatus.FAILED],
