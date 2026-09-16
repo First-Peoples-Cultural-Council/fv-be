@@ -34,7 +34,7 @@ elasticsearch==8.18.0
 et-xmlfile==2.0.0
 Faker==40.38.0
 ffmpeg-python==0.2.0
-g2p==2.3.1 # https://github.com/roedoejet/g2p
+g2p==2.3.2 # https://github.com/roedoejet/g2p
 greenlet==3.5.5
 gunicorn==26.2.0
 humanfriendly==10.0
