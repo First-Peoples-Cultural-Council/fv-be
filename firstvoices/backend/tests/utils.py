@@ -19,6 +19,8 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.constants import Visibility
+from backend.models.import_jobs import ImportJob
+from backend.models.update_jobs import UpdateJob
 from backend.models.widget import SiteWidgetListOrder
 from backend.tests import factories
 
@@ -418,6 +420,14 @@ class BatchRelatedMediaMixin:
             mimetype = "application/pdf"
         else:
             return
+
+        if isinstance(import_job, ImportJob):
+            relation_kwargs = {"import_job": import_job}
+        elif isinstance(import_job, UpdateJob):
+            relation_kwargs = {"update_job": import_job}
+        else:
+            relation_kwargs = {}
+
         for x in range(1, count + 1):
             media_factory(
                 site=self.site,
@@ -426,7 +436,7 @@ class BatchRelatedMediaMixin:
                     mimetype=mimetype,
                     title=f"{filename}-{x}{file_ext}",
                 ),
-                import_job=import_job,
+                **relation_kwargs,
             )
 
     def setup_maximum_related_media(self, job, filename_set):

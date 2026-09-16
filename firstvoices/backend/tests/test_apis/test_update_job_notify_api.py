@@ -1,6 +1,7 @@
 import pytest
 
-from backend.models.import_jobs import ImportJobMode
+from backend.models.update_jobs import UpdateJob, UpdateJobStatus
+from backend.tests import factories
 from backend.tests.test_apis.base.import_update_jobs.base_notify_api_test import (
     BaseImportUpdateJobNotifyApi,
 )
@@ -11,7 +12,10 @@ from backend.views.update_job_views import SUPPORT_USER_EMAIL
 class TestUpdateJobNotifyApi(BaseImportUpdateJobNotifyApi):
     API_NOTIFY_ACTION = "api:updatejob-notify"
     SAMPLE_FILE_PATH = "update_job/all_valid_columns.csv"
-    JOB_MODE = ImportJobMode.UPDATE
+    JOB_MODE = None
+    JOB_MODEL = UpdateJob
+    JOB_FACTORY = factories.UpdateJobFactory
+    STATUS_ENUM = UpdateJobStatus
     JOB_ID_LABEL = "UpdateJob"
     NOT_VALIDATED_ERROR_MESSAGE = (
         "Please validate the job before marking it ready for processing."

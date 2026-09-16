@@ -16,28 +16,40 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.files import File
-from backend.models.import_jobs import (
-    ImportJob,
-    ImportJobReportRow,
-    ImportJobStatus,
-    RowStatus,
-)
+from backend.models.import_jobs import ImportJob, ImportJobReportRow, RowStatus
 from backend.models.media import ImageFile, VideoFile
+from backend.models.update_jobs import UpdateJob, UpdateJobReport, UpdateJobReportRow
 from backend.utils.character_utils import clean_input
 
 
 def verify_no_other_import_jobs_running(current_job):
     # Method to verify that no other ImportJob tasks are running
     # on the provided site
+    started_states = ["accepted", "started"]
 
-    existing_incomplete_jobs = ImportJob.objects.filter(
+    existing_incomplete_import_jobs = ImportJob.objects.filter(
         Q(site=current_job.site),
-        Q(status__in=[ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED])
-        | Q(validation_status__in=[ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]),
-    ).exclude(id=current_job.id)
+        Q(status__in=started_states) | Q(validation_status__in=started_states),
+    )
+    existing_incomplete_update_jobs = UpdateJob.objects.filter(
+        Q(site=current_job.site),
+        Q(status__in=started_states) | Q(validation_status__in=started_states),
+    )
 
-    if len(existing_incomplete_jobs):
-        current_job.status = ImportJobStatus.FAILED
+    if isinstance(current_job, ImportJob):
+        existing_incomplete_import_jobs = existing_incomplete_import_jobs.exclude(
+            id=current_job.id
+        )
+    else:
+        existing_incomplete_update_jobs = existing_incomplete_update_jobs.exclude(
+            id=current_job.id
+        )
+
+    if (
+        existing_incomplete_import_jobs.exists()
+        or existing_incomplete_update_jobs.exists()
+    ):
+        current_job.status = "failed"
         current_job.save()
         raise ValidationError(
             "There is at least 1 job on this site that is already running or queued to run soon. "
@@ -78,7 +90,12 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
 
 
 def create_or_append_error_row(import_job, report, row_number, errors):
-    error_row, created = ImportJobReportRow.objects.get_or_create(
+    report_row_model = (
+        UpdateJobReportRow
+        if isinstance(report, UpdateJobReport)
+        else ImportJobReportRow
+    )
+    error_row, created = report_row_model.objects.get_or_create(
         site=import_job.site,
         report=report,
         row_number=row_number,
@@ -151,18 +168,20 @@ def get_associated_filenames(import_job):
     """
     Get a list of filenames for the uploaded files associated with the import-job.
     """
+    related_job_filter = (
+        {"import_job": import_job}
+        if isinstance(import_job, ImportJob)
+        else {"update_job": import_job}
+    )
+
     associated_audio_and_document_files = list(
-        File.objects.filter(import_job=import_job).values_list("content", flat=True)
+        File.objects.filter(**related_job_filter).values_list("content", flat=True)
     )
     associated_video_files = list(
-        VideoFile.objects.filter(import_job=import_job).values_list(
-            "content", flat=True
-        )
+        VideoFile.objects.filter(**related_job_filter).values_list("content", flat=True)
     )
     associated_image_files = list(
-        ImageFile.objects.filter(import_job=import_job).values_list(
-            "content", flat=True
-        )
+        ImageFile.objects.filter(**related_job_filter).values_list("content", flat=True)
     )
     associated_files = (
         associated_image_files

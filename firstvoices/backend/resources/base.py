@@ -9,6 +9,7 @@ from backend.models.constants import Visibility
 from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
+from backend.models.update_jobs import UpdateJob
 from backend.resources.utils.import_export_widgets import (
     ArrayOfStringsWidget,
     ChoicesWidget,
@@ -39,15 +40,24 @@ class BaseResource(resources.ModelResource):
         self.site = site
         self.run_as_user = run_as_user
         self.import_job = import_job
-        self.created_by = (
-            ImportJob.objects.get(id=import_job).created_by if import_job else ""
-        )
+        # TODO: Remove this ImportJob/UpdateJob bridge after the split is
+        # complete for this slice. Keep legacy import-job behavior unchanged while
+        # update-job pathways are being fully separated.
+        self.job = self.get_job_instance(import_job) if import_job else None
+        self.created_by = self.job.created_by if self.job else ""
+
+    @staticmethod
+    def get_job_instance(job_id):
+        try:
+            return ImportJob.objects.get(id=job_id)
+        except ImportJob.DoesNotExist:
+            return UpdateJob.objects.get(id=job_id)
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
         # ID is only added if the import job mode is not update
-        import_job = ImportJob.objects.get(id=self.import_job)
-        if import_job.mode != ImportJobMode.UPDATE:
+        is_update_job = isinstance(self.job, UpdateJob)
+        if not is_update_job and self.job.mode != ImportJobMode.UPDATE:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
         dataset.append_col(lambda x: str(self.site.id), header="site")
@@ -56,7 +66,10 @@ class BaseResource(resources.ModelResource):
         dataset.append_col(
             lambda x: str(self.created_by), header="system_last_modified_by"
         )
-        dataset.append_col(lambda x: str(self.import_job), header="import_job")
+        if is_update_job:
+            dataset.append_col(lambda x: str(self.import_job), header="update_job")
+        else:
+            dataset.append_col(lambda x: str(self.import_job), header="import_job")
 
     def import_row(self, row, instance_loader, **kwargs):
         # Marking erroneous and invalid rows as skipped, then clearing the errors and validation_errors

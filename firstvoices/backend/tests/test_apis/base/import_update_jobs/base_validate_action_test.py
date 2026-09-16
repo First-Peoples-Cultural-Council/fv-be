@@ -24,9 +24,15 @@ class BaseImportUpdateJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     JOB_MODE = None
     VALIDATE_JOB_TASK = None
     CONFIRMED_REVALIDATE_ERROR_MESSAGE = None
+    JOB_FACTORY = ImportJobFactory
+    JOB_MODEL = ImportJob
+    REPORT_FILTER_PATCH_PATH = (
+        "backend.tasks.utils.reporting_utils.ImportJobReport.objects.filter"
+    )
+    JOB_LOG_LABEL = "import_job"
 
     def get_job_mode_kwargs(self):
-        if self.JOB_MODE is None:
+        if self.JOB_MODE is None or self.JOB_MODEL is not ImportJob:
             return {}
         return {"mode": self.JOB_MODE}
 
@@ -52,7 +58,7 @@ class BaseImportUpdateJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
 
         file_content = get_sample_file(self.SAMPLE_FILE_PATH, "text/csv")
         file = factories.FileFactory(content=file_content)
-        self.job = ImportJobFactory(
+        self.job = self.JOB_FACTORY(
             site=self.site,
             data=file,
             validation_status=JobStatus.ACCEPTED,
@@ -70,23 +76,20 @@ class BaseImportUpdateJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
     def test_exception_fetching_previous_report(self, caplog):
         mock_report = MagicMock()
         mock_report.delete.side_effect = Exception("General Exception")
-        with patch(
-            "backend.tasks.utils.reporting_utils.ImportJobReport.objects.filter",
-            return_value=mock_report,
-        ):
+        with patch(self.REPORT_FILTER_PATCH_PATH, return_value=mock_report):
             response = self.client.post(self.get_validate_endpoint(self.job))
 
-        job = ImportJob.objects.filter(id=self.job.id).first()
+        job = self.JOB_MODEL.objects.filter(id=self.job.id).first()
 
         assert response.status_code == 202
         assert "General Exception" in caplog.text
         assert (
-            f"Unable to delete previous report for import_job: {str(job.id)}"
+            f"Unable to delete previous report for {self.JOB_LOG_LABEL}: {str(job.id)}"
             in caplog.text
         )
 
     def test_validate_action(self):
-        job = ImportJob.objects.get(id=self.job.id)
+        job = self.JOB_MODEL.objects.get(id=self.job.id)
         old_validation_report_id = job.validation_report.id
 
         response = self.client.post(self.get_validate_endpoint(job))
@@ -96,10 +99,11 @@ class BaseImportUpdateJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         assert job.validation_report.id != old_validation_report_id
 
     def test_more_than_one_jobs_not_allowed(self):
-        ImportJobFactory(
+        self.JOB_FACTORY(
             site=self.site,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.STARTED,
+            **self.get_job_mode_kwargs(),
         )
 
         response = self.client.post(self.get_validate_endpoint(self.job))
@@ -115,8 +119,8 @@ class BaseImportUpdateJobValidateAction(FormDataMixin, BaseSiteContentApiTest):
         "validation_status", [JobStatus.ACCEPTED, JobStatus.STARTED]
     )
     def test_validating_current_job_again_not_allowed(self, validation_status):
-        ImportJob.objects.filter(id=self.job.id).delete()
-        job = ImportJobFactory(
+        self.JOB_MODEL.objects.filter(id=self.job.id).delete()
+        job = self.JOB_FACTORY(
             site=self.site,
             validation_status=validation_status,
             **self.get_job_mode_kwargs(),

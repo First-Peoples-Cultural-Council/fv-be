@@ -6,15 +6,14 @@ from uuid import UUID
 import pytest
 import tablib
 
-from backend.models import ImportJob
 from backend.models.constants import Visibility
 from backend.models.dictionary import (
     DictionaryEntry,
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
 )
-from backend.models.import_jobs import ImportJobMode
 from backend.models.jobs import JobStatus
+from backend.models.update_jobs import UpdateJob
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
 from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
@@ -118,16 +117,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         return update_job
 
     def update_invalid_dictionary_entries(self, entry_ids):
@@ -138,16 +136,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         )
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         return update_job
 
     def validate_related_entries(self):
@@ -155,17 +152,16 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
 
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 0
@@ -194,16 +190,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         )
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 6
@@ -222,16 +217,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         file_content = get_sample_file("update_job/default_values.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 3
@@ -257,12 +251,11 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             content=get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         )
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         with patch(
@@ -271,7 +264,7 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         ):
             validate_update_job(update_job.id)
 
-            update_job = ImportJob.objects.get(id=update_job.id)
+            update_job = UpdateJob.objects.get(id=update_job.id)
             assert update_job.validation_status == JobStatus.FAILED
             assert "Test exception" in caplog.text
 
@@ -317,16 +310,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=validation_status,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.FAILED
         assert "This job cannot be run due to consistency issues." in caplog.text
 
@@ -337,17 +329,16 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
             status=status,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.FAILED
         assert (
             "This job could not be started as it is either queued, or already running or completed. "
@@ -356,15 +347,14 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
 
     def test_update_dictionary_entry_external_system_fields(self):
         _, _, file = setup_for_external_systems(self.site)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 0
@@ -388,16 +378,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         )
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == expected_updated_rows
@@ -411,16 +400,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 0
@@ -433,17 +421,16 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
             "update_job/one_column_update.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
 
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 2
         assert update_job.validation_report.error_rows == 0
@@ -452,17 +439,16 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/duplicate_ids.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
 
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
         assert update_job.validation_report.error_rows == 1
@@ -508,12 +494,11 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
 
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         filename_set = [
@@ -526,7 +511,9 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
 
         validate_update_job(update_job.id)
 
-        update_job = ImportJob.objects.get(id=update_job.id, mode=ImportJobMode.UPDATE)
+        update_job = UpdateJob.objects.get(
+            id=update_job.id,
+        )
         validation_report = update_job.validation_report
         assert validation_report.error_rows == 0
         assert validation_report.updated_rows == 5
@@ -609,25 +596,15 @@ class TestBulkUpdateDryRun(BatchRelatedMediaMixin):
         )
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         validate_update_job(update_job.id)
-        update_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
-        )
-
-        validate_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
 
         assert update_job.validation_status == JobStatus.COMPLETE
         assert update_job.validation_report.updated_rows == 1
@@ -688,13 +665,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
@@ -709,23 +685,22 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
         entry1 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
         assert entry1.title == "abc"
-        assert entry1.import_job_id == update_job.id
+        assert entry1.update_job_id == update_job.id
 
         entry2 = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[1])
         assert entry2.title == "xyz"
-        assert entry2.import_job_id == update_job.id
+        assert entry2.update_job_id == update_job.id
 
     def test_all_columns_update(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
@@ -733,13 +708,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/all_valid_columns.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
         entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
@@ -812,13 +786,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/default_values.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
@@ -841,13 +814,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         with patch(
@@ -856,7 +828,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         ):
             confirm_update_job(update_job.id)
 
-            update_job = ImportJob.objects.get(id=update_job.id)
+            update_job = UpdateJob.objects.get(id=update_job.id)
             assert update_job.status == JobStatus.FAILED
             assert "Test exception" in caplog.text
 
@@ -866,13 +838,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/invalid_dictionary_entry_updates.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
@@ -889,17 +860,16 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=status,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.status == JobStatus.FAILED
         assert "This job cannot be run due to consistency issues." in caplog.text
 
@@ -911,17 +881,16 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=validation_status,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
-        update_job = ImportJob.objects.get(id=update_job.id)
+        update_job = UpdateJob.objects.get(id=update_job.id)
         assert update_job.status == JobStatus.FAILED
         assert (
             f"Please validate the job before confirming the update job. Update job id: {update_job.id}."
@@ -930,13 +899,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
     def test_update_dictionary_entry_external_system_fields(self):
         _, external_system_2, file = setup_for_external_systems(self.site)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
@@ -963,13 +931,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
         file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
@@ -999,13 +966,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/one_column_update.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
@@ -1037,13 +1003,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/blank_optional_columns.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
@@ -1073,13 +1038,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/related_entries_by_id_add_new_entries.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
@@ -1111,13 +1075,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/related_entries_by_id_replace_entries.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)
@@ -1166,13 +1129,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
             "update_job/related_media_ids_multiple.csv", self.MIMETYPE
         )
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
         confirm_update_job(update_job.id)
 
@@ -1230,13 +1192,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         )
 
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         sample_audio_ids = [
@@ -1261,7 +1222,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
                 filename="sample-image.jpg",
                 mimetype="image/jpeg",
             ),
-            import_job=update_job,
+            update_job=update_job,
         )
         factories.FileFactory(
             site=self.site,
@@ -1269,7 +1230,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
                 filename="sample-audio.mp3",
                 mimetype="audio/mpeg",
             ),
-            import_job=update_job,
+            update_job=update_job,
         )
         factories.VideoFileFactory(
             site=self.site,
@@ -1277,7 +1238,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
                 filename="video_example_small.mp4",
                 mimetype="video/mp4",
             ),
-            import_job=update_job,
+            update_job=update_job,
         )
         factories.FileFactory(
             site=self.site,
@@ -1285,7 +1246,7 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
                 filename="sample-document.pdf",
                 mimetype="application/pdf",
             ),
-            import_job=update_job,
+            update_job=update_job,
         )
 
         factories.AudioFactory.create(id=sample_audio_ids[0], site=self.site)
@@ -1343,13 +1304,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
 
         file = factories.FileFactory(content=file_content)
 
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         filename_set = [
@@ -1399,13 +1359,12 @@ class TestBulkUpdate(IgnoreTaskResultsMixin, BatchRelatedMediaMixin):
         )
 
         file = factories.FileFactory(content=file_content)
-        update_job = factories.ImportJobFactory(
+        update_job = factories.UpdateJobFactory(
             site=self.site,
             run_as_user=self.user,
             data=file,
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
-            mode=ImportJobMode.UPDATE,
         )
 
         confirm_update_job(update_job.id)

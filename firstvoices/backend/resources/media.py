@@ -30,8 +30,12 @@ class BaseMediaResource(SiteContentResource):
 
         # Adding "id" column if in update mode,
         # since media is always imported and not updated
-        import_job = ImportJob.objects.get(id=self.import_job)
-        if import_job.mode == ImportJobMode.UPDATE:
+        is_update_mode = (
+            self.job.mode == ImportJobMode.UPDATE
+            if isinstance(self.job, ImportJob)
+            else True
+        )
+        if is_update_mode:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
     def import_row(self, row, instance_loader, **kwargs):
@@ -104,8 +108,13 @@ class AudioResource(BaseMediaResource):
         valid_filename = get_valid_filename(row["audio_filename"])
 
         # Adding original
+        related_job_filter = (
+            {"import_job__id": row["import_job"]}
+            if row.get("import_job")
+            else {"update_job__id": str(self.import_job)}
+        )
         associated_file = File.objects.filter(
-            import_job__id=row["import_job"], content__contains=valid_filename
+            content__contains=valid_filename, **related_job_filter
         ).first()
         if associated_file:
             row["audio_original"] = str(associated_file.id)
@@ -153,8 +162,13 @@ class DocumentResource(BaseMediaResource):
         valid_filename = get_valid_filename(row["document_filename"])
 
         # Adding original
+        related_job_filter = (
+            {"import_job__id": row["import_job"]}
+            if row.get("import_job")
+            else {"update_job__id": str(self.import_job)}
+        )
         associated_file = File.objects.filter(
-            import_job__id=row["import_job"], content__contains=valid_filename
+            content__contains=valid_filename, **related_job_filter
         ).first()
         if associated_file:
             row["document_original"] = str(associated_file.id)
@@ -200,8 +214,13 @@ class ImageResource(BaseMediaResource):
         valid_filename = get_valid_filename(row["img_filename"])
 
         # Adding original
+        related_job_filter = (
+            {"import_job__id": row["import_job"]}
+            if row.get("import_job")
+            else {"update_job__id": str(self.import_job)}
+        )
         associated_file = ImageFile.objects.filter(
-            import_job__id=row["import_job"], content__contains=valid_filename
+            content__contains=valid_filename, **related_job_filter
         ).first()
         if associated_file:
             row["img_original"] = str(associated_file.id)
@@ -247,8 +266,13 @@ class VideoResource(BaseMediaResource):
         valid_filename = get_valid_filename(row["video_filename"])
 
         # Adding original
+        related_job_filter = (
+            {"import_job__id": row["import_job"]}
+            if row.get("import_job")
+            else {"update_job__id": str(self.import_job)}
+        )
         associated_file = VideoFile.objects.filter(
-            import_job__id=row["import_job"], content__contains=valid_filename
+            content__contains=valid_filename, **related_job_filter
         ).first()
         if associated_file:
             row["video_original"] = str(associated_file.id)
