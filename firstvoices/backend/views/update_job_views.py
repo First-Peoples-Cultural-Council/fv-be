@@ -13,7 +13,7 @@ from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
 )
-from backend.tasks.batch_utils import verify_no_other_import_jobs_running
+from backend.tasks.batch_utils import verify_no_other_update_jobs_running
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -128,7 +128,7 @@ class UpdateJobViewSet(
                 "This job has already been confirmed and is currently being processed."
             )
 
-        verify_no_other_import_jobs_running(curr_job)
+        verify_no_other_update_jobs_running(curr_job)
         verify_update_job_size_limit(curr_job)
 
         # Queue the job for validation
@@ -164,7 +164,7 @@ class UpdateJobViewSet(
         if curr_job.status == UpdateJobStatus.COMPLETE:
             raise ValidationError("This job has already finished processing.")
 
-        verify_no_other_import_jobs_running(curr_job)
+        verify_no_other_update_jobs_running(curr_job)
         verify_update_job_size_limit(curr_job)
 
         # Queue the job for confirmation

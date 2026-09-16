@@ -27,9 +27,8 @@ from backend.models.update_jobs import (
 from backend.utils.character_utils import clean_input
 
 
-def verify_no_other_import_jobs_running(current_job):
-    # Method to verify that no other ImportJob tasks are running
-    # on the provided site
+def verify_no_other_jobs_running(current_job):
+    # Verify that no other queued/running import or update jobs exist for the site.
     started_states = ["accepted", "started"]
 
     existing_incomplete_import_jobs = ImportJob.objects.filter(
@@ -62,7 +61,15 @@ def verify_no_other_import_jobs_running(current_job):
         )
 
 
-def get_failed_rows_csv_file(import_job, data, error_row_numbers):
+def verify_no_other_import_jobs_running(current_job):
+    return verify_no_other_jobs_running(current_job)
+
+
+def verify_no_other_update_jobs_running(current_job):
+    return verify_no_other_jobs_running(current_job)
+
+
+def get_failed_rows_csv_file_for_job(job, data, error_row_numbers):
     # Generate a csv for the erroneous rows
     failed_row_dataset = []
     for row_num in error_row_numbers:
@@ -86,20 +93,28 @@ def get_failed_rows_csv_file(import_job, data, error_row_numbers):
     # The csv will be set to "failed_rows_csv" on import job in "attach_csv_to_report"
     failed_row_csv_file = File(
         content=in_memory_csv_file,
-        site=import_job.site,
-        created_by=import_job.last_modified_by,
-        last_modified_by=import_job.last_modified_by,
+        site=job.site,
+        created_by=job.last_modified_by,
+        last_modified_by=job.last_modified_by,
     )
     failed_row_csv_file.save()
     return failed_row_csv_file
 
 
-def create_or_append_error_row(import_job, report, row_number, errors):
+def get_failed_rows_csv_file(import_job, data, error_row_numbers):
+    return get_failed_rows_csv_file_for_job(import_job, data, error_row_numbers)
+
+
+def get_failed_rows_csv_file_for_update_job(update_job, data, error_row_numbers):
+    return get_failed_rows_csv_file_for_job(update_job, data, error_row_numbers)
+
+
+def create_or_append_job_error_row(job, report, row_number, errors):
     is_update_report = isinstance(report, UpdateJobReport)
     report_row_model = UpdateJobReportRow if is_update_report else ImportJobReportRow
     row_status = UpdateJobRowStatus.ERROR if is_update_report else RowStatus.ERROR
     error_row, created = report_row_model.objects.get_or_create(
-        site=import_job.site,
+        site=job.site,
         report=report,
         row_number=row_number,
         defaults={
@@ -110,6 +125,14 @@ def create_or_append_error_row(import_job, report, row_number, errors):
     if not created:
         error_row.errors.extend(errors)
         error_row.save()
+
+
+def create_or_append_error_row(import_job, report, row_number, errors):
+    return create_or_append_job_error_row(import_job, report, row_number, errors)
+
+
+def create_or_append_update_error_row(update_job, report, row_number, errors):
+    return create_or_append_job_error_row(update_job, report, row_number, errors)
 
 
 def is_valid_header_variation(input_header, all_headers, valid_headers):
@@ -167,14 +190,12 @@ def normalize_columns(import_data, columns):
     return normalized_data
 
 
-def get_associated_filenames(import_job):
+def get_associated_filenames_for_job(job):
     """
-    Get a list of filenames for the uploaded files associated with the import-job.
+    Get a list of filenames for uploaded files associated with the provided job.
     """
     related_job_filter = (
-        {"import_job": import_job}
-        if isinstance(import_job, ImportJob)
-        else {"update_job": import_job}
+        {"import_job": job} if isinstance(job, ImportJob) else {"update_job": job}
     )
 
     associated_audio_and_document_files = list(
@@ -195,14 +216,22 @@ def get_associated_filenames(import_job):
     return [file.split("/")[-1] for file in associated_files]
 
 
-def get_missing_uploaded_media(data, import_job):
+def get_associated_filenames(import_job):
+    return get_associated_filenames_for_job(import_job)
+
+
+def get_associated_filenames_for_update_job(update_job):
+    return get_associated_filenames_for_job(update_job)
+
+
+def get_missing_uploaded_media_for_job(data, job):
     """
-    Checks for missing media files in the specified import-job by comparing file names present in the data
-    with the uploaded files associated with the import-job.
+    Checks for missing media files in the specified job by comparing file names present in the data
+    with the uploaded files associated with the job.
     Returns a list of missing media files.
     """
 
-    associated_filenames = get_associated_filenames(import_job)
+    associated_filenames = get_associated_filenames_for_job(job)
     missing_media = []
     media_fields = [
         "AUDIO_FILENAME",
@@ -265,6 +294,14 @@ def get_missing_uploaded_media(data, import_job):
                 )
 
     return missing_media
+
+
+def get_missing_uploaded_media(data, import_job):
+    return get_missing_uploaded_media_for_job(data, import_job)
+
+
+def get_missing_uploaded_media_for_update_job(data, update_job):
+    return get_missing_uploaded_media_for_job(data, update_job)
 
 
 def get_missing_referenced_media(data, site_id):

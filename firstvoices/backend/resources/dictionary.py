@@ -180,10 +180,8 @@ class DictionaryEntryResource(
 
         instance_loader.get_instance(row)
         site = self.site
-        is_update_mode = (
-            self.job.mode == ImportJobMode.UPDATE
-            if isinstance(self.job, ImportJob)
-            else True
+        is_update_mode = isinstance(self.job, UpdateJob) or (
+            isinstance(self.job, ImportJob) and self.job.mode == ImportJobMode.UPDATE
         )
 
         # Raise errors for invalid type/visibility
@@ -260,7 +258,7 @@ class DictionaryEntryResource(
         # Prevent duplicate updates within the same import
         if str(row.get("id")) in self._processed_ids:
             raise ImportError(
-                f"Duplicate entry with id {row.get('id')} found in import."
+                f"Duplicate entry with id {row.get('id')} found in update data."
             )
         self._processed_ids.add(str(row.get("id")))
 
