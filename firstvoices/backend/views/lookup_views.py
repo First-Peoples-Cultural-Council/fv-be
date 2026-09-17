@@ -29,7 +29,7 @@ from .api_doc_variables import id_parameter
 @extend_schema_view(
     retrieve=extend_schema(
         description=_(
-            "Look up an object by its UUID, across all supported content type."
+            "Look up an object by its UUID, across all supported content types."
             "Returns identifying information and a link to the object's detail view."
         ),
         responses={

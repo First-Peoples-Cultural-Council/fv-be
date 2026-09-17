@@ -20,7 +20,7 @@ from backend.serializers.base_serializers import (
 class LookupSerializer(ExternalSiteContentUrlMixin, BaseSiteContentSerializer):
     """
     Base serializer for UUID lookup results. Returns identifying information about an
-    object and a link to its dtail view, without the site slug in the req context.
+    object and a link to its detail view, without the site slug in the req context.
     """
 
     type = serializers.SerializerMethodField(read_only=True)
