@@ -30,6 +30,20 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
 
     content_type = "application/json"
 
+    @staticmethod
+    def setup_site_banners(client):
+        """Creates a site with both banner media available, and authenticates a language admin."""
+        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
+        user = factories.get_non_member_user()
+        image = factories.ImageFactory.create(site=site)
+        video = factories.VideoFactory.create(site=site)
+        factories.MembershipFactory.create(
+            user=user, site=site, role=Role.LANGUAGE_ADMIN
+        )
+
+        client.force_authenticate(user=user)
+        return site, image, video
+
     def get_detail_endpoint(self, key):
         """Override to get urls based on site slugs instead of IDs"""
         try:
@@ -697,15 +711,8 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
 
     @pytest.mark.django_db
     def test_update_both_banners_400(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
-        factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
-        )
+        site, image, video = self.setup_site_banners(self.client)
 
-        self.client.force_authenticate(user=user)
         req_body = {
             "title": site.title,
             "logo": None,
@@ -722,18 +729,11 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
     @pytest.mark.django_db
     def test_patch_second_banner_400(self):
         # the other banner is already set on the site, so it won't be in the req body
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
-        factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
-        )
+        site, image, video = self.setup_site_banners(self.client)
 
         site.banner_image = image
         site.save()
 
-        self.client.force_authenticate(user=user)
         response = self.client.patch(
             f"{self.get_detail_endpoint(site.slug)}",
             data=json.dumps({"bannerVideo": str(video.id)}),
@@ -744,18 +744,11 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
 
     @pytest.mark.django_db
     def test_patch_swap_banner_200(self):
-        site = factories.SiteFactory.create(visibility=Visibility.TEAM)
-        user = factories.get_non_member_user()
-        image = factories.ImageFactory.create(site=site)
-        video = factories.VideoFactory.create(site=site)
-        factories.MembershipFactory.create(
-            user=user, site=site, role=Role.LANGUAGE_ADMIN
-        )
+        site, image, video = self.setup_site_banners(self.client)
 
         site.banner_image = image
         site.save()
 
-        self.client.force_authenticate(user=user)
         response = self.client.patch(
             f"{self.get_detail_endpoint(site.slug)}",
             data=json.dumps({"bannerImage": None, "bannerVideo": str(video.id)}),
